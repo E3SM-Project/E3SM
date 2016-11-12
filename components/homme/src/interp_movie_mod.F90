@@ -41,7 +41,6 @@ module interp_movie_mod
        nf_addrequiredvar,   &
        num_io_procs,        &
        PIOFS
-  use fvm_control_volume_mod, only : fvm_struct
 
   implicit none
 #undef V_IS_LATLON
@@ -353,14 +352,6 @@ contains
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
-    call nf_variable_attributes(ncdf, 'psC', 'surface pressure implied my fvm','Pa')
-    call nf_variable_attributes(ncdf, 'dp_fvm', 'dp implied by fvm','Pa')
-    call nf_variable_attributes(ncdf, 'div_fvm', 'divergence implied by fvm','1/s')
-    call nf_variable_attributes(ncdf, 'C1', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'C2', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'C3', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'C4', 'concentration','kg/kg')
-    call nf_variable_attributes(ncdf, 'C5', 'concentration','kg/kg')
 
     call nf_output_init_complete(ncdf)
     allocate(lon(nlon), lat(nlat), gw(nlat))
@@ -429,7 +420,7 @@ contains
 
 
 
-  subroutine interp_movie_output(elem, tl, par, phimean, fvm, hvcoord)
+  subroutine interp_movie_output(elem, tl, par, phimean, hvcoord)
 
     use kinds, only : int_kind, real_kind
     use element_mod, only : element_t
@@ -451,7 +442,6 @@ contains
     ! ---------------------    
     type (element_t),target    :: elem(:)
     type (parallel_t)     :: par
-    type (fvm_struct), optional   :: fvm(:)
     type (TimeLevel_t)  :: tl
 
 #if defined(_PRIM)
@@ -478,13 +468,10 @@ contains
     real (kind=real_kind) :: vco(np,np,2),ke(np,np,nlev)
     real (kind=real_kind) :: v1,v2
 
-    integer (kind=int_kind) :: n0_fvm, np1_fvm !fvm time-level pointers
-
     type (derivative_t)  :: deriv
 
     call t_startf('interp_movie_output')
     n0 = tl%n0
-    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
 
 !    if (0==pio_iotask_rank(piofs)) write(*,'(a,i4,a,i1)') &
 !         "lat/lon interp movie output: ios=",ios," interpolation type=",&
@@ -614,78 +601,6 @@ contains
                 end if
                 deallocate(var3d)
              end if
-
-           if(nf_selectedvar('psC', output_varnames)) then
-              if (par%masterproc) print *,'writing psC...'
-              st=1
-              allocate(datall(ncnt,1))
-              do ie=1,nelemd
-                 en=st+interpdata(ie)%n_interp-1
-                 call interpol_phys_latlon(interpdata(ie),fvm(ie)%psc, &
-                                    fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,1))
-                 st=st+interpdata(ie)%n_interp
-              enddo
-        
-#ifdef _PRIM
-              if (p0 < 2000)  then  ! convert to Pa, if using mb
-                 datall(:,1) = 100*(datall(:,1)) 
-              endif
-#endif
-              call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='psC')
-              deallocate(datall)
-           endif          
-           
-            do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
-               write(vname,'(a1,i1)') 'C',cindex
-
-               if(nf_selectedvar(vname, output_varnames)) then
-                  if (par%masterproc) print *,'writing FVM tracer ',vname
-                  allocate(datall(ncnt,nlev))
-                  st=1
-                  do ie=1,nelemd
-                     en=st+interpdata(ie)%n_interp-1
-                     do k=1,nlev                       
-                       call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0_fvm), &
-                                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
-                     end do
-                     st=st+interpdata(ie)%n_interp
-                  enddo                  
-                  call nf_put_var(ncdf(ios),datall,start3d, count3d, name=vname)                  
-                  deallocate(datall)                  
-               end if
-            enddo
-
-            if(nf_selectedvar('dp_fvm', output_varnames)) then
-               if (par%masterproc) print *,'writing dp_fvm ...'
-               allocate(datall(ncnt,nlev))
-               st=1
-               do ie=1,nelemd
-                  en=st+interpdata(ie)%n_interp-1
-                  do k=1,nlev                       
-                     call interpol_phys_latlon(interpdata(ie),fvm(ie)%dp_fvm(:,:,k,n0_fvm), &
-                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
-                  end do
-                  st=st+interpdata(ie)%n_interp
-               enddo
-               call nf_put_var(ncdf(ios),datall,start3d, count3d, name='dp_fvm')
-               deallocate(datall)
-            end if
-
-            if(nf_selectedvar('div_fvm', output_varnames)) then
-               if (par%masterproc) print *,'writing div_fvm ...'
-               allocate(datall(ncnt,nlev))
-               st=1
-               do ie=1,nelemd
-                  en=st+interpdata(ie)%n_interp-1
-                  do k=1,nlev                       
-                     call interpol_phys_latlon(interpdata(ie),fvm(ie)%div_fvm(:,:,k), &
-                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
-                  end do
-                  st=st+interpdata(ie)%n_interp
-               enddo
-               call nf_put_var(ncdf(ios),datall,start3d, count3d, name='div_fvm')
-               deallocate(datall)
-            end if
 
              if(nf_selectedvar('geop', output_varnames)) then
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))

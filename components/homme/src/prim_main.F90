@@ -152,13 +152,6 @@ program prim_main
 #if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
-  ! setup fake threading so we can call routines that require 'hybrid'
-  ithr=omp_get_thread_num()
-  hybrid = hybrid_create(par,ithr,1)
-  nets=1
-  nete=nelemd 
-
-
 
   
   ! Here we get sure the directory specified
@@ -201,9 +194,9 @@ program prim_main
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
 #ifdef PIO_INTERP
-     call interp_movie_output(elem, tl, par, 0d0, fvm=fvm, hvcoord=hvcoord)
+     call interp_movie_output(elem, tl, par, 0d0, hvcoord=hvcoord)
 #else
-     call prim_movie_output(elem, tl, hvcoord, par, fvm)
+     call prim_movie_output(elem, tl, hvcoord, par)
 #endif
   endif
 
@@ -221,28 +214,19 @@ program prim_main
      nete=dom_mt(ithr)%end
      
      nstep = nextoutputstep(tl)
-!JMD     call vprof_start()
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
         call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord,1)
         call t_stopf('prim_run')
      end do
-!JMD     call vprof_stop()
 #if (defined HORIZ_OPENMP)
      !$OMP END PARALLEL
 #endif
-     ! setup fake threading so we can call routines that require 'hybrid'
-     ithr=omp_get_thread_num()
-     hybrid = hybrid_create(par,ithr,1)
-     nets=1
-     nete=nelemd 
-
 
 #ifdef PIO_INTERP
-     if (ntrac>0) call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
-     call interp_movie_output(elem, tl, par, 0d0,fvm=fvm, hvcoord=hvcoord)
+     call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
-     call prim_movie_output(elem, tl, hvcoord, par, fvm)
+     call prim_movie_output(elem, tl, hvcoord, par)
 #endif
 
      ! ============================================================
@@ -266,10 +250,6 @@ program prim_main
 
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
-!   write(numproc_char,*) par%nprocs
-!   write(numtrac_char,*) ntrac
-!   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
-!   call t_prf('time/HommeFVMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
   call t_prf('HommeTime', par%comm)
   if(par%masterproc) print *,"calling t_finalizef"
   call t_finalizef()

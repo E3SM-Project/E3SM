@@ -5,7 +5,7 @@
 module prim_movie_mod
 #ifndef PIO_INTERP
   use kinds, only : real_kind, longdouble_kind
-  use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize, ntrac, nc
+  use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize
   use hybvcoord_mod, only :  hvcoord_t 
 #ifdef _MPI
   use parallel_mod, only : syncmp, iam, mpireal_t, mpi_max, mpi_sum, mpiinteger_t, parallel_t, haltmp, abortmp
@@ -14,7 +14,6 @@ module prim_movie_mod
 #endif
   use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax
   use element_mod, only : element_t
-  use fvm_control_volume_mod, only : fvm_struct
 
   use cube_mod, only : cube_assemble
   use control_mod, only : test_case, runtype, &
@@ -92,22 +91,20 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
-    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem, iodesct, pio_subsystem 
+    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
-    use fvm_control_volume_mod, only : fvm_mesh_ari
     use reduction_mod, only : parallelmax
     type (element_t), intent(in) :: elem(:)
     type (parallel_t), intent(in)     :: par
     type (hvcoord_t), intent(in) :: hvcoord
     type(timelevel_t) :: tl
     ! Local variables
-    type (fvm_struct) :: fvm_tmp
     type (hybrid_t) :: hybrid
     real (kind=real_kind),allocatable, dimension(:) :: latp,lonp
     integer :: ie, v1(4), i, ios, istartP
     integer,dimension(maxdims) :: dimsize
     integer :: st, en, icnt, kmax,kmax2
-    integer :: j,jj,cc,ii,k, iorank,base, global_nc, global_nsub
+    integer :: j,jj,cc,ii,k, iorank,base, global_nsub
     integer(kind=nfsizekind) :: start(2), count(2)
     integer, allocatable :: compDOF(:)
     integer, allocatable :: dof(:)
@@ -126,9 +123,6 @@ contains
 
     num_agg = 1
     call PIO_setDebugLevel(0)
-#ifdef _AIX
-!    call unbind()
-#endif
 
 
     call nf_output_init_begin(ncdf,par%masterproc,par%nprocs,par%rank, &
@@ -139,9 +133,8 @@ contains
     do ie=1,nelemd
       nxyp=nxyp+elem(ie)%idxp%NumUniquePts
     enddo
-    global_nc=nc*nc*nelem  ! total number of physics points
     global_nsub=(np-1)*(np-1)*nelem  ! total number of subelements
-    dimsize = (/GlobalUniqueCols,nlev,nlevp,nelem,0,global_nc,global_nsub/)
+    dimsize = (/GlobalUniqueCols,nlev,nlevp,nelem,0,global_nsub/)
     call nf_output_register_dims(ncdf,maxdims, dimnames, dimsize)
 
 
@@ -186,26 +179,6 @@ contains
 
     deallocate(compdof)
 
-! the fvm grid
-    allocate(dof(nc*nc*nelemd*nlev))
-    jj=0
-    do cc=0,nlev-1
-       do ie=1,nelemd
-          base = ((elem(ie)%globalid-1)+cc*nelem)*(nc*nc)
-          ii=0
-          do j=1,nc
-             do i=1,nc
-                ii=ii+1
-                jj=jj+1
-                dof(jj) = base+ii
-             end do
-          end do
-       end do
-    end do
-    call pio_initdecomp(pio_subsystem, pio_double, (/global_nc,nlev/), dof, iodesc3d_nc)
-    call PIO_initDecomp(pio_subsystem, pio_double,(/global_nc/),&
-         dof(1:(nelemd*nc*nc)),IOdesc2D_nc)
-    deallocate(dof)
 
 ! the GLL based element subgrid
     allocate(dof((np-1)*(np-1)*nelemd*nlev))
@@ -380,118 +353,22 @@ contains
              deallocate(var3d)
           end if
 
-          allocate(var1(nc*nc*nelemd,nlev))
-          allocate(var2(nc*nc*nelemd,nlev))
-          if( (nf_selectedvar('phys_lat', output_varnames))) then
-             jj=0
-             do ie=1,nelemd
-                ! fvm grid for element ie.
-                ! (if ntrac=0, fvm grid was never computed, so we cant use fvm()%
-                call fvm_mesh_ari(elem(ie),fvm_tmp,tl)
-                ii=0
-                do j=1,nc
-                   do i=1,nc
-                      ii=ii+1
-                      jj=jj+1
-                      ! take center of mass of elem(ie)%
-                      var1(jj,1) = fvm_tmp%centersphere(i,j)%lat
-                      var2(jj,1) = fvm_tmp%centersphere(i,j)%lon
-                   end do
-                end do
-             end do
 
-             var1=var1*180/dd_pi
-             var2=var2*180/dd_pi
-             if (par%masterproc) print *,'writing phys_lat'
-             call nf_put_var(ncdf(ios),var1(:,1),start(1:1),count(1:1),&
-                  name='phys_lat',iodescin=iodesc2d_nc)
-             if (par%masterproc) print *,'writing phys_lon'
-             call nf_put_var(ncdf(ios),var2(:,1),start(1:1),count(1:1),&
-                  name='phys_lon',iodescin=iodesc2d_nc)
-          endif
-
-          if( (nf_selectedvar('phys_area', output_varnames))) then
-             jj=0
-             do ie=1,nelemd
-
-                ! fvm grid for element ie.
-                ! (if ntrac=0, fvm grid was never computed, so we cant use fvm()%
-                call fvm_mesh_ari(elem(ie),fvm_tmp,tl)
-
-                ii=0
-                do j=1,nc
-                   do i=1,nc
-                      ii=ii+1
-                      jj=jj+1
-                      var1(jj,1)= fvm_tmp%area_sphere(i,j)
-                   end do
-                end do
-             end do
-             call nf_put_var(ncdf(ios),var1(:,1),start(1:1),count(1:1),&
-                  name='phys_area',iodescin=iodesc2d_nc)
-          endif
-
-          if( (nf_selectedvar('phys_cv_lat', output_varnames))) then
-             if (par%masterproc) print *,'writing physics grid cv metadata'
-             var1=0
-             var2=0
-             jj=0
-             do ie=1,nelemd
-
-                ! fvm grid for element ie.
-                ! (if ntrac=0, fvm grid was never computed, so we cant use fvm()%
-                call fvm_mesh_ari(elem(ie),fvm_tmp,tl)
-
-                ii=0
-                do j=1,nc
-                   do i=1,nc
-                      ii=ii+1
-                      jj=jj+1
-                      ! take center of mass of elem(ie)%
-                      var1(jj,1) = fvm_tmp%asphere(i,j)%lat
-                      var2(jj,1) = fvm_tmp%asphere(i,j)%lon
-                      var1(jj,2) = fvm_tmp%asphere(i+1,j)%lat
-                      var2(jj,2) = fvm_tmp%asphere(i+1,j)%lon
-                      var1(jj,3) = fvm_tmp%asphere(i+1,j+1)%lat
-                      var2(jj,3) = fvm_tmp%asphere(i+1,j+1)%lon
-                      var1(jj,4) = fvm_tmp%asphere(i,j+1)%lat
-                      var2(jj,4) = fvm_tmp%asphere(i,j+1)%lon
-                   end do
-                end do
-             end do
-             var1=var1*180/dd_pi
-             var2=var2*180/dd_pi
-             call nf_put_var(ncdf(ios),var1(:,:),start(1:1),count(1:1),&
-                  name='phys_cv_lat',iodescin=iodesc3d_nc)
-             call nf_put_var(ncdf(ios),var2(:,:),start(1:1),count(1:1),&
-                  name='phys_cv_lon',iodescin=iodesc3d_nc)
-                
-          endif
-          deallocate(var1)
-          deallocate(var2)
-! #else
-!           if( (nf_selectedvar('phys_lat', output_varnames))) then
-!              if (par%masterproc) print *,'WARNING: compile with -D_FVM to output fvm grid coordinate data'
-!           endif
-! #endif
           if (par%masterproc) print *,'done writing coordinates ios=',ios
        end if
     end do
-
-    
     deallocate(latp,lonp)
-#ifdef _AIX
-!    call rebind()
-#endif
-
   end subroutine prim_movie_init
+
+
+
   subroutine prim_movie_finish
 ! ncdf is a module global
-    call nf_close_all(ncdf)
-   
-   
+  call nf_close_all(ncdf)
   end subroutine prim_movie_finish
-!
+
+
+  !
 ! This function returns the next step number in which an output (either restart or movie) 
 ! needs to be written.
 !
@@ -515,14 +392,12 @@ contains
     end if
  end function nextoutputstep
 
-  subroutine prim_movie_output(elem, tl, hvcoord, par, fvm)
+  subroutine prim_movie_output(elem, tl, hvcoord, par)
     use piolib_mod, only : Pio_SetDebugLevel !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
-    use netcdf_io_mod, only : iodesc3d_nc
 
     type (element_t)    :: elem(:)
-    type (fvm_struct), optional   :: fvm(:)
 
     type (TimeLevel_t)  :: tl
     type (hvcoord_t)    :: hvcoord
@@ -536,7 +411,6 @@ contains
     real (kind=real_kind) :: vartmp(np,np,nlev),arealocal(np,np)
     real (kind=real_kind) :: var2d(nxyp), var3d(nxyp,nlev), ke(np,np,nlev)
     real (kind=real_kind) :: temp3d(np,np,nlev,nelemd)
-    real (kind=real_kind) :: varphys(nc*nc*nelemd,nlev)
 
     integer :: st, en, kmax, qindex
     character(len=2) :: vname
@@ -544,9 +418,6 @@ contains
     integer(kind=nfsizekind) :: start(3), count(3), start2d(2),count2d(2)
     integer :: ncnt
     call t_startf('prim_movie_output:pio')
-#ifdef _AIX
-!    call unbind()
-#endif
 
     do ios=1,max_output_streams
        if((output_frequency(ios) .gt. 0)) then
@@ -718,30 +589,6 @@ contains
                 end if
              enddo
 
-             if (present(fvm)) then
-             do qindex=1,min(ntrac,4)
-                write(vname,'(a1,i1)') 'C',qindex
-                if (qindex==1) vname='C'
-                if(nf_selectedvar(vname, output_varnames)) then
-
-                   
-                   if (par%masterproc) print *,'writing ',vname
-                   do k=1,nlev
-                      jj=0
-                      do ie=1,nelemd
-                         do j=1,nc
-                            do i=1,nc
-                               jj=jj+1
-                               varphys(jj,k)= fvm(ie)%c(i,j,k,qindex,tl%n0)
-                            end do
-                         end do
-                      end do
-                   end do
-                   call nf_put_var(ncdf(ios),varphys,start, count, name=vname,iodescin=iodesc3d_nc)
-                endif
-             enddo
-             endif
-
              if(nf_selectedvar('geo', output_varnames)) then
                 st=1
                 do ie=1,nelemd
@@ -761,18 +608,12 @@ contains
                 end do
                 call nf_put_var(ncdf(ios),var3d,start, count, name='omega')
              end if
-!             call PIO_SetDebugLevel(3)
              call nf_put_var(ncdf(ios),real(dayspersec*time_at(tl%nstep),kind=real_kind),&
                   start(3:3),count(3:3),name='time')
              call nf_advance_frame(ncdf(ios))
-!             call PIO_SetDebugLevel(0)
-
           end if
        end if
     end do
-#ifdef _AIX
-!    call rebind()
-#endif
     call t_stopf('prim_movie_output:pio')
  end subroutine prim_movie_output
 

@@ -443,10 +443,10 @@ contains
           endif
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,par,tl=tl)
-          call interp_movie_output(elem,tl, par, pmean, fvm)     
+          call interp_movie_output(elem,tl, par, pmean)
 #else
-          call shal_movie_init(elem,hybrid,fvm)
-          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
+          call shal_movie_init(elem,hybrid)
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 #endif
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
@@ -673,9 +673,9 @@ contains
        ! Shallow Water Test Case output files
        ! ============================================================
 #ifdef PIO_INTERP
-        call interp_movie_output(elem,tl, par, pmean, fvm)
+        call interp_movie_output(elem,tl, par, pmean)
 #else     
-        call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
+        call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 #endif
        ! ==================================================
        ! Shallow Water Test Cases:
