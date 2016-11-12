@@ -107,6 +107,7 @@ MODULE seq_infodata_mod
       character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique
       logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
       logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
+      real(SHR_KIND_R8)       :: gust_fac        ! wind gustiness factor
       real(SHR_KIND_R8)       :: wall_time_limit ! force stop time limit (hours)
       character(SHR_KIND_CS)  :: force_stop_at   ! when to force a stop (month, day, etc)
       character(SHR_KIND_CL)  :: atm_gnam        ! atm grid
@@ -336,6 +337,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
+    real(SHR_KIND_R8)      :: gust_fac           ! wind gustiness factor
     real(SHR_KIND_R8)      :: wall_time_limit    ! force stop time limit (hours)
     character(SHR_KIND_CS) :: force_stop_at      ! when to force a stop (month, day, etc)
     character(SHR_KIND_CL) :: atm_gnam           ! atm grid
@@ -397,7 +399,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
          brnch_retain_casename, info_debug, bfbflag,       &
          restart_pfile, restart_file, run_barriers,        &
          single_column, scmlat, force_stop_at,             &
-         scmlon, logFilePostFix, outPathRoot, flux_diurnal,&
+         scmlon, logFilePostFix, outPathRoot, flux_diurnal, gust_fac,&
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
@@ -473,6 +475,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        flux_epbal            = 'off'
        flux_albav            = .false.
        flux_diurnal          = .false.
+       gust_fac              = huge(1.0_SHR_KIND_R8)
        wall_time_limit       = -1.0
        force_stop_at         = 'month'
        atm_gnam              = 'undefined'
@@ -576,6 +579,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
+       infodata%gust_fac              = gust_fac
        infodata%wall_time_limit       = wall_time_limit
        infodata%force_stop_at         = force_stop_at
        infodata%atm_gnam              = atm_gnam
@@ -866,7 +870,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, case_name, case_desc, timing
            shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
            nextsw_cday, precip_fact, flux_epbal, flux_albav, glcrun_alarm,    &
            glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
-           do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+           do_budgets, do_histinit, drv_threading, flux_diurnal, gust_fac,    &
            budget_inst, budget_daily, budget_month, wall_time_limit,          &
            budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
            histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
@@ -934,6 +938,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, case_name, case_desc, timing
    character(len=*)    ,optional, intent(OUT) :: flux_epbal    ! selects E,P,R adjustment technique
    logical             ,optional, intent(OUT) :: flux_albav    ! T => no diurnal cycle in ocn albedos
    logical             ,optional, intent(OUT) :: flux_diurnal  ! T => diurnal cycle in atm/ocn flux
+   real(SHR_KIND_R8)   ,optional, intent(OUT) :: gust_fac      ! wind gustiness factor
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: wall_time_limit ! force stop wall time (hours)
    character(len=*)    ,optional, intent(OUT) :: force_stop_at ! force stop at next (month, day, etc)
    character(len=*)    ,optional, intent(OUT) :: atm_gnam      ! atm grid
@@ -1096,6 +1101,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, case_name, case_desc, timing
     if ( present(flux_epbal)     ) flux_epbal     = infodata%flux_epbal
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
     if ( present(flux_diurnal)   ) flux_diurnal   = infodata%flux_diurnal
+    if ( present(gust_fac)       ) gust_fac       = infodata%gust_fac
     if ( present(wall_time_limit)) wall_time_limit= infodata%wall_time_limit
     if ( present(force_stop_at)  ) force_stop_at  = infodata%force_stop_at
     if ( present(atm_gnam)       ) atm_gnam       = infodata%atm_gnam
@@ -1346,7 +1352,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, case_name, case_desc, timing
            shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
            nextsw_cday, precip_fact, flux_epbal, flux_albav, glcrun_alarm,    &
            glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
-           do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+           do_budgets, do_histinit, drv_threading, flux_diurnal, gust_fac,    &
            budget_inst, budget_daily, budget_month, force_stop_at,            &
            budget_ann, budget_ltann, budget_ltend ,                           &
            histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
@@ -1413,6 +1419,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, case_name, case_desc, timing
    character(len=*)    ,optional, intent(IN) :: flux_epbal    ! selects E,P,R adjustment technique
    logical             ,optional, intent(IN) :: flux_albav    ! T => no diurnal cycle in ocn albedos
    logical             ,optional, intent(IN) :: flux_diurnal  ! T => diurnal cycle in atm/ocn flux
+   real(SHR_KIND_R8)   ,optional, intent(IN) :: gust_fac      ! wind gustiness factor
    real(SHR_KIND_R8)   ,optional, intent(IN) :: wall_time_limit ! force stop wall time (hours)
    character(len=*)    ,optional, intent(IN) :: force_stop_at ! force a stop at next (month, day, etc)
    character(len=*)    ,optional, intent(IN) :: atm_gnam   ! atm grid
@@ -1574,6 +1581,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, case_name, case_desc, timing
     if ( present(flux_epbal)     ) infodata%flux_epbal     = flux_epbal
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
     if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
+    if ( present(gust_fac)       ) infodata%gust_fac       = gust_fac
     if ( present(wall_time_limit)) infodata%wall_time_limit= wall_time_limit
     if ( present(force_stop_at)  ) infodata%force_stop_at  = force_stop_at
     if ( present(atm_gnam)       ) infodata%atm_gnam       = atm_gnam
@@ -1847,6 +1855,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%flux_epbal,            mpicom)
     call shr_mpi_bcast(infodata%flux_albav,            mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,          mpicom)
+    call shr_mpi_bcast(infodata%gust_fac,              mpicom)
     call shr_mpi_bcast(infodata%wall_time_limit,       mpicom)
     call shr_mpi_bcast(infodata%force_stop_at,         mpicom)
     call shr_mpi_bcast(infodata%atm_gnam,              mpicom)
@@ -2488,6 +2497,7 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
        write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
        write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
+       write(logunit,F0R) subname,'gust_fac                 = ', infodata%gust_fac
        write(logunit,F0R) subname,'wall_time_limit          = ', infodata%wall_time_limit
        write(logunit,F0A) subname,'force_stop_at            = ', trim(infodata%force_stop_at)
        write(logunit,F0A) subname,'atm_gridname             = ', trim(infodata%atm_gnam)
