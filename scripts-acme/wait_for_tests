@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+"""
+Wait for a queued set of ACME tests to finish by watching the
+TestStatus files.  If all tests pass, 0 is returned, otherwise a
+non-zero error code is returned.
+
+The easiest way to test this script is to keep a set of create_test
+results laying around somewhere so you don't have to wait for tests
+to run to test this script.
+"""
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+import wait_for_tests
+
+import argparse, sys, os
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s [<Path to TestStatus> <Path to TestStatus> ...]  [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Wait for test in current dir\033[0m
+    > %s
+    \033[1;32m# Wait for test in user specified tests\033[0m
+    > %s path/to/testdir
+    \033[1;32m# Wait for all tests in a test area\033[0m
+    > %s path/to/testarea/*/TestStatus
+""" % ((os.path.basename(args[0]), ) * 6),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("paths", default=".", nargs="*", help="Paths to test directories or status file. Pwd default.")
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print extra information")
+
+    parser.add_argument("-n", "--no-wait", action="store_true",
+                        help="Do not wait for tests to finish")
+
+    parser.add_argument("-t", "--check-throughput", action="store_true",
+                        help="Fail if throughput check fails (fail if tests slow down)")
+
+    parser.add_argument("-m", "--check-memory", action="store_true",
+                        help="Fail if memory check fails (fail if tests footprint grows)")
+
+    parser.add_argument("-i", "--ignore-namelist-diffs", action="store_true",
+                        help="Do not fail a test if the only problem is diffing namelists")
+
+    parser.add_argument("-d", "--cdash-build-name",
+                        help="Build name, implies you want results send to Cdash")
+
+    parser.add_argument("-p", "--cdash-project", default=wait_for_tests.ACME_MAIN_CDASH,
+                        help="The name of the CDash project where results should be uploaded")
+
+    parser.add_argument("-g", "--cdash-build-group", default=wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
+                        help="The build group to be used to display results on the CDash dashboard.")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+    return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.cdash_build_name, args.cdash_project, args.cdash_build_group
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        acme_util.run_cmd("python -m doctest %s/wait_for_tests.py -v" % os.path.dirname(sys.argv[0]), arg_stdout=None, arg_stderr=None)
+        return
+
+    acme_util.stop_buffering_output()
+
+    test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group = \
+        parse_command_line(sys.argv, description)
+
+    sys.exit(0 if wait_for_tests.wait_for_tests(test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs,
+                                                cdash_build_name, cdash_project, cdash_build_group)
+             else acme_util.TESTS_FAILED_ERR_CODE)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -1,0 +1,318 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition_CAM.xsl"?>
+
+<namelist_definition>
+
+<!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other aspects of the variable's definition are expressed as
+     attributes of the <entry> element.  Note that it is an XML requirement
+     that the attribute values are enclosed in quotes.  The attributes are:
+
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+
+     type
+          An abbreviation of the fortran declaration for the variable.
+	  Valid declarations are:
+
+          char*n  
+	  integer
+	  logical
+	  real
+
+	  Any of these types may be followed by a comma separated list of
+	  integers enclosed in parenthesis to indicate an array.
+
+	  The current namelist validation code only distinquishes between
+	  string and non-string types.
+
+     input_pathname
+          Only include this attribute to indicate that the variable
+          contains the pathname of an input dataset.  The recognized values
+          are "abs" to indicate that an absolute pathname is required, or
+	  "rel:var_name" to indicate that the pathname is relative and that
+          the namelist variable "var_name" contains the absolute root
+          directory.
+
+     catagory
+          A catagory assigned for organizing the documentation.
+
+     group
+          The namelist group that the variable is declared in.
+
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+                                                                        -->
+
+<!-- ========================================================================================  -->
+<!-- CLM -->
+
+<entry id="clump_pproc" type="integer" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Clumps per processor.
+Default: Number of threads per process; or 1 if no OMP.
+</entry>
+
+<entry id="co2_ppmv" type="real" catagory="clm"
+       group="clm_inparm" valid_values="" >
+
+Default: 355.
+</entry>
+
+<entry id="co2_type" type="char*16" catagory="clm"
+       group="clm_inparm" valid_values="constant,prognostic,diagnostic" >
+Type of CO2 feedback.
+Default: 'constant' for BGC mode
+</entry>
+
+<entry id="create_crop_landunit" type="logical" catagory="clm"
+       group="clm_inparm" valid_values="" >
+on if to create crop as separate landunits
+Default: FALSE
+</entry>
+
+<entry id="csm_doflxave" type="logical" catagory="clm"
+       group="clm_inparm" valid_values="" >
+true => flux averaging is to be performed (only used for csm mode)
+Default: TRUE
+</entry>
+
+<entry id="fatmgrid" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of atmosphere grid data file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="fatmlndfrc" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of landfrac data file (on atm grid).
+Default: set by build-namelist.
+</entry>
+
+<entry id="fatmtopo" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of atmosphere topography data file (on atm grid).
+Default: set by build-namelist.
+</entry>
+
+<entry id="finidat" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of initial conditions file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="flndtopo" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of land topography file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="ndepdat" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of nitrogen deposition data file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="faerdep" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of aerosol deposition data file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="fndepdyn" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of dynamic nitrogen deposition data file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="fpftcon" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of PFT data file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="flanduse_timeseries" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of time varying PFT data file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="frivinp_rtm" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of input datafile for rtm.
+Default: set by build-namelist.
+</entry>
+
+<entry id="fsurdat" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of surface data file.
+Default: set by build-namelist.
+</entry>
+
+<entry id="hist_avgflag_pertape" type="char*1(6)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Per file averaging flag.
+Default: ' ',' ',' ',' ',' ',' '
+</entry>
+
+<entry id="hist_crtinic" type="char*8" catagory="clm"
+       group="clm_inparm" valid_values="6-HOURLY,DAILY,MONTHLY,YEARLY,NONE" >
+Frequency to generate initial dataset.
+Default: 'YEARLY' for DGVM; 'NONE' otherwise.
+</entry>
+
+<entry id="hist_dov2xy" type="logical(6)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+TRUE implies do grid averaging.  One value for each output history file.
+Default: All TRUE.
+</entry>
+
+<entry id="hist_empty_htapes" type="logical" catagory="clm"
+       group="clm_inparm" valid_values="" >
+TRUE indicates no default history fields.
+Default: FALSE
+</entry>
+
+<entry id="hist_fexcl1" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to exclude from history file 1.
+Default: none.
+</entry>
+
+<entry id="hist_fexcl2" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to exclude from history file 2.
+Default: none.
+</entry>
+
+<entry id="test_multi_dim_array" type="char*12(1,2,3)" category="clm"
+       group="clm_inparm" valid_values="">
+Test that multi-dimensional array is rejected.
+</entry>
+
+<entry id="hist_fexcl3" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to exclude from history file 3.
+Default: none.
+</entry>
+
+<entry id="hist_fexcl4" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to exclude from history file 4.
+Default: none.
+</entry>
+
+<entry id="hist_fexcl5" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to exclude from history file 5.
+Default: none.
+</entry>
+
+<entry id="hist_fexcl6" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to exclude from history file 6.
+Default: none.
+</entry>
+
+<entry id="hist_fincl1" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to add to history file 1.
+Default: none.
+</entry>
+
+<entry id="hist_fincl2" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to add to history file 2.
+Default: none.
+</entry>
+
+<entry id="hist_fincl3" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to add to history file 3.
+Default: none.
+</entry>
+
+<entry id="hist_fincl4" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to add to history file 4.
+Default: none.
+</entry>
+
+<entry id="hist_fincl5" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to add to history file 5.
+Default: none.
+</entry>
+
+<entry id="hist_fincl6" type="char*34(1000)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Fields to add to history file 6.
+Default: none.
+</entry>
+
+<entry id="hist_mfilt" type="integer(6)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Per file maximum number of time samples.
+Default: 30,30,30,30,30,30
+</entry>
+
+<entry id="hist_ndens" type="integer(6)" catagory="clm"
+       group="clm_inparm" valid_values="1,2" >
+Per file history output precision.
+Default: 2,2,2,2,2,2
+</entry>
+
+<entry id="hist_nhtfrq" type="integer(6)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Per file history write frequency (0=monthly)
+Default: 0,-24,-24,-24,-24,-24
+</entry>
+
+<entry id="hist_type1d_pertape" type="char*32(6)" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Per file type1d
+Default: ' ',' ',' ',' ',' ',' '
+</entry>
+
+<entry id="irad" type="integer" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Solar radiation frequency (+ = iteration. - = hour).
+Default: -1
+</entry>
+
+<entry id="nrevsn" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of master restart file for branch run.
+Default: none.
+</entry>
+
+<entry id="nsegspc" type="integer" catagory="clm"
+       group="clm_inparm" valid_values="" >
+number of segments per clump for decomposition
+Default: 20
+</entry>
+
+<entry id="rest_flag" type="logical" catagory="clm"
+       group="clm_inparm" valid_values="" >
+FALSE implies don't write any restart files.
+Default: TRUE
+</entry>
+
+<entry id="rpntpath" type="char*256" input_pathname="abs" catagory="clm"
+       group="clm_inparm" valid_values="" >
+Full pathname of restart pointer file.
+Default: 'rpointer.lnd'
+</entry>
+
+<entry id="wrtdia" type="logical" catagory="clm"
+       group="clm_inparm" valid_values="" >
+true if want output written
+Default: FALSE
+</entry>
+
+</namelist_definition>

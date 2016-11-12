@@ -1,0 +1,1326 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>CESM Component Models Namelist Definitions </title>
+  <link rel="stylesheet" type="text/css" href="/models/cesm1.0/cam/docs/namelist/nl_style_sheet.css" />
+  <script src=./showinfo.js> </script>
+</head>
+
+<body>
+
+<h2>Search or Browse env_build.xml variables </h2>
+<p>
+This page contains the complete list of xml variables in env_build.xml.
+These variables are locked after $CASE.build is called.
+They are grouped by categories designed to aid browsing.  Clicking on the name
+of a variable will display descriptive information.  If search terms
+are entered in the text box below, the list will be condensed to
+contain only matched variables.  </p>
+
+<form id="filter_form" name="filter_form" style="margin: 0px; padding: 0px;" action="javascript:void(0);">
+  <table border="0" cellpadding="2" cellspacing="1">
+    <tbody>
+      <tr>
+        <td valign="top">
+          <input id="filter_text" name="filter_text" size="40"
+                 onkeydown="if (event.keyCode==13) applyFilter(document.getElementById('filter_text').value);"
+                 type="text">
+          <input id="btn_search" value="Search Variable Names"
+                 onclick="applyFilter(document.getElementById('filter_text').value);"
+		 type="button">
+          <input id="btn_show_all" value="Show All Variable Names"
+		 onclick="clearFilter();return false;"
+                 type="button">
+          <br>
+          <label>
+            <input id="logical_operator_and" name="logical_operator" value="AND" 
+                   type="radio" checked> AND
+          </label>
+          <label>
+            <input id="logical_operator_or" name="logical_operator" value="OR"
+                   type="radio"> OR
+          </label>
+          (separate search terms with spaces)
+          <br>
+          <label>
+            <input id="search_help_text" name="search_help_text" type="checkbox"> Also search help text
+          </label>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+
+<div id="filter_matches" style="visibility: hidden; margin-bottom: 10px;">
+  Found <span id="filter_matches_num"></span> standard names matching query: <span id="filter_matches_query"></span>
+</div>
+
+<p>
+
+<center>
+<input id="btn_expand_help" value="Show All Help Text" 
+       onclick="expandAllHelp();return false;"
+       type="button">
+<input id="btn_collapse_help" value="Collapse All Help Text" 
+       onclick="collapseAllHelp();return false;"
+       type="button">
+</center>
+
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_model">Macro Generation Settings (used by setup)</a></h3></span>
+<table id="build_macros_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="OS_tr">
+    <td><a name="OS"></a>
+        <img id="OS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OS')">OS</a>
+        </code>
+        <div id="OS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created  </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="COMPILERS_tr">
+    <td><a name="COMPILERS"></a>
+        <img id="COMPILERS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMPILERS')">COMPILERS</a>
+        </code>
+        <div id="COMPILERS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>machine compiler (must match one the supported compilers) - ignored once Macros has been created . 
+Set in $CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml for each machine.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="COMPILER_tr">
+    <td><a name="COMPILER"></a>
+        <img id="COMPILER_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMPILER')">COMPILER</a>
+        </code>
+        <div id="COMPILER_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Machine compiler (must match one the supported compilers) . 
+Set in $CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml for each supported machine.
+Must be explicitly set in env_build.xml for userdefined machine.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="MPILIBS_tr">
+    <td><a name="MPILIBS"></a>
+        <img id="MPILIBS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('MPILIBS')">MPILIBS</a>
+        </code>
+        <div id="MPILIBS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>supported mpi libraries for target machine - set in config_machines.xml - (DO NOT EDIT) . 
+Set in $CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml for each supported machine.
+Must be explicitly set in env_build.xml for userdefined machine.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="MPILIB_tr">
+    <td><a name="MPILIB"></a>
+        <img id="MPILIB_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('MPILIB')">MPILIB</a>
+        </code>
+        <div id="MPILIB_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>mpi library (must match one of the supported libraries) - ignored once Macros has been created . 
+Set in $CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml for each supported machine.
+Must be explicitly set in env_build.xml for userdefined machine.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="PIO_CONFIG_OPTS_tr">
+    <td><a name="PIO_CONFIG_OPTS"></a>
+        <img id="PIO_CONFIG_OPTS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('PIO_CONFIG_OPTS')">PIO_CONFIG_OPTS</a>
+        </code>
+        <div id="PIO_CONFIG_OPTS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>PIO configure options, see PIO configure utility for details</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_model">Build Control Settings (used by $CASE.build)</a></h3></span>
+<table id="build_def_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="CESMSCRATCHROOT_tr">
+    <td><a name="CESMSCRATCHROOT"></a>
+        <img id="CESMSCRATCHROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CESMSCRATCHROOT')">CESMSCRATCHROOT</a>
+        </code>
+        <div id="CESMSCRATCHROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>scratch root directory for each machine.  For now, primarily used for shared library builds . 
+The CESM 'scratchroot' root directory.  Base diretory for build and run directories.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="EXEROOT_tr">
+    <td><a name="EXEROOT"></a>
+        <img id="EXEROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('EXEROOT')">EXEROOT</a>
+        </code>
+        <div id="EXEROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>case executable root directory (executable is $EXEROOT/cesm.exe, component libraries are in $EXEROOT/bld) . 
+The CESM executable root directory.  This is where the model builds
+its executable and by default runs the executable.  Note that EXEROOT
+needs to have enough disk space for the experimental configuration
+requirements. As an example, CESM can produce more than a terabyte of
+data during a 100-year run, so you should set EXEROOT to scratch or
+tmp space and frequently back up the data to a mass storage device
+EXEROOT is set in CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml
+for each supported machine.  Must explicitly set it in env_build.xml for a
+userdefined machine.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="SUPPORTED_BY_tr">
+    <td><a name="SUPPORTED_BY"></a>
+        <img id="SUPPORTED_BY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('SUPPORTED_BY')">SUPPORTED_BY</a>
+        </code>
+        <div id="SUPPORTED_BY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>email address of person (or group) that supports the build and port for this machine (do not edit)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CALENDAR_tr">
+    <td><a name="CALENDAR"></a>
+        <img id="CALENDAR_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CALENDAR')">CALENDAR</a>
+        </code>
+        <div id="CALENDAR_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>calendar type
+Valid Values: NO_LEAP,GREGORIAN </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="COMP_INTERFACE_tr">
+    <td><a name="COMP_INTERFACE"></a>
+        <img id="COMP_INTERFACE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_INTERFACE')">COMP_INTERFACE</a>
+        </code>
+        <div id="COMP_INTERFACE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>use MCT or ESMF component interfaces
+Valid Values: MCT,ESMF </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="USE_ESMF_LIB_tr">
+    <td><a name="USE_ESMF_LIB"></a>
+        <img id="USE_ESMF_LIB_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('USE_ESMF_LIB')">USE_ESMF_LIB</a>
+        </code>
+        <div id="USE_ESMF_LIB_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>TRUE implies using the ESMF library specified by ESMF_LIBDIR or ESMFMKFILE
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="DEBUG_tr">
+    <td><a name="DEBUG"></a>
+        <img id="DEBUG_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('DEBUG')">DEBUG</a>
+        </code>
+        <div id="DEBUG_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>TRUE implies turning on run and compile time debugging . 
+Flag to turn on debugging for run time and compile time. 
+If TRUE, compile-time debugging flags are activated that you can use to verify 
+software robustness, such as bounds checking.
+Important:: On IBM machines, floating point trapping is not activated for production 
+runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags. 
+The default is FALSE.
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="BUILD_THREADED_tr">
+    <td><a name="BUILD_THREADED"></a>
+        <img id="BUILD_THREADED_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('BUILD_THREADED')">BUILD_THREADED</a>
+        </code>
+        <div id="BUILD_THREADED_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>TRUE implies always build model for openmp capability . 
+If FALSE, component libraries are built with OpenMP capability only if 
+the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
+If TRUE, the component libraries are always built with OpenMP capability. 
+The default is FALSE.
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="USE_PETSC">
+    <td><a name="USE_PETSC"></a>
+        <img id="USE_PETSC_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('USE_PETSC')">USE_PETSC</a>
+        </code>
+        <div id="USE_PETSC_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>TRUE implies linking to the PETSc library - set automatically by XXX_USE_PETSc options (do not edit) .
+Flag to turn on linking to the PETSc library. Currently this is
+used by CLM. This is currently only supported for certain machines.
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="USE_TRILINOS_tr">
+    <td><a name="USE_TRILINOS"></a>
+        <img id="USE_TRILINOS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('USE_TRILINOS')">USE_TRILINOS</a>
+        </code>
+        <div id="USE_TRILINOS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>TRUE implies linking to the trilinos library - set automatically by XXX_USE_TRILINOS options (do not edit) . 
+Flag to turn on linking to the trilinos library. Currently this is
+used by CISM. Note that trilinos is a C++ library, so setting this
+variable to TRUE will involve the inclusion of C++ code in the CESM
+executable. This is currently only supported for certain machines.
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="USE_ALBANY">
+    <td><a name="USE_ALBANY"></a>
+        <img id="USE_ALBANY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('USE_ALBANY')">USE_ALBANY</a>
+        </code>
+        <div id="USE_ALBANY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>TRUE implies linking to the Albany library - set automatically by XXX_USE_ALBANY options (do not edit) .
+Flag to turn on linking to the Albany library. Currently this is
+used by MPASLI. Note that Albany is a C++ library, so setting this
+variable to TRUE will involve the inclusion of C++ code in the CESM
+executable. This is currently only supported for certain machines.
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+
+  <tr id="GMAKE_tr">
+    <td><a name="GMAKE"></a>
+        <img id="GMAKE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GMAKE')">GMAKE</a>
+        </code>
+        <div id="GMAKE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>GNU make command</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="GMAKE_J_tr">
+    <td><a name="GMAKE_J"></a>
+        <img id="GMAKE_J_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GMAKE_J')">GMAKE_J</a>
+        </code>
+        <div id="GMAKE_J_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Number of processors for gmake</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_cam">CAM build-time settings</a></h3></span>
+<table id="build_component_cam_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="CAM_CONFIG_OPTS_tr">
+    <td><a name="CAM_CONFIG_OPTS"></a>
+        <img id="CAM_CONFIG_OPTS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CAM_CONFIG_OPTS')">CAM_CONFIG_OPTS</a>
+        </code>
+        <div id="CAM_CONFIG_OPTS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CAM configure options, see CAM configure utility for details . 
+Provides option(s) for the CAM configure utility. 
+CAM_CONFIG_OPTS are normally set as compset variables (e.g., -phys  cam3_5_1 -chem waccm_mozart) 
+and in general should not be modified for supported compsets.  It is recommended that if you want 
+to modify this value for your experiment, you should use your own user-defined
+component sets via using create_newcase with a compset_file argument.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CAM_DYCORE_tr">
+    <td><a name="CAM_DYCORE"></a>
+        <img id="CAM_DYCORE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CAM_DYCORE')">CAM_DYCORE</a>
+        </code>
+        <div id="CAM_DYCORE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CAM dynamical core
+Valid Values: eul,fv,se </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_cice">CICE build-time settings</a></h3></span>
+<table id="build_component_cice_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="CICE_MODE_tr">
+    <td><a name="CICE_MODE"></a>
+        <img id="CICE_MODE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CICE_MODE')">CICE_MODE</a>
+        </code>
+        <div id="CICE_MODE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Option to the CICE configure utility for the -mode argument (default is prognostic)
+Valid Values: prognostic,prescribed,thermo_only </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CICE_CONFIG_OPTS_tr">
+    <td><a name="CICE_CONFIG_OPTS"></a>
+        <img id="CICE_CONFIG_OPTS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CICE_CONFIG_OPTS')">CICE_CONFIG_OPTS</a>
+        </code>
+        <div id="CICE_CONFIG_OPTS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CICE configure options, see CICE configure utility for details . 
+Provides option(s) for the CLM configure utility.
+CICE_CONFIG_OPTS are normally set as compset variables (e.g., -ntr_aero 3)
+and in general should not be modified for supported compsets.  
+It is recommended that if you want to modify this value for your experiment, 
+you should use your own user-defined component sets via using create_newcase 
+with a compset_file argument. 
+This is an advanced flag and should only be used by expert users.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CICE_AUTO_DECOMP_tr">
+    <td><a name="CICE_AUTO_DECOMP"></a>
+        <img id="CICE_AUTO_DECOMP_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CICE_AUTO_DECOMP')">CICE_AUTO_DECOMP</a>
+        </code>
+        <div id="CICE_AUTO_DECOMP_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>if false, user must set the CICE decomp, otherwise cesm_setup script sets it . 
+This is for experts only - if CICE_AUTO_DECOMP is set to false, then
+can manually set the values of CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS, 
+CICE_DECOMPTYPE, and CICE_DECOMPSETTING
+Valid Values: true,false </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CICE_BLCKX_tr">
+    <td><a name="CICE_BLCKX"></a>
+        <img id="CICE_BLCKX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CICE_BLCKX')">CICE_BLCKX</a>
+        </code>
+        <div id="CICE_BLCKX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Size of cice block in first horiz dimension (do not edit if CICE_AUTO_DECOMP is true) . 
+This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+to set this value, must first set CICE_AUTO_DECOMP to false </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CICE_BLCKY_tr">
+    <td><a name="CICE_BLCKY"></a>
+        <img id="CICE_BLCKY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CICE_BLCKY')">CICE_BLCKY</a>
+        </code>
+        <div id="CICE_BLCKY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Size of cice block in second horiz dimension (do not edit if CICE_AUTO_DECOMP is true) . 
+This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+to set this value, must first set CICE_AUTO_DECOMP to false </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CICE_MXBLCKS_tr">
+    <td><a name="CICE_MXBLCKS"></a>
+        <img id="CICE_MXBLCKS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CICE_MXBLCKS')">CICE_MXBLCKS</a>
+        </code>
+        <div id="CICE_MXBLCKS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Max number of cice blocks per processor (do not edit if CICE_AUTO_DECOMP is true) . 
+This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+to set this value, must first set CICE_AUTO_DECOMP to false </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CICE_DECOMPTYPE_tr">
+    <td><a name="CICE_DECOMPTYPE"></a>
+        <img id="CICE_DECOMPTYPE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CICE_DECOMPTYPE')">CICE_DECOMPTYPE</a>
+        </code>
+        <div id="CICE_DECOMPTYPE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>cice block distribution type (do not edit if CICE_AUTO_DECOMP is true) . 
+This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+to set this value, must first set CICE_AUTO_DECOMP to false </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="CICE_DECOMPSETTING_tr">
+    <td><a name="CICE_DECOMPSETTING"></a>
+        <img id="CICE_DECOMPSETTING_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CICE_DECOMPSETTING')">CICE_DECOMPSETTING</a>
+        </code>
+        <div id="CICE_DECOMPSETTING_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>cice decomp setting for decomp type (do not edit if CICE_AUTO_DECOMP is true) . 
+This is for experts only - automatically set if CICE_AUTO_DECOMP is true,
+to set this value, must first set CICE_AUTO_DECOMP to false </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_clm">CLM build-time settings</a></h3></span>
+<table id="build_component_clm_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="CLM_CONFIG_OPTS_tr">
+    <td><a name="CLM_CONFIG_OPTS"></a>
+        <img id="CLM_CONFIG_OPTS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CLM_CONFIG_OPTS')">CLM_CONFIG_OPTS</a>
+        </code>
+        <div id="CLM_CONFIG_OPTS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CLM configure options . Provides option(s) for the CLM configure utility.
+CLM_CONFIG_OPTS are normally set as compset variables (e.g., -bgc cn)
+and in general should not be modified for supported compsets.  
+It is recommended that if you want to modify this value for your experiment, 
+you should use your own user-defined component sets via using create_newcase 
+with a compset_file argument. 
+This is an advanced flag and should only be used by expert users.</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_pop2">POP2 build-time settings</a></h3></span>
+<table id="build_component_pop2_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="OCN_SUBMODEL_tr">
+    <td><a name="OCN_SUBMODEL"></a>
+        <img id="OCN_SUBMODEL_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OCN_SUBMODEL')">OCN_SUBMODEL</a>
+        </code>
+        <div id="OCN_SUBMODEL_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Optional ocean submodel option.  Any one of: moby</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="OCN_TRACER_MODULES_tr">
+    <td><a name="OCN_TRACER_MODULES"></a>
+        <img id="OCN_TRACER_MODULES_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OCN_TRACER_MODULES')">OCN_TRACER_MODULES</a>
+        </code>
+        <div id="OCN_TRACER_MODULES_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Optional ocean tracers.  Valid values are Any combination of: iage cfc ecosys</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="OCN_TRACER_MODULES_OPT_tr">
+    <td><a name="OCN_TRACER_MODULES_OPT"></a>
+        <img id="OCN_TRACER_MODULES_OPT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OCN_TRACER_MODULES_OPT')">OCN_TRACER_MODULES_OPT</a>
+        </code>
+        <div id="OCN_TRACER_MODULES_OPT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Optional ocean tracers option.  Any one of: darwin quota mono</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="POP_TAVG_R8_tr">
+    <td><a name="POP_TAVG_R8"></a>
+        <img id="POP_TAVG_R8_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('POP_TAVG_R8')">POP_TAVG_R8</a>
+        </code>
+        <div id="POP_TAVG_R8_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>If TRUE then time-averaged history files from POP2 will contain double precision output
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="POP_AUTO_DECOMP_tr">
+    <td><a name="POP_AUTO_DECOMP"></a>
+        <img id="POP_AUTO_DECOMP_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('POP_AUTO_DECOMP')">POP_AUTO_DECOMP</a>
+        </code>
+        <div id="POP_AUTO_DECOMP_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>if false, user must set the POP decomp, otherwise cesm_setup script sets it
+Valid Values: true,false </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="POP_BLCKX_tr">
+    <td><a name="POP_BLCKX"></a>
+        <img id="POP_BLCKX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('POP_BLCKX')">POP_BLCKX</a>
+        </code>
+        <div id="POP_BLCKX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Size of pop block in first horiz dimension (do not edit if POP_AUTO_DECOMP is true)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="POP_BLCKY_tr">
+    <td><a name="POP_BLCKY"></a>
+        <img id="POP_BLCKY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('POP_BLCKY')">POP_BLCKY</a>
+        </code>
+        <div id="POP_BLCKY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Size of pop block in second horiz dimension (do not edit if POP_AUTO_DECOMP is true)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="POP_NX_BLOCKS_tr">
+    <td><a name="POP_NX_BLOCKS"></a>
+        <img id="POP_NX_BLOCKS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('POP_NX_BLOCKS')">POP_NX_BLOCKS</a>
+        </code>
+        <div id="POP_NX_BLOCKS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Number of pop blocks in first horiz dimension (do not edit if POP_AUTO_DECOMP is true)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="POP_NY_BLOCKS_tr">
+    <td><a name="POP_NY_BLOCKS"></a>
+        <img id="POP_NY_BLOCKS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('POP_NY_BLOCKS')">POP_NY_BLOCKS</a>
+        </code>
+        <div id="POP_NY_BLOCKS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Number of pop blocks in second horiz dimension (do not edit if POP_AUTO_DECOMP is true)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="POP_MXBLCKS_tr">
+    <td><a name="POP_MXBLCKS"></a>
+        <img id="POP_MXBLCKS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('POP_MXBLCKS')">POP_MXBLCKS</a>
+        </code>
+        <div id="POP_MXBLCKS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Max number of pop blocks per processor (do not edit if POP_AUTO_DECOMP is true)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="POP_DECOMPTYPE_tr">
+    <td><a name="POP_DECOMPTYPE"></a>
+        <img id="POP_DECOMPTYPE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('POP_DECOMPTYPE')">POP_DECOMPTYPE</a>
+        </code>
+        <div id="POP_DECOMPTYPE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>pop block distribution type (do not edit if POP_AUTO_DECOMP is true)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_status">Build Status (For Documentation Only: DO NOT EDIT)</a></h3></span>
+<table id="build_status_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="BUILD_COMPLETE_tr">
+    <td><a name="BUILD_COMPLETE"></a>
+        <img id="BUILD_COMPLETE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('BUILD_COMPLETE')">BUILD_COMPLETE</a>
+        </code>
+        <div id="BUILD_COMPLETE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="SMP_BUILD_tr">
+    <td><a name="SMP_BUILD"></a>
+        <img id="SMP_BUILD_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('SMP_BUILD')">SMP_BUILD</a>
+        </code>
+        <div id="SMP_BUILD_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Status: smp status of previous build, coded string. (DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="SMP_VALUE_tr">
+    <td><a name="SMP_VALUE"></a>
+        <img id="SMP_VALUE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('SMP_VALUE')">SMP_VALUE</a>
+        </code>
+        <div id="SMP_VALUE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Status: smp status of current case, coded string (DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="NINST_BUILD_tr">
+    <td><a name="NINST_BUILD"></a>
+        <img id="NINST_BUILD_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('NINST_BUILD')">NINST_BUILD</a>
+        </code>
+        <div id="NINST_BUILD_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Status: ninst status of previous build, coded string. (DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="NINST_VALUE_tr">
+    <td><a name="NINST_VALUE"></a>
+        <img id="NINST_VALUE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('NINST_VALUE')">NINST_VALUE</a>
+        </code>
+        <div id="NINST_VALUE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Status: ninst status of current case, coded string (DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="BUILD_STATUS_tr">
+    <td><a name="BUILD_STATUS"></a>
+        <img id="BUILD_STATUS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('BUILD_STATUS')">BUILD_STATUS</a>
+        </code>
+        <div id="BUILD_STATUS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Status: of prior build. (DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_pop2">Build Derived Directories (DO NOT EDIT)</a></h3></span>
+<table id="build_derived_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="OBJROOT_tr">
+    <td><a name="OBJROOT"></a>
+        <img id="OBJROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OBJROOT')">OBJROOT</a>
+        </code>
+        <div id="OBJROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>case build directory (set automatically to $EXEROOT, - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="LIBROOT_tr">
+    <td><a name="LIBROOT"></a>
+        <img id="LIBROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('LIBROOT')">LIBROOT</a>
+        </code>
+        <div id="LIBROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>case lib directory (set automatically to $EXEROOT/lib - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="INCROOT_tr">
+    <td><a name="INCROOT"></a>
+        <img id="INCROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('INCROOT')">INCROOT</a>
+        </code>
+        <div id="INCROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>case lib include directory (set automatically to $EXEROOT/lib/include - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="SHAREDLIBROOT_tr">
+    <td><a name="SHAREDLIBROOT"></a>
+        <img id="SHAREDLIBROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('SHAREDLIBROOT')">SHAREDLIBROOT</a>
+        </code>
+        <div id="SHAREDLIBROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Shared library root, (set automatically to $EXEROOT - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="SHAREDLIBROOTDIR_tr">
+    <td><a name="SHAREDLIBROOTDIR"></a>
+        <img id="SHAREDLIBROOTDIR_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('SHAREDLIBROOTDIR')">SHAREDLIBROOTDIR</a>
+        </code>
+        <div id="SHAREDLIBROOTDIR_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Shared library root directory, neeed for cleaning shared builds (set automatically to $EXEROOT - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="build_grid">Model Grid Specification (Experts Only: in general DO NOT EDIT)</a></h3></span>
+<table id="build_grid_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="GRID_tr">
+    <td><a name="GRID"></a>
+        <img id="GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GRID')">GRID</a>
+        </code>
+        <div id="GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CESM grid - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ATM_GRID_tr">
+    <td><a name="ATM_GRID"></a>
+        <img id="ATM_GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ATM_GRID')">ATM_GRID</a>
+        </code>
+        <div id="ATM_GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>atmosphere grid - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ATM_NX_tr">
+    <td><a name="ATM_NX"></a>
+        <img id="ATM_NX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ATM_NX')">ATM_NX</a>
+        </code>
+        <div id="ATM_NX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of atmosphere cells in i direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ATM_NY_tr">
+    <td><a name="ATM_NY"></a>
+        <img id="ATM_NY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ATM_NY')">ATM_NY</a>
+        </code>
+        <div id="ATM_NY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of atmosphere cells in j direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="LND_GRID_tr">
+    <td><a name="LND_GRID"></a>
+        <img id="LND_GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('LND_GRID')">LND_GRID</a>
+        </code>
+        <div id="LND_GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>land grid - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="LND_NX_tr">
+    <td><a name="LND_NX"></a>
+        <img id="LND_NX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('LND_NX')">LND_NX</a>
+        </code>
+        <div id="LND_NX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of land cells in i direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="LND_NY_tr">
+    <td><a name="LND_NY"></a>
+        <img id="LND_NY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('LND_NY')">LND_NY</a>
+        </code>
+        <div id="LND_NY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of land cells in j direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="OCN_GRID_tr">
+    <td><a name="OCN_GRID"></a>
+        <img id="OCN_GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OCN_GRID')">OCN_GRID</a>
+        </code>
+        <div id="OCN_GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>ocn grid - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="OCN_NX_tr">
+    <td><a name="OCN_NX"></a>
+        <img id="OCN_NX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OCN_NX')">OCN_NX</a>
+        </code>
+        <div id="OCN_NX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of ocn cells in i direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="OCN_NY_tr">
+    <td><a name="OCN_NY"></a>
+        <img id="OCN_NY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OCN_NY')">OCN_NY</a>
+        </code>
+        <div id="OCN_NY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of ocn cells in j direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ICE_GRID_tr">
+    <td><a name="ICE_GRID"></a>
+        <img id="ICE_GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ICE_GRID')">ICE_GRID</a>
+        </code>
+        <div id="ICE_GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>ice grid (must equal ocn grid) - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ICE_NX_tr">
+    <td><a name="ICE_NX"></a>
+        <img id="ICE_NX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ICE_NX')">ICE_NX</a>
+        </code>
+        <div id="ICE_NX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of ice cells in i direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ICE_NY_tr">
+    <td><a name="ICE_NY"></a>
+        <img id="ICE_NY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ICE_NY')">ICE_NY</a>
+        </code>
+        <div id="ICE_NY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of ice cells in j direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ROF_GRID_tr">
+    <td><a name="ROF_GRID"></a>
+        <img id="ROF_GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ROF_GRID')">ROF_GRID</a>
+        </code>
+        <div id="ROF_GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>river runoff (rof) grid</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ROF_NX_tr">
+    <td><a name="ROF_NX"></a>
+        <img id="ROF_NX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ROF_NX')">ROF_NX</a>
+        </code>
+        <div id="ROF_NX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of rof cells in i direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="ROF_NY_tr">
+    <td><a name="ROF_NY"></a>
+        <img id="ROF_NY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ROF_NY')">ROF_NY</a>
+        </code>
+        <div id="ROF_NY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of rof cells in j direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="GLC_GRID_tr">
+    <td><a name="GLC_GRID"></a>
+        <img id="GLC_GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GLC_GRID')">GLC_GRID</a>
+        </code>
+        <div id="GLC_GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>river runoff (glc) grid</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="GLC_NX_tr">
+    <td><a name="GLC_NX"></a>
+        <img id="GLC_NX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GLC_NX')">GLC_NX</a>
+        </code>
+        <div id="GLC_NX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of glc cells in i direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="GLC_NY_tr">
+    <td><a name="GLC_NY"></a>
+        <img id="GLC_NY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GLC_NY')">GLC_NY</a>
+        </code>
+        <div id="GLC_NY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of glc cells in j direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="WAV_GRID_tr">
+    <td><a name="WAV_GRID"></a>
+        <img id="WAV_GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('WAV_GRID')">WAV_GRID</a>
+        </code>
+        <div id="WAV_GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>wave model (wav) grid</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="WAV_NX_tr">
+    <td><a name="WAV_NX"></a>
+        <img id="WAV_NX_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('WAV_NX')">WAV_NX</a>
+        </code>
+        <div id="WAV_NX_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of wav cells in i direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="WAV_NY_tr">
+    <td><a name="WAV_NY"></a>
+        <img id="WAV_NY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('WAV_NY')">WAV_NY</a>
+        </code>
+        <div id="WAV_NY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>number of wav cells in j direction - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+  <tr id="MASK_GRID_tr">
+    <td><a name="MASK_GRID"></a>
+        <img id="MASK_GRID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('MASK_GRID')">MASK_GRID</a>
+        </code>
+        <div id="MASK_GRID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>grid mask - DO NOT EDIT (for experts only)</pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+</table>
+</body>
+</html>
