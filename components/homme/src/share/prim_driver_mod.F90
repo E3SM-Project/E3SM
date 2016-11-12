@@ -754,7 +754,7 @@ contains
 
       ! runtype=0: initial run
       if (hybrid%masterthread) write(iulog,*) ' runtype: initial run'
-      call set_test_initial_conditions(elem,deriv(hybrid%ithr),hybrid,hvcoord,tl,nets,nete,fvm)
+      call set_test_initial_conditions(elem,deriv(hybrid%ithr),hybrid,hvcoord,tl,nets,nete)
       if (hybrid%masterthread) write(iulog,*) '...done'
 
       ! scale PS to achieve prescribed dry mass
@@ -1002,7 +1002,7 @@ contains
     endif
 #else
     ! Apply HOMME test case forcing
-    call apply_test_forcing(elem,fvm,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+    call apply_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
 #endif
 
