@@ -418,6 +418,7 @@ if (defined $xmlvars{'CPL_EPBAL'}) {
     add_default($nl, 'flux_epbal', 'val'=>"off");
 }
 add_default($nl, 'flux_diurnal');
+add_default($nl, 'gust_fac');
 
 add_default($nl, 'info_debug');
 add_default($nl, 'cpl_decomp');
