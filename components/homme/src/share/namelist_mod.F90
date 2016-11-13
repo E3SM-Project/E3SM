@@ -133,10 +133,6 @@ module namelist_mod
 
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
 
-#ifndef CAM
-  use fvm_mod, only: fvm_ideal_test, ideal_test_off, ideal_test_analytical_departure, ideal_test_analytical_winds
-  use fvm_mod, only: fvm_test_type, ideal_test_boomerang, ideal_test_solidbody
-#endif
 
   !=======================================================================================================!
   ! This module should contain no global data and should only be used where readnl is called
