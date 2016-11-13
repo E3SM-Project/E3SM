@@ -170,7 +170,6 @@ module control_mod
   integer, public, parameter :: nwest = 7
   integer, public, parameter :: neast = 8
   
-  logical, public :: test_cfldep          = .FALSE.
   logical, public :: disable_diagnostics  = .FALSE.
 
   ! parameters for dcmip12 test 2-0: steady state atmosphere with orography

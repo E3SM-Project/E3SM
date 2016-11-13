@@ -71,8 +71,7 @@ module namelist_mod
     maxits,        &
     tol,           &
     debug_level,   &
-    vert_remap_q_alg, &
-    test_cfldep
+    vert_remap_q_alg
 
 #ifndef CAM
   use control_mod, only:              &
@@ -247,13 +246,12 @@ module namelist_mod
       u_perturb,     &
       rotate_grid,   &
       mesh_file,     &               ! Name of mesh file
-      vert_remap_q_alg, &
-      test_cfldep                   ! fvm: test shape of departure grid cell and cfl number
+      vert_remap_q_alg
 
 
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
-      se_phys_tscale, &
+      se_phys_tscale
     namelist  /ctl_nl/ se_met_nudge_u, se_met_nudge_p, se_met_nudge_t, se_met_tevolve
 #else
     namelist /ctl_nl/test_case,       &             ! test case idenitfier
@@ -593,7 +591,6 @@ module namelist_mod
     call MPI_bcast(tasknum,         1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(qsize,           1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(test_cfldep,     1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(sub_case,        1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(remapfreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
@@ -887,7 +884,6 @@ module namelist_mod
        write(iulog,*)'readnl: useframes     = ',useframes
        write(iulog,*)'readnl: nnodes        = ',nnodes
        write(iulog,*)'readnl: npart         = ',npart
-       write(iulog,*)'readnl: test_cfldep   = ',test_cfldep
 
        print *
        write(iulog,*)"readnl: integration   = ",trim(integration)

@@ -65,7 +65,7 @@ contains
     !-----------------
     use control_mod, only : integration,  &
          restartfreq, statefreq, runtype, topology,   &
-         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output, &
+         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, g_sw_output, &
          tstep_type, toy_chemistry
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
