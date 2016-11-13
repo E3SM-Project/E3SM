@@ -208,9 +208,7 @@
         <queue walltimemax="06:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
       </queues>
       <walltimes>
-        <walltime default="true">00:30:00</walltime>
-        <walltime ccsm_estcost="-3">01:00:00</walltime>
-        <walltime ccsm_estcost="0">01:00:00</walltime>
+        <walltime default="true">03:00:00</walltime>
       </walltimes>
     </batch_system>
 

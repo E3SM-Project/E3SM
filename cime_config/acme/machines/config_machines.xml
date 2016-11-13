@@ -816,7 +816,7 @@
 </machine>
 
 <machine MACH="cetus">
-         <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
+         <DESC>ANL IBM BG/Q, os is BGP, 16 cores/node, batch system is cobalt</DESC>
          <NODENAME_REGEX>cetus</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
@@ -848,8 +848,9 @@
                <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
                <arg name="num_tasks"> --np $TOTALPES</arg>
-               <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
+               <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes --envs MPI_TYPE_MAX=100000  --envs OMP_DYNAMIC=FALSE $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
+	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
              </arguments>
@@ -861,13 +862,13 @@
       <cmd_path lang="sh">soft</cmd_path>
       <modules>
         <command name="add">+mpiwrapper-xl</command>
-        <command name="add">@ibm-compilers-2015-02</command>
+        <command name="add">@ibm-compilers-2016-05</command>
         <command name="add">+cmake</command>
         <command name="add">+python</command>
       </modules>
     </module_system>
     <environment_variables>
-      <env name="MPI_TYPE_MAX">10000</env>
+      <env name="MPI_TYPE_MAX">100000</env>
       <env name="OMP_DYNAMIC">FALSE</env>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="HDF5">/soft/libraries/hdf5/1.8.14/cnk-xl/current</env>
@@ -938,7 +939,7 @@
 </machine>
 
 <machine MACH="mira">
-         <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
+         <DESC>ANL IBM BG/Q, os is BGP, 16 cores/node, batch system is cobalt</DESC>
 	 <NODENAME_REGEX>.*.fst.alcf.anl.gov</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
@@ -948,7 +949,7 @@
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/projects/$PROJECT/usr/$USER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/projects/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
          <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
          <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -956,7 +957,7 @@
          <OS>BGQ</OS>
 	 <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
+         <GMAKE_J>8</GMAKE_J>
          <PES_PER_NODE>4</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -972,6 +973,7 @@
                <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
+	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
              </arguments>
