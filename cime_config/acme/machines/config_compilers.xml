@@ -1248,6 +1248,61 @@ for mct, etc.
 	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
 
+
+<compiler COMPILER="intel" MACH="mesabi">
+        <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+        <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
+        <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
+        <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+        <FREEFLAGS> -free </FREEFLAGS>
+        <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
+        <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
+        <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+        <FFLAGS> -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -I/soft/i
+ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </FFLAGS>
+        <CFLAGS> -O2 -fp-model precise -I/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/inc
+lude </CFLAGS>
+        <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+        <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+        <SFC> ifort </SFC>        <SCC> icc </SCC>        <SCXX> icpc </SCXX>
+        <MPIFC> mpiifort </MPIFC>
+        <MPICC> mpiicc  </MPICC>
+        <MPICXX> mpiicpc </MPICXX>
+        <CXX_LINKER>FORTRAN</CXX_LINKER>
+        <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+        <ADD_CPPDEFS> -DCPRINTEL </ADD_CPPDEFS>
+        <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+        <ADD_LDFLAGS> -lnetcdff </ADD_LDFLAGS>
+        <ADD_SLIBS>-L/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel/lib -lnetcdff -L/soft/hdf5/hdf5-1.8.13-intel-2013-sp1-update3-impi-5.0.0.028/lib -openmp -fPIC -lnetcdf -lnetcdf -L/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm </ADD_SLIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="itasca">
+        <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+        <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
+        <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
+        <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+        <FREEFLAGS> -free </FREEFLAGS>
+        <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
+        <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
+        <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+        <FFLAGS> -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -I/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </FFLAGS>
+        <CFLAGS> -O2 -fp-model precise -I/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </CFLAGS>
+        <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+        <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+        <SFC> ifort </SFC>
+        <SCC> icc </SCC>
+        <SCXX> icpc </SCXX>
+        <MPIFC> mpiifort </MPIFC>
+        <MPICC> mpiicc  </MPICC>
+        <MPICXX> mpiicpc </MPICXX>
+        <CXX_LINKER>FORTRAN</CXX_LINKER>
+        <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+        <ADD_CPPDEFS> -DCPRINTEL </ADD_CPPDEFS>
+        <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+        <ADD_LDFLAGS> -lnetcdff </ADD_LDFLAGS>
+        <ADD_SLIBS>-L/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel/lib -lnetcdff -L/soft/hdf5/hdf5-1.8.13-intel-2013-sp1-update3-impi-5.0.0.028/lib -openmp -fPIC -lnetcdf -lnetcdf -L/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm </ADD_SLIBS>
+</compiler>
+
 <compiler COMPILER="gnu">
 	<ADD_CFLAGS MODEL="csm_share"> -std=c99 </ADD_CFLAGS>
 </compiler>
