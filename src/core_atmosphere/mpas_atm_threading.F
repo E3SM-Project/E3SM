@@ -37,7 +37,7 @@ module mpas_atm_threading
 
         use mpas_derived_types, only : block_type
         use mpas_pool_routines, only : mpas_pool_get_dimension, mpas_pool_add_dimension
-#ifdef _OPENMP
+#ifdef MPAS_OPENMP
         use omp_lib
 #endif
 
@@ -63,7 +63,7 @@ module mpas_atm_threading
 
         block => blocklist
         do while (associated(block))
-#ifdef _OPENMP
+#ifdef MPAS_OPENMP
 !$OMP PARALLEL
 !$OMP MASTER
             nThreads = OMP_get_num_threads()
@@ -93,7 +93,7 @@ module mpas_atm_threading
             call mpas_pool_get_dimension(block % dimensions, 'nVertices', nVertices)
             call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
 
-#ifdef _OPENMP
+#ifdef MPAS_OPENMP
 !$OMP PARALLEL PRIVATE(threadid)
             threadid = OMP_get_thread_num()
 
