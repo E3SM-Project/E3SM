@@ -77,10 +77,12 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
   character(len=MAX_STRING_LEN)    , public :: columnpackage
-  character(len=MAX_STRING_LEN)    , public :: moisture
+! namelist variable set to dry,notdry,moist
+! internally the code should use logical "use_moisture"
+  character(len=MAX_STRING_LEN)    , public :: moisture  
 
-  integer, public  :: use_cpstar=0    ! use cp or cp* in thermodynamics
-  integer, public  :: use_moisture=0  ! use Q(:,:,:,1) as specific humidity
+  integer, public  :: use_cpstar=0          ! use cp or cp* in thermodynamics
+  logical, public  :: use_moisture=.false.  ! use Q(:,:,:,1) to compute T_v
 
   
   integer              , public :: maxits         ! max iterations of solver

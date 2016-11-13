@@ -7,7 +7,7 @@
 module prim_driver_mod
 
   use cg_mod,           only: cg_t
-  use derivative_mod,   only: derivative_t
+  use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
   use element_mod,      only: element_t, timelevels,  allocate_element_desc
   use hybrid_mod,       only: hybrid_t
@@ -40,6 +40,7 @@ module prim_driver_mod
   type (ColumnModel_t), allocatable :: cm(:) ! (nthreads)
 #endif
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
+  type (derivative_t), allocatable   :: deriv(:) ! derivative struct (nthreads)
 
 contains
 
@@ -200,6 +201,13 @@ contains
        call test_gausslobatto(np)
     end if
 #endif
+    ! ==================================
+    ! Initialize derivative structure
+    ! ==================================
+    allocate(deriv(0:n_domains-1))
+    do ith=0,n_domains-1
+       call derivinit(deriv(ith))
+    enddo
 
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
@@ -468,6 +476,7 @@ contains
 #endif
     call Prim_Advec_Init1(par, elem,n_domains)
 
+
     if ( use_semi_lagrange_transport) then
       call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
     end if
@@ -485,13 +494,12 @@ contains
                                     topology,columnpackage, rsplit, qsplit, rk_stage_user,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, moisture, use_moisture
-    use derivative_mod,       only: derivinit
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_si_ref_mod,      only: prim_si_refstate_init, prim_set_mass
-    use prim_advection_mod,   only: prim_advec_init2, deriv
+    use prim_advection_mod,   only: prim_advec_init2
     use solver_init_mod,      only: solver_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
     use thread_mod,           only: nthreads
@@ -633,10 +641,6 @@ contains
 
 #endif
 
-    ! ==================================
-    ! Initialize derivative structure
-    ! ==================================
-    call derivinit(deriv(hybrid%ithr)) 
 
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
@@ -1056,7 +1060,7 @@ contains
     use hybvcoord_mod,      only : hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp
-    use prim_advection_mod, only: prim_advec_tracers_remap, deriv
+    use prim_advection_mod, only: prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: time_at,TimeLevel_t, timelevel_update, nsplit
 
@@ -1171,7 +1175,6 @@ contains
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use viscosity_mod, only : biharmonic_wk
     use prim_advance_mod, only : smooth_phis
-    use prim_advection_mod, only: deriv
     implicit none
 
     integer , intent(in) :: nets,nete

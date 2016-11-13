@@ -84,8 +84,6 @@ module prim_advection_mod_base
 
   real(kind=real_kind), allocatable :: qmin(:,:,:), qmax(:,:,:)
 
-  type (derivative_t), public, allocatable   :: deriv(:) ! derivative struct (nthreads)
-
 contains
 
   subroutine Prim_Advec_Init1(par, elem, n_domains)
@@ -123,8 +121,6 @@ contains
     ! Don't actually want these saved, if this is ever called twice.
     nullify(buf_ptr)
     nullify(receive_ptr)
-
-    allocate(deriv(0:n_domains-1))
 
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
     allocate (qmin(nlev,qsize,nelemd))

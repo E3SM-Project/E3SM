@@ -7,7 +7,7 @@
 #endif
 
 module prim_advection_mod
-  !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, prim_advec_init_deriv, deriv, Prim_Advec_Tracers_remap_rk2
+  !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, Prim_Advec_Tracers_remap_rk2
   use prim_advection_mod_base, only: vertical_remap
   use kinds, only              : real_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, nelemd
@@ -29,7 +29,6 @@ module prim_advection_mod
   use derivative_mod, only: derivative_t
   implicit none
   private
-  type (derivative_t), allocatable :: deriv(:) ! derivative struct (nthreads)
   real(kind=real_kind), private, allocatable :: qmin(:,:,:), qmax(:,:,:)
   real(kind=real_kind), private, allocatable :: dp0(:)
   real(kind=real_kind), private, allocatable :: Qtens_biharmonic(:,:,:,:,:)
@@ -48,7 +47,6 @@ module prim_advection_mod
   public :: Prim_Advec_Tracers_remap
   public :: prim_advec_init1
   public :: prim_advec_init2
-  public :: deriv
 
 contains
 
@@ -271,7 +269,6 @@ contains
     allocate(qtens(np,np,nlev,qsize,nelemd))
     allocate(grads_tracer(np,np,2,nlev,qsize,nelemd))
     allocate(dp0(nlev))
-    allocate(deriv(0:n_domains-1))
     allocate(data_pack(np,np,nlev,nelemd))
     allocate(data_pack2(np,np,nlev,nelemd))
   end subroutine prim_advec_init1
