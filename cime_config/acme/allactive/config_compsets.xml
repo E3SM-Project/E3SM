@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+
+<compsets>
+
+<!-- ACME v1 science compsets -->
+
+<compset>
+  <alias>A_WCYCL2000</alias >
+  <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL2000S</alias >
+  <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850</alias>
+  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL1850S</alias>
+  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL20TR</alias>
+  <lname>20TR_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL20TRS</alias>
+  <lname>20TR_CAM5%AV1C-L_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_CRYO</alias>
+  <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_RTM_MPASLIALB_SWAV</lname>
+</compset>
+
+<!-- ACME backup compsets -->
+<compset>
+ <alias>A_WCYCL1850_v0atm</alias> 
+ <lname>1850_CAM5_CLM45%SP_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+ <alias>A_WCYCL2000_v0atm</alias>
+ <lname>2000_CAM5_CLM45%SP_MPASCICE_MPASO_MOSART_SGLC_SWAVi</lname>
+</compset>
+
+<!-- ACME BG compsets -->
+
+<compset>
+  <alias>A_BG1850CN</alias>
+  <lname>1850_CAM5_CLM45%CN_MPASCICE_MPASO_RTM_MPASLI_SWAV</lname>
+</compset>
+
+<!-- OCN + CICE + GLC Only Compsets -->
+<compset>
+  <alias>MPAS_LISIO_TEST</alias>
+  <lname>2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_MPASLI_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>ETEST</alias>
+  <lname>2000_CAM4_CLM40%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV_TEST</lname>
+</compset>
+
+<compset>
+  <alias>E1850C5</alias>
+  <lname>1850_CAM5_CLM40%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>E1850C5TEST</alias>
+  <lname>1850_CAM5_CLM40%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV_TEST</lname>
+</compset>
+
+<compset>
+  <alias>E1850CN</alias>
+  <lname>1850_CAM4_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>E1850C5CN</alias>
+  <lname>1850_CAM5_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>E1850C5CNTEST</alias>
+  <lname>1850_CAM5_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV_TEST </lname>
+</compset>
+
+<compset>
+  <alias>E1850C5CLM45</alias>
+  <lname>1850_CAM5_CLM45%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>E1850C5CLM45CN</alias>
+  <lname>1850_CAM5_CLM45%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>E1850C5CLM45BGC</alias>
+  <lname>1850_CAM5_CLM45%BGC_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+</compset>
+
+</compsets>
