@@ -1235,55 +1235,6 @@ for mct, etc.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<compiler MACH="mustang" COMPILER="gnu">
-  <ALBANY_PATH><env>ALBANY_PATH</env></ALBANY_PATH>
-  <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
-  </CXX_LIBS>
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpic++</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <SCC>gcc</SCC>
-  <SCXX>g++</SCXX>
-  <SFC>gfortran</SFC>
-  <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -llapack -lblas</append>
-  </SLIBS>
-  <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="mustang" COMPILER="intel">
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpic++</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <SCC>icc</SCC>
-  <SCXX>icpc</SCXX>
-  <SFC>ifort</SFC>
-  <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -llapack -lblas</append>
-    <append MPILIB="mpich"> -mkl=cluster </append>
-    <append MPILIB="mpich2"> -mkl=cluster </append>
-    <append MPILIB="mpt"> -mkl=cluster </append>
-    <append MPILIB="openmpi"> -mkl=cluster </append>
-    <append MPILIB="mvapich"> -mkl=cluster </append>
-    <append MPILIB="impi"> -mkl=cluster </append>
-    <append MPILIB="mpi-serial"> -mkl </append>
-  </SLIBS>
-  <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="mustang" COMPILER="pgi">
-  <MPICC>mpicc</MPICC>
-  <MPICXX>mpic++</MPICXX>
-  <MPIFC>mpif90</MPIFC>
-  <SCC>pgcc</SCC>
-  <SCXX>pgc++</SCXX>
-  <SFC>pgfortran</SFC>
-  <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -llapack -lblas</append>
-  </SLIBS>
-  <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
-</compiler>
 
 <compiler MACH="oic2" COMPILER="gnu">
   <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
@@ -1549,6 +1500,21 @@ for mct, etc.
   <PNETCDF_PATH/>
   <SLIBS>
     <append># USERDEFINED <shell><var>NETCDF_PATH</var>/bin/nc-config --flibs</shell></append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="grizzly" COMPILER="gnu">
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+  <MPICC>mpicc</MPICC>
+  <MPICXX>mpic++</MPICXX>
+  <MPIFC>mpif90</MPIFC>
+  <SCC>gcc</SCC>
+  <SCXX>g++</SCXX>
+  <SFC>gfortran</SFC>
+  <SLIBS>
+    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -llapack -lblas</append>
   </SLIBS>
 </compiler>
 
