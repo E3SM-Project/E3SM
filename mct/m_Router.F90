@@ -268,7 +268,7 @@
 !           increasing.  Instead, permute it to increasing and proceed.
 ! 07Sep12 - T. Craig <tcraig@ucar.edu> - Replace a double loop with a single
 !           to improve speed for large proc and segment counts.
-! 12Nov16 - P. Worley <worleyph@gmail.com> - eliminate iterations in double
+! 12Nov16 - P. Worley <worleyph@gmail.com> - eliminate iterations in nested
 !           loop that can be determined to be unnecessary
 !EOP -------------------------------------------------------------------
 
