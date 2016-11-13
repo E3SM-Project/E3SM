@@ -1278,17 +1278,23 @@
         <command name="rm">PrgEnv-pathscale</command>
         <command name="rm">intel</command>
         <command name="rm">pgi</command>
+        <command name="rm">gcc</command>
         <command name="rm">cray</command>
         <command name="rm">pathscale</command>
         <command name="rm">parallel-netcdf</command>
         <command name="rm">netcdf</command>
-        <command name="rm">cmake</command>
+        <command name="rm">cray-mpich</command>
         <command name="rm">cray-mpich2</command>
         <command name="rm">cray-libsci</command>
+        <command name="rm">esmf</command>
+        <command name="rm">atp</command>
+        <command name="rm">cudatoolkit</command>
         <command name="rm">xt-libsci</command>
         <command name="rm">cray-netcdf</command>
         <command name="rm">cray-netcdf-hdf5parallel</command>
         <command name="rm">cray-parallel-netcdf</command>
+        <command name="rm">subversion</command>
+        <command name="rm">cmake</command>
 
         <command name="load">python/2.7.9</command>
         <command name="load">subversion</command>
@@ -1326,7 +1332,7 @@
       <modules compiler="cray">
         <command name="rm">PrgEnv-pgi</command>
         <command name="load">PrgEnv-cray</command>
-        <command name="load">cce/8.4.0</command>
+        <command name="load">cce/8.5.0</command>
         <command name="load">cray-mpich/7.4.0</command>
       </modules>
       <!-- mpi lib settings -->
@@ -1370,7 +1376,7 @@
         <env name="CRAY_CPU_TARGET">istanbul</env>
       </environment_variables>
       <environment_variables compiler="intel">
-        <env name="XTPE_LINK_TYPE">dynamic</env>
+        <env name="CRAYPE_LINK_TYPE">dynamic</env>
       </environment_variables>
     </module_system>
 </machine>
