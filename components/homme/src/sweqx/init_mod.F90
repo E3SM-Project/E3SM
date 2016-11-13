@@ -5,8 +5,7 @@
 
 module init_mod
 contains
-! not a nice way to integrate fvm but otherwise DG does not work anymore
-  subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt, fvm)
+  subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
     use thread_mod, only : nthreads, omp_set_num_threads
@@ -79,9 +78,6 @@ contains
     ! ---------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
-    use fvm_mod, only : fvm_init1
-    use fvm_control_volume_mod, only : fvm_struct
-    use dimensions_mod, only : nc, ntrac
 
     implicit none
 #ifdef _MPI
@@ -91,7 +87,6 @@ contains
 !   G95  "pointer attribute conflicts with INTENT attribute":  
 !    type (element_t), intent(inout), pointer :: elem(:)
     type (element_t), pointer :: elem(:)
-    type (fvm_struct), pointer, optional :: fvm(:)
         
     type (EdgeBuffer_t)           :: edge1
     type (EdgeBuffer_t)           :: edge2
@@ -246,13 +241,6 @@ contains
 
     allocate(elem(nelemd))
     call allocate_element_desc(elem)
-    if (present(fvm)) then
-    if (ntrac>0) then
-       allocate(fvm(nelemd))
-    else
-       allocate(fvm(0))  ! create mesh, even if no cslam tracers
-    endif
-    endif
 
     ! ====================================================
     !  Generate the communication schedule
@@ -357,7 +345,6 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    if (ntrac>0) call fvm_init1(par,elem)
     
     call t_stopf('init')
   end subroutine init

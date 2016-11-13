@@ -50,10 +50,11 @@ interface compute_div_C0
 end interface
 interface make_c0
     module procedure make_c0_hybrid
+    module procedure make_c0_hybrid1
     module procedure make_c0_par
 end interface
 
-
+public :: make_c0_vector
 public :: compute_zeta_C0_contra    ! for older versions of sweq which carry
 public :: compute_div_C0_contra     ! velocity around in contra-coordinates
 
@@ -395,97 +396,84 @@ end subroutine
 
 
 
-
+! wrapper functions
 subroutine make_C0_par(zeta,elem,par)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! apply DSS (aka assembly procedure) to zeta.  
-! this is a low-performance routine used for I/O and analysis.
-! no need to optimize
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (parallel_t), intent(in) :: par
 type (element_t)     , intent(in), target :: elem(:)
-integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
-
 ! local
-integer :: k,i,j,ie,ic,kptr
 type (hybrid_t)   :: hybrid
-
 hybrid = hybrid_create(par,0,1)
-call make_c0_hybrid(zeta,elem,hybrid,1,nelemd)
-
-
+call make_c0_hybrid_klev(zeta,elem,hybrid,1,nelemd,nlev)
 end subroutine
 
-
-
-
 subroutine make_C0_hybrid(zeta,elem,hybrid,nets,nete)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! apply DSS (aka assembly procedure) to zeta.  
-! this is a low-performance routine used for I/O and analysis.
-! no need to optimize
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
 integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
+call make_c0_hybrid_klev(zeta,elem,hybrid,1,nelemd,nlev)
+end subroutine
 
-! local
-integer :: k,i,j,ie,ic,kptr
-
-call initEdgeBuffer(hybrid%par,edge1,elem,nlev, numthreads_in=omp_get_num_threads())
-
-do ie=nets,nete
-   do k=1,nlev
-      zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%spheremp(:,:)
-   enddo
-   kptr=0
-   call edgeVpack(edge1, zeta(1,1,1,ie),nlev,kptr,ie)
-enddo
-
-call t_startf('makeC02d_bexchV')
-call bndry_exchangeV(hybrid,edge1)
-call t_stopf('makeC02d_bexchV')
-
-do ie=nets,nete
-   kptr=0
-   call edgeVunpack(edge1, zeta(1,1,1,ie),nlev,kptr, ie)
-   do k=1,nlev
-      zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-   enddo
-enddo
-
-call FreeEdgeBuffer(edge1) 
-
+subroutine make_C0_hybrid1(zeta,elem,hybrid,nets,nete)
+type (hybrid_t)      , intent(in) :: hybrid
+type (element_t)     , intent(in), target :: elem(:)
+integer :: nets,nete
+real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
+call make_c0_hybrid_klev(zeta,elem,hybrid,nets,nete,1)
 end subroutine
 
 
 subroutine make_C0_vector(v,elem,hybrid,nets,nete)
+type (hybrid_t)      , intent(in) :: hybrid
+type (element_t)     , intent(in), target :: elem(:)
+integer :: nets,nete
+real (kind=real_kind), dimension(np,np,2,nets:nete) :: v
+call make_c0_hybrid_klev(v,elem,hybrid,nets,nete,2)
+end subroutine
+
+
+
+
+
+subroutine make_C0_hybrid_klev(zeta,elem,hybrid,nets,nete,klev)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! apply DSS to a velocity vector
+! apply DSS (aka assembly procedure) to zeta.  
 ! this is a low-performance routine used for I/O and analysis.
 ! no need to optimize
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-integer :: nets,nete
-real (kind=real_kind), dimension(np,np,2,nlev,nets:nete) :: v
+integer :: nets,nete,klev
+real (kind=real_kind), dimension(np,np,klev,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic,kptr
-type (EdgeBuffer_t)          :: edge2
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: v1
 
-v1(:,:,:,:) = v(:,:,1,:,:)
-call make_C0(v1,elem,hybrid,nets,nete)
-v(:,:,1,:,:) = v1(:,:,:,:) 
-
-v1(:,:,:,:) = v(:,:,2,:,:)
-call make_C0(v1,elem,hybrid,nets,nete)
-v(:,:,2,:,:) = v1(:,:,:,:) 
-
+call initEdgeBuffer(hybrid%par,edge1,elem,klev, numthreads_in=omp_get_num_threads())
+do ie=nets,nete
+   do k=1,klev
+      zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%spheremp(:,:)
+   enddo
+   kptr=0
+   call edgeVpack(edge1, zeta(1,1,1,ie),klev,kptr,ie)
+enddo
+call bndry_exchangeV(hybrid,edge1)
+do ie=nets,nete
+   kptr=0
+   call edgeVunpack(edge1, zeta(1,1,1,ie),klev,kptr, ie)
+   do k=1,klev
+      zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%rspheremp(:,:)
+   enddo
+enddo
+call FreeEdgeBuffer(edge1) 
 end subroutine
+
+
+
+
+
+
 
 
 

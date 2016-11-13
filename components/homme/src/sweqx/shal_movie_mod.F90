@@ -26,7 +26,6 @@ module shal_movie_mod
   use control_mod, only : test_case, runtype, kmass
   ! ---------------------
   use element_mod, only : element_t
-  use fvm_control_volume_mod, only : fvm_struct
   ! ---------------------
   use coordinate_systems_mod, only : cartesian2d_t, spherical_polar_t
   ! ---------------------
@@ -62,7 +61,7 @@ module shal_movie_mod
        nf_close_all, &
        nf_get_frame, &
        nf_put_var => nf_put_var_netcdf, &
-       iodesc2d, iodesc3d, iodescT, pio_subsystem, iodesc2d_nc, iodesc3d_nc
+       iodesc2d, iodesc3d, iodescT, pio_subsystem
 
   use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile, & 
                   pio_iotask_rank
@@ -110,12 +109,11 @@ contains
   end subroutine GetDOF
 
 
-  subroutine shal_movie_init(elem, hybrid, fvm)
+  subroutine shal_movie_init(elem, hybrid)
     type (element_t), intent(in)    :: elem(:)
-    type (fvm_struct), optional, intent(in)    :: fvm(:)
     type (hybrid_t), intent(in)     :: hybrid
     ! Local variables
-    integer ie,i,j,k,ios,ii,jj,base,global_nc
+    integer ie,i,j,k,ios,ii,jj,base
     integer :: v1(4), vstart, gstart
     integer(kind=nfsizekind) :: start(2), count(2)
     integer :: iorank
@@ -126,7 +124,6 @@ contains
     if (hybrid%par%masterproc) print *,'PIO initialization'
     call nf_output_init_begin(ncdf,hybrid%par%masterproc,hybrid%par%nprocs,hybrid%par%rank, &
          hybrid%par%comm,test_case,runtype)
-    global_nc = nc*nc*nelem
     nxyp=0
     nxyv=0
     do ie=1,nelemd
@@ -134,7 +131,7 @@ contains
       nxyv=nxyv+elem(ie)%idxV%NumUniquePts
     enddo
 
-    dimsize = (/GlobalUniqueCols,nlev,nelem,0,global_nc/)
+    dimsize = (/GlobalUniqueCols,nlev,nelem,0/)
     call nf_output_register_dims(ncdf, maxdims, dimnames, dimsize)
 
     allocate(compdof(nxyp*nlev), latp(nxyp),lonp(nxyp))
@@ -162,30 +159,6 @@ contains
          compDOF(1:1),IOdescT)
     deallocate(compdof)
 
-! fvm grid
-    if (hybrid%par%masterproc) print *,'PIO initialization of fvm grid'
-    allocate(compdof(nc*nc*nelemd*nlev))
-    jj=0
-    do k=0,nlev-1
-       do ie=1,nelemd
-          base = ((elem(ie)%globalid-1)+k*nelem)*(nc*nc)
-          ii=0
-          do j=1,nc
-             do i=1,nc
-                ii=ii+1
-                jj=jj+1
-                compdof(jj) = base+ii
-             end do
-          end do
-       end do
-    end do
-    call pio_initdecomp(pio_subsystem, pio_double, (/global_nc,nlev/), compdof, iodesc3d_nc)
-    call PIO_initDecomp(pio_subsystem, pio_double,(/global_nc/),compdof(1:(nelemd*nc*nc)),IOdesc2D_nc)
-    deallocate(compdof)
-
-
-
-
 
     call nf_output_register_variables(ncdf,varcnt,varnames,vardims,vartype,varrequired)
     call nf_global_attribute(ncdf, 'np', np)
@@ -196,9 +169,6 @@ contains
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
-    call nf_variable_attributes(ncdf, 'fvm_lat', 'column latitude','degrees_north')
-    call nf_variable_attributes(ncdf, 'fvm_lon', 'column longitude','degrees_east')
-    call nf_variable_attributes(ncdf, 'fvm_area', 'area weights','radians^2')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
 
     call nf_output_init_complete(ncdf)
@@ -233,48 +203,6 @@ contains
           enddo
           call nf_put_var(ncdf(ios),latp,start(1:1), count(1:1), name='area')
 
-          if (present(fvm)) then 
-             if (hybrid%par%masterproc) print *,'writing fvm coordinates ios=',ios
-             allocate(var1(nc*nc*nelemd,nlev))
-             allocate(var2(nc*nc*nelemd,nlev))
-             var1=0
-             var2=0
-             
-             jj=0
-             do ie=1,nelemd
-                ii=0
-                do j=1,nc
-                   do i=1,nc
-                      jj=jj+1
-                      var1(jj,1) = fvm(ie)%centersphere(i,j)%lat
-                      var2(jj,1) = fvm(ie)%centersphere(i,j)%lon
-                   end do
-                end do
-             end do
-             
-             var1=var1*180/dd_pi
-             var2=var2*180/dd_pi
-             call nf_put_var(ncdf(ios),var1(:,1),start(1:1),count(1:1),&
-                  name='phys_lat',iodescin=iodesc2d_nc)
-             call nf_put_var(ncdf(ios),var2(:,1),start(1:1),count(1:1),&
-                  name='phys_lon',iodescin=iodesc2d_nc)
-             
-             jj=0
-             do ie=1,nelemd
-                ii=0
-                do j=1,nc
-                   do i=1,nc
-                      jj=jj+1
-                      var1(jj,1)=fvm(ie)%area_sphere(i,j)
-                   end do
-                end do
-             end do
-             call nf_put_var(ncdf(ios),var1(:,1),start(1:1),count(1:1),&
-                  name='phys_area',iodescin=iodesc2d_nc)
-             deallocate(var1)
-             deallocate(var2)
-          endif !fvm
-
           if (hybrid%par%masterproc) print *,'done.'
        end if
     end do
@@ -284,14 +212,13 @@ contains
     
   end subroutine shal_movie_init
 
-  subroutine shal_movie_output(elem,tl,hybrid, phimean, nets, nete,deriv, fvm)
+  subroutine shal_movie_output(elem,tl,hybrid, phimean, nets, nete,deriv)
     use time_mod, only : Timelevel_t, time_at
     use derivative_mod, only : vorticity_sphere
 
     integer,          intent(in)    :: nets,nete  
     type (derivative_t),intent(in)  :: deriv 
     type (element_t), intent(inout) :: elem(:)
-    type (fvm_struct), optional, intent(inout) :: fvm(:)
     type (TimeLevel_t), intent(in)  :: tl
     type (hybrid_t), intent(in)     :: hybrid
     real (kind=real_kind), intent(in) :: phimean
@@ -399,34 +326,6 @@ contains
              call nf_put_var(ncdf(ios),var3d,start, count, name='div')
 	  endif 
 
-          if (present(fvm)) then
-             do cindex=1,min(ntrac,4)
-                write(vname,'(a1,i1)') 'C',cindex
-                if (cindex==1) vname='C'
-                if(nf_selectedvar(vname, output_varnames)) then
-                   if (hybrid%par%masterproc) print *,'output: ',vname
-                   count(1:2)=-1  ! ignored by PIO
-                   start(1:2)=-1  ! ignored by PIO
-                   start(3)=nf_get_frame(ncdf(ios))
-                   count(3)=1
-                   
-                   do k=1,nlev
-                      jj=0
-                      do ie=1,nelemd
-                         do j=1,nc
-                            do i=1,nc
-                               jj=jj+1
-                               varphys(jj,k)= fvm(ie)%c(i,j,k,cindex,tl%n0)
-                            end do
-                         end do
-                      end do
-                   end do
-                   
-                   call nf_put_var(ncdf(ios),varphys,start, count, name=vname)
-                endif
-             enddo
-          endif
-
           if(nf_selectedvar('geop', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: geop'
 
@@ -434,11 +333,7 @@ contains
              do ie=1,nelemd
                 en=st+elem(ie)%idxp%NumUniquePts-1
                    do k=1,nlev
-                      if(test_case(1:5).eq.'fvm') then
-                         varptmp(:,:,k) = elem(ie)%state%p(:,:,k,tl%n0) 
-                      else
-                         varptmp(:,:,k) = (elem(ie)%state%p(:,:,k,tl%n0) + elem(ie)%state%ps + phimean)/g
-                      endif
+                      varptmp(:,:,k) = (elem(ie)%state%p(:,:,k,tl%n0) + elem(ie)%state%ps + phimean)/g
                    end do
                    if (kmass.ne.-1) then
                       ! p(:,:,kmass) = is the density, 

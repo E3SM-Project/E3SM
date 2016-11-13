@@ -4,10 +4,8 @@
 #endif
 
 module viscosity_mod
-  use viscosity_mod_base, only: biharmonic_wk, compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0
-#ifdef _PRIM
+  use viscosity_mod_base, only: biharmonic_wk, compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0, make_c0_vector
   use viscosity_mod_base, only: biharmonic_wk_scalar,neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, biharmonic_wk_dp3d
-#endif
   use thread_mod, only : omp_get_num_threads
   use kinds, only : real_kind, iulog
   use dimensions_mod, only : np, nc, nlev,qsize,nelemd, ntrac
@@ -21,10 +19,8 @@ module viscosity_mod
   implicit none
   private
 
-  public :: biharmonic_wk, compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0
-#ifdef _PRIM
+  public :: biharmonic_wk, compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0, make_c0_vector
   public :: biharmonic_wk_scalar, neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, biharmonic_wk_dp3d
-#endif
   public :: biharmonic_wk_scalar_openacc
   public :: neighbor_minmax_openacc
 

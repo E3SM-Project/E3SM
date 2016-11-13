@@ -73,7 +73,6 @@ contains
   ! =======================================================
 
   subroutine cg_create(cg,len,ninst,nblks,hybrid,debug_level,wts)
-    use dimensions_mod, only : ne
     use hybrid_mod, only : hybrid_t
     use parallel_mod, only : abortmp
     type (cg_t)      , intent(inout)  :: cg
@@ -89,8 +88,6 @@ contains
     cg%ninst       = ninst
     cg%nblks       = nblks
     cg%iter        = 0
-
-    if (0==ne) call abortmp('Error in cg_create: ne is zero')
 
     if (present(debug_level)) cg%debug_level=debug_level
 
@@ -264,7 +261,7 @@ contains
        end do
 
        if (cg%debug_level == 2) then
-          if (cg%hybrid%par%masterproc .and. cg%hybrid%ithr == 0) then
+          if (cg%hybrid%masterthread) then
              print *,"++++++++++++++++++++++++++++"
              do k=1,SIZE(eps)
                 print *,"iter = ",cg%iter,"eps(",k,")=",eps(k)," rhs_norm(",k,")=",cg%rhs_norm(k)
@@ -357,7 +354,7 @@ contains
        cg%iter=cg%iter+1
        if (cg%iter==maxits .or. ALL(eps(:) < tol)) then
           if (cg%debug_level == 1) then
-          if (cg%hybrid%par%masterproc .and. cg%hybrid%ithr == 0) then
+          if (cg%hybrid%masterthread) then
              print *
              print *,"++++++++++++++++++++++++++++"
              do k=1,SIZE(eps)
