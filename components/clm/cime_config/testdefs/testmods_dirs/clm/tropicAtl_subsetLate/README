@@ -1,6 +1,0 @@
-This testmods directory is meant to be used in conjunction with a 20th
-century transient case at resolution 1x1_tropicAtl. 
-
-This starts the simulation just after the last year of data defined on
-that file, in order to test the logic for starting past the end of the
-landuse_timeseries file.

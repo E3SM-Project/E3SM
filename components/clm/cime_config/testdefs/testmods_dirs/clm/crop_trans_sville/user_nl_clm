@@ -1,6 +1,0 @@
-fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_78pfts_simyr2000_c150218.nc'
-flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_1x1_smallvilleIA_hist_78pfts_simyr1850-1855_c150218.nc'
-
-! Set check_dynpft_consistency to .false. because we currently use a year-2000 dataset rather than a year-1850 dataset.
-! This setting can be removed once we use a year-1850 surface dataset, which is what is expected for transient runs.
-check_dynpft_consistency = .false.

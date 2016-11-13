@@ -1,6 +1,0 @@
--spmd -smp
--chem waccm_mozart
--dyn fv
--res 4x5
--phys cam4
--s
