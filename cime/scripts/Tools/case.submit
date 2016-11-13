@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+"""
+case.submit - Submit a cesm workflow to the queueing system or run it if there is no queueing system.   A cesm workflow may include multiple jobs.
+"""
+
+from standard_script_setup import *
+from CIME.case_submit import submit
+from CIME.case        import Case
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [<casedir>] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Setup case \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to setup")
+
+    parser.add_argument("--job", "-j",
+                        help="Name of the job to be submitted, default is case.run"
+                        " can be any of the jobs listed in env_batch.xml")
+
+    parser.add_argument("--no-batch", action="store_true",
+                        help="Do not submit jobs to batch system, run locally.")
+
+    parser.add_argument("--prereq",
+                        help="Specify a prerequiset job id, this job will not start until the "
+                        "job with this id is completed (batch mode only)")
+
+    parser.add_argument("--resubmit", action="store_true",
+                        help="Used with tests only, to continue rather than restart a test. ")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.expect(args.prereq is None, "--prereq not currently supported")
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.caseroot, args.job, args.no_batch, args.resubmit
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot, job, no_batch, resubmit = parse_command_line(sys.argv, description)
+    with Case(caseroot, read_only=False) as case:
+        submit(case, job=job, no_batch=no_batch, resubmit=resubmit)
+
+if __name__ == "__main__":
+    _main_func(__doc__)
