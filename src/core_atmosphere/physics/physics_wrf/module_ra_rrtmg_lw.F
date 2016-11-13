@@ -4938,9 +4938,9 @@ contains
 
 ! ----- Output -----
       real(kind=rb), intent(out) :: fracs(:,:)        ! planck fractions
-                                                      !    Dimensions: (nlayers,ngptlw)
+                                                      !    Dimensions: (nlayers+1,ngptlw)
       real(kind=rb), intent(out) :: taug(:,:)         ! gaseous optical depth 
-                                                      !    Dimensions: (nlayers,ngptlw)
+                                                      !    Dimensions: (nlayers+1,ngptlw)
 
 !jm not thread safe      hvrtau = '$Revision: 1.7 $'
 
@@ -11453,8 +11453,10 @@ use mcica_subcol_gen_lw, only: mcica_subcol_lw
          205.728, 214.055, 222.694, 231.661, 240.971, 250.639/  
     !
     save retab
+#if !defined(mpas)
     ! For buffer layer adjustment.  Steven Cavallo, Dec 2010.
     integer , save    :: nlayers    
+#endif
     real, PARAMETER :: deltap = 4.  ! Pressure interval for buffer layer in mb
     
 CONTAINS
@@ -11533,7 +11535,7 @@ CONTAINS
 
 !--- additional local variables and arrays needed to include additional layers between the model top
 !    and the top of the atmosphere:
- integer,dimension(ims:ime,jms:jme):: mpas_nlay
+ integer,dimension(its:ite,jts:jte):: mpas_nlay
 
  real,dimension(:),allocatable:: o3mmr,varint
  real,dimension(:,:),allocatable:: &
@@ -11544,6 +11546,11 @@ CONTAINS
 
 !--- additional local variables and arrays needed for the CAM ozone climatologyL
  real,dimension(1:noznlevels):: o3clim1d
+
+#if defined(mpas)
+!MPAS specific (Dom Heinzeller):
+ integer:: nlayers
+#endif
 
 !--- set trace gas volume mixing ratios, 2005 values, IPCC (2007):
 !carbon dioxide (379 ppmv)
@@ -11687,7 +11694,7 @@ CONTAINS
        !--- add extra layers to include absorption and transmission between the top of the model and the top of
        !    the atmosphere: in contrast to WRF, MPAS columns have different model-top pressures since MPAS uses
        !    a height coordinate system. Therefore, we define nlayers for each individual column:
-       nlayers = kte + nint(pw1d(kte+1)/deltap)
+       nlayers = kte + max(nint(pw1d(kte+1)/deltap), 1)
        mpas_nlay(i,j) = nlayers-kte
 !      write(0,101) j,i,kme,kte,nlayers,mpas_nlay(i,j),pw1d(kte+1),pw1d(kte+1)-mpas_nlay(i,j)*deltap
 !      101 format(6i9,3(1x,f9.4))
@@ -11800,14 +11807,10 @@ CONTAINS
        !--- the sourcecode below follows Steven Cavallo's method to "fill" the atmospheric layers between the
        !    top of the model and the top of the atmosphere. check if the pressure at the top of the atmosphere
        !    is negative. if negative, set it to zero prior to the calculation of temperatures (tlev and tlay):
-       do k = kte+1, nlayers, 1
-          plev(ncol,k+1) = plev(ncol,k) - deltap
+       do k=kte+1,nlayers,1
+          plev(ncol,k+1) = max(plev(ncol,k) - deltap, 0.00)
           play(ncol,k) = 0.5*(plev(ncol,k) + plev(ncol,k+1))
        enddo          
-       if(plev(ncol,nlayers+1) < 0.0) then
-          plev(ncol,nlayers+1) = 0.0
-          play(ncol,nlayers) = 0.5*(plev(ncol,nlayers) + plev(ncol,nlayers+1))
-       endif
 
        !--- add zero as top level. this gets the temperature max at the stratopause, reducing downward flux
        !    errors in the top levels.  If zero happened to be the top level already, this will add another
@@ -12081,7 +12084,7 @@ CONTAINS
 
        if(present(lwupflx)) then
           !output up and down fluxes:
-          do k = kts, kte+2
+          do k=kts,nlayers+1
              lwupflx(i,k,j)  = uflx(1,k)
              lwupflxc(i,k,j) = uflxc(1,k)
              lwdnflx(i,k,j)  = dflx(1,k)
