@@ -30,24 +30,44 @@
   </compset>	  
 
   <compset>
+    <alias>I1850CLM45BC</alias>
+    <lname>1850_DATM%QIA_CLM45%SPBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+  </compset>	  
+
+  <compset>
     <alias>IM1850CLM45</alias>
     <lname>1850_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
+    <alias>IM1850CLM45BC</alias>
+    <lname>1850_DATM%QIA_CLM45%SPBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>I</alias>
     <lname>2000_DATM%QIA_CLM40%SP_SICE_SOCN_RTM_SGLC_SWAV</lname>
-  </compset>	  
+  </compset>
 
   <compset>
     <alias>ICLM45</alias>
     <lname>2000_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_SGLC_SWAV</lname>
-  </compset>	  
+  </compset>
+
+  <compset>
+    <alias>ICLM45BC</alias>
+    <lname>2000_DATM%QIA_CLM45%SPBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
+  </compset>
 
   <compset>
     <alias>IMCLM45</alias>
     <lname>2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
-  </compset>	  
+  </compset>
+
+  <compset>
+    <alias>IMCLM45BC</alias>
+    <lname>2000_DATM%QIA_CLM45%SPBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
 
   <compset>
     <alias>I4804</alias>
