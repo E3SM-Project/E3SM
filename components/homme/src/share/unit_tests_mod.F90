@@ -252,17 +252,19 @@ contains
   end subroutine test_ibyp
 
 
-  subroutine test_subcell_dss_fluxes(elem,deriv,nets,nete)
+  subroutine test_subcell_dss_fluxes(elem,hybrid,deriv,nets,nete)
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_dss_fluxes
     use derivative_mod, only : subcell_integration
     use element_mod,    only : element_t
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
     type (element_t)     , intent(in) :: elem(:)
+    type (hybrid_t)      , intent(in) :: hybrid
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
@@ -320,14 +322,14 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_dss_fluxes test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_dss_fluxes test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_dss_fluxes test FAILED."
     end if
 
   end subroutine test_subcell_dss_fluxes
 
-  subroutine test_subcell_div_fluxes(elem,deriv,nets,nete)
+  subroutine test_subcell_div_fluxes(elem,hybrid,deriv,nets,nete)
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_div_fluxes
     use derivative_mod, only : subcell_integration
@@ -336,11 +338,12 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use coordinate_systems_mod, only: spherical_polar_t
-
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
     type (element_t)     , intent(in) :: elem(:)
+    type (hybrid_t)      , intent(in) :: hybrid
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
@@ -400,7 +403,7 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_div_fluxes test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_div_fluxes test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_div_fluxes test FAILED."
     end if
@@ -408,7 +411,7 @@ contains
   end subroutine test_subcell_div_fluxes
 
 
-  subroutine test_subcell_div_fluxes_again(elem,deriv,nets,nete)
+  subroutine test_subcell_div_fluxes_again(elem,hybrid,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_div_fluxes
@@ -416,9 +419,11 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use quadrature_mod, only : gausslobatto, quadrature_t
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
+    type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(in) :: elem(:)
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
@@ -559,14 +564,14 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test FAILED."
     end if
 
   end subroutine test_subcell_div_fluxes_again
 
-  subroutine test_subcell_dss_fluxes_again(elem,deriv,nets,nete)
+  subroutine test_subcell_dss_fluxes_again(elem,hybrid,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_dss_fluxes
@@ -574,9 +579,11 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use quadrature_mod, only : gausslobatto, quadrature_t
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
+    type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(in) :: elem(:)
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
@@ -676,7 +683,7 @@ contains
   end subroutine test_subcell_dss_fluxes_again
 
 
-  subroutine test_subcell_Laplace_fluxes_again(elem,deriv,nets,nete)
+  subroutine test_subcell_Laplace_fluxes_again(elem,hybrid,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_Laplace_fluxes
@@ -684,9 +691,11 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use quadrature_mod, only : gausslobatto, quadrature_t
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
+    type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(in) :: elem(:)
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
@@ -746,14 +755,14 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test FAILED."
     end if
 
   end subroutine test_subcell_Laplace_fluxes_again
 
-  subroutine test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
+  subroutine test_subcell_Laplace_fluxes(elem,hybrid,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_Laplace_fluxes
@@ -764,10 +773,12 @@ contains
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
     use coordinate_systems_mod, only: spherical_polar_t
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
     type (element_t)     , intent(in) :: elem(:)
+    type (hybrid_t)      , intent(in) :: hybrid
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
@@ -822,23 +833,25 @@ contains
     end do
 
     if (success) then
-      print *,__FILE__,__LINE__," test_subcell_Laplace_fluxes test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_subcell_Laplace_fluxes test passed."
     else
       print *,__FILE__,__LINE__," test_subcell_Laplace_fluxes test FAILED."
     end if
 
   end subroutine test_subcell_Laplace_fluxes
 
-  subroutine test_sub_integration(elem,deriv,nets,nete)
+  subroutine test_sub_integration(elem,hybrid,deriv,nets,nete)
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_integration
     use element_mod,    only : element_t
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
+    use hybrid_mod, only : hybrid_t
 
     implicit none
 
     type (element_t)     , intent(in) :: elem(:)
+    type (hybrid_t)      , intent(in) :: hybrid
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
@@ -876,7 +889,7 @@ contains
       end if
     end do
     if (success) then
-      print *,__FILE__,__LINE__," test_sub_integration test passed."
+      if (hybrid%masterthread) print *,__FILE__,__LINE__," test_sub_integration test passed."
     else
       print *,__FILE__,__LINE__," test_sub_integration test FAILED."
     end if

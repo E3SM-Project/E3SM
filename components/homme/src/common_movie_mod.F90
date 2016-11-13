@@ -56,12 +56,7 @@ module common_movie_mod
                                                                1,0,0,0,0,0, & ! area
                                                                1,2,0,0,0,0, & ! cv_lat
                                                                1,2,0,0,0,0, & ! cv_lon
-                                                               7,2,0,0,0,0, & ! subelement_corners
-                                                               6,0,0,0,0,0, & ! phys_area
-                                                               6,0,0,0,0,0, & ! phys_lat
-                                                               6,0,0,0,0,0, & ! phys_lon
-                                                               6,2,0,0,0,0, & ! phys_cv_lat
-                                                               6,2,0,0,0,0, & ! phys_cv_lon
+                                                               6,2,0,0,0,0, & ! subelement_corners
                                                                1,2,5,0,0,0, & ! faceno
                                                                1,2,5,0,0,0, & ! zeta
                                                                1,2,5,0,0,0, & ! div

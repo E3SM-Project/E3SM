@@ -82,7 +82,6 @@ module interpolate_mod
   public :: interpolate_scalar
   public :: interpolate_ce
   
-  public :: interpol_phys_latlon
   public :: interpolate_vector
   public :: set_interp_parameter
   public :: get_interp_parameter
@@ -657,83 +656,6 @@ contains
             + p*q* y4(3) + (1.0D0 - p)*q * y4(4)
 
   end function interpol_bilinear
-
-! ----------------------------------------------------------------------------------!
-!FUNCTION   interpol_phys_latlon----------------------------------------CE-for fvm!
-! AUTHOR: CHRISTOPH ERATH, 23. May 2012                                             !
-! DESCRIPTION: evaluation of the reconstruction for every physics grid cell         !
-!                                                                                   !
-! CALLS: 
-! INPUT: 
-!        
-! OUTPUT: 
-!-----------------------------------------------------------------------------------!
-subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
-  use fvm_control_volume_mod, only : fvm_struct
-  use fvm_reconstruction_mod, only: reconstruction
-  use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
-  use edgetype_mod, only : edgedescriptor_t
-  
-  type (interpdata_t), intent(in)     :: interpdata                        
-  real (kind=real_kind), intent(in)   :: f(1-nhc:nc+nhc,1-nhc:nc+nhc)
-  type (fvm_struct), intent(in)       :: fvm
-  type (cartesian2d_t), intent(in)    :: corners(:)
-  type (edgedescriptor_t),intent(in)  :: desc
-  
-                          
-  real (kind=real_kind)             :: flatlon(:)
-  ! local variables
-  real (kind=real_kind)             :: xp,yp, tmpval
-  real (kind=real_kind)             :: tmpaxp,tmpaxm, tmpayp, tmpaym
-  integer                           :: i, ix, jy, starti,endi,tmpi
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
-  
-  call reconstruction(f, fvm,recons)
-  call monotonic_gradient_cart(f, fvm,recons, desc) 
-!phl PCoM  recons=0.0
-
-  tmpaxp=(corners(1)%x+corners(2)%x)/2
-  tmpaxm=(corners(2)%x-corners(1)%x)/2
-  tmpayp=(corners(1)%y+corners(4)%y)/2
-  tmpaym=(corners(4)%y-corners(1)%y)/2
-  do i=1,interpdata%n_interp
-    ! caculation phys grid coordinate of xp point, note the interp_xy are on the reference [-1,1]x[-1,1]
-    xp=tan(tmpaxp+interpdata%interp_xy(i)%x*tmpaxm)
-    yp=tan(tmpayp+interpdata%interp_xy(i)%y*tmpaym)   
-
-    ! Search index along "x"  (bisection method)
-    starti = 1
-    endi = nc+1
-    do
-       if  ((endi-starti) <=  1)  exit
-       tmpi = (endi + starti)/2
-       if (xp  >  fvm%acartx(tmpi)) then
-          starti = tmpi
-       else
-          endi = tmpi
-       endif
-    enddo
-    ix = starti
-
-  ! Search index along "y"
-    starti = 1
-    endi = nc+1
-    do
-       if  ((endi-starti) <=  1)  exit
-       tmpi = (endi + starti)/2
-       if (yp  >  fvm%acarty(tmpi)) then
-          starti = tmpi
-       else
-          endi = tmpi
-       endif
-    enddo
-    jy = starti
-    
-    call recons_val_cart(f, xp,yp,fvm%spherecentroid,recons,ix,jy,tmpval)
-    flatlon(i)=tmpval    
-!phl PCoM     flatlon(i)=f(ix,jy)    
-  end do
-end subroutine interpol_phys_latlon
 
   function parametric_coordinates(sphere, corners3D,ref_map_in, corners,cartp,facenum) result (ref)
 

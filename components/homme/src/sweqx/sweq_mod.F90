@@ -227,13 +227,15 @@ contains
     call test_ibyp(elem,hybrid,nets,nete)
     if (hybrid%masterthread) print *,'** running element divergence/edge flux checks **'
     call test_edge_flux(elem,hybrid,deriv,nets,nete)
-    call test_sub_integration(elem,deriv,nets,nete)
-    call test_subcell_dss_fluxes(elem,deriv,nets,nete)
-    call test_subcell_div_fluxes(elem,deriv,nets,nete)
-    call test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
-    call test_subcell_div_fluxes_again(elem,deriv,nets,nete)
-!   call test_subcell_dss_fluxes_again(elem,deriv,nets,nete)
-    call test_subcell_Laplace_fluxes_again(elem,deriv,nets,nete)
+    if (hybrid%masterthread) print *,'** test integration in element subcells **'
+    call test_sub_integration(elem,hybrid,deriv,nets,nete)
+    if (hybrid%masterthread) print *,'** test element subcell flux code **'
+    call test_subcell_dss_fluxes(elem,hybrid,deriv,nets,nete)
+    call test_subcell_div_fluxes(elem,hybrid,deriv,nets,nete)
+    call test_subcell_Laplace_fluxes(elem,hybrid,deriv,nets,nete)
+    call test_subcell_div_fluxes_again(elem,hybrid,deriv,nets,nete)
+!   call test_subcell_dss_fluxes_again(elem,hybrid,deriv,nets,nete)
+    call test_subcell_Laplace_fluxes_again(elem,hybrid,deriv,nets,nete)
     if (hybrid%masterthread) print *,'** completed unit tests **'
 #endif
 

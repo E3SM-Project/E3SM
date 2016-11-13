@@ -7,7 +7,7 @@ module interp_movie_mod
   use dimensions_mod, only :  nlev, nelemd, np, ne, qsize, ntrac, nc
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
-       set_interp_parameter, interpol_phys_latlon
+       set_interp_parameter
   use pio_io_mod, only : & 
        nf_output_init_begin,&
        nf_output_init_complete,  &

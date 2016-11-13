@@ -212,10 +212,6 @@ contains
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
-    call nf_variable_attributes(ncdf, 'phys_lat', 'column latitude','degrees_north')
-    call nf_variable_attributes(ncdf, 'phys_lon', 'column longitude','degrees_east')
-    call nf_variable_attributes(ncdf, 'phys_cv_lat', 'column control volume latitude','degrees_north')
-    call nf_variable_attributes(ncdf, 'phys_cv_lon', 'column control volume longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
     call nf_variable_attributes(ncdf, 'lev' ,'hybrid level at midpoints' ,'level','positive','down') !,'formula_terms','a: hyam b: hybm p0: P0 ps: PS')
     call nf_variable_attributes(ncdf, 'ilev','hybrid level at interfaces','level','positive','down') !,'formula_terms','a: hyai b: hybi p0: P0 ps: PS')
@@ -223,10 +219,7 @@ contains
     call nf_variable_attributes(ncdf, 'hybm','hybrid B coefficiet at layer midpoints' ,'dimensionless') 
     call nf_variable_attributes(ncdf, 'hyai','hybrid A coefficiet at layer interfaces' ,'dimensionless') 
     call nf_variable_attributes(ncdf, 'hybi','hybrid B coefficiet at layer interfaces' ,'dimensionless') 
-
-
     call nf_output_init_complete(ncdf)
-
 
     do ios=1,max_output_streams
        output_varnames=>get_current_varnames(ios)

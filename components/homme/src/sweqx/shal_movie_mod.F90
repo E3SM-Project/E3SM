@@ -11,7 +11,7 @@ module shal_movie_mod
   use kinds, only : real_kind
   ! ---------------------
   use dimensions_mod, only : np, ne, nelem, nelemd, nlev, nelemdmax, &
-       GlobalUniqueCols, npsq ,ntrac, nc
+       GlobalUniqueCols, npsq 
   ! ---------------------
   use hybrid_mod, only : hybrid_t
   ! ---------------------
@@ -244,7 +244,6 @@ contains
 
     real (kind=real_kind),pointer :: field1(:,:,:),field2(:,:,:,:)
     real (kind=real_kind) :: var3d(nxyp,nlev)
-    real (kind=real_kind) :: varphys(nc*nc*nelemd,nlev)
     character(len=280) :: namell
 
     lenscale = rearth 
