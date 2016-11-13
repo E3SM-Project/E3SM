@@ -437,7 +437,7 @@ contains
                 v1     = fptr%base(ie)%state%v(i,j,1,k,n0)
                 v2     = fptr%base(ie)%state%v(i,j,2,k,n0)
                 E = 0.5D0*( v1*v1 + v2*v2 )
-                Ephi(i,j)=E+fptr%base(ie)%derived%phi(i,j,k)+fptr%base(ie)%derived%pecnd(i,j,k)
+                Ephi(i,j)=E+fptr%base(ie)%derived%phi(i,j,k)
              end do
           end do
           ! ================================================

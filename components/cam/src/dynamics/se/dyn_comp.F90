@@ -299,8 +299,6 @@ CONTAINS
           moisture='dry'
           if(runtype == 0) then
              do ie=nets,nete
-                elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
-
                 elem(ie)%state%ps_v(:,:,:) =dyn_ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
@@ -315,8 +313,6 @@ CONTAINS
           end if
        else if(aqua_planet .and. runtype==0)  then
           do ie=nets,nete
-             !          elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
-             !          elem(ie)%state%ps_v(:,:,:) =dyn_ps0
              elem(ie)%state%phis(:,:)=0.0_r8
           end do
           if(allocated(landm)) landm=0.0_r8

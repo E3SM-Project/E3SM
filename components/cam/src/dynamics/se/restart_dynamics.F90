@@ -460,7 +460,6 @@ CONTAINS
           do i=1,np
              cnt=cnt+1
              elem(ie)%state%ps_v(i,j,tl) = var2d(cnt)
-             elem(ie)%state%lnps(i,j,tl) = log(var2d(cnt))
           end do
        end do
     end do

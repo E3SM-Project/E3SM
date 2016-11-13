@@ -70,7 +70,6 @@ contains
   subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
 
     use test_mod,  only: set_test_prescribed_wind
-    use asp_tests, only: asp_advection_vertical
 
     type (element_t),      intent(inout), target  :: elem(:)
     type (derivative_t),   intent(in)             :: deriv
@@ -135,12 +134,6 @@ contains
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
-#endif
-
-#ifdef CAM
-    use control_mod,    only: prescribed_vertwind
-#else
-    use asp_tests,      only: asp_advection_vertical
 #endif
 
     implicit none
@@ -1058,9 +1051,6 @@ contains
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
   use physics_mod, only : virtual_specific_heat, virtual_temperature
   use prim_si_mod, only : preq_vertadv, preq_omega_ps, preq_hydrostatic
-#if ( defined CAM )
-  use control_mod, only: se_met_nudge_u, se_met_nudge_p, se_met_nudge_t, se_met_tevolve
-#endif
 
   use time_mod, only : tevolve
 
@@ -1147,19 +1137,6 @@ contains
               vdp(i,j,2,k) = v2*dp(i,j,k)
            end do
         end do
-
-#if ( defined CAM )
-        ! ============================
-        ! compute grad(P-P_met)
-        ! ============================
-        if (se_met_nudge_p.gt.0.D0) then
-           grad_p_m_pmet(:,:,:,k) = &
-                grad_p(:,:,:,k) - &
-                hvcoord%hybm(k)* &
-                gradient_sphere( elem(ie)%derived%ps_met(:,:)+tevolve*elem(ie)%derived%dpsdt_met(:,:), &
-                                 deriv,elem(ie)%Dinv)
-        endif
-#endif
 
         ! ================================
         ! Accumulate mean Vel_rho flux in vn0
@@ -1305,7 +1282,7 @@ contains
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
               E = 0.5D0*( v1*v1 + v2*v2 )
-              Ephi(i,j)=E+phi(i,j,k)+elem(ie)%derived%pecnd(i,j,k)
+              Ephi(i,j)=E+phi(i,j,k)
            end do
         end do
         ! ================================================
@@ -1326,9 +1303,6 @@ contains
 
         do j=1,np
            do i=1,np
-!              gpterm = hvcoord%hybm(k)*T_v(i,j,k)/p(i,j,k)
-!              glnps1 = Rgas*gpterm*grad_ps(i,j,1)
-!              glnps2 = Rgas*gpterm*grad_ps(i,j,2)
               gpterm = T_v(i,j,k)/p(i,j,k)
               glnps1 = Rgas*gpterm*grad_p(i,j,1,k)
               glnps2 = Rgas*gpterm*grad_p(i,j,2,k)

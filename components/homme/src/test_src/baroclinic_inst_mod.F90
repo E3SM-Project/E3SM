@@ -182,7 +182,6 @@ do ie=nets,nete
           trm3 = (1.60D0 *cslat**3 *(snlat**2 + 2.0D0/3.0D0) - DD_PI *0.25D0)* erad*omg
 
           elem(ie)%state%phis(i,j) = trm1 *(trm2 * trm1 + trm3) 
-          elem(ie)%state%lnps(i,j,:) = LOG(p0)
           elem(ie)%state%ps_v(i,j,:) = p0
        end do
     end do
@@ -372,10 +371,7 @@ endif
     allocate(t1(nptsp,nptsp,nets:nete))
 
     do ie=nets,nete
-       elem(ie)%state%lnps(:,:,:) = LOG(p0)
        elem(ie)%state%ps_v(:,:,:) = p0
-       !       elem(ie)%state%lnps(:,:,nm1)= elem(ie)%state%lnps(:,:,n0)
-       !       elem(ie)%state%lnps(:,:,np1)= 0.0D0
     end do
 
     gs = gauss(nlat)

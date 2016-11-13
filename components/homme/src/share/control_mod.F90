@@ -88,16 +88,6 @@ module control_mod
   integer              , public :: debug_level    ! debug level of CG solver
 
 
-  ! Boyd Vandeven filter Transfer fn parameters
-
-  real (kind=real_kind), public :: p_bv
-  real (kind=real_kind), public :: s_bv
-
-  ! Fischer-Mullen filter Transfer fn parameters
-
-  real (kind=real_kind), public :: wght_fm
-  integer              , public :: kcut_fm
-
   character(len=MAX_STRING_LEN)    ,public  :: vfile_int=""   ! vertical formulation (ecmwf,ccm1)
   character(len=MAX_STRING_LEN)    ,public  :: vfile_mid=""   ! vertical grid spacing (equal,unequal)
   character(len=MAX_STRING_LEN)    ,public  :: vform = ""     ! vertical coordinate system (sigma,hybrid)
@@ -146,14 +136,6 @@ module control_mod
   real (kind=real_kind), public :: smooth_phis_nudt = 0
 
   integer, public :: prescribed_wind=0    ! fix the velocities?
-
-#ifdef CAM
-  real (kind=real_kind), public :: se_met_nudge_u = 0.D0  ! velocity nudging rate (1/sec)
-  real (kind=real_kind), public :: se_met_nudge_p = 0.D0  ! pressure nudging rate (1/sec)
-  real (kind=real_kind), public :: se_met_nudge_t = 0.D0  ! temperature nudging rate (1/sec)
-  integer,               public :: se_met_tevolve = 0     ! switch to turn on time evolution of nudging within dynamics
-  integer,               public :: prescribed_vertwind = 0
-#endif
 
   real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
   real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case

@@ -86,9 +86,7 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
     s%v   (:,:,:,:,np1) = s%v   (:,:,:,:,n0)
     s%T   (:,:,:,  np1) = s%T   (:,:,:,  n0)
     s%dp3d(:,:,:,  np1) = s%dp3d(:,:,:,  n0)
-    s%lnps(:,:,    np1) = s%lnps(:,:,    n0)
     s%ps_v(:,:,    np1) = s%ps_v(:,:,    n0)
-    elem(ie)%derived%div = 0
   enddo
 
   ! set prescribed quantities

@@ -432,7 +432,7 @@ contains
                 if (par%masterproc) print *,'writing ps...'
                 st=1
                 do ie=1,nelemd
-                   vartmp(:,:,1) = exp(elem(ie)%state%lnps(:,:,tl%n0))
+                   vartmp(:,:,1) = (elem(ie)%state%ps_v(:,:,tl%n0))
                    en=st+elem(ie)%idxp%NumUniquePts-1
                    call UniquePoints(elem(ie)%idxP,vartmp(:,:,1),var2d(st:en))
                    st=en+1
@@ -513,7 +513,7 @@ contains
                       do j=1,np
                          do i=1,np
                             pfull = hvcoord%hyam(k)*hvcoord%ps0  &
-                                 + hvcoord%hybm(k)*exp(elem(ie)%state%lnps(i,j,tl%n0))
+                                 + hvcoord%hybm(k)*(elem(ie)%state%ps_v(i,j,tl%n0))
                             varTMP(i,j,k)=elem(ie)%state%T(i,j,k,tl%n0)* &
                                  (pfull*pr0)**(-kappa)
                          end do

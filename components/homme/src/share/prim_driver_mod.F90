@@ -404,7 +404,6 @@ contains
        elem(ie)%derived%FQ=0.0
        elem(ie)%derived%FQps=0.0
        elem(ie)%derived%FT=0.0
-       elem(ie)%derived%pecnd=0.0
 
        elem(ie)%accum%Qvar=0
        elem(ie)%accum%Qmass=0
@@ -413,22 +412,6 @@ contains
        elem(ie)%derived%Omega_p=0
        elem(ie)%state%dp3d=0
 
-#ifdef CAM
-       elem(ie)%derived%etadot_prescribed = nan
-       elem(ie)%derived%u_met = nan
-       elem(ie)%derived%v_met = nan
-       elem(ie)%derived%dudt_met = nan
-       elem(ie)%derived%dvdt_met = nan
-       elem(ie)%derived%T_met = nan
-       elem(ie)%derived%dTdt_met = nan
-       elem(ie)%derived%ps_met = nan
-       elem(ie)%derived%dpsdt_met = nan
-       elem(ie)%derived%nudge_factor = nan
-
-       elem(ie)%derived%Utnd=0.D0
-       elem(ie)%derived%Vtnd=0.D0
-       elem(ie)%derived%Ttnd=0.D0
-#endif
     enddo
 
     ! ==========================================================
@@ -699,7 +682,6 @@ contains
              elem(ie)%state%v(:,:,:,:,tl%nm1) = elem(ie)%state%v(:,:,:,:,tl%n0)
              elem(ie)%state%T(:,:,:,tl%nm1)   = elem(ie)%state%T(:,:,:,tl%n0)
              elem(ie)%state%ps_v(:,:,tl%nm1)  = elem(ie)%state%ps_v(:,:,tl%n0)
-             elem(ie)%state%lnps(:,:,tl%nm1)  = elem(ie)%state%lnps(:,:,tl%n0)
           enddo
        endif ! runtype==2
 
@@ -985,13 +967,11 @@ contains
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
-    ! lnps (we should get rid of this)
     ! Q    (mixing ratio)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     call t_startf("prim_run_subcyle_diags")
     do ie=nets,nete
        !dir$ simd
-       elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
 #if (defined COLUMN_OPENMP)
        !$omp parallel do default(shared), private(k,q,dp_np1)
 #endif

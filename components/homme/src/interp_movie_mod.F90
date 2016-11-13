@@ -796,7 +796,7 @@ contains
                       do j=1,np
                          do i=1,np
                             pfull = hvcoord%hyam(k)*hvcoord%ps0  &
-                                 + hvcoord%hybm(k)*exp(elem(ie)%state%lnps(i,j,n0))
+                                 + hvcoord%hybm(k)*elem(ie)%state%ps_v(i,j,n0)
                             var3d(i,j,k,1)=elem(ie)%state%T(i,j,k,n0)* &
                                  (pfull*pr0)**(-kappa)
                          end do
@@ -858,7 +858,7 @@ contains
                       do j=1,np
                          do i=1,np
                             pfull = hvcoord%hyam(k)*hvcoord%ps0  &
-                                 + hvcoord%hybm(k)*exp(elem(ie)%state%lnps(i,j,n0))
+                                 + hvcoord%hybm(k)*elem(ie)%state%ps_v(i,j,n0)
                             var3d(i,j,k,ie)=elem(ie)%derived%omega_p(i,j,k)*pfull
                          end do
                       end do

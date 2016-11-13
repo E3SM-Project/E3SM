@@ -83,13 +83,6 @@ module namelist_mod
     dcmip2_x_h0,                      &
     dcmip2_x_d,                       &
     dcmip2_x_xi
-
-#else
-  use control_mod, only:              &
-    se_met_nudge_u,                   &
-    se_met_nudge_p,                   &
-    se_met_nudge_t,                   &
-    se_met_tevolve
 #endif
 
   use thread_mod,     only: nthreads, nthreads_accel, omp_set_num_threads, omp_get_max_threads, vert_num_threads, vthreads
@@ -252,7 +245,6 @@ module namelist_mod
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
       se_phys_tscale
-    namelist  /ctl_nl/ se_met_nudge_u, se_met_nudge_p, se_met_nudge_t, se_met_tevolve
 #else
     namelist /ctl_nl/test_case,       &             ! test case idenitfier
       sub_case,        &             ! generic test case parameter
@@ -605,10 +597,6 @@ module namelist_mod
     limiter_option  = se_limiter_option
     nsplit          = se_nsplit
     call MPI_bcast(vthreads  ,      1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(se_met_nudge_u,  1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(se_met_nudge_p,  1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(se_met_nudge_t,  1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(se_met_tevolve,  1, MPIinteger_t, par%root,par%comm,ierr)
 #else
     call MPI_bcast(omega,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(pertlim,         1, MPIreal_t   , par%root,par%comm,ierr)
@@ -931,13 +919,6 @@ module namelist_mod
        write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
        write(iulog,*)"PHIS smoothing:  ",smooth_phis_numcycle,smooth_phis_nudt
        write(iulog,*)"SGH  smoothing:  ",smooth_sgh_numcycle
-
-#if ( defined CAM )
-       write(iulog,'(a,e14.6)')"nudging:  se_met_nudge_u = ", se_met_nudge_u
-       write(iulog,'(a,e14.6)')"nudging:  se_met_nudge_p = ", se_met_nudge_p
-       write(iulog,'(a,e14.6)')"nudging:  se_met_nudge_t = ", se_met_nudge_t
-       write(iulog,'(a,I4)')   "nudging:  se_met_tevolve = ", se_met_tevolve
-#endif
 
        if(initial_total_mass>0) then
           write(iulog,*) "initial_total_mass = ",initial_total_mass

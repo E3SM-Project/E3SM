@@ -1057,7 +1057,6 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
           enddo
           elem(ie)%state%phis(i,j) = surface_geopotential(lon,lat,rotate_grid)
           elem(ie)%state%ps_v(i,j,:) = p0
-          elem(ie)%state%lnps(i,j,:) = LOG(p0)
        enddo
     enddo
     enddo
@@ -1267,7 +1266,6 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
 
              elem(ie)%state%phis(i,j) = surface_geopotential
              elem(ie)%state%ps_v(i,j,:) = surface_pressure
-             elem(ie)%state%lnps(i,j,:) = LOG(surface_pressure)
              elem(ie)%state%T(i,j,k,:)  = temperature
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind
@@ -1357,7 +1355,6 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
                   surface_pressure)
           elem(ie)%state%phis(i,j) = surface_geopotential
           elem(ie)%state%ps_v(i,j,:) = surface_pressure
-          elem(ie)%state%lnps(i,j,:) = LOG(surface_pressure)
        enddo
     enddo
     enddo
@@ -1425,7 +1422,6 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
              if (k==1) then
                 elem(ie)%state%phis(i,j) = surface_geopotential
                 elem(ie)%state%ps_v(i,j,:) = surface_pressure
-                elem(ie)%state%lnps(i,j,:) = LOG(surface_pressure)
              endif
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind
@@ -1479,7 +1475,6 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
              if (k.eq.1) then
                 elem(ie)%state%phis(i,j) = surface_geopotential
                 elem(ie)%state%ps_v(i,j,:) = surface_pressure
-                elem(ie)%state%lnps(i,j,:) = LOG(surface_pressure)
              endif
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind
