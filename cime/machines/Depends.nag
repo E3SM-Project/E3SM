@@ -1,4 +1,0 @@
-wrap_mpi.o: wrap_mpi.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
-fft99.o: fft99.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
