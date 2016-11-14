@@ -2208,7 +2208,7 @@
     </gridmap>
 
     <gridmap ocn_grid="oQU120" rof_grid="rx1">
-      <ROF2OCN_RMAPNAME>cpl/cpl6/map_rx1_to_oQU120_nn.1608.nc</ROF2OCN_RMAPNAME>
+      <ROF2OCN_RMAPNAME>cpl/cpl6/map_rx1_to_oQU120_nn.160527.nc</ROF2OCN_RMAPNAME>
     </gridmap>
 
     <gridmap ocn_grid="oRRS15to5" rof_grid="rx1">
