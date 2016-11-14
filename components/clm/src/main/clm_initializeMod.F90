@@ -898,15 +898,51 @@ contains
     ! CLM initialization - third phase
     !
     ! !USES:
-    use mpp_varpar, only : mpp_varpar_set_nlevsoi, mpp_varpar_set_nlevgrnd
-    use mpp_varpar, only : mpp_varpar_set_nlevsno
-    use clm_varpar, only : nlevsoi, nlevgrnd, nlevsno
+    use clm_varpar     , only : nlevsoi, nlevgrnd, nlevsno, max_patch_per_col
+    use landunit_varcon, only : istsoil, istcrop, istice_mec, istice_mec
+    use landunit_varcon, only : istice, istdlak, istwet, max_lunit
+    use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use clm_varctl     , only : use_vsfm, vsfm_use_dynamic_linesearch
+    use clm_varctl     , only : vsfm_include_seepage_bc, vsfm_satfunc_type
+    use clm_varctl     , only : vsfm_lateral_model_type
+    use clm_varctl     , only : use_petsc_thermal_model
+    use clm_varctl     , only : lateral_connectivity
+    use decompMod      , only : get_proc_clumps
+    use mpp_varpar     , only : mpp_varpar_init
+    use mpp_varcon     , only : mpp_varcon_init_landunit
+    use mpp_varcon     , only : mpp_varcon_init_column
+    use mpp_varctl     , only : mpp_varctl_init_vsfm
+    use mpp_varctl     , only : mpp_varctl_init_petsc_thermal
+    use mpp_bounds     , only : mpp_bounds_init_proc_bounds
+    use mpp_bounds     , only : mpp_bounds_init_clump
+
+    implicit none
+
+    type(bounds_type) :: bounds_proc
 
     call t_startf('clm_init3')
 
-    call mpp_varpar_set_nlevsoi (nlevsoi )
-    call mpp_varpar_set_nlevgrnd(nlevgrnd)
-    call mpp_varpar_set_nlevsno (nlevsno )
+    call mpp_varpar_init (nlevsoi, nlevgrnd, nlevsno, max_patch_per_col)
+
+    call mpp_varcon_init_landunit   (istsoil, istcrop, istice, istice_mec, &
+           istdlak, istwet, max_lunit)
+
+    call mpp_varcon_init_column(icol_roof, icol_sunwall, icol_shadewall, &
+      icol_road_imperv, icol_road_perv)
+
+    call mpp_varctl_init_vsfm(use_vsfm, vsfm_use_dynamic_linesearch, &
+      vsfm_include_seepage_bc, lateral_connectivity, vsfm_satfunc_type, &
+      vsfm_lateral_model_type)
+
+    call mpp_varctl_init_petsc_thermal(use_petsc_thermal_model)
+
+    call get_proc_bounds(bounds_proc)
+    call mpp_bounds_init_proc_bounds(bounds_proc%begg    , bounds_proc%endg,     &
+                                     bounds_proc%begg_all, bounds_proc%endg_all, &
+                                     bounds_proc%begc    , bounds_proc%endc,     &
+                                     bounds_proc%begc_all, bounds_proc%endc_all)
+
+    call mpp_bounds_init_clump(get_proc_clumps())
 
     call initialize_vsfm()
     call initialize_petsc_thermal_model()
@@ -1035,7 +1071,7 @@ contains
 
     nc = 1
 
-    call MPPVSFMALM_Init()
+    call MPPVSFMALM_Init(iam)
 
     ! PreSolve: Allows saturation value to be computed based on ICs and stored
     !           in GE auxvar
@@ -1179,7 +1215,7 @@ contains
 
 #ifdef USE_PETSC_LIB
 
-    call MPPThermalTBasedALM_Init()
+    call MPPThermalTBasedALM_Init(iam)
 
 #else
 
