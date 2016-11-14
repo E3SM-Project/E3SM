@@ -1042,14 +1042,14 @@
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
 	<OS>LINUX</OS>
-	<RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
+	<RUNDIR>/lustre/scratch2/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch2/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch2/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch2/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch2/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+	<CCSM_BASELINE>/lustre/scratch2/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+	<CESMSCRATCHROOT>/lustre/scratch2/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>
