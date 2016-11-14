@@ -101,8 +101,7 @@ GetOptions(
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
     "casebuild=s"   => \$opts{'casebuild'},
-    "cimeroot=s"    => \$opts{'cimeroot'}
-
+    "cimeroot=s"    => \$opts{'cimeroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
     "ocn_grid=s"    => \$opts{'ocn_grid'},
     "date_stamp=s"  => \$opts{'date_stamp'},
