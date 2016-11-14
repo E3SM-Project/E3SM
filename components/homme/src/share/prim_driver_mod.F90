@@ -40,7 +40,7 @@ module prim_driver_mod
   type (ColumnModel_t), allocatable :: cm(:) ! (nthreads)
 #endif
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
-  type (derivative_t), allocatable   :: deriv(:) ! derivative struct (nthreads)
+  type (derivative_t)  :: deriv1
 
 contains
 
@@ -204,10 +204,7 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    allocate(deriv(0:n_domains-1))
-    do ith=0,n_domains-1
-       call derivinit(deriv(ith))
-    enddo
+    call derivinit(deriv1)
 
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
@@ -619,13 +616,13 @@ contains
       eta_ave_w = 1d0 ! divide by qsplit for mean flux interpolation
 
       call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv1, tstep, tl, nets, nete)
 
       call initialize(pre_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv1, tstep, tl, nets, nete)
 
       call initialize(jac_object, lenx, elem, hvcoord, .false., &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv1, tstep, tl, nets, nete)
 
 !      pc_elem = elem
 !      jac_elem = elem
@@ -693,7 +690,7 @@ contains
 
       ! runtype=0: initial run
       if (hybrid%masterthread) write(iulog,*) ' runtype: initial run'
-      call set_test_initial_conditions(elem,deriv(hybrid%ithr),hybrid,hvcoord,tl,nets,nete)
+      call set_test_initial_conditions(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
       if (hybrid%masterthread) write(iulog,*) '...done'
 
       ! scale PS to achieve prescribed dry mass
@@ -803,7 +800,7 @@ contains
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
 
-    call solver_init2(elem(:), deriv(hybrid%ithr))
+    call solver_init2(elem(:), deriv1)
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
   end subroutine prim_init2
@@ -1106,12 +1103,11 @@ contains
     n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
                  ! FV tracers still carry 3 timelevels
                  ! SE tracers only carry 2 timelevels
-    call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
+    call prim_advance_exp(elem, deriv1, hvcoord,   &
          hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
-       call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-            hybrid, dt, tl, nets, nete, .false.)
+       call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
     call t_stopf("prim_step_dyn")
@@ -1137,7 +1133,7 @@ contains
     call t_startf("prim_step_advec")
     if (qsize > 0) then
       call t_startf("PAT_remap")
-      call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,hybrid,dt_q,tl,nets,nete)
+      call Prim_Advec_Tracers_remap(elem, deriv1,hvcoord,hybrid,dt_q,tl,nets,nete)
       call t_stopf("PAT_remap")
     end if
     call t_stopf("prim_step_advec")
@@ -1190,15 +1186,15 @@ contains
     minf=-9e9
     if (hybrid%masterthread) &
        write(iulog,*) "Applying hyperviscosity smoother to PHIS"
-    call smooth_phis(phis,elem,hybrid,deriv(hybrid%ithr),nets,nete,minf,smooth_phis_numcycle)
+    call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle)
 
     minf=0
     if (hybrid%masterthread) &
        write(iulog,*) "Applying hyperviscosity smoother to SGH"
-    call smooth_phis(sghdyn,elem,hybrid,deriv(hybrid%ithr),nets,nete,minf,smooth_sgh_numcycle)
+    call smooth_phis(sghdyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
     if (hybrid%masterthread) &
        write(iulog,*) "Applying hyperviscosity smoother to SGH30"
-    call smooth_phis(sgh30dyn,elem,hybrid,deriv(hybrid%ithr),nets,nete,minf,smooth_sgh_numcycle)
+    call smooth_phis(sgh30dyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
 
     end subroutine smooth_topo_datasets
 
