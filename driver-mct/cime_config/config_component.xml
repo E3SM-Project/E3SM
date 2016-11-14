@@ -1109,7 +1109,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,null</valid_values>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.gis20km,mpas.ais20km,null</valid_values>
     <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
@@ -3535,33 +3535,6 @@
       when building the ACME executable. This occurs if this variable
       is set to TRUE. Note that is only available on a limited set of
       machines/compilers.</desc>
-  </entry>
-
-  <entry id="MPASLI_CONFIG_OPTS">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>build_component_mpasli</group>
-    <file>env_build.xml</file>
-    <desc>MPASLI configure options. Currently not used</desc>
-  </entry>
-
-  <entry id="MPASLI_USE_ALBANY">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>build_component_mpasli</group>
-    <file>env_build.xml</file>
-    <desc>TRUE implies MPASLI is built with support for the Albany
-      library The first-order velocity solver in MPASLI uses the
-      Albany library.  In order to use that velocity solver, MPASLI
-      must be built with Albany support and linking to Albany must
-      occur when building the ACME executable.  This occurs if this
-      variable is set to TRUE.  Note that is only available on a
-      limited set of machines/compilers.  This must remain FALSE to
-      run MPASLI on a machine that does not have Albany, or for which
-      the CIME scripts are not aware of the existence of
-      Albany.</desc>
   </entry>
 
   <entry id="GLC_TWO_WAY_COUPLING">
