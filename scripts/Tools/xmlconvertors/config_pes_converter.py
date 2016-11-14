@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """
 config_pes_converter.py -- convert (or verify) config_pesfrom CIME2 format
-    to CIME4
+    to CIME5
 
 The location of these files are needed by the script:
     CIME2: cime/machines-acme/config_pes.xml
-    CIME4: cime_config/acme/allactive/config_pesall.xml
+    CIME5: cime_config/acme/allactive/config_pesall.xml
 """
 
 
@@ -26,17 +26,17 @@ def parse_command_line(args):
 
     # Set command line options
     parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 repository")
-    parser.add_argument("-cime4file", "--cime4file", help="location of config_grids.xml file in CIME4 repository")
+    parser.add_argument("-cime5file", "--cime5file", help="location of config_grids.xml file in CIME5 repository")
 
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    if args.cime2file is None or args.cime4file is None:
+    if args.cime2file is None or args.cime5file is None:
         parser.print_help()
         exit()
 
-    return args.cime2file, args.cime4file
+    return args.cime2file, args.cime5file
 
 class PesNode(grid_xml_converter.DataNode):
     def __init__(self,root):
@@ -59,7 +59,7 @@ class PesNode(grid_xml_converter.DataNode):
                                 self.data['pesize'], self.data['compset'])
 
 
-    def to_cime4(self):
+    def to_cime5(self):
         gridnode = ET.Element('grid')
         self.setattrib(gridnode, 'name', 'gridname')
         machnode = ET.SubElement(gridnode, 'mach')
@@ -98,7 +98,7 @@ class PesNode(grid_xml_converter.DataNode):
                     return False
         return True
 
-class Cime4PesNode(PesNode):
+class Cime5PesNode(PesNode):
     def set_data(self, xmlnode):
         for d in ['ntasks', 'nthrds', 'rootpe']:
             self.data[d] = {}
@@ -192,7 +192,7 @@ class PesTree(grid_xml_converter.DataTree):
         
     def populate(self):
         xmlnodes = self.root.findall('grid')
-        nodeclass = Cime4PesNode
+        nodeclass = Cime5PesNode
 
         if len(xmlnodes) == 0:
             xmlnodes = self.root.findall('pes')
@@ -210,10 +210,10 @@ class PesTree(grid_xml_converter.DataTree):
         for a, b in addlist:
             if b is not None:
                 root.append(ET.Element('REPLACE'))
-                root.append(b.to_cime4())
+                root.append(b.to_cime5())
                 root.append(ET.Element('WITH'))
             if a is not None:
-                root.append(a.to_cime4())
+                root.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
             run_cmd("%s --format --output %s -"%(xmllint, newfilename),
@@ -267,14 +267,14 @@ def diff_tree(atree, btree):
 
 
 def pes_compare():
-    cime2file, cime4file = parse_command_line(sys.argv)
+    cime2file, cime5file = parse_command_line(sys.argv)
 
     cime2pestree = PesTree(cime2file)
-    cime4pestree = PesTree(cime4file)
+    cime5pestree = PesTree(cime5file)
 
     LOGGER.info("Comparing config_pes files...")
-    oklist, fixlist, addlist = diff_tree(cime2pestree, cime4pestree)
-    cime4pestree.postprocess(fixlist, addlist, "tempgrid.xml", cime4file,
+    oklist, fixlist, addlist = diff_tree(cime2pestree, cime5pestree)
+    cime5pestree.postprocess(fixlist, addlist, "tempgrid.xml", cime5file,
                              "badgrid.xml")
 
 if __name__ == "__main__":
