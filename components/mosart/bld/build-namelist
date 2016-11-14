@@ -144,12 +144,12 @@ EOF
 # Make sure we can find required perl modules, definition, and defaults files.
 # Look for them under the directory that contains the configure script.
 
-my $cesmroot = abs_path( "$cfgdir/../../../");
-my $perl5dir = "$cesmroot/cime/utils/perl5lib";
+my $srcroot = abs_path( "$cfgdir/../../../");
+my $perl5dir = "$srcroot/cime/utils/perl5lib";
 
 # The root directory to cesm utils Tools
 
-my $SetupTools_dir = "$cesmroot/cime/scripts/Tools";
+my $SetupTools_dir = "$perl5dir/Config";
 (-f "$SetupTools_dir/SetupTools.pm")  or
     fatal_error("Cannot find perl module \"SetupTools.pm\" in directory\n" .
                 "\"$SetupTools_dir\" \n");
@@ -204,7 +204,7 @@ require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
-require SetupTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the MOSART config_cache.xml file. 
@@ -286,7 +286,7 @@ my $ROF_NCPL        = $xmlvars{'ROF_NCPL'};
 
 (-d $DIN_LOC_ROOT)  or  mkdir $DIN_LOC_ROOT;
 if ($print>=2) { 
-    print "CESM inputdata root directory: $DIN_LOC_ROOT \n"; 
+    print "model inputdata root directory: $DIN_LOC_ROOT \n"; 
 }
 
 ####################################
@@ -376,7 +376,7 @@ sub add_default {
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
 #  $defaults          -- the namelist defaults object
-#  $DIN_LOC_ROOT      -- CESM inputdata root directory
+#  $DIN_LOC_ROOT      -- model inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -433,7 +433,7 @@ sub add_default {
 
        # The default values for input pathnames are relative.  If the namelist
        # variable is defined to be an absolute pathname, then prepend
-       # the CESM inputdata root directory.
+       # the model inputdata root directory.
        if (not defined $opts{'no_abspath'}) {
 	   if (defined $opts{'set_abspath'}) {
 	       $val = set_abs_filepath($val, $opts{'set_abspath'});
