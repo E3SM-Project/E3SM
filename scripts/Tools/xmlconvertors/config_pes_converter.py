@@ -178,16 +178,15 @@ class PesTree(grid_xml_converter.DataTree):
     def __init__(self, xmlfilename):
         # original xml file has bad comments
         import re, StringIO
-        xmlfile = open(xmlfilename,'r')
-        t1 = xmlfile.read()
-        xmlfile.close()
-        t2 = re.sub(r'(?<=<!--)([ -]+)',
-                    lambda x: x.group(0).replace('-',' '),t1)
-        t3 = re.sub(r'([ -]+)(?=-->)',
-                    lambda x: x.group(0).replace('-',' '),t2)
-        tempxml = StringIO.StringIO(t3)
-        super(PesTree, self).__init__(tempxml)
-        tempxml.close()
+        with open(xmlfilename,'r') as xmlfile:
+            t1 = xmlfile.read()
+            t2 = re.sub(r'(?<=<!--)([ -]+)',
+                        lambda x: x.group(0).replace('-',' '), t1)
+            t3 = re.sub(r'([ -]+)(?=-->)',
+                        lambda x: x.group(0).replace('-',' '), t2)
+            tempxml = StringIO.StringIO(t3)
+            super(PesTree, self).__init__(tempxml)
+            tempxml.close()
         
         
     def populate(self):
