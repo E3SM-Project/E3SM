@@ -34,10 +34,10 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values>
-      <value compset="2000.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
-      <value compset="1850.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG1850CN.f09_g16.002_c121001</value>
-      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
-      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BGRCP85CN.f09_g16.002_c121001</value>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG1850CN.f09_g16.002_c121001</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BGRCP85CN.f09_g16.002_c121001</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -48,10 +48,10 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <values>
-      <value compset="2000.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">b.e10.BG20TRCN.f09_g16.002</value>
-      <value compset="1850.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">b.e10.BG1850CN.f09_g16.002</value>
-      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">b.e10.BG20TRCN.f09_g16.002</value>
-      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">b.e10.BGRCP85CN.f09_g16.002</value>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BG1850CN.f09_g16.002</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BG20TRCN.f09_g16.002</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">b.e10.BGRCP85CN.f09_g16.002</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -62,10 +62,10 @@
     <type>integer</type>
     <default_value>1</default_value>
     <values>
-      <value compset="2000.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1</value>
-      <value compset="1850.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1</value>
-      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1850</value>
-      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2006</value>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1850</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2006</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -76,10 +76,10 @@
     <type>integer</type>
     <default_value>1</default_value>
     <values>
-      <value compset="2000.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1976</value>
-      <value compset="1850.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">26</value>
-      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1850</value>
-      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2006</value>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1976</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">26</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">1850</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2006</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -90,10 +90,10 @@
     <type>integer</type>
     <default_value>1</default_value>
     <values>
-      <value compset="2000.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2005</value>
-      <value compset="1850.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">100</value>
-      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2005</value>
-      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2100</value>
+      <value compset="2000.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2005</value>
+      <value compset="1850.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">100</value>
+      <value compset="HIST.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2005</value>
+      <value compset="RCP8.*_DLND%SCPL.*_CISM" grid="l%0.9x1.25">2100</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
