@@ -283,11 +283,12 @@ class DataTree(object):
     def __iter__(self):
         return self
 
-    def postprocess(self, fixlist, addlist, newxmlfile, badxmlfile):
+    def postprocess(self, fixlist, addlist, newxmlfile, currentxmlfile,
+                    badxmlfile):
         if len(addlist) > 0:
             logger.info("\n\nWriting suggested nodes to %s" % newxmlfile)
             logger.info("Copy 'grid' nodes into corresponding location in")
-            logger.info("cime_config/acme/config_grids.xml")
+            logger.info(currentxmlfile)
             self.writexml(addlist,newxmlfile)
             self.writexml(fixlist,badxmlfile)
             if len(fixlist) > 0:
@@ -437,13 +438,16 @@ def grid_compare():
 
     logger.info("Comparing grid nodes...")
     oklist, fixlist, addlist = diff_tree(cime2gridtree, cime4gridtree)
-    cime4gridtree.postprocess(fixlist, addlist, "tempgrid.xml","badgrid.xml")
+    cime4gridtree.postprocess(fixlist, addlist, "tempgrid.xml", cime4file,
+                              "badgrid.xml")
 
     oklist, fixlist, addlist = diff_tree(cime2domaintree, cime4domaintree)
-    cime4domaintree.postprocess(fixlist, addlist, "tempdomain.xml","baddomain.xml")
+    cime4domaintree.postprocess(fixlist, addlist, "tempdomain.xml",
+                                cime4file, "baddomain.xml")
 
     oklist, fixlist, addlist = diff_tree(cime2gridmaptree, cime4gridmaptree)
-    cime4gridmaptree.postprocess(fixlist, addlist, "tempgridmap.xml","badgridmap.xml")
+    cime4gridmaptree.postprocess(fixlist, addlist, "tempgridmap.xml",
+                                 cime4file, "badgridmap.xml")
 
 if __name__=="__main__":
     grid_compare()

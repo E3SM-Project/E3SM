@@ -5,9 +5,7 @@ config_pes_converter.py -- convert (or verify) config_pesfrom CIME2 format
 
 The location of these files are needed by the script:
     CIME2: cime/machines-acme/config_pes.xml
-           cime/scripts/config_pes.xml
-    CIME4: cime_config/acme/allactive/config_pes.xml
-           driver_cpl/cime_config/config_pes.xml
+    CIME4: cime_config/acme/allactive/config_pesall.xml
 """
 
 
@@ -41,6 +39,10 @@ def parse_command_line(args):
     return args.cime2file, args.cime4file
 
 class PesNode(grid_xml_converter.DataNode):
+    def __init__(self,root):
+        self.ignore = False
+        super(PesNode, self).__init__(root)
+
     def __str__(self):
         return ET.tostring(self.xmlnode)
 
@@ -118,9 +120,6 @@ class Cime4PesNode(PesNode):
 class Cime2PesNode(PesNode):
     ISDEFAULT = "-999999"
     DEFAULTS = {'ntasks':'16', 'nthrds':'1', 'rootpe':'0'}
-    def __init__(self):
-        self.ignore = False
-
     def set_data(self, xmlnode):
         # Set Defaults
         for d in ['ntasks', 'nthrds', 'rootpe']:
@@ -176,9 +175,21 @@ class Cime2PesNode(PesNode):
 
 
 class PesTree(grid_xml_converter.DataTree):
-    def __init__(self):
-        self.ignore = False
-
+    def __init__(self, xmlfilename):
+        # original xml file has bad comments
+        import re, StringIO
+        xmlfile = open(xmlfilename,'r')
+        t1 = xmlfile.read()
+        xmlfile.close()
+        t2 = re.sub(r'(?<=<!--)([ -]+)',
+                    lambda x: x.group(0).replace('-',' '),t1)
+        t3 = re.sub(r'([ -]+)(?=-->)',
+                    lambda x: x.group(0).replace('-',' '),t2)
+        tempxml = StringIO.StringIO(t3)
+        super(PesTree, self).__init__(tempxml)
+        tempxml.close()
+        
+        
     def populate(self):
         xmlnodes = self.root.findall('grid')
         nodeclass = Cime4PesNode
@@ -263,7 +274,8 @@ def pes_compare():
 
     LOGGER.info("Comparing config_pes files...")
     oklist, fixlist, addlist = diff_tree(cime2pestree, cime4pestree)
-    cime4pestree.postprocess(fixlist, addlist, "tempgrid.xml","badgrid.xml")
+    cime4pestree.postprocess(fixlist, addlist, "tempgrid.xml", cime4file,
+                             "badgrid.xml")
 
 if __name__ == "__main__":
     pes_compare()
