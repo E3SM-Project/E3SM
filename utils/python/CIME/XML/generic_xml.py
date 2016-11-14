@@ -28,7 +28,8 @@ class GenericXML(object):
             # If file is defined and exists, read it
             self.filename = infile
             self.read(infile)
-            if schema is not None:
+
+            if schema is not None and self.get_version() != "1.0":
                 self.validate_xml_file(infile, schema)
         else:
             # if file does not exist create a root xml element
