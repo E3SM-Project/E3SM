@@ -196,6 +196,7 @@
 <atm2ocn_vmapname>$ATM2OCN_VMAPNAME</atm2ocn_vmapname>
 <ocn2atm_fmapname>$OCN2ATM_FMAPNAME</ocn2atm_fmapname>
 <ocn2atm_smapname>$OCN2ATM_SMAPNAME</ocn2atm_smapname>
+<ocn2rof_fmapname>$ocn2rof_FMAPNAME</ocn2rof_fmapname>
 <atm2lnd_fmapname>$ATM2LND_FMAPNAME</atm2lnd_fmapname>
 <atm2lnd_smapname>$ATM2LND_SMAPNAME</atm2lnd_smapname>
 <lnd2atm_fmapname>$LND2ATM_FMAPNAME</lnd2atm_fmapname>
@@ -220,6 +221,7 @@
 <atm2ocn_vmaptype>X</atm2ocn_vmaptype>
 <ocn2atm_fmaptype>Y</ocn2atm_fmaptype>
 <ocn2atm_smaptype>Y</ocn2atm_smaptype>
+<ocn2rof_fmaptype>Y</ocn2rof_fmaptype>
 <atm2lnd_fmaptype>X</atm2lnd_fmaptype>
 <atm2lnd_smaptype>X</atm2lnd_smaptype>
 <lnd2atm_fmaptype>Y</lnd2atm_fmaptype>
@@ -244,6 +246,7 @@
 <atm2ocn_vmaptype BFBFLAG="TRUE">X</atm2ocn_vmaptype>
 <ocn2atm_fmaptype BFBFLAG="TRUE">X</ocn2atm_fmaptype>
 <ocn2atm_smaptype BFBFLAG="TRUE">X</ocn2atm_smaptype>
+<ocn2rof_fmaptype BFBFLAG="TRUE">X</ocn2rof_fmaptype>
 <atm2lnd_fmaptype BFBFLAG="TRUE">X</atm2lnd_fmaptype>
 <atm2lnd_smaptype BFBFLAG="TRUE">X</atm2lnd_smaptype>
 <lnd2atm_fmaptype BFBFLAG="TRUE">X</lnd2atm_fmaptype>

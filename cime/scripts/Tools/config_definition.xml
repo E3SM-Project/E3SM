@@ -935,6 +935,24 @@
 	    ></entry>
      -->
 
+  <entry id="OCN2ROF_FMAPNAME" 
+	 type="char"
+	 valid_values="" 
+	 value="idmap" 
+	 group="run_domain"
+	 sdesc="ocn2rof flux mapping file"
+	 ></entry>
+
+  <!--- 
+     <entry id="OCN2ROF_FMAPTYPE" 
+	    type="char"
+	    valid_values="X,Y" 
+	    value="Y" 
+	    group="run_domain"
+	    sdesc="ocn2rof flux mapping file decomp type"
+	    ></entry>
+     -->
+
   <entry id="ROF2OCN_RMAPNAME" 
 	 type="char"
 	 valid_values="" 

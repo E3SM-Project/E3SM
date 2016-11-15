@@ -2175,6 +2175,27 @@ grid.
 </entry>
 
 <entry 
+id="ocn2rof_fmapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+ocn to atm mapping file for fluxes
+</entry>
+
+<entry 
+id="ocn2rof_fmaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
 id="ocn2atm_smapname"
 type="char*256"
 category="mapping" 
