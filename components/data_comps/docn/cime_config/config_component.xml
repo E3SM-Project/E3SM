@@ -99,12 +99,12 @@
       <value compset="DOCN%DOM" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset="DOCN%DOM" grid="a%0.47x0.63.*_oi%0.47x0.63"				>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_c061106.nc</value>
       <value compset="DOCN%DOM" grid="a%0.23x0.31.*_oi%0.23x0.31"				>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_c110526.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid=".+"				>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_1850_2012_c130411.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%T31.*_oi%T31"			>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_48x96_1850_2012_c130411.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%1.9x2.5.*_oi%1.9x2.5"		>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_1850_2012_c130411.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%0.9x1.25.*_oi%0.9x1.25"		>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_1850_2012_c130411.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_1850_2012_c130411.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%0.23x0.31.*_oi%0.23x0.31"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_1850_2012_c130411.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid=".+"				>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_1850_2012_c130411.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%T31.*_oi%T31"			>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_48x96_1850_2012_c130411.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%1.9x2.5.*_oi%1.9x2.5"		>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_1850_2012_c130411.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.9x1.25.*_oi%0.9x1.25"		>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_1850_2012_c130411.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_1850_2012_c130411.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.23x0.31.*_oi%0.23x0.31"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_1850_2012_c130411.nc</value>
       <value compset="1850_" grid=".+"								>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_pi_c101029.nc</value>
       <value compset="1850_" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_48x96_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_pi_c101028.nc</value>
@@ -130,12 +130,12 @@
       <value compset="DOCN%DOM" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
       <value compset="DOCN%DOM" grid="a%0.47x0.63.*_oi%0.47x0.63"				>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.47x0.63_gx1v6_090408.nc</value>
       <value compset="DOCN%DOM" grid="a%0.23x0.31.*_oi%0.23x0.31"				>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.23x0.31_gx1v6_101108.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid=".+"				>$DIN_LOC_ROOT/ocn/docn7/domain.ocn.1x1.111007.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%T31.*_oi%T31"			>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.48x96_gx3v7_100114.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%1.9x2.5.*_oi%1.9x2.5"		>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.1.9x2.5_gx1v6_090403.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%0.9x1.25.*_oi%0.9x1.25"		>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.47x0.63_gx1v6_090408.nc</value>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid="a%0.23x0.31.*_oi%0.23x0.31"	>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.23x0.31_gx1v6_101108.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid=".+"				>$DIN_LOC_ROOT/ocn/docn7/domain.ocn.1x1.111007.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%T31.*_oi%T31"			>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.48x96_gx3v7_100114.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%1.9x2.5.*_oi%1.9x2.5"		>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.1.9x2.5_gx1v6_090403.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.9x1.25.*_oi%0.9x1.25"		>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.47x0.63_gx1v6_090408.nc</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.23x0.31.*_oi%0.23x0.31"	>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.23x0.31_gx1v6_101108.nc</value>
       <value compset="1850" grid=".+"								>$DIN_LOC_ROOT/ocn/docn7/domain.ocn.1x1.111007.nc</value>
       <value compset="1850" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.48x96_gx3v7_100114.nc</value>
       <value compset="1850" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.1.9x2.5_gx1v6_090403.nc</value>
@@ -156,7 +156,7 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <values>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)">1850</value>
+      <value compset="(AMIP_|20TR_|HIST_|5505_|PIPD_|%TSCH)">1850</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
@@ -177,7 +177,7 @@
     <valid_values></valid_values>
     <default_value>0</default_value>
     <values>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)">1850</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)">1850</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
@@ -193,7 +193,7 @@
     <valid_values></valid_values>
     <default_value>0</default_value>
     <values>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)">2012</value>
+      <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)">2012</value>
       <value compset=".*WW3" grid="a%ww3a">2000</value>
     </values>
     <group>run_component_cam_sstice</group>
