@@ -2504,14 +2504,19 @@ contains
          block
 
     type(MPAS_pool_type), pointer :: &
-         velocitySolverPool, &
          velocityWeakPool, &
-         velocityVariationalPool
+         velocityVariationalPool, &
+         meshPool
 
     real(kind=RKIND), dimension(:), pointer :: &
-         replacementPressure, &
-         principalStress1, &
-         principalStress2
+         replacementPressureWeak, &
+         principalStress1Weak, &
+         principalStress2Weak
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         replacementPressureVar, &
+         principalStress1Var, &
+         principalStress2Var
 
     real(kind=RKIND), dimension(:), pointer :: &
          stress11Weak, &
@@ -2523,8 +2528,15 @@ contains
          stress22Var, &
          stress12Var
 
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
     integer, pointer :: &
          nCellsSolve
+
+    integer :: &
+         iCell, &
+         iVertexOnCell
 
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme
@@ -2536,44 +2548,57 @@ contains
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
-
-       call MPAS_pool_get_array(velocitySolverPool, "replacementPressure", replacementPressure)
-       call MPAS_pool_get_array(velocitySolverPool, "principalStress1", principalStress1)
-       call MPAS_pool_get_array(velocitySolverPool, "principalStress2", principalStress2)
-
        ! calculate the principal stresses
        if (trim(config_stress_divergence_scheme) == "weak") then
+
+          call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
 
           call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11Weak)
           call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22Weak)
           call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12Weak)
+          call MPAS_pool_get_array(velocityWeakPool, "replacementPressure", replacementPressureWeak)
+          call MPAS_pool_get_array(velocityWeakPool, "principalStress1", principalStress1Weak)
+          call MPAS_pool_get_array(velocityWeakPool, "principalStress2", principalStress2Weak)
 
-          call principal_stresses(&
-               nCellsSolve, &
-               principalStress1, &
-               principalStress2, &
-               stress11Weak, &
-               stress22Weak, &
-               stress12Weak, &
-               replacementPressure)
+          do iCell = 1, nCellsSolve
+
+             call principal_stresses(&
+                  principalStress1Weak(iCell), &
+                  principalStress2Weak(iCell), &
+                  stress11Weak(iCell), &
+                  stress22Weak(iCell), &
+                  stress12Weak(iCell), &
+                  replacementPressureWeak(iCell))
+
+          enddo ! iCell
 
        else if (trim(config_stress_divergence_scheme) == "variational") then
+
+          call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+          call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
 
           call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11Var)
           call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22Var)
           call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12Var)
+          call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressureVar)
+          call MPAS_pool_get_array(velocityVariationalPool, "principalStress1", principalStress1Var)
+          call MPAS_pool_get_array(velocityVariationalPool, "principalStress2", principalStress2Var)
 
-          call principal_stresses(&
-               nCellsSolve, &
-               principalStress1, &
-               principalStress2, &
-               stress11Var(1,:), &
-               stress22Var(1,:), &
-               stress12Var(1,:), &
-               replacementPressure)
+          do iCell = 1, nCellsSolve
+             do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+                call principal_stresses(&
+                     principalStress1Var(iVertexOnCell,iCell), &
+                     principalStress2Var(iVertexOnCell,iCell), &
+                     stress11Var(iVertexOnCell,iCell), &
+                     stress22Var(iVertexOnCell,iCell), &
+                     stress12Var(iVertexOnCell,iCell), &
+                     replacementPressureVar(iVertexOnCell,iCell))
+
+             enddo ! iVertexOnCell
+          enddo ! iCell
 
        endif
 
@@ -2595,7 +2620,6 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine principal_stresses(&
-       nPoints, &
        principalStress1, &
        principalStress2, &
        stress11, &
@@ -2606,14 +2630,11 @@ contains
     use cice_constants, only: &
          cicePuny
 
-    integer, intent(in) :: &
-         nPoints
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
+    real(kind=RKIND), intent(out) :: &
          principalStress1, & !< Output:
          principalStress2    !< Output:
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
+    real(kind=RKIND), intent(in) :: &
          stress11, &         !< Input:
          stress22, &         !< Input:
          stress12, &         !< Input:
@@ -2622,31 +2643,24 @@ contains
     real(kind=RKIND) :: &
          sqrtContents
 
-    integer :: &
-         iPoint
+    if (replacementPressure > cicePuny) then
 
-    do iPoint = 1, nPoints
+       sqrtContents = (stress11 + stress22)**2 - &
+                      4.0_RKIND * stress11 * stress22 + &
+                      4.0_RKIND * stress12**2
 
-       if (replacementPressure(iPoint) > cicePuny) then
+       principalStress1 = 0.5_RKIND * (stress11 + stress22) + 0.5_RKIND * sqrt(sqrtContents)
+       principalStress2 = 0.5_RKIND * (stress11 + stress22) - 0.5_RKIND * sqrt(sqrtContents)
 
-          sqrtContents = (stress11(iPoint) + stress22(iPoint))**2 - &
-                         4.0_RKIND * stress11(iPoint) * stress22(iPoint) + &
-                         4.0_RKIND * stress12(iPoint)**2
+       principalStress1 = principalStress1 / replacementPressure
+       principalStress2 = principalStress2 / replacementPressure
 
-          principalStress1(iPoint) = 0.5_RKIND * (stress11(iPoint) + stress22(iPoint)) + 0.5_RKIND * sqrt(sqrtContents)
-          principalStress2(iPoint) = 0.5_RKIND * (stress11(iPoint) + stress22(iPoint)) - 0.5_RKIND * sqrt(sqrtContents)
+    else
 
-          principalStress1(iPoint) = principalStress1(iPoint) / replacementPressure(iPoint)
-          principalStress2(iPoint) = principalStress2(iPoint) / replacementPressure(iPoint)
+       principalStress1 = 1.0e30_RKIND
+       principalStress2 = 1.0e30_RKIND
 
-       else
-
-          principalStress1(iPoint) = 1.0e30_RKIND
-          principalStress2(iPoint) = 1.0e30_RKIND
-
-       endif
-
-    enddo ! iPoint
+    endif
 
   end subroutine principal_stresses
 
