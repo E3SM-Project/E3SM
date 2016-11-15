@@ -1025,18 +1025,46 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler MACH="corip1" COMPILER="intel">
-  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+<compiler MACH="cori-haswell" COMPILER="intel">
   <CFLAGS>
+    <append> -xCORE-AVX2 </append>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CPPDEFS>
+    <append> -DHAVE_SLASHPROC </append>
     <append MODEL="gptl"> -DHAVE_PAPI </append>
   </CPPDEFS>
   <FFLAGS>
+    <append> -xCORE-AVX2 </append>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <PETSC_PATH><env>PETSC_DIR</env></PETSC_PATH>
+  <SLIBS>
+    <append> -L<env>NETCDF_DIR</env> -lnetcdff -Wl,--as-needed,-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf </append>
+    <append> <env>MKLROOT</env>/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group <env>MKLROOT</env>/lib/intel64/libmkl_intel_lp64.a <env>MKLROOT</env>/lib/intel64/libmkl_core.a <env>MKLROOT</env>/lib/intel64/libmkl_sequential.a -Wl,--end-group <env>MKLROOT</env>/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="cori-knl" COMPILER="intel">
+  <CFLAGS>
+    <append> -xMIC-AVX512 </append>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DHAVE_SLASHPROC </append>
+    <append MODEL="gptl"> -DHAVE_PAPI </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append> -xMIC-AVX512 </append>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
   <MPICC> cc </MPICC>
