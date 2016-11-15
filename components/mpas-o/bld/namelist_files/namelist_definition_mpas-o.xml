@@ -1194,6 +1194,22 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_frazil_in_open_ocean" type="logical"
+	category="frazil_ice" group="frazil_ice">
+If frazil formation is used, controls if frazil fluxes are computed in the open ocean (as opposed to under land ice).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_under_land_ice" type="logical"
+	category="frazil_ice" group="frazil_ice">
+If frazil formation is used, controls if frazil fluxes are computed under land ice.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_frazil_heat_of_fusion" type="real"
 	category="frazil_ice" group="frazil_ice">
 Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME.
@@ -1254,7 +1270,7 @@ Default: Defined in namelist_defaults.xml
 	category="frazil_ice" group="frazil_ice">
 Maximum freezing temperature for the creation of frazil
 
-Valid values: Any positive real number.
+Valid values: Any real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1468,41 +1484,81 @@ Valid values: Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_freezing_temperature_coeff_0" type="real"
+<entry id="config_open_ocean_freezing_temperature_coeff_0" type="real"
 	category="eos" group="eos">
-The freezing temperature at zero pressure.
+The freezing temperature at zero pressure in open ocean.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_freezing_temperature_coeff_S" type="real"
+<entry id="config_open_ocean_freezing_temperature_coeff_S" type="real"
 	category="eos" group="eos">
-The coefficient for the term proportional to salinity in the freezing temperature.
+The coefficient for the term proportional to salinity in the freezing temperature in the open ocean.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_freezing_temperature_coeff_p" type="real"
+<entry id="config_open_ocean_freezing_temperature_coeff_p" type="real"
 	category="eos" group="eos">
-The coefficient for the term proportional to the (limited) pressure in the freezing temperature.
+The coefficient for the term proportional to the (limited) pressure in the freezing temperature in the open ocean.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_freezing_temperature_coeff_pS" type="real"
+<entry id="config_open_ocean_freezing_temperature_coeff_pS" type="real"
 	category="eos" group="eos">
-The coefficient for the term proportional to salinity times pressure in the freezing temperature.
+The coefficient for the term proportional to salinity times pressure in the freezing temperature in the open ocean.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_freezing_temperature_reference_pressure" type="real"
+<entry id="config_open_ocean_freezing_temperature_reference_pressure" type="real"
 	category="eos" group="eos">
-The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0.
+The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in the open ocean.
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_cavity_freezing_temperature_coeff_0" type="real"
+	category="eos" group="eos">
+The freezing temperature at zero pressure in land-ice cavities.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_cavity_freezing_temperature_coeff_S" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to salinity in the freezing temperature in land-ice cavities.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_cavity_freezing_temperature_coeff_p" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to the (limited) pressure in the freezing temperature in land-ice cavities.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_cavity_freezing_temperature_coeff_pS" type="real"
+	category="eos" group="eos">
+The coefficient for the term proportional to salinity times pressure in the freezing temperature in land-ice cavities.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_cavity_freezing_temperature_reference_pressure" type="real"
+	category="eos" group="eos">
+The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in land-ice cavities.
 
 Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
@@ -4726,6 +4782,177 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- isomip_plus -->
+
+<entry id="config_isomip_plus_vert_levels" type="integer"
+	category="isomip_plus" group="isomip_plus">
+Number of vertical levels in test case.
+
+Valid values: Any integer greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_vertical_level_distribution" type="char*1024"
+	category="isomip_plus" group="isomip_plus">
+The distribution of vertical levels, currently only constant (all equal thickness).
+
+Valid values: 'constant'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_max_bottom_depth" type="real"
+	category="isomip_plus" group="isomip_plus">
+Maximum depth of the ocean in the test case.
+
+Valid values: Any negative real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_minimum_levels" type="integer"
+	category="isomip_plus" group="isomip_plus">
+Minimum number of vertical levels in a column.
+
+Valid values: Any positive integer value greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_min_column_thickness" type="real"
+	category="isomip_plus" group="isomip_plus">
+Minimum thickness of the inital ocean column (to prevent 'drying').
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_min_ocean_fraction" type="real"
+	category="isomip_plus" group="isomip_plus">
+Minimum fraction of a cell that contains ocean (as opposed to land or grounded land ice) in order for it to be an active ocean cell.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_topography_file" type="char*1024"
+	category="isomip_plus" group="isomip_plus">
+Path to the topography initial condition file.
+
+Valid values: path/to/topography/file.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_init_top_temp" type="real"
+	category="isomip_plus" group="isomip_plus">
+Initial temperature at sea level.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_init_bot_temp" type="real"
+	category="isomip_plus" group="isomip_plus">
+Initial temperature in deepest cells.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_init_top_sal" type="real"
+	category="isomip_plus" group="isomip_plus">
+Initial salinity at sea level.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_init_bot_sal" type="real"
+	category="isomip_plus" group="isomip_plus">
+Initial salinity in deepest cells.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_restore_top_temp" type="real"
+	category="isomip_plus" group="isomip_plus">
+Restoring temperature at sea level.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_restore_bot_temp" type="real"
+	category="isomip_plus" group="isomip_plus">
+Restoring temperature in deepest cells.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_restore_top_sal" type="real"
+	category="isomip_plus" group="isomip_plus">
+Restoring salinity at sea level.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_restore_bot_sal" type="real"
+	category="isomip_plus" group="isomip_plus">
+Restoring salinity in deepest cells.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_restore_rate" type="real"
+	category="isomip_plus" group="isomip_plus">
+Restoring salinity in deepest cells.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_restore_evap_rate" type="real"
+	category="isomip_plus" group="isomip_plus">
+Evaporation rate used to maintain sea level near zero.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_restore_xMin" type="real"
+	category="isomip_plus" group="isomip_plus">
+Southern boundary of restoring region.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_restore_xMax" type="real"
+	category="isomip_plus" group="isomip_plus">
+Northern boundary of restoring region.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_coriolis_parameter" type="real"
+	category="isomip_plus" group="isomip_plus">
+Coriolis parameter for entrie domain.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_isomip_plus_effective_density" type="real"
+	category="isomip_plus" group="isomip_plus">
+Initial value for the effective density for entrie domain.
+
+Valid values: Any non-negative real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- tracer_forcing_activeTracers -->
 
 <entry id="config_use_activeTracers" type="logical"
@@ -4781,6 +5008,30 @@ Default: Defined in namelist_defaults.xml
 if true, transit time distribution forcing source is applied to tracers in 'activeTracers' category
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_surface_salinity_monthly_restoring" type="logical"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+if true, apply monthly salinity restoring
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_salinity_restoring_constant_piston_velocity" type="real"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+maximum allowable difference between surface salinity and climatology
+
+Valid values: any non-negative number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_salinity_restoring_max_difference" type="real"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+maximum allowable difference between surface salinity and climatology
+
+Valid values: any non-negative number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5996,130 +6247,130 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- AM_regionalStats -->
+<!-- AM_regionalStatsDaily -->
 
-<entry id="config_AM_regionalStats_enable" type="logical"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_enable" type="logical"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 If true, ocean analysis member regional stats is called.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_compute_on_startup" type="logical"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_compute_on_startup" type="logical"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 Logical flag determining if an analysis member computation occurs on start-up.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_write_on_startup" type="logical"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_write_on_startup" type="logical"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 Logical flag determining if an analysis member output occurs on start-up.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_compute_interval" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_compute_interval" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 Interval that determines frequency of computation for the regional stats analysis member.
 
 Valid values: Any valid time stamp, 'output_interval', or 'dt'.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_output_stream" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_output_stream" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 Name of stream the regional stats analysis member will operate on that contains the list of input fields (and will be modified to contain the output stats fields).
 
 Valid values: An existing output stream that will be read for input fields. Cannot be 'none', like other analysis members.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_restart_stream" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_restart_stream" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 Name of stream the regional stats analysis member will use for the mask/region data.
 
 Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as input_stream to ensure the masks are read on start or restart.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_input_stream" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_input_stream" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 Name of stream the regional stats analysis member will use for the mask/region data.
 
 Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as restart_stream to ensure the masks are read on start or restart.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_operation" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_operation" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 An operation describing the statistic to apply to all variables in the output stream.
 
-Valid values: An operation, where it can be 'avg', 'min', or 'max'.
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_region_type" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_region_type" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 The reduced dimension of the region masks that will be used during the regional stats operation. Needs to be the last dimension, and the same dimension as all of the reduced fields, weight fields, and masks.
 
 Valid values: The mask reduction dimension, where it can be 'cell' or 'vertex'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_region_group" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_region_group" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 The name of the group of region masks that will be used to subset the mesh during the regional stats operation.
 
 Valid values: a valid name in the region group names
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_1d_weighting_function" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_1d_weighting_function" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 An operation applied to every element in a region WITHOUT a vertical dimension, with a 1D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
 
 Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_2d_weighting_function" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_2d_weighting_function" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 An operation applied to every element in a region WITH a vertical dimension, with a 2D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
 
 Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_1d_weighting_field" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_1d_weighting_field" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 A 1D real field used in conjunction with the 1D weighting function, to be used as a weighting scale factor (like area).
 
 Valid values: 'none' if 1D weighting function is 'id', otherwise any valid 1D real field with the same horizontal dimensions as the region masks
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_2d_weighting_field" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_2d_weighting_field" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 A 2D real field used in conjunction with the 2D weighting function, to be used as a weighting scale factor (like area).
 
 Valid values: 'none' if weighting function is 'id', otherwise any valid 2D real field with the same horizontal dimensions as the region masks and the vertical mask (requires that there is a vertical mask and vertical dimension)
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_vertical_mask" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_vertical_mask" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 An additional 2D vertical integer mask field, which is used in conjunction with the regional masks. Used in cases when an input field has a second dimension that matches the vertical mask dimension.
 
 Valid values: 'none' if no vertical mask field is to be used, otherwise any integer 2D field with the configured second vertical dimension
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_regionalStats_vertical_dimension" type="char*1024"
-	category="AM_regionalStats" group="AM_regionalStats">
+<entry id="config_AM_regionalStatsDaily_vertical_dimension" type="char*1024"
+	category="AM_regionalStatsDaily" group="AM_regionalStatsDaily">
 The second dimension to be used for additional vertical mask.
 
 Valid values: 'none' if no vertical mask field is to be used, otherwise the name of the second dimension in the vertical mask field (where the first has to be the element dimension)
@@ -6127,98 +6378,788 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- AM_timeSeriesStats -->
+<!-- AM_regionalStatsWeekly -->
 
-<entry id="config_AM_timeSeriesStats_enable" type="logical"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-If true, ocean analysis member time series stats is called.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_AM_timeSeriesStats_compute_on_startup" type="logical"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+<entry id="config_AM_regionalStatsWeekly_enable" type="logical"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+If true, ocean analysis member regional stats is called.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_write_on_startup" type="logical"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_regionalStatsWeekly_compute_on_startup" type="logical"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_write_on_startup" type="logical"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
 Logical flag determining if an analysis member output occurs on start-up.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_compute_interval" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_regionalStatsWeekly_compute_interval" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+Interval that determines frequency of computation for the regional stats analysis member.
+
+Valid values: Any valid time stamp, 'output_interval', or 'dt'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_output_stream" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+Name of stream the regional stats analysis member will operate on that contains the list of input fields (and will be modified to contain the output stats fields).
+
+Valid values: An existing output stream that will be read for input fields. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_restart_stream" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as input_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_input_stream" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as restart_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_operation" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+An operation describing the statistic to apply to all variables in the output stream.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_region_type" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+The reduced dimension of the region masks that will be used during the regional stats operation. Needs to be the last dimension, and the same dimension as all of the reduced fields, weight fields, and masks.
+
+Valid values: The mask reduction dimension, where it can be 'cell' or 'vertex'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_region_group" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+The name of the group of region masks that will be used to subset the mesh during the regional stats operation.
+
+Valid values: a valid name in the region group names
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_1d_weighting_function" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+An operation applied to every element in a region WITHOUT a vertical dimension, with a 1D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_2d_weighting_function" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+An operation applied to every element in a region WITH a vertical dimension, with a 2D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_1d_weighting_field" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+A 1D real field used in conjunction with the 1D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if 1D weighting function is 'id', otherwise any valid 1D real field with the same horizontal dimensions as the region masks
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_2d_weighting_field" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+A 2D real field used in conjunction with the 2D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if weighting function is 'id', otherwise any valid 2D real field with the same horizontal dimensions as the region masks and the vertical mask (requires that there is a vertical mask and vertical dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_vertical_mask" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+An additional 2D vertical integer mask field, which is used in conjunction with the regional masks. Used in cases when an input field has a second dimension that matches the vertical mask dimension.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise any integer 2D field with the configured second vertical dimension
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsWeekly_vertical_dimension" type="char*1024"
+	category="AM_regionalStatsWeekly" group="AM_regionalStatsWeekly">
+The second dimension to be used for additional vertical mask.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise the name of the second dimension in the vertical mask field (where the first has to be the element dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_regionalStatsMonthly -->
+
+<entry id="config_AM_regionalStatsMonthly_enable" type="logical"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+If true, ocean analysis member regional stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_compute_on_startup" type="logical"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_write_on_startup" type="logical"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_compute_interval" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+Interval that determines frequency of computation for the regional stats analysis member.
+
+Valid values: Any valid time stamp, 'output_interval', or 'dt'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_output_stream" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+Name of stream the regional stats analysis member will operate on that contains the list of input fields (and will be modified to contain the output stats fields).
+
+Valid values: An existing output stream that will be read for input fields. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_restart_stream" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as input_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_input_stream" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as restart_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_operation" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+An operation describing the statistic to apply to all variables in the output stream.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_region_type" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+The reduced dimension of the region masks that will be used during the regional stats operation. Needs to be the last dimension, and the same dimension as all of the reduced fields, weight fields, and masks.
+
+Valid values: The mask reduction dimension, where it can be 'cell' or 'vertex'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_region_group" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+The name of the group of region masks that will be used to subset the mesh during the regional stats operation.
+
+Valid values: a valid name in the region group names
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_1d_weighting_function" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+An operation applied to every element in a region WITHOUT a vertical dimension, with a 1D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_2d_weighting_function" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+An operation applied to every element in a region WITH a vertical dimension, with a 2D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_1d_weighting_field" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+A 1D real field used in conjunction with the 1D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if 1D weighting function is 'id', otherwise any valid 1D real field with the same horizontal dimensions as the region masks
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_2d_weighting_field" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+A 2D real field used in conjunction with the 2D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if weighting function is 'id', otherwise any valid 2D real field with the same horizontal dimensions as the region masks and the vertical mask (requires that there is a vertical mask and vertical dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_vertical_mask" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+An additional 2D vertical integer mask field, which is used in conjunction with the regional masks. Used in cases when an input field has a second dimension that matches the vertical mask dimension.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise any integer 2D field with the configured second vertical dimension
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsMonthly_vertical_dimension" type="char*1024"
+	category="AM_regionalStatsMonthly" group="AM_regionalStatsMonthly">
+The second dimension to be used for additional vertical mask.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise the name of the second dimension in the vertical mask field (where the first has to be the element dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_regionalStatsCustom -->
+
+<entry id="config_AM_regionalStatsCustom_enable" type="logical"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+If true, ocean analysis member regional stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_compute_on_startup" type="logical"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_write_on_startup" type="logical"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_compute_interval" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+Interval that determines frequency of computation for the regional stats analysis member.
+
+Valid values: Any valid time stamp, 'output_interval', or 'dt'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_output_stream" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+Name of stream the regional stats analysis member will operate on that contains the list of input fields (and will be modified to contain the output stats fields).
+
+Valid values: An existing output stream that will be read for input fields. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_restart_stream" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as input_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_input_stream" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as restart_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_operation" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+An operation describing the statistic to apply to all variables in the output stream.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_region_type" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+The reduced dimension of the region masks that will be used during the regional stats operation. Needs to be the last dimension, and the same dimension as all of the reduced fields, weight fields, and masks.
+
+Valid values: The mask reduction dimension, where it can be 'cell' or 'vertex'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_region_group" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+The name of the group of region masks that will be used to subset the mesh during the regional stats operation.
+
+Valid values: a valid name in the region group names
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_1d_weighting_function" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+An operation applied to every element in a region WITHOUT a vertical dimension, with a 1D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_2d_weighting_function" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+An operation applied to every element in a region WITH a vertical dimension, with a 2D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_1d_weighting_field" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+A 1D real field used in conjunction with the 1D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if 1D weighting function is 'id', otherwise any valid 1D real field with the same horizontal dimensions as the region masks
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_2d_weighting_field" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+A 2D real field used in conjunction with the 2D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if weighting function is 'id', otherwise any valid 2D real field with the same horizontal dimensions as the region masks and the vertical mask (requires that there is a vertical mask and vertical dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_vertical_mask" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+An additional 2D vertical integer mask field, which is used in conjunction with the regional masks. Used in cases when an input field has a second dimension that matches the vertical mask dimension.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise any integer 2D field with the configured second vertical dimension
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStatsCustom_vertical_dimension" type="char*1024"
+	category="AM_regionalStatsCustom" group="AM_regionalStatsCustom">
+The second dimension to be used for additional vertical mask.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise the name of the second dimension in the vertical mask field (where the first has to be the element dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_timeSeriesStatsDaily -->
+
+<entry id="config_AM_timeSeriesStatsDaily_enable" type="logical"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
+If true, ocean analysis member time series stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsDaily_compute_on_startup" type="logical"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsDaily_write_on_startup" type="logical"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsDaily_compute_interval" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 Interval that determines frequency of computation for the time series stats analysis member.
 
 Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_output_stream" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_timeSeriesStatsDaily_output_stream" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 Name of stream the time series stats analysis member will operate on.
 
 Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_restart_stream" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_timeSeriesStatsDaily_restart_stream" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
 
 Valid values: A restart stream with state of the time series stats.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_operation" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_timeSeriesStatsDaily_operation" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
 
-Valid values: An operation, where it can be 'avg', 'min', or 'max'.
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_reference_times" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_timeSeriesStatsDaily_reference_times" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
 
 Valid values: A list of absolute times or 'initial_time's, separated by ;.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_duration_intervals" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_timeSeriesStatsDaily_duration_intervals" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
 
 Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_repeat_intervals" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_timeSeriesStatsDaily_repeat_intervals" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
 
 Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_reset_intervals" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_timeSeriesStatsDaily_reset_intervals" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
 A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
 
 Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_timeSeriesStats_backward_output_offset" type="char*1024"
-	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+<entry id="config_AM_timeSeriesStatsDaily_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsDaily" group="AM_timeSeriesStatsDaily">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_timeSeriesStatsMonthly -->
+
+<entry id="config_AM_timeSeriesStatsMonthly_enable" type="logical"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+If true, ocean analysis member time series stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_compute_on_startup" type="logical"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_write_on_startup" type="logical"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_compute_interval" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+Interval that determines frequency of computation for the time series stats analysis member.
+
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_output_stream" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+Name of stream the time series stats analysis member will operate on.
+
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_restart_stream" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the time series stats.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_operation" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_reference_times" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
+
+Valid values: A list of absolute times or 'initial_time's, separated by ;.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_duration_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_repeat_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_reset_intervals" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsMonthly_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsMonthly" group="AM_timeSeriesStatsMonthly">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_timeSeriesStatsClimatology -->
+
+<entry id="config_AM_timeSeriesStatsClimatology_enable" type="logical"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+If true, ocean analysis member time series stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_compute_on_startup" type="logical"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_write_on_startup" type="logical"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_compute_interval" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+Interval that determines frequency of computation for the time series stats analysis member.
+
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_output_stream" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+Name of stream the time series stats analysis member will operate on.
+
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_restart_stream" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the time series stats.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_operation" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_reference_times" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
+
+Valid values: A list of absolute times or 'initial_time's, separated by ;.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_duration_intervals" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_repeat_intervals" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_reset_intervals" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsClimatology_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsClimatology" group="AM_timeSeriesStatsClimatology">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_timeSeriesStatsCustom -->
+
+<entry id="config_AM_timeSeriesStatsCustom_enable" type="logical"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+If true, ocean analysis member time series stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_compute_on_startup" type="logical"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_write_on_startup" type="logical"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_compute_interval" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Interval that determines frequency of computation for the time series stats analysis member.
+
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_output_stream" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Name of stream the time series stats analysis member will operate on.
+
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_restart_stream" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+Name of the restart stream the time series stats analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the time series stats.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_operation" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max', 'sum', or 'sos' (sum of squares).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_reference_times" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
+
+Valid values: A list of absolute times or 'initial_time's, separated by ;.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_duration_intervals" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_repeat_intervals" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_reset_intervals" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
+
+Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStatsCustom_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStatsCustom" group="AM_timeSeriesStatsCustom">
 Backward offset for filename timestamps when writing the output stream
 
 Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
@@ -6530,6 +7471,156 @@ Default: Defined in namelist_defaults.xml
 Logical flag determining if an analysis member write occurs on start-up.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_transect_group" type="char*1024"
+	category="AM_transectTransport" group="AM_transectTransport">
+The name of the transect group that holds the transects for which the transport should be caclulated.
+
+Valid values: Either of '', 'all' or any valid transect group name.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_eddyProductVariables -->
+
+<entry id="config_AM_eddyProductVariables_enable" type="logical"
+	category="AM_eddyProductVariables" group="AM_eddyProductVariables">
+If true, ocean analysis member eddyProductVariables is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_eddyProductVariables_compute_interval" type="char*1024"
+	category="AM_eddyProductVariables" group="AM_eddyProductVariables">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_eddyProductVariables_output_stream" type="char*1024"
+	category="AM_eddyProductVariables" group="AM_eddyProductVariables">
+Name of the stream that the eddyProductVariables analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_eddyProductVariables_compute_on_startup" type="logical"
+	category="AM_eddyProductVariables" group="AM_eddyProductVariables">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_eddyProductVariables_write_on_startup" type="logical"
+	category="AM_eddyProductVariables" group="AM_eddyProductVariables">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_mocStreamfunction -->
+
+<entry id="config_AM_mocStreamfunction_enable" type="logical"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+If true, ocean analysis member MOC streamfunction is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_compute_interval" type="char*1024"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_output_stream" type="char*1024"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+Name of the stream that the mocStreamfunction analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_compute_on_startup" type="logical"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_write_on_startup" type="logical"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_min_bin" type="real"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+minimum bin boundary value.  If set to -1.0e34, the minimum value in the domain is found.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_max_bin" type="real"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_num_bins" type="integer"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+Number of bins in South-to-North direction used for moc streamfunction calculation.
+
+Valid values: Any positive integer value less than or equal to nMocStreamfunctionBins.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_vertical_velocity_value" type="char*1024"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+The vertical velocity variable used for the computation of the MOC Streamfunction.
+
+Valid values: Either of 'vertVelocityTop', 'vertTransportVelocityTop' or 'vertGMBolusVelocityTop' (all from diagnostics pool).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_normal_velocity_value" type="char*1024"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+The normal velocity variable used for the computation of the MOC Streamfunction.
+
+Valid values: Either of 'vertVelocityTop', 'vertTransportVelocityTop' or 'vertGMBolusVelocityTop' (all from diagnostics pool).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_region_group" type="char*1024"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+The name of the region group, for which the moc should be computed in addition to the global MOC.
+
+Valid values: Either of '', 'all' or any valid region group name.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mocStreamfunction_transect_group" type="char*1024"
+	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
+The name of the transect group that holds the boundaries for the regions in the region group, configured in 'config_AM_mocStreamfunction_region_group'. Please note, that these two should have the same amount of entries.
+
+Valid values: Any valid transect group name.
 Default: Defined in namelist_defaults.xml
 </entry>
 
