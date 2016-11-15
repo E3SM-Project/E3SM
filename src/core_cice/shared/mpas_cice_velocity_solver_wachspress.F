@@ -788,6 +788,9 @@ contains
 
     use mpas_timer
 
+    use cice_velocity_solver_variational_shared, only: &
+         cice_wrapped_index
+
     ! basisGradientUV(jVertexOnCell,iVertexOnCell,iCell)
     ! iCell         : The cell the gradients are based in
     ! iVertexOnCell : The vertex basis function the gradient is calculated from
@@ -882,12 +885,27 @@ contains
                derivativeV(1:nEdgesOnCell(iCell)))
 
           ! loop over vertices again - derivative position
-          do iGradientVertex = 1, nEdgesOnCell(iCell)
+          !do iGradientVertex = 1, nEdgesOnCell(iCell)
 
-             basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
-             basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
+          !   basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
+          !   basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
 
-          enddo ! iGradientVertex
+          !enddo ! iGradientVertex
+
+          basisGradientU(iBasisVertex,:,iCell) = 0.0_RKIND
+          basisGradientV(iBasisVertex,:,iCell) = 0.0_RKIND
+
+          iGradientVertex = iBasisVertex
+          basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
+          basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
+
+          iGradientVertex = cice_wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))
+          basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
+          basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
+
+          iGradientVertex = cice_wrapped_index(iBasisVertex + 1, nEdgesOnCell(iCell))
+          basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
+          basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
 
        enddo ! iBasisVertex
 
