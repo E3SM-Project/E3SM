@@ -884,14 +884,6 @@ contains
                derivativeU(1:nEdgesOnCell(iCell)), &
                derivativeV(1:nEdgesOnCell(iCell)))
 
-          ! loop over vertices again - derivative position
-          !do iGradientVertex = 1, nEdgesOnCell(iCell)
-
-          !   basisGradientU(iBasisVertex,iGradientVertex,iCell) = derivativeU(iGradientVertex)
-          !   basisGradientV(iBasisVertex,iGradientVertex,iCell) = derivativeV(iGradientVertex)
-
-          !enddo ! iGradientVertex
-
           basisGradientU(iBasisVertex,:,iCell) = 0.0_RKIND
           basisGradientV(iBasisVertex,:,iCell) = 0.0_RKIND
 
