@@ -7,7 +7,7 @@ my $current = $ARGV[2];
 my $codeDir = "$current/code/";
 
 opendir(D,$timingDir);
-my @files = grep /cesm_timing/, readdir(D);
+my @files = grep /_timing/, readdir(D);
 closedir(D);
 my $component;
 foreach my $file (@files){

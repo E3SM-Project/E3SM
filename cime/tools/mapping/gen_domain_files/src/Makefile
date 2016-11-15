@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------
-# This Makefile is for building clm tools on AIX, Linux (with pgf90 or 
+# This Makefile is for building clm tools on AIX, Linux (with pgf90 or
 # lf95 compiler), Darwin or IRIX platforms.
 #
 # $Id: Makefile 35671 2012-03-22 21:23:14Z mlevy@ucar.edu $
@@ -29,14 +29,15 @@ null :=
 CURDIR = .
 EXENAME = ../gen_domain
 RM = rm
+MACROS = Macros.make
 
 default: $(EXENAME)
 
-Macros:
-	@echo "use the configure script located in the Machines directory to create the Makefile Macros file"
+$(MACROS):
+	@echo "use the configure script located in the Machines directory to create the Makefile $(MACROS) file"
 
--include Macros
-# Check for the netcdf library and include directories 
+-include $(MACROS)
+# Check for the netcdf library and include directories
 ifdef NETCDF_PATH
   LIB_NETCDF:=$(NETCDF_PATH)/lib
   INC_NETCDF:=$(NETCDF_PATH)/include
@@ -48,7 +49,7 @@ else
   ifeq ($(INC_NETCDF),$(null))
     INC_NETCDF := /usr/local/include
   endif
- 
+
   ifeq ($(MOD_NETCDF),$(null))
     MOD_NETCDF := $(LIB_NETCDF)
   endif
@@ -88,17 +89,17 @@ cpp_dirs := $(dirs) $(INC_NETCDF) $(MOD_NETCDF)
 cpp_path := $(foreach dir,$(cpp_dirs),-I$(dir)) # format for command line
 
 # Expand any tildes in directory names. Change spaces to colons.
-VPATH := $(foreach dir,$(cpp_dirs),$(wildcard $(dir))) 
-VPATH := $(subst $(space),:,$(VPATH))               
+VPATH := $(foreach dir,$(cpp_dirs),$(wildcard $(dir)))
+VPATH := $(subst $(space),:,$(VPATH))
 ifdef CPRE
-  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS)) 
+  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS))
 else
   FPPDEFS := $(CPPDEFS)
 endif
 #Primary Target: build the tool
-all: $(EXENAME) Macros
+all: $(EXENAME) $(MACROS)
 
-OBJS := gen_domain.o 
+OBJS := gen_domain.o
 
 #------------------------------------------------------------------------
 # Default rules and macros
@@ -108,8 +109,8 @@ OBJS := gen_domain.o
 .SUFFIXES: .F90 .c .o
 
 # Append user defined compiler and load flags to Makefile defaults
-CFLAGS   += $(USER_CFLAGS) -I$(INC_NETCDF) 
-FFLAGS   += $(USER_FFLAGS) -I$(MOD_NETCDF) -I$(INC_NETCDF) 
+CFLAGS   += $(USER_CFLAGS) -I$(INC_NETCDF)
+FFLAGS   += $(USER_FFLAGS) -I$(MOD_NETCDF) -I$(INC_NETCDF)
 LDFLAGS  += $(USER_LDFLAGS)
 
 # Set user specified linker
@@ -130,9 +131,9 @@ $(EXENAME): $(OBJS)
 	$(LINKER) -o $@ $(OBJS) $(SLIBS) $(LDFLAGS)
 
 clean:
-	$(RM) -f $(OBJS) $(EXENAME) *.mod 
+	$(RM) -f $(OBJS) $(EXENAME) *.mod
 
 veryclean:
-	$(RM) -f $(OBJS) $(EXENAME) *.mod Macros env_mach* build*
+	$(RM) -f $(OBJS) $(EXENAME) *.mod $(MACROS) env_mach* Depends* .env_mach*
 
 gen_domain.o : gen_domain.F90

@@ -85,7 +85,7 @@ foreach $f (@src) {
 
 # Now make a list of .mod files in the file_paths.  If a .o source dependency
 # can't be found based on the module_files list above, then maybe a .mod
-# module dependency can if the mod file is visible.  
+# module dependency can if the mod file is visible.
 my %trumod_files = ();
 my ($dir);
 my ($f, $name, $path, $suffix, $mod);
@@ -239,7 +239,7 @@ sub find_dependencies {
 	# Search for "#include" and strip filename when found.
 	if ( /^#include\s+[<"](.*)[>"]/ ) {
 	     push @incs, $1;
-	 } 
+	 }
 	# Search for Fortran include dependencies.
 	elsif ( /^\s*include\s+['"](.*)['"]/ ) {                   #" for emacs fontlock
 	     push @incs, $1;
@@ -249,7 +249,7 @@ sub find_dependencies {
 	    ($module = $1) =~ tr/a-z/A-Z/;
 	    # Return dependency in the form of a .o version of the file that contains
 	    # the module.  this is from the source list.
-	    if ( defined $module_files{$module} ) { 
+	    if ( defined $module_files{$module} ) {
 	        if ( defined $obj_dir ) {
 		    push @mods, "$obj_dir/$module_files{$module}.o";
 	        } else {
@@ -258,7 +258,7 @@ sub find_dependencies {
 	    }
 	    # Return dependency in the form of a .mod version of the file that contains
 	    # the module.  this is from the .mod list.  only if .o version not found
-	    elsif ( defined $trumod_files{$module} ) { 
+	    elsif ( defined $trumod_files{$module} ) {
 	        if ( defined $obj_dir ) {
 		    push @mods, "$obj_dir/$trumod_files{$module}.mod";
 	        } else {
@@ -319,7 +319,7 @@ OPTIONS
           targets in the dependency rules have the form dir/file.o.
      -w   Print warnings to STDERR about files or dependencies not found.
 ARGUMENTS
-     Filepath is the name of a file containing the directories (one per 
+     Filepath is the name of a file containing the directories (one per
      line) to be searched for dependencies.  Srcfiles is the name of a
      file containing the names of files (one per line) for which
      dependencies will be generated.

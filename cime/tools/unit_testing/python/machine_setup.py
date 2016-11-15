@@ -79,7 +79,7 @@ class MachineCompilerSettings(object):
     write_cmake_macros - Create CMake "Macros" file.
     """
 
-    def __init__(self, compiler, compiler_xml_path, 
+    def __init__(self, compiler, compiler_xml_path,
                  machine=None,
                  use_env_compiler=False,
                  mpilib=None, use_openmp=False):
@@ -178,13 +178,13 @@ class MachineCompilerSettings(object):
             "set(CMAKE_Fortran_FLAGS_"+model+" \"\" CACHE STRING \"Flags used by the Fortran compiler during builds.\" FORCE)")
         macros_printer.print(
             "set(CMAKE_Fortran_FLAGS_"+model+"_DEBUG \"\" CACHE STRING \"Flags used by the Fortran compiler during DEBUG builds.\" FORCE)")
-            
+
 
         macros_printer.print(
             "set(CMAKE_C_FLAGS_"+model+" \"\" CACHE STRING \"Flags used by the C compiler during builds.\" FORCE)")
         macros_printer.print(
             "set(CMAKE_C_FLAGS_"+model+"_DEBUG \"\" CACHE STRING \"Flags used by the C compiler during DEBUG builds.\" FORCE)")
-            
+
         macros_printer.print(
             "mark_as_advanced(CMAKE_Fortran_FLAGS_"+model+" CMAKE_Fortran_FLAGS_"
             +model+"_DEBUG)")
@@ -195,7 +195,7 @@ class MachineCompilerSettings(object):
             " "+model+"_DEBUG\")")
         macros_printer.print(
             "set(CMAKE_BUILD_TYPE \"${CMAKE_BUILD_TYPE}\" CACHE STRING \"Choose the type of build, options are: ${all_build_types}.\" FORCE)")
-            
+
 
 
 
@@ -208,7 +208,7 @@ class MachineCompilerSettings(object):
         # HDF5 location if it exists.
         self.add_path("HDF5", macros_printer)
         # MPI location if it exists.
-        self.add_path("MPI", macros_printer) 
+        self.add_path("MPI", macros_printer)
         # PETSc location if it exists.
         self.add_path("PETSC", macros_printer)
        # TRILINOS location if it exists.

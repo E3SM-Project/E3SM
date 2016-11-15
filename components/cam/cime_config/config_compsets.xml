@@ -2,6 +2,43 @@
 
 <compsets>
 
+  <help>
+
+    =========================================
+    compset naming convention
+    =========================================
+    The compset longname below has the specified order
+    atm, lnd, ice, ocn, river, glc wave model-options
+
+    The notation for the compset longname is
+    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
+    Where for the CAM specific compsets below the following is supported
+    TIME = Time period (e.g. 2000, HIST, RCP8...)
+    ATM  = [CAM4, CAM5, SATM]
+    LND  = [CLM40, CLM45, CLM50, SLND]
+    ICE  = [MPASCICE, CICE, DICE, SICE]
+    OCN  = [MPASO, DOCN, ,AQUAP, SOCN]
+    ROF  = [RTM, MOSART, SROF]
+    GLC  = [MPASLISIA, MPASLIALB, CISM1, CISM2, SGLC]
+    WAV  = [WW3, DWAV, XWAV, SWAV]
+    ESP  = [SESP]
+    BGC  = optional BGC scenario
+
+    The OPTIONAL %phys attributes specify submodes of the given system
+    For example DOCN%DOM is the data ocean model for DOCN
+    ALL the possible %phys choices for each component are listed
+    with the -list command for create_newcase
+    ALL data models must have a %phys option that corresponds to the data  model mode
+
+    Each compset node is associated with the following elements
+    - lname
+    - alias
+    - support  (optional description of the support level for this compset)
+    Each compset node can also have the following attributes
+    - grid  (optional regular expression match for grid to work with the compset)
+
+  </help>
+
   <compset>
     <alias>F1850</alias>
     <lname>1850_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
@@ -73,6 +110,16 @@
   </compset>
 
   <compset>
+    <alias>F1850C5AV1C-04</alias>
+    <lname>1850_CAM5%AV1C-04_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F1850C5AV1C-04P</alias>
+    <lname>1850_CAM5%AV1C-04P_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F1850C5AV1C-L</alias>
     <lname>1850_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
@@ -93,6 +140,16 @@
   </compset>
 
   <compset>
+    <alias>FC5AV1C-04</alias>
+    <lname>2000_CAM5%AV1C-04_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5AV1C-04P</alias>
+    <lname>2000_CAM5%AV1C-04P_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FC5AV1C-L</alias>
     <lname>2000_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
@@ -110,6 +167,26 @@
   <compset>
     <alias>FC5AV1F-01</alias>
     <lname>2000_CAM5%AV1F-01_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+   <alias>F20TRC5AV1C-03</alias>
+   <lname>20TR_CAM5%AV1C-03_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+   <alias>F20TRC5AV1C-04</alias>
+   <lname>20TR_CAM5%AV1C-04_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+   <alias>F20TRC5AV1C-04P</alias>
+   <lname>20TR_CAM5%AV1C-04P_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+   <alias>F20TRC5AV1C-L</alias>
+   <lname>20TR_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>

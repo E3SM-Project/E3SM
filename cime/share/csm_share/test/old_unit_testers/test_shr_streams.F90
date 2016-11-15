@@ -3,7 +3,7 @@ module streams_exp
    use shr_sys_mod,     only : shr_sys_abort
    use shr_file_mod,    only : shr_file_getUnit, shr_file_freeUnit
    use shr_stream_mod
- 
+
    implicit none
 
    private
@@ -141,7 +141,7 @@ subroutine streams_exp_write_strm_txt( stream_filename, streams_exp )
    do n = 1, max( nfModel, nfFile )
        if ( n > nfFile ) then
           varFile = " "
-       else 
+       else
           call shr_string_listGetName(streams_exp%fldListFile,  n, varFile  )
        end if
        if ( n > nfModel ) then
@@ -250,7 +250,7 @@ logical function is_streams_expected( stream, streams_exp )
        filen = file_next
    end do
    call shr_stream_getNextFileName( stream, filen, file_next )
-   if ( trim(file_next) /= trim(file_first) ) is_streams_expected = .false. 
+   if ( trim(file_next) /= trim(file_first) ) is_streams_expected = .false.
    if ( .not. is_streams_expected ) write(*,*) "too many files"
 
 end function is_streams_expected
@@ -316,7 +316,7 @@ program test_shr_streams
                          CLMNCEP_ALOGO_TEST = 3, &
                          GISS_TEST          = 4, &
                          CAMHIST_TEST       = 5
-  
+
 #ifdef LINUX
   num_series = CLMNCEP_ALOGO_TEST
 #else
@@ -409,9 +409,9 @@ program test_shr_streams
               call shr_stream_findBounds(streams(1),mDateIn,        secIn,       &
                                         &   mDateLB,dDateLB,secLB,n_lb,fileLB,   &
                                         &   mDateUB,dDateUB,secUB,n_ub,fileUB )
-              if (      year < yearFirst )then 
+              if (      year < yearFirst )then
                  expected(n) = yearLast * 10000 + month*100 + 1
-              else if ( year > yearLast  )then 
+              else if ( year > yearLast  )then
                  expected(n) = yearFirst * 10000 + month*100 + 1
               else
                  expected(n) = year * 10000 + month*100 + 1

@@ -2,15 +2,15 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: twocmp.seqNB.F90,v 1.4 2004-06-24 21:07:01 eong Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE:  twocmp.seqNB
 !
-! !DESCRIPTION:  Provide a simple example of using MCT to connect to 
+! !DESCRIPTION:  Provide a simple example of using MCT to connect to
 !  components executing sequentially in a single executable using
 !  the non-blocking communications to transfer data.
-!  
+!
 !
 ! !INTERFACE:
 !
@@ -51,7 +51,7 @@
       integer,dimension(:),pointer :: myids
       integer,dimension(:),pointer :: req1,req2
 !-----------------------------------------------------------------------
-!  The Main program. 
+!  The Main program.
 ! We are implementing a single-executable, seqeuntial-execution system.
 ! This small main program sets up MCTWorld, calls each "init" method
 ! and then calls each component in turn.
@@ -95,7 +95,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model1init(comm1,req1,GSmap,av1)   ! init the first model
 
       implicit none
@@ -105,7 +105,7 @@
       integer,dimension(1) :: start,length
       real,pointer :: testarray(:)
       integer,pointer :: req1(:)
-      
+
       type(GlobalSegMap) :: GSmap
       type(AttrVect) :: av1
 !---------------------------
@@ -147,7 +147,7 @@
       integer :: fieldindx,avsize,i
       integer,dimension(1) :: start,length
       real,pointer :: testarray(:)
-      
+
       type(GlobalSegMap) :: GSmap,GSmap2
       type(AttrVect) :: av1
       type(Router),save :: Rout
@@ -184,7 +184,7 @@
       do i=1,avsize
         write(6,*)myproc, "model 1 data", i,av1%rAttr(1,i),av1%rAttr(2,i)
       enddo
-      
+
 !  send the data
       call MCT_ISend(av1,Rout)
 
@@ -194,7 +194,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model2init(comm2,req2,GSmap,av1)  ! init model 2
 
       implicit none
@@ -235,7 +235,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model2(comm2,GSmap,av1)
 
       implicit none

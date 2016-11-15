@@ -9,10 +9,10 @@ Place holder to point to docs for:
   - st_archive script
 
 - history time-slice to variable time-series conversion
-  - cesm_tseries_generator.py wrapper script 
+  - cesm_tseries_generator.py wrapper script
   - env_run.xml DOUT_S_* variables
   - env_archive.xml documentation
-  - pyReshaper documentation 
+  - pyReshaper documentation
   - tseries_generate run and submit scripts
   - integration into cesm run script
   - tseriesStatus diagnostics output
@@ -23,7 +23,7 @@ Place holder to point to docs for:
 
 - Archive metadata documentation
   - experiment database
-  - data management 
+  - data management
 
 - Diagnostics packages
   - using diagnostic packages with files in the short term archive

@@ -32,9 +32,6 @@ module component_mod
   use mct_mod   ! mct_ wrappers for mct lib
   use perf_mod
   use ESMF
-#ifdef ESMF_INTERFACE
-  use esmfshr_mod
-#endif 
 
   implicit none
 
@@ -52,9 +49,6 @@ module component_mod
   public :: component_init_cx
   public :: component_init_aream
   public :: component_init_areacor
-#ifdef ESMF_INTERFACE
-  public :: component_init_update_petlist !esmf only
-#endif
   public :: component_run                 ! mct and esmf versions
   public :: component_final               ! mct and esmf versions 
   public :: component_exch
@@ -150,6 +144,7 @@ contains
 
        ! Determine initial value of comp_present in infodata - to do - add this to component 
 
+#ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
@@ -157,14 +152,16 @@ contains
        if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
-
+       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+#else
+       call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+#endif
     end do
 
   end subroutine component_init_pre
 
   !===============================================================================
 
-#ifndef ESMF_INTERFACE
   subroutine component_init_cc(Eclock, comp, comp_init, infodata, NLFilename, &
        seq_flds_x2c_fluxes, seq_flds_c2x_fluxes)
 
@@ -247,6 +244,7 @@ contains
     ! Determine final value of comp_present in infodata (after component initialization)
 
     do eci = 1,size(comp) 
+#ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
@@ -254,6 +252,10 @@ contains
        if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+#else
+       call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+#endif
     end do
 
 
@@ -274,390 +276,6 @@ contains
     end do
 
   end subroutine component_init_cc
-#endif
-
-  !===============================================================================
-
-#ifdef ESMF_INTERFACE
-  subroutine component_init_cc(Eclock, drvcomp, comp, gridcomp_register,  &
-       infodata, NlFilename, seq_flds_x2c_fields, seq_flds_c2x_fields, &
-       seq_flds_x2c_fluxes, seq_flds_c2x_fluxes) 
-
-    !---------------------------------------------------------------
-    ! Uses
-    use esmf2mct_mod,         only: esmf2mct_init, esmf2mct_copy
-    use mct2esmf_mod,         only: mct2esmf_init
-    use seq_flds_mod,         only: seq_flds_dom_coord, seq_flds_dom_other, seq_flds_dom_fields
-    !
-    ! Arguments
-    type(ESMF_Clock)     , intent(inout) :: EClock
-    type(ESMF_CplComp)   , intent(inout) :: drvComp
-    type(component_type) , intent(inout) :: comp(:)
-    interface 
-       subroutine gridcomp_register(gridcomp, rc)
-         use ESMF
-         implicit none
-         type(ESMF_GridComp)  :: gridcomp
-         integer, intent(out) :: rc
-       end subroutine gridcomp_register
-    end interface 
-    type (seq_infodata_type) , intent(inout)        :: infodata
-    character(len=*)         , intent(in), optional :: NLFilename 
-    character(len=*)         , intent(in), optional :: seq_flds_x2c_fields
-    character(len=*)         , intent(in), optional :: seq_flds_c2x_fields
-    character(len=*)         , intent(in), optional :: seq_flds_x2c_fluxes
-    character(len=*)         , intent(in), optional :: seq_flds_c2x_fluxes
-    !
-    ! Local Variables
-    integer             :: k1, k2
-    integer             :: nx, ny
-    integer             :: eci
-    integer             :: rc, urc
-    integer             :: init_phase
-    integer             :: lsize
-    type(ESMF_DistGrid) :: distgrid_cc
-    type(ESMF_DistGrid) :: distgrid_cx
-    type(ESMF_Array)    :: dom_cc_array
-    type(ESMF_Array)    :: dom_cx_array
-    type(ESMF_Array)    :: x2c_cc_array
-    type(ESMF_Array)    :: x2c_cx_array
-    type(ESMF_Array)    :: c2x_cc_array
-    type(ESMF_Array)    :: c2x_cx_array
-    integer , pointer   :: petlist(:)
-    real(R8), pointer   :: fptr(:,:)            ! pointer into    array data
-    character(len=1)    :: cid
-    character(len=8196) :: mct_names_x2c, mct_names_c2x, mct_names_dom
-    character(*), parameter :: subname = '(component_init_cc:esmf)'
-    character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
-    !---------------------------------------------------------------
-
-    if (present(seq_flds_x2c_fluxes) .and. present(seq_flds_c2x_fluxes)) then
-       init_phase = 2
-    else
-       init_phase = 1
-    end if
-
-    do eci = 1,size(comp)
-
-       if (init_phase == 1) then
-
-          ! Create gridcomp for this instance
-
-          call seq_comm_petlist(comp(eci)%compid, petlist) 
-
-          comp(eci)%gridcomp_cc = ESMF_GridCompCreate(name=trim(comp(eci)%name), petList=petlist, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          call ESMF_GridCompSetServices(comp(eci)%gridcomp_cc, userRoutine=gridcomp_register, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          ! create import and export states state_x2c_cc and state_c2x_cc
-
-          comp(eci)%x2c_cc_state = ESMF_StateCreate(name=trim(comp(eci)%ntype)//" x2c_cc", &
-               stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          comp(eci)%c2x_cc_state = ESMF_StateCreate(name=trim(comp(eci)%ntype)//" c2x_cc", &
-               stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          ! link attributes
-
-          call ESMF_AttributeLink(drvcomp, comp(eci)%gridcomp_cc, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-       end if
-
-       !--------------------------------------------------
-       ! COMPONENT-CPL PES
-       !--------------------------------------------------
-       ! Transfer infodata from coupler pes -> component pes
-
-       if (comp(1)%iamin_cplallcompid) then
-          call seq_infodata_exchange(infodata, comp(1)%cplallcompid, &
-               'cpl2'//comp(1)%ntype(1:3)//'_init')
-       end if
-
-       !--------------------------------------------------
-       ! COMPONENT PES
-       !--------------------------------------------------
-
-       ! The following initializes the component instance values of x2c_cc and c2x_cc
-       
-       if (iamroot_CPLID .and. comp(eci)%present) then
-          write(logunit,F00) 'Initialize component '//trim(comp(eci)%ntype)
-          call shr_sys_flush(logunit)
-       end if
-
-       if (comp(eci)%iamin_compid) then
-
-          if (comp(eci)%present) then
-
-             if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
-             call shr_sys_flush(logunit)
-
-             if (init_phase == 1) then 
-                call ESMF_AttributeSet(comp(eci)%c2x_cc_state, name="ID", &
-                     value=comp(eci)%compid, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-             end if
-
-             ! Set init_phase attribute value
-             call ESMF_AttributeSet(comp(eci)%c2x_cc_state, name=trim(comp(eci)%ntype)//"_phase", &
-                  value=init_phase, rc=rc)
-             if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-             ! Convert infodata information into appropriate export state attributes
-             call esmfshr_infodata_infodata2state(infodata, comp(eci)%c2x_cc_state, &
-                  id=comp(eci)%compid, rc=rc)
-             if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-             ! Rescale the attribute vector before sending for phase 2 of atm initialization
-             ! Note that x2c_cc attribute vector and x2c_cc_array share the same memory 
-             ! (set in init_phase=1)
-
-             if (init_phase == 2) then ! phase 2 (only for atm for now)
-                call ESMF_StateGet(comp(eci)%x2c_cc_state, itemName="x2d", array=x2c_cc_array, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
-             end if
-
-             !-----------------------------------
-             ! *** call into ESMF init method ***
-             !-----------------------------------
-             call t_set_prefixf(comp(1)%oneletterid//"_i:")
-             call ESMF_GridCompInitialize(comp(eci)%gridcomp_cc, &
-                  importState=comp(eci)%x2c_cc_state, exportState=comp(eci)%c2x_cc_state, &
-                  clock=EClock, userRc=urc, rc=rc)
-             if (urc /= ESMF_SUCCESS) call ESMF_Finalize(rc=urc, endflag=ESMF_END_ABORT)
-             if (rc  /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc , endflag=ESMF_END_ABORT)
-             call t_unset_prefixf()
-             !-----------------------------------
-
-             if (init_phase == 2) then
-                ! Rescale the attribute vector after receiving for phase 2 of atm initialization
-                call ESMF_StateGet(comp(eci)%c2x_cc_state, itemName="d2x", array=c2x_cc_array, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-             end if
-
-             ! Convert appropriate export state attributes back to infodata, 
-             ! the new nextsw_cday is updated in infodata
-             call esmfshr_infodata_state2infodata(comp(eci)%c2x_cc_state, infodata, rc=rc)
-             if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-             ! The following is only from infodata updates on the component pes
-
-             cid = comp(1)%oneletterid
-             if (cid=='a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present, atm_nx=nx, atm_ny=ny)
-             if (cid=='l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present, lnd_nx=nx, lnd_ny=ny)
-             if (cid=='i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present, ice_nx=nx, ice_ny=ny)
-             if (cid=='o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present, ocn_nx=nx, ocn_ny=ny)
-             if (cid=='r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present, rof_nx=nx, rof_ny=ny)
-             if (cid=='g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present, glc_nx=nx, glc_ny=ny)
-             if (cid=='w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present, wav_nx=nx, wav_ny=ny)
-
-             if (init_phase == 1 .and. comp(eci)%present) then
-
-                ! allocate memory and initialize dom_cc%data, x2c_cc and c2x_cc attribute vectors
-
-                if (.not. associated(comp(eci)%x2c_cc)) allocate(comp(eci)%x2c_cc)
-                if (.not. associated(comp(eci)%c2x_cc)) allocate(comp(eci)%c2x_cc)
-                if (.not. associated(comp(eci)%dom_cc)) allocate(comp(eci)%dom_cc)
-
-                call ESMF_StateGet(comp(eci)%x2c_cc_state, itemName="x2d", array=x2c_cc_array, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_StateGet(comp(eci)%c2x_cc_state, itemName="d2x", array=c2x_cc_array, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_StateGet(comp(eci)%c2x_cc_state, itemName="domain", array=dom_cc_array, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                ! initialize MCT gsmap_cc global seg map from ESMF distgrid_cc
-
-                call ESMF_ArrayGet(c2x_cc_array, distgrid=distgrid_cc, rc=rc) 
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call esmf2mct_init(distgrid_cc, comp(eci)%compid, comp(eci)%gsmap_cc, &
-                     comp(eci)%mpicom_compid, nx*ny, rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                ! initialize MCT x2c_cc and c2x_cc attribute vectors from ESMF arrays
-
-                call esmf2mct_init(x2c_cc_array, comp(eci)%x2c_cc, rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-                call esmf2mct_copy(x2c_cc_array, comp(eci)%x2c_cc, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call esmf2mct_init(c2x_cc_array, comp(eci)%c2x_cc, rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-                call esmf2mct_copy(c2x_cc_array, comp(eci)%c2x_cc, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                ! initialize MCT ggrid dom_cc from ESMF array
-
-                call ESMF_DistGridGet(distgrid_cc, localDe=0, elementCount=lsize, rc=rc)
-                if(rc /= 0) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call mct_gGrid_init(comp(eci)%dom_cc, coordchars=seq_flds_dom_coord, &
-                     otherchars=seq_flds_dom_other, lsize=lsize )
-
-                call esmf2mct_copy(dom_cc_array, comp(eci)%dom_cc%data, rc=rc)
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                ! destroy original ESMF arrays, x2c_cc_array, c2x_cc_array and c2x_dom_array 
-                ! in preparation for creating new ones that share memory with MCT attribute vecs
-                ! *** But this will remove any attributes that were originally in the ESMF array
-                ! so need to extract this info out first ****
-
-                call ESMF_AttributeGet(x2c_cc_array, name='mct_names', value=mct_names_x2c, rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_ArrayDestroy(x2c_cc_array, rc=rc) ! destroy the Array
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_AttributeGet(c2x_cc_array, name='mct_names', value=mct_names_c2x, rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_ArrayDestroy(c2x_cc_array, rc=rc) ! destroy the Array
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_AttributeGet(dom_cc_array, name='mct_names', value=mct_names_dom, rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_ArrayDestroy(dom_cc_array, rc=rc) ! destroy the Array
-                if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                ! create new ESMF arrays
-                ! - x2c_cc_array  shares memory with comp(eci)%x2c_cc attribute vector 
-                ! - c2x_cc_array  shares memory with comp(eci)%c2x_cc attribute vector 
-                ! - c2x_dom_array shares memory with comp(eci)%dom_cc%data attribute vector 
-
-                x2c_cc_array = ESMF_ArrayCreate(distgrid=distgrid_cc, farrayPtr=comp(eci)%x2c_cc%rattr, &
-                     distgridToArrayMap=(/2/), name="x2d", rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                c2x_cc_array = ESMF_ArrayCreate(distgrid=distgrid_cc, farrayPtr=comp(eci)%c2x_cc%rattr, &
-                     distgridToArrayMap=(/2/), name="d2x", rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                dom_cc_array = ESMF_ArrayCreate(distgrid=distgrid_cc, farrayPtr=comp(eci)%dom_cc%data%rattr, &
-                     distgridToArrayMap=(/2/), name="domain", rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_AttributeSet(x2c_cc_array, name="mct_names", value=trim(mct_names_x2c), rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_AttributeSet(c2x_cc_array, name="mct_names", value=trim(mct_names_c2x), rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_AttributeSet(dom_cc_array, name="mct_names", value=trim(mct_names_dom), rc=rc)
-                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-                call ESMF_StateReplace(comp(eci)%x2c_cc_state, (/x2c_cc_array/), rc=rc)
-                call ESMF_StateReplace(comp(eci)%c2x_cc_state, (/c2x_cc_array/), rc=rc)
-                call ESMF_StateReplace(comp(eci)%c2x_cc_state, (/dom_cc_array/), rc=rc)
-
-             end if
-
-             ! Convert appropriate export state attributes back to infodata, 
-             ! the new nextsw_cday is updated in infodata
-             call esmfshr_infodata_state2infodata(comp(eci)%c2x_cc_state, infodata, rc=rc)
-             if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-
-          end if   ! end of comp(eci)%present
-       end if   ! end of comp(eci)%iamin_compid
-
-       ! allocate memory for attribute vectors that are in cpl id - if compid and cplid
-       ! are not the smae
-       if (comp(eci)%iamin_cplcompid) then
-          if (init_phase == 1 .and. comp(eci)%present) then
-             if (.not. associated(comp(eci)%x2c_cc)) allocate(comp(eci)%x2c_cc)
-             if (.not. associated(comp(eci)%c2x_cc)) allocate(comp(eci)%c2x_cc)
-             if (.not. associated(comp(eci)%dom_cc)) allocate(comp(eci)%dom_cc)
-          end if
-       end if
-
-    end do   ! end of loop over instances
-
-    !--------------------------------------------------
-    ! COMPONENT -CPL PES
-    !--------------------------------------------------
-    ! Transfer infodata between component pes -> coupler pes
-
-    if (comp(1)%iamin_cplcompid) then
-       call seq_infodata_exchange(infodata, comp(1)%cplcompid, &
-            comp(1)%ntype(1:3)//'2cpl_init')
-    endif
-
-    ! Determine final value of comp_present in infodata (after component initialization)
-
-    do eci = 1,size(comp) 
-       if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
-       if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
-    end do
-
-    !--------------------------------------------------
-    ! COMPONENT PES
-    !--------------------------------------------------
-    ! Initialize aream, set it to area for now until maps are read
-    !   in some cases, maps are not read at all !!
-    ! Entire domain must have reasonable values before calling xxx2xxx init
-
-    do eci = 1,size(comp)
-       if (comp(eci)%iamin_compid .and. comp(eci)%present) then
-          if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
-          k1 = mct_aVect_indexRa(comp(eci)%cdata_cc%dom%data, "area"  ,perrWith='aa area ')
-          k2 = mct_aVect_indexRa(comp(eci)%cdata_cc%dom%data, "aream" ,perrWith='aa aream')
-
-          comp(eci)%cdata_cc%dom%data%rAttr(k2,:) = comp(eci)%cdata_cc%dom%data%rAttr(k1,:)
-
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-       endif
-    end do
-
-  end subroutine component_init_cc
-#endif
-
-  !===============================================================================
-
-#ifdef ESMF_INTERFACE
-  subroutine component_init_update_petlist(comp, vm)
-
-    !---------------------------------------------------------------
-    ! Arguments
-    type(component_type), intent(inout) :: comp(:) 
-    type(ESMF_VM) :: vm
-    !
-    ! Local variables
-    integer :: eci
-    integer :: rc
-    integer, pointer :: petlist(:)
-    character(*), parameter :: subname = '(component_init_update_petlist)'
-    !---------------------------------------------------------------
-
-   ! Update petlist attribute
-    do eci = 1, size(comp)
-!BUG       write(6,*)'DEBUG: comp is ',trim(comp(eci)%name)
-       call seq_comm_petlist(comp(eci)%compid, petlist)
-!BUG       write(6,*)'DEBUG: petlist is ',petlist
-!BUG       call ESMF_AttributeUpdate(comp(eci)%gridcomp_cc, vm, rootList=petlist, rc=rc)
-!BUG       if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-!BUG       write(6,*)'DEBUG: successfully updated attributes'
-    enddo
-
-  end subroutine component_init_update_petlist
-#endif
 
   !===============================================================================
     
@@ -944,7 +562,6 @@ contains
 
   !===============================================================================
 
-#ifndef ESMF_INTERFACE
   subroutine component_run(Eclock, comp, comp_run, infodata,  &
        seq_flds_x2c_fluxes, seq_flds_c2x_fluxes, &
        comp_prognostic, comp_num, timer_barrier, timer_comp_run, &
@@ -953,6 +570,11 @@ contains
     !---------------------------------------------------------------
     ! Description
     ! Run component model
+    ! Note that the optional arguments, seq_flds_x2c_fluxes and
+    !   seq_flds_c2x_fluxes, are not passed for external models (ESP)
+    !   since these type of models do not interact through the coupler.
+    !   The absence of these inputs should be used to avoid coupler-
+    !   based actions in component_run
     !
     ! Arguments
     type(ESMF_Clock)     , intent(inout)   :: EClock
@@ -970,8 +592,8 @@ contains
        end subroutine comp_run
     end interface 
     type (seq_infodata_type) , intent(inout)        :: infodata
-    character(len=*)         , intent(in)           :: seq_flds_x2c_fluxes
-    character(len=*)         , intent(in)           :: seq_flds_c2x_fluxes
+    character(len=*)         , intent(in), optional :: seq_flds_x2c_fluxes
+    character(len=*)         , intent(in), optional :: seq_flds_c2x_fluxes
     logical                  , intent(in)           :: comp_prognostic
     integer                  , intent(in), optional :: comp_num
     character(len=*)         , intent(in), optional :: timer_barrier   
@@ -1014,6 +636,7 @@ contains
        else
           firstloop = .false.
        endif
+#ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') call seq_infodata_putData(infodata, atm_phase=phase)
        if (comp(1)%oneletterid == 'l') call seq_infodata_putData(infodata, lnd_phase=phase)
        if (comp(1)%oneletterid == 'i') call seq_infodata_putData(infodata, ice_phase=phase)
@@ -1021,6 +644,10 @@ contains
        if (comp(1)%oneletterid == 'r') call seq_infodata_putData(infodata, rof_phase=phase)
        if (comp(1)%oneletterid == 'g') call seq_infodata_putData(infodata, glc_phase=phase)
        if (comp(1)%oneletterid == 'w') call seq_infodata_putData(infodata, wav_phase=phase)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_putData(infodata, esp_phase=phase)
+#else
+       call seq_infodata_putData(comp(1)%oneletterid, infodata, comp_phase=phase)
+#endif
 
        do eci = 1,num_inst
           if (comp(eci)%iamin_compid) then
@@ -1041,7 +668,7 @@ contains
              end if
              if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
 
-             if (comp_prognostic .and. firstloop) then
+             if (comp_prognostic .and. firstloop .and. present(seq_flds_x2c_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
              end if
 
@@ -1049,7 +676,7 @@ contains
              call comp_run(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
              call t_unset_prefixf()
 
-             if (phase == 1) then
+             if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
              endif
 
@@ -1084,131 +711,9 @@ contains
 107 format( 3A, 2i8, A, f12.4, A, f12.4 )
 
   end subroutine component_run
-#endif
 
   !===============================================================================
 
-#ifdef ESMF_INTERFACE
-  subroutine component_run(Eclock, comp, infodata, &
-       seq_flds_x2c_fluxes, seq_flds_c2x_fluxes, &
-       comp_prognostic, comp_num, timer_barrier, timer_comp_run, &
-       run_barriers, ymd, tod, comp_layout)
-
-    !---------------------------------------------------------------
-    !
-    ! Arguments
-    type(ESMF_Clock)         , intent(inout)        :: EClock
-    type(component_type)     , intent(inout)        :: comp(:)
-    type (seq_infodata_type) , intent(inout)        :: infodata
-    character(len=*)         , intent(in)           :: seq_flds_x2c_fluxes
-    character(len=*)         , intent(in)           :: seq_flds_c2x_fluxes
-    logical                  , intent(in)           :: comp_prognostic
-    integer                  , intent(in), optional :: comp_num
-    character(len=*)         , intent(in), optional :: timer_barrier   
-    character(len=*)         , intent(in), optional :: timer_comp_run
-    logical                  , intent(in), optional :: run_barriers
-    integer                  , intent(in), optional :: ymd  ! Current date (YYYYMMDD)
-    integer                  , intent(in), optional :: tod  ! Current time of day (seconds) 
-    character(len=*)         , intent(in), optional :: comp_layout
-    !
-    ! Local Variables
-    type(ESMF_Array)         :: x2d_array
-    type(ESMF_Array)         :: d2x_array
-    integer                  :: rc, urc
-    integer                  :: eci
-    integer                  :: ierr
-    integer                  :: num_inst
-    real(r8)                 :: time_brun         ! Start time
-    real(r8)                 :: time_erun         ! Ending time
-    real(r8)                 :: cktime            ! delta time
-    real(r8)                 :: cktime_acc(10)    ! cktime accumulator array 1 = all, 2 = atm, etc
-    integer                  :: cktime_cnt(10)    ! cktime counter array
-    character(*), parameter :: subname = '(component_run:esmf)'
-    !---------------------------------------------------------------
-
-    num_inst = size(comp)
-    do eci = 1,num_inst
-       if (comp(eci)%iamin_compid) then
-
-          if (present(timer_barrier))  then
-             if (present(run_barriers)) then
-                if (run_barriers) then
-                   call t_drvstartf (trim(timer_barrier))
-                   call mpi_barrier(comp(eci)%mpicom_compid, ierr) 
-                   call t_drvstopf (trim(timer_barrier))
-                   time_brun = mpi_wtime()
-                endif
-             end if
-          end if
-
-          if (present(timer_comp_run)) then
-             call t_drvstartf (trim(timer_comp_run), barrier=comp(eci)%mpicom_compid)
-          end if
-          if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
-
-          ! Put infodata information into export state (NOTE - not into import state)
-          call esmfshr_infodata_infodata2state(infodata, comp(eci)%c2x_cc_state, &
-               id=comp(eci)%compid, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          ! Determine import state into component
-          ! Remember that import state array and import attribute vector share memory now
-          call ESMF_StateGet(comp(eci)%x2c_cc_state, itemName="x2d", array=x2d_array, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          ! Apply area correction factor from x2c on mct attribute vector
-          if (comp_prognostic) then
-             call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
-          end if
-
-          ! Convert mct attribute vector to esmf array
-          call mct2esmf_copy(comp(eci)%x2c_cc, x2d_array, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          !----------------------------------------------
-          ! *** Run the component on component pes***
-          !----------------------------------------------
-          call t_set_prefixf(comp(1)%oneletterid//":")
-          call ESMF_GridCompRun(comp(eci)%gridcomp_cc, &
-               importState=comp(eci)%x2c_cc_state, exportState=comp(eci)%c2x_cc_state, &
-               clock=EClock, userRc=urc, rc=rc)
-          if (urc /= ESMF_SUCCESS) call ESMF_Finalize(rc=urc, endflag=ESMF_END_ABORT)
-          if (rc  /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc , endflag=ESMF_END_ABORT)
-          call t_unset_prefixf()
-          !----------------------------------------------
-
-          call ESMF_AttributeSet(comp(eci)%c2x_cc_state, name="ID", value=comp(eci)%compid, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          ! Convert export state back to infodata, the new nextsw_cday is updated in infodata
-          call esmfshr_infodata_state2infodata(comp(eci)%c2x_cc_state, infodata, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          ! Determine export state and obtain output esmf array 
-          call ESMF_StateGet(comp(eci)%c2x_cc_state, itemName="d2x", array=d2x_array, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-
-          ! Convert output esmf array to mct attribute vector
-          call esmf2mct_copy(d2x_array, comp(eci)%c2x_cc, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-       
-          ! Apply area correction for c2x on mct attribute vector
-          call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-
-          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          
-          if (present(timer_comp_run)) then
-             call t_drvstopf (trim(timer_comp_run))
-          end if
-       end if
-    end do
-
-  end subroutine component_run
-#endif
-
-  !===============================================================================
-
-#ifndef ESMF_INTERFACE
   subroutine component_final(Eclock, comp, comp_final)
 
     !---------------------------------------------------------------
@@ -1249,42 +754,6 @@ contains
     end do
     
   end subroutine component_final
-#endif
-
-  !===============================================================================
-
-#ifdef ESMF_INTERFACE
-  subroutine component_final(Eclock, comp)
-
-    !---------------------------------------------------------------
-    !
-    ! Arguments
-    type(ESMF_Clock)     , intent(inout) :: EClock
-    type(component_type) , intent(inout) :: comp(:)
-    !
-    ! Local Variables
-    integer             :: eci
-    integer             :: rc, urc
-    integer             :: num_inst
-    character(*), parameter :: subname = '(component_final:esmf)'
-    !---------------------------------------------------------------
-    call t_set_prefixf(comp(1)%oneletterid//"_f:")
-
-    num_inst = size(comp)
-    do eci = 1,num_inst
-
-       ! This calls xxx_final_esmf
-       call ESMF_GridCompFinalize(comp(eci)%gridcomp_cc, &
-            importState=comp(eci)%x2c_cc_state, exportState=comp(eci)%c2x_cc_state, &
-            userRc=urc, rc=rc)
-       if (urc /= ESMF_SUCCESS) call ESMF_Finalize(rc=urc, endflag=ESMF_END_ABORT)
-       if (rc  /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc , endflag=ESMF_END_ABORT)
-
-    end do
-
-    call t_unset_prefixf()
-  end subroutine component_final
-#endif
 
   !===============================================================================
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 
@@ -47,7 +47,7 @@ only matched variables.
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -72,10 +72,10 @@ only matched variables.
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -152,8 +152,8 @@ my %cat_heading = (
     'presgrad'   => '<a name="press"    >POP2:  Pressure Gradient</a>',
     'topostress' => '<a name="topos"    >POP2:  Topo Stress</a>',
     'forcing'    => '<a name="forc"     >POP2:  Forcing</a>',
-    'coupled'    => '<a name="coupling" >POP2:  Coupling Control</a>', 
-    'swabs'      => '<a name="swave"    >POP2:  Shortwave Absorbtion</a>', 
+    'coupled'    => '<a name="coupling" >POP2:  Coupling Control</a>',
+    'swabs'      => '<a name="swave"    >POP2:  Shortwave Absorbtion</a>',
     'transdiag'  => '<a name="transport">POP2:  Transport Diagnostic Control</a>',
     'context'    => '<a name="context"  >POP2:  Context for Coupling POP2</a>',
     'overflows'  => '<a name="overflows">POP2:  Overflows</a>',

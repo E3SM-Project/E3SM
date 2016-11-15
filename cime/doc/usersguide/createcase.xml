@@ -28,26 +28,26 @@ CESM1.1 release series short name).
 
 <sect2 id="compset_names">
 <title>New Component Set Naming Convention</title>
-<para> The new component set (compset) longname has the form 
+<para> The new component set (compset) longname has the form
 <screen>
 TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_BGC%phys]
 
-TIME = model time period (e.g. 2000, 20TR, RCP8...)   
-ATM  = [CAM4, CAM5, DATM, SATM, XATM]	   
-LND  = [CLM40, CLM45, DLND, SLND, XLND]	   
-ICE  = [CICE, DICE, SICE, SICE]		   
-OCN  = [POP2, DOCN, SOCN, XOCN,AQUAP]	   
-ROF  = [RTM, DROF, SROF, XROF]		   
-GLC  = [CISM1, SGLC, XGLC]			   
-WAV  = [SWAV, XWAV]				   
-BGC  = optional BGC scenario                    
+TIME = model time period (e.g. 2000, 20TR, RCP8...)
+ATM  = [CAM4, CAM5, DATM, SATM, XATM]
+LND  = [CLM40, CLM45, DLND, SLND, XLND]
+ICE  = [CICE, DICE, SICE, SICE]
+OCN  = [POP2, DOCN, SOCN, XOCN,AQUAP]
+ROF  = [RTM, DROF, SROF, XROF]
+GLC  = [CISM1, SGLC, XGLC]
+WAV  = [SWAV, XWAV]
+BGC  = optional BGC scenario
 
 The OPTIONAL %phys attributes specify sub-modes of the given system
 For example DOCN%DOM is the  DOCN data ocean (rather than slab-ocean) mode.
-ALL the possible %phys choices for each component are listed 
+ALL the possible %phys choices for each component are listed
 by the calling create_newcase with the -list compsets argument.
 ALL data models now have a %phys option that corresponds to the data
-model mode 
+model mode
 </screen>
 </para><para>
 As an example, the new longname,
@@ -69,22 +69,22 @@ appear that provides more details of the component configuration.
 </para>
 </sect2>
 
-<sect2 id="grid_names"> 
+<sect2 id="grid_names">
 <title>New Overall Model Grid Naming Convention</title>
 <para> The new model grid longname has the form
 <screen>
 a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
 
-a%  = atmosphere grid 
-l%  = land grid 
-oi% = ocean/sea-ice grid (must be the same) 
-r%  = river grid 
-m%  = land mask grid 
+a%  = atmosphere grid
+l%  = land grid
+oi% = ocean/sea-ice grid (must be the same)
+r%  = river grid
+m%  = land mask grid
 g%  = internal land-ice (CISM) grid
-w%  = wave component grid (not relevant in CESM1.2 series) 
+w%  = wave component grid (not relevant in CESM1.2 series)
 
 From the point of view of model coupling - the glc (CISM) grid is assumed to
-be identical to the land grid. However, the internal CISM grid can be different, 
+be identical to the land grid. However, the internal CISM grid can be different,
 and is specified by the g% value.
 </screen>
 </para>
@@ -143,9 +143,9 @@ in degrees and n is the grid version. </para></listitem>
 
 </sect2>
 
-<sect2 id="using_create_newcase"> 
+<sect2 id="using_create_newcase">
 <title>Using create_newcase</title>
-<para> 
+<para>
 You should first use the -h option in calling &create_newcase; to
 document its input options.  In addition, the &create_newcase; -list
 [compsets,grids,machine] option can also be used to see which
@@ -154,10 +154,10 @@ above, however, provide a much more complete determination.
 &create_newcase; can be called with the following arguments:
 </para>
 <screen>
-create_newcase \     
-     -case <emphasis>case-name</emphasis> \        
-     -compset <emphasis>component-set</emphasis> \      
-     -res <emphasis>resolution</emphasis> \         
+create_newcase \
+     -case <emphasis>case-name</emphasis> \
+     -compset <emphasis>component-set</emphasis> \
+     -res <emphasis>resolution</emphasis> \
      -mach <emphasis>machine-name</emphasis> \
      [-compiler <emphasis>compiler-name></emphasis> \
      [-mpilib <emphasis>mpi-library-name</emphasis>] \
@@ -168,28 +168,28 @@ create_newcase \
      [-user_compset <emphasis>new user compset long name</emphasis>] \
      [-user_grid_file <emphasis>full-pathname of user xml grid file</emphasis>] \
      [-help [or -h]] |
-     [-list <emphasis>[compsets,grids,machines]</emphasis>  \         
+     [-list <emphasis>[compsets,grids,machines]</emphasis>  \
      [-silent [or -s]] \
      [-verbose [or -v]] \
      [-xmlmode [normal, expert]] \
-     [-nowarning]      
+     [-nowarning]
 </screen>
 
 <para>Required arguments to &create_newcase; are -case, -mach, -compset and -res.
 If you want to use your own pes setup file, specify the full
 pathname of that file for the optional -pes_file argument. The
 required pes_file format is provided at
-<filename>$CIMEROOT/scripts/sample_pes_file.xml</filename>. 
+<filename>$CIMEROOT/scripts/sample_pes_file.xml</filename>.
 </para>
 
-<para> 
+<para>
 Following is a simple example of using &create_newcase;: In what
 follows, $&CIMEROOT; is the full pathname of the root directory of the
-CESM distribution. 
-<screen> 
-> cd $&CIMEROOT;/scripts 
-> create_newcase -case ~/cesm/example1 \ 
-  -compset B_1850_CAM5_CN \ 
+CESM distribution.
+<screen>
+> cd $&CIMEROOT;/scripts
+> create_newcase -case ~/cesm/example1 \
+  -compset B_1850_CAM5_CN \
   -res ne30np4_gx1v6 \
   -mach yellowstone
 </screen>
@@ -205,7 +205,7 @@ configured to produce a present-day simulation.  The complete example
 appears in the <link linkend="use_case_basic">basic
 example</link>. $&CASE; can include letters, numbers, ".", and "_".
 Note that &create_newcase; creates the $&CASEROOT; directory. If the
-directory already exists, it prints a warning and aborts. 
+directory already exists, it prints a warning and aborts.
 </para>
 
 <para>
@@ -240,7 +240,7 @@ and changes.</entry>
 
 <row>
 <entry>CaseStatus</entry>
-<entry>File containing a list of operations done in the current case.</entry> 
+<entry>File containing a list of operations done in the current case.</entry>
 </row>
 
 <row>
@@ -268,13 +268,13 @@ You should never edit the contents of this directory.
 </row>
 
 <row>
-<entry>Tools/</entry> 
-<entry>Directory containing support utility scripts. You should never  
+<entry>Tools/</entry>
+<entry>Directory containing support utility scripts. You should never
 need to edit the contents of this directory.</entry>
 </row>
 
 <row>
-<entry>env_mach_specific</entry> 
+<entry>env_mach_specific</entry>
 <entry>File used to set a number of machine-specific environment
 variables for building and/or running. Although you can edit this at
 any time, build environment variables should not be edited after a
@@ -283,7 +283,7 @@ build is invoked.
 </row>
 
 <row>
-<entry>env_case.xml</entry> 
+<entry>env_case.xml</entry>
 <entry> Sets case specific variables (e.g. model components, model and
 case root directories) and <emphasis>cannot</emphasis> be modified
 after a case has been created.  To make changes, your should re-run
@@ -299,10 +299,10 @@ variables</ulink>).</entry>
 </row>
 
 <row>
-<entry>env_mach_pes.xml</entry> 
+<entry>env_mach_pes.xml</entry>
 <entry> Sets component machine-specific processor layout (see <xref
 linkend="case_conf_setting_pes"/>). The settings in this are
-critical to a well-load-balanced simulation (see <link 
+critical to a well-load-balanced simulation (see <link
 linkend="running_ccsm_loadbalance">loadbalancing a run</link>).
 </entry>
 </row>
@@ -311,7 +311,7 @@ linkend="running_ccsm_loadbalance">loadbalancing a run</link>).
 <entry>env_run.xml</entry>
 <entry>Sets run-time settings such as length of run, frequency of
 restarts, output of coupler diagnostics, and short-term and long-term
-archiving. See 
+archiving. See
 <ulink url="../modelnl/env_run.html#run_start">run initialization variables</ulink>,
 <ulink url="../modelnl/env_run.html#run_stop">run stop variables</ulink>,
 <ulink url="../modelnl/env_run.html#run_restart">run restart control variables</ulink>,
@@ -326,12 +326,12 @@ user_nl_xxx files)</entry>
 </row>
 
 <row>
-<entry><emphasis>$&CASE;.$&MACH;<filename>.build</filename></emphasis> </entry> 
+<entry><emphasis>$&CASE;.$&MACH;<filename>.build</filename></emphasis> </entry>
 <entry>Script to build component and utility libraries and model executable.</entry>
 </row>
 
 <row>
-<entry><emphasis>$&CASE;.$&MACH;<filename>.clean_build</filename></emphasis></entry> 
+<entry><emphasis>$&CASE;.$&MACH;<filename>.clean_build</filename></emphasis></entry>
 <entry> Script to remove all object files and libraries and unlocks
 <filename>Macros</filename> and
 <filename>env_build.xml</filename>. This step is required before a
@@ -367,7 +367,7 @@ into place.</entry>
 </row>
 
 <row>
-<entry><emphasis>create_production_test</emphasis></entry> 
+<entry><emphasis>create_production_test</emphasis></entry>
 <entry>Utility used to create a test of your case.</entry>
 </row>
 
@@ -396,7 +396,7 @@ modify the csh environment variables directly.</para></note>
 that appear in $&CASEROOT; are provided in
 <ulink url="../modelnl/env_case.html">case variables </ulink>,
 <ulink url="../modelnl/env_mach_pes.html">pe layout variables </ulink>,
-<ulink url="../modelnl/env_build.html">build-time variables </ulink>, and 
+<ulink url="../modelnl/env_build.html">build-time variables </ulink>, and
 <ulink url="../modelnl/env_run.html">run-time variables</ulink>.
 </para>
 
@@ -416,10 +416,10 @@ that appear in $&CASEROOT; are provided in
 <itemizedlist>
 <listitem><para>
 Creates the Macros file if it does not exist. Calling <command>cesm_setup -clean</command>
-does not remove this file. 
+does not remove this file.
 </para></listitem>
 
-<listitem><para> 
+<listitem><para>
 Creates the files, <filename>user_nl_xxx</filename>, (where xxx
 denotes the set of components targeted for the specific case).  As an
 example, for a B_ compset, xxx would denote
@@ -439,12 +439,12 @@ Any user modifications to &env_mach_pes.xml; must be done
 <emphasis>before</emphasis> &cesm_setup; is invoked. In the simplest case,
 &cesm_setup; can be run without modifying this file and default settings
 will be then be used.  The &cesm_setup; command must be run in the
-$&CASEROOT; directory. 
+$&CASEROOT; directory.
 </para></listitem>
 </itemizedlist>
 
-<command>cesm_setup -clean</command> moves 
-<filename>$CASEROOT/$CASE.run</filename> and a copy of 
+<command>cesm_setup -clean</command> moves
+<filename>$CASEROOT/$CASE.run</filename> and a copy of
 <filename>env_mach_pes.xml</filename> to a time-stamped directory in
 <filename>MachinesHist</filename>. The $&CASEROOT; directory will now
 appear as if &create_newcase; had just been run with the exception
@@ -539,7 +539,7 @@ Should <emphasis>not</emphasis> be modified by the user.</entry>
 <sect2 id="case_conf_setting_pes">
 <title>Changing the PE layout </title>
 
-<para> 
+<para>
 <ulink url="../modelnl/env_mach_pes.html">&env_mach_pes.xml</ulink>
 variables determine the number of processors for each component, the
 number of instances of each component and the layout of the components
@@ -599,9 +599,9 @@ NTASKS * NTHRDS.
 </para></listitem>
 
 <listitem><para>
-The coupler processor inputs specify the pes used by coupler 
+The coupler processor inputs specify the pes used by coupler
 computation such as mapping, merging, diagnostics, and flux
-calculation.  This is distinct from the driver which always 
+calculation.  This is distinct from the driver which always
 automatically runs on the union
 of all processors to manage model concurrency and sequencing.
 </para></listitem>
@@ -613,17 +613,17 @@ hardware processors counts.  An example of this is below.
 
 <listitem><para>
 The layout of components on processors has no impact on the science.
-The scientific sequencing is hardwired into the driver.  Changing 
+The scientific sequencing is hardwired into the driver.  Changing
 processor layouts does not change intrinsic coupling lags or coupling
-sequencing.  ONE IMPORTANT POINT is that for a fully 
-active configuration, the atmosphere component is hardwired in the driver to 
-never run concurrently with the land or ice component.  Performance 
+sequencing.  ONE IMPORTANT POINT is that for a fully
+active configuration, the atmosphere component is hardwired in the driver to
+never run concurrently with the land or ice component.  Performance
 improvements associated with processor layout concurrency is therefore
 constrained in this case such that there is never a performance reason
 not to overlap the atmosphere component with the land and ice components.
 Beyond that constraint, the land, ice, coupler and ocean models can
-run concurrently, and the ocean model can also run concurrently with the 
-atmosphere model.  
+run concurrently, and the ocean model can also run concurrently with the
+atmosphere model.
 </para></listitem>
 
 <listitem><para>
@@ -664,7 +664,7 @@ If you set ROOTPE_OCN=64 in the preceding example, then a total of
 have been laid out on the first 64 hardware processors in 16x4
 fashion, and the ocean model would have been laid out
 on hardware processors 113-176. Hardware processors 65-112 would
-have been allocated but completely idle.  
+have been allocated but completely idle.
 </para>
 
 <note><para>&env_mach_pes.xml; <emphasis>cannot</emphasis> be modified
@@ -708,45 +708,45 @@ create the case
 <listitem><para>
 Lets assume the following out of the box pe-layout for hopper:
 <screen>
-&lt;entry id="NTASKS_ATM"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_ATM"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_ATM"   value="0"  /&gt;    
-&lt;entry id="NINST_ATM"   value="1"  /&gt;    
-&lt;entry id="NINST_ATM_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_ATM"   value="128"  /&gt;
+&lt;entry id="NTHRDS_ATM"   value="1"  /&gt;
+&lt;entry id="ROOTPE_ATM"   value="0"  /&gt;
+&lt;entry id="NINST_ATM"   value="1"  /&gt;
+&lt;entry id="NINST_ATM_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_LND"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_LND"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_LND"   value="0"  /&gt;    
-&lt;entry id="NINST_LND"   value="1"  /&gt;    
-&lt;entry id="NINST_LND_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_LND"   value="128"  /&gt;
+&lt;entry id="NTHRDS_LND"   value="1"  /&gt;
+&lt;entry id="ROOTPE_LND"   value="0"  /&gt;
+&lt;entry id="NINST_LND"   value="1"  /&gt;
+&lt;entry id="NINST_LND_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_ICE"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_ICE"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_ICE"   value="0"  /&gt;    
-&lt;entry id="NINST_ICE"   value="1"  /&gt;    
-&lt;entry id="NINST_ICE_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_ICE"   value="128"  /&gt;
+&lt;entry id="NTHRDS_ICE"   value="1"  /&gt;
+&lt;entry id="ROOTPE_ICE"   value="0"  /&gt;
+&lt;entry id="NINST_ICE"   value="1"  /&gt;
+&lt;entry id="NINST_ICE_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_OCN"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_OCN"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_OCN"   value="0"  /&gt;    
-&lt;entry id="NINST_OCN"   value="1"  /&gt;    
-&lt;entry id="NINST_OCN_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_OCN"   value="128"  /&gt;
+&lt;entry id="NTHRDS_OCN"   value="1"  /&gt;
+&lt;entry id="ROOTPE_OCN"   value="0"  /&gt;
+&lt;entry id="NINST_OCN"   value="1"  /&gt;
+&lt;entry id="NINST_OCN_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_GLC"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_GLC"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_GLC"   value="0"  /&gt;    
-&lt;entry id="NINST_GLC"   value="1"  /&gt;    
-&lt;entry id="NINST_GLC_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_GLC"   value="128"  /&gt;
+&lt;entry id="NTHRDS_GLC"   value="1"  /&gt;
+&lt;entry id="ROOTPE_GLC"   value="0"  /&gt;
+&lt;entry id="NINST_GLC"   value="1"  /&gt;
+&lt;entry id="NINST_GLC_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_WAV"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_WAV"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_WAV"   value="0"  /&gt;    
-&lt;entry id="NINST_WAV"   value="1"  /&gt;    
-&lt;entry id="NINST_WAV_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_WAV"   value="128"  /&gt;
+&lt;entry id="NTHRDS_WAV"   value="1"  /&gt;
+&lt;entry id="ROOTPE_WAV"   value="0"  /&gt;
+&lt;entry id="NINST_WAV"   value="1"  /&gt;
+&lt;entry id="NINST_WAV_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_CPL"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_CPL"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_CPL"   value="0"  /&gt;    
+&lt;entry id="NTASKS_CPL"   value="128"  /&gt;
+&lt;entry id="NTHRDS_CPL"   value="1"  /&gt;
+&lt;entry id="ROOTPE_CPL"   value="0"  /&gt;
 </screen>
 </para>
 
@@ -764,45 +764,45 @@ need to do is to change NINST_ATM, NINST_LND, NINST_ICE, NINST_ROF and NINST_DOC
 This will result in the following &env_mach_pes.xml; file:
 </para><para>
 <screen>
-&lt;entry id="NTASKS_ATM"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_ATM"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_ATM"   value="0"  /&gt;    
-&lt;entry id="NINST_ATM"   value="2"  /&gt;    
-&lt;entry id="NINST_ATM_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_ATM"   value="128"  /&gt;
+&lt;entry id="NTHRDS_ATM"   value="1"  /&gt;
+&lt;entry id="ROOTPE_ATM"   value="0"  /&gt;
+&lt;entry id="NINST_ATM"   value="2"  /&gt;
+&lt;entry id="NINST_ATM_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_LND"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_LND"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_LND"   value="0"  /&gt;    
-&lt;entry id="NINST_LND"   value="2"  /&gt;    
-&lt;entry id="NINST_LND_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_LND"   value="128"  /&gt;
+&lt;entry id="NTHRDS_LND"   value="1"  /&gt;
+&lt;entry id="ROOTPE_LND"   value="0"  /&gt;
+&lt;entry id="NINST_LND"   value="2"  /&gt;
+&lt;entry id="NINST_LND_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_ICE"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_ICE"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_ICE"   value="0"  /&gt;    
-&lt;entry id="NINST_ICE"   value="2"  /&gt;    
-&lt;entry id="NINST_ICE_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_ICE"   value="128"  /&gt;
+&lt;entry id="NTHRDS_ICE"   value="1"  /&gt;
+&lt;entry id="ROOTPE_ICE"   value="0"  /&gt;
+&lt;entry id="NINST_ICE"   value="2"  /&gt;
+&lt;entry id="NINST_ICE_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_ROF"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_ROF"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_ROF"   value="0"  /&gt;    
-&lt;entry id="NINST_ROF"   value="2"  /&gt;    
-&lt;entry id="NINST_ROF_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_ROF"   value="128"  /&gt;
+&lt;entry id="NTHRDS_ROF"   value="1"  /&gt;
+&lt;entry id="ROOTPE_ROF"   value="0"  /&gt;
+&lt;entry id="NINST_ROF"   value="2"  /&gt;
+&lt;entry id="NINST_ROF_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_OCN"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_OCN"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_OCN"   value="0"  /&gt;    
-&lt;entry id="NINST_OCN"   value="2"  /&gt;    
-&lt;entry id="NINST_OCN_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_OCN"   value="128"  /&gt;
+&lt;entry id="NTHRDS_OCN"   value="1"  /&gt;
+&lt;entry id="ROOTPE_OCN"   value="0"  /&gt;
+&lt;entry id="NINST_OCN"   value="2"  /&gt;
+&lt;entry id="NINST_OCN_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_GLC"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_GLC"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_GLC"   value="0"  /&gt;    
-&lt;entry id="NINST_GLC"   value="1"  /&gt;    
-&lt;entry id="NINST_GLC_LAYOUT"   value="concurrent"  /&gt;    
+&lt;entry id="NTASKS_GLC"   value="128"  /&gt;
+&lt;entry id="NTHRDS_GLC"   value="1"  /&gt;
+&lt;entry id="ROOTPE_GLC"   value="0"  /&gt;
+&lt;entry id="NINST_GLC"   value="1"  /&gt;
+&lt;entry id="NINST_GLC_LAYOUT"   value="concurrent"  /&gt;
 
-&lt;entry id="NTASKS_CPL"   value="128"  /&gt;    
-&lt;entry id="NTHRDS_CPL"   value="1"  /&gt;    
-&lt;entry id="ROOTPE_CPL"   value="0"  /&gt;    
+&lt;entry id="NTASKS_CPL"   value="128"  /&gt;
+&lt;entry id="NTHRDS_CPL"   value="1"  /&gt;
+&lt;entry id="ROOTPE_CPL"   value="0"  /&gt;
 </screen>
 </para><para>
 As a result of this, you will have 2 instances of CAM, CLM and CICE (prescribed) and RTM, each running concurrently on
@@ -853,7 +853,7 @@ rof_in_0002
 by changing the corresponding user_nl_xxx_NNNN file for that component
 instance. Modifying the user_nl_cam_0002 will result in the namelist
 changes you put in to be active ONLY for instance 2 of CAM. To change the
-DOCN stream txt file instance 0002, you should place a copy of 
+DOCN stream txt file instance 0002, you should place a copy of
 <filename>docn.streams.txt.prescribed_0002</filename> in $&CASEROOT;
 with the name <filename>user_docn.streams.txt.prescribed_0002</filename>
 and modify it accordlingly.
@@ -861,7 +861,7 @@ and modify it accordlingly.
 
 </orderedlist>
 
-<para> 
+<para>
 It is also important to stress the following points:
 </para>
 
@@ -1031,12 +1031,12 @@ Here is the simplest example of using &create_clone;:
 
 <screen>
 > cd $&CIMEROOT;/scripts
-> create_clone -case $&CASEROOT; -clone $&CLONEROOT; 
+> create_clone -case $&CASEROOT; -clone $&CLONEROOT;
 </screen>
 
 <para>
 &create_clone; will preserve any local namelist modifications made in the user_nl_xxxx files as well as any source code modifications in the SourceMods tree.   Note that the new case directory will be
-identical to the cloned case directory 
+identical to the cloned case directory
 <emphasis>except</emphasis> for the original cloned scripts
 $&CASEROOT;.$&MACH;.build, $&CASEROOT;.$&MACH;.clean_build,
 $&CASEROOT;.$&MACH;.run, and $&CASEROOT;.$&MACH;.l_archive,
@@ -1047,7 +1047,7 @@ which will have new names in the new case.
 <para>Do not change anything in the &env_case.xml;
 file.  The $&CASEROOT;/ directory will now
 appear as if &create_newcase; had just been run -- with the exception
-that local modifications to the env_* files are preserved. 
+that local modifications to the env_* files are preserved.
 </para></note>
 
 <para>

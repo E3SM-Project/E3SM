@@ -5,7 +5,7 @@ module dead_mod
   use shr_file_mod, only: shr_file_getlogunit
   use shr_sys_mod
   use dead_data_mod
-  
+
   implicit none
   private
 
@@ -36,7 +36,7 @@ subroutine dead_setNewGrid(decomp_type,nxg,nyg,totpe,mype,lsize,gbuf,seg_len,npr
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-   integer(IN),intent(in) :: decomp_type     ! 
+   integer(IN),intent(in) :: decomp_type     !
    integer(IN),intent(in) :: nxg,nyg         ! global grid sizes
    integer(IN),intent(in) :: totpe           ! total number of pes
    integer(IN),intent(in) :: mype            ! local pe number
@@ -107,7 +107,7 @@ subroutine dead_setNewGrid(decomp_type,nxg,nyg,totpe,mype,lsize,gbuf,seg_len,npr
       found = .true.
    elseif (decomp_type == 3) then  ! 2d decomp
       if (present(nproc_x)) then
-      if ( nproc_x > 0 ) then 
+      if ( nproc_x > 0 ) then
          npesx=nproc_x
          npesy=totpe/npesx
          if ( npesx*npesy /= totpe) then
@@ -127,7 +127,7 @@ subroutine dead_setNewGrid(decomp_type,nxg,nyg,totpe,mype,lsize,gbuf,seg_len,npr
             endif
          enddo
       endif
-   elseif (decomp_type == 4) then  ! 2d evenly divisible square block decomp 
+   elseif (decomp_type == 4) then  ! 2d evenly divisible square block decomp
       hscore = nxg*nyg
       do nx = 1,totpe
          ny = totpe/nx
@@ -222,7 +222,7 @@ subroutine dead_setNewGrid(decomp_type,nxg,nyg,totpe,mype,lsize,gbuf,seg_len,npr
 
    endif
 
-   if ( .not.found ) then 
+   if ( .not.found ) then
       write(logunit,F01) 'ERROR: with decomp nxg,nyg,totpe=',nxg,nyg,totpe
       call shr_sys_abort(subName//'decomp')
    endif

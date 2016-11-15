@@ -154,7 +154,7 @@ PURE function front_vec(self) result(item)
   TYPE_NAME :: item
 
   item = self%get(1)
-  
+
 end function front_vec
 
 ! Get last item in the array
@@ -163,7 +163,7 @@ PURE function back_vec(self) result(item)
   TYPE_NAME :: item
 
   item = self%get(self%vec_size)
-  
+
 end function back_vec
 
 ! Declare the vector to have zero size.

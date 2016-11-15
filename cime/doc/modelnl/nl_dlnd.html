@@ -35,7 +35,7 @@ only matched variables.
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -60,10 +60,10 @@ only matched variables.
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -86,7 +86,7 @@ only matched variables.
 	     <pre>
 valid values: NULL,COPYALL
 datamode = "NULL"
-  NULL is always a valid option and means no data will be generated.  
+  NULL is always a valid option and means no data will be generated.
   Turns off the data model as a provider of data to the coupler.  The
   ice_present flag will be set to false and the coupler will assume no
   exchange of data to or from the data model.
@@ -95,8 +95,8 @@ dataMode = "COPYALL"
   fields not found on an input stream will be set to zero.
 
 Set by the following xml variables in env_run.xml
-DLND_MODE 
-   default value: NULL 
+DLND_MODE
+   default value: NULL
 </pre>
         </div>
     </td>
@@ -116,7 +116,7 @@ DLND_MODE
 	     <pre>
 spatial gridfile associated with the strdata.  grid information will
 be read from this file and that grid will serve as the target grid
-for all input data for this strdata input.  
+for all input data for this strdata input.
 </pre>
         </div>
     </td>
@@ -146,7 +146,7 @@ maximum ratio should be about 1.1.  the running value of the delta
 time is computed as data is read and any wraparound or cycling is also
 included.  this input helps trap missing data or errors in cycling.
 to turn off trapping, set the value to 1.0e30 or something similar.
-default=1.5. 
+default=1.5.
 </pre>
         </div>
     </td>
@@ -168,7 +168,7 @@ array (up to 30 elements) of fill algorithms associated with the array
 of streams.  valid options are just copy (ie. no fill), special value,
 nearest neighbor, nearest neighbor in "i" direction, or nearest
 neighbor in "j" direction.
-valid values:  'copy','spval','nn','nnoni','nnonj'  
+valid values:  'copy','spval','nn','nnoni','nnonj'
 <br/>default: "nn".
 </pre>
         </div>
@@ -187,7 +187,7 @@ valid values:  'copy','spval','nn','nnoni','nnonj'
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-plays no role is fill algorithm at the present time.  
+plays no role is fill algorithm at the present time.
 valid values: "nomask,srcmask,dstmask,bothmask"
 <br/>default: "nomask"
 </pre>
@@ -232,7 +232,7 @@ and fillmask are ignored.
 array (up to 30 elements)  of filenames associated with the array of
 streams.  specifies the weights file to generate after weights are
 computed on the fly for the fill operation.  this allows a user to
-save and reuse a set of weights later.  
+save and reuse a set of weights later.
 default="unset".
 </pre>
         </div>
@@ -254,7 +254,7 @@ default="unset".
 array (up to 30 elements) of fill algorithms associated with the array
 of streams.  valid options are copy by index, set to special value,
 nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
-in "j" direction, or bilinear.  
+in "j" direction, or bilinear.
 valid values: copy,spval,nn,nnoni,nnonj,bilinear
 <br/>default: bilinear
 </pre>
@@ -296,7 +296,7 @@ valid values: srcmask, dstmask, nomask,bothmask
         <div id="mapread_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre> 
+	     <pre>
 array (up to 30 elements) of filenames associated with the array of
 streams.  specifies the weights file to read instead of computing
 weights on the fly for the mapping (interpolation) operation.  if this
@@ -347,7 +347,7 @@ specified by the stream module.  this string consists of a
 stream_input_filename is a stream text input file and the format and
 options are described elsewhere.  year_align, year_first, and
 year_last provide information about the time axis of the file and how
-to relate the input time axis to the model time axis.  
+to relate the input time axis to the model time axis.
 default="null".
 </pre>
         </div>
@@ -367,7 +367,7 @@ default="null".
              #cccccc;">
 	     <pre>
 array of time axis modes associated with the array of streams for
-handling data outside the specified stream time axis.  
+handling data outside the specified stream time axis.
 valid options are to cycle the data based on the first, last, and
 align settings associated with the stream dataset, to extend the first
 and last valid value indefinitely, or to limit the interpolated data
@@ -395,7 +395,7 @@ default="cycle".
              #cccccc;">
 	     <pre>
 array (up to 30 elements) of time interpolation options associated with the array of
-streams.  
+streams.
 valid values: lower,upper,nearest,linear,coszen
   lower   = Use lower time-value
   upper   = Use upper time-value
@@ -447,7 +447,7 @@ DLND Decomposition strategy
              #cccccc;">
 	     <pre>
 If TRUE, prognostic is forced to true.
-default=false 
+default=false
 </pre>
         </div>
     </td>

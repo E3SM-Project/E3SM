@@ -11,7 +11,7 @@ function( add_mpi_test _testName _testExe _testArgs _numProc _timeout)
         ###
         ###
 				#set(PIO_RUNJOB ${CMAKE_BINARY_DIR}/scripts/pio_runjob.sh)
-        set(REQUIRED_OPTION --block \$ENV{COBALT_PARTNAME}) 
+        set(REQUIRED_OPTION --block \$ENV{COBALT_PARTNAME})
         set(RUNJOB_NPF --np ${_numProc})
         if (DEFINED ENV{BGQ_RUNJOB})
           set(RUNJOB $ENV{BGQ_RUNJOB})

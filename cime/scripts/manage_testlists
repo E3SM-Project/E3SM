@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 use XML::LibXML;
 use IO::File;
 use Data::Dumper;
@@ -12,51 +12,57 @@ use strict;
 # Globals
 #==========================================================================
 my %opts;
+
+# *** paths and definitions file ***
 my $scriptdir = dirname(abs_path(__FILE__));
 my $cimeroot  = abs_path("$scriptdir/../");
+my $srcroot   = abs_path("$cimeroot/../");
+my $config_file;
+my $model;
 my $testlist;
 my $component;
-
+my $model_components;
 my $banner = "==========================================================================";
 
 {
-	#==========================================================================
-	# Simple attribute class to facilitate easier test parsing..
-        #
-        # NOTE(wjs, 2014-11-12): it would be great if we could make more use of
-        # this intermediate CESMTests representation, doing more processing of
-        # lists of CESMTests, and less of the xml representation (e.g., via
-        # convertXMLToCESMTests, then processing that list, then converting back
-        # to xml via addXMLTests).
-        # ==========================================================================
-	package CESMTest;
+    #==========================================================================
+    # Simple attribute class to facilitate easier test parsing..
+    #
+    # NOTE(wjs, 2014-11-12): it would be great if we could make more use of
+    # this intermediate CIMETests representation, doing more processing of
+    # lists of CIMETests, and less of the xml representation (e.g., via
+    # convertXMLToCIMETests, then processing that list, then converting back
+    # to xml via addXMLTests).
+    # ==========================================================================
+    package CIMETest;
 
-	sub new 
-	{
-	    my ($class, %params) = @_;
-	    
-	    my $self = {
-		# The following are always defined
-		compset  => $params{'compset'}  || undef, 	
-		grid     => $params{'grid'}	|| undef, 	
-		testname => $params{'testname'} || undef, 	
-		machine  => $params{'machine'}  || undef, 	
-		compiler => $params{'compiler'} || undef, 	
-		
-		# The following are optional for each test
-		testmods => $params{'testmods'} || undef, 	
-		comment  => $params{'comment'}  || undef, 	
-		
-		# The following will only be defined in certain use cases
-		testtype  => $params{'testtype'} || undef, 	
-	    };
-	    bless $self, $class;
-	    return $self;
-	}
+    sub new
+    {
+	my ($class, %params) = @_;
+
+	my $self = {
+	    # The following are always defined
+	    compset  => $params{'compset'}  || undef,
+	    grid     => $params{'grid'}	    || undef,
+	    testname => $params{'testname'} || undef,
+	    machine  => $params{'machine'}  || undef,
+	    compiler => $params{'compiler'} || undef,
+	    model    => $params{'model'}    || undef,
+
+	    # The following are optional for each test
+	    testmods => $params{'testmods'} || undef,
+	    comment  => $params{'comment'}  || undef,
+
+	    # The following will only be defined in certain use cases
+	    testtype  => $params{'testtype'} || undef,
+	};
+	bless $self, $class;
+	return $self;
+    }
 }
 
 #==========================================================================
-# Show the usage. 
+# Show the usage.
 #==========================================================================
 sub usage
 {
@@ -68,16 +74,17 @@ SYNOPSIS
     manage_testlists -list [compsets|grids|tests|machines|compilers|components]
                      -component [allactive | cam | cice | cism | clm | drv | pop]
 
-    manage_testlists -query [-compset|-grid|-test|-machine|-compiler|-testmods]
+    manage_testlists -query -model <model_name> -component [allactive | cam | cice | cism | clm | drv | pop]
+                        [-compset <compset_name>] [-grid <grid_name>] [-test <test_name>]
+			[-machine <machine_name>] [-compiler <compiler_name>] [-testmods <testmods_name>]
+
+    manage_testlists -addlist -file new_test_list -category test_category
                      -component [allactive | cam | cice | cism | clm | drv | pop]
 
-    manage_testlists -addlist -file new_test_list -category test_category 
-                     -component [allactive | cam | cice | cism | clm | drv | pop]
-    
-    manage_testlists -synclist -file modified_test_list 
+    manage_testlists -synclist -file modified_test_list
                      -category test_category [-compset|-grid|-test|-machine|-compiler|-testmods]
                      -component [allactive | cam | cice | cism | clm | drv | pop]
-   
+
     manage_testlists -removetests [-compset|-grid|-test|-machine|-compiler|-testmods]
                      -component [allactive | cam | cice | cism | clm | drv | pop]
 
@@ -87,71 +94,71 @@ SYNOPSIS
 DESCRIPTION
 
     Adds, removes, and 'syncs' modified testlists with the xml test files for a given
-    component.  
+    component.
 
-TEST FILE FORMAT: 
+TEST FILE FORMAT:
 
-    Testname.Grid.Compset.Machine_Compiler[.Testmods] # Test comments may be placed here. 
+    Testname.Grid.Compset.Machine_Compiler[.Testmods] # Test comments may be placed here.
 
 USAGE, OPTIONS, AND EXAMPLES
-   
+
     There are four main modes of operation: -addlist, -synclist, -removetests, and -cleanxml.
-    Usage for each of the modes are described below.  
+    Usage for each of the modes are described below.
 
     -addlist:
- 
-    This mode is intended for adding new tests to the testlist. The script will parse your text 
-    list, and add the new test to the appropriate compset, grid, and test entry.  If duplicates are found, 
+
+    This mode is intended for adding new tests to the testlist. The script will parse your text
+    list, and add the new test to the appropriate compset, grid, and test entry.  If duplicates are found,
     they will be silently ignored, even if they contain a different comment.  Also, please not that since the
-    CESM text testlist never contained a test category, the test category is required to add tests. 
+    CIME text testlist never contained a test category, the test category is required to add tests.
 
     Example:
     To clone and add a new set of prebeta tests for a machine, one would execute the following command
 
-       manage_testlists -query -outputlist and the appropriate flags, and save the output. 
+       manage_testlists -query -outputlist and the appropriate flags, and save the output.
 
-    Modify the test list, change the machine, compiler, and add comments if necessary.  
+    Modify the test list, change the machine, compiler, and add comments if necessary.
 
-       manage_testlists -addlist -file newfile.txt -category prebeta.   
+       manage_testlists -addlist -file newfile.txt -category prebeta.
 
-    -synclist: 
- 
-    This mode is intended to let one dump an existing test list, 'aux_clm_short' for example, 
+    -synclist:
+
+    This mode is intended to let one dump an existing test list, 'aux_clm_short' for example,
     make changes as required, and then re-import those changes back into the test list. The script
-    will delete tests that match any of the following options: -compset, -grid, -test, -machine, 
-    -compiler, and -testmods.  This is currently the easiest way I can see to make mass edits possible, 
+    will delete tests that match any of the following options: -compset, -grid, -test, -machine,
+    -compiler, and -testmods.  This is currently the easiest way I can see to make mass edits possible,
     and as a result, you *MUST* use the same options used to output the test list when you use the -synclist
-    option. Also, since the category was never part of the test list, the testlist can only be mass-edited 
-    by each category.  
- 
-    Example:  
-    To modify the yellowstone PGI prebeta test list for example, one would do the following: 
+    option. Also, since the category was never part of the test list, the testlist can only be mass-edited
+    by each category.
+
+    Example:
+    To modify the yellowstone PGI allactive prebeta test list example, one would execute the following command:
 	manage_testlists -query -outputlist -machine yellowstone -compiler pgi \
-             -category prebeta -component cesm > yellowstone.txt
- 
+             -category prebeta -component allactive > yellowstone.txt
+
     Make any modifications necessary to yellowstone.txt
 
     manage_testlists -synclist -machine yellowstone -compiler pgi \
-             -category prebeta -component cesm -file yellowstone.txt
+             -category prebeta -component allactive -file yellowstone.txt
 
-    This command will delete all tests that match yellowstone, the pgi compiler, and the prebeta category. 
-    Then all the potentially modified tests in yellowstone.txt will be added back in.   
+    This command will delete all tests that match yellowstone, the pgi compiler, and the prebeta category.
+    Then all the potentially modified tests in yellowstone.txt will be added back in.
 
     -removetests:
- 
-    This mode is intended delete any tests found matching the specified arguments.
-    Want to delete all the aux_clm tests?  
-    manage_testlists -removetests -category aux_clm -component cesm
-   
-    Want to delete all the BG1850CN tests?  
-    manage_testlists -removetests -compset BG1850CN -component cesm
-	
-    want to delte the yellowstone aux_science tests using only the gnu compiler? 
-    manage_testlists -removetests -category aux_science -machine yellowstone \
-        -compiler gnu -component cesm
 
-    Want to remove only tests with the 'clm/decStart' testmod? 
-    manage_testlists -removetests -testmods "clm/decStart" -component cesm
+    This mode is intended delete any tests found matching the specified arguments.
+    Want to delete all the aux_clm tests?
+    manage_testlists -removetests -category aux_clm -component allactive
+
+    Want to delete all the BG1850CN tests?
+    manage_testlists -removetests -compset BG1850CN -component allactive
+
+    want to delte the yellowstone aux_science tests using only the gnu compiler?
+    manage_testlists -removetests -category aux_science -machine yellowstone \
+        -compiler gnu -component allactive
+
+    Want to remove only tests with the 'clm/decStart' testmod?
+    manage_testlists -removetests -testmods "clm/decStart" -component allactive
 
     -cleanxml:
 
@@ -165,12 +172,12 @@ USAGE, OPTIONS, AND EXAMPLES
 
     -list <name>             name can be [compsets,grids,compilers,machines,categories,tests]
 
-	list the available compsets, grids, compilers, machines, categories, or tests. 
+	list the available compsets, grids, compilers, machines, categories, or tests.
 
     -query:
 
-	Query the testlist by compset, grid, test, compiler, machine, testmod, or any combination 
-    thereof. 
+	Query the testlist by compset, grid, test, compiler, machine, testmod, or any combination
+    thereof.
 
     A note on the PE count specifiers:
     T, S, M, L, X are not constant.  first, they are only defined for a few
@@ -193,7 +200,7 @@ EOF
 
 
 #==========================================================================
-# Get the options, check the options. 
+# Get the options, check the options.
 #==========================================================================
 sub getOptions
 {
@@ -212,6 +219,7 @@ sub getOptions
 	    "compset=s"		=> \$opts{'compset'},
 	    "grid=s"		=> \$opts{'grid'},
 	    "test=s"		=> \$opts{'test'},
+	    "model=s"           => \$opts{'model'},
 	    "machine=s"		=> \$opts{'machine'},
 	    "compiler=s"	=> \$opts{'compiler'},
 	    "category=s"	=> \$opts{'category'},
@@ -219,17 +227,27 @@ sub getOptions
 	    "testmods=s"	=> \$opts{'testmods'},
 	);
 	usage() if $opts{'help'};
+	if (defined $opts{'model'} ) {
+	    $model = $opts{'model'};
+	} else {
+	    $model = 'cesm';
+	}
+	my @model_components = ('allactive', 'drv');
+	if ($model eq 'cesm') {
+	    push @model_components, ('cam', 'clm', 'cice', 'cism', 'pop');
+	}
+
 	if ( ! defined $opts{'component'} )
 	{
 	    if (defined $opts{'query'} ) {
-		foreach my $comp ('allactive', 'cam ', 'clm', 'cice', 'drv', 'cism', 'pop') {
+		foreach my $comp (@model_components) {
 		    $testlist = setTestlist($comp);
-		    query(); 
+		    query();
 		}
 		exit(0);
 	    } else {
 		print "Must supply a component argument via the -component option \n";
-		print " values must be [allactive | cam | clm | cice | cism| drv | pop] \n";
+		print " values must be @model_components \n";
 		exit(1);
 	    }
 	} else {
@@ -300,21 +318,21 @@ sub readXML
 }
 
 #==========================================================================
-# Write the new testlist xml file.  
+# Write the new testlist xml file.
 #==========================================================================
 sub writeXML
 {
 	my ($testxml) = shift;
 
-	my $newfilename; 
+	my $newfilename;
 	if ($component eq 'allactive') {
-	    $newfilename = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive.xml";
+            $newfilename = "$cimeroot/cime_config/${model}/allactive/testlist_allactive.xml";
 	}
 	elsif ($component eq 'drv') {
-	    $newfilename = "$cimeroot/driver_cpl/cimetest/testlist_drv.xml";
+            $newfilename = "$cimeroot/driver_cpl/cime_config/testdefs//testlist_drv.xml";
 	}
 	else {
-            my $dir = "$cimeroot/../components/$component/cimetest";
+            my $dir = "$cimeroot/../components/$component/cime_config/testdefs";
             if ( ! -d $dir ) {
               die "ERROR: Can not find directory: $dir\n";
             }
@@ -331,17 +349,17 @@ sub writeXML
 }
 
 #==========================================================================
-# Sort an array of CESMTests. Return a reference to a sorted array.
+# Sort an array of CIMETests. Return a reference to a sorted array.
 #
-# NOTE(wjs, 2014-11-12): Should this be moved into the CESMTest package?
+# NOTE(wjs, 2014-11-12): Should this be moved into the CIMETest package?
 #
 # NOTE(wjs, 2014-11-12): It's possible that we could replace some of the other
-# sorting done in this file with calls to sortCESMTests. In particular, it would
+# sorting done in this file with calls to sortCIMETests. In particular, it would
 # be great if we could do away with sortXML, since that is a complex routine.
 # ==========================================================================
-sub sortCESMTests {
+sub sortCIMETests {
    my $tests = shift;
-   my @sorted_tests = sort 
+   my @sorted_tests = sort
       {$a->{compset} cmp $b->{compset} ||
        $a->{grid} cmp $b->{grid}       ||
        $a->{testname} cmp $b->{testname} ||
@@ -351,7 +369,7 @@ sub sortCESMTests {
        undefToBlank($a->{comment}) cmp undefToBlank($b->{comment}) ||
        undefToBlank($a->{testtype}) cmp undefToBlank($b->{testtype}) }
       @$tests;
-   
+
    return \@sorted_tests;
 }
 
@@ -369,7 +387,7 @@ sub undefToBlank {
 }
 
 #==========================================================================
-# Parse the text test list.  
+# Parse the text test list.
 #==========================================================================
 sub parseTextList
 {
@@ -379,24 +397,24 @@ sub parseTextList
 	my @lines = <$TSTFILE>;
 	close $TSTFILE;
 
-	# We're building a list of CESMTest objects
+	# We're building a list of CIMETest objects
 	my @tests;
 	my $testsfound = 0;
-	
+
 	foreach my $line(@lines)
 	{
 		my $comment = undef;
-		chomp $line;	
-		# skip blank lines and # commments at the beginning of lines. 
+		chomp $line;
+		# skip blank lines and # commments at the beginning of lines.
 		next if $line =~ m/^$/;
 		next if $line =~ m/^#/;
 
-		# if we find a comment, split by #, and strip the whitespace. 
+		# if we find a comment, split by #, and strip the whitespace.
 		if($line =~ m/#/)
 		{
 			($line, $comment) = split('\#', $line, 2);
 			# no single quotes in comments, it messes up the XPATH xml searching
-			# when parsing test lists. 
+			# when parsing test lists.
 			if($comment =~ /'/)
 			{
 				print "Sorry, quotes aren't allowed in comments. The offending line was:\n";
@@ -408,16 +426,16 @@ sub parseTextList
 			$line =~ s/^\s+//;
 			$line =~ s/\s+$//;
 		}
-		
-		my ($testname, $grid, $compset, $machcomp, $testmods) = split('\.', $line);	
+
+		my ($testname, $grid, $compset, $machcomp, $testmods) = split('\.', $line);
 		# if the split results in an undefined testname, grid, compset, machcomp, machine, or
-		# compiler, complain and exit. 
+		# compiler, complain and exit.
 		my $parse_error = 0;
 		if(! defined $testname || ! defined $grid || ! defined $compset || ! defined $machcomp)
 		{
 			$parse_error = 1;
 		}
-	
+
 		my ($machine, $compiler) = split('_', $machcomp);
 		if(! defined $machine || ! defined $compiler)
 		{
@@ -430,15 +448,15 @@ sub parseTextList
 			print "Please review your test list and correct any errors\n";
 			return undef;
 		}
-		
+
 		if(defined $testmods)
 		{
 			$testmods =~ s/ //g;
 			$testmods =~  s/-/\//g;
 		}
-		my $tst = new CESMTest(compset => $compset, grid => $grid, testname => $testname, 
-					          machine => $machine, compiler => $compiler); 
-		
+		my $tst = new CIMETest(compset => $compset, grid => $grid, testname => $testname,
+					          machine => $machine, compiler => $compiler);
+
 		if(defined $testmods)
 		{
 			$tst->{testmods} = $testmods;
@@ -447,7 +465,7 @@ sub parseTextList
 		{
 			$tst->{comment} = $comment;
 		}
-		
+
 		push(@tests, $tst);
 		$testsfound++;
 	}
@@ -457,10 +475,10 @@ sub parseTextList
 }
 
 #==========================================================================
-# Add a new set of tests.  Go through the list of CESMTests, silently ignore 
-# any that happen to already be there, and add the tests that don't yet exist 
-# to a new machine element.  Then walk back up the tree of tests, grids, and compsets, 
-# adding any that do not yet exist. 
+# Add a new set of tests.  Go through the list of CIMETests, silently ignore
+# any that happen to already be there, and add the tests that don't yet exist
+# to a new machine element.  Then walk back up the tree of tests, grids, and compsets,
+# adding any that do not yet exist.
 #
 # The global_testtype parameter is optional. If it is supplied, we use it as the
 # testtype for all tests (ignoring the testtype component of each test). If it
@@ -473,7 +491,7 @@ sub addXMLTests
 	my $acounter = 0;
 	foreach my $test(@$tests)
 	{
-		# get the relevant values. 
+		# get the relevant values.
 		my $compset = $test->{compset};
 		my $grid = $test->{grid};
 		my $testname = $test->{testname};
@@ -493,7 +511,7 @@ sub addXMLTests
                    die "ERROR: In addXMLTests, if global_testtype is not provided, each test must contain a testtype component.";
                 }
 
-		# Search the xml for matchng tests using Xpath queries. 
+		# Search the xml for matchng tests using Xpath queries.
 		my @xmltestnodes;
 		if(defined $test->{comment} && defined $test->{testmods})
 		{
@@ -518,11 +536,11 @@ sub addXMLTests
 			$testxml->findnodes("/testlist/compset[\@name=\'$compset\']/grid[\@name=\'$grid\']/test[\@name=\'$testname\']/machine[text()=\'$machine\' and \@compiler=\'$compiler\' and \@testtype=\'$testtype\' and not(\@testmods) and not(\@comment)]");
 
 		}
-		# if we find matching tests in the xml, skip adding the test. 
+		# if we find matching tests in the xml, skip adding the test.
 		next if @xmltestnodes;
 
 		# If we're here, we need to add a new machne element with the machine name
-		# and relevant attributes. 
+		# and relevant attributes.
 		my $newmachnode = $testxml->createElement('machine');
 		$newmachnode->appendText($machine);
 		$newmachnode->setAttribute('compiler', $compiler);
@@ -530,16 +548,16 @@ sub addXMLTests
 		$newmachnode->setAttribute('testmods', $testmods) if defined $testmods;
 		$newmachnode->setAttribute('comment', $comment) if defined $comment;
 
-		# Now we search for matching compset, grid, and test nodes again using Xpath queries.  
+		# Now we search for matching compset, grid, and test nodes again using Xpath queries.
 		my $compsetnode;
 		my $gridnode;
 		my $testnode;
 		my @testnodes = $testxml->findnodes("/testlist/compset[\@name=\'$compset\']/grid[\@name=\'$grid\']/test[\@name=\'$testname\']");
 		my @gridnodes = $testxml->findnodes("/testlist/compset[\@name=\'$compset\']/grid[\@name=\'$grid\']");
 		my @compsetnodes = $testxml->findnodes("/testlist/compset[\@name=\'$compset\']");
-		
-		# if a matching test node is found, set the test node to the found test node. Otherwise add 
-		# a new one. 
+
+		# if a matching test node is found, set the test node to the found test node. Otherwise add
+		# a new one.
 		if(@testnodes)
 		{
 			$testnode = $testnodes[0];
@@ -551,9 +569,9 @@ sub addXMLTests
 		}
 		$testnode->addChild($newmachnode);
 		$acounter++;
-		
-		# if a matching grid node is found, set the test node to the found test node. Otherwise add 
-		# a new one. 
+
+		# if a matching grid node is found, set the test node to the found test node. Otherwise add
+		# a new one.
 		if(@gridnodes)
 		{
 			$gridnode = $gridnodes[0];
@@ -563,8 +581,8 @@ sub addXMLTests
 			$gridnode = $testxml->createElement('grid');
 			$gridnode->setAttribute('name', $grid);
 		}
-		# if a matching compset node is found, set the test node to the found test node. Otherwise add 
-		# a new one. 
+		# if a matching compset node is found, set the test node to the found test node. Otherwise add
+		# a new one.
 		if(@compsetnodes)
 		{
 			$compsetnode = $compsetnodes[0];
@@ -577,8 +595,8 @@ sub addXMLTests
 
 		# add node children if necessary..
 		$testnode->addChild($newmachnode);
-		$gridnode->addChild($testnode) if !@testnodes;		
-		$compsetnode->addChild($gridnode) if !@gridnodes;		
+		$gridnode->addChild($testnode) if !@testnodes;
+		$compsetnode->addChild($gridnode) if !@gridnodes;
 
 		my $root = $testxml->findnodes('./testlist')->get_node(0);
 		$root->addChild($compsetnode) if ! @compsetnodes;
@@ -587,7 +605,7 @@ sub addXMLTests
 	$testxml = sortXML($testxml);
 	print "added $acounter tests\n";
 	return $testxml;
-	
+
 
 }
 
@@ -596,7 +614,7 @@ sub addXMLTests
 # by machine name, testtype, then compiler.  Then sort the tests, then the grids,
 # finally the compsets.
 #
-# NOTE(wjs, 2014-11-12): Could we replace this with uses of sortCESMTests, to
+# NOTE(wjs, 2014-11-12): Could we replace this with uses of sortCIMETests, to
 # avoid needing to maintain this relatively complex routine?
 # ==========================================================================
 sub sortXML
@@ -609,19 +627,19 @@ sub sortXML
 			foreach my $test($grid->findnodes('./test'))
 			{
 				#sort the machines nodes by machine, then by test type, then by
-				#compiler. 
+				#compiler.
 				my @machnodes = $test->findnodes('./machine');
 				my @sortedMachNodes = sort {
 					$a->textContent() cmp $b->textContent() ||
 					$a->getAttribute('testtype') cmp $b->getAttribute('testtype') ||
-					$a->getAttribute('compiler') cmp $b->getAttribute('compiler') 
+					$a->getAttribute('compiler') cmp $b->getAttribute('compiler')
 				} @machnodes;
 				# remove the unsorted nodes, and re-add the sorted nodes..
 				$test->removeChildNodes();
 				map {  $test->addChild($_) } @sortedMachNodes;
 			}
-			# sort the test nodes by name, remove the unsorted test nodes, 
-			# re-add the sorted test nodes. 
+			# sort the test nodes by name, remove the unsorted test nodes,
+			# re-add the sorted test nodes.
 			my @testnodes = $grid->findnodes('./test');
 			my @sortedTestNodes = sort {
 				$a->getAttribute('name') cmp $b->getAttribute('name')
@@ -629,8 +647,8 @@ sub sortXML
 			$grid->removeChildNodes();
 			map { $grid->addChild($_) } @sortedTestNodes;
 		}
-        # sort the grid nodes by name, remove the unsorted, then 
-        # add the sorted. 
+        # sort the grid nodes by name, remove the unsorted, then
+        # add the sorted.
 		my @gridnodes = $compset->findnodes('./grid');
 		my @sortedGridNodes = sort {
 			$a->getAttribute('name') cmp $b->getAttribute('name')
@@ -639,26 +657,26 @@ sub sortXML
 		map { $compset->addChild($_) } @sortedGridNodes;
 	}
 
-	# sort the compset nodes. 
+	# sort the compset nodes.
 	my @compsetnodes = $testxml->findnodes('/testlist/compset');
 	my @sortedCompsetNodes = sort {
 		$a->getAttribute('name') cmp $b->getAttribute('name')
 	} @compsetnodes;
 
-	
-	# get the root element, remove the unsorted compset nodes, 
-	# add the sorted compset nodes. 
+
+	# get the root element, remove the unsorted compset nodes,
+	# add the sorted compset nodes.
 	my $root = $testxml->getDocumentElement();
 	$root->removeChildNodes();
 	map { $root->addChild($_) } @sortedCompsetNodes;
 
 	return $testxml;
-	
+
 }
 
 #==========================================================================
 # Remove xml tests if they match the compset, grid, testname, machine, compiler
-# test category , or testmods argument, and return the xml object. 
+# test category , or testmods argument, and return the xml object.
 #==========================================================================
 sub removeXMLTests
 {
@@ -695,7 +713,7 @@ sub removeXMLTests
 					my $xcompilername = $machnode->getAttribute('compiler');
 					my $xtesttypename = $machnode->getAttribute('testtype');
 					my $xtestmodsname = $machnode->getAttribute('testmods');
-					
+
 					if(defined $$machine)
 					{
 						next unless $xmachinename eq $$machine;
@@ -710,32 +728,32 @@ sub removeXMLTests
 					}
 					if(defined $$testmods)
 					{
-						next unless $xtestmodsname eq $$testmods;	
+						next unless $xtestmodsname eq $$testmods;
 					}
 
 					# Remove the node if everything matched..
 					$testnode->removeChild($machnode);
 					$rcounter++;
 				}
-				# If the current test entry doesn't have any children, 
+				# If the current test entry doesn't have any children,
 				# remove it.
 				if(! $testnode->nonBlankChildNodes())
 				{
 					my $parent = $testnode->parentNode();
 					$parent->removeChild($testnode);
 				}
-				
+
 			}
-			# If the current grid node doesn't have any children, 
-			# remove it. 
+			# If the current grid node doesn't have any children,
+			# remove it.
 			if(! $gridnode->nonBlankChildNodes())
 			{
 				my $parent = $gridnode->parentNode();
 				$parent->removeChild($gridnode);
 			}
 		}
-		# If the current compset node doesn't have any children, 
-		# remove it from the root. 
+		# If the current compset node doesn't have any children,
+		# remove it from the root.
 		if(! $compsetnode->nonBlankChildNodes())
 		{
 				my $parent = $compsetnode->parentNode();
@@ -748,14 +766,13 @@ sub removeXMLTests
 
 #==========================================================================
 # Query the relevant file for the available compsets, grids, tests, machines,
-# and compilers. 
+# and compilers.
 #==========================================================================
 sub list
 {
 	my $listopt = $opts{'list'};
-
 	my $testxml = readXML();
-	
+
 	my @list;
 	my %uniqs;
 	if($listopt =~ /compsets/)
@@ -809,9 +826,9 @@ sub list
 	if($listopt =~ /tests/)
 	{
 	    print "$banner\nAvailable Tests\n$banner\n";
-	    my $testconfig = XML::LibXML->new()->parse_file("./Testcases/config_tests.xml");
+	    my $testconfig = XML::LibXML->new()->parse_file("./Testing/Testcases/config_tests.xml");
 	    my $testroot = $testconfig->getDocumentElement();
-	    foreach my $elem($testroot->findnodes('//ccsmtest'))
+	    foreach my $elem($testroot->findnodes('//test'))
 	    {
 		my $name = $elem->getAttribute('NAME');
 		my $desc = $elem->getAttribute('DESC');
@@ -854,105 +871,92 @@ EOF
 }
 
 #==========================================================================
-# query the test xml file by compset, grid, test, machine, compiler, 
+# query the test xml file by compset, grid, test, machine, compiler,
 # test category, testmods, or any combination thereof. Just use the testxml
-# object read in from testlist.xml, remove any xml elements that don't match, 
-# and return the testxml object with only the nodes matching the query. 
+# object read in from testlist.xml, remove any xml elements that don't match,
+# and return the testxml object with only the nodes matching the query.
 #==========================================================================
 sub queryXMLTests
 {
     my ($testxml, $compset, $grid, $test, $machine, $compiler, $testtype, $testmods) = @_;
+
     # drill down into the machine nodes.  Move onto the next element
     # if anything doesn't match the compset, grid, testname...
-	my $root = $testxml->getDocumentElement();
-	
-	foreach my $compsetnode($testxml->findnodes('/testlist/compset'))
-	{
-		my $xcompsetname = $compsetnode->getAttribute('name');
-		if(defined $$compset && $$compset ne $xcompsetname)
-		{
-			$root->removeChild($compsetnode);
-			next;
-		}
-		foreach my $gridnode($compsetnode->findnodes('./grid'))
-		{
-			my $xgridname = $gridnode->getAttribute('name');
-			if(defined $$grid && $$grid ne $xgridname)
-			{
-				$compsetnode->removeChild($gridnode);
-				next;
-			}
-			foreach my $testnode($gridnode->findnodes('./test'))
-			{
-				my $xtestname = $testnode->getAttribute('name');
-				if(defined $$test && $$test ne $xtestname)
-				{
-					$gridnode->removeChild($testnode);
-					next;	
-				}
-				foreach my $machnode($testnode->findnodes('./machine'))
-				{
-					my $xmachinename = $machnode->textContent();
-					my $xcompilername = $machnode->getAttribute('compiler');
-					my $xtesttypename = $machnode->getAttribute('testtype');
-					my $xtestmodsname = $machnode->getAttribute('testmods');
-				
-					if(defined $$machine && $$machine ne $xmachinename)
-					{
-						$testnode->removeChild($machnode);
-						next;
-					}
-					if(defined $$compiler && $$compiler ne $xcompilername)
-					{
-						$testnode->removeChild($machnode);
-						next;
-					}
-					if(defined $$testtype && $$testtype ne $xtesttypename)
-					{
-						$testnode->removeChild($machnode);
-						next;
-					}
-					if(defined $$testmods && $$testmods ne $xtestmodsname)
-					{
-						$testnode->removeChild($machnode);
-						next;
-					}
-				}
-				if(! $testnode->nonBlankChildNodes())
-				{
-					$gridnode->removeChild($testnode);
-				}
-			}
-			if(! $gridnode->nonBlankChildNodes())
-			{
-				$compsetnode->removeChild($gridnode);
-			}
-		}
-		if(! $compsetnode->nonBlankChildNodes())
-		{
-			$root->removeChild($compsetnode);
-		}
-		
+    my $root = $testxml->getDocumentElement();
+
+    foreach my $compsetnode($testxml->findnodes('/testlist/compset'))	{
+	my $xcompsetname = $compsetnode->getAttribute('name');
+	if(defined $$compset && $$compset ne $xcompsetname) {
+	    $root->removeChild($compsetnode);
+	    next;
 	}
-	return $testxml;
+	foreach my $gridnode($compsetnode->findnodes('./grid'))	{
+	    my $xgridname = $gridnode->getAttribute('name');
+	    if(defined $$grid && $$grid ne $xgridname) {
+		$compsetnode->removeChild($gridnode);
+		next;
+	    }
+	    foreach my $testnode($gridnode->findnodes('./test')) {
+		my $xtestname = $testnode->getAttribute('name');
+		if(defined $$test && $$test ne $xtestname) {
+		    $gridnode->removeChild($testnode);
+		    next;
+		}
+		foreach my $machnode($testnode->findnodes('./machine'))	{
+		    my $xmachinename = $machnode->textContent();
+		    my $xcompilername = $machnode->getAttribute('compiler');
+		    my $xtesttypename = $machnode->getAttribute('testtype');
+		    my $xtestmodsname = $machnode->getAttribute('testmods');
+
+		    if(defined $$machine && $$machine ne $xmachinename)	{
+			$testnode->removeChild($machnode);
+			next;
+		    }
+		    if(defined $$compiler && $$compiler ne $xcompilername) {
+			$testnode->removeChild($machnode);
+			next;
+		    }
+		    if(defined $$testtype && $$testtype ne $xtesttypename) {
+			$testnode->removeChild($machnode);
+			next;
+		    }
+		    if(defined $$testmods && $$testmods ne $xtestmodsname) {
+			$testnode->removeChild($machnode);
+			next;
+		    }
+		}
+		if(! $testnode->nonBlankChildNodes()) {
+		    $gridnode->removeChild($testnode);
+		}
+	    }
+	    if(! $gridnode->nonBlankChildNodes()) {
+		$compsetnode->removeChild($gridnode);
+	    }
+	}
+	if(! $compsetnode->nonBlankChildNodes()) {
+	    $root->removeChild($compsetnode);
+	}
+
+    }
+    return $testxml;
 }
 
 #==========================================================================
-# Query subroutine called from main. Read the xml file, query the object, 
-# and print the user's choice of output. 
+# Query subroutine called from main. Read the xml file, query the object,
+# and print the user's choice of output.
 #==========================================================================
 sub query
 {
     my $testxml = readXML();
-    $testxml = queryXMLTests($testxml, 
-			     \$opts{'compset'}, 
-			     \$opts{'grid'}, 
-			     \$opts{'test'}, 
-			     \$opts{'machine'}, 
+    $testxml = queryXMLTests($testxml,
+			     \$opts{'compset'},
+			     \$opts{'grid'},
+			     \$opts{'test'},
+			     \$opts{'machine'},
 			     \$opts{'compiler'},
-			     \$opts{'category'}, 
+			     \$opts{'category'},
 			     \$opts{'testmods'});
-    
+
     #print $testxml->toString(1);
     $testxml = sortXML($testxml);
     if($opts{'outputxml'})
@@ -970,9 +974,9 @@ sub query
 }
 
 #==========================================================================
-# Convert an xml-based test list to a list of CESMTests
+# Convert an xml-based test list to a list of CIMETests
 # ==========================================================================
-sub convertXMLToCESMTests {
+sub convertXMLToCIMETests {
    my $testxml = shift;
    my @tests;
    foreach my $compsetnode ($testxml->findnodes('./testlist/compset')) {
@@ -987,8 +991,8 @@ sub convertXMLToCESMTests {
                my $testtype = $machnode->getAttribute('testtype');
                my $testmods = $machnode->getAttribute('testmods');
                my $comment = $machnode->getAttribute('comment');
-               
-               my $tst = new CESMTest(compset => $compset,
+
+               my $tst = new CIMETest(compset => $compset,
                                       grid => $grid,
                                       testname => $testname,
                                       machine => $machine,
@@ -1013,13 +1017,13 @@ sub convertXMLToCESMTests {
 
 
 #==========================================================================
-# Print out the queried test list in the old-style test output. 
+# Print out the queried test list in the old-style test output.
 #==========================================================================
 sub textOutput {
    my $testxml = shift;
    #print $testxml->toString(1);
    my @output;
-   my $tests = convertXMLToCESMTests($testxml);
+   my $tests = convertXMLToCIMETests($testxml);
    foreach my $test (@$tests) {
       my $compset = $test->{compset};
       my $grid = $test->{grid};
@@ -1028,7 +1032,7 @@ sub textOutput {
       my $compiler = $test->{compiler};
       my $testmods = $test->{testmods};
       my $comment = $test->{comment};
-      
+
       my $line = "$testname\.$grid\.$compset\.$machine\_$compiler";
       if(defined $testmods) {
          $testmods =~ s/ //g;
@@ -1041,7 +1045,7 @@ sub textOutput {
       push(@output, $line);
    }
 
-   # add a header, and the options used to create the text list. 
+   # add a header, and the options used to create the text list.
    my $dtformat = strftime "%d%b%Y-%H%M%S",  localtime;
    my $header = "# Test list created $dtformat with the following options: ";
    my $opt_output = "# ";
@@ -1054,29 +1058,45 @@ sub textOutput {
    $opt_output .= "-testmods  $opts{'testmods'} " if defined $opts{'testmods'};
    unshift(@output, $opt_output);
    unshift(@output, $header);
-	
+
    #map { print "$_\n" } sort @output;
    map { print "$_\n" } @output;
 }
 
 #==========================================================================
-# print out the queried test list in a (hopefully) nicely formatted fashion. 
+# print out the queried test list in a (hopefully) nicely formatted fashion.
 #==========================================================================
 sub formattedOutput {
    my $testxml = shift;
    my @output;
-   my $header =  sprintf("   %-60s %-25s %-20s %-20s  %-20s %-30s %-20s",
+   my $header =  sprintf("   %-80s %-25s %-20s %-20s  %-20s %-30s %-20s",
                          "Compset", "TestName", "Grid", "Machine_compiler", "Test Category", "TestMods (optional)", "Comment(Optional)");
 
    my %configcompsets;
-   my $compsetxml = XML::LibXML->new()->parse_file("$scriptdir/Tools/config_compsets.xml");
-   foreach my $cfgcompset ($compsetxml->findnodes('//COMPSET')) {
-      my $alias = $cfgcompset->getAttribute('alias');
-      my $sname = $cfgcompset->getAttribute('sname');
-      $configcompsets{$alias} = $sname;
+   my $xml = XML::LibXML->new()->parse_file("$cimeroot/cime_config/${model}/config_files.xml");
+   my @nodes= $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/*");
+   foreach my $node (@nodes) {
+       my $file = $node->textContent();
+       $file =~ s/\$CIMEROOT/$cimeroot/;
+       $file =~ s/\$SRCROOT/$srcroot/;
+       $file =~ s/\$MODEL/$model/;
+       if (-f $file) {
+	   my $compset_xml = XML::LibXML->new()->parse_file($file);
+	   my @compset_nodes = $compset_xml->findnodes(".//COMPSET");
+	   foreach my $compset_node (@compset_nodes) {
+	       my @name_nodes = $compset_node->childNodes();
+	       my $alias;
+	       my $lname;
+	       foreach my $name_node (@name_nodes) {
+		   my $name = $name_node->nodeName();
+		   if ($name eq 'alias') {$alias = $name_node->textContent();}
+		   if ($name eq 'lname') {$lname = $name_node->textContent();}
+	       }
+	       $configcompsets{$alias} = $lname;
+	   }
+       }
    }
-
-   my $tests = convertXMLToCESMTests($testxml);
+   my $tests = convertXMLToCIMETests($testxml);
    foreach my $test (@$tests) {
       my $compset = $test->{compset};
       my $fcompset = "$compset ($configcompsets{$compset})";
@@ -1090,11 +1110,11 @@ sub formattedOutput {
       my $comment = $test->{comment};
 
       #next if($line =~ /^$/);
-      my $line = sprintf("   %-60s %-25s %-20s %-20s  %-20s %-30s %-20s",
+      my $line = sprintf("   %-80s %-25s %-20s %-20s  %-20s %-30s %-20s",
                       $fcompset, $testname, $grid, $machine_compiler, $testtype, $testmods, $comment);
       push(@output, $line);
    }
-	
+
    my @sortedoutput = sort @output;
    unshift(@sortedoutput, $header);
    map { print "$_\n" } @sortedoutput;
@@ -1102,8 +1122,8 @@ sub formattedOutput {
 }
 
 #==========================================================================
-# Add the tests.  Parse the text file, read the xml, add the xml tests. 
-# Write the new xml file. 
+# Add the tests.  Parse the text file, read the xml, add the xml tests.
+# Write the new xml file.
 #==========================================================================
 sub addTests
 {
@@ -1116,9 +1136,9 @@ sub addTests
 }
 
 #==========================================================================
-# Sync an existing test list. Read testlist.xml, remove the tests matching the 
-# options (must be the same options used to dump the test list, parse the changed 
-# text test list, add the changes back to the xml object, and write a new file. 
+# Sync an existing test list. Read testlist.xml, remove the tests matching the
+# options (must be the same options used to dump the test list, parse the changed
+# text test list, add the changes back to the xml object, and write a new file.
 #==========================================================================
 sub syncTests
 {
@@ -1134,8 +1154,8 @@ sub syncTests
 }
 
 #==========================================================================
-# Remove tests from testlist.xml.  Tests can be removed using compset, grid, test name, 
-# machine, compiler, testmods, or any combination thereof. 
+# Remove tests from testlist.xml.  Tests can be removed using compset, grid, test name,
+# machine, compiler, testmods, or any combination thereof.
 #==========================================================================
 sub removeTests
 {
@@ -1163,15 +1183,15 @@ sub cleanTestlistXMLFile
 # Determine testlist for target component
 #==========================================================================
 sub setTestlist{
-    my $comp = shift;
+    my $component = shift;
     my $list;
 
-    if ($comp =~ /^allactive/) {
-	$list = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive.xml"; 
-    } elsif ($comp =~ /^drv/) {
-	$list = "$cimeroot/driver_cpl/cimetest/testlist_drv.xml"; 
+    if ($component =~ /^allactive/) {
+	$list = "$cimeroot/cime_config/${model}/allactive/testlist_allactive.xml";
+    } elsif ($component =~ /^drv/) {
+	$list = "$cimeroot/driver_cpl/cime_config/testdefs/testlist_drv.xml";
     } else {
-	$list = "$cimeroot/../components/$component/cimetest/testlist_$component.xml"; 
+	$list = "$srcroot/components/$component/cime_config/testdefs/testlist_$component.xml";
     }
     if (-f $list) {
 	print "# testlist is $list \n";
@@ -1180,7 +1200,7 @@ sub setTestlist{
 	print "testlist $list for target component is not present \n";
 	exit(1);
     }
-}    
+}
 
 #==========================================================================
 # Clean a testlist xml object, and return the cleaned object
@@ -1190,8 +1210,8 @@ sub setTestlist{
 #==========================================================================
 sub cleanTestlistXML {
    my $testxml = shift;
-   my $cesm_tests = convertXMLToCESMTests($testxml);
-   my $testxml_cleaned = addXMLTests($cesm_tests, blankXML());
+   my $cime_tests = convertXMLToCIMETests($testxml);
+   my $testxml_cleaned = addXMLTests($cime_tests, blankXML());
    return $testxml_cleaned;
 }
 

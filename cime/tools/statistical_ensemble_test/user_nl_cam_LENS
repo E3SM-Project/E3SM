@@ -1,6 +1,6 @@
-! Users should add all user specific namelist changes below in the form of 
+! Users should add all user specific namelist changes below in the form of
 ! namelist_var = new_namelist_value
-! These are specific changes to CAM for the LENS experiment 
+! These are specific changes to CAM for the LENS experiment
  cldfrc_rhminl = 0.8925D0
  empty_htapes=.true.
  fincl1='ABSORB:A','ANRAIN:A','ANSNOW:A','AODDUST1:A','AODDUST2:A','AODDUST3:A',
