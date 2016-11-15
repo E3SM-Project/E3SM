@@ -247,8 +247,11 @@ module atm_time_integration
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
       allocate(qtot(nVertLevels,nCells+1))
+      qtot(:,nCells+1) = 0.0_RKIND
       allocate(tend_rtheta_physics(nVertLevels,nCells+1))
+      tend_rtheta_physics(:,nCells+1) = 0.0_RKIND
       allocate(tend_ru_physics(nVertLevels,nEdges+1))
+      tend_ru_physics(:,nEdges+1) = 0.0_RKIND
 
       !
       ! Initialize RK weights
@@ -539,13 +542,19 @@ module atm_time_integration
                call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
 
                allocate(delsq_theta(nVertLevels,nCells+1))
+               delsq_theta(:,nCells+1) = 0.0_RKIND
                allocate(delsq_w(nVertLevels,nCells+1))
+               delsq_w(:,nCells+1) = 0.0_RKIND
 !!               allocate(qtot(nVertLevels,nCells+1))  ! initializing this earlier in solution sequence
                allocate(delsq_divergence(nVertLevels,nCells+1))
+               delsq_divergence(:,nCells+1) = 0.0_RKIND
                allocate(delsq_u(nVertLevels,nEdges+1))
+               delsq_u(:,nEdges+1) = 0.0_RKIND
 !!               allocate(delsq_circulation(nVertLevels,nVertices+1))  ! no longer used -> removed 
                allocate(delsq_vorticity(nVertLevels,nVertices+1))
+               delsq_vorticity(:,nVertices+1) = 0.0_RKIND
                allocate(dpdz(nVertLevels,nCells+1))
+               dpdz(:,nCells+1) = 0.0_RKIND
 
 !$OMP PARALLEL DO
                do thread=1,nThreads
@@ -827,17 +836,27 @@ module atm_time_integration
                   call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
 
                   allocate(scalar_old_arr(nVertLevels,nCells+1))
+                  scalar_old_arr(:,nCells+1) = 0.0_RKIND
                   allocate(scalar_new_arr(nVertLevels,nCells+1))
+                  scalar_new_arr(:,nCells+1) = 0.0_RKIND
                   allocate(s_max_arr(nVertLevels,nCells+1))
+                  s_max_arr(:,nCells+1) = 0.0_RKIND
                   allocate(s_min_arr(nVertLevels,nCells+1))
+                  s_min_arr(:,nCells+1) = 0.0_RKIND
                   allocate(scale_array(nVertLevels,2,nCells+1))
+                  scale_array(:,:,nCells+1) = 0.0_RKIND
                   allocate(flux_array(nVertLevels,nEdges+1))
+                  flux_array(:,nEdges+1) = 0.0_RKIND
                   allocate(wdtn_arr(nVertLevels+1,nCells+1))
+                  wdtn_arr(:,nCells+1) = 0.0_RKIND
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                      allocate(horiz_flux_array(num_scalars,nVertLevels,nEdges+1))
+                     horiz_flux_array(:,:,nEdges+1) = 0.0_RKIND
                   else
                      allocate(flux_upwind_tmp_arr(nVertLevels,nEdges+1))
+                     flux_upwind_tmp_arr(:,nEdges+1) = 0.0_RKIND
                      allocate(flux_tmp_arr(nVertLevels,nEdges+1))
+                     flux_tmp_arr(:,nEdges+1) = 0.0_RKIND
                   end if
 
                   !
@@ -921,7 +940,9 @@ module atm_time_integration
                call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
 
                allocate(ke_vertex(nVertLevels,nVertices+1))
+               ke_vertex(:,nVertices+1) = 0.0_RKIND
                allocate(ke_edge(nVertLevels,nEdges+1))
+               ke_edge(:,nEdges+1) = 0.0_RKIND
    
 !$OMP PARALLEL DO
                do thread=1,nThreads
@@ -1072,19 +1093,31 @@ module atm_time_integration
                call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
 
                allocate(scalar_old_arr(nVertLevels,nCells+1))
+               scalar_old_arr(:,nCells+1) = 0.0_RKIND
                allocate(scalar_new_arr(nVertLevels,nCells+1))
+               scalar_new_arr(:,nCells+1) = 0.0_RKIND
                allocate(s_max_arr(nVertLevels,nCells+1))
+               s_max_arr(:,nCells+1) = 0.0_RKIND
                allocate(s_min_arr(nVertLevels,nCells+1))
+               s_min_arr(:,nCells+1) = 0.0_RKIND
                allocate(scale_array(nVertLevels,2,nCells+1))
+               scale_array(:,:,nCells+1) = 0.0_RKIND
                allocate(flux_array(nVertLevels,nEdges+1))
+               flux_array(:,nEdges+1) = 0.0_RKIND
                allocate(wdtn_arr(nVertLevels+1,nCells+1))
+               wdtn_arr(:,nCells+1) = 0.0_RKIND
                allocate(rho_zz_int(nVertLevels,nCells+1))
+               rho_zz_int(:,nCells+1) = 0.0_RKIND
                allocate(scalar_tend_array(num_scalars,nVertLevels,nCells+1))
+               scalar_tend_array(:,:,nCells+1) = 0.0_RKIND
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                   allocate(horiz_flux_array(num_scalars,nVertLevels,nEdges+1))
+                  horiz_flux_array(:,:,nEdges+1) = 0.0_RKIND
                else
                   allocate(flux_upwind_tmp_arr(nVertLevels,nEdges+1))
+                  flux_upwind_tmp_arr(:,nEdges+1) = 0.0_RKIND
                   allocate(flux_tmp_arr(nVertLevels,nEdges+1))
+                  flux_tmp_arr(:,nEdges+1) = 0.0_RKIND
                end if
 
                !
@@ -4018,6 +4051,7 @@ module atm_time_integration
       inactive_rthdynten = .false.
       if (.not. associated(rthdynten)) then
          allocate(rthdynten(nVertLevels,nCells+1))
+         rthdynten(:,nCells+1) = 0.0_RKIND
          inactive_rthdynten = .true.
       end if
 
