@@ -358,7 +358,7 @@ contains
 
         ! Setup start time. Will be over written later when clocks are synchronized
         call mpas_pool_get_config(domain % configs, "config_start_time", tempCharConfig)
-        tempCharConfig = "0001-01-01_00:00:00"
+        tempCharConfig = trim(tempCharConfig) // "0:00:00"
 
         ! Setup run duration. Will be ignored in coupled run, since coupler defines how long the run is.
         call mpas_pool_get_config(domain % configs, "config_run_duration", tempCharConfig)
