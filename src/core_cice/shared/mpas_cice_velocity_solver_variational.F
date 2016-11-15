@@ -451,6 +451,8 @@ contains
 
        do iCell = 1, nCells
 
+          replacementPressure(:,iCell) = 0.0_RKIND
+
           if (solveStress(iCell) == 1) then
 
              do iVertexOnCell = 1, nEdgesOnCell(iCell)
