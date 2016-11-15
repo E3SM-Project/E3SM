@@ -1068,6 +1068,8 @@ class X_TestSingleSubmit(TestCreateTestCommon):
             self.skipTest("Skipping single submit. Not valid without batch")
         if CIME.utils.get_model() != "acme":
             self.skipTest("Skipping single submit. ACME experimental feature")
+        if self._machine != "skybridge":
+            self.skipTest("Skipping single submit. Only works on skybridge")
 
         # Keep small enough for now that we don't have to worry about load balancing
         run_cmd_assert_result(self,
@@ -1429,7 +1431,7 @@ file(WRITE query.out "${{{}}}")
         else:
             cmake_args = ""
 
-        run_cmd_assert_result(self.parent, "cmake . 2>&1", from_dir=temp_dir, env=environment)
+        run_cmd_assert_result(self.parent, "cmake %s . 2>&1" % cmake_args, from_dir=temp_dir, env=environment)
 
         with open(output_name, "r") as output:
             query_result = output.read().strip()
