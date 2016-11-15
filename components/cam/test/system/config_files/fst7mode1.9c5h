@@ -1,7 +1,0 @@
--spmd -smp
--chem trop_strat_mam7
--age_of_air_trcs
--dyn fv
--res 1.9x2.5
--phys cam5
--s

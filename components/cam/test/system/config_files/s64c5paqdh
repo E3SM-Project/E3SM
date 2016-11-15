@@ -1,8 +1,0 @@
--spmd -smp
--dyn sld
--res 64x128
--debug
--pergro
--ocn aquaplanet
--phys cam5
--s

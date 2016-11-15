@@ -1,7 +1,0 @@
--spmd -nosmp
--dyn fv
--res 4x5
--phys cam4
--rad rrtmg
--debug
--s

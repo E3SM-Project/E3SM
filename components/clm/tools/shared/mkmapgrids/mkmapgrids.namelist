@@ -1,4 +1,0 @@
- &mkmapgrids_in
-  fname_in  = '/glade/p/cesm/cseg/inputdata/lnd/clm2/griddata/griddata_10x15_070212.nc'
-  fname_out = 'SCRIPgrid_10x15_nomask_c110712.nc'
-/
