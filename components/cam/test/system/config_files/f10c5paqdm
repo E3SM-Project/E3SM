@@ -1,8 +1,0 @@
--spmd -nosmp
--dyn fv
--res 10x15
--debug
--pergro
--ocn aquaplanet
--phys cam5
--s
