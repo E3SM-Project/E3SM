@@ -97,7 +97,7 @@ _TEST_SUITES = {
                          "HOMME_P24.f19_g16_rx1.A",
                          "NCK.f19_g16_rx1.A",
                          "SMS.ne30_f19_g16_rx1.A",
-                         "ERS_Ld5.T62_oQU120.CMPASO_NYF",
+                         "ERS_Ld5.T62_oQU120.CMPASO-NYF",
                          "ERS.f09_g16_g.MPASLISIA",
                          "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
