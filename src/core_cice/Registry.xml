@@ -1717,9 +1717,6 @@
                 <var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceU"/>
 		<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceV"/>
 		<var name="totalMassVertexfVertex"            type="real"     dimensions="nVertices Time"                name_in_code="totalMassVertexfVertex"/>
-		<var name="principalStress1"                  type="real"     dimensions="nCells Time"                   name_in_code="principalStress1"/>
-		<var name="principalStress2"                  type="real"     dimensions="nCells Time"                   name_in_code="principalStress2"/>
-		<var name="replacementPressure"               type="real"     dimensions="nCells Time"                   name_in_code="replacementPressure"/>
 		<var name="divergence"                        type="real"     dimensions="nCells Time"                   name_in_code="divergence"/>
 		<var name="shear"                             type="real"     dimensions="nCells Time"                   name_in_code="shear"/>
 		<var name="dynamicallyLockedCellsMask"        type="integer"  dimensions="nCells Time"                   name_in_code="dynamicallyLockedCellsMask"/>
@@ -1737,6 +1734,9 @@
 		<var name="stress11weak"                      type="real"     dimensions="nCells Time"                         name_in_code="stress11"/>
 		<var name="stress22weak"                      type="real"     dimensions="nCells Time"                         name_in_code="stress22"/>
 		<var name="stress12weak"                      type="real"     dimensions="nCells Time"                         name_in_code="stress12"/>
+		<var name="principalStress1Weak"                  type="real"     dimensions="nCells Time"                   name_in_code="principalStress1"/>
+		<var name="principalStress2Weak"                  type="real"     dimensions="nCells Time"                   name_in_code="principalStress2"/>
+		<var name="replacementPressureWeak"               type="real"     dimensions="nCells Time"                   name_in_code="replacementPressure"/>
 	</var_struct>
 
 	<!-- variational formulation -->
@@ -1754,6 +1754,9 @@
 		<var name="basisIntegralsMetric"              type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsMetric"/>
 		<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
 		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
+		<var name="principalStress1Var"                  type="real"     dimensions="maxEdges nCells Time"                   name_in_code="principalStress1"/>
+		<var name="principalStress2Var"                  type="real"     dimensions="maxEdges nCells Time"                   name_in_code="principalStress2"/>
+		<var name="replacementPressureVar"               type="real"     dimensions="maxEdges nCells Time"                   name_in_code="replacementPressure"/>
 	</var_struct>
 
 	<!-- column physics -->

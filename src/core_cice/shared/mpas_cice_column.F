@@ -11708,14 +11708,14 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
+         velocityWeakPool, &
+         velocityVariationalPool, &
          ridgingPool, &
          diagnosticsPool, &
          tracersAggregatePool
 
     ! dynamics
     real(kind=RKIND), dimension(:), pointer :: &
-         principalStress1, &
-         principalStress2, &
          oceanStressU, &
          oceanStressV, &
          airStressVertexU, &
@@ -11723,8 +11723,17 @@ contains
          stressDivergenceU, &
          stressDivergenceV, &
          surfaceTiltForceU, &
-         surfaceTiltForceV, &
-         replacementPressure
+         surfaceTiltForceV
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         principalStress1Var, &
+         principalStress2Var, &
+         replacementPressureVar
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         principalStress1Weak, &
+         principalStress2Weak, &
+         replacementPressureWeak
 
     ! ridging
     real(kind=RKIND), dimension(:), pointer :: &
@@ -11746,7 +11755,11 @@ contains
          config_use_ice_age, &
          config_use_column_package
 
+    character(len=strKIND), pointer :: &
+         config_stress_divergence_scheme
+
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
     if (config_use_column_package) then
 
@@ -11755,8 +11768,6 @@ contains
 
           call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
 
-          call MPAS_pool_get_array(velocitySolverPool, "principalStress1", principalStress1)
-          call MPAS_pool_get_array(velocitySolverPool, "principalStress2", principalStress2)
           call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
           call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
           call MPAS_pool_get_array(velocitySolverPool, "airStressVertexU", airStressVertexU)
@@ -11765,10 +11776,7 @@ contains
           call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
           call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
           call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
-          call MPAS_pool_get_array(velocitySolverPool, "replacementPressure", replacementPressure)
 
-          principalStress1    = 0.0_RKIND
-          principalStress2    = 0.0_RKIND
           oceanStressU        = 0.0_RKIND
           oceanStressV        = 0.0_RKIND
           airStressVertexU    = 0.0_RKIND
@@ -11777,7 +11785,32 @@ contains
           stressDivergenceV   = 0.0_RKIND
           surfaceTiltForceU   = 0.0_RKIND
           surfaceTiltForceV   = 0.0_RKIND
-          replacementPressure = 0.0_RKIND
+
+          if (trim(config_stress_divergence_scheme) == "weak") then
+
+             call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
+
+             call MPAS_pool_get_array(velocityWeakPool, "principalStress1", principalStress1Weak)
+             call MPAS_pool_get_array(velocityWeakPool, "principalStress2", principalStress2Weak)
+             call MPAS_pool_get_array(velocityWeakPool, "replacementPressure", replacementPressureWeak)
+
+             principalStress1Weak    = 0.0_RKIND
+             principalStress2Weak    = 0.0_RKIND
+             replacementPressureWeak = 0.0_RKIND
+
+          else if (trim(config_stress_divergence_scheme) == "variational") then
+
+             call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+
+             call MPAS_pool_get_array(velocityVariationalPool, "principalStress1", principalStress1Var)
+             call MPAS_pool_get_array(velocityVariationalPool, "principalStress2", principalStress2Var)
+             call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressureVar)
+
+             principalStress1Var    = 0.0_RKIND
+             principalStress2Var    = 0.0_RKIND
+             replacementPressureVar = 0.0_RKIND
+
+          endif
 
           call MPAS_pool_get_subpool(block % structs, "ridging", ridgingPool)
 

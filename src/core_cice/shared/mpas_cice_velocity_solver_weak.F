@@ -167,7 +167,6 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
-       call MPAS_pool_get_array(velocitySolverPool, "replacementPressure", replacementPressure)
        call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
@@ -182,6 +181,7 @@ contains
        call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11)
        call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22)
        call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12)
+       call MPAS_pool_get_array(velocitySolverPool, "replacementPressure", replacementPressure)
 
        call cice_strain_tensor_weak(&
             meshPool, &

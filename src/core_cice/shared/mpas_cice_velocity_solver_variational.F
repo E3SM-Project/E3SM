@@ -137,7 +137,6 @@ contains
          uVelocity, &
          vVelocity, &
          icePressure, &
-         replacementPressure, &
          stressDivergenceU, &
          stressDivergenceV
 
@@ -158,6 +157,7 @@ contains
          tanLatVertexRotatedOverRadius
 
     real(kind=RKIND), dimension(:,:), pointer :: &
+         replacementPressure, &
          strain11, &
          strain22, &
          strain12, &
@@ -186,7 +186,6 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
-       call MPAS_pool_get_array(velocitySolverPool, "replacementPressure", replacementPressure)
        call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
@@ -204,6 +203,7 @@ contains
        call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsU", basisIntegralsU)
        call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsV", basisIntegralsV)
        call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsMetric", basisIntegralsMetric)
+       call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressure)
 
        call mpas_timer_start("Velocity solver strain tensor")
        call cice_strain_tensor_variational(&
@@ -406,7 +406,7 @@ contains
          stress22, & !< Input/Output:
          stress12    !< Input/Output:
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
+    real(kind=RKIND), dimension(:,:), intent(out) :: &
          replacementPressure !< Output:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
@@ -425,9 +425,6 @@ contains
 
     logical, intent(in) :: &
          revisedEVP !< Input:
-
-    real(kind=RKIND), dimension(:), allocatable :: &
-         replacementPressureCell
 
     integer :: &
          iCell, &
@@ -450,8 +447,6 @@ contains
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
-    allocate(replacementPressureCell(maxEdges))
-
     if (.not. revisedEVP) then
 
        do iCell = 1, nCells
@@ -468,14 +463,11 @@ contains
                      strain22(iVertexOnCell,iCell), &
                      strain12(iVertexOnCell,iCell), &
                      icePressure(iCell), &
-                     replacementPressureCell(iVertexOnCell), &
+                     replacementPressure(iVertexOnCell,iCell), &
                      areaCell(iCell), &
                      dtElastic)
 
              enddo ! iVertexOnCell
-
-             !replacementPressure(iCell) = replacementPressureCell(3) ! for comparison to CICE quads
-             replacementPressure(iCell) = sum(replacementPressureCell(1:nEdgesOnCell(iCell))) / real(nEdgesOnCell(iCell),RKIND)
 
           endif ! solveStress
 
@@ -497,22 +489,16 @@ contains
                      strain22(iVertexOnCell,iCell), &
                      strain12(iVertexOnCell,iCell), &
                      icePressure(iCell), &
-                     replacementPressureCell(iVertexOnCell), &
+                     replacementPressure(iVertexOnCell,iCell), &
                      areaCell(iCell))
 
              enddo ! iVertexOnCell
-
-             !replacementPressure(iCell) = replacementPressureCell(3) ! for comparison to CICE quads
-             replacementPressure(iCell) = sum(replacementPressureCell(1:nEdgesOnCell(iCell))) / real(nEdgesOnCell(iCell),RKIND)
 
           endif ! solveStress
 
        enddo ! iCell
 
     endif
-
-    ! clean up
-    deallocate(replacementPressureCell)
 
   end subroutine cice_stress_tensor_variational!}}}
 
