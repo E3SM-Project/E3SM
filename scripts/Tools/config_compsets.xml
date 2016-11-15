@@ -242,12 +242,14 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_1850_CAM5_AV1C-03"        alias="F1850C5AV1C-03"  >1850_CAM5%AV1C-03_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850_CAM5_AV1C-04"        alias="F1850C5AV1C-04"  >1850_CAM5%AV1C-04_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850_CAM5_AV1C-04P"       alias="F1850C5AV1C-04P" >1850_CAM5%AV1C-04P_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_1850_CAM5_AV1C-04P2"      alias="F1850C5AV1C-04P2">1850_CAM5%AV1C-04P2_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850_CAM5_AV1C-L"         alias="F1850C5AV1C-L"   >1850_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1C-01"        alias="FC5AV1C-01"      >2000_CAM5%AV1C-01_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1C-02"        alias="FC5AV1C-02"      >2000_CAM5%AV1C-02_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1C-03"        alias="FC5AV1C-03"      >2000_CAM5%AV1C-03_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1C-04"        alias="FC5AV1C-04"      >2000_CAM5%AV1C-04_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1C-04P"       alias="FC5AV1C-04P"     >2000_CAM5%AV1C-04P_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_AV1C-04P2"      alias="FC5AV1C-04P2"    >2000_CAM5%AV1C-04P2_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1C-L"         alias="FC5AV1C-L"       >2000_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1F"           alias="FC5AV1F"         >2000_CAM5%AV1F_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1F-00"        alias="FC5AV1F-00"      >2000_CAM5%AV1F-00_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -255,6 +257,7 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_1850-2000_CAM5_AV1C-03"   alias="F20TRC5AV1C-03"  >20TR_CAM5%AV1C-03_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850-2000_CAM5_AV1C-04"   alias="F20TRC5AV1C-04"  >20TR_CAM5%AV1C-04_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850-2000_CAM5_AV1C-04P"  alias="F20TRC5AV1C-04P" >20TR_CAM5%AV1C-04P_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_1850-2000_CAM5_AV1C-04P2" alias="F20TRC5AV1C-04P2">20TR_CAM5%AV1C-04P2_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850-2000_CAM5_AV1C-L"    alias="F20TRC5AV1C-L"   >20TR_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_ATMMODCOSP"     alias="FC5ATMMODCOSP"   >2000_CAM5%ATMMODCOSP_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_COSP"           alias="FC5COSP"         >2000_CAM5%COSP_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -704,6 +707,7 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_CONFIG_OPTS compset="_CAM5%AV1C-03"  >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%AV1C-04"  >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%AV1C-04P" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%AV1C-04P2">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%AV1C-L"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%AV1F"     >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%AV1F-00"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
@@ -806,12 +810,14 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_NML_USE_CASE compset="1850_CAM5.*AV1C-03">1850_cam5_av1c-03</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="1850_CAM5.*AV1C-04">1850_cam5_av1c-04</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="1850_CAM5.*AV1C-04P">1850_cam5_av1c-04p</CAM_NML_USE_CASE>
+<CAM_NML_USE_CASE compset="1850_CAM5.*AV1C-04P2">1850_cam5_av1c-04p2</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="1850_CAM5.*AV1C-L" >1850_cam5_av1c-04p</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*AV1C-04">2000_cam5_av1c-04</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*AV1C-04P">2000_cam5_av1c-04p</CAM_NML_USE_CASE>
+<CAM_NML_USE_CASE compset="2000_CAM5.*AV1C-04P2">2000_cam5_av1c-04p2</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*AV1C-L" >2000_cam5_av1c-04p</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*AV1F"   >2000_cam5_av1f</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*AV1F-00">2000_cam5_av1f-00</CAM_NML_USE_CASE>
@@ -819,6 +825,7 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_NML_USE_CASE compset="20TR_CAM5.*AV1C-03">20TR_cam5_av1c-03</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="20TR_CAM5.*AV1C-04">20TR_cam5_av1c-04</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="20TR_CAM5.*AV1C-04P">20TR_cam5_av1c-04p</CAM_NML_USE_CASE>
+<CAM_NML_USE_CASE compset="20TR_CAM5.*AV1C-04P2">20TR_cam5_av1c-04p2</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="20TR_CAM5.*AV1C-L" >20TR_cam5_av1c-04p</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5%COSP"   >2000_cam5_cosp</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</CAM_NML_USE_CASE>
@@ -886,6 +893,7 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <desc compset="_CAM5.*AV1C-03"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v03:</desc>
 <desc compset="_CAM5.*AV1C-04"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04:</desc>
 <desc compset="_CAM5.*AV1C-04P" >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p:</desc>
+<desc compset="_CAM5.*AV1C-04P2">CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p2:</desc>
 <desc compset="_CAM5.*AV1C-L"   >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p:</desc>
 <desc compset="_CAM5.*AV1F"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model):</desc>
 <desc compset="_CAM5.*AV1F-00"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model)- v00:</desc>
@@ -2029,6 +2037,7 @@ DOCN%COPY => docn copy mode
 <CCSM_CO2_PPMV compset="^2000.+AV1C-03"  >368.865</CCSM_CO2_PPMV>  <!-- note: previous versions of 2000_AV1C used the 367ppm default -->
 <CCSM_CO2_PPMV compset="^2000.+AV1C-04"  >368.865</CCSM_CO2_PPMV>  
 <CCSM_CO2_PPMV compset="^2000.+AV1C-04P" >368.865</CCSM_CO2_PPMV>  
+<CCSM_CO2_PPMV compset="^2000.+AV1C-04P2" >368.865</CCSM_CO2_PPMV>  
 <CCSM_CO2_PPMV compset="^2000.+AV1C-L"   >368.865</CCSM_CO2_PPMV>
 
 <!-- Override values based on CAM (WACCM) chemistry -->
