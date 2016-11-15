@@ -13,7 +13,6 @@ module prim_advection_mod
   use dimensions_mod, only     : nlev, nlevp, np, qsize, nelemd
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use element_mod, only        : element_t
-  use fvm_control_volume_mod, only        : fvm_struct
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
   use control_mod, only        : integration, test_case, hypervis_order, &
