@@ -648,10 +648,11 @@ end subroutine ice_deposition_sublimation
 ! minimum qc of 1 x 10^-8 prevents floating point error
 
 elemental subroutine kk2000_liq_autoconversion(microp_uniform, qcic, &
-     ncic, rho, relvar,prc_coef1,prc_exp,prc_exp1, prc, nprc, nprc1)
+     ncic, rho, relvar,mg_prc_coeff_fix,prc_coef1,prc_exp,prc_exp1, prc, nprc, nprc1)
 
   logical, intent(in) :: microp_uniform
 
+  logical, intent(in) :: mg_prc_coeff_fix
   real(r8), intent(in) :: qcic
   real(r8), intent(in) :: ncic
   real(r8), intent(in) :: rho
@@ -669,7 +670,11 @@ elemental subroutine kk2000_liq_autoconversion(microp_uniform, qcic, &
 
   ! Take variance into account, or use uniform value.
   if (.not. microp_uniform) then
-     prc_coef = var_coef(relvar, 2.47_r8)
+     if(mg_prc_coeff_fix) then
+        prc_coef = var_coef(relvar, prc_exp) !PMA: a hardwired constant is replaced by a variable
+     else
+        prc_coef = var_coef(relvar, 2.47_r8)
+     endif
   else
      prc_coef = 1._r8
   end if
