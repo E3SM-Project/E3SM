@@ -135,23 +135,6 @@ contains
     deallocate(xLocal)
     deallocate(yLocal)
 
-    iCell = 4000
-    do i1 = 1, maxEdges
-       do i2 = 1, maxEdges
-          write(70,*) i1, i2, &
-               basisGradientU(i1,i2,iCell), basisGradientV(i1,i2,iCell), &
-               basisIntegralsMetric(i1,i2,iCell), &
-               basisIntegralsU(i1,i2,iCell), basisIntegralsV(i1,i2,iCell)
-       enddo
-    enddo
-
-    call cice_plot_cells_planar(mesh, basisGradientU(3,3,:), "basisGradientU_pwl")
-    call cice_plot_cells_planar(mesh, basisGradientV(3,3,:), "basisGradientV_pwl")
-    call cice_plot_cells_planar(mesh, basisIntegralsMetric(3,3,:), "basisIntegralsMetric_pwl")
-    call cice_plot_cells_planar(mesh, basisIntegralsU(3,3,:), "basisIntegralsU_pwl")
-    call cice_plot_cells_planar(mesh, basisIntegralsV(3,3,:), "basisIntegralsV_pwl")
-    !stop
-
   end subroutine cice_init_velocity_solver_pwl!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -361,19 +344,6 @@ contains
           subBasisConstant(iSubCell,3)  = 1.0_RKIND - subBasisConstant(iSubCell,1) - subBasisConstant(iSubCell,2)
 
        enddo ! iSubCell
-
-       !call plot_pwl(&
-       !     mesh, &
-       !     iCell, &
-       !     nEdgesOnCell(iCell), &
-       !     1, &
-       !     subBasisGradientU, &
-       !     subBasisGradientV, &
-       !     subBasisConstant, &
-       !     xLocal(:,iCell), &
-       !     yLocal(:,iCell))!{{{
-
-       !stop
 
        ! use the linear sub area basis to calculate the PWL basis
        do iBasisVertex = 1, nEdgesOnCell(iCell)
