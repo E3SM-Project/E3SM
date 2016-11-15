@@ -426,17 +426,19 @@
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
-	<command name="purge"/>
-        <command name="load">git/2.1.3</command>
-	<command name="load">python/2.7.9</command>
-	<command name="load">gcc/5.1.0/openmpi/1.8.7</command>
-	<command name="load">cmake/2.8.12</command>
-	<command name="load">netcdf/4.3.2/gcc/5.1.0/openmpi/1.8.7</command>
+        <command name="purge"/>
+        <command name="load">sems-env</command>
+        <command name="load">sems-git</command>
+        <command name="load">sems-python/2.7.9</command>
+        <command name="load">sems-gcc/5.1.0</command>
+        <command name="load">sems-openmpi/1.8.7</command>
+        <command name="load">sems-cmake/2.8.12</command>
+        <command name="load">sems-netcdf/4.3.2/parallel</command>
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-      <env name="PNETCDFROOT">$SEMS_NETCDF_ROOT</env>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
 </machine>
 
