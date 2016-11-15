@@ -289,7 +289,7 @@ def _archive_restarts(case, archive, archive_entry,
                         if (os.path.isfile(srcfile)):
                             try:
                                 os.remove(srcfile)
-                            except OSError as e:
+                            except OSError:
                                 logger.warn("unable to remove interim restart file %s" %srcfile)
                         else:
                             logger.warn("interim restart file %s does not exist" %srcfile)
