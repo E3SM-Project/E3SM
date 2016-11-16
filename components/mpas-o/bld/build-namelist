@@ -677,6 +677,8 @@ add_default($nl, 'config_forcing_restart_file');
 ##############################
 
 add_default($nl, 'config_use_frazil_ice_formation');
+add_default($nl, 'config_frazil_in_open_ocean');
+add_default($nl, 'config_frazil_under_land_ice');
 add_default($nl, 'config_frazil_heat_of_fusion');
 add_default($nl, 'config_frazil_ice_density');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
@@ -739,11 +741,16 @@ add_default($nl, 'config_common_level_weight');
 #######################
 
 add_default($nl, 'config_eos_type');
-add_default($nl, 'config_freezing_temperature_coeff_0');
-add_default($nl, 'config_freezing_temperature_coeff_S');
-add_default($nl, 'config_freezing_temperature_coeff_p');
-add_default($nl, 'config_freezing_temperature_coeff_pS');
-add_default($nl, 'config_freezing_temperature_reference_pressure');
+add_default($nl, 'config_open_ocean_freezing_temperature_coeff_0');
+add_default($nl, 'config_open_ocean_freezing_temperature_coeff_S');
+add_default($nl, 'config_open_ocean_freezing_temperature_coeff_p');
+add_default($nl, 'config_open_ocean_freezing_temperature_coeff_pS');
+add_default($nl, 'config_open_ocean_freezing_temperature_reference_pressure');
+add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_0');
+add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_S');
+add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_p');
+add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_pS');
+add_default($nl, 'config_land_ice_cavity_freezing_temperature_reference_pressure');
 
 ##############################
 # Namelist group: eos_linear #
@@ -1235,6 +1242,32 @@ add_default($nl, 'config_isomip_y3');
 add_default($nl, 'config_isomip_z3');
 add_default($nl, 'config_isomip_ice_fraction3');
 
+###############################
+# Namelist group: isomip_plus #
+###############################
+
+add_default($nl, 'config_isomip_plus_vert_levels');
+add_default($nl, 'config_isomip_plus_vertical_level_distribution');
+add_default($nl, 'config_isomip_plus_max_bottom_depth');
+add_default($nl, 'config_isomip_plus_minimum_levels');
+add_default($nl, 'config_isomip_plus_min_column_thickness');
+add_default($nl, 'config_isomip_plus_min_ocean_fraction');
+add_default($nl, 'config_isomip_plus_topography_file');
+add_default($nl, 'config_isomip_plus_init_top_temp');
+add_default($nl, 'config_isomip_plus_init_bot_temp');
+add_default($nl, 'config_isomip_plus_init_top_sal');
+add_default($nl, 'config_isomip_plus_init_bot_sal');
+add_default($nl, 'config_isomip_plus_restore_top_temp');
+add_default($nl, 'config_isomip_plus_restore_bot_temp');
+add_default($nl, 'config_isomip_plus_restore_top_sal');
+add_default($nl, 'config_isomip_plus_restore_bot_sal');
+add_default($nl, 'config_isomip_plus_restore_rate');
+add_default($nl, 'config_isomip_plus_restore_evap_rate');
+add_default($nl, 'config_isomip_plus_restore_xMin');
+add_default($nl, 'config_isomip_plus_restore_xMax');
+add_default($nl, 'config_isomip_plus_coriolis_parameter');
+add_default($nl, 'config_isomip_plus_effective_density');
+
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################
@@ -1246,6 +1279,9 @@ add_default($nl, 'config_use_activeTracers_interior_restoring');
 add_default($nl, 'config_use_activeTracers_exponential_decay');
 add_default($nl, 'config_use_activeTracers_idealAge_forcing');
 add_default($nl, 'config_use_activeTracers_ttd_forcing');
+add_default($nl, 'config_use_surface_salinity_monthly_restoring');
+add_default($nl, 'config_salinity_restoring_constant_piston_velocity');
+add_default($nl, 'config_salinity_restoring_max_difference');
 
 ###############################################
 # Namelist group: tracer_forcing_debugTracers #
@@ -1477,43 +1513,157 @@ add_default($nl, 'config_AM_mixedLayerDepths_temp_gradient_threshold');
 add_default($nl, 'config_AM_mixedLayerDepths_den_gradient_threshold');
 add_default($nl, 'config_AM_mixedLayerDepths_interp_method');
 
-####################################
-# Namelist group: AM_regionalStats #
-####################################
+#########################################
+# Namelist group: AM_regionalStatsDaily #
+#########################################
 
-add_default($nl, 'config_AM_regionalStats_enable');
-add_default($nl, 'config_AM_regionalStats_compute_on_startup');
-add_default($nl, 'config_AM_regionalStats_write_on_startup');
-add_default($nl, 'config_AM_regionalStats_compute_interval');
-add_default($nl, 'config_AM_regionalStats_output_stream');
-add_default($nl, 'config_AM_regionalStats_restart_stream');
-add_default($nl, 'config_AM_regionalStats_input_stream');
-add_default($nl, 'config_AM_regionalStats_operation');
-add_default($nl, 'config_AM_regionalStats_region_type');
-add_default($nl, 'config_AM_regionalStats_region_group');
-add_default($nl, 'config_AM_regionalStats_1d_weighting_function');
-add_default($nl, 'config_AM_regionalStats_2d_weighting_function');
-add_default($nl, 'config_AM_regionalStats_1d_weighting_field');
-add_default($nl, 'config_AM_regionalStats_2d_weighting_field');
-add_default($nl, 'config_AM_regionalStats_vertical_mask');
-add_default($nl, 'config_AM_regionalStats_vertical_dimension');
+add_default($nl, 'config_AM_regionalStatsDaily_enable');
+add_default($nl, 'config_AM_regionalStatsDaily_compute_on_startup');
+add_default($nl, 'config_AM_regionalStatsDaily_write_on_startup');
+add_default($nl, 'config_AM_regionalStatsDaily_compute_interval');
+add_default($nl, 'config_AM_regionalStatsDaily_output_stream');
+add_default($nl, 'config_AM_regionalStatsDaily_restart_stream');
+add_default($nl, 'config_AM_regionalStatsDaily_input_stream');
+add_default($nl, 'config_AM_regionalStatsDaily_operation');
+add_default($nl, 'config_AM_regionalStatsDaily_region_type');
+add_default($nl, 'config_AM_regionalStatsDaily_region_group');
+add_default($nl, 'config_AM_regionalStatsDaily_1d_weighting_function');
+add_default($nl, 'config_AM_regionalStatsDaily_2d_weighting_function');
+add_default($nl, 'config_AM_regionalStatsDaily_1d_weighting_field');
+add_default($nl, 'config_AM_regionalStatsDaily_2d_weighting_field');
+add_default($nl, 'config_AM_regionalStatsDaily_vertical_mask');
+add_default($nl, 'config_AM_regionalStatsDaily_vertical_dimension');
 
-######################################
-# Namelist group: AM_timeSeriesStats #
-######################################
+##########################################
+# Namelist group: AM_regionalStatsWeekly #
+##########################################
 
-add_default($nl, 'config_AM_timeSeriesStats_enable');
-add_default($nl, 'config_AM_timeSeriesStats_compute_on_startup');
-add_default($nl, 'config_AM_timeSeriesStats_write_on_startup');
-add_default($nl, 'config_AM_timeSeriesStats_compute_interval');
-add_default($nl, 'config_AM_timeSeriesStats_output_stream');
-add_default($nl, 'config_AM_timeSeriesStats_restart_stream');
-add_default($nl, 'config_AM_timeSeriesStats_operation');
-add_default($nl, 'config_AM_timeSeriesStats_reference_times');
-add_default($nl, 'config_AM_timeSeriesStats_duration_intervals');
-add_default($nl, 'config_AM_timeSeriesStats_repeat_intervals');
-add_default($nl, 'config_AM_timeSeriesStats_reset_intervals');
-add_default($nl, 'config_AM_timeSeriesStats_backward_output_offset');
+add_default($nl, 'config_AM_regionalStatsWeekly_enable');
+add_default($nl, 'config_AM_regionalStatsWeekly_compute_on_startup');
+add_default($nl, 'config_AM_regionalStatsWeekly_write_on_startup');
+add_default($nl, 'config_AM_regionalStatsWeekly_compute_interval');
+add_default($nl, 'config_AM_regionalStatsWeekly_output_stream');
+add_default($nl, 'config_AM_regionalStatsWeekly_restart_stream');
+add_default($nl, 'config_AM_regionalStatsWeekly_input_stream');
+add_default($nl, 'config_AM_regionalStatsWeekly_operation');
+add_default($nl, 'config_AM_regionalStatsWeekly_region_type');
+add_default($nl, 'config_AM_regionalStatsWeekly_region_group');
+add_default($nl, 'config_AM_regionalStatsWeekly_1d_weighting_function');
+add_default($nl, 'config_AM_regionalStatsWeekly_2d_weighting_function');
+add_default($nl, 'config_AM_regionalStatsWeekly_1d_weighting_field');
+add_default($nl, 'config_AM_regionalStatsWeekly_2d_weighting_field');
+add_default($nl, 'config_AM_regionalStatsWeekly_vertical_mask');
+add_default($nl, 'config_AM_regionalStatsWeekly_vertical_dimension');
+
+###########################################
+# Namelist group: AM_regionalStatsMonthly #
+###########################################
+
+add_default($nl, 'config_AM_regionalStatsMonthly_enable');
+add_default($nl, 'config_AM_regionalStatsMonthly_compute_on_startup');
+add_default($nl, 'config_AM_regionalStatsMonthly_write_on_startup');
+add_default($nl, 'config_AM_regionalStatsMonthly_compute_interval');
+add_default($nl, 'config_AM_regionalStatsMonthly_output_stream');
+add_default($nl, 'config_AM_regionalStatsMonthly_restart_stream');
+add_default($nl, 'config_AM_regionalStatsMonthly_input_stream');
+add_default($nl, 'config_AM_regionalStatsMonthly_operation');
+add_default($nl, 'config_AM_regionalStatsMonthly_region_type');
+add_default($nl, 'config_AM_regionalStatsMonthly_region_group');
+add_default($nl, 'config_AM_regionalStatsMonthly_1d_weighting_function');
+add_default($nl, 'config_AM_regionalStatsMonthly_2d_weighting_function');
+add_default($nl, 'config_AM_regionalStatsMonthly_1d_weighting_field');
+add_default($nl, 'config_AM_regionalStatsMonthly_2d_weighting_field');
+add_default($nl, 'config_AM_regionalStatsMonthly_vertical_mask');
+add_default($nl, 'config_AM_regionalStatsMonthly_vertical_dimension');
+
+##########################################
+# Namelist group: AM_regionalStatsCustom #
+##########################################
+
+add_default($nl, 'config_AM_regionalStatsCustom_enable');
+add_default($nl, 'config_AM_regionalStatsCustom_compute_on_startup');
+add_default($nl, 'config_AM_regionalStatsCustom_write_on_startup');
+add_default($nl, 'config_AM_regionalStatsCustom_compute_interval');
+add_default($nl, 'config_AM_regionalStatsCustom_output_stream');
+add_default($nl, 'config_AM_regionalStatsCustom_restart_stream');
+add_default($nl, 'config_AM_regionalStatsCustom_input_stream');
+add_default($nl, 'config_AM_regionalStatsCustom_operation');
+add_default($nl, 'config_AM_regionalStatsCustom_region_type');
+add_default($nl, 'config_AM_regionalStatsCustom_region_group');
+add_default($nl, 'config_AM_regionalStatsCustom_1d_weighting_function');
+add_default($nl, 'config_AM_regionalStatsCustom_2d_weighting_function');
+add_default($nl, 'config_AM_regionalStatsCustom_1d_weighting_field');
+add_default($nl, 'config_AM_regionalStatsCustom_2d_weighting_field');
+add_default($nl, 'config_AM_regionalStatsCustom_vertical_mask');
+add_default($nl, 'config_AM_regionalStatsCustom_vertical_dimension');
+
+###########################################
+# Namelist group: AM_timeSeriesStatsDaily #
+###########################################
+
+add_default($nl, 'config_AM_timeSeriesStatsDaily_enable');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_operation');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_backward_output_offset');
+
+#############################################
+# Namelist group: AM_timeSeriesStatsMonthly #
+#############################################
+
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_enable');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_operation');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_backward_output_offset');
+
+#################################################
+# Namelist group: AM_timeSeriesStatsClimatology #
+#################################################
+
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_enable');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_operation');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_backward_output_offset');
+
+############################################
+# Namelist group: AM_timeSeriesStatsCustom #
+############################################
+
+add_default($nl, 'config_AM_timeSeriesStatsCustom_enable');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_operation');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_backward_output_offset');
 
 #####################################
 # Namelist group: AM_pointwiseStats #
@@ -1571,11 +1721,40 @@ add_default($nl, 'config_AM_transectTransport_compute_interval');
 add_default($nl, 'config_AM_transectTransport_output_stream');
 add_default($nl, 'config_AM_transectTransport_compute_on_startup');
 add_default($nl, 'config_AM_transectTransport_write_on_startup');
+add_default($nl, 'config_AM_transectTransport_transect_group');
+
+###########################################
+# Namelist group: AM_eddyProductVariables #
+###########################################
+
+add_default($nl, 'config_AM_eddyProductVariables_enable');
+add_default($nl, 'config_AM_eddyProductVariables_compute_interval');
+add_default($nl, 'config_AM_eddyProductVariables_output_stream');
+add_default($nl, 'config_AM_eddyProductVariables_compute_on_startup');
+add_default($nl, 'config_AM_eddyProductVariables_write_on_startup');
+
+########################################
+# Namelist group: AM_mocStreamfunction #
+########################################
+
+add_default($nl, 'config_AM_mocStreamfunction_enable');
+add_default($nl, 'config_AM_mocStreamfunction_compute_interval');
+add_default($nl, 'config_AM_mocStreamfunction_output_stream');
+add_default($nl, 'config_AM_mocStreamfunction_compute_on_startup');
+add_default($nl, 'config_AM_mocStreamfunction_write_on_startup');
+add_default($nl, 'config_AM_mocStreamfunction_min_bin');
+add_default($nl, 'config_AM_mocStreamfunction_max_bin');
+add_default($nl, 'config_AM_mocStreamfunction_num_bins');
+add_default($nl, 'config_AM_mocStreamfunction_vertical_velocity_value');
+add_default($nl, 'config_AM_mocStreamfunction_normal_velocity_value');
+add_default($nl, 'config_AM_mocStreamfunction_region_group');
+add_default($nl, 'config_AM_mocStreamfunction_transect_group');
 
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpas-o_in) and input dataset list (mpas-o.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
 # Set namelist groups to be written out
+
 
 my @groups = qw(run_modes
                 time_management
@@ -1629,6 +1808,7 @@ my @groups = qw(run_modes
                 ecosys_column
                 sea_mount
                 isomip
+                isomip_plus
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
@@ -1647,12 +1827,20 @@ my @groups = qw(run_modes
                 am_lagrparttrack
                 am_eliassenpalm
                 am_mixedlayerdepths
-                am_regionalstats
-                am_timeseriesstats
+                am_regionalstatsdaily
+                am_regionalstatsweekly
+                am_regionalstatsmonthly
+                am_regionalstatscustom
+                am_timeseriesstatsdaily
+                am_timeseriesstatsmonthly
+                am_timeseriesstatsclimatology
+                am_timeseriesstatscustom
                 am_pointwisestats
                 am_debugdiagnostics
                 am_rpncalculator
                 am_transecttransport
+                am_eddyproductvariables
+                am_mocstreamfunction
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group
