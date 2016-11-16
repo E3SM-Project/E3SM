@@ -249,8 +249,11 @@ def _archive_restarts(case, archive, archive_entry,
                 # need to do this before archiving restart files
                 histfiles_for_restart = get_histfiles_for_restarts(case, archive,
                                                                    archive_entry, restfile)
+
                 if datename_is_last and histfiles_for_restart:
-                    histfiles_savein_rundir = histfiles_for_restart
+                    for histfile in histfiles_for_restart:
+                        if histfile not in histfiles_savein_rundir:
+                            histfiles_savein_rundir.append(histfile)
 
                 # archive restart files and all history files that are needed for restart
                 # Note that the latest file should be copied and not moved

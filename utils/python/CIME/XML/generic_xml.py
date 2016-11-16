@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class GenericXML(object):
 
-    def __init__(self, infile=None):
+    def __init__(self, infile=None, schema=None):
         """
         Initialize an object
         """
@@ -28,6 +28,9 @@ class GenericXML(object):
             # If file is defined and exists, read it
             self.filename = infile
             self.read(infile)
+
+            if schema is not None and self.get_version() != "1.0":
+                self.validate_xml_file(infile, schema)
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
@@ -260,3 +263,15 @@ class GenericXML(object):
         else:
             logger.warn("xmllint not found, could not validate file %s"%filename)
 
+    def get_element_text(self, element_name, attributes=None, root=None, xpath=None):
+        element_node = self.get_optional_node(element_name, attributes, root, xpath)
+        if element_node is not None:
+            return element_node.text
+        return None
+
+    def set_element_text(self, element_name, new_text, attributes=None, root=None, xpath=None):
+        element_node = self.get_optional_node(element_name, attributes, root, xpath)
+        if element_node is not None:
+            element_node.text = new_text
+            return new_text
+        return None

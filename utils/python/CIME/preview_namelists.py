@@ -18,6 +18,7 @@ def create_dirs(case):
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
 
+
     docdir = os.path.join(caseroot, "CaseDocs")
     dirs_to_make = []
     models = case.get_values("COMP_CLASSES")

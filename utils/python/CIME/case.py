@@ -377,6 +377,7 @@ class Case(object):
         if item in self.lookups.keys() and self.lookups[item] is not None:
             logger.warn("Item %s already in lookups with value %s"%(item,self.lookups[item]))
         else:
+            logger.debug("Setting in lookups: item %s, value %s"%(item,value))
             self.lookups[item] = value
 
 

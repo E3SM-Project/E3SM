@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class EntryID(GenericXML):
 
-    def __init__(self, infile=None):
-        GenericXML.__init__(self, infile)
+    def __init__(self, infile=None, schema=None):
+        GenericXML.__init__(self, infile, schema)
         self.groups={}
 
     def get_default_value(self, node, attributes=None):
@@ -24,9 +24,7 @@ class EntryID(GenericXML):
         value = self._get_value_match(node, attributes)
         if value is None:
             # Fall back to default value
-            val_node = self.get_optional_node("default_value", root=node)
-            if val_node is not None:
-                value = val_node.text
+            value = self.get_element_text("default_value", root=node)
         else:
             logger.debug("node is %s value is %s" % (node.get("id"), value))
 
@@ -39,10 +37,8 @@ class EntryID(GenericXML):
     def set_default_value(self, vid, val):
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
-            default_node = self.get_optional_node("default_value", root=node)
-            if default_node is not None:
-                default_node.text = val
-            else:
+            val = self.set_element_text("default_value", val, root=node)
+            if val is None:
                 logger.warn("Called set_default_value on a node without default_value field")
 
         return val
@@ -111,10 +107,7 @@ class EntryID(GenericXML):
             return self._get_node_element_info(node, element_name)
 
     def _get_node_element_info(self, node, element_name):
-        element_node = self.get_optional_node(element_name, root=node)
-        if element_node is not None:
-            return element_node.text
-        return None
+        return self.get_element_text(element_name, root=node)
 
     def _get_type_info(self, node):
         val = self._get_node_element_info(node, "type")
@@ -144,31 +137,36 @@ class EntryID(GenericXML):
         node = self.get_optional_node("entry", {"id":vid})
         if node is None:
             return None
+        return self._get_valid_values(node)
 
-        vv_node = self.get_optional_node("valid_values", root=node)
-        if vv_node is None:
-            return None
-        else:
-            return vv_node.text.split(",")
+    def _get_valid_values(self, node):
+        valid_values = self.get_element_text("valid_values", root=node)
+        valid_values_list = None
+        if valid_values is not None:
+            valid_values_list = [item.lstrip() for item in valid_values.split(',')]
+        return valid_values_list
 
     def set_valid_values(self, vid, new_valid_values):
         node = self.get_optional_node("entry", {"id":vid})
         if node is None:
             return None
-        vv_node = self.get_optional_node("valid_values", root=node)
-        if vv_node is None:
+        return self._set_valid_values(node, new_valid_values)
+
+    def _set_valid_values(self, node, new_valid_values):
+        old_vv = self._get_valid_values(node)
+        if old_vv is None:
             vv_node = ET.Element("valid_values")
             vv_node.text = new_valid_values
             self.add_child(vv_node)
+            logger.debug("Adding valid_values %s for %s"%(new_valid_values, node.get("id")))
         else:
-            logger.debug("Replacing valid_values %s for %s"%(vv_node.text, vid))
-            vv_node.text = new_valid_values
-        logger.debug("Adding valid_values %s for %s"%(new_valid_values, vid))
+            vv_text = self.set_element_text("valid_values", new_valid_values, root=node)
+            logger.debug("Replacing valid_values %s with %s for %s"%(old_vv, vv_text, node.get("id")))
 
         current_value = node.get("value")
-        valid_values_list = new_valid_values.split(',')
+        valid_values_list = self._get_valid_values(node)
         if current_value is not None and current_value not in valid_values_list:
-            logger.warn("WARNING: Current setting for %s not in new valid values. Updating setting to \"%s\""%(vid, valid_values_list[0]))
+            logger.warn("WARNING: Current setting for %s not in new valid values. Updating setting to \"%s\""%(node.get("id"), valid_values_list[0]))
             self._set_value(node, valid_values_list[0])
         return new_valid_values
 
@@ -179,16 +177,15 @@ class EntryID(GenericXML):
         subgroup is ignored in the general routine and applied in specific methods
         """
         expect(subgroup is None, "Subgroup not supported")
-        valid_values = self.get_optional_node("valid_values", root=node)
+        valid_values = self._get_valid_values(node)
         if ignore_type:
             expect(type(value) is str, "Value must be type string if ignore_type is true")
             str_value = value
         else:
             type_str = self._get_type_info(node)
             str_value = convert_to_string(value, type_str, vid)
-        if valid_values is not None and valid_values.text is not None and not str_value.startswith('$'):
-            vvlist = [item.lstrip() for item in valid_values.text.split(',')]
-            expect(str_value in vvlist, "Did not find %s in valid values:%s"%(value, vvlist))
+        if valid_values is not None and not str_value.startswith('$'):
+            expect(str_value in valid_values, "Did not find %s in valid values:%s"%(value, valid_values))
         node.set("value", str_value)
 
         return value
@@ -257,9 +254,7 @@ class EntryID(GenericXML):
 
         logger.debug("Found node %s with attributes %s" , node.tag , node.attrib)
         if attribute:
-            valnodes = self.get_optional_node("value", attribute, root=node)
-            if valnodes is not None:
-                val = valnodes.text
+            val = self.get_element_text("value", attributes=attribute, root=node)
         elif node.get("value") is not None:
             val = node.get("value")
         else:
@@ -328,19 +323,15 @@ class EntryID(GenericXML):
         val = None
         node = self.get_optional_node("entry", {"id" : vid})
         if node is not None:
-            childmatch  = self.get_optional_node(childname, root=node[0])
-            if childmatch is not None:
-                val = childmatch.text
-
+            val = self.get_element_text(childname, root=node)
         return val
 
     def get_elements_from_child_content(self, childname, childcontent):
         nodes = self.get_nodes("entry")
         elements = []
         for node in nodes:
-            childnode = self.get_optional_node(childname,root=node)
-            expect(childnode is not None,"No childname %s for id %s"%(childname,node.get("id")))
-            content = childnode.text
+            content = self.get_element_text(childname, root=node)
+            expect(content is not None,"No childname %s for id %s"%(childname,node.get("id")))
             if content == childcontent:
                 elements.append(deepcopy(node))
 
