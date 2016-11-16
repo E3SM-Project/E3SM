@@ -11,7 +11,7 @@
 !
 !> \brief MPAS ocean analysis core member: time_series_stats
 !> \author Jon Woodring, modified for sea ice by Adrian K. Turner
-!> \date   September 1, 2015 (seaice: 10th November 2015, 17th May 2016)
+!> \date   September 1, 2015 (seaice: 10th November 2015)
 !> \details
 !>  Flexible time series averaging, mins, and maxes of fields.
 !-----------------------------------------------------------------------
@@ -21,6 +21,9 @@ module cice_time_series_stats
   use mpas_dmpar
   use mpas_timekeeping
   use mpas_stream_manager
+
+  !use ocn_constants
+  !use ocn_diagnostics_routines
 
   implicit none
   private
@@ -32,11 +35,11 @@ module cice_time_series_stats
   ! Public member functions
   !--------------------------------------------------------------------
   public :: cice_bootstrap_time_series_stats, &
-         cice_init_time_series_stats, &
-         cice_precompute_time_series_stats, &
-         cice_compute_time_series_stats, &
-         cice_restart_time_series_stats, &
-         cice_finalize_time_series_stats
+            cice_init_time_series_stats, &
+            cice_precompute_time_series_stats, &
+            cice_compute_time_series_stats, &
+            cice_restart_time_series_stats, &
+            cice_finalize_time_series_stats
 
   ! Private module variables
   !--------------------------------------------------------------------
@@ -63,9 +66,7 @@ module cice_time_series_stats
       duration_alarm_ID, reset_alarm_ID
 
     ! counter for accumulation
-    integer, pointer :: counter
-    character (len=StrKIND), pointer :: xtime_start
-    character (len=StrKIND), pointer :: xtime_end
+    real (kind=RKIND), pointer :: counter
   end type time_series_buffer_type
 
   type time_series_type
@@ -84,10 +85,10 @@ module cice_time_series_stats
   integer, parameter :: MIN_OP = 2
   integer, parameter :: MAX_OP = 3
 
-  integer, parameter :: START_TIMES = 11
-  integer, parameter :: DURATION_INTERVALS = 12
-  integer, parameter :: REPEAT_INTERVALS = 13
-  integer, parameter :: RESET_INTERVALS = 14
+  integer, parameter :: START_TIMES = 5
+  integer, parameter :: DURATION_INTERVALS = 6
+  integer, parameter :: REPEAT_INTERVALS = 7
+  integer, parameter :: RESET_INTERVALS = 8
 
   character (len=3), parameter :: AVG_TOKEN = 'avg'
   character (len=3), parameter :: MIN_TOKEN = 'min'
@@ -95,8 +96,6 @@ module cice_time_series_stats
 
   character (len=4), parameter :: MESH_STREAM = 'mesh'
   character (len=5), parameter :: TIME_STREAM = 'xtime'
-  character (len=11), parameter :: TIME_START_PREFIX = 'xtime_start'
-  character (len=9), parameter :: TIME_END_PREFIX = 'xtime_end'
 
   character (len=StrKIND), parameter :: ONE_STRING_MEMORY = &
     'timeSeriesStatsOneString'
@@ -107,7 +106,7 @@ module cice_time_series_stats
 
   character (len=StrKIND), parameter :: CONFIG_PREFIX = &
     'config_AM_timeSeriesStats'
-  character (len=StrKIND), parameter :: FRAMEWORK_PREFIX = 'time'
+  character (len=StrKIND), parameter :: FRAMEWORK_PREFIX = 'timeSeriesStats'
 
   character (len=StrKIND), parameter :: OUTPUT_STREAM_SUFFIX = '_output_stream'
   character (len=StrKIND), parameter :: RESTART_STREAM_SUFFIX = '_restart_stream'
@@ -145,7 +144,7 @@ module cice_time_series_stats
   character (len=StrKIND), parameter :: RESET_ALARM_ID_SUFFIX = &
     '_reset_alarm_ID'
   character (len=StrKIND), parameter :: COUNTER_SUFFIX = &
-    '_counter'
+    '_counter_'
 
   character (len=StrKIND), parameter :: START_ALARM_PREFIX = '_startAlarm_'
   character (len=StrKIND), parameter :: REPEAT_ALARM_PREFIX = '_repeatAlarm_'
@@ -157,9 +156,6 @@ module cice_time_series_stats
   character (len=StrKIND), parameter :: REPEAT_INTERVAL_TOKEN = &
     'repeat_interval'
   character (len=StrKIND), parameter :: RESET_INTERVAL_TOKEN = 'reset_interval'
-
-  character (len=StrKIND), parameter :: CURRENT_CORE_NAME = 'MPAS-Seaice'
-  character (len=4), parameter :: NONE_TOKEN = 'none'
 
 !***********************************************************************
 contains
@@ -177,7 +173,8 @@ contains
 !-----------------------------------------------------------------------
 subroutine cice_bootstrap_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character(len=StrKIND), intent(in) :: instance
+  character(len=*), intent(in) :: instance
+
   ! input/output variables
   type (domain_type), intent(inout) :: domain
 
@@ -186,10 +183,15 @@ subroutine cice_bootstrap_time_series_stats(domain, instance, err)!{{{
 
   ! local variables
   integer :: v
+  !character (len=StrKIND) :: instance ! TODO intent(in)
   type (time_series_type) :: series
+  type (time_series_alarms_type), allocatable, dimension(:) :: alarms
 
   ! start procedure
   err = 0
+
+  ! TODO placeholder for some unique ID if this code is replicated
+  !instance = '' ! TODO to be passed in
 
   ! initial allocation of instance state for this AM from the namelist
   call start_state(domain, instance, series, err)
@@ -218,7 +220,7 @@ end subroutine cice_bootstrap_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine cice_init_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character(len=StrKIND), intent(in) :: instance
+  character(len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -227,14 +229,16 @@ subroutine cice_init_time_series_stats(domain, instance, err)!{{{
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  integer :: v, b
+  integer :: v
+  !character (len=StrKIND) :: instance ! TODO intent(in)
   type (time_series_type) :: series
   type (time_series_alarms_type), allocatable, dimension(:) :: alarms
-  type (MPAS_Time_type) :: start_intv
-  character (len=StrKIND) :: start_xtime
 
   ! start procedure
   err = 0
+
+  ! TODO placeholder for some unique ID if this code is replicated
+  !instance = '' ! TODO to be passed in
 
   ! coming back from a potential restart read
   ! get all of the state for this instance
@@ -247,17 +251,6 @@ subroutine cice_init_time_series_stats(domain, instance, err)!{{{
   ! set the values of the alarms and current flag states based on timers
   call set_alarms(domain, instance, series, alarms, err)
   deallocate(alarms)
-
-  ! set xtime start if it is still unset, for very first time step
-  ! (i.e., no restarts)
-  start_intv = mpas_get_clock_time(domain % clock, MPAS_NOW, err)
-  call mpas_get_time(start_intv, dateTimeString=start_xtime, ierr=err)
-
-  do b = 1, series % number_of_buffers
-    if (trim(series % buffers(b) % xtime_start) == '') then
-      series % buffers(b) % xtime_start = start_xtime
-    end if
-  end do
 
   ! clean up the instance memory
   do v = 1, series % number_of_variables
@@ -288,7 +281,7 @@ end subroutine cice_init_time_series_stats!}}}
       !
       !-----------------------------------------------------------------
 
-      character(len=StrKIND), intent(in) :: instance
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -330,7 +323,7 @@ end subroutine cice_init_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine cice_compute_time_series_stats(domain, instance, timeLevel, err)!{{{
   ! input variables
-  character(len=StrKIND), intent(in) :: instance
+  character(len=*), intent(in) :: instance
   integer, intent(in) :: timeLevel
 
   ! input/output variables
@@ -340,38 +333,25 @@ subroutine cice_compute_time_series_stats(domain, instance, timeLevel, err)!{{{
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
+  !character (len=StrKIND) :: instance ! TODO intent(in)
   integer :: v, b
   type (time_series_type) :: series
-  type (MPAS_TimeInterval_type) :: dt
-  type (MPAS_Time_type) :: start_intv, end_intv
-  character (len=StrKIND) :: start_xtime, end_xtime
-  logical :: unset_xtime
 
   ! start procedure
   err = 0
 
+  ! TODO placeholder for some unique ID if this code is replicated
+  !instance = '' ! TODO to be passed in
+
   ! get all of the state for this instance to be able to compute
   call get_state(domain, instance, series)
-
-  ! get the strings for the date
-  unset_xtime = .true.
 
   ! update the counter
   do b = 1, series % number_of_buffers
     if (series % buffers(b) % accumulate_flag == 1) then
-      if (unset_xtime) then
-        end_intv = mpas_get_clock_time(domain % clock, MPAS_NOW, err)
-        call mpas_get_time(end_intv, dateTimeString=end_xtime, ierr=err)
-        start_intv = end_intv - mpas_get_clock_timestep(domain % clock, err)
-        call mpas_get_time(start_intv, dateTimeString=start_xtime, ierr=err)
-        unset_xtime = .false.
-      end if
-
       if (series % buffers(b) % reset_flag == 1) then
-        series % buffers(b) % xtime_start = start_xtime
         series % buffers(b) % counter = 1
       else
-        series % buffers(b) % xtime_end = end_xtime
         series % buffers(b) % counter = series % buffers(b) % counter + 1
       end if
     end if
@@ -410,7 +390,7 @@ end subroutine cice_compute_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine cice_restart_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character(len=StrKIND), intent(in) :: instance
+  character(len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -439,7 +419,7 @@ end subroutine cice_restart_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine cice_finalize_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character(len=StrKIND), intent(in) :: instance
+  character(len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -459,163 +439,6 @@ end subroutine cice_finalize_time_series_stats!}}}
 !
 
 !***********************************************************************
-! routine add_new_string
-!
-!> \brief Allocate an string in the MPAS framework for this AM
-!> \author  Jon Woodring
-!> \date    December 17, 2015
-!> \details
-!> Allocate a new integer in the AM pool and return a pointer to it.
-!-----------------------------------------------------------------------
-subroutine debug_state(series)
-  ! input variables
-  type (time_series_type), intent(in) :: series
-
-  ! input/output variables
-
-  ! output variables
-
-  ! local variables
-  integer :: v, b
-
-  ! start procedure
-  write(*,*) 'operation: ', series % operation
-  write(*,*) '# variables: ', series % number_of_variables
-  write(*,*) '# buffers: ', series % number_of_buffers
-
-  do b = 1, series % number_of_buffers
-    write(*,*) 'buffer #: ', b
-    write(*,*) 'started: ', series % buffers(b) % started_flag
-    write(*,*) 'accum: ', series % buffers(b) % accumulate_flag
-    write(*,*) 'reset: ', series % buffers(b) % reset_flag
-    write(*,*) 'start alarm: ', trim(series % buffers(b) % start_alarm_ID)
-    write(*,*) 'repeat alarm: ', trim(series % buffers(b) % repeat_alarm_ID)
-    write(*,*) 'duration alarm: ', trim(series % buffers(b) % duration_alarm_ID)
-    write(*,*) 'reset alarm: ', trim(series % buffers(b) % reset_alarm_ID)
-    write(*,*) 'counter: ', series % buffers(b) % counter
-    write(*,*) 'xtime start: ', trim(series % buffers(b) % xtime_start)
-    write(*,*) 'xtime end: ', trim(series % buffers(b) % xtime_end)
-  end do
-
-  do v = 1, series % number_of_variables
-    write(*,*) 'variable #: ', v
-    write(*,*) 'input: ', trim(series % variables(v) % input_name)
-    do b = 1, series % number_of_buffers
-      write(*,*), 'buffer #: ', b
-      write(*,*), 'output: ', trim(series % variables(v) % output_names(b))
-    end do
-  end do
-
-end subroutine debug_state
-
-!***********************************************************************
-! routine add_new_string
-!
-!> \brief Allocate an string in the MPAS framework for this AM
-!> \author  Jon Woodring
-!> \date    December 17, 2015
-!> \details
-!> Allocate a new integer in the AM pool and return a pointer to it.
-!-----------------------------------------------------------------------
-subroutine add_new_string(all_fields, inpool, & !outpool,
-    field_name, target_ptr)
-  ! input variables
-  character (len=StrKIND) :: field_name
-
-  ! input/output variables
-  type (mpas_pool_type), pointer, intent(inout) :: all_fields, inpool !, outpool
-
-  ! output variables
-  character (len=StrKIND), pointer, optional :: target_ptr
-
-  ! local variables
-  type (field0DChar), pointer :: srcString, dstString
-
-  call mpas_pool_get_field(inpool, ONE_STRING_MEMORY, srcString, 1)
-  call mpas_duplicate_field(srcString, dstString)
-  dstString % fieldName = field_name
-  !call mpas_pool_add_field(outpool, dstString % fieldName, dstString)
-  call mpas_pool_add_field(all_fields, dstString % fieldName, dstString)
-  if (present(target_ptr)) then
-    !call mpas_pool_get_array(outpool, dstString % fieldName, target_ptr, 1)
-    call mpas_pool_get_array(all_fields, dstString % fieldName, target_ptr, 1)
-  end if
-end subroutine add_new_string
-
-
-
-!***********************************************************************
-! routine add_new_integer
-!
-!> \brief Allocate an integer in the MPAS framework for this AM
-!> \author  Jon Woodring
-!> \date    December 17, 2015
-!> \details
-!> Allocate a new integer in the AM pool and return a pointer to it.
-!-----------------------------------------------------------------------
-subroutine add_new_integer(all_fields, inpool, & !outpool,
-    field_name, target_ptr)
-  ! input variables
-  character (len=StrKIND) :: field_name
-
-  ! input/output variables
-  type (mpas_pool_type), pointer, intent(inout) :: all_fields, inpool !, outpool
-
-  ! output variables
-  integer, pointer, optional :: target_ptr
-
-  ! local variables
-  type (field0DInteger), pointer :: srcInteger, dstInteger
-
-  call mpas_pool_get_field(inpool, ONE_INTEGER_MEMORY, srcInteger, 1)
-  call mpas_duplicate_field(srcInteger, dstInteger)
-  dstInteger % fieldName = field_name
-  !call mpas_pool_add_field(outpool, dstInteger % fieldName, dstInteger)
-  call mpas_pool_add_field(all_fields, dstInteger % fieldName, dstInteger)
-  if (present(target_ptr)) then
-    !call mpas_pool_get_array(outpool, dstInteger % fieldName, target_ptr, 1)
-    call mpas_pool_get_array(all_fields, dstInteger % fieldName, target_ptr, 1)
-  end if
-end subroutine add_new_integer
-
-
-
-!***********************************************************************
-! routine add_new_real
-!
-!> \brief Allocate an real in the MPAS framework for this AM
-!> \author  Jon Woodring
-!> \date    December 17, 2015
-!> \details
-!> Allocate a new real in the AM pool and return a pointer to it.
-!-----------------------------------------------------------------------
-subroutine add_new_real(all_fields, inpool, & !outpool,
-    field_name, target_ptr)
-  ! input variables
-  character (len=StrKIND) :: field_name
-
-  ! input/output variables
-  type (mpas_pool_type), pointer, intent(inout) :: all_fields, inpool !, outpool
-
-  ! output variables
-  real (kind=RKIND), pointer, optional :: target_ptr
-
-  ! local variables
-  type (field0DReal), pointer :: srcReal, dstReal
-
-  call mpas_pool_get_field(inpool, ONE_REAL_MEMORY, srcReal, 1)
-  call mpas_duplicate_field(srcReal, dstReal)
-  dstReal % fieldName = field_name
-  !call mpas_pool_add_field(outpool, dstReal % fieldName, dstReal)
-  call mpas_pool_add_field(all_fields, dstReal % fieldName, dstReal)
-  if (present(target_ptr)) then
-    !call mpas_pool_get_array(outpool, dstReal % fieldName, target_ptr, 1)
-    call mpas_pool_get_array(all_fields, dstReal % fieldName, target_ptr, 1)
-  end if
-end subroutine add_new_real
-
-
-!***********************************************************************
 ! routine get_state
 !
 !> \brief Get all of the state for this instance.
@@ -627,7 +450,7 @@ end subroutine add_new_real
 !-----------------------------------------------------------------------
 subroutine get_state(domain, instance, series)
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -662,7 +485,14 @@ subroutine get_state(domain, instance, series)
   call mpas_pool_get_array(domain % blocklist % allFields, &
     field_name, series % operation, 1)
 
-  op_name = operator_naming(series % operation)
+  ! operator
+  if (series % operation == AVG_OP) then
+    op_name = AVG_TOKEN
+  else if (series % operation == MIN_OP) then
+    op_name = MIN_TOKEN
+  else
+    op_name = MAX_TOKEN
+  end if
 
   ! create the memory
   allocate(series % variables(series % number_of_variables))
@@ -685,19 +515,14 @@ subroutine get_state(domain, instance, series)
     call mpas_pool_get_array(domain % blocklist % allFields, &
       field_name, series % variables(v) % input_name, 1)
 
-    if (series % number_of_buffers > 1) then
-      do b = 1, series % number_of_buffers
-        write(buf_identifier, '(I0)') b
+    do b = 1, series % number_of_buffers
+      write(buf_identifier, '(I0)') b
 
-        ! create output names
-        series % variables(v) % output_names(b) = output_naming &
-          (storage_prefix, op_name, series % variables(v) % input_name, &
-           buf_identifier)
-      end do
-    else
-      series % variables(v) % output_names(1) = output_naming &
-        (storage_prefix, op_name, series % variables(v) % input_name)
-    end if
+      ! create output names
+      series % variables(v) % output_names(b) = output_naming &
+        (storage_prefix, op_name, series % variables(v) % input_name, &
+         buf_identifier)
+    end do
   end do
 
   !
@@ -745,34 +570,9 @@ subroutine get_state(domain, instance, series)
       field_name, series % buffers(b) % reset_alarm_ID, 1)
 
     ! counter
-    if (series % number_of_buffers > 1) then
-      field_name = counter_naming(storage_prefix, buf_identifier)
-    else
-      field_name = counter_naming(storage_prefix)
-    end if
+    field_name = counter_naming(storage_prefix, buf_identifier)
     call mpas_pool_get_array(domain % blocklist % allFields, &
       field_name, series % buffers(b) % counter, 1)
-
-    ! xtime start
-    if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_START_PREFIX) // trim(instance) // &
-        '_' // buf_identifier
-    else
-      field_name = trim(TIME_START_PREFIX) // trim(instance)
-    end if
-    call mpas_pool_get_array(domain % blocklist % allFields, &
-      field_name, series % buffers(b) % xtime_start, 1)
-
-    ! xtime end
-    if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_END_PREFIX) // trim(instance) // &
-        '_' // buf_identifier
-    else
-      field_name = trim(TIME_END_PREFIX) // trim(instance)
-    end if
-    call mpas_pool_get_array(domain % blocklist % allFields, &
-      field_name, series % buffers(b) % xtime_end, 1)
-
   end do
 
 end subroutine get_state
@@ -789,7 +589,7 @@ end subroutine get_state
 !-----------------------------------------------------------------------
 subroutine start_state(domain, instance, series, err)
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -801,8 +601,10 @@ subroutine start_state(domain, instance, series, err)
   ! local variables
   character (len=StrKIND), pointer :: config_results, output_stream_name
   character (len=StrKIND) :: config, namelist_prefix, storage_prefix, &
-    var_identifier, buf_identifier, var_prefix, buf_prefix, field_name
+    var_identifier, buf_identifier, var_prefix, buf_prefix
   integer :: b, v
+  type (field0DChar), pointer :: srcString, dstString
+  type (field0DInteger), pointer :: srcInteger, dstInteger
 
   ! start procedure
   err = 0
@@ -815,22 +617,37 @@ subroutine start_state(domain, instance, series, err)
   !
 
   ! number_of_variables
-  field_name = trim(storage_prefix) // trim(NUMBER_OF_VARIABLES_SUFFIX)
-  call add_new_integer(domain % blocklist % allFields, &
-    domain % blocklist % allFields, field_name, &
-    series % number_of_variables)
+  call mpas_pool_get_field(domain % blocklist % allFields, &
+    ONE_INTEGER_MEMORY, srcInteger, 1)
+  call mpas_duplicate_field(srcInteger, dstInteger)
+  dstInteger % fieldName = &
+    trim(storage_prefix) // trim(NUMBER_OF_VARIABLES_SUFFIX)
+  call mpas_pool_add_field(domain % blocklist % allFields, &
+    dstInteger % fieldName, dstInteger)
+  call mpas_pool_get_array(domain % blocklist % allFields, &
+    dstInteger % fieldName, series % number_of_variables, 1)
 
   ! number_of_buffers
-  field_name = trim(storage_prefix) // trim(NUMBER_OF_BUFFERS_SUFFIX)
-  call add_new_integer(domain % blocklist % allFields, &
-    domain % blocklist % allFields, field_name, &
-    series % number_of_buffers)
+  call mpas_pool_get_field(domain % blocklist % allFields, &
+    ONE_INTEGER_MEMORY, srcInteger, 1)
+  call mpas_duplicate_field(srcInteger, dstInteger)
+  dstInteger % fieldName = &
+    trim(storage_prefix) // trim(NUMBER_OF_BUFFERS_SUFFIX)
+  call mpas_pool_add_field(domain % blocklist % allFields, &
+    dstInteger % fieldName, dstInteger)
+  call mpas_pool_get_array(domain % blocklist % allFields, &
+    dstInteger % fieldName, series % number_of_buffers, 1)
 
   ! operation
-  field_name = trim(storage_prefix) // trim(OPERATION_SUFFIX)
-  call add_new_integer(domain % blocklist % allFields, &
-    domain % blocklist % allFields, field_name, &
-    series % operation)
+  call mpas_pool_get_field(domain % blocklist % allFields, &
+    ONE_INTEGER_MEMORY, srcInteger, 1)
+  call mpas_duplicate_field(srcInteger, dstInteger)
+  dstInteger % fieldName = &
+    trim(storage_prefix) // trim(OPERATION_SUFFIX)
+  call mpas_pool_add_field(domain % blocklist % allFields, &
+    dstInteger % fieldName, dstInteger)
+  call mpas_pool_get_array(domain % blocklist % allFields, &
+    dstInteger % fieldName, series % operation, 1)
 
   !
   ! assign some instance values
@@ -840,9 +657,8 @@ subroutine start_state(domain, instance, series, err)
   config = trim(namelist_prefix) // trim(OUTPUT_STREAM_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, output_stream_name)
 
-  if (output_stream_name == NONE_TOKEN) then
-    call mpas_dmpar_global_abort( &
-      trim(CURRENT_CORE_NAME) // ' ERROR: stream cannot be "none" ' // &
+  if (output_stream_name == 'none') then
+    call mpas_dmpar_global_abort('MPAS-seaice: Error: stream cannot be "none" ' // &
       'for time series stats.')
   end if
 
@@ -870,8 +686,17 @@ subroutine start_state(domain, instance, series, err)
   ! get our operation
   config = trim(namelist_prefix) // trim(OPERATION_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, config_results)
-
-  series % operation = operator_enum(config_results)
+  if (config_results == AVG_TOKEN) then
+    series % operation = AVG_OP
+  else if (config_results == MIN_TOKEN) then
+    series % operation = MIN_OP
+  else if (config_results == MAX_TOKEN) then
+    series % operation = MAX_OP
+  else
+    ! error if unknown operation
+    call mpas_dmpar_global_abort('MPAS-seaice: Error: unknown operation in time ' // &
+      'averaging analysis member configuration.')
+  end if
 
   ! create the memory
   allocate(series % variables(series % number_of_variables))
@@ -891,10 +716,14 @@ subroutine start_state(domain, instance, series, err)
     var_prefix = trim(storage_prefix) // '_' // trim(var_identifier)
 
     ! input_name
-    field_name = trim(var_prefix) // trim(INPUT_NAME_SUFFIX)
-    call add_new_string(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % variables(v) % input_name)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_STRING_MEMORY, srcString, 1)
+    call mpas_duplicate_field(srcString, dstString)
+    dstString % fieldName = trim(var_prefix) // trim(INPUT_NAME_SUFFIX)
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstString % fieldName, dstString)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstString % fieldName, series % variables(v) % input_name, 1)
   end do
 
   ! create buffer space
@@ -904,50 +733,77 @@ subroutine start_state(domain, instance, series, err)
     buf_prefix = trim(storage_prefix) // '_' // trim(buf_identifier)
 
     ! started_flag
-    field_name = trim(buf_prefix) // trim(STARTED_FLAG_SUFFIX)
-    call add_new_integer(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % started_flag)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_INTEGER_MEMORY, srcInteger, 1)
+    call mpas_duplicate_field(srcInteger, dstInteger)
+    dstInteger % fieldName = trim(buf_prefix) // trim(STARTED_FLAG_SUFFIX)
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstInteger % fieldName, dstInteger)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstInteger % fieldName, series % buffers(b) % started_flag, 1)
 
     ! accumulate_flag
-    field_name = trim(buf_prefix) // trim(ACCUMULATE_FLAG_SUFFIX)
-    call add_new_integer(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % accumulate_flag)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_INTEGER_MEMORY, srcInteger, 1)
+    call mpas_duplicate_field(srcInteger, dstInteger)
+    dstInteger % fieldName = trim(buf_prefix) // trim(ACCUMULATE_FLAG_SUFFIX)
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstInteger % fieldName, dstInteger)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstInteger % fieldName, series % buffers(b) % accumulate_flag, 1)
 
     ! reset_flag
-    field_name = trim(buf_prefix) // trim(RESET_FLAG_SUFFIX)
-    call add_new_integer(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % reset_flag)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_INTEGER_MEMORY, srcInteger, 1)
+    call mpas_duplicate_field(srcInteger, dstInteger)
+    dstInteger % fieldName = trim(buf_prefix) // trim(RESET_FLAG_SUFFIX)
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstInteger % fieldName, dstInteger)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstInteger % fieldName, series % buffers(b) % reset_flag, 1)
 
     ! start_alarm_ID
-    field_name = trim(buf_prefix) // trim(START_ALARM_ID_SUFFIX)
-    call add_new_string(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % start_alarm_ID)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_STRING_MEMORY, srcString, 1)
+    call mpas_duplicate_field(srcString, dstString)
+    dstString % fieldName = trim(buf_prefix) // trim(START_ALARM_ID_SUFFIX)
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstString % fieldName, dstString)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstString % fieldName, series % buffers(b) % start_alarm_ID, 1)
 
     ! repeat_alarm_ID
-    field_name = trim(buf_prefix) // trim(REPEAT_ALARM_ID_SUFFIX)
-    call add_new_string(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % repeat_alarm_ID)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_STRING_MEMORY, srcString, 1)
+    call mpas_duplicate_field(srcString, dstString)
+    dstString % fieldName = trim(buf_prefix) // trim(REPEAT_ALARM_ID_SUFFIX)
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstString % fieldName, dstString)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstString % fieldName, series % buffers(b) % repeat_alarm_ID, 1)
 
     ! duration_alarm_ID
-    field_name = trim(buf_prefix) // trim(DURATION_ALARM_ID_SUFFIX)
-    call add_new_string(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % duration_alarm_ID)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_STRING_MEMORY, srcString, 1)
+    call mpas_duplicate_field(srcString, dstString)
+    dstString % fieldName = trim(buf_prefix) // trim(DURATION_ALARM_ID_SUFFIX)
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstString % fieldName, dstString)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstString % fieldName, series % buffers(b) % duration_alarm_ID, 1)
 
     ! reset_alarm_ID
-    field_name = trim(buf_prefix) // trim(RESET_ALARM_ID_SUFFIX)
-    call add_new_string(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % reset_alarm_ID)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_STRING_MEMORY, srcString, 1)
+    call mpas_duplicate_field(srcString, dstString)
+    dstString % fieldName = trim(buf_prefix) // trim(RESET_ALARM_ID_SUFFIX)
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstString % fieldName, dstString)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstString % fieldName, series % buffers(b) % reset_alarm_ID, 1)
 
     !
-    ! counter, xtime_start, and xtime_end is not allocated here,
-    ! because it is part of the restart stream and output_stream,
+    ! counter is not allocated here, because it is part of the restart stream,
     ! and not just the internal AM state
     !
     ! it is allocated in modify_stream
@@ -970,7 +826,7 @@ end subroutine start_state
 !-----------------------------------------------------------------------
 subroutine modify_stream(domain, instance, series, err)!{{{
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -984,6 +840,7 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   logical :: emptyRestartStream
   character (len=StrKIND), pointer :: output_stream_name, restart_stream_name
   character (len=StrKIND) :: fieldName
+  type (field0DReal), pointer :: srcReal, dstReal
   logical, pointer :: copy_mesh
   character (len=StrKIND) :: field_name, config, op_name
   character (len=StrKIND) :: namelist_prefix, &
@@ -1004,7 +861,14 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   config = trim(namelist_prefix) // trim(RESTART_STREAM_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, restart_stream_name)
 
-  op_name = operator_naming(series % operation)
+  ! operator
+  if (series % operation == AVG_OP) then
+    op_name = AVG_TOKEN
+  else if (series % operation == MIN_OP) then
+    op_name = MIN_TOKEN
+  else
+    op_name = MAX_TOKEN
+  end if
 
   ! get the old field names
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
@@ -1045,79 +909,42 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
   ! ensure restart stream is empty
   emptyRestartStream = .true.
-  call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    streamID=restart_stream_name, ierr=err)
-  do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    streamID=restart_stream_name, fieldName=fieldName) .and. emptyRestartStream)
+  call mpas_stream_mgr_begin_iteration(domain % streamManager, streamID=restart_stream_name, ierr=err)
+  do while (mpas_stream_mgr_get_next_field(domain % streamManager, streamID=restart_stream_name, fieldName=fieldName) .and. emptyRestartStream)
     emptyRestartStream = .false.
   end do
 
   if (.not. emptyRestartStream) then
-    write(stderrUnit, *) trim(CURRENT_CORE_NAME) // ' ERROR: stream named ''' &
-      // trim(restart_stream_name) // ''' is not empty, but is used in ' // &
-      'an restart instance of the time series stats analysis member. ' // &
-      'This restart stream will be built based on the contents of the ''' // &
-      trim(output_stream_name) // ''' stream. Please ensure it is empty ' // &
-      'in the streams input file.'
-    call mpas_dmpar_global_abort( &
-      trim(CURRENT_CORE_NAME) // &
-      'ERROR: misconfigured restart stream for time series stats ' // &
-      ' analysis member.')
+    write(stderrUnit, *) 'ERROR: Stream named ''' // trim(restart_stream_name) // ''' is not empty, but is used in '
+    write(stderrUnit, *) '       an instance of the time series stats analysis member. This stream will be built'
+    write(stderrUnit, *) '       based on the contents of the ''' // trim(output_stream_name) // ''' stream.'
+    write(stderrUnit, *) '       Please ensure it is empty in the streams file.'
+    call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Misconfigured streams for time series stats analysis member.')
   end if
 
-  ! create and put the counter, xtime_start, xtime_end in the streams
+  ! create and put the counters in the streams
   do b = 1, series % number_of_buffers
     write(buf_identifier, '(I0)') b
 
+    field_name = counter_naming(storage_prefix, buf_identifier)
+
     ! allocate counter memory
-    if (series % number_of_buffers > 1) then
-      field_name = counter_naming(storage_prefix, buf_identifier)
-    else
-      field_name = counter_naming(storage_prefix)
-    end if
-    call add_new_integer(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % counter)
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_REAL_MEMORY, srcReal, 1)
+    call mpas_duplicate_field(srcReal, dstReal)
+    dstReal % fieldName = field_name
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstReal % fieldName, dstReal)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstReal % fieldName, series % buffers(b) % counter, 1)
 
-    ! put it in the output and restart
+    ! put it in the output stream
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      output_stream_name, field_name, ierr=err)
-    call mpas_stream_mgr_add_field(domain % streamManager, &
-      restart_stream_name, field_name, ierr=err)
+      output_stream_name, dstReal % fieldName, ierr=err)
 
-    ! xtime start
-    if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_START_PREFIX) // trim(instance) // &
-        '_' // buf_identifier
-    else
-      field_name = trim(TIME_START_PREFIX) // trim(instance)
-    end if
-    call add_new_string(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % xtime_start)
-
-    ! put it in the output and restart
+    ! put it in the restart stream
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      output_stream_name, field_name, ierr=err)
-    call mpas_stream_mgr_add_field(domain % streamManager, &
-      restart_stream_name, field_name, ierr=err)
-
-    ! xtime end
-    if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_END_PREFIX) // trim(instance) // &
-        '_' // buf_identifier
-    else
-      field_name = trim(TIME_END_PREFIX) // trim(instance)
-    end if
-    call add_new_string(domain % blocklist % allFields, &
-      domain % blocklist % allFields, field_name, &
-      series % buffers(b) % xtime_end)
-
-    ! put it in the output and restart
-    call mpas_stream_mgr_add_field(domain % streamManager, &
-      output_stream_name, field_name, ierr=err)
-    call mpas_stream_mgr_add_field(domain % streamManager, &
-      restart_stream_name, field_name, ierr=err)
+      restart_stream_name, dstReal % fieldName, ierr=err)
   end do
 
   ! set up the variables
@@ -1129,25 +956,20 @@ subroutine modify_stream(domain, instance, series, err)!{{{
       series % variables(v) % input_name, info)
 
     ! check if we can handle it
-    if(info % fieldType /= MPAS_POOL_REAL) then
-      call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // &
-        ' ERROR: field "' // &
+    if(.not. ((info % fieldType == MPAS_POOL_REAL) &
+       .or. (info % fieldType == MPAS_POOL_INTEGER))) then
+      call mpas_dmpar_global_abort('MPAS-seaice: Error: field "' // &
         trim(series % variables(v) % input_name) // '" listed in the ' // &
         'output stream, for time series stats analysis member ' // &
-        'stream, is not real.')
+        'stream, is not real or integer.')
     end if
 
     ! allocate a number of fields and add field
     do b = 1, series % number_of_buffers
       write(buf_identifier, '(I0)') b
 
-      if (series % number_of_buffers > 1) then
-        field_name = output_naming(storage_prefix, op_name, &
-          series % variables(v) % input_name, buf_identifier)
-      else
-        field_name = output_naming(storage_prefix, op_name, &
-          series % variables(v) % input_name)
-      end if
+      field_name = output_naming(storage_prefix, op_name, &
+        series % variables(v) % input_name, buf_identifier)
 
       ! create the name of the output var
       series % variables(v) % output_names(b) = field_name
@@ -1182,16 +1004,11 @@ end subroutine modify_stream!}}}
 !-----------------------------------------------------------------------
 character (len=StrKIND) function output_naming &
 (storage_prefix, op_name, input_name, buf_identifier)
-  character (len=StrKIND), intent(in) :: storage_prefix, op_name, input_name
-  character (len=StrKIND), intent(in), optional :: buf_identifier
+  character (len=StrKIND), intent(in) :: storage_prefix, op_name, &
+    input_name, buf_identifier
 
-  if (present(buf_identifier)) then
-    output_naming = trim(storage_prefix) // '_' // trim(op_name) // '_' // &
-      trim(input_name) // '_' // trim(buf_identifier)
-  else
-    output_naming = trim(storage_prefix) // '_' // trim(op_name) // '_' // &
-      trim(input_name)
-  endif
+  output_naming = trim(storage_prefix) // '_' // trim(op_name) // '_' // &
+    trim(input_name) // '_' // trim(buf_identifier)
 end function output_naming
 
 
@@ -1206,71 +1023,12 @@ end function output_naming
 !-----------------------------------------------------------------------
 character (len=StrKIND) function counter_naming &
 (storage_prefix, buf_identifier)
-  character (len=StrKIND), intent(in) :: storage_prefix
-  character (len=StrKIND), intent(in), optional :: buf_identifier
+  character (len=StrKIND), intent(in) :: storage_prefix, buf_identifier
 
-  if (present(buf_identifier)) then
-    counter_naming = trim(storage_prefix) // trim(COUNTER_SUFFIX) // &
-      '_' // trim(buf_identifier)
-  else
-    counter_naming = trim(storage_prefix) // trim(COUNTER_SUFFIX)
-  end if
+  counter_naming = trim(storage_prefix) // trim(COUNTER_SUFFIX) // &
+    trim(buf_identifier)
 end function counter_naming
 
-
-!***********************************************************************
-! function operator_naming
-!
-!> \brief Given an operator number, create a corresponding operator name
-!> \author  Jon Woodring
-!> \date    May 9, 2016
-!> \details
-!> Code to create consistent operator names from operator enums.
-!-----------------------------------------------------------------------
-character (len=StrKIND) function operator_naming (operator_enum)
-  integer, intent(in) :: operator_enum
-
-  ! operator
-  if (operator_enum == AVG_OP) then
-    operator_naming = AVG_TOKEN
-  else if (operator_enum == MIN_OP) then
-    operator_naming = MIN_TOKEN
-  else if (operator_enum == MAX_OP) then
-    operator_naming = MAX_TOKEN
-  else
-    call mpas_dmpar_global_abort( &
-      trim(CURRENT_CORE_NAME) // ' ERROR: the impossible happened - ' // &
-      'tried to create an operation in the time series stats ' // &
-      'analysis member of unknown kind')
-  end if
-end function operator_naming
-
-
-!***********************************************************************
-! function operator_enum
-!
-!> \brief Given an operator token, create a corresponding operator enum
-!> \author  Jon Woodring
-!> \date    May 9, 2016
-!> \details
-!> Code to create consistent operator enums from operator tokens.
-!-----------------------------------------------------------------------
-integer function operator_enum (token)
-  character (len=StrKIND), intent(in) :: token
-
-  if (trim(token) == AVG_TOKEN) then
-    operator_enum = AVG_OP
-  else if (trim(token) == MIN_TOKEN) then
-    operator_enum = MIN_OP
-  else if (trim(token) == MAX_TOKEN) then
-    operator_enum = MAX_OP
-  else
-    call mpas_dmpar_global_abort( &
-      trim(CURRENT_CORE_NAME) // ' ERROR: unknown operation "' // &
-      trim(token) // '" requested in the time ' // &
-      'series stats analysis member configuration')
-  end if
-end function operator_enum
 
 
 !***********************************************************************
@@ -1285,7 +1043,7 @@ end function operator_enum
 !-----------------------------------------------------------------------
 subroutine get_alarms(domain, instance, series, alarms, err)
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -1322,9 +1080,8 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, RESET_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // &
-      ' ERROR: number of listed times in ' // &
-      'reset_intervals is not consistent with number of listed times ' // &
+    call mpas_dmpar_global_abort('MPAS-seaice: Error: number of times in ' // &
+      'reset_intervals is not consistent with number of times ' // &
       'in reference_times in time series stats analysis member ' // &
       'configuration.')
   end if
@@ -1335,9 +1092,8 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, REPEAT_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // &
-      ' ERROR: number of listed times in ' // &
-      'repeat_intervals is not consistent with number of listed times ' // &
+    call mpas_dmpar_global_abort('MPAS-seaice: Error: number of times in ' // &
+      'repeat_intervals is not consistent with number of times ' // &
       'in reference_times in time series stats analysis member ' // &
       'configuration.')
   end if
@@ -1348,9 +1104,8 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, DURATION_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // &
-      ' ERROR: number of listed times in ' // &
-      'duration_intervals is not consistent with number of listed times ' // &
+    call mpas_dmpar_global_abort('MPAS-seaice: Error: number of times in ' // &
+      'duration_intervals is not consistent with number of times ' // &
       'in reference_times in time series stats analysis member ' // &
       'configuration.')
   end if
@@ -1364,9 +1119,8 @@ subroutine get_alarms(domain, instance, series, alarms, err)
        alarms(b) % reset_interval, n, rem)
 
     if (n > 1 .or. (n == 1 .and. rem /= zero)) then
-      write(stderrUnit,*) trim(CURRENT_CORE_NAME) // &
-        'WARNING: repeat_interval > ' // &
-        'reset_interval in time series stats analysis member ' // &
+      write(stderrUnit,*) 'Warning: repeat_interval > ' // &
+        'reset_interval in time averaging analysis member ' // &
         'configuration. Truncating repeat_interval.'
       alarms(b) % repeat_interval = alarms(b) % reset_interval
     end if
@@ -1376,9 +1130,8 @@ subroutine get_alarms(domain, instance, series, alarms, err)
        alarms(b) % repeat_interval, n, rem)
 
     if (n > 1 .or. (n == 1 .and. rem /= zero)) then
-      write(stderrUnit,*) trim(CURRENT_CORE_NAME) // &
-        'WARNING: duration_interval > ' // &
-        'repeat_interval in time series stats analysis member ' // &
+      write(stderrUnit,*) 'Warning: duration_interval > ' // &
+        'repeat_interval in time averaging analysis member ' // &
         'configuration. Truncating duration_interval.'
       alarms(b) % repeat_interval = alarms(b) % reset_interval
     end if
@@ -1399,7 +1152,7 @@ end subroutine get_alarms
 !-----------------------------------------------------------------------
 subroutine set_alarms(domain, instance, series, alarms, err)
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -1692,22 +1445,30 @@ subroutine add_new_field(info, inname, outname, pool)!{{{
   ! local variables
 
   ! duplicate field and add new field to pool
-  if (info % nDims == 0) then
-    call copy_field_0r(inname, pool, outname)
-  else if (info % nDims == 1) then
-    call copy_field_1r(inname, pool, outname)
-  else if (info % nDims == 2) then
-    call copy_field_2r(inname, pool, outname)
-  else if (info % nDims == 3) then
-    call copy_field_3r(inname, pool, outname)
-  else if (info % nDims == 4) then
-    call copy_field_4r(inname, pool, outname)
-  else if (info % nDims == 5) then
-    call copy_field_5r(inname, pool, outname)
+  if (info % fieldType == MPAS_POOL_REAL) then
+    if (info % nDims == 0) then
+      call copy_field_0r(inname, pool, outname)
+    else if (info % nDims == 1) then
+      call copy_field_1r(inname, pool, outname)
+    else if (info % nDims == 2) then
+      call copy_field_2r(inname, pool, outname)
+    else if (info % nDims == 3) then
+      call copy_field_3r(inname, pool, outname)
+    else if (info % nDims == 4) then
+      call copy_field_4r(inname, pool, outname)
+    else
+      call copy_field_5r(inname, pool, outname)
+    end if
   else
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
-      'the impossible happened - tried to copy a real field "' // &
-      trim(inname) // '" that does not have 0-5 dimensionality')
+    if (info % nDims == 0) then
+      call copy_field_0i(inname, pool, outname)
+    else if (info % nDims == 1) then
+      call copy_field_1i(inname, pool, outname)
+    else if (info % nDims == 2) then
+      call copy_field_2i(inname, pool, outname)
+    else
+      call copy_field_3i(inname, pool, outname)
+    end if
   end if
 
 end subroutine add_new_field!}}}
@@ -1830,60 +1591,91 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
   call mpas_pool_get_field_info(block % allFields, variable % input_name, info)
 
   ! switch based on the type, dimensionality, and operation
-  if (info % nDims  == 0) then
-    if (operation == AVG_OP) then
-      call operate0r_avg(block, variable, buffers)
-    else if (operation == MIN_OP) then
-      call operate0r_min(block, variable, buffers)
+  if (info % fieldType == MPAS_POOL_REAL) then
+    if (info % nDims  == 0) then
+      if (operation == AVG_OP) then
+        call operate0r_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate0r_min(block, variable, buffers)
+      else
+        call operate0r_max(block, variable, buffers)
+      end if
+    else if (info % nDims == 1) then
+      if (operation == AVG_OP) then
+        call operate1r_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate1r_min(block, variable, buffers)
+      else
+        call operate1r_max(block, variable, buffers)
+      end if
+    else if (info % nDims == 2) then
+      if (operation == AVG_OP) then
+        call operate2r_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate2r_min(block, variable, buffers)
+      else
+        call operate2r_max(block, variable, buffers)
+      end if
+    else if (info % nDims == 3) then
+      if (operation == AVG_OP) then
+        call operate3r_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate3r_min(block, variable, buffers)
+      else
+        call operate3r_max(block, variable, buffers)
+      end if
+    else if (info % nDims == 4) then
+      if (operation == AVG_OP) then
+        call operate4r_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate4r_min(block, variable, buffers)
+      else
+        call operate4r_max(block, variable, buffers)
+      end if
     else
-      call operate0r_max(block, variable, buffers)
-    end if
-  else if (info % nDims == 1) then
-    if (operation == AVG_OP) then
-      call operate1r_avg(block, variable, buffers)
-    else if (operation == MIN_OP) then
-      call operate1r_min(block, variable, buffers)
-    else
-      call operate1r_max(block, variable, buffers)
-    end if
-  else if (info % nDims == 2) then
-    if (operation == AVG_OP) then
-      call operate2r_avg(block, variable, buffers)
-    else if (operation == MIN_OP) then
-      call operate2r_min(block, variable, buffers)
-    else
-      call operate2r_max(block, variable, buffers)
-    end if
-  else if (info % nDims == 3) then
-    if (operation == AVG_OP) then
-      call operate3r_avg(block, variable, buffers)
-    else if (operation == MIN_OP) then
-      call operate3r_min(block, variable, buffers)
-    else
-      call operate3r_max(block, variable, buffers)
-    end if
-  else if (info % nDims == 4) then
-    if (operation == AVG_OP) then
-      call operate4r_avg(block, variable, buffers)
-    else if (operation == MIN_OP) then
-      call operate4r_min(block, variable, buffers)
-    else
-      call operate4r_max(block, variable, buffers)
-    end if
-  else if (info % nDims == 5) then
-    if (operation == AVG_OP) then
-      call operate5r_avg(block, variable, buffers)
-    else if (operation == MIN_OP) then
-      call operate5r_min(block, variable, buffers)
-    else
-      call operate5r_max(block, variable, buffers)
+      if (operation == AVG_OP) then
+        call operate5r_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate5r_min(block, variable, buffers)
+      else
+        call operate5r_max(block, variable, buffers)
+      end if
     end if
   else
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
-      'the impossible happened - tried to operate on a real field "' // &
-      trim(variable % input_name) // '" that does not have 0-5 dimensionality')
+    if (info % nDims == 0) then
+      if (operation == AVG_OP) then
+        call operate0i_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate0i_min(block, variable, buffers)
+      else
+        call operate0i_max(block, variable, buffers)
+      end if
+    else if (info % nDims == 1) then
+      if (operation == AVG_OP) then
+        call operate1i_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate1i_min(block, variable, buffers)
+      else
+        call operate1i_max(block, variable, buffers)
+      end if
+    else if (info % nDims == 2) then
+      if (operation == AVG_OP) then
+        call operate2i_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate2i_min(block, variable, buffers)
+      else
+        call operate2i_max(block, variable, buffers)
+      end if
+    else
+      if (operation == AVG_OP) then
+        call operate3i_avg(block, variable, buffers)
+      else if (operation == MIN_OP) then
+        call operate3i_min(block, variable, buffers)
+      else
+        call operate3i_max(block, variable, buffers)
+      end if
+    end if
   end if
-
 end subroutine typed_operate!}}}
 
 
@@ -1900,41 +1692,224 @@ end subroutine typed_operate!}}}
 !-----------------------------------------------------------------------
 
 subroutine copy_field_0r(inname, pool, outname)!{{{
-#include "time_series_inc/copy_field_1.inc"
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
   type (field0DReal), pointer :: src, dst
-#include "time_series_inc/copy_field_2.inc"
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
 end subroutine copy_field_0r!}}}
 
 subroutine copy_field_1r(inname, pool, outname)!{{{
-#include "time_series_inc/copy_field_1.inc"
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
   type (field1DReal), pointer :: src, dst
-#include "time_series_inc/copy_field_2.inc"
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
 end subroutine copy_field_1r!}}}
 
 subroutine copy_field_2r(inname, pool, outname)!{{{
-#include "time_series_inc/copy_field_1.inc"
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
   type (field2DReal), pointer :: src, dst
-#include "time_series_inc/copy_field_2.inc"
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
 end subroutine copy_field_2r!}}}
 
 subroutine copy_field_3r(inname, pool, outname)!{{{
-#include "time_series_inc/copy_field_1.inc"
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
   type (field3DReal), pointer :: src, dst
-#include "time_series_inc/copy_field_2.inc"
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
 end subroutine copy_field_3r!}}}
 
 subroutine copy_field_4r(inname, pool, outname)!{{{
-#include "time_series_inc/copy_field_1.inc"
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
   type (field4DReal), pointer :: src, dst
-#include "time_series_inc/copy_field_2.inc"
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
 end subroutine copy_field_4r!}}}
 
 subroutine copy_field_5r(inname, pool, outname)!{{{
-#include "time_series_inc/copy_field_1.inc"
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
   type (field5DReal), pointer :: src, dst
-#include "time_series_inc/copy_field_2.inc"
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
 end subroutine copy_field_5r!}}}
 
+subroutine copy_field_0i(inname, pool, outname)!{{{
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
+  type (field0DInteger), pointer :: src, dst
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_0i!}}}
+
+subroutine copy_field_1i(inname, pool, outname)!{{{
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
+  type (field1DInteger), pointer :: src, dst
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_1i!}}}
+
+subroutine copy_field_2i(inname, pool, outname)!{{{
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
+  type (field2DInteger), pointer :: src, dst
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_2i!}}}
+
+subroutine copy_field_3i(inname, pool, outname)!{{{
+  character (len=StrKIND), intent(in) :: inname, outname
+  type (mpas_pool_type), intent(inout) :: pool
+
+  type (field3DInteger), pointer :: src, dst
+  integer :: i
+
+  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_duplicate_field(src, dst)
+
+  dst % fieldName = outname
+
+  if (dst % isVarArray) then
+    do i = 1, size(dst % constituentNames)
+      dst % constituentNames(i) = trim(outname) // '_' // &
+        trim(dst % constituentNames(i))
+    end do
+  end if
+
+  call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_3i!}}}
 
 
 !***********************************************************************
@@ -1957,160 +1932,1144 @@ end subroutine copy_field_5r!}}}
 !>  to disk).
 !-----------------------------------------------------------------------
 subroutine operate0r_avg (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
   real (kind=RKIND), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = (out_array * &
-    (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
-#include "time_series_inc/operate_3.inc"
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate0r_avg
 
 subroutine operate1r_avg (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = (out_array * &
-    (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
-#include "time_series_inc/operate_3.inc"
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate1r_avg
 
 subroutine operate2r_avg (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = (out_array * &
-    (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate2r_avg
 
 subroutine operate3r_avg (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = (out_array * &
-    (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate3r_avg
 
 subroutine operate4r_avg (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = (out_array * &
-    (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate4r_avg
 
 subroutine operate5r_avg (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = (out_array * &
-    (buffers(b) % counter - 1) + in_array) &
-    / buffers(b) % counter ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate5r_avg
 
+subroutine operate0i_avg (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate0i_avg
+
+subroutine operate1i_avg (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate1i_avg
+
+subroutine operate2i_avg (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate2i_avg
+
+subroutine operate3i_avg (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+        out_array = (out_array * &
+                (buffers(b) % counter - 1) + in_array) &
+                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate3i_avg
+
 subroutine operate0r_min (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
   real (kind=RKIND), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate0r_min
 
 subroutine operate1r_min (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate1r_min
 
 subroutine operate2r_min (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate2r_min
 
 subroutine operate3r_min (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate3r_min
 
 subroutine operate4r_min (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate4r_min
 
 subroutine operate5r_min (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = min(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate5r_min
 
+subroutine operate0i_min (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate0i_min
+
+subroutine operate1i_min (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate1i_min
+
+subroutine operate2i_min (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate2i_min
+
+subroutine operate3i_min (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+        out_array = min(out_array, in_array) ;
+!        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate3i_min
+
 subroutine operate0r_max (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
   real (kind=RKIND), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate0r_max
 
 subroutine operate1r_max (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate1r_max
 
 subroutine operate2r_max (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate2r_max
 
 subroutine operate3r_max (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate3r_max
 
 subroutine operate4r_max (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate4r_max
 
 subroutine operate5r_max (start_block, variable, buffers)
-#include "time_series_inc/operate_1.inc"
-  real (kind=RKIND), dimension(:, :, :, :, :), pointer :: in_array, out_array
-#include "time_series_inc/operate_2.inc"
-  out_array = max(out_array, in_array) ;
-#include "time_series_inc/operate_3.inc"
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
 end subroutine operate5r_max
+
+subroutine operate0i_max (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate0i_max
+
+subroutine operate1i_max (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate1i_max
+
+subroutine operate2i_max (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate2i_max
+
+subroutine operate3i_max (start_block, variable, buffers)
+  type (block_type), pointer, intent(in) :: start_block
+  type (time_series_buffer_type), dimension(:), intent(in) :: buffers
+  type (time_series_variable_type), intent(in) :: variable
+
+  integer, dimension(:,:,:), pointer :: in_array, out_array
+  integer :: b
+  type (block_type), pointer :: block
+
+  block => start_block
+  do while (associated(block))
+    call mpas_pool_get_array(block % allFields, &
+      variable % input_name, in_array, 1)
+
+    do b = 1, size(buffers)
+      if (buffers(b) % accumulate_flag == 0) then
+        cycle
+      end if
+
+      call mpas_pool_get_array(block % allFields, &
+          variable % output_names(b), out_array, 1)
+
+      if (buffers(b) % reset_flag == 1) then
+        out_array = in_array
+      else
+!        out_array = (out_array * &
+!                (buffers(b) % counter - 1) + in_array) &
+!                / buffers(b) % counter ;
+!        out_array = min(out_array, in_array) ;
+        out_array = max(out_array, in_array) ;
+
+      end if
+    end do
+
+    block => block % next
+  end do
+end subroutine operate3i_max
 
 end module cice_time_series_stats
 ! vim: foldmethod=marker
