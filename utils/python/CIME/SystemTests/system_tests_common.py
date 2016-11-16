@@ -199,10 +199,6 @@ class SystemTestsCommon(object):
             infostr += ", with restarts every %d %s"%(rest_n, rest_option)
         logger.info(infostr)
 
-
-        with self._test_status:
-            self._test_status.set_status(RUN_PHASE, TEST_RUN_STATUS)
-
         case_run(self._case)
 
         if not self._coupler_log_indicates_run_complete():
