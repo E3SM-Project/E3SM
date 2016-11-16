@@ -5548,7 +5548,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="any">
+  <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30_r%r05_m%oEC60to30_g%null_w%null">
     <mach name="titan">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
