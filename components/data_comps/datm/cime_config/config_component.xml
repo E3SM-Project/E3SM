@@ -15,7 +15,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3,CPLHISTForcingForOcnIce</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
