@@ -196,7 +196,7 @@
 <atm2ocn_vmapname>$ATM2OCN_VMAPNAME</atm2ocn_vmapname>
 <ocn2atm_fmapname>$OCN2ATM_FMAPNAME</ocn2atm_fmapname>
 <ocn2atm_smapname>$OCN2ATM_SMAPNAME</ocn2atm_smapname>
-<ocn2rof_fmapname>$ocn2rof_FMAPNAME</ocn2rof_fmapname>
+<ocn2rof_fmapname>$OCN2ROF_FMAPNAME</ocn2rof_fmapname>
 <atm2lnd_fmapname>$ATM2LND_FMAPNAME</atm2lnd_fmapname>
 <atm2lnd_smapname>$ATM2LND_SMAPNAME</atm2lnd_smapname>
 <lnd2atm_fmapname>$LND2ATM_FMAPNAME</lnd2atm_fmapname>
