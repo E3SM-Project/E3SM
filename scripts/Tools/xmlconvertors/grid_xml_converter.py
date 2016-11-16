@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 """
-grid_xml_converter.py -- convert (or verify) grid xml from CIME2 format to CIME4
+grid_xml_converter.py -- convert (or verify) grid xml from CIME2 format to CIME5
 The location of these files are needed by the script:
     CIME2: cime/scripts/Tools/config_grid.xml
-    CIME4: cime_config/acme/config_grids.xml
+    CIME5: cime_config/acme/config_grids.xml
 """
 
 # make sure cime2, cime roots are defined
 # use categories
 #  GRID CONFIGURATIONS   grid list   domain    grid maps
 #    CIME2: cime/scripts/Tools/config_grid.xml
-#    CIME4: cime_config/acme/config_grids.xml
+#    CIME5: cime_config/acme/config_grids.xml
 #
 
 from standard_script_setup import *
@@ -31,17 +31,17 @@ def parse_command_line(args):
 
     # Set command line options
     parser.add_argument("-cime2file", "--cime2file", help="location of config_grid.xml file in CIME2 repository")
-    parser.add_argument("-cime4file", "--cime4file", help="location of config_grids.xml file in CIME4 repository")
+    parser.add_argument("-cime5file", "--cime5file", help="location of config_grids.xml file in CIME5 repository")
 
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    if args.cime2file is None or args.cime4file is None:
+    if args.cime2file is None or args.cime5file is None:
         parser.print_help()
         exit()
 
-    return args.cime2file, args.cime4file
+    return args.cime2file, args.cime5file
 
 
 
@@ -64,7 +64,7 @@ class GridNode(DataNode):
         return ET.tostring(self.xmlnode)
 
 
-    def to_cime4(self):
+    def to_cime5(self):
         node = ET.Element('grid')
         if 'compset' in self.data and self.data['compset'] is not None:
             node.set('compset',self.data['compset'])
@@ -100,7 +100,7 @@ class Cime2GridNode(GridNode):
         if tmpval is not None:
             self.data['support'] = tmpval.strip()
 
-class Cime4GridNode(GridNode):
+class Cime5GridNode(GridNode):
     def set_data(self, xmlnode):
         self.xmlnode = xmlnode
         for k in ['sname','lname','support','alias']:
@@ -125,7 +125,7 @@ class GridmapNode(DataNode):
     def sort(self):
         newlist = sorted(self.keys, key=operator.itemgetter(0))
         self.keys = newlist
-    def to_cime4(self):
+    def to_cime5(self):
         node = ET.Element('gridmap')
         for k in ['atm_grid','lnd_grid','ocn_grid','rof_grid','glc_grid']:
             if k in self.data:
@@ -154,7 +154,7 @@ class DomainNode(DataNode):
     """
     key = 'name'
 
-    def to_cime4(self):
+    def to_cime5(self):
         node = ET.Element('domain')
         node.set('name',self.data['name'])
         for tag in ['nx','ny','desc','support']:
@@ -229,9 +229,9 @@ class Cime2DomainNode(DomainNode):
         # sort the file and path entries
         self.sort()
 
-class Cime4DomainNode(DomainNode):
+class Cime5DomainNode(DomainNode):
     """
-    Read in a domain node from Cime4 xml format
+    Read in a domain node from Cime5 xml format
     """
     def set_data(self, xmlnode):
         self.xmlnode = xmlnode
@@ -283,11 +283,12 @@ class DataTree(object):
     def __iter__(self):
         return self
 
-    def postprocess(self, fixlist, addlist, newxmlfile, badxmlfile):
+    def postprocess(self, fixlist, addlist, newxmlfile, currentxmlfile,
+                    badxmlfile):
         if len(addlist) > 0:
             logger.info("\n\nWriting suggested nodes to %s" % newxmlfile)
             logger.info("Copy 'grid' nodes into corresponding location in")
-            logger.info("cime_config/acme/config_grids.xml")
+            logger.info(currentxmlfile)
             self.writexml(addlist,newxmlfile)
             self.writexml(fixlist,badxmlfile)
             if len(fixlist) > 0:
@@ -301,7 +302,7 @@ class GridTree(DataTree):
         nodeclass=Cime2GridNode
         if len(xmlnodes) == 0:
             xmlnodes = self.root.findall('./grids/grid')
-            nodeclass=Cime4GridNode
+            nodeclass=Cime5GridNode
 
         for xmlnode in xmlnodes:
             datanode = nodeclass(self.root)
@@ -314,11 +315,11 @@ class GridTree(DataTree):
         for a, b in addlist:
             if b is not None:
                 grids.append(ET.Element('REPLACE'))
-                grids.append(b.to_cime4())
+                grids.append(b.to_cime5())
                 grids.append(ET.Element('WITH'))
 
             if a is not None:
-                grids.append(a.to_cime4())
+                grids.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
             run_cmd_no_fail("%s --format --output %s -"%(xmllint,newfilename),
@@ -331,7 +332,7 @@ class DomainTree(DataTree):
         nodeclass=Cime2DomainNode
         if len(xmlnodes) == 0:
             xmlnodes = self.root.findall('./domains/domain')
-            nodeclass=Cime4DomainNode
+            nodeclass=Cime5DomainNode
 
         for node in xmlnodes:
             datanode = nodeclass(self.root)
@@ -344,10 +345,10 @@ class DomainTree(DataTree):
         for a, b in addlist:
             if b is not None:
                 domains.append(ET.Element('REPLACE'))
-                domains.append(b.to_cime4())
+                domains.append(b.to_cime5())
                 domains.append(ET.Element('WITH'))
             if a is not None:
-                domains.append(a.to_cime4())
+                domains.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
             run_cmd_no_fail("%s --format --output %s -"%(xmllint,newfilename),
@@ -369,10 +370,10 @@ class GridmapTree(DataTree):
         for a, b in addlist:
             if b is not None:
                 gridmaps.append(ET.Element('REPLACE'))
-                gridmaps.append(b.to_cime4())
+                gridmaps.append(b.to_cime5())
                 gridmaps.append(ET.Element('WITH'))
             if a is not None:
-                gridmaps.append(a.to_cime4())
+                gridmaps.append(a.to_cime5())
         xmllint = find_executable("xmllint")
         if xmllint is not None:
             run_cmd_no_fail("%s --format --output %s -"%(xmllint,newfilename),
@@ -426,24 +427,27 @@ def diff_tree(atree, btree):
 
 
 def grid_compare():
-    cime2file, cime4file = parse_command_line(sys.argv)
+    cime2file, cime5file = parse_command_line(sys.argv)
 
     cime2gridtree = GridTree(cime2file)
-    cime4gridtree = GridTree(cime4file)
+    cime5gridtree = GridTree(cime5file)
     cime2domaintree = DomainTree(cime2file)
-    cime4domaintree = DomainTree(cime4file)
+    cime5domaintree = DomainTree(cime5file)
     cime2gridmaptree = GridmapTree(cime2file)
-    cime4gridmaptree = GridmapTree(cime4file)
+    cime5gridmaptree = GridmapTree(cime5file)
 
     logger.info("Comparing grid nodes...")
-    oklist, fixlist, addlist = diff_tree(cime2gridtree, cime4gridtree)
-    cime4gridtree.postprocess(fixlist, addlist, "tempgrid.xml","badgrid.xml")
+    oklist, fixlist, addlist = diff_tree(cime2gridtree, cime5gridtree)
+    cime5gridtree.postprocess(fixlist, addlist, "tempgrid.xml", cime5file,
+                              "badgrid.xml")
 
-    oklist, fixlist, addlist = diff_tree(cime2domaintree, cime4domaintree)
-    cime4domaintree.postprocess(fixlist, addlist, "tempdomain.xml","baddomain.xml")
+    oklist, fixlist, addlist = diff_tree(cime2domaintree, cime5domaintree)
+    cime5domaintree.postprocess(fixlist, addlist, "tempdomain.xml",
+                                cime5file, "baddomain.xml")
 
-    oklist, fixlist, addlist = diff_tree(cime2gridmaptree, cime4gridmaptree)
-    cime4gridmaptree.postprocess(fixlist, addlist, "tempgridmap.xml","badgridmap.xml")
+    oklist, fixlist, addlist = diff_tree(cime2gridmaptree, cime5gridmaptree)
+    cime5gridmaptree.postprocess(fixlist, addlist, "tempgridmap.xml",
+                                 cime5file, "badgridmap.xml")
 
 if __name__=="__main__":
     grid_compare()
