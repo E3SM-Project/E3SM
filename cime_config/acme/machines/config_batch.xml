@@ -229,8 +229,7 @@
     </batch_system>
 
    <batch_system MACH="constance" type="slurm" version="x.y">
-    <directives>
-       <directive>-A  climate</directive>
+     <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
        <directive>--mail-type=END</directive>
        <directive>--mail-user=email@pnnl.gov</directive>
@@ -238,7 +237,7 @@
        <directive>--error=slurm.err</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="9999" default="true">slurm</queue>
+      <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">slurm</queue>
     </queues>
    </batch_system>
 
