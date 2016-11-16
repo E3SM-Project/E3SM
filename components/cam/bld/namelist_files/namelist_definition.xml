@@ -2219,6 +2219,19 @@ scale factor for cloud sedimentation velocity
 Default: 1.0D0
 </entry>
 
+<entry id="mg_prc_coeff_fix" type="logical" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Temporary variable for a bug fix. Introduced to maintain BFB, must be REMOVED later
+Default: FALSE
+</entry>
+ 
+<entry id="rrtmg_temp_fix" type="logical" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Temporary variable for a bug fix. Introduced to maintain BFB, must be REMOVED later
+Default: FALSE
+</entry>
+
+
 
 
 
@@ -2849,6 +2862,12 @@ Default: 268.15D0
        group="clubbpbl_diff_nl" valid_values="" >
 temperature thresholds determining the fraction of condensate detrained from ZM as ice
 Default: 238.15D0
+</entry>
+
+<entry id="relvar_fix" type="logical" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Temporary variable for a bug fix. Introduced to maintain BFB, must be REMOVED later
+Default: FALSE
 </entry>
 
 

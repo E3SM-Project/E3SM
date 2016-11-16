@@ -243,6 +243,8 @@ integer :: &
    real(r8) :: prc_exp_in               = huge(1.0_r8)
    real(r8) :: prc_exp1_in              = huge(1.0_r8)
    real(r8) :: cld_sed_in               = huge(1.0_r8) !scale fac for cloud sedimentation velocity
+   logical  :: mg_prc_coeff_fix_in      = .false. !temporary variable to maintain BFB, MUST be removed
+   logical  :: rrtmg_temp_fix           = .false. !temporary variable to maintain BFB, MUST be removed
 
 interface p
    module procedure p1
@@ -620,7 +622,9 @@ subroutine micro_mg_cam_init(pbuf2d)
                      prc_coef1_out        = prc_coef1_in,      &
                      prc_exp_out          = prc_exp_in,        &
                      prc_exp1_out         = prc_exp1_in,       &
-                     cld_sed_out          = cld_sed_in         )
+                     cld_sed_out          = cld_sed_in,        &
+                     mg_prc_coeff_fix_out = mg_prc_coeff_fix_in, &
+                     rrtmg_temp_fix_out   = rrtmg_temp_fix       )
 
    if (do_clubb_sgs) then
      allow_sed_supersat = .false.
@@ -682,7 +686,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
-              prc_exp1_in, cld_sed_in, errstring)
+              prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, errstring)
       end select
    end select
 
@@ -1531,6 +1535,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), parameter :: deicon = 50._r8            ! Convective ice effective diameter (meters)
 
    real(r8), pointer :: pckdptr(:,:)
+   logical :: cldfsnow_logic = .false.
 
    !-------------------------------------------------------------------------------
 
@@ -2343,7 +2348,14 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
             cldfsnow(i,k) = 0._r8
          end if
          ! If no cloud and snow, then set to 0.25
-         if( ( cldfsnow(i,k) .lt. 1.e-4_r8 ) .and. ( qsout(i,k) .gt. 1.e-6_r8 ) ) then
+         !BSINGH- Following code MUST be reworked. This is TEMPORARY solution to maintain BFB
+         !PMA: .lt. is replaced by .le. following part of NCAR RRTMG bug fix         
+         cldfsnow_logic = ( cldfsnow(i,k) .lt. 1.e-4_r8 )
+         if (rrtmg_temp_fix) then
+            cldfsnow_logic = ( cldfsnow(i,k) .le. 1.e-4_r8 )
+         endif
+         if( cldfsnow_logic .and. ( qsout(i,k) .gt. 1.e-6_r8 )) then
+
             cldfsnow(i,k) = 0.25_r8
          end if
          ! Calculate in-cloud snow water path

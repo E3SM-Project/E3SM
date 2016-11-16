@@ -3399,6 +3399,7 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_dcs');
     add_default($nl, 'ice_sed_ai');
     add_default($nl, 'micro_mg_accre_enhan_fac');
+    add_default($nl, 'rrtmg_temp_fix');
 }
 
 if ($cfg->get('microphys') =~ /^mg2/) {
@@ -3406,6 +3407,7 @@ if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl, 'prc_exp');
     add_default($nl, 'prc_exp1');
     add_default($nl, 'cld_sed');
+    add_default($nl, 'mg_prc_coeff_fix');    
 }
 
 # Sub-column switches for physics packages
@@ -3486,6 +3488,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_tk1');
    add_default($nl, 'clubb_tk2');
    add_default($nl, 'clubb_wpxp_L_thresh');
+   add_default($nl, 'relvar_fix');
 }
 
 #in-cloud scav tuning for cloud-borne aerosol
