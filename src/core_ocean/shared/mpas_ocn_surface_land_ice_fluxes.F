@@ -497,7 +497,8 @@ contains
             ! linearized equaiton for the S and p dependent potential freezing temperature
             landIceInterfaceTracers(indexIT,iCell) = ocn_freezing_temperature( &
                salinity=landIceBoundaryLayerTracers(indexBLT,iCell), &
-               pressure=landIcePressure(iCell))
+               pressure=landIcePressure(iCell), &
+               inLandIceCavity=.true.)
 
             ! using (3) and (4) from Hunter (2006)
             ! or (7) from Jenkins et al. (2001) if gamma constant
@@ -798,8 +799,10 @@ contains
         nu = 0.0_RKIND
         iceDeltaT = 0.0_RKIND
       end if
-      T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
-      dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
+      T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
+                                    inLandIceCavity=.true.)
+      dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
+                                                       inLandIceCavity=.true.)
 
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
@@ -945,8 +948,10 @@ contains
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
-      T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
-      dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell))
+      T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
+                                    inLandIceCavity=.true.)
+      dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
+                                                       inLandIceCavity=.true.)
       transferVelocityRatio = (rho_fw/rho_sw)*oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
       Tlatent = latent_heat_fusion_mks/cp_sw
 
