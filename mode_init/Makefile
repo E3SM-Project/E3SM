@@ -21,7 +21,8 @@ TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_ecosys_column.o \
              mpas_ocn_init_sea_mount.o \
              mpas_ocn_init_global_ocean.o \
-             mpas_ocn_init_isomip.o
+             mpas_ocn_init_isomip.o \
+             mpas_ocn_init_isomip_plus.o
              #mpas_ocn_init_TEMPLATE.o
 
 all: init_mode
@@ -67,6 +68,8 @@ mpas_ocn_init_ecosys_column.o: $(UTILS)
 mpas_ocn_init_sea_mount.o: $(UTILS)
 
 mpas_ocn_init_isomip.o: $(UTILS)
+
+mpas_ocn_init_isomip_plus.o: $(UTILS)
 
 mpas_ocn_init_ziso.o: $(UTILS)
 

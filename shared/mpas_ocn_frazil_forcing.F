@@ -355,6 +355,8 @@ contains
       real (kind=RKIND), pointer :: config_frazil_land_ice_reference_salinity
       real (kind=RKIND), pointer :: config_frazil_maximum_freezing_temperature
       logical, pointer :: config_frazil_use_surface_pressure
+      logical, pointer :: config_frazil_in_open_ocean
+      logical, pointer :: config_frazil_under_land_ice
 
       real (kind=RKIND) :: newFrazilIceThickness, newThicknessWeightedSaltContent
       real (kind=RKIND) :: sumNewFrazilIceThickness, sumNewThicknessWeightedSaltContent
@@ -423,6 +425,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
       ! get configure parameters
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_in_open_ocean', config_frazil_in_open_ocean)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_under_land_ice', config_frazil_under_land_ice)
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_maximum_depth', config_frazil_maximum_depth)
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_fractional_thickness_limit', config_frazil_fractional_thickness_limit)
       call mpas_pool_get_config(ocnConfigs, 'config_specific_heat_sea_water', config_specific_heat_sea_water)
@@ -457,11 +461,21 @@ contains
            underLandIce = (landIceMask(iCell) == 1)
         end if
 
+        if (underLandIce .and. .not. config_frazil_under_land_ice) then
+          ! skip this cell because we're not doing frazil under land ice
+          cycle
+        end if
+
+        if (.not. underLandIce .and. .not. config_frazil_in_open_ocean) then
+          ! skip this cell because we're not doing frazil in the open ocean
+          cycle
+        end if
+
         ! find deepest level where frazil can be created
         kBottomFrazil=maxLevelCell(iCell)
         do k=maxLevelCell(iCell), 1, -1
           ! add the ssh so frazil can form below land ice, where the ssh is depressed
-          if(-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
+          if (-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
             kBottomFrazil=k
             exit
           endif
@@ -476,7 +490,7 @@ contains
         enddo
 
         ! test min temperature agains max freezing temperature to see if we should even consider creating frazil
-        if(columnTemperatureMin > config_frazil_maximum_freezing_temperature) cycle
+        if (columnTemperatureMin > config_frazil_maximum_freezing_temperature) cycle
 
         ! initialize the sum of new frazil ice created
         sumNewFrazilIceThickness = 0.0_RKIND
@@ -487,7 +501,8 @@ contains
 
           ! get freezing temperature
           oceanFreezingTemperature = ocn_freezing_temperature(salinity=activeTracers(indexSalinity,k,iCell), &
-                                                              pressure=pressure(k,iCell))
+                                                              pressure=pressure(k,iCell), &
+                                                              inLandIceCavity=underLandIce)
 
           potential = layerThickness(k,iCell) * config_specific_heat_sea_water &
                     * rho_sw * (activeTracers(indexTemperature,k,iCell) - oceanFreezingTemperature)
@@ -498,7 +513,7 @@ contains
           if (freezingEnergy > 0) then
 
             ! get frazil salinity
-            if(underLandice) then
+            if (underLandIce) then
               frazilSalinity = config_frazil_land_ice_reference_salinity
             else
               frazilSalinity = config_frazil_sea_ice_reference_salinity
@@ -585,12 +600,11 @@ contains
                                            * config_frazil_ice_density
         accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + sumNewThicknessWeightedSaltContent
 
-        if ( associated(landIceMask) ) then
+        if ( underLandIce ) then
            ! accumulate frazil formed under land ice in case we're not coupling and we need to keep track of it
            ! for freshwater budgets
            accumulatedLandIceFrazilMassNew(iCell) = accumulatedLandIceFrazilMassOld(iCell) &
-                                                  + landIceMask(iCell) * sumNewFrazilIceThickness &
-                                                    * config_frazil_ice_density
+                                                  + sumNewFrazilIceThickness * config_frazil_ice_density
         end if
 
       enddo   ! do iCell = 1, nCells

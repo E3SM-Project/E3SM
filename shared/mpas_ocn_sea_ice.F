@@ -145,7 +145,8 @@ contains
          ! Loop over vertical levels, starting from the bottom of a column
          do k = maxLevel, 1, -1
             freezingTemp = ocn_freezing_temperature(tracers(indexSalinity, k, iCell), &
-                                                    pressure=0.0_RKIND)
+                                                    pressure=0.0_RKIND, &
+                                                    inLandIceCavity=.false.)
             ! availableEnergyChange is:
             !     positive when frazil ice is formed
             !     negative when frazil ice can be melted
@@ -197,7 +198,8 @@ contains
 
             netEnergychange = 0.0_RKIND
             freezingTemp = ocn_freezing_temperature(tracers(indexSalinity, k, iCell), &
-                                                    pressure=0.0_RKIND)
+                                                    pressure=0.0_RKIND, &
+                                                    inLandIceCavity=.false.)
             ! availableEnergyChange is:
             !     positive when frazil ice is formed
             !     negative when frazil ice can be melted
@@ -262,16 +264,17 @@ contains
       integer, intent(in) :: nVertLevels !< Input: Number of vertical levels suggested for level cap
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_use_frazil_ice_formation, config_monotonic
+      logical, pointer :: config_use_frazil_ice_formation, config_monotonic, config_frazil_in_open_ocean
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_use_frazil_ice_formation', config_use_frazil_ice_formation)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_in_open_ocean', config_frazil_in_open_ocean)
       call mpas_pool_get_config(ocnConfigs, 'config_monotonic', config_monotonic)
 
       frazilFormationOn = .false.
 
-      if(config_use_frazil_ice_formation) then
+      if(config_use_frazil_ice_formation .and. config_frazil_in_open_ocean) then
         frazilFormationOn = .true.
       end if
 

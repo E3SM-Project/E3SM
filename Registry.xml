@@ -77,6 +77,14 @@
 		<dim name="nTransects" definition="1" units="unitless"
 			 description="The number of transects for AM transectTransport"
 		/>
+		<dim name="nTransectGroups" units="unitless"
+			description="Number of groups of regions."
+			definition="1"
+		/>
+		<dim name="maxTransectsInGroup" units="unitless"
+			description="Maximum number of regions in a group."
+			definition="1"
+		/>
 		<dim name="maxEdgesInTransect" definition="1" units="unitless"
 			 description="Max number of edges in a transect for AM transectTransport"
 		/>
@@ -681,6 +689,14 @@
 					description="Controls if fluxes related to frazil ice process are computed."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_frazil_in_open_ocean" type="logical" default_value=".true." units="unitless"
+					description="If frazil formation is used, controls if frazil fluxes are computed in the open ocean (as opposed to under land ice)."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_frazil_under_land_ice" type="logical" default_value=".true." units="unitless"
+					description="If frazil formation is used, controls if frazil fluxes are computed under land ice."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_frazil_heat_of_fusion" type="real" default_value="3.34e5" units="J kg^{-1}"
 					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME."
 					possible_values="Any positive real number."
@@ -711,7 +727,7 @@
 		/>
 		<nml_option name="config_frazil_maximum_freezing_temperature" type="real" default_value="0.0" units="C"
 			description="Maximum freezing temperature for the creation of frazil"
-			possible_values="Any positive real number."
+			possible_values="Any real number."
 		/>
 		<nml_option name="config_frazil_use_surface_pressure" type="logical" default_value=".true." units="unitless"
 			description="Flag that controls if frazil formation will exert a surface pressure as it is formed."
@@ -822,24 +838,44 @@
 					description="Character string to choose EOS formulation"
 					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
 		/>
-		<nml_option name="config_freezing_temperature_coeff_0" type="real" default_value="-1.8" units="C"
-					description="The freezing temperature at zero pressure."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_0" type="real" default_value="-1.8" units="C"
+					description="The freezing temperature at zero pressure in open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_freezing_temperature_coeff_S" type="real" default_value="0.0" units="C PSU^{-1}"
-					description="The coefficient for the term proportional to salinity in the freezing temperature."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_S" type="real" default_value="0.0" units="C PSU^{-1}"
+					description="The coefficient for the term proportional to salinity in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_freezing_temperature_coeff_p" type="real" default_value="6.64670038e-08" units="C Pa^{-1}"
-					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_p" type="real" default_value="0.0" units="C Pa^{-1}"
+					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_freezing_temperature_coeff_pS" type="real" default_value="-4.44655526e-09" units="C PSU^{-1} Pa^{-1}"
-					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature."
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_pS" type="real" default_value="0.0" units="C PSU^{-1} Pa^{-1}"
+					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_freezing_temperature_reference_pressure" type="real" default_value="1e5" units="Pa"
-					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0."
+		<nml_option name="config_open_ocean_freezing_temperature_reference_pressure" type="real" default_value="0.0" units="Pa"
+					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in the open ocean."
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_0" type="real" default_value="6.22e-2" units="C"
+					description="The freezing temperature at zero pressure in land-ice cavities."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_S" type="real" default_value="-5.63e-2" units="C PSU^{-1}"
+					description="The coefficient for the term proportional to salinity in the freezing temperature in land-ice cavities."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_p" type="real" default_value="-7.43e-8" units="C Pa^{-1}"
+					description="The coefficient for the term proportional to the (limited) pressure in the freezing temperature in land-ice cavities."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_pS" type="real" default_value="-1.74e-10" units="C PSU^{-1} Pa^{-1}"
+					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature in land-ice cavities."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_land_ice_cavity_freezing_temperature_reference_pressure" type="real" default_value="0.0" units="Pa"
+					description="The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in land-ice cavities."
 					possible_values="Any positive real number"
 		/>
 	</nml_record>
@@ -1644,7 +1680,7 @@
 			<var name="pointCellGlobalID"/>
 		</stream>
 
-		<stream name="transect_masks"
+		<stream name="transects"
 				type="input"
 				filename_template="transect_masks.nc"
 				immutable="true"
@@ -1653,6 +1689,10 @@
 
 			<var name="transectEdgeMasks"/>
 			<var name="transectEdgeMaskSigns"/>
+			<var name="transectsInGroup"/>
+			<var name="nTransectsInGroup"/>
+			<var name="transectNames"/>
+			<var name="transectGroupNames"/>
 		</stream>
 	</streams>
 
@@ -2096,16 +2136,16 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
+			 description="vertical velocity defined at center (horizontally) and top (vertically) of cell"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="vertical tracer-transport velocity defined at center (horizonally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
+			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
 			 packages="forwardMode;analysisMode"
 
 		/>
 		<var name="vertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="vertical tracer-transport velocity defined at center (horizonally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
+			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
 			 packages="forwardMode;analysisMode"
 
 		/>
@@ -2689,12 +2729,12 @@
 			description="Flux of mass through the ocean surface. Positive into ocean."
 			packages="landIceFluxesPKG"
 		/>
-		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W s^{-1}"
+		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^{-2}"
 			description="Flux of heat into the ocean at land ice-ocean interface. Positive into ocean."
 			packages="landIceFluxesPKG"
 		/>
 		<!-- Output fields from standalone land-ice flux computaiton -->
-		<var name="heatFluxToLandIce"  type="real" dimensions="nCells Time" units="W s^{-1}"
+		<var name="heatFluxToLandIce"  type="real" dimensions="nCells Time" units="W m^{-2}"
 			description="Flux of heat out of ice at land ice-ocean interface. Positive into ocean."
 			packages="landIceFluxesPKG"
 		/>
@@ -3204,6 +3244,44 @@
 			dimensions="nRegionGroups"
 			units="unitless"
 			description="The name for each region group."
+			/>
+	</var_struct>
+	<var_struct name="transects" time_levs="1">
+		<var name="transectEdgeMasks" 
+		     type="integer" 
+		     dimensions="nTransects nEdges" 
+		     units="NA"
+			 description="Mask of edges for measuring transport across transects"
+		/>
+		<var name="transectEdgeMaskSigns" 
+		     type="integer" 
+		     dimensions="nTransects nEdges" 
+		     units="NA"
+			 description="Sign of normalVelocity on edge for this transect"
+		/>
+		<var name="transectsInGroup"
+			type="integer"
+			dimensions="maxTransectsInGroup nTransectGroups"
+			units="unitless"
+			description="The list of transect indices in each group."
+			/>
+		<var name="nTransectsInGroup"
+			type="integer"
+			dimensions="nTransectGroups"
+			units="unitless"
+			description="The number of transects in each group."
+			/>
+		<var name="transectNames"
+			type="text"
+			dimensions="nTransects"
+			units="unitless"
+			description="The name for each transect."
+			/>
+		<var name="transectGroupNames"
+			type="text"
+			dimensions="nTransectGroups"
+			units="unitless"
+			description="The name for each transect group."
 			/>
 	</var_struct>
 
