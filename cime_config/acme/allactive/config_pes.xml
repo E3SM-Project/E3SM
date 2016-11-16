@@ -77,7 +77,7 @@
     </mach>
   </grid>
   <grid name="a%1.9x2.5.+l%1.9x2.5.+oi%gx1">
-    <mach name="corip1">
+    <mach name="cori-haswell">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -1072,7 +1072,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
-    <mach name='corip1'>
+    <mach name='cori-haswell'>
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
