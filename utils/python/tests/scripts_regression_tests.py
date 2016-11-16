@@ -1115,11 +1115,15 @@ class L_TestSaveTimings(TestCreateTestCommon):
     ###########################################################################
     def test_save_timings(self):
     ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping test_save_timings. ACME feature")
         self.simple_test()
 
     ###########################################################################
     def test_save_timings_manual(self):
     ###########################################################################
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping test_save_timings. ACME feature")
         self.simple_test(manual_timing=True)
 
 ###############################################################################
@@ -1290,7 +1294,7 @@ class MakefileTester(object):
     _makefile_template = """
 include Macros
 query:
-	echo '$({})' > query.out
+        echo '$({})' > query.out
 """
 
     def __init__(self, parent, make_string):
