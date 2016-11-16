@@ -1290,11 +1290,11 @@ class MakefileTester(object):
     assert_variable_equals
     assert_variable_matches
     """
-
+# Note that the following is a Makefile and the echo line must begin with a tab
     _makefile_template = """
 include Macros
 query:
-        echo '$({})' > query.out
+	echo '$({})' > query.out
 """
 
     def __init__(self, parent, make_string):

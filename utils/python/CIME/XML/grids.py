@@ -259,7 +259,6 @@ class Grids(GenericXML):
                         path = os.path.dirname(domain_name)
                         if len(path) > 0:
                             domains[path_name] = path
-        print domains
         return domains
 
     def _get_component_grids_from_longname(self, name):
