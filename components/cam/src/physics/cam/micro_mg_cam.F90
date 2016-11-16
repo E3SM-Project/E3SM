@@ -2354,7 +2354,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          if (rrtmg_temp_fix) then
             cldfsnow_logic = ( cldfsnow(i,k) .le. 1.e-4_r8 )
          endif
-         if( ( cldfsnow_logic  .and. ( qsout(i,k) .gt. 1.e-6_r8 )) then
+         if( cldfsnow_logic .and. ( qsout(i,k) .gt. 1.e-6_r8 )) then
 
             cldfsnow(i,k) = 0.25_r8
          end if
