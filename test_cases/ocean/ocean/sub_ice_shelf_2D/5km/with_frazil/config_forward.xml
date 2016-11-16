@@ -11,11 +11,6 @@
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_use_frazil_ice_formation">.true.</option>
 		<option name="config_frazil_maximum_depth">2000.0</option>
-		<option name="config_freezing_temperature_coeff_0">-1.8</option>
-		<option name="config_freezing_temperature_coeff_S">0.0</option>
-		<option name="config_freezing_temperature_coeff_p">6.64670038e-08</option>
-		<option name="config_freezing_temperature_coeff_pS">-4.44655526e-09</option>
-		<option name="config_freezing_temperature_reference_pressure">1e5</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">

@@ -17,13 +17,13 @@
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
 !>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
-!>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
+!>     cp Registry_TEMPLATE.xml Registry_your_new_name.xml
 !>
 !>  2. In those two new files, replace the following text:
 !>     temPlate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
 !>     Typically temPlate uses camel case (variable names), like yourNewName,
 !>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
-!>     note: do not replace 'filename_template' in Registry_ocn_yourNewName.xml
+!>     note: do not replace 'filename_template' in Registry_yourNewName.xml
 !>
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
@@ -186,7 +186,6 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: temPlateAM
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers

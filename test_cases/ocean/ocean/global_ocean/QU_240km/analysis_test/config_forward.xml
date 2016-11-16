@@ -22,6 +22,7 @@
 		<template file="surface_area_weighted_averages.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="water_mass_census.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="zonal_mean.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="eddy_product_variables.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_pio_num_iotasks">1</option>
  		<option name="config_pio_stride">4</option>
 	</namelist>
@@ -79,6 +80,10 @@
 		</stream>
 		<template file="zonal_mean.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<stream name="zonalMeanOutput">
+			<attribute name="output_interval">0000_00:00:01</attribute>
+		</stream>
+		<template file="eddy_product_variables.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<stream name="eddyProductVariablesOutput">
 			<attribute name="output_interval">0000_00:00:01</attribute>
 		</stream>
 	</streams>

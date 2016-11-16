@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<config case="init_step2">
+
+	<get_file dest_path="initial_condition_database" file_name="PTemp.Jan_p3.filled.mpas100levs.160127.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="ETOPO2v2c_f4_151106.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="initial_condition_database" file_name="chlorophyllA_monthly_averages_1deg.151201.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
+
+	<add_executable source="metis" dest="metis"/>
+
+	<add_link source="../init_step1/culled_mesh_final.nc" dest="mesh.nc"/>
+	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
+	<add_link source_path="initial_condition_database" source="PTemp.Jan_p3.filled.mpas100levs.160127.nc" dest="temperature.nc"/>
+	<add_link source_path="initial_condition_database" source="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc" dest="salinity.nc"/>
+	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
+	<add_link source_path="initial_condition_database" source="ETOPO2v2c_f4_151106.nc" dest="topography.nc"/>
+	<add_link source_path="initial_condition_database" source="chlorophyllA_monthly_averages_1deg.151201.nc" dest="swData.nc"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
+		<option name="config_global_ocean_deepen_critical_passages">.false.</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">1200</argument>
+		</step>
+		<model_run procs="1200" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

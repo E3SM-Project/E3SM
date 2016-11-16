@@ -9,6 +9,7 @@
 			<add_contents>
 				<member name="mesh" type="stream"/>
 				<member name="xtime" type="var"/>
+				<member name="daysSinceStartOfSim" type="var"/>
 				<member name="ssh" type="var"/>
 				<member name="seaSurfacePressure" type="var"/>
 				<member name="landIcePressure" type="var"/>

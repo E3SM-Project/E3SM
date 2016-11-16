@@ -6,7 +6,7 @@
 		<option name="config_AM_timeSeriesStats_compute_interval">'dt'</option>
 		<option name="config_AM_timeSeriesStats_output_stream">'timeSeriesStatsOutput'</option>
 		<option name="config_AM_timeSeriesStats_restart_stream">'timeSeriesStatsRestart'</option>
-		<option name="config_AM_timeSeriesStats_add_mesh">.true.</option>
+		<option name="config_AM_timeSeriesStats_add_mesh">.false.</option>
 		<option name="config_AM_timeSeriesStats_operation">'avg'</option>
 		<option name="config_AM_timeSeriesStats_reference_times">'initial_time'</option>
 		<option name="config_AM_timeSeriesStats_duration_intervals">'repeat_interval'</option>

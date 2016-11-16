@@ -1,0 +1,107 @@
+<template>
+	<namelist>
+		<option name="config_ocean_run_mode">'forward'</option>
+		<option name="config_dt">'00:04:00'</option>
+		<option name="config_btr_dt">'00:00:10'</option>
+		<option name="config_run_duration">'0000-01-00_00:00:00'</option>
+		<option name="config_write_output_on_startup">.false.</option>
+		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+		<option name="config_time_integrator">'split_explicit'</option>
+		<option name="config_use_mom_del2">.true.</option>
+		<option name="config_use_tracer_del2">.true.</option>
+		<option name="config_mom_del2">6.0</option>
+		<option name="config_tracer_del2">1.0</option>
+		<option name="config_use_cvmix">.true.</option>
+		<option name="config_use_cvmix_background">.true.</option>
+		<option name="config_cvmix_background_diffusion">5.0e-5</option>
+		<option name="config_cvmix_background_viscosity">1.0e-3</option>
+		<option name="config_use_cvmix_convection">.true.</option>
+		<option name="config_cvmix_convective_diffusion">0.1</option>
+		<option name="config_cvmix_convective_viscosity">0.1</option>
+		<option name="config_use_cvmix_shear">.true.</option>
+		<option name="config_use_bulk_thickness_flux">.true.</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
+		<option name="config_land_ice_flux_attenuation_coefficient">10.0</option>
+		<option name="config_land_ice_flux_boundaryLayerThickness">10.0</option>
+		<option name="config_land_ice_flux_topDragCoeff">2.5e-3</option>
+		<option name="config_land_ice_flux_rms_tidal_velocity">1e-2</option>
+		<option name="config_land_ice_flux_jenkins_heat_transfer_coefficient">0.0146</option>
+		<option name="config_land_ice_flux_jenkins_salt_transfer_coefficient">0.00041785579</option>
+		<option name="config_bottom_drag_coeff">2.5e-3</option>
+		<option name="config_eos_type">'linear'</option>
+		<option name="config_eos_linear_alpha">0.03836</option>
+		<option name="config_eos_linear_beta">0.8059</option>
+		<option name="config_eos_linear_Tref">-1.0</option>
+		<option name="config_eos_linear_Sref">34.2</option>
+		<option name="config_eos_linear_densityref">1027.51</option>
+		<option name="config_pressure_gradient_type">'pressure_and_zmid'</option>
+		<option name="config_use_activeTracers_interior_restoring">.true.</option>
+		<option name="config_use_activeTracers_surface_bulk_forcing">.true.</option>
+		<option name="config_check_ssh_consistency">.false.</option>
+	</namelist>
+
+	<streams>
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="restart">
+			<attribute name="output_interval">0000-01-00_00:00:00</attribute>
+		</stream>
+		<stream name="forcing_data">
+			<attribute name="filename_template">forcing_data.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input</attribute>
+			<attribute name="name">forcing_data</attribute>
+			<add_contents>
+				<member name="tracersInteriorRestoringFields" type="var_struct"/>
+				<member name="evaporationFlux" type="var"/>
+				<member name="seaIceHeatFlux" type="var"/>
+				<member name="seaIceSalinityFlux" type="var"/>
+				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="output">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">output.nc</attribute>
+			<attribute name="output_interval">0000-00-05_00:00:00</attribute>
+			<attribute name="clobber_mode">overwrite</attribute>
+			<add_contents>
+				<member name="tracers" type="var_struct"/>
+				<member name="mesh" type="stream"/>
+				<member name="xtime" type="var"/>
+				<member name="daysSinceStartOfSim" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="kineticEnergyCell" type="var"/>
+				<member name="vertVelocityTop" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="zMid" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="landIcePressure" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+				<member name="tracersSurfaceValue" type="var_array"/>
+				<member name="surfaceVelocity" type="var_array"/>
+				<member name="tracersSurfaceFlux" type="var_struct"/>
+				<member name="surfaceStressMagnitude" type="var"/>
+				<member name="surfaceThicknessFlux" type="var"/>
+				<member name="velocityX" type="var"/>
+				<member name="velocityY" type="var"/>
+			</add_contents>
+		</stream>
+
+		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
+		<stream name="land_ice_fluxes">
+			<attribute name="clobber_mode">overwrite</attribute>
+			<attribute name="output_interval">0000-00-05_00:00:00</attribute>
+		</stream>
+
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<stream name="globalStatsOutput">
+			<attribute name="clobber_mode">overwrite</attribute>
+			<attribute name="output_interval">0001_00:00:00</attribute>
+		</stream>
+	</streams>
+</template>

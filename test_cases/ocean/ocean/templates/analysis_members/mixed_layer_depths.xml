@@ -29,7 +29,6 @@
 			<attribute name="packages">mixedLayerDepthsAMPKG</attribute>
 			<attribute name="type">output</attribute>
 			<add_contents>
-				<member name="mesh" type="stream"/>
 				<member name="xtime" type="var"/>
 				<member name="tThreshMLD" type="var"/>
 				<member name="dThreshMLD" type="var"/>

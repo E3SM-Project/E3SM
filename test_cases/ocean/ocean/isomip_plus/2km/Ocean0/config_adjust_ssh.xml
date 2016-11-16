@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<config case="adjust_ssh">
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<add_link source_path="script_core_dir" source="iterative_ssh_landIcePressure_scripts/iterate_init.py" dest="iterate_init.py"/>
+	<add_link source_path="script_core_dir" source="iterative_ssh_landIcePressure_scripts/plot_cart_ssh_landIcePressure.py" dest="plot_cart_ssh_landIcePressure.py"/>
+	<add_link source_path="script_core_dir" source="scripts/plot_globalStats.py" dest="plot_globalStats.py"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="template_adjust_ssh.xml" path_base="script_configuration_dir"/>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="template_adjust_ssh.xml" path_base="script_configuration_dir"/>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<stream name="globalStatsOutput">
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<step executable="./iterate_init.py">
+ 			<argument flag="--iteration_count">10</argument>
+ 			<argument flag="--variable_to_modify">landIcePressure</argument>
+		</step>
+	</run_script>
+
+	<run_script name="run_model.py">
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

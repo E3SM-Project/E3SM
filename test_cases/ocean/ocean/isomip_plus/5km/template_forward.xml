@@ -1,0 +1,34 @@
+<template>
+	<namelist>
+		<option name="config_dt">'00:05:00'</option>
+		<option name="config_btr_dt">'00:00:10'</option>
+		<option name="config_use_mom_del2">.false.</option>
+		<option name="config_use_tracer_del2">.false.</option>
+		<option name="config_use_mom_del4">.true.</option>
+		<option name="config_use_tracer_del4">.false.</option>
+		<option name="config_mom_del4">1.9e09</option>
+		<option name="config_mom_del4_div_factor">1.0</option>
+		<option name="config_tracer_del4">0.0</option>
+		<option name="config_use_cvmix">.true.</option>
+		<option name="config_use_cvmix_background">.true.</option>
+		<option name="config_cvmix_background_diffusion">1.0e-5</option>
+		<option name="config_cvmix_background_viscosity">1.0e-4</option>
+		<option name="config_use_cvmix_convection">.true.</option>
+		<option name="config_cvmix_convective_diffusion">1.0</option>
+		<option name="config_cvmix_convective_viscosity">1.0</option>
+		<option name="config_use_cvmix_shear">.true.</option>
+		<option name="config_cvmix_shear_mixing_scheme">'KPP'</option>
+		<option name="config_use_bulk_thickness_flux">.true.</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
+		<option name="config_land_ice_flux_attenuation_coefficient">10.0</option>
+		<option name="config_land_ice_flux_boundaryLayerThickness">10.0</option>
+		<option name="config_land_ice_flux_topDragCoeff">2.5e-3</option>
+		<option name="config_land_ice_flux_rms_tidal_velocity">5e-2</option>
+		<option name="config_land_ice_flux_jenkins_heat_transfer_coefficient">0.011</option>
+		<option name="config_land_ice_flux_jenkins_salt_transfer_coefficient">0.00031</option>
+		<option name="config_bottom_drag_coeff">1e-3</option>
+		<option name="config_eos_type">'jm'</option>
+		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
+	</namelist>
+
+</template>

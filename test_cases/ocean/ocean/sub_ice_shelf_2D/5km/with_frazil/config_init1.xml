@@ -13,12 +13,7 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init.xml" path_base="script_resolution_dir"/>
-		<option name="config_sub_ice_shelf_2D_vert_levels">100</option>
-		<option name="config_sub_ice_shelf_2D_temperature">-3.0</option>
 		<option name="config_write_cull_cell_mask">.true.</option>
-		<option name="config_iterative_init_variable">'landIcePressure_from_top_density'</option>
-		<option name="config_use_rx1_constraint">.true.</option>
-		<option name="config_rx1_max">5.0</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
