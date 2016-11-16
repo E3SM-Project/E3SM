@@ -223,18 +223,14 @@
 
    <batch_system MACH="constance" type="slurm" version="x.y">
     <directives>
-       <directive>-A  climate</directive>
        <directive>--mail-type=END</directive>
        <directive>--mail-user=email@pnnl.gov</directive>
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="9999" default="true">slurm</queue>
+      <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">slurm</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">0:30:00</walltime>
-    </walltimes>
    </batch_system>
 
   <batch_system MACH="skybridge" type="slurm" version="x.y">
