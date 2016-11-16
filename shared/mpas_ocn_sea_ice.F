@@ -145,7 +145,8 @@ contains
          ! Loop over vertical levels, starting from the bottom of a column
          do k = maxLevel, 1, -1
             freezingTemp = ocn_freezing_temperature(tracers(indexSalinity, k, iCell), &
-                                                    pressure=0.0_RKIND)
+                                                    pressure=0.0_RKIND, &
+                                                    inLandIceCavity=.false.)
             ! availableEnergyChange is:
             !     positive when frazil ice is formed
             !     negative when frazil ice can be melted
@@ -197,7 +198,8 @@ contains
 
             netEnergychange = 0.0_RKIND
             freezingTemp = ocn_freezing_temperature(tracers(indexSalinity, k, iCell), &
-                                                    pressure=0.0_RKIND)
+                                                    pressure=0.0_RKIND, &
+                                                    inLandIceCavity=.false.)
             ! availableEnergyChange is:
             !     positive when frazil ice is formed
             !     negative when frazil ice can be melted
