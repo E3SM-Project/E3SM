@@ -1048,35 +1048,99 @@
          <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
          <OS>LINUX</OS>
          <COMPILERS>intel,pgi</COMPILERS>
-         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <MPILIBS>mvapich2,openmpi,intelmpi,mvapich</MPILIBS>
 	 <NODENAME_REGEX>constance</NODENAME_REGEX>
-         <RUNDIR>/pic/scratch/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
-         <EXEROOT>/pic/scratch/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+	 <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+	 <RUNDIR>$CESMSCRATCHROOT/csmruns/$CASE/bld</RUNDIR>
+	 <EXEROOT>$CESMSCRATCHROOT/csmruns/$CASE/bld</EXEROOT>
+         <CIME_OUTPUT_ROOT>/pic/scratch/$USER</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/pic/projects/climate/csmdata/</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/pic/projects/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/pic/scratch/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/pic/projects/climate/acme_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/pic/projects/climate/acme_baselines/cprnc</CCSM_CPRNC>
+         <CCSM_CPRNC>/pic/projects/climate/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
 	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
 	 <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-	 <mpirun mpilib="mpich">
+	 <PES_PER_NODE>24</PES_PER_NODE>
+	 <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <mpirun mpilib="mpi-serial">
+	   <executable></executable>
+	 </mpirun>
+	 <mpirun mpilib="mvapich2">
 	   <executable>srun</executable>
 	   <arguments>
-	     <arg name="mpinone"> --mpi=none</arg>
-	     <arg name="num_tasks"> --ntasks={{ num_tasks }}</arg>
-	     <arg name="cpubind"> --cpu_bind=sockets</arg>
-	     <arg name="cpubind"> --cpu_bind=verbose</arg>
-             <arg name="killonbadexit"> --kill-on-bad-exit</arg>
+	     <arg name="mpi">--mpi=none</arg>
+	     <arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	     <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
+             <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
 	   </arguments>
 	 </mpirun>
-	 <mpirun mpilib="mpi-serial">
-           <executable></executable>
+	 <mpirun mpilib="mvapich">
+	   <executable>srun</executable>
+	   <arguments>
+	     <arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	     <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
+	     <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+	   </arguments>
 	 </mpirun>
-
+	 <mpirun mpilib="intelmpi">
+	   <executable>mpirun</executable>
+	   <arguments>
+	     <arg name="num_tasks">-n $TOTALPES</arg>
+	   </arguments>
+	 </mpirun>
+	 <mpirun mpilib="openmpi">
+	   <executable>mpirun</executable>
+	   <arguments>
+	     <arg name="num_tasks">-n $TOTALPES</arg>
+	   </arguments>
+	 </mpirun>
+	 <module_system type="module">
+	   <init_path lang="perl">/share/apps/modules/Modules/3.2.10/init/perl.pm</init_path>
+	   <init_path lang="python">/share/apps/modules/Modules/3.2.10/init/python.py</init_path>
+	   <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+	   <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+	   <cmd_path lang="perl">/share/apps/modules/Modules/3.2.10/bin/modulecmd perl </cmd_path>
+	   <cmd_path lang="python">/share/apps/modules/Modules/3.2.10/bin/modulecmd python</cmd_path>
+	   <cmd_path lang="sh">module</cmd_path>
+	   <cmd_path lang="csh">module</cmd_path>
+	   <modules>
+	     <command name="purge"></command>
+	   </modules>
+	   <modules>
+	     <command name="load">perl/5.20.0</command>
+	     <command name="load">cmake/3.3.0</command>
+	     <command name="load">python/2.7.8</command>
+	   </modules>
+	   <modules compiler="intel">
+	     <command name="load">intel/15.0.1</command>
+	     <command name="load">mkl/15.0.1</command>
+	   </modules>
+	   <modules compiler="pgi">
+	     <command name="load">pgi/14.10</command>
+	   </modules>
+	   <modules mpilib="mvapich">
+	     <command name="load">mvapich2/2.1</command>
+	   </modules>
+           <modules mpilib="mvapich2">
+             <command name="load">mvapich2/2.1</command>
+	   </modules>
+           <modules mpilib="intelmpi">
+             <command name="load">intelmpi/5.0.1.035</command>
+	   </modules>
+           <modules mpilib="openmpi">
+             <command name="load">openmpi/1.8.3</command>
+	   </modules>
+	   <modules>
+	     <command name="load">netcdf/4.3.2</command>
+	   </modules>
+	 </module_system>
+	 <environment_variables>
+	   <env name="OMP_STACKSIZE">64M</env>
+	 </environment_variables>
 </machine>
 
 <machine MACH="oic2">
