@@ -87,7 +87,32 @@ SET(SWEQX_SRCS
 
 SET(EXEC_SOURCES ${SWEQX_SRCS} )
 
+# Set up defaults
+IF (NOT SWEQX_NP)
+  SET (SWEQX_NP 8) 
+ENDIF ()
+IF (NOT SWEQX_PLEV)
+  SET (SWEQX_PLEV 4) 
+ENDIF ()
+IF (NOT SWEQX_USE_PIO)
+  SET (SWEQX_USE_PIO FALSE) 
+ENDIF ()
+IF (NOT SWEQX_USE_ENERGY)
+  SET (SWEQX_USE_ENERGY FALSE) 
+ENDIF ()
+IF (NOT SWEQX_NC)
+  SET (SWEQX_NC 4)
+ENDIF ()
+IF (NOT QSIZE_D)
+  SET (QSIZE_D 4)
+ENDIF ()
+
 endmacro(sweqx_setup)
 
+############################################################################
+# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
+############################################################################
 
+sweqx_setup()
+createTestExec(sweqx sweqx ${SWEQX_NP} ${SWEQX_NC} ${SWEQX_PLEV} ${SWEQX_USE_PIO} ${SWEQX_USE_ENERGY} ${QSIZE_D})
 
