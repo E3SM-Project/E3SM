@@ -91,6 +91,8 @@
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
 <config_stress_divergence_scheme>'variational'</config_stress_divergence_scheme>
 <config_variational_basis>'wachspress'</config_variational_basis>
+<config_wachspress_integration_type>'dunavant'</config_wachspress_integration_type>
+<config_wachspress_integration_order>8</config_wachspress_integration_order>
 <config_revised_evp>false</config_revised_evp>
 <config_use_air_stress>true</config_use_air_stress>
 <config_use_ocean_stress>true</config_use_ocean_stress>
