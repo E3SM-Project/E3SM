@@ -416,8 +416,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '	<var name="icePressure"/>' . "\n";
 	print $stream_file '	<var name="divergence"/>' . "\n";
 	print $stream_file '	<var name="shear"/>' . "\n";
-	print $stream_file '	<var name="principalStress1"/>' . "\n";
-	print $stream_file '	<var name="principalStress2"/>' . "\n";
+	print $stream_file '	<var name="principalStress1Var"/>' . "\n";
+	print $stream_file '	<var name="principalStress2Var"/>' . "\n";
 	print $stream_file '	<var name="iceVolumeTendencyThermodynamics"/>' . "\n";
 	print $stream_file '	<var name="iceVolumeTendencyTransport"/>' . "\n";
 	print $stream_file '	<var name="iceAreaTendencyThermodynamics"/>' . "\n";

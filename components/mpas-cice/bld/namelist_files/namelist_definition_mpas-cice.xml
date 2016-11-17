@@ -519,6 +519,22 @@ Valid values: 'wachspress' or 'pwl'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_wachspress_integration_type" type="char*1024"
+       category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: 'trapezoidal', 'dunavant' or 'fekete'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_wachspress_integration_order" type="integer"
+       category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: positive integers
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_revised_evp" type="logical"
 	category="velocity_solver" group="velocity_solver">
 MISSING DESCRIPTION
