@@ -34,7 +34,6 @@ module namelist_mod
     cubed_sphere_map, &
     qsplit,        &
     rsplit,        &
-    physics,       &
     rk_stage_user, &
     LFTfreq,       &
     prescribed_wind, &
@@ -78,14 +77,6 @@ module namelist_mod
 #ifndef CAM
   use control_mod, only:              &
     pertlim,                          &
-    tracer_transport_type,            &
-    TRACERTRANSPORT_SE_GLL,           &
-    TRACERTRANSPORT_SEMILAGRANG_GLL,  &
-    TRACERTRANSPORT_LAGRANGIAN_FVM,   &
-    TRACERTRANSPORT_FLUXFORM_FVM,     &
-    tracer_grid_type,                 &
-    TRACER_GRIDTYPE_GLL,              &
-    TRACER_GRIDTYPE_FVM,              &
     dcmip2_0_h0,                      &
     dcmip2_0_rm,                      &
     dcmip2_0_zetam,                   &
@@ -103,7 +94,7 @@ module namelist_mod
 #endif
 
   use thread_mod,     only: nthreads, nthreads_accel, omp_set_num_threads, omp_get_max_threads, vert_num_threads, vthreads
-  use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, ntrac, ntrac_d, qsize, qsize_d, set_mesh_dimensions
+  use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
 #ifdef CAM
   use time_mod,       only: nsplit, smooth, phys_tscale
 #else
@@ -192,11 +183,6 @@ module namelist_mod
     character(len=80)  :: se_write_phys_grid
     character(len=256) :: se_phys_grid_file
 #endif
-#ifndef CAM
-    character(len=32) :: tracer_transport_method = 'se_gll'
-    character(len=32) :: cslam_ideal_test = 'off'
-    character(len=32) :: cslam_test_type = 'boomerang'
-#endif
     ! ============================================
     ! Namelists
     ! ============================================
@@ -211,7 +197,6 @@ module namelist_mod
       vthreads,          &         ! number of vertical/column threads per horizontal thread
 #else
       qsize,             &         ! number of SE tracers
-      ntrac,             &         ! number of fvm tracers
       nthreads,          &         ! number of threads per process
       vert_num_threads,  &         ! number of threads per process
       nthreads_accel,    &         ! number of threads per an accelerator process
@@ -219,9 +204,6 @@ module namelist_mod
       smooth,            &         ! timestep Filter
       omega,             &
       pertlim,           &         ! temperature initial perturbation
-      tracer_transport_method, &
-      cslam_ideal_test,        &
-      cslam_test_type,         &
       omega,                   &   ! scaled rotation rate
       rearth,                  &   ! scaled earth radius
 #endif
@@ -242,7 +224,6 @@ module namelist_mod
       cubed_sphere_map, &
       qsplit,        &
       rsplit,        &
-      physics,       &             ! type of physics, 0=none, 1=multicloud or 2= emanuel.
       rk_stage_user, &
       LFTfreq,       &
       disable_diagnostics, &
@@ -277,11 +258,6 @@ module namelist_mod
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
       se_phys_tscale, &
-      ! These items are only here to keep readnl from crashing. Remove when possible
-      se_fv_nphys,    &      ! Linear size of FV physics grid
-      se_write_phys_grid, &  ! Write physics grid file if .true.
-      se_phys_grid_file      ! Physics grid filename
-
     namelist  /ctl_nl/ se_met_nudge_u, se_met_nudge_p, se_met_nudge_t, se_met_tevolve
 #else
     namelist /ctl_nl/test_case,       &             ! test case idenitfier
@@ -295,11 +271,6 @@ module namelist_mod
       tstep,           &             ! tracer time step
       columnpackage,   &
       moisture
-#endif
-
-
-#ifndef CAM
-
     ! control parameters for dcmip stand-alone tests
     namelist /ctl_nl/     &
       dcmip2_0_h0,        & !dcmip2-0 mountain height           (meters)
@@ -309,15 +280,6 @@ module namelist_mod
       dcmip2_x_h0,        & !dcmip2-x mountain height           (m)
       dcmip2_x_d,         & !dcmip2-x mountain half-width       (m)
       dcmip2_x_xi           !dcmip2-x mountain wavelength       (m)
-#endif
-
-    namelist /solver_nl/precon_method, &
-      maxits,        &
-      tol,           &
-      debug_level
-
-
-#ifndef CAM
     namelist /vert_nl/        &
       vform,              &
       vfile_mid,          &
@@ -351,6 +313,13 @@ module namelist_mod
       interpolate_analysis
 #endif
 ! ^ ifndef CAM
+
+
+    namelist /solver_nl/precon_method, &
+      maxits,        &
+      tol,           &
+      debug_level
+
 
     ! ==========================
     ! Set the default partmethod
@@ -628,7 +597,6 @@ module namelist_mod
     call MPI_bcast(tasknum,         1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(qsize,           1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(ntrac,           1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(test_cfldep,     1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(sub_case,        1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(remapfreq,       1,MPIinteger_t,par%root,par%comm,ierr)
@@ -708,7 +676,6 @@ module namelist_mod
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(physics,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rk_stage_user,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -749,52 +716,6 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
-! These options are set by the CAM namelist
-#ifndef CAM
-! Set and broadcast tracer transport type
-    if (trim(tracer_transport_method) == 'se_gll') then
-      tracer_transport_type = TRACERTRANSPORT_SE_GLL
-      tracer_grid_type = TRACER_GRIDTYPE_GLL
-!phl      if (ntrac>0) then
-!phl         call abortmp('user specified ntrac should only be > 0 when tracer_transport_type is fvm')
-!phl      end if
-    else if (trim(tracer_transport_method) == 'cslam_fvm') then
-      tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN_FVM
-      tracer_grid_type = TRACER_GRIDTYPE_FVM
-!phl      if (qsize>0) then
-!phl         call abortmp('user specified qsize should only be > 0 when tracer_transport_type is se_gll')
-!phl      end if
-    else if (trim(tracer_transport_method) == 'flux_form_cslam_fvm') then
-      tracer_transport_type = TRACERTRANSPORT_FLUXFORM_FVM
-      tracer_grid_type = TRACER_GRIDTYPE_FVM
-!phl      if (qsize>0) then
-!phl         call abortmp('user specified qsize should only be > 0 when tracer_transport_type is se_gll')
-!phl      end if
-    else
-      call abortmp('Unknown tracer transport method: '//trim(tracer_transport_method))
-    end if
-    call MPI_bcast(tracer_transport_type,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(tracer_grid_type,1,MPIinteger_t,par%root,par%comm,ierr)
-! Set and broadcast CSLAM test options
-    if (trim(cslam_ideal_test) == 'off') then
-      fvm_ideal_test = IDEAL_TEST_OFF
-    else if (trim(cslam_ideal_test) == 'analytical_departure') then
-      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_DEPARTURE
-    else if (trim(cslam_ideal_test) == 'analytical_winds') then
-      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_WINDS
-    else
-      call abortmp('Unknown ideal_cslam_test: '//trim(cslam_ideal_test))
-    end if
-    if (trim(cslam_test_type) == 'boomerang') then
-      fvm_test_type = IDEAL_TEST_BOOMERANG
-    else if (trim(cslam_test_type) == 'solidbody') then
-      fvm_test_type = IDEAL_TEST_SOLIDBODY
-    else
-      call abortmp('Unknown cslam test type: '//trim(cslam_test_type))
-    end if
-    call MPI_bcast(fvm_ideal_test,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(fvm_test_type,1,MPIinteger_t,par%root,par%comm,ierr)
-#endif
 
 #ifdef IS_ACCELERATOR
     if (nthreads_accel > 0) then
@@ -829,18 +750,6 @@ module namelist_mod
        endif
     endif
 #endif
-
-#ifndef CAM
-    if (0 < cubed_sphere_map .AND.  &
-        tracer_transport_type .eq. TRACERTRANSPORT_LAGRANGIAN_FVM  .OR. &
-        tracer_transport_type .eq. TRACERTRANSPORT_FLUXFORM_FVM)  then
-      print *,' cslam_fvm and flux_form_cslam_fvm require equi-angle gnomonic cube sphere mapping.'
-      print *,' Set cubed_sphere_map = 0 or comment it out all together.                          '
-        call abortmp("Error: (cslam_fvm or flux_form_cslam_fvm) and cubed_sphere_map>0")
-    end if
-#endif
-
-
 
     if (ne /=0) then
     if (mesh_file /= "none" .and. mesh_file /= "/dev/null") then
@@ -969,10 +878,6 @@ module namelist_mod
        if (qsize>qsize_d) then
           call abortmp('user specified qsize > qsize_d parameter in dimensions_mod.F90')
        endif
-       write(iulog,*)"readnl: ntrac,ntrac_d = ",ntrac,ntrac_d
-       if (ntrac>ntrac_d) then
-          call abortmp('user specified ntrac > ntrac_d parameter in dimensions_mod.F90')
-       endif
        write(iulog,*)"readnl: NThreads      = ",NTHREADS
        write(iulog,*)"readnl: vert_num_threads = ",vert_num_threads
        write(iulog,*)"readnl: nthreads_accel = ",nthreads_accel
@@ -1011,7 +916,6 @@ module namelist_mod
 #endif
        write(iulog,*)"readnl: qsplit        = ",qsplit
        write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
-       write(iulog,*)"readnl: physics       = ",physics
 
        write(iulog,*)"readnl: runtype       = ",runtype
 
@@ -1082,33 +986,6 @@ module namelist_mod
 #endif
 
 #ifndef CAM
-       ! Write CSLAM namelist values
-       select case (tracer_transport_type)
-       case (TRACERTRANSPORT_SE_GLL)
-         write(iulog, *) 'Eulerian tracer advection on GLL grid'
-       case (TRACERTRANSPORT_SEMILAGRANG_GLL)
-         write(iulog, *) 'Classic semi-Lagrangian tracer advection on GLL grid'
-       case (TRACERTRANSPORT_LAGRANGIAN_FVM)
-         write(iulog, *) 'CSLAM tracer advection on FVM grid'
-       case (TRACERTRANSPORT_FLUXFORM_FVM)
-         write(iulog, *) 'Flux-form CSLAM tracer advection on FVM grid'
-       end select
-
-       if (fvm_ideal_test /= IDEAL_TEST_OFF) then
-         select case (fvm_test_type)
-         case (IDEAL_TEST_BOOMERANG)
-           write(iulog, *) 'Running boomerang CSLAM test'
-         case (IDEAL_TEST_SOLIDBODY)
-           write(iulog, *) 'Running solid body CSLAM test'
-         end select
-         select case (fvm_ideal_test)
-         case (IDEAL_TEST_ANALYTICAL_DEPARTURE)
-           write(iulog, *) 'Using analytical departure points for CSLAM test'
-         case (IDEAL_TEST_ANALYTICAL_WINDS)
-           write(iulog, *) 'Using analytical winds for CSLAM test'
-         end select
-       end if
-
        write(iulog,*)" analysis interpolation = ", interpolate_analysis
 
        if(any(interpolate_analysis)) then

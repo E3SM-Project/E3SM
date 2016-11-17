@@ -4,7 +4,7 @@
 
 module interp_movie_mod
   use kinds, only : real_kind
-  use dimensions_mod, only :  nlev, nelemd, np, ne, qsize, ntrac, nc
+  use dimensions_mod, only :  nlev, nelemd, np, ne, qsize
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
        set_interp_parameter

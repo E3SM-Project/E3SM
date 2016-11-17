@@ -13,7 +13,7 @@ module viscosity_mod_base
 !
 use thread_mod, only : omp_get_num_threads
 use kinds, only : real_kind, iulog
-use dimensions_mod, only : np, nc, nlev,qsize,nelemd, ntrac
+use dimensions_mod, only : np, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t, hybrid_create
 use parallel_mod, only : parallel_t
 use element_mod, only : element_t
@@ -204,7 +204,7 @@ end subroutine
 
 
 #ifdef _PRIM
-subroutine biharmonic_wk_dp3d(elem,dptens,dpflux,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
 use derivative_mod, only :  subcell_Laplace_fluxes
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -216,7 +216,6 @@ use derivative_mod, only :  subcell_Laplace_fluxes
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
 integer              , intent(in)  :: nt,nets,nete
-real (kind=real_kind), intent(out), dimension(nc,nc,4,nlev,nets:nete) :: dpflux
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
 type (EdgeBuffer_t)  , intent(inout) :: edge3
@@ -231,7 +230,6 @@ real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
 logical var_coef1
 
-   if (ntrac>0) dpflux = 0
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
    var_coef1 = .true.
@@ -293,14 +291,6 @@ logical var_coef1
       kptr=3*nlev
       call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, ie)
       
-
-      if (ntrac>0) then
-      do k=1,nlev
-         tmp(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
-         dpflux(:,:,:,k,ie) = subcell_Laplace_fluxes(tmp, deriv, elem(ie), np, nc) 
-      enddo
-      endif
-
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,v,tmp,tmp2)

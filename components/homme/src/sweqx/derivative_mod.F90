@@ -16,10 +16,6 @@ module derivative_mod
       gradient_wk,                &
       vorticity,                  &
       divergence,                 &
-      interpolate_gll2fvm_corners,&
-      interpolate_gll2fvm_points, &
-      remap_phys2gll,             &
-      v2pinit,                    &
       gradient_sphere_wk_testcov, &
       gradient_sphere_wk_testcontra, &
       ugradv_sphere,              &

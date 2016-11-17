@@ -533,7 +533,7 @@ contains
                       vartmp(:,:,k) = elem(ie)%state%v(:,:,1,k,tl%n0)
                    end do
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call UniquePoints(elem(ie)%idxv,nlev,vartmp,var3d(st:en,:))
+                   call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3d,start, count, name='u')
@@ -547,7 +547,7 @@ contains
                       vartmp(:,:,k) = elem(ie)%state%v(:,:,2,k,tl%n0)
                    end do
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call UniquePoints(elem(ie)%idxv,nlev,vartmp,var3d(st:en,:))
+                   call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3d,start, count, name='v')

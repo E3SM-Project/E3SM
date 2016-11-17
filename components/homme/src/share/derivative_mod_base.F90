@@ -6,7 +6,7 @@
 module derivative_mod_base
 
   use kinds,          only : real_kind, longdouble_kind
-  use dimensions_mod, only : np, nc, nelemd, nlev
+  use dimensions_mod, only : np, nelemd, nlev
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
   use parallel_mod,   only : abortmp
   use element_mod,    only : element_t
@@ -21,8 +21,6 @@ private
      real (kind=real_kind) :: Dvv_diag(np,np)
      real (kind=real_kind) :: Dvv_twt(np,np)
      real (kind=real_kind) :: Mvv_twt(np,np)  ! diagonal matrix of GLL weights
-     real (kind=real_kind) :: Mfvm(np,nc+1)
-     real (kind=real_kind) :: Cfvm(np,nc)
      real (kind=real_kind) :: legdg(np,np)
   end type derivative_t
 
@@ -46,11 +44,6 @@ private
   public :: vorticity
   public :: divergence
 
-  public :: interpolate_gll2fvm_corners
-  public :: interpolate_gll2fvm_points
-  public :: remap_phys2gll
-
-
   interface divergence
       module procedure divergence_nonstag
   end interface
@@ -62,8 +55,6 @@ private
   interface gradient_wk
       module procedure gradient_wk_nonstag
   end interface
-
-  public :: v2pinit
 
   private :: dvvinit
 
@@ -100,19 +91,14 @@ contains
 ! derivatives and interpolating
 ! ==========================================
 
-  subroutine derivinit(deriv,fvm_corners, fvm_points)
+  subroutine derivinit(deriv)
     type (derivative_t)      :: deriv
-!    real (kind=longdouble_kind),optional :: phys_points(:)
-    real (kind=longdouble_kind),optional :: fvm_corners(nc+1)
-    real (kind=longdouble_kind),optional :: fvm_points(nc)
 
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
     
     real (kind=longdouble_kind) :: dmat(np,np)
     real (kind=longdouble_kind) :: dpv(np,np)
-    real (kind=longdouble_kind) :: v2p(np,np)
-    real (kind=longdouble_kind) :: p2v(np,np)
     real (kind=longdouble_kind) :: dvv(np,np)
     real (kind=longdouble_kind) :: dvv_diag(np,np)
     real (kind=longdouble_kind) :: v2v(np,np)
@@ -154,11 +140,6 @@ contains
 
     deriv%Dvv_twt = TRANSPOSE(dvv)
     deriv%Mvv_twt = v2v
-    if (present(fvm_corners)) &
-         call v2pinit(deriv%Mfvm,gp%points,fvm_corners,np,nc+1)
-
-    if (present(fvm_points)) &
-         call v2pinit(deriv%Cfvm,gp%points,fvm_points,np,nc)
 
     ! notice we deallocate this memory here even though it was allocated 
     ! by the call to gausslobatto.
@@ -166,110 +147,6 @@ contains
     deallocate(gp%weights)
 
   end subroutine derivinit
-
-
-! =======================================
-! v2pinit:
-! Compute interpolation matrix from gll(1:n1) -> gs(1:n2)
-! =======================================
-  subroutine v2pinit(v2p,gll,gs,n1,n2)
-    integer :: n1,n2
-    real(kind=real_kind)  ::  v2p(n1,n2)
-    real(kind=real_kind)  ::  v2p_new(n1,n2)
-    real(kind=longdouble_kind)  ::  gll(n1),gs(n2)
-    ! Local variables
-
-    integer i,j,k,m,l
-    real(kind=longdouble_kind)  fact,f1, sum
-    real(kind=longdouble_kind)  func0,func1
-
-    real(kind=longdouble_kind)  :: leg(n1,n1)
-    real(kind=longdouble_kind)  ::  jac(0:n1-1)
-    real(kind=longdouble_kind)  :: djac(0:n1-1)
-    real(kind=longdouble_kind)  :: c0,c1
-
-    type(quadrature_t) :: gll_pts
-    real(kind=longdouble_kind)  :: leg_out(n1,n2)
-    real(kind=longdouble_kind)  :: gamma(n1)
-
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
-
-    ! ==============================================================
-    ! Compute Legendre polynomials on Gauss-Lobatto grid (velocity)
-    ! ==============================================================
-
-    fact = -n1*(n1-1)
-    do i=1,n1
-       leg(:,i) = legendre(gll(i),n1-1)
-       leg(n1,i) = fact * leg(n1,i)
-    end do
-
-    ! ===================================================
-    !  Velocity cardinal functions on pressure grid
-    ! ===================================================
-#if 0
-    do j=1,n2
-       call jacobi(n1-1,gs(j),c0,c0,jac(0:n1-1),djac(0:n1-1))
-       func0 = jac(n1-1)
-       func1 = djac(n1-1)
-       f1 = (c1 - gs(j)**2) * func1
-       do i = 1, n1
-          if ( gs(j) /= gll(i) ) then
-             v2p(i,j) = f1 / ( leg(n1,i) * (gs(j)-gll(i)))
-          else
-             v2p(i,j) = c1
-          endif
-       end do
-    end do
-#endif
-
-    ! NEW VERSION, with no division by (gs(j)-gll(i)):
-
-    ! compute legendre polynomials at output points:
-    gll_pts = gausslobatto(n1)
-
-    fact = -n1*(n1-1)
-    do i=1,n2
-       leg_out(:,i) = legendre(gs(i),n1-1)
-       leg_out(n1,i) = fact * leg_out(n1,i)
-    end do
-
-
-    ! compute gamma: (normalization factor for inv(leg)
-    do m=1,n1
-       gamma(m)=0
-       do i=1,n1
-          gamma(m)=gamma(m)+leg(m,i)*leg(m,i)*gll_pts%weights(i) 
-       enddo
-       gamma(m)=1/gamma(m)
-    enddo
-
-    ! compute product of leg_out * inv(leg):
-    do j=1,n2   ! this should be fvm points
-       do l=1,n1   ! this should be GLL points
-          sum=0
-          do k=1,n1  ! number of polynomials = number of GLL points
-             sum=sum + leg_out(k,j)*gamma(k)*leg(k,l)
-          enddo
-          v2p_new(l,j) = gll_pts%weights(l)*sum
-       enddo
-    enddo
-    deallocate(gll_pts%points)
-    deallocate(gll_pts%weights)
-
-#if 0
-    do j=1,n2   ! this should be fvm points
-       do l=1,n1   ! this should be GLL points
-          print *,l,j,v2p_new(l,j),v2p(l,j)
-       enddo
-    enddo
-    print *,'max error: ',maxval(abs(v2p_new-v2p))
-#endif
-
-    v2p=v2p_new
-  end subroutine v2pinit
-
 
 
 ! =======================================
@@ -513,383 +390,6 @@ contains
 
 
 
-!  ================================================
-!  interpolate_gll2fvm_points:
-!
-!  shape funtion interpolation from data on GLL grid to cellcenters on physics grid
-!  Author: Christoph Erath
-!  ================================================
-  function interpolate_gll2fvm_points(v,deriv) result(p)
-
-    real(kind=real_kind), intent(in) :: v(np,np)
-    type (derivative_t)         :: deriv
-    real(kind=real_kind) :: p(nc,nc)
-
-    ! Local
-    integer i
-    integer j
-    integer l
-
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  vtemp(np,nc)
-
-    do j=1,np
-       do l=1,nc
-          sumx00=0.0d0
-!DIR$ UNROLL(NP)
-          do i=1,np
-             sumx00 = sumx00 + deriv%Cfvm(i,l  )*v(i,j  )
-          enddo
-          vtemp(j  ,l) = sumx00
-        enddo
-    enddo
-    do j=1,nc
-       do i=1,nc
-          sumx00=0.0d0
-!DIR$ UNROLL(NP)
-          do l=1,np
-             sumx00 = sumx00 + deriv%Cfvm(l,j  )*vtemp(l,i)
-          enddo
-          p(i  ,j  ) = sumx00
-       enddo
-    enddo
-  end function interpolate_gll2fvm_points
-
-!  ================================================
-!  interpolate_gll2fvm_corners:
-!
-!  shape funtion interpolation from data on GLL grid to physics grid
-!
-!  ================================================
-  function interpolate_gll2fvm_corners(v,deriv) result(p)
-
-    real(kind=real_kind), intent(in) :: v(np,np)
-    type (derivative_t), intent(in) :: deriv
-    real(kind=real_kind) :: p(nc+1,nc+1)
-
-    ! Local
-    integer i
-    integer j
-    integer l
-
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  vtemp(np,nc+1)
-
-    do j=1,np
-       do l=1,nc+1
-          sumx00=0.0d0
-!DIR$ UNROLL(NP)
-          do i=1,np
-             sumx00 = sumx00 + deriv%Mfvm(i,l  )*v(i,j  )
-          enddo
-          vtemp(j  ,l) = sumx00
-        enddo
-    enddo
-    do j=1,nc+1
-       do i=1,nc+1
-          sumx00=0.0d0
-!DIR$ UNROLL(NP)
-          do l=1,np
-             sumx00 = sumx00 + deriv%Mfvm(l,j  )*vtemp(l,i)
-          enddo
-          p(i  ,j  ) = sumx00
-       enddo
-    enddo
-  end function interpolate_gll2fvm_corners
-
-
-#if 0
-!  ================================================
-!  bilin_phys2gll:
-!
-!  interpolate to an equally spaced (in reference element coordinate system)
-!  "physics" grid to the GLL grid
-!
-!  For edge/corner nodes:  compute only contribution from this element,
-!  assuming there is a corresponding (symmetric) contribution from the
-!  neighboring element which will be incorporated after DSS'ing the results
-!  Note: this symmetry assuption is false at cube panel edges.  
-!
-!  MT initial version 3/2014
-!  2nd order at all gll points (including cube corners) *except*
-!  1st order at edge points on cube panel edges
-!  ================================================
-  function bilin_phys2gll(pin,nphys) result(pout)
-    integer :: nphys
-    real(kind=real_kind), intent(in) :: pin(nphys,nphys)
-    real(kind=real_kind) :: pout(np,np)
-    
-    ! static data, shared by all threads
-    integer, save  :: nphys_init=0
-    integer, save  :: index_l(np),index_r(np)
-    real(kind=real_kind),save :: w_l(np),w_r(np)
-
-    ! local
-    real(kind=real_kind) :: px(np,nphys)  ! interpolate in x to this array
-                                          ! then interpolate in y to pout
-    integer i,j,i1,i2
-    real(kind=real_kind) :: phys_centers(nphys)
-    real(kind=real_kind) :: dx,d_l,d_r,gll
-    type(quadrature_t) :: gll_pts
-
-
-    if (nphys_init/=nphys) then
-    ! setup (most be done on masterthread only) since all data is static
-    ! MT: move inside if - we dont want a barrier every time this is called       
-#if (defined HORIZ_OPENMP)
-!OMP BARRIER
-!OMP MASTER
-#endif
-       nphys_init=nphys
-
-       ! compute phys grid cell edges on [-1,1]
-       do i=1,nphys
-          dx = 2d0/nphys
-          phys_centers(i)=-1 + (dx/2) + (i-1)*dx
-       enddo
-
-       ! compute 1D interpolation weights
-       ! for every GLL point, find the index of the phys point to the left and right:
-       !    index_l, index_r
-       ! Then compute the weights
-       !    w_l, w_r
-       !
-       ! for points on the edge, we just take data from a single point
-       ! which we'll fake by setting index_l=index_r and w_l = w_r = 0.5
-
-       ! first GLL point is just a copy from first PHYS point:    
-       w_l(1)=0.5d0
-       w_r(1)=0.5d0
-       index_l(1)=1
-       index_r(1)=1
-
-       w_l(np)=0.5d0
-       w_r(np)=0.5d0
-       index_l(np)=nphys
-       index_r(np)=nphys
-
-       ! compute GLL cell edges on [-1,1]
-       gll_pts = gausslobatto(np)
-
-       do i=2,np-1
-          ! find: i1,i2 such that:
-          ! phys_centers(i1) <=  gll(i)  <= phys_centers(i2)
-          gll = gll_pts%points(i)
-          i1=0
-          do j=1,nphys-1
-             if (phys_centers(j) <= gll .and. phys_centers(j+1)>gll) then
-                i1=j
-                i2=j+1
-             endif
-          enddo
-          if (i1==0) call abortmp('ERROR: bilin_phys2gll() bad logic0')
-
-          d_l = gll-phys_centers(i1) 
-          d_r = phys_centers(i2) - gll
-
-          if (d_l<0) call abortmp('ERROR: bilin_phys2gll() bad logic1')
-          if (d_r<0) call abortmp('ERROR: bilin_phys2gll() bad logic2')
-
-          w_l(i) = d_r/(d_r + d_l) 
-          w_r(i) = d_l/(d_r + d_l) 
-          index_l(i)=i1
-          index_r(i)=i2  
-       enddo
-
-       deallocate(gll_pts%points)
-       deallocate(gll_pts%weights)
-
-#if (defined HORIZ_OPENMP)
-!OMP END MASTER
-!OMP BARRIER
-#endif
-    endif
-
-    ! interpolate i dimension
-    do j=1,nphys
-       do i=1,np
-          ! pin(nphys,nphys) -> px(np,nphys)
-          i1=index_l(i)
-          i2=index_r(i)
-          px(i,j) = w_l(i)*pin(i1,j) + w_r(i)*pin(i2,j)
-       enddo
-    enddo
-
-    ! interpolate j dimension
-    do j=1,np
-       do i=1,np
-          ! px(np,nphys) -> pout(np,np)
-          i1=index_l(j)
-          i2=index_r(j)
-          pout(i,j) = w_l(j)*px(i,i1) + w_r(j)*px(i,i2)
-       enddo
-    enddo
-    end function bilin_phys2gll
-!----------------------------------------------------------------
-#endif
-
-!  ================================================
-!  remap_phys2gll:
-!
-!  interpolate to an equally spaced (in reference element coordinate system)
-!  "physics" grid to the GLL grid
-!
-!  1st order, monotone, conservative
-!  MT initial version 2013
-!  ================================================
-  function remap_phys2gll(pin,nphys) result(pout)
-    integer :: nphys
-    real(kind=real_kind), intent(in) :: pin(nphys*nphys)
-    real(kind=real_kind) :: pout(np,np)
-    
-    ! Local
-    integer, save  :: nphys_init=0
-    integer, save  :: nintersect
-    real(kind=real_kind),save,pointer :: acell(:)  ! arrivial cell index of i'th intersection
-    real(kind=real_kind),save,pointer :: dcell(:)  ! departure cell index of i'th intersection
-    real(kind=real_kind),save,pointer :: delta(:)  ! length of i'th intersection
-    real(kind=real_kind),save,pointer :: delta_a(:)  ! length of arrival cells
-    integer in_i,in_j,ia,ja,id,jd,count,i,j
-    logical :: found
-
-    real(kind=real_kind) :: tol=1e-13
-    real(kind=real_kind) :: weight,x1,x2,dx
-!    real(kind=longdouble_kind) :: gll_edges(np+1),phys_edges(nphys+1)
-    real(kind=real_kind) :: gll_edges(np+1),phys_edges(nphys+1)
-    type(quadrature_t) :: gll_pts
-    if (nphys_init/=nphys) then
-       ! setup (most be done on masterthread only) since all data is static
-       ! MT: move barrier inside if loop - we dont want a barrier every regular call
-#if (defined HORIZ_OPENMP)
-!OMP BARRIER
-!OMP MASTER
-#endif
-       nphys_init=nphys
-       ! find number of intersections
-       nintersect = np+nphys-1  ! max number of possible intersections
-       allocate(acell(nintersect))
-       allocate(dcell(nintersect))
-       allocate(delta(nintersect))
-       allocate(delta_a(np))
-
-       ! compute phys grid cell edges on [-1,1]
-       do i=1,nphys+1
-          dx = 2d0/nphys
-          phys_edges(i)=-1 + (i-1)*dx
-       enddo
-
-       ! compute GLL cell edges on [-1,1]
-       gll_pts = gausslobatto(np)
-       gll_edges(1)=-1
-       do i=2,np
-          gll_edges(i) = gll_edges(i-1) + gll_pts%weights(i-1)
-       enddo
-       gll_edges(np+1)=1
-       delta_a=gll_pts%weights
-       deallocate(gll_pts%points)
-       deallocate(gll_pts%weights)
-
-       count=0
-       x1=-1
-       do while ( abs(x1-1) > tol )
-          ! find point x2 closet to x1 and x2>x1:
-          x2=1.1
-          do ia=2,np+1
-             if (gll_edges(ia)>x1) then
-                if ( ( gll_edges(ia)-x1) < (x2-x1) ) then
-                   x2=gll_edges(ia)
-                endif
-             endif
-          enddo
-          do id=2,nphys+1
-             if (phys_edges(id)>x1) then
-                if ( ( phys_edges(id)-x1) < (x2-x1) ) then
-                   x2=phys_edges(id)
-                endif
-             endif
-          enddo
-          print *,'x2=',x2
-          if (x2>1+tol) call abortmp('ERROR: did not find next intersection point')
-          if (x2<=x1) call abortmp('ERROR: next intersection point did not advance')
-          count=count+1
-          if (count>nintersect) call abortmp('ERROR: search failuer: nintersect was too small')
-          delta(count)=x2-x1
-          
-          found=.false.
-          do ia=1,np
-             if (gll_edges(ia) <= x1+tol  .and.  x2-tol <= gll_edges(ia+1)) then
-                found=.true.
-                acell(count)=ia
-             endif
-          enddo
-          if (.not. found) call abortmp('ERROR: interval search problem')
-       
-          found=.false.
-          do id=1,nphys
-             if (phys_edges(id) <= x1+tol .and.  x2-tol <= phys_edges(id+1)) then
-                found=.true.
-                dcell(count)=id
-             endif
-          enddo
-          if (.not. found) call abortmp('ERROR: interval search problem')
-          x1=x2
-       enddo
-       ! reset to actual number of intersections
-       nintersect=count
-#if 0
-       print *,'gll->phys conservative monotone remap algorithm:'
-       print *,'np,nphys,nintersect',np,nphys,nintersect
-       print *,'i   [x1,x2]   [acell]   [dcell]'
-       x1=-1
-       do in_i=1,nintersect
-          ia=acell(in_i)
-          id=dcell(in_i)
-          write(*,'(i3,a,2f10.6,a,a,2f10.6,a,a,2f10.6,a)') in_i,&
-               '[',x1,x1+delta(in_i),']',&
-               '[',gll_edges(ia),gll_edges(ia+1),']',&
-               '[',phys_edges(id),phys_edges(id+1),']'
-          x1=x1+delta(in_i)
-       enddo
-
-    pout=0
-    do in_i = 1,nintersect
-       do in_j = 1,nintersect
-          ia = acell(in_i)
-          ja = acell(in_j)
-          id = dcell(in_i)
-          jd = dcell(in_j)
-          weight = (  delta(in_i)*delta(in_j) ) / ( delta_a(ia)*delta_a(ja))
-          pout(ia,ja) = pout(ia,ja) + weight
-       enddo
-    enddo
-    print *,'sum of weights: ',pout(:,:)
-    call abortmp(__FILE__)
-#endif
-#if (defined HORIZ_OPENMP)
-!OMP END MASTER
-!OMP BARRIER
-#endif
-    endif
-
-    pout=0
-    do in_i = 1,nintersect
-       do in_j = 1,nintersect
-          ia = acell(in_i)
-          ja = acell(in_j)
-          id = dcell(in_i)
-          jd = dcell(in_j)
-          ! mass in intersection region:  value*area_intersect
-          ! value_arrival = value*area_intersect/area_arrival
-          weight = (  delta(in_i)*delta(in_j) ) / ( delta_a(ia)*delta_a(ja))
-          ! accumulate contribution from each intersection region:
-          pout(ia,ja) = pout(ia,ja) + weight*pin(id+(jd-1)*nphys)
-       enddo
-    enddo
-    
-    end function remap_phys2gll
-    
 !----------------------------------------------------------------
 
 !DIR$ ATTRIBUTES FORCEINLINE :: gradient_sphere

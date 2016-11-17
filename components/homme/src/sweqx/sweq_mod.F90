@@ -18,7 +18,7 @@ contains
     !-----------------
     use derivative_mod, only : derivative_t, derivinit, allocate_subcell_integration_matrix
     !-----------------
-    use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc
+    use dimensions_mod, only : np, nlev, npsq, nelemd
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
@@ -462,7 +462,8 @@ contains
       if (hybrid%masterthread) print *,'initializing Trilinos solver info'
 
 #ifdef TRILINOS
-      lenx=np*np*nlev*nvar*(nete-nets+1)
+      ! nvar = 3: u,v,h
+      lenx=np*np*nlev*3*(nete-nets+1)
       allocate(xstate(lenx))
       xstate(:) = 0
        call initialize(state_object, lenx, elem, pmean,edge1,edge2, edge3, &

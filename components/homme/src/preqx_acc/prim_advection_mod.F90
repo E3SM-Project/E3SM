@@ -8,20 +8,20 @@
 
 module prim_advection_mod
   !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, prim_advec_init_deriv, deriv, Prim_Advec_Tracers_remap_rk2
-  use prim_advection_mod_base, only: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
+  use prim_advection_mod_base, only: vertical_remap
   use kinds, only              : real_kind
-  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nelemd
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, nelemd
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
   use control_mod, only        : integration, test_case, hypervis_order, &
-        statefreq, moisture, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
+        statefreq, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
   use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer, initedgesbuffer, &
-        edgevunpackmin, initghostbuffer3D
+        edgevunpackmin
  
-  use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
+  use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
@@ -44,13 +44,11 @@ module prim_advection_mod
   real(kind=real_kind), allocatable, private :: data_pack(:,:,:,:), data_pack2(:,:,:,:)
   logical, private :: first_time = .true.
 
-  public :: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
+  public :: vertical_remap
   public :: Prim_Advec_Tracers_remap
   public :: prim_advec_init1
   public :: prim_advec_init2
-  public :: prim_advec_init_deriv
   public :: deriv
-  public :: Prim_Advec_Tracers_remap_rk2
 
 contains
 
@@ -277,22 +275,6 @@ contains
     allocate(data_pack(np,np,nlev,nelemd))
     allocate(data_pack2(np,np,nlev,nelemd))
   end subroutine prim_advec_init1
-
-  subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points)
-    use kinds         , only : longdouble_kind
-    use dimensions_mod, only : nc
-    use derivative_mod, only : derivinit
-    use hybrid_mod    , only : hybrid_t
-    implicit none
-    type (hybrid_t), intent(in) :: hybrid
-    real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
-    real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
-
-    ! ==================================
-    ! Initialize derivative structure
-    ! ==================================
-    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points)
-  end subroutine Prim_Advec_Init_deriv
 
   subroutine prim_advec_init2(elem,hvcoord,hybrid)
     use element_mod   , only: element_t, state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj

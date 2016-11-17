@@ -301,11 +301,6 @@ contains
     enddo
     call SetElemOffset(par,elem,GlobalUniqueCols)
 
-    ! use a copy.  has to be done *after* SetElemOffset()
-    do ie=1,nelemd
-       elem(ie)%idxV=>elem(ie)%idxP
-    end do
-
     !JMD call PrintDofV(elem)
     !JMD call PrintDofP(elem)
 

@@ -5,13 +5,12 @@
 
 module bndry_mod_base
   use parallel_mod, only : syncmp,parallel_t,abortmp,iam
-  use edgetype_mod, only : Ghostbuffertr_t, Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
+  use edgetype_mod, only : Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
   use thread_mod, only : omp_in_parallel, omp_get_thread_num, omp_get_num_threads
 
   implicit none
   private
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation
-  public :: ghost_exchangeV
   public :: bndry_exchangeS
   public :: bndry_exchangeS_start
   public :: bndry_exchangeS_finish
@@ -748,125 +747,6 @@ contains
 
   end subroutine ghost_exchangeVfull
 
-  ! ===========================================
-  !  GHOST_EXCHANGEV:
-  !  Author: Christoph Erath
-  !  derived from bndry_exchange, but copies an entire
-  !             element of ghost cell information, including corner
-  !             elements.  Requres cubed-sphere grid
-  ! =========================================
- subroutine ghost_exchangeV(hybrid,buffer,nhc,npoints,ntrac)
-!
-!   2011:  derived from bndry_exchange, but copies an entire
-!             element of ghost cell information, including corner
-!             elements.  Requres cubed-sphere grid
-!
-    use hybrid_mod, only : hybrid_t
-    use kinds, only : log_kind
-    use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use dimensions_mod, only: nelemd
-#ifdef _MPI
-    use parallel_mod, only : status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
-#endif
-    implicit none
-
-    type (hybrid_t)                   :: hybrid
-    type (GhostBuffertr_t)               :: buffer
-    integer :: nhc,npoints,ntrac
-
-    type (Schedule_t),pointer                     :: pSchedule
-    type (Cycle_t),pointer                        :: pCycle
-    integer                                       :: dest,length,tag
-    integer                                       :: icycle,ierr
-    integer                                       :: iptr,source,nlyr
-    integer                                       :: nSendCycles,nRecvCycles
-    integer                                       :: errorcode,errorlen
-    character*(80) errorstring
-
-    integer        :: i,i1,i2
-    logical(kind=log_kind),parameter      :: Debug = .FALSE.
-
-
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-    if(hybrid%ithr == 0) then 
-
-#ifdef _MPI
-       ! Setup the pointer to proper Schedule
-       pSchedule => Schedule(1)
-       nlyr = buffer%nlyr
-              
-       nSendCycles = pSchedule%nSendCycles
-       nRecvCycles = pSchedule%nRecvCycles
-
-       !==================================================
-       !  Fire off the sends
-       !==================================================
-       do icycle=1,nSendCycles
-          pCycle      => pSchedule%SendCycle(icycle)
-          dest            = pCycle%dest - 1
-          length      = nlyr * ntrac * pCycle%lengthP_ghost*nhc*npoints
-          tag             = pCycle%tag
-          iptr            = pCycle%ptrP_ghost
-          !print *,'ghost_exchangeV: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
-          call MPI_Isend(buffer%buf(1,1,1,1,iptr),length,MPIreal_t,dest,tag,hybrid%par%comm,Srequest(icycle),ierr)
-          if(ierr .ne. MPI_SUCCESS) then
-             errorcode=ierr
-             call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-             print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
-          endif
-       end do    ! icycle
-
-       !==================================================
-       !  Post the Receives 
-       !==================================================
-       do icycle=1,nRecvCycles
-          pCycle         => pSchedule%RecvCycle(icycle)
-          source          = pCycle%source - 1
-          length      = nlyr * ntrac * pCycle%lengthP_ghost*nhc*npoints
-          tag             = pCycle%tag
-          iptr            = pCycle%ptrP_ghost
-          !print *,'ghost_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
-          call MPI_Irecv(buffer%receive(1,1,1,1,iptr),length,MPIreal_t, &
-               source,tag,hybrid%par%comm,Rrequest(icycle),ierr)
-          if(ierr .ne. MPI_SUCCESS) then
-             errorcode=ierr
-             call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
-             print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
-          endif
-       end do    ! icycle
-
-
-       !==================================================
-       !  Wait for all the receives to complete
-       !==================================================
-
-       call MPI_Waitall(nSendCycles,Srequest,status,ierr)
-       call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
-
-       do icycle=1,nRecvCycles
-          pCycle         => pSchedule%RecvCycle(icycle)
-          length             = pCycle%lengthP_ghost
-          iptr            = pCycle%ptrP_ghost
-          do i=0,length-1
-             do i2=1,nhc
-                do i1=1,npoints
-                   buffer%buf(i1,i2,1:nlyr,1:ntrac,iptr+i) = buffer%receive(i1,i2,1:nlyr,1:ntrac,iptr+i)
-                enddo
-             enddo
-          enddo
-       end do   ! icycle
-
-
-#endif
-    endif  ! if (hybrid%ithr == 0)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-  end subroutine ghost_exchangeV
 
   subroutine compute_ghost_corner_orientation(hybrid,elem,nets,nete)
 !

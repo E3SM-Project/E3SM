@@ -88,7 +88,7 @@ private
 
 ! local size of variable block for output
   type(nf_handle), target, save :: ncdf(max_output_streams)
-  integer :: nxyp, nxyv
+  integer :: nxyp
 contains
   subroutine GetDOF(elem, gcols, nz, compdof)
 
@@ -125,10 +125,8 @@ contains
     call nf_output_init_begin(ncdf,hybrid%par%masterproc,hybrid%par%nprocs,hybrid%par%rank, &
          hybrid%par%comm,test_case,runtype)
     nxyp=0
-    nxyv=0
     do ie=1,nelemd
       nxyp=nxyp+elem(ie)%idxP%NumUniquePts
-      nxyv=nxyv+elem(ie)%idxV%NumUniquePts
     enddo
 
     dimsize = (/GlobalUniqueCols,nlev,nelem,0/)

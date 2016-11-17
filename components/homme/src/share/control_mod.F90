@@ -17,17 +17,6 @@ module control_mod
   logical, public  :: use_semi_lagrange_transport   = .false.
   logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
 
-! Tracer transport type
-! We potentially have five types of tracer advection. However, not all of them
-! may be chosen at runtime due to compile-type restrictions on arrays
-  integer, public, parameter :: TRACERTRANSPORT_SE_GLL          = 1
-  integer, public, parameter :: TRACERTRANSPORT_SEMILAGRANG_GLL = 2
-  integer, public, parameter :: TRACERTRANSPORT_LAGRANGIAN_FVM  = 3
-  integer, public, parameter :: TRACERTRANSPORT_FLUXFORM_FVM    = 4
-  integer, public            :: tracer_transport_type           = TRACERTRANSPORT_SE_GLL
-  integer, public, parameter :: TRACER_GRIDTYPE_GLL             = 11
-  integer, public, parameter :: TRACER_GRIDTYPE_FVM             = 12
-  integer, public            :: tracer_grid_type = TRACER_GRIDTYPE_GLL
 
 !shallow water advection tests:
 !kmass points to a level with density.  other levels contain test tracers
@@ -35,23 +24,16 @@ module control_mod
   integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
   real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
 
-  real (kind=real_kind), public ::nu_mc = 0.0
-
-  integer, public  :: tstep_type= 5                           ! 0 = leapfrog
-                                                              ! 1 = RK (foward-in-time)
+  integer, public  :: tstep_type= 5                           ! preqx timestepping options
   integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 
   integer, public  :: ftype = 0                                ! Forcing Type
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
-  integer, public  :: use_cpstar=0                             ! use cp or cp* in T equation                               
   integer, public  :: energy_fixer = 0    !  not used anymore
                                               
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
                                           ! every rsplit tracer timesteps
-  integer, public :: physics = 0          ! Defines if the program is to use its own physics (HOMME standalone), valid values 1,2,3
-                                          ! physics = 0, no physics
-                                          ! physics = 1, Use physics
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
@@ -96,6 +78,10 @@ module control_mod
 
   character(len=MAX_STRING_LEN)    , public :: columnpackage
   character(len=MAX_STRING_LEN)    , public :: moisture
+
+  integer, public  :: use_cpstar=0    ! use cp or cp* in thermodynamics
+  integer, public  :: use_moisture=0  ! use Q(:,:,:,1) as specific humidity
+
   
   integer              , public :: maxits         ! max iterations of solver
   real (kind=real_kind), public :: tol            ! solver tolerance (convergence criteria)

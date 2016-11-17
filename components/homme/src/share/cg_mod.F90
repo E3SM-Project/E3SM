@@ -375,7 +375,7 @@ contains
 
     end if
 
-10  format("cg:iter:",i4," residual=",e22.16," instance=",i4)
+10  format("cg:iter:",i4," residual=",e22.14," instance=",i4)
 
   end function congrad0
 

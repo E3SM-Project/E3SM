@@ -8,7 +8,7 @@ module viscosity_mod
   use viscosity_mod_base, only: biharmonic_wk_scalar,neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, biharmonic_wk_dp3d
   use thread_mod, only : omp_get_num_threads
   use kinds, only : real_kind, iulog
-  use dimensions_mod, only : np, nc, nlev,qsize,nelemd, ntrac
+  use dimensions_mod, only : np, nlev,qsize,nelemd
   use hybrid_mod, only : hybrid_t, hybrid_create
   use parallel_mod, only : parallel_t
   use element_mod, only : element_t

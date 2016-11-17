@@ -3,9 +3,9 @@
 #endif
 
 module checksum_mod
-  use edgetype_mod, only : ghostbuffer3D_t, edgebuffer_t, ghostbuffer3d_t, ghostbufferTR_t
+  use edgetype_mod, only : ghostbuffer3D_t, edgebuffer_t, ghostbuffer3d_t
   use kinds, only : real_kind
-  use dimensions_mod, only : np, nlev, nelem, nelemd, max_corner_elem, nc
+  use dimensions_mod, only : np, nlev, nelem, nelemd, max_corner_elem
 
 
   implicit none
@@ -17,7 +17,6 @@ module checksum_mod
   ! and these buffers have to be thread-shared
   type (ghostBuffer3D_t)   :: ghostbuf,ghostbuf_cv
   type (ghostBuffer3d_t) :: ghostbuf3d
-  type (ghostBufferTR_t) :: ghostbuf_tr
   type (edgeBuffer_t)    :: edge1
 
   public  :: testchecksum, test_ghost

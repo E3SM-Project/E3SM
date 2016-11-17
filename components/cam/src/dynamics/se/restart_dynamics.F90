@@ -84,7 +84,6 @@ CONTAINS
     use control_mod, only: qsplit
     use time_mod, only : tstep, TimeLevel_Qdp
     use element_mod, only : element_t
-    use fvm_control_volume_mod, only : fvm_struct
     use dimensions_mod, only : nlev, qsize_d, nlevp, np, ne, nelemd, nelem
     use dof_mod, only : UniquePoints
     use time_manager, only: get_curr_time
@@ -104,7 +103,6 @@ CONTAINS
     integer :: i, j
 
     type(element_t), pointer :: elem(:)
-    type(fvm_struct), pointer :: fvm(:)
     real(kind=r8) :: time
     integer :: ndcur, nscur
     integer, pointer :: ldof(:)
@@ -113,9 +111,8 @@ CONTAINS
 
    if (iam .lt. par%nprocs) then
     elem => dyn_out%elem
-    fvm => dyn_out%fvm
    else
-    allocate (elem(0), fvm(0))
+    allocate (elem(0))
    endif
 
     ldof => get_restart_decomp(elem, 1)
@@ -271,7 +268,7 @@ CONTAINS
 
    if (iam .lt. par%nprocs) then
    else
-    deallocate(elem, fvm)
+    deallocate(elem)
    endif  !!  iam .lt. par%nprocs
 
   end subroutine write_restart_dynamics
@@ -323,7 +320,6 @@ CONTAINS
     use constituents, only : cnst_name
     use cam_pio_utils, only : pio_subsystem
     use spmd_dyn, only: spmd_readnl
-    use fvm_control_volume_mod, only: fvm_struct
     use control_mod,            only: qsplit
     use time_mod,               only: TimeLevel_Qdp
 
@@ -341,7 +337,6 @@ CONTAINS
     integer :: ncols
     integer, pointer :: ldof(:)
     type(element_t), pointer :: elem(:)               ! pointer to dyn_in element array
-    type(fvm_struct), pointer :: fvm(:)
     integer(kind=pio_offset_kind), parameter :: t = 1
     integer :: i, k, cnt, st, en, tl, tlQdp, ii, jj, s2d, q, j
     integer :: timelevel_dimid, timelevel_chk
@@ -553,7 +548,6 @@ CONTAINS
    if (iam .lt. par%nprocs) then
    else
     deallocate(elem)
-    deallocate(fvm)
    endif  !!  iam .lt. par%nprocs
 
     return
