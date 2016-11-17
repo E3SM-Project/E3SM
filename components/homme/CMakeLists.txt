@@ -169,7 +169,7 @@ ADD_SUBDIRECTORY(utils/cime/externals/pio1)
 
 # CPRNC locations
 SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
-SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
+SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
 ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
 
 
