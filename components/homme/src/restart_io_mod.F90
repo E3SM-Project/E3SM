@@ -31,10 +31,6 @@ module restart_io_mod
    !------------------
    use control_mod, only : restartdir, restartfile, columnpackage
    !------------------
-#ifdef _PRIM
-   use physics_types_mod, only : physics_state_t, pelem
-#endif
-   !------------------
    use schedtype_mod, only : Schedule
    !------------------
    implicit none
@@ -275,12 +271,7 @@ endif
      do ie=1,nelemd
        ig = Schedule(1)%Local2Global(ie)
 !	print *, __FILE__,__LINE__,ie,ig,sizeof(variable(ie))
-
-        if(columnpackage == "emanuel")then
-   	  write(56,rec=ig) variable(ie)
-        else
-	  write(56,rec=ig) variable(ie)%buffer
-	endif
+        write(56,rec=ig) variable(ie)%buffer
      enddo
      close(56)
 #endif
@@ -382,11 +373,7 @@ endif
 	     recl=recl,ACCESS='DIRECT')
      do ie=1,nelemd
        ig = Schedule(1)%Local2Global(ie)
-         if(columnpackage == "emanuel")then
-           read(56,rec=ig) variable(ie)
-	 else
-           read(56,rec=ig) variable(ie)%buffer
-         endif
+       read(56,rec=ig) variable(ie)%buffer
      enddo
      close(56)
 #endif
@@ -638,11 +625,6 @@ endif
 
     do ie=nets,nete
        RestartBuffer(ie)%buffer = elem(ie)%state
-#ifdef _PRIMXXX
-       if(columnpackage == "emanuel") then
-         RestartBuffer(ie)%puffer = pelem(ie)%state
-       endif
-#endif
     enddo
 
 !$OMP BARRIER
@@ -687,11 +669,6 @@ endif
 !$OMP BARRIER
     do ie=nets,nete
        elem(ie)%state = RestartBuffer(ie)%buffer
-#ifdef _PRIMXXX
-       if(columnpackage == "emanuel")then
-          pelem(ie)%state = RestartBuffer(ie)%puffer
-       endif
-#endif
     enddo
 
 

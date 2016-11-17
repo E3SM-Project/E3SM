@@ -28,7 +28,6 @@ module namelist_mod
     restartdir,    &       ! name of the restart directory for OUTPUT
     runtype,       &
     integration,   &       ! integration method
-    tracer_advection_formulation, &   ! conservation or non-conservation formulaton
     use_semi_lagrange_transport , &   ! conservation or non-conservation formulaton
     use_semi_lagrange_transport_local_conservation , &   ! local conservation vs. global 
     tstep_type,    &
@@ -38,8 +37,6 @@ module namelist_mod
     physics,       &
     rk_stage_user, &
     LFTfreq,       &
-    TRACERADV_TOTAL_DIVERGENCE, &
-    TRACERADV_UGRADQ, &
     prescribed_wind, &
     ftype,         &
     energy_fixer,  &
@@ -66,16 +63,6 @@ module namelist_mod
     u_perturb,     &        ! J&W baroclinic test perturbation size
     columnpackage, &
     moisture,      &
-    filter_type,   &
-    transfer_type, &
-    filter_freq,   &
-    filter_mu,     &
-    filter_freq_advection,   &
-    filter_mu_advection,     &
-    p_bv,          &
-    s_bv,          &
-    wght_fm,       &
-    kcut_fm,       &
     vform,         &
     vfile_mid,     &
     vfile_int,     &
@@ -249,7 +236,6 @@ module namelist_mod
       remap_type,    &             ! selected remapping option
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
-      tracer_advection_formulation, &
       use_semi_lagrange_transport , &
       use_semi_lagrange_transport_local_conservation , &
       tstep_type,    &
@@ -330,16 +316,6 @@ module namelist_mod
       tol,           &
       debug_level
 
-    namelist /filter_nl/filter_type,   &
-      transfer_type, &
-      filter_freq,   &
-      filter_mu,     &
-      filter_freq_advection,   &
-      filter_mu_advection,     &
-      p_bv,          &
-      s_bv,          &
-      wght_fm,       &
-      kcut_fm       
 
 #ifndef CAM
     namelist /vert_nl/        &
@@ -393,7 +369,6 @@ module namelist_mod
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2
-    energy_fixer = -1      ! no fixer, non-staggered-in-time formulas
     se_partmethod = -1
     se_ne       = -1
     se_topology = 'none'
@@ -497,42 +472,9 @@ module namelist_mod
        nEndStep = nmax
 #endif
 
-       if (integration == "semi_imp") then
-          ! =========================
-          ! set solver defaults
-          ! =========================
-          precon_method = "identity"
-          maxits        = 100
-          tol           = 1.0D-13
-          debug_level   = CG_NO_DEBUG
-
-          print *,'HYPERVIS order = ',hypervis_order
-          if (hypervis_order /= 0) then
-             call abortmp("Error: hypervis_order > 0 not supported for semi-implicit model")
-          endif
-
-          write(iulog,*)"reading solver namelist..."
-#if defined(CAM)
-       unitn=getunit()
-       open( unitn, file=trim(nlfilename), status='old' )
-       ierr = 1
-       do while ( ierr /= 0 )
-          read (unitn,solver_nl,iostat=ierr)
-          if (ierr < 0) then
-             call abortmp( subname//':: namelist read returns an'// &
-                  ' end of file or end of record condition' )
-          end if
-       end do
-       close( unitn )
-       call freeunit( unitn )
-#elif defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-          read(unit=7,nml=solver_nl)
-#else
-          read(*,nml=solver_nl)
-#endif
-       else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
+       if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
                     (integration .ne. "full_imp")) then
-          call abortmp('integration must be explicit, semi_imp, full_imp, or runge_kutta')
+          call abortmp('integration must be explicit, full_imp, or runge_kutta')
        end if
 
        if (integration == "full_imp") then
@@ -543,21 +485,6 @@ module namelist_mod
           endif
        endif
 
-       write(iulog,*)"reading filter namelist..."
-       ! Set default mu/freq for advection filtering
-       filter_mu_advection   = 0.05_real_kind
-       filter_freq_advection = 0
-       filter_freq=0
-
-#if defined(CAM)
-#elif defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=filter_nl)
-#else
-       read(*,nml=filter_nl)
-#endif
-
-       ! A modulo(a,p) where p == 0 is undefined
-       if(filter_freq == 0) filter_freq = -1
 #ifndef CAM
 
 #ifdef _PRIM
@@ -749,7 +676,6 @@ module namelist_mod
     call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(energy_fixer,    1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
@@ -794,25 +720,10 @@ module namelist_mod
 
     call MPI_bcast(uselapi,1,MPIlogical_t,par%root,par%comm,ierr)
 
-    if ((integration == "semi_imp").or.(integration == "full_imp")) then
+    if (integration == "full_imp") then
        call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
        call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr)
        call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    end if
-
-    call MPI_bcast(filter_type   ,8,MPIChar_t    ,par%root,par%comm,ierr)
-    call MPI_bcast(transfer_type ,8,MPIChar_t    ,par%root,par%comm,ierr)
-    call MPI_bcast(filter_mu     ,1,MPIreal_t    ,par%root,par%comm,ierr)
-    call MPI_bcast(filter_freq   ,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(filter_mu_advection     ,1,MPIreal_t    ,par%root,par%comm,ierr)
-    call MPI_bcast(filter_freq_advection   ,1,MPIinteger_t ,par%root,par%comm,ierr)
-
-    if (transfer_type == "bv") then
-       call MPI_bcast(p_bv      ,1,MPIreal_t    ,par%root,par%comm,ierr)
-       call MPI_bcast(s_bv      ,1,MPIreal_t    ,par%root,par%comm,ierr)
-    else if (transfer_type == "fm") then
-       call MPI_bcast(kcut_fm   ,1,MPIinteger_t,par%root,par%comm,ierr)
-       call MPI_bcast(wght_fm   ,1,MPIreal_t   ,par%root,par%comm,ierr)
     end if
 
     call MPI_bcast(vform    , MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
@@ -968,21 +879,6 @@ module namelist_mod
 
 #ifdef _PRIM
     rk_stage_user=3  ! 3d PRIM code only supports 3 stage RK tracer advection
-    ! CHECK timestepping options
-     if (tstep_type == 0) then
-        ! pure leapfrog mode, mostly used for debugging
-        if (ftype>0) then
-           call abortmp('adjustment type forcing (se_ftype>0) not allowed with tstep_type=0')
-        endif
-        if (qsplit>1) then
-          call abortmp('tracer/dynamics subcycling requires tstep_type=1(RK timestepping)')
-        endif
-        if (rsplit>0) then
-          call abortmp('vertically lagrangian code requires tstep_type=1(RK timestepping)')
-        endif
-    endif
-
-
     ! CHECK phys timescale, requires se_ftype=0 (pure tendencies for forcing)
     if (phys_tscale/=0) then
        if (ftype>0) call abortmp('user specified se_phys_tscale requires se_ftype<=0')
@@ -1097,7 +993,7 @@ module namelist_mod
        if (integration == "explicit" ) then
           write(iulog,*)"readnl: LF-trapazoidal freq= ",LFTfreq
        endif
-       if (integration == "runge_kutta" .or. tstep_type>0 ) then
+       if (integration == "runge_kutta"  ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
        write(iulog,*)"readnl: use_semi_lagrange_transport   = ",use_semi_lagrange_transport
@@ -1112,23 +1008,12 @@ module namelist_mod
        write(iulog,*)"readnl: tstep          = ",tstep
        write(iulog,*)"readnl: ftype          = ",ftype
        write(iulog,*)"readnl: limiter_option = ",limiter_option
-       write(iulog,*)"filter: smooth         = ",smooth
 #endif
        write(iulog,*)"readnl: qsplit        = ",qsplit
        write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
        write(iulog,*)"readnl: physics       = ",physics
 
-       write(iulog,*)"readnl: energy_fixer  = ",energy_fixer
        write(iulog,*)"readnl: runtype       = ",runtype
-
-       if (integration == "semi_imp") then
-          print *
-          write(iulog,*)"solver: precon_method  = ",precon_method
-          write(iulog,*)"solver: max iterations = ",maxits
-          write(iulog,*)"solver: tolerance      = ",tol
-          write(iulog,*)"solver: debug_level    = ",debug_level
-       endif
-
 
        if (hypervis_power /= 0)then
           write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power
@@ -1162,26 +1047,6 @@ module namelist_mod
           write(iulog,*) "initial_total_mass = ",initial_total_mass
        end if
 
-       if (filter_freq>0 .or. filter_freq_advection>0) then
-       write(iulog,*)"Filter Method is ",filter_type
-       write(iulog,*)"filter: viscosity (mu)  = ",filter_mu
-       write(iulog,*)"filter: frequency       = ",filter_freq
-       write(iulog,*)"filter_advection: viscosity (mu)  = ",filter_mu_advection
-       write(iulog,*)"filter_advection: frequency       = ",filter_freq_advection
-
-       write(iulog,*)"filter: transfer_type   = ",transfer_type
-       if (transfer_type == "bv") then
-          print *
-          write(iulog,*)"with Boyd-Vandeven Transfer Fn Parameters:"
-          write(iulog,*)"     filter: order     (p)   = ",p_bv
-          write(iulog,*)"     filter: lag coeff (s)   = ",s_bv
-       else if (transfer_type == "fm") then
-          print *
-          write(iulog,*)"with Fischer-Mullen Transfer Fn Parameters:"
-          write(iulog,*)"     filter: clipped wave nos kc = ",kcut_fm
-          write(iulog,*)"     filter: amount of clipping  = ",wght_fm
-       end if
-       endif
 #ifndef CAM
        write(iulog,*)"  analysis: output_prefix = ",TRIM(output_prefix)
        write(iulog,*)"  analysis: io_stride = ",io_stride

@@ -20,33 +20,6 @@ module physics_mod
   
   private
   
-#ifndef CAM
-  ! Each element contains this kind of physics
-  type, public :: elem_physics_t
-     !required by multicloud       
-     real (kind=real_kind) :: mask(np,np)  
-     real (kind=real_kind) :: invmask(np,np)  
-     real (kind=real_kind) :: qmc(np,np,  timelevels)
-     real (kind=real_kind) :: teb(np,np,timelevels)
-     real (kind=real_kind) :: Hs(np,np,timelevels)
-     real (kind=real_kind) :: Hc(np,np,timelevels)
-     real (kind=real_kind) :: uproj1(np,np,2,timelevels)
-     real (kind=real_kind) :: uproj2(np,np,2,timelevels)
-     real (kind=real_kind) :: ubar(np,np,2,timelevels)
-     real (kind=real_kind) :: pot0(np,np,nlev) ! This is the forcing applied to dycore
-     real (kind=real_kind) :: QHeating(np,np,nlev) ! This is the forcing applied to dycore
-     real (kind=real_kind) :: Pmc(np,np) ! This is the precipitation
-     real (kind=real_kind) :: Hd(np,np) 
-     real (kind=real_kind) :: D(np,np) 
-     real (kind=real_kind) :: w(np,np,nlev) ! Vertical velocity     
-     real (kind=real_kind) :: delthetasurf(np,np) ! This the space dependent version of TstarMinTeb
-     real (kind=real_kind) :: mp(np,np)          ! mass matrix 
-     !real (kind=real_kind) :: mv(np,np)          ! mass matrix on velocity grid
-     real (kind=real_kind) :: rmp(np,np)         ! inverse mass matrix 
-     !end multicloud
-  end type elem_physics_t
-#endif
-  
   public :: Saturation_Vapor_Pressure
   public :: Specific_Humidity
   public :: Saturation_Specific_Humidity

@@ -11,12 +11,9 @@ module control_mod
 
   integer, public, parameter :: MAX_STRING_LEN=240
   integer, public, parameter :: MAX_FILE_LEN=240
-  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, semi_imp, or full imp)
+  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
 ! none of this is used anymore:
-  integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
-  integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation
-  integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
   logical, public  :: use_semi_lagrange_transport   = .false.
   logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
 
@@ -40,18 +37,14 @@ module control_mod
 
   real (kind=real_kind), public ::nu_mc = 0.0
 
-  integer, public  :: tstep_type= 0                           ! 0 = leapfrog
+  integer, public  :: tstep_type= 5                           ! 0 = leapfrog
                                                               ! 1 = RK (foward-in-time)
-  integer, public  :: rk_stage_user  = 0                      ! number of RK stages to use  
+  integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 
   integer, public  :: ftype = 0                                ! Forcing Type
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
   integer, public  :: use_cpstar=0                             ! use cp or cp* in T equation                               
-  integer, public  :: energy_fixer = 0    !  -1: No fixer, use non-staggered formula
-                                          !   0: No Fixer, use staggered in time formula
-                                          !       (only for leapfrog)
-                                          !   1 or 4:  Enable fixer, non-staggered formula
-
+  integer, public  :: energy_fixer = 0    !  not used anymore
                                               
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
@@ -59,7 +52,7 @@ module control_mod
   integer, public :: physics = 0          ! Defines if the program is to use its own physics (HOMME standalone), valid values 1,2,3
                                           ! physics = 0, no physics
                                           ! physics = 1, Use physics
-  integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency
+  integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
@@ -81,13 +74,6 @@ module control_mod
   real (kind=real_kind), public, parameter :: tol_limiter=1e-13
 
   integer              , public :: limiter_option = 0
-  character(len=8)     , public :: filter_type
-  character(len=8)     , public :: transfer_type
-  integer              , public :: filter_freq
-  integer              , public :: filter_freq_advection
-  integer              , public :: filter_counter
-  real (kind=real_kind), public :: filter_mu
-  real (kind=real_kind), public :: filter_mu_advection
   character(len=MAX_STRING_LEN)    , public :: precon_method  ! if semi_implicit, type of preconditioner:
                                                   ! choices block_jacobi or identity
 
@@ -132,7 +118,6 @@ module control_mod
   integer,                          public  :: vanalytic = 0  ! if 1, test initializes vertical coords
   real (kind=real_kind),            public  :: vtop = 0.1     ! top coordinate level for analytic vcoords
 
-  integer              , public :: while_iter
   integer              , public :: fine_ne = -1               ! set for refined exodus meshes (variable viscosity)
   real (kind=real_kind), public :: max_hypervis_courant = 1d99! upper bound for Courant number
                                                               ! (only used for variable viscosity, recommend 1.9 in namelist)

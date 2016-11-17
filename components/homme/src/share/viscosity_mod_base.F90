@@ -19,7 +19,7 @@ use parallel_mod, only : parallel_t
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
-use edge_mod, only : edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
+use edge_mod, only : edgevpack, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack
 
 use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
@@ -32,7 +32,6 @@ save
 public :: biharmonic_wk
 #ifdef _PRIM
 public :: biharmonic_wk_scalar
-public :: biharmonic_wk_scalar_minmax
 public :: neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish
 #endif
 
@@ -384,98 +383,6 @@ logical var_coef1
         enddo
       enddo
    enddo
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-end subroutine
-
-subroutine biharmonic_wk_scalar_minmax(elem,qtens,deriv,edgeq,edgeminmax,hybrid,nets,nete,emin,emax)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute weak biharmonic operator
-!    input:  qtens = Q
-!    output: qtens = weak biharmonic of Q and Q element min/max
-!
-!    note: emin/emax must be initialized with Q element min/max.  
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-type (hybrid_t)      , intent(in) :: hybrid
-type (element_t)     , intent(inout), target :: elem(:)
-integer :: nets,nete
-real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
-type (EdgeBuffer_t)  , intent(inout) :: edgeq
-type (EdgeBuffer_t)  , intent(inout) :: edgeminmax
-type (derivative_t)  , intent(in) :: deriv
-real (kind=real_kind), intent(inout), dimension(nlev,qsize,nets:nete) :: emin,emax
-
-! local
-integer :: k,kptr,i,j,ie,ic,q
-real (kind=real_kind), dimension(np,np) :: lap_p
-real (kind=real_kind) :: Qmin(np,np,nlev,qsize)
-real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
-logical var_coef1
-
-   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
-   !so tensor is only used on second call to laplace_sphere_wk
-   var_coef1 = .true.
-   if(hypervis_scaling > 0)    var_coef1 = .false.
-
-
-
-   do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q, lap_p)
-#endif
-      do q=1,qsize      
-      do k=1,nlev    !  Potential loop inversion (AAM)
-         Qmin(:,:,k,q)=emin(k,q,ie)  ! need to set all values in element for
-         Qmax(:,:,k,q)=emax(k,q,ie)  ! edgeVpack routine below
-         lap_p(:,:) = qtens(:,:,k,q,ie)
-! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
-      enddo
-      enddo
-      call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,ie)
-      call edgeVpack(edgeq,Qmin,nlev*qsize,nlev*qsize,ie)
-      call edgeVpack(edgeq,Qmax,nlev*qsize,2*nlev*qsize,ie)
-   enddo
-   
-   call t_startf('biwkscmm_bexchV')
-   call bndry_exchangeV(hybrid,edgeq)
-   call t_stopf('biwkscmm_bexchV')
-   
-   do ie=nets,nete
-      do q=1,qsize      
-      do k=1,nlev
-         Qmin(:,:,k,q)=emin(k,q,ie)  ! restore element data.  we could avoid
-         Qmax(:,:,k,q)=emax(k,q,ie)  ! this by adding a "ie" index to Qmin/max
-      enddo
-      enddo
-! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-      call edgeVunpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,ie)
-      call edgeVunpackMin(edgeq, Qmin,qsize*nlev,qsize*nlev,ie)
-      call edgeVunpackMax(edgeq, Qmax,qsize*nlev,2*qsize*nlev,ie)
-
-      ! apply inverse mass matrix, then apply laplace again
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q, lap_p)
-#endif
-      do q=1,qsize      
-        do k=1,nlev    !  Potential loop inversion (AAM)
-           lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
-           ! note: only need to consider the corners, since the data we packed was
-           ! constant within each element
-           emin(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
-! dont add threshold in this routine - it should be done by calling routine, if needed
-!           emin(k,q,ie)=max(emin(k,q,ie),0d0)
-           emax(k,q,ie)=max(qmax(1,1,k,q),qmax(1,np,k,q),qmax(np,1,k,q),qmax(np,np,k,q))
-        enddo
-      enddo
-   enddo
-
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER

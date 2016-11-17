@@ -110,7 +110,6 @@ module prim_derived_type_mod
 !   use reduction_mod, only : reductionbuffer_ordered_1d_t
 !   use cg_mod, only : cg_t
 !   use solver_mod, only : blkjac_t
-!   use filter_mod, only : filter_t
 !   use hybvcoord_mod, only : hvcoord_t
 !   use hybrid_mod, only : hybrid_t
 !   use prim_si_ref_mod, only : ref_state_t

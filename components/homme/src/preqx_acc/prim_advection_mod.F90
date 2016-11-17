@@ -14,15 +14,11 @@ module prim_advection_mod
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct
-  use filter_mod, only         : filter_t, filter_P
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
-  use prim_si_mod, only        : preq_pressure
-  use diffusion_mod, only      : scalar_diffusion, diffusion_init
-  use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
-        statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
-        nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
-  use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, initedgesbuffer, &
+  use control_mod, only        : integration, test_case, hypervis_order, &
+        statefreq, moisture, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
+  use edge_mod, only           : edgevpack, edgevunpack, initedgebuffer, initedgesbuffer, &
         edgevunpackmin, initghostbuffer3D
  
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
@@ -128,13 +124,12 @@ contains
     call t_stopf('qdp1_pcie')
   end subroutine copy_qdp1_d2h
 
-  subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+  subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
     use element_mod   , only: element_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod , only: hvcoord_t
     use hybrid_mod    , only: hybrid_t
-    use filter_mod    , only: filter_t
     use time_mod      , only: TimeLevel_t, TimeLevel_Qdp
     use control_mod   , only: limiter_option, nu_p, qsplit
     use bndry_mod, only: bndry_exchangeV_timing
@@ -142,7 +137,6 @@ contains
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
     type (hvcoord_t)     , intent(in   ) :: hvcoord
-    type (filter_t)      , intent(in   ) :: flt
     type (hybrid_t)      , intent(in   ) :: hybrid
     real(kind=real_kind) , intent(in   ) :: dt
     type (TimeLevel_t)   , intent(inout) :: tl
@@ -155,7 +149,7 @@ contains
       enddo
       first_time = .false.
     endif
-    call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+    call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
   end subroutine Prim_Advec_Tracers_remap
 
   !-----------------------------------------------------------------------------
@@ -183,20 +177,18 @@ contains
   !
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
-  subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
+  subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
     use element_mod   , only: element_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod , only: hvcoord_t
     use hybrid_mod    , only: hybrid_t
-    use filter_mod    , only: filter_t
     use time_mod      , only: TimeLevel_t, TimeLevel_Qdp
     use control_mod   , only: limiter_option, nu_p, qsplit
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
     type (hvcoord_t)     , intent(in   ) :: hvcoord
-    type (filter_t)      , intent(in   ) :: flt
     type (hybrid_t)      , intent(in   ) :: hybrid
     real(kind=real_kind) , intent(in   ) :: dt
     type (TimeLevel_t)   , intent(inout) :: tl

@@ -18,7 +18,6 @@ module edgetype_mod
   end type rotation_t
 
   type, public :: EdgeDescriptor_t
-     integer(kind=int_kind)  :: use_rotation
      integer(kind=int_kind)  :: padding
      integer(kind=int_kind), pointer  :: putmapP(:) => null()
      integer(kind=int_kind), pointer  :: getmapP(:) => null()

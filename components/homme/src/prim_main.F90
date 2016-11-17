@@ -4,9 +4,8 @@
 
 program prim_main
 #ifdef _PRIM
-  use prim_driver_mod,  only: prim_init1, prim_init2, prim_run, prim_finalize,&
-                              leapfrog_bootstrap, prim_run_subcycle
-  use hybvcoord_mod,    only: hvcoord_t, hvcoord_init
+  use prim_driver_mod, only : prim_init1, prim_init2, prim_finalize, prim_run_subcycle
+  use hybvcoord_mod, only : hvcoord_t, hvcoord_init
 #endif
 
   use parallel_mod,     only: parallel_t, initmp, syncmp, haltmp, abortmp
@@ -27,10 +26,6 @@ program prim_main
   use hybrid_mod,       only: hybrid_create
   use fvm_control_volume_mod, only: fvm_struct
   use fvm_control_volume_mod, only: n0_fvm
-
-#ifdef _REFSOLN
-  use prim_state_mod, only : prim_printstate_par
-#endif
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
@@ -213,15 +208,6 @@ program prim_main
   endif
 
 
-  ! advance_si not yet upgraded to be self-starting.  use leapfrog bootstrap procedure:
-  if(integration == 'semi_imp') then
-     if (runtype /= 1 ) then
-        if(par%masterproc) print *,"Leapfrog bootstrap initialization..."
-        call leapfrog_bootstrap(elem, hybrid,1,nelemd,tstep,tl,hvcoord)
-     endif
-  endif
-  
-
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')
   do while(tl%nstep < nEndStep)
@@ -238,11 +224,7 @@ program prim_main
 !JMD     call vprof_start()
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
-        if (tstep_type>0) then  ! forward in time subcycled methods
-           call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord,1)
-        else  ! leapfrog
-           call prim_run(elem, hybrid,nets,nete, tstep, tl, hvcoord, "leapfrog")
-        endif
+        call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord,1)
         call t_stopf('prim_run')
      end do
 !JMD     call vprof_stop()
@@ -262,10 +244,6 @@ program prim_main
 #else
      call prim_movie_output(elem, tl, hvcoord, par, fvm)
 #endif
-
-#ifdef _REFSOLN
-     call prim_printstate_par(elem, tl,hybrid,hvcoord,nets,nete, par)
-#endif 
 
      ! ============================================================
      ! Write restart files if required 

@@ -77,13 +77,6 @@ IF (${HOMME_USE_CXX})
   ENABLE_LANGUAGE(CXX)
 ENDIF ()
 
-OPTION(REFSOLN "Whether to read/write reference soln data" FALSE)
-# Reference solution data
-IF(REFSOLN)
-  MESSAGE(STATUS "Including option to read or write reference soln data...")
-  ADD_DEFINITIONS(-D_REFSOLN)
-ENDIF()
-
 ##############################################################################
 # Compiler options set in cmake/SetCompiler.cmake
 ##############################################################################

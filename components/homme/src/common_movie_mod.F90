@@ -190,9 +190,6 @@ contains
 ! This gets the default var list for namelist_mod
 !
   subroutine setvarnames(nlvarnames)
-#ifdef _PRIM
-    use physics_io_mod, only : physics_set_varnames
-#endif
     character*(*), intent(out) :: nlvarnames(:)
     integer :: lvarcnt
     if (varcnt > max_output_variables) then
@@ -202,11 +199,6 @@ contains
     lvarcnt=varcnt
     nlvarnames(1:varcnt) = varnames
     !print *,__FILE__,__LINE__,varcnt, size(nlvarnames),varnames
-#ifdef _PRIM 
-    if(columnpackage.ne.'none') then
-       call physics_set_varnames(lvarcnt,nlvarnames(lvarcnt+1:))
-    end if
-#endif
   end subroutine setvarnames
 !
 ! This function returns the next step number in which an output (either restart or movie) 

@@ -37,7 +37,6 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/domain_mod.F90
   ${SRC_SHARE}/edge_mod_base.F90
   ${SRC_SHARE}/element_mod.F90
-  ${SRC_SHARE}/filter_mod.F90
   ${SRC_SHARE}/fvm_bsp_mod.F90
   ${SRC_SHARE}/fvm_transformation_mod.F90
   ${SRC_SHARE}/fvm_analytic_mod.F90
@@ -81,8 +80,6 @@ SET(SWEQX_SRCS
   ${SRC_UTILS}/shr_vmath_mod.F90
   ${SRC_UTILS}/shr_const_mod.F90
   ${SRC_UTILS}/shr_spfn_mod.F90
-  ${SRC_BASE}/ref_state_mod.F90
-  ${SRC_BASE}/jrio.c
 )
 
 SET(EXEC_SOURCES ${SWEQX_SRCS} )

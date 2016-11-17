@@ -16,7 +16,7 @@ contains
     !-----------------
     use time_mod, only : timelevel_t , tstep, secpday, time_at, nmax, timelevel_update, timelevel_init
     !-----------------
-    use derivative_mod, only : derivative_t, derivinit, deriv_print, allocate_subcell_integration_matrix
+    use derivative_mod, only : derivative_t, derivinit, allocate_subcell_integration_matrix
     !-----------------
     use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc, ntrac
     !-----------------
@@ -43,15 +43,13 @@ contains
     !-----------------
     use state_mod, only : printstate
     !-----------------
-    use filter_mod, only : filter_t, taylor_filter_create, fm_filter_create, fm_transfer, bv_transfer
-    !-----------------
-    use solver_mod, only : blkjac_t, blkjac_init, solver_test
+    use solver_mod, only : solver_test
     !-----------------
     use cg_mod, only : cg_t, cg_create
     !-----------------
     use restart_io_mod, only : readrestart, writerestart
     !-----------------
-    use advance_mod, only : advance_nonstag, advance_si_nonstag
+    use advance_mod, only : advance_nonstag
     !-----------------
 #ifdef TRILINOS
     use implicit_mod, only : advance_imp_nonstag
@@ -65,8 +63,8 @@ contains
     use solver_mod, only : solver_test, solver_test_ml
 #endif
     !-----------------
-    use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
-         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, precon_method, topology,   &
+    use control_mod, only : integration,  &
+         restartfreq, statefreq, runtype, topology,   &
          test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output, &
          tstep_type, toy_chemistry
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
@@ -121,16 +119,10 @@ contains
     real (kind=real_kind)       :: pmean           ! mean geopotential
     type (derivative_t)         :: deriv           ! derivative struct
     type (TimeLevel_t)          :: tl              ! time level struct
-    type (blkjac_t),allocatable :: blkjac(:)  
-    type (cg_t)                 :: cg              ! conjugate gradient struct
-    real (kind=real_kind)       :: lambdasq(nlev)  ! Helmholtz length scale
     type (hybrid_t)             :: hybrid
     type (quadrature_t)         :: gll,gs          ! gauss-lobatto and gauss wts and pts
 
-    real (kind=real_kind) :: Tp(np)          ! transfer function
-    type (filter_t)       :: flt           ! Filter structure for both v and p grid
     type (quadrature_t)   :: gp           ! quadratures on velocity and pressure grids
-    real (kind=real_kind) :: solver_wts(npsq,nete-nets+1) ! solver wets array for nonstag grid
 
 #ifdef TRILINOS
     integer :: lenx
@@ -250,10 +242,6 @@ contains
        call test_bilin_phys2gll(elem,fvm,hybrid,nets,nete)
     endif
 
-!   if (hybrid%masterthread) then
-!       call deriv_print(deriv)
-!    end if
-
     ! ========================================
     ! Initialize velocity and pressure grid
     ! quadrature points...
@@ -261,56 +249,6 @@ contains
 
     
     gp =gausslobatto(np)
-
-    if(Debug) print *,'homme: point #3'
-    ! ==========================================
-    ! Initialize pressure and velocity grid 
-    ! filter matrix...
-    ! ==========================================
-
-    if (transfer_type == "bv") then
-       Tp    = bv_transfer(p_bv,s_bv,np)
-    else if (transfer_type == "fm") then
-       Tp    = fm_transfer(kcut_fm,wght_fm,np)
-    end if
-
-    if (filter_type == "taylor") then
-       flt = taylor_filter_create(Tp, filter_mu, gp)
-    else if (filter_type == "fischer") then
-       flt = fm_filter_create(Tp, filter_mu, gp)
-    end if
-    if (hybrid%masterthread) then
-       print *,"transfer function type in homme=",transfer_type
-       print *,"filter type            in homme=",filter_type
-       write(*,'(a,99f10.6)') "Tp(:) = ",Tp(:)
-    end if
-
-    if(Debug) print *,'homme: point #4'
-
-    if (hybrid%masterthread) then
-#if 0
-       print *,"Filter:"
-       do j=1,np
-          do k=1,np
-             print *,"F(",k,",",j,")=",flt%FmatV(k,j)
-          end do
-       end do
-
-       if (transfer_type=="bv") then
-          call bvsigma_test(p_bv)
-       end if
-#endif
-    end if
-
-    do ie=nets,nete
-       iptr=1
-       do j=1,np
-          do i=1,np
-             solver_wts(iptr,ie-nets+1) = elem(ie)%mp(i,j)*elem(ie)%rmp(i,j)
-             iptr=iptr+1
-          end do
-       end do
-    end do
 
 !   some test code
 #if 0
@@ -440,10 +378,6 @@ contains
           ! Read in the restarted state 
           !============================
           call ReadRestart(elem,ithr,nete,nets,tl)
-          if (integration == "semi_imp") then
-             allocate(blkjac(nets:nete))
-             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
-          endif
           !================================================
           ! Print out the state variables 
           !================================================
@@ -518,29 +452,6 @@ contains
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
           if(Debug) print *,'homme: point #6'
 
-
-          ! ===========================================================
-          ! In the case of semi implicit integration (as solver or precon),
-          ! initialize solver
-          ! ===========================================================
-
-          if (integration == "semi_imp") then
-             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
-             if (precon_method == "block_jacobi") then
-                !JMD call blkjac_init(deriv,lambdasq,nets,nete,E(1,1,1,nets),blkjac)
-                allocate(blkjac(nets:nete))
-                call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
-             end if
-          else if (integration == "full_imp") then
-! only nonstagger is coded
-             allocate(blkjac(nets:nete))
-             lambdasq(:) = pmean*dt*dt
-!             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
-!             if (precon_method == "block_jacobi") then
-!                call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
-!             end if
-          end if
-
           if (toy_chemistry==1) call toy_chemistry_forcing(elem,nets,nete,tl,dt)
           if(Debug) print *,'homme: point #7'
 
@@ -548,36 +459,9 @@ contains
           ! =================================
           ! Call advance
           ! =================================
-
-          if (integration == "explicit") then
-             call advance_nonstag(elem, edge2, edge3,    deriv,  flt,  hybrid, &
+          call advance_nonstag(elem, edge2, edge3,    deriv,   hybrid, &
                   dt,    pmean,     tl,  nets,   nete)
-#ifdef _FVM
-       call Shal_Advec_Tracers_fvm(elem, fvm, deriv,hybrid,dt,tl,nets,nete)
-       if(test_cfldep) then
-         do k=1,nlev
-           maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
-           maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid) 
-           if(hybrid%masterthread) then 
-             write(*,*) "Time step:", tl%nstep, "LEVEL:", k
-             write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
-             print *
-           endif 
-         end do
-       endif
-#endif
-             call TimeLevel_update(tl,"forward")
-          else if (integration == "semi_imp") then
-             if(Debug) print *,'homme: before call to advance_si'
-             call advance_si_nonstag(elem, edge1, edge2,    edge3        ,   red          ,     &
-                  deriv,                         &
-                  flt,                                        &
-                  cg   ,    blkjac ,  lambdasq,  &
-                  dt   ,    pmean        ,   tl           ,             &
-                  nets ,    nete         )
-             if(Debug) print *,'homme: after call to advance_si'
-             call TimeLevel_update(tl,"forward")
-          endif
+          call TimeLevel_update(tl,"forward")
           if(Debug) print *,'homme: point #8'
 
           ! ============================================================
@@ -616,18 +500,6 @@ contains
 
     dt = tstep/2
 
-    if (integration == "semi_imp") then
-       lambdasq(:) = pmean*dt*dt
-       if (precon_method == "block_jacobi") then
-          call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
-       end if
-    else if (integration == "full_imp") then
-       lambdasq(:) = pmean*dt*dt
-!       if (precon_method == "block_jacobi") then
-!          call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
-!       end if
-    end if
-
     if (integration == "full_imp") then
       if (hybrid%masterthread) print *,'initializing Trilinos solver info'
 
@@ -637,8 +509,6 @@ contains
       xstate(:) = 0
        call initialize(state_object, lenx, elem, pmean,edge1,edge2, edge3, &
         hybrid, deriv, dt, tl, nets, nete)
-       !call init_precon(pre_object, lenx, elem, blkjac, edge1, edge2, edge3, &
-       ! red, deriv, cg, lambdasq, dt, pmean, tl, nets, nete)
 
     
        pc_elem=elem
@@ -690,24 +560,8 @@ contains
        if(Debug) print *,'homme: point #12'
 
        if      (integration == "explicit") then
-          call advance_nonstag( elem,  edge2, edge3, deriv, flt, hybrid, &
+          call advance_nonstag( elem,  edge2, edge3, deriv, hybrid, &
                dt   , pmean, tl   , nets, nete)
-#ifdef _FVM
-       call Shal_Advec_Tracers_fvm(elem, fvm, deriv,hybrid,dt,tl,nets,nete)
-        if(test_cfldep) then
-          do k=1,nlev
-            maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
-            maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid) 
-            if(hybrid%masterthread) then 
-              write(*,*) "Time step:", tl%nstep, "LEVEL:", k
-              write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
-              print *
-            endif 
-          end do
-        endif
-#endif 
-               
-               
        else if (integration == "full_imp") then
             dt=tstep
 #ifdef TRILINOS
@@ -747,7 +601,7 @@ contains
 
 
             call advance_imp_nonstag(elem, edge1, edge2, edge3, red, deriv,  &
-               cg, hybrid, blkjac, lambdasq, dt, pmean, tl, nets, nete, xstate)
+               cg, hybrid, dt, pmean, tl, nets, nete, xstate)
 
             ! TODO update with vortex and swirl possibly using set_prescribed_velocity
 
@@ -791,14 +645,6 @@ contains
 !           Check /utils/trilinos/README for more details
             call abortmp('Need to include -DTRILINOS at compile time to execute FI solver')
 #endif
-       else if (integration == "semi_imp") then
-          call advance_si_nonstag(elem, edge1, edge2,    edge3        ,   red          ,             &
-               deriv,                                  &
-               flt         ,             &
-               cg   ,    blkjac,  lambdasq,  &
-               dt   ,    pmean        ,   tl           ,             &
-               nets ,    nete         )
-          tot_iter=tot_iter+cg%iter
        end if
        if(Debug) print *,'homme: point #13'
 !      if (hybrid%masterthread) print *,'post solve same ts'
@@ -952,12 +798,6 @@ contains
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        end if
 
-       if (MODULO(tl%nstep,statefreq)==0 ) then
-          if(hybrid%masterthread) then
-             if (integration == "semi_imp") print *, "cg its=",cg%iter
-          endif
-       endif
-
 #if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
@@ -979,11 +819,6 @@ contains
        deallocate(xstate)
 #endif
      end if
-
-! TODO: branch has this, I think we need it here as well, but not yet tested
-!     if ((integration == "full_imp").or.(integration == "semi_imp")) then ! closeout 
-!       deallocate(blkjac)
-!     end if
 
     ! ======================================================
     ! compute and report times...
@@ -1014,7 +849,7 @@ contains
     !-----------------
     use time_mod, only : timelevel_t , ndays, tstep, secpday, time_at, nmax, timelevel_update, timelevel_init
     !-----------------
-    use derivative_mod, only : derivative_t, derivinit, deriv_print
+    use derivative_mod, only : derivative_t, derivinit
     !-----------------
     use dimensions_mod, only :  np, nlev, npsq
     !-----------------
@@ -1046,14 +881,12 @@ contains
     !-----------------
     use state_mod, only : printstate
     !-----------------
-    use filter_mod, only : filter_t, taylor_filter_create, fm_filter_create, fm_transfer, bv_transfer
-    !-----------------
     use restart_io_mod, only : readrestart, writerestart
     !-----------------
     use advance_mod, only : advance_nonstag_rk
     !-----------------
-    use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
-         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, topology, &
+    use control_mod, only : integration, &
+         restartfreq, statefreq, runtype, topology, &
          rk_stage_user, test_case, sub_case, kmass, qsplit, nu, nu_s, limiter_option, &
          hypervis_subcycle, g_sw_output, toy_chemistry
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
@@ -1092,8 +925,6 @@ contains
     type (quadrature_t)         :: gll,gs          ! gauss-lobatto and gauss wts and pts
 
 
-    real (kind=real_kind) :: Tp(np)          ! transfer function
-    type (filter_t)       :: flt           ! Filter structure for both v and p grid
     type (quadrature_t)   :: gp           ! quadratures on velocity and pressure grids
     
     real (kind=real_kind) :: mindx,dt_gv
@@ -1145,39 +976,12 @@ contains
 
     call derivinit(deriv)
 
-    if (hybrid%masterthread) then
-       !call deriv_print(deriv)
-    end if
-
     ! ========================================
     ! Initialize velocity and pressure grid
     ! quadrature points...
     ! ========================================
 
     gp=gausslobatto(np)
-
-    if(Debug) print *,'homme: point #3'
-    ! ==========================================
-    ! Initialize pressure and velocity grid 
-    ! filter matrix...
-    ! ==========================================
-
-    if (transfer_type == "bv") then
-       Tp    = bv_transfer(p_bv,s_bv,np)
-    else if (transfer_type == "fm") then
-       Tp    = fm_transfer(kcut_fm,wght_fm,np)
-    end if
-
-    if (filter_type == "taylor") then
-       flt = taylor_filter_create(Tp, filter_mu, gp)
-    else if (filter_type == "fischer") then
-       flt = fm_filter_create(Tp, filter_mu, gp)
-    end if
-    if (hybrid%masterthread) then
-       print *,"transfer function type in homme=",transfer_type
-       print *,"filter type            in homme=",filter_type
-       write(*,'(a,99f10.6)') "I-mu + mu*Tp(:) = ",(1-filter_mu)+filter_mu*Tp(:)
-    end if
 
     if(Debug) print *,'homme: point #4'
     call TimeLevel_init(tl)
@@ -1367,7 +1171,7 @@ contains
        call RkInit(cfl,RungeKutta)  ! number of stages: cfl+1
 
        if (toy_chemistry==1) call toy_chemistry_forcing(elem,nets,nete,tl,dt_rk)
-       call advance_nonstag_rk(RungeKutta, elem,  edge2, edge3, deriv, flt, hybrid, &
+       call advance_nonstag_rk(RungeKutta, elem,  edge2, edge3, deriv,  hybrid, &
             dt_rk   , pmean, tl   , nets, nete)
        
        call TimeLevel_update(tl,"leapfrog")       
