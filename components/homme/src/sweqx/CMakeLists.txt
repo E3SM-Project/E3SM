@@ -1,4 +1,4 @@
-p# Relevant Directories within the HOMME repository
+# Relevant Directories within the HOMME repository
 # holding source files needed for building the library
 # and executable sweqx.
 
