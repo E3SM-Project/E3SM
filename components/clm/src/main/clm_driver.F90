@@ -982,22 +982,19 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,         &                 
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &                
             atm2lnd_vars, glc2lnd_vars, temperature_vars,     &
-            soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
+            soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars,ep_betr)
 
        call t_stopf('hydro2 drainage')     
 
        if (use_betr) then
 
           call t_startf('betr drainage')       
-          call ep_betr%BeTRSetBiophysForcing(bounds_clump, col, pft, 1, nlevsoi,&
-                waterflux_vars=waterflux_vars )
           call ep_betr%StepWithDrainage(bounds_clump, col)
           call t_stopf('betr drainage')
 
           call t_startf('betr balchk')
           call ep_betr%MassBalanceCheck(bounds_clump)
           call t_stopf('betr balchk')  
-
           call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
 
 !          call bgc_reaction%betr_alm_flux_statevar_feedback(bounds_clump, &

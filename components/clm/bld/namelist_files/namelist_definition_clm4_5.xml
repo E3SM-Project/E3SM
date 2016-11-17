@@ -1368,11 +1368,30 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 <!-- ========================================================================================  -->
 <!-- namelist elements associated with the betr_initializeMod                                  -->
 <!-- ========================================================================================  -->
-<entry id="bgc_method" type="char*256" category="clm_betr"
+<entry id="reaction_method" type="char*256" category="clm_betr"
        group="betr_inparm" valid_values="" >
-Specify what bgc module will be used within the betr framework. 
+Specify what reaction module will be used within the betr framework. 
 </entry>
 
+<entry id="advection_on" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Turn on advection in betr if it is true.
+</entry>
+
+<entry id="diffusion_on" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Turn on diffusion in betr if it is true.
+</entry>
+
+<entry id="ebullition_on" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Turn on ebullition in betr if it is true.
+</entry>
+
+<entry id="reaction_on" type="logical" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Turn on reaction in betr if it is true.
+</entry>
 <!-- ========================================================================================  -->
 <!-- namelist elements associated with the Hydrology1Mod                                       -->
 <!-- ========================================================================================  -->
