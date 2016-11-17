@@ -530,6 +530,8 @@ add_default($nl, 'config_include_metric_terms');
 add_default($nl, 'config_elastic_subcycle_number');
 add_default($nl, 'config_stress_divergence_scheme');
 add_default($nl, 'config_variational_basis');
+add_default($nl, 'config_wachspress_integration_type');
+add_default($nl, 'config_wachspress_integration_order');
 add_default($nl, 'config_revised_evp');
 add_default($nl, 'config_use_air_stress');
 add_default($nl, 'config_use_ocean_stress');
