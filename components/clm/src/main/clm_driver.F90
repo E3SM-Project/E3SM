@@ -576,7 +576,10 @@ contains
        ! ============================================================================
        ! Determine temperatures
        ! ============================================================================
-
+       if(use_betr)then
+         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col, pft, 1, nlevsoi, waterstate_vars=waterstate_vars)
+         call ep_betr%PreDiagSoilColWaterFlux(filter(nc)%num_nolakec , filter(nc)%nolakec)
+       endif
        ! Set lake temperature 
 
        call LakeTemperature(bounds_clump,                                             &
@@ -596,6 +599,10 @@ contains
             solarabs_vars, soilstate_vars, energyflux_vars,  temperature_vars)
        call t_stopf('soiltemperature')
 
+       if(use_betr)then
+         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col, pft, 1, nlevsoi, waterstate_vars=waterstate_vars)
+         call ep_betr%DiagnoseDtracerFreezeThaw(bounds_clump, filter(nc)%num_nolakec , filter(nc)%nolakec, col)
+       endif
        ! ============================================================================
        ! update surface fluxes for new ground temperature.
        ! ============================================================================
