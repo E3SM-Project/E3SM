@@ -415,6 +415,12 @@ class NamelistGenerator(object):
         year_end = int(self.get_default("strm_year_end", config))
         data_filenames = self._sub_paths(data_filenames, year_start, year_end)
         domain_filenames = self._sub_paths(domain_filenames, year_start, year_end)
+
+        # Overwrite domain_file if should be set from stream data
+        if domain_filenames == 'null':
+            domain_filepath = data_filepath
+            domain_filenames = data_filenames.splitlines()[0]
+
         stream_file_text = _stream_file_template.format(
             domain_varnames=domain_varnames,
             domain_filepath=domain_filepath,
