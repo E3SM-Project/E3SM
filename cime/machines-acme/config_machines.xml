@@ -818,7 +818,7 @@
 	 <NODENAME_REGEX>constance</NODENAME_REGEX>
          <RUNDIR>/pic/scratch/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/pic/scratch/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/pic/scratch/$USER/csmruns</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/pic/projects/climate/csmdata/</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/pic/projects/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
