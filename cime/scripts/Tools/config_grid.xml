@@ -1982,19 +1982,19 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oEC60to30_nn.160527.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="oEC60to30v2" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oEC60to30v2_smoothed.160920.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oEC60to30v2_smoothed.r300e600.160920.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="oEC60to30wLI" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oEC60to30wLI_smoothed.r500e1000.160830.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oEC60to30wLI_smoothed.r300e600.160830.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="oRRS30to10" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10_smoothed.r125e250.160527.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="oRRS30to10v2" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10v2_nn.161102.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10v2_smoothed.r150e300.161102.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="oRRS30to10wLI" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10wLI_smoothed.r500e1000.160930.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS30to10wLI_smoothed.r150e300.160930.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="oRRS18to6" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oRRS18to6_nn.160830.nc</ROF2OCN_RMAPNAME>
@@ -2038,7 +2038,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30v2_smoothed.r300e600.161115.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oEC60to30wLI" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30wLI_nn.160926.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30wLI_smoothed.r300e600.160926.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oRRS30to10" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oRRS30to10_nn.160718.nc</ROF2OCN_RMAPNAME>
