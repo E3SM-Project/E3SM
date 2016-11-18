@@ -315,9 +315,13 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            (component,modspath) = test_mods.split('/',1)
-            testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
+            if CIME.utils.get_model() == "acme":
+                component = "allactive"
+                modspath = test_mods
+            else:
+                (component, modspath) = test_mods.split('/',1)
 
+            testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
             if not os.path.exists(test_mod_file):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
