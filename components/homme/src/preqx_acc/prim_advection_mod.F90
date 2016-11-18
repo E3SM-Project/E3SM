@@ -8,7 +8,6 @@
 
 module prim_advection_mod
   !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, Prim_Advec_Tracers_remap_rk2
-  use prim_advection_mod_base, only: vertical_remap
   use kinds, only              : real_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, nelemd
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
@@ -42,7 +41,6 @@ module prim_advection_mod
   real(kind=real_kind), allocatable, private :: data_pack(:,:,:,:), data_pack2(:,:,:,:)
   logical, private :: first_time = .true.
 
-  public :: vertical_remap
   public :: Prim_Advec_Tracers_remap
   public :: prim_advec_init1
   public :: prim_advec_init2
