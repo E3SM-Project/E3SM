@@ -2369,6 +2369,7 @@ module seq_flds_mod
 
         call seq_flds_add(a2x_states, "Sa_co2prog")
         call seq_flds_add(x2l_states, "Sa_co2prog")
+        call seq_flds_add(x2o_states, "Sa_co2prog")
         longname = 'Prognostic CO2 at the lowest model level'
         stdname  = ''
         units    = '1e-6 mol/mol'
@@ -2377,6 +2378,7 @@ module seq_flds_mod
 
         call seq_flds_add(a2x_states, "Sa_co2diag")
         call seq_flds_add(x2l_states, "Sa_co2diag")
+        call seq_flds_add(x2o_states, "Sa_co2diag")
         longname = 'Diagnostic CO2 at the lowest model level'
         stdname  = ''
         units    = '1e-6 mol/mol'
