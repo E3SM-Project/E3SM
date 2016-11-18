@@ -300,8 +300,8 @@ contains
        write (scratchFName,'(a,i9.9)') 'scratch_ocn_',iam
        open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
        if (ioerr /= 0) then
-          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',stdout_shr,'iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in ocn_init_mct open stdout_shr'//trim(ioerrstr))
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ocn_init_mct open stdout_shr '//trim(ioerrstr))
        endif
     else
        inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
@@ -1022,8 +1022,8 @@ contains
     if ( iam /= 0 ) then
        close(ocnStdErrUnit, status='DELETE', iostat=ioerr)
        if (ioerr /= 0) then
-          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',ocnStdErrUnit,'iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in ocn_final_mct close ocnStdErrUnit'//trim(ioerrstr))
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',ocnStdErrUnit,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ocn_final_mct close ocnStdErrUnit '//trim(ioerrstr))
        endif
     end if
 #endif

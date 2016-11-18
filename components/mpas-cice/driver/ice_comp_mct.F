@@ -294,7 +294,7 @@ contains
        write (scratchFName,'(a,i9.9)') 'scratch_ice_',iam
        open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
        if (ioerr /= 0) then
-          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',stdout_shr,'iostat=',ioerr
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
           call mpas_dmpar_global_abort('ERROR in ice_init_mct open stdout_shr '//trim(ioerrstr))
        endif
     else
@@ -967,8 +967,8 @@ contains
     if ( iam /= 0 ) then
        close(iceStdErrUnit, status='DELETE', iostat=ioerr)
        if (ioerr /= 0) then
-          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',iceStdErrUnit,'iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in ice_final_mct close iceStdErrUnit'//trim(ioerrstr))
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',iceStdErrUnit,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ice_final_mct close iceStdErrUnit '//trim(ioerrstr))
        endif
     end if
 #endif

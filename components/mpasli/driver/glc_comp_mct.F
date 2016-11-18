@@ -291,8 +291,8 @@ contains
        write (scratchFName,'(a,i9.9)') 'scratch_glc_',iam
        open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
        if (ioerr /= 0) then
-          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',stdout_shr,'iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in glc_init_mct open stdout_shr'//trim(ioerrstr))
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in glc_init_mct open stdout_shr '//trim(ioerrstr))
        endif
     else
        inquire(file='glc_modelio.nml'//trim(inst_suffix),exist=exists)
@@ -1058,8 +1058,8 @@ contains
     if ( iam /= 0 ) then
        close(glcStdErrUnit, status='DELETE', iostat=ioerr)
        if (ioerr /= 0) then
-          write (ioerrstr,'(a,i6,a,i3,a,i3)') 'rank=',iam,'unit=',glcStdErrUnit,'iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in glc_final_mct close glcStdErrUnit'//trim(ioerrstr))
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',glcStdErrUnit,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in glc_final_mct close glcStdErrUnit '//trim(ioerrstr))
        endif
     end if
 #endif
