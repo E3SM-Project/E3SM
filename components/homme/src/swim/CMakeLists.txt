@@ -1,14 +1,18 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
-# and executable swim.
+# and executable sweqx.
+
 macro(swim_setup)
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
-SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
-SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
+SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/swim)
+SET(SRC_BASE          ${HOMME_SOURCE_DIR}/src)
+SET(SRC_SHARE         ${HOMME_SOURCE_DIR}/src/share)
+SET(SRC_SHARE_SWEQX   ${HOMME_SOURCE_DIR}/src/sweqx)
+SET(SRC_UTILS         ${HOMME_SOURCE_DIR}/utils/csm_share)
+SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/timing)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
 SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 
@@ -91,7 +95,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${UTILS_TRILINOS_DIR}/belos_helm.cpp
 )
 
-
 SET(EXEC_SOURCES ${SWIM_SRCS} ${SRC_DIR}/main.F90 )
 
 #Set up defaults
@@ -114,14 +117,20 @@ IF (NOT QSIZE_D)
   SET (QSIZE_D 4)
 ENDIF ()
 
+
 endmacro(swim_setup)
 
+############################################################################
+# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
+############################################################################
 
 swim_setup()
-# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 createTestExec(swim swim ${SWIM_NP} ${SWIM_NC} ${SWIM_PLEV} ${SWIM_USE_PIO} ${SWIM_USE_ENERGY} ${QSIZE_D})
 
 SET_PROPERTY(TARGET swim PROPERTY LINKER_LANGUAGE Fortran)
 
 TARGET_LINK_LIBRARIES(swim ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+
+
+
 

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Change next two lines to your paths
+export ACME_ROOT=/ccs/home/$USER/tmp
+export Install_DIR=/ccs/home/$USER/test_bld_swim
+
+# Start Build #
+source $ACME_ROOT/ACME/components/homme/compile_scripts/titan/env_mach_specific.cpu
+export Trilinos_DIR=/lustre/atlas1/cli900/world-shared/cesm/software/Trilinos/Trilinos-11.12.1_gptl/titan-pgi-acme-ci-nophal_15.10.lustre/install
+export HOMME_ROOT=$ACME_ROOT/ACME/components/homme
+export CRAYPE_LINK_TYPE='dynamic'
+
+rm -rf $Install_DIR
+mkdir -p $Install_DIR     || exit -1
+cd $Install_DIR
+ 
+cmake                                                                          \
+  -C $HOMME_ROOT/cmake/machineFiles/titan.cmake                                \
+  -DCMAKE_Fortran_COMPILER=ftn                                                 \
+  -DCMAKE_C_COMPILER=cc                                                        \
+  -DCMAKE_CXX_COMPILER=CC                                                      \
+  -DOPT_FLAGS="-fastsse -Kieee -Minfo=accel"                                   \
+  -DCMAKE_CXX_FLAGS="-c11"                                                     \
+  -DNETCDF_DIR=$NETCDF_DIR                                                     \
+  -DWITH_PNETCDF=FALSE                                                         \
+  -DHDF5_DIR=$HDF5_DIR                                                         \
+  -DSWIM_NP=4                                                                  \
+  -DBUILD_HOMME_SWIM=TRUE                                                      \
+  -DENABLE_OPENMP=TRUE                                                         \
+  -DHOMME_PROJID=CLI106ms                                                      \
+  -DENABLE_OPENACC=FALSE                                                       \
+  -DENABLE_CUDA_FORTRAN=FALSE                                                  \
+  -DHOMME_FIND_BLASLAPACK=TRUE                                                 \
+                                                                               \
+                                                                               \
+  $HOMME_ROOT                                               
+
+make -j6 swim                                            || exit -1
+
+

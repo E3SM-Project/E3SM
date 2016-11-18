@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Change next four lines to your paths
+export ACME_ROOT=/ccs/home/$USER/tmp
+export Install_DIR=/ccs/home/$USER/test_bld_prim
+NTRACERS=0
+NLEVELS=64
+
+# Start Build #
+source $ACME_ROOT/ACME/components/homme/compile_scripts/titan/env_mach_specific.cpu
+export Trilinos_DIR=/lustre/atlas1/cli900/world-shared/cesm/software/Trilinos/Trilinos-11.12.1_gptl/titan-pgi-acme-ci-nophal_15.10.lustre/install
+export HOMME_ROOT=$ACME_ROOT/ACME/components/homme
+export CRAYPE_LINK_TYPE='dynamic'
+
+rm -rf $Install_DIR
+mkdir -p $Install_DIR     || exit -1
+cd $Install_DIR
+ 
+cmake                                                                          \
+  -C $HOMME_ROOT/cmake/machineFiles/titan.cmake                                \
+  -DCMAKE_Fortran_COMPILER=ftn                                                 \
+  -DCMAKE_C_COMPILER=cc                                                        \
+  -DCMAKE_CXX_COMPILER=CC                                                      \
+  -DOPT_FLAGS="-fastsse -Kieee -Minfo=accel"                                   \
+  -DCMAKE_CXX_FLAGS="-c11"                                                     \
+  -DNETCDF_DIR=$NETCDF_DIR                                                     \
+  -DWITH_PNETCDF=FALSE                                                         \
+  -DHDF5_DIR=$HDF5_DIR                                                         \
+  -DPRIM_NP=$NLEVELS                                                           \
+  -DPREQX_QSIZE_D=$NTRACERS 		                                           \
+  -DBUILD_HOMME_PRIM=TRUE                                                      \
+  -DENABLE_OPENMP=TRUE                                                         \
+  -DHOMME_PROJID=CLI106ms                                                      \
+  -DENABLE_OPENACC=FALSE                                                       \
+  -DHOMME_FIND_BLASLAPACK=TRUE                                                 \
+                                                                               \
+                                                                               \
+  $HOMME_ROOT                                               
+
+make -j6 prim                                            || exit -1
+
+
