@@ -458,7 +458,8 @@ module cesm_comp_mod
    character(CL) :: hist_a2x3hr_flds  = &
         'Sa_z:Sa_topo:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
         &Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl:&
-        &Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
+        &Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf:&
+        &Sa_co2diag:Sa_co2prog'
 
    ! --- other ---
    integer  :: ka,km,k1,k2,k3         ! aVect field indices
