@@ -48,7 +48,8 @@ module prim_advection_mod
 contains
 
   subroutine copy_qdp1_h2d( elem , tl , nets , nete )
-    use element_mod, only: element_t, state_qdp
+    use element_mod, only: element_t
+    use element_state, only: state_qdp
     use perf_mod, only: t_startf, t_stopf
     implicit none
     type(element_t), intent(in) :: elem(:)
@@ -83,7 +84,8 @@ contains
   end subroutine copy_qdp1_h2d
 
   subroutine copy_qdp1_d2h( elem , tl , nets , nete )
-    use element_mod, only: element_t, state_qdp
+    use element_mod, only: element_t
+    use element_state, only: state_qdp
     use perf_mod, only: t_startf, t_stopf
     implicit none
     type(element_t), intent(in) :: elem(:)
@@ -271,7 +273,8 @@ contains
   end subroutine prim_advec_init1
 
   subroutine prim_advec_init2(elem,hvcoord,hybrid)
-    use element_mod   , only: element_t, state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj
+    use element_mod   , only: element_t
+    use element_state , only: state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj
     use hybvcoord_mod , only: hvcoord_t
     use hybrid_mod    , only: hybrid_t
     implicit none
@@ -311,7 +314,8 @@ contains
     use kinds                , only: real_kind
     use dimensions_mod       , only: np, nlev
     use hybrid_mod           , only: hybrid_t
-    use element_mod          , only: element_t, derived_divdp_proj, state_qdp
+    use element_mod          , only: element_t
+    use element_state        , only: derived_divdp_proj, state_qdp
     use derivative_mod       , only: derivative_t
     use perf_mod             , only: t_startf, t_stopf                          ! _EXTERNAL
     use hybvcoord_mod        , only: hvcoord_t
@@ -431,7 +435,8 @@ contains
   end subroutine advance_hypervis_scalar
 
   subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
-    use element_mod, only: element_t, state_qdp
+    use element_mod, only: element_t
+    use element_state, only: state_qdp
     implicit none
     type(element_t)     , intent(inout) :: elem(:)
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
@@ -477,7 +482,7 @@ contains
   use hybvcoord_mod         , only: hvcoord_t
   use control_mod           , only: limiter_option, nu_p, nu_q
   use perf_mod              , only: t_startf, t_stopf
-  use element_mod           , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp
+  use element_state         , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp
   use derivative_mod, only: divergence_sphere_openacc
   use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
   use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
@@ -923,7 +928,8 @@ contains
   end subroutine limiter_optim_iter_full
 
   subroutine precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
-    use element_mod           , only: element_t, derived_vn0, derived_divdp, derived_divdp_proj
+    use element_mod           , only: element_t
+    use element_state         , only: derived_vn0, derived_divdp, derived_divdp_proj
     use hybrid_mod            , only: hybrid_t
     use derivative_mod        , only: derivative_t
     use edge_mod              , only: edgeVpack, edgeVunpack

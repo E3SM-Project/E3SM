@@ -35,7 +35,8 @@ contains
   end function acc_async_test_wrap
 
   subroutine copy_qdp_h2d( elem , tl )
-    use element_mod, only: element_t, state_qdp
+    use element_mod, only: element_t
+    use element_state, only: state_qdp
     implicit none
     type(element_t), intent(in) :: elem(:)
     integer        , intent(in) :: tl
@@ -50,7 +51,8 @@ contains
   end subroutine copy_qdp_h2d
 
   subroutine copy_qdp_d2h( elem , tl )
-    use element_mod, only: element_t, state_qdp
+    use element_mod, only: element_t
+    use element_state, only: state_qdp
     implicit none
     type(element_t), intent(in) :: elem(:)
     integer        , intent(in) :: tl

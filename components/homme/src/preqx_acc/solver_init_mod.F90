@@ -16,7 +16,8 @@ contains
 
 
   subroutine solver_init2( elem , deriv )
-    use element_mod, only: element_t, state_qdp, derived_vn0, derived_divdp, derived_divdp_proj
+    use element_mod, only: element_t
+    use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj
     use derivative_mod, only: derivative_t
     implicit none
     type(element_t)   , intent(in) :: elem(:)

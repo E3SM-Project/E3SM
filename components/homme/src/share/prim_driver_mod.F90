@@ -7,7 +7,8 @@ module prim_driver_mod
   use cg_mod,           only: cg_t
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
-  use element_mod,      only: element_t, timelevels,  allocate_element_desc
+  use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
+  use element_state,    only: timelevels
   use hybrid_mod,       only: hybrid_t
   use kinds,            only: real_kind, iulog
   use perf_mod,         only: t_startf, t_stopf
@@ -57,8 +58,6 @@ contains
     use mesh_mod, only : MeshUseMeshFile
     ! --------------------------------
     use time_mod, only : nmax, time_at, timelevel_init, timelevel_t
-    ! --------------------------------
-    use element_mod, only : setup_element_pointers
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
