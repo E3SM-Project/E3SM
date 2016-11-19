@@ -153,6 +153,9 @@
       <value compset="HIST.*_DATM%QIA">1895</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
       <value compset="HIST.*_DATM%GSW">1901</value>
+      <value compset="20TR.*_DATM%QIA">1895</value>
+      <value compset="20TR.*_DATM%CRU">1901</value>
+      <value compset="20TR.*_DATM%GSW">1901</value>
       <value compset="4804.*_DATM%QIA">1</value>
       <value compset="RCP.*_DATM%QIA">2004</value> 
       <value compset="RCP.*_DATM%CRU">2005</value> 
@@ -183,6 +186,9 @@
       <value compset="HIST.*_DATM%QIA">1948</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
       <value compset="HIST.*_DATM%GSW">1901</value>
+      <value compset="20TR.*_DATM%QIA">1948</value>
+      <value compset="20TR.*_DATM%CRU">1901</value>
+      <value compset="20TR.*_DATM%GSW">1901</value>
       <value compset="4804.*_DATM%QIA">1948</value>
       <value compset="RCP.*_DATM%QIA" >1972</value> 
       <value compset="RCP.*_DATM%CRU" >1991</value> 
