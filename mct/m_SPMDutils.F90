@@ -24,6 +24,16 @@
 !
 ! !INTERFACE:
 
+! Code added as a work around for poor performance or incorrect functionality
+! in MPI libraries
+!
+#ifndef _USE_MPI_RSEND
+#define MPI_RSEND MPI_SEND
+#define mpi_rsend mpi_send
+#define MPI_IRSEND MPI_ISEND
+#define mpi_irsend mpi_isend
+#endif
+
  module m_SPMDutils
 
       implicit none
