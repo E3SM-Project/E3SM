@@ -3047,6 +3047,7 @@
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="_BGC%BDRD">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
+      <value compset="20TR.*_DATM%(QIA|CRU)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU)" >CO2A</value>
     </values>
     <group>run_coupling</group>
@@ -3393,7 +3394,9 @@
     <values>
       <value compset="^1850"					>284.7</value>
       <value compset="^HIST.+BGC%BPRP"				>284.7</value>
+      <value compset="^20TR.+BGC%BPRP"				>284.7</value>
       <value compset="^HIST_CAM4%FCHM"				>0.000001</value>
+      <value compset="^20TR_CAM4%FCHM"				>0.000001</value>
       <value compset="^2000"					>367.0</value>
       <value compset="^1850.+DATM%NYF"				>379.000</value>
       <value compset="^1850.+DATM%NYF.*_POP2%ECO"		>284.7</value>
@@ -3686,6 +3689,7 @@
     <desc compset="1850_">pre-industrial:</desc>
     <desc compset="2000_">present day:</desc>
     <desc compset="HIST_">Historical 1850 to 2000 transient:</desc>
+    <desc compset="20TR_">Historical 1850 to 2000 transient:</desc>
     <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
     <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
     <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
@@ -3706,6 +3710,7 @@
     <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc>
     <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc>
     <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
+    <desc compset="20TR_CLM4[05]%CN">CLM transient land use:</desc>
     <desc compset="PIPD">
       pre-industrial (1850) to present day:
       -----------------------------WARNING ------------------------------------------------
