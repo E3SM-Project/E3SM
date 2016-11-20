@@ -167,8 +167,8 @@
 
 </machine>
 
-<machine MACH="corip1">
-    <DESC>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is SLURM</DESC>
+<machine MACH="cori-haswell">
+    <DESC>Cori. XC40 Cray system at NERSC. Haswell partition. os is CNL, 32 pes/node, batch system is SLURM</DESC>
     <NODENAME_REGEX>cori</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
@@ -197,24 +197,28 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
-	<arg name="thread_count" > -c {{ thread_count }}</arg>
+        <!--NOTE: hard-coding -c 2 for now, which is only correct when using full node with no hyper-threading.  need updates from cime5.2 to fix.  (ndk) -->
+	<arg name="thread_count" > -c 2 </arg>
+	<arg name="binding" > --cpu_bind=cores</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
-      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+      <init_path lang="perl">/opt/modules/default/init/perl</init_path>
+      <init_path lang="python">/opt/modules/default/init/python</init_path>
       <init_path lang="sh">/opt/modules/default/init/sh</init_path>
       <init_path lang="csh">/opt/modules/default/init/csh</init_path>
       <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
+
       <modules>
 	<command name="rm">PrgEnv-intel</command>
 	<command name="rm">PrgEnv-cray</command>
 	<command name="rm">PrgEnv-gnu</command>
 	<command name="rm">intel</command>
 	<command name="rm">cce</command>
+        <command name="rm">gcc</command>
 	<command name="rm">cray-parallel-netcdf</command>
 	<command name="rm">cray-parallel-hdf5</command>
 	<command name="rm">pmi</command>
@@ -227,19 +231,25 @@
 	<command name="rm">craype-sandybridge</command>
 	<command name="rm">craype-ivybridge</command>
 	<command name="rm">craype</command>
+        <command name="rm">papi</command>
+        <command name="rm">cmake</command>
+        <command name="rm">cray-petsc</command>
+        <command name="rm">esmf</command>
+      </modules>
+
+      <modules>
+	<command name="rm">craype</command>
+	<command name="load">craype/2.5.5</command>
+	<command name="load">craype-haswell</command>
+
+	<command name="load">cray-mpich/7.4.0</command>
       </modules>
 
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/17.0.0.042</command>
-	<command name="rm">cray-libsci</command>
-	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" >
-	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" >
-        <command name="load">esmf/6.3.0rp1-defio-intel2016-mpiuni-O</command>
+	<command name="rm">intel</command>
+	<!--command name="load">intel/16.0.3.210</command-->
+	<command name="load">intel/17.0.0.098</command>
       </modules>
 
       <modules compiler="cray">
@@ -250,16 +260,145 @@
 	<command name="load">PrgEnv-gnu</command>
 	<command name="switch">gcc gcc/5.3.0</command>
       </modules>
+
+      <modules compiler="!intel">
+	<command name="rm">cray-libsci</command>
+	<command name="load">cray-libsci/16.06.1</command>
+      </modules>
+
+      <modules mpilib="mpi-serial">
+	<command name="load">cray-hdf5/1.8.16</command>
+	<command name="load">cray-netcdf/4.4.0</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+	<command name="load">cray-hdf5-parallel/1.8.16</command>
+	<command name="load">cray-parallel-netcdf/1.7.0</command>
+      </modules>
+
       <modules>
+	<command name="load">cmake/3.3.2</command>
+	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
-	<command name="swap">craype craype/2.5.5</command>
+	<command name="load">cray-petsc/3.7.0.0</command>
+      </modules>
+    </module_system>
+
+    <environment_variables>
+
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+
+    <!-- Where to put commands such as these? -->
+    <!-- module list >& software_environment.txt -->
+    <!-- env >>&  software_environment.txt -->
+    <!-- limit coredumpsize unlimited -->
+    <!-- limit stacksize unlimited -->
+    </environment_variables>
+</machine>
+
+<!-- Think of this as a stub entry.  Will have access and can test soon.  ndk -->
+<machine MACH="cori-knl">
+    <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
+    <NODENAME_REGEX>cori-knl-haswell-is-default</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
+    <COMPILERS>intel,gnu,cray</COMPILERS>
+    <MPILIBS>mpt,mpi-serial</MPILIBS>
+    <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
+    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+    <OS>CNL</OS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>acme</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
+    <PROJECT>acme</PROJECT>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="label"> --label</arg>
+	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
+        <!--NOTE: hard-coding -c 4 for now, which is only correct when using full node with no hyper-threading.  need updates from cime5.2 to fix.  (ndk) -->
+	<arg name="thread_count" > -c 2 </arg>
+	<arg name="binding" > --cpu_bind=cores</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/modules/default/init/perl</init_path>
+      <init_path lang="python">/opt/modules/default/init/python</init_path>
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="rm">PrgEnv-intel</command>
+	<command name="rm">PrgEnv-cray</command>
+	<command name="rm">PrgEnv-gnu</command>
+	<command name="rm">intel</command>
+	<command name="rm">cce</command>
+        <command name="rm">gcc</command>
+	<command name="rm">cray-parallel-netcdf</command>
+	<command name="rm">cray-parallel-hdf5</command>
+	<command name="rm">pmi</command>
+	<command name="rm">cray-libsci</command>
+	<command name="rm">cray-mpich2</command>
+	<command name="rm">cray-mpich</command>
+	<command name="rm">cray-netcdf</command>
+	<command name="rm">cray-hdf5</command>
+	<command name="rm">cray-netcdf-hdf5parallel</command>
+	<command name="rm">craype-sandybridge</command>
+	<command name="rm">craype-ivybridge</command>
+	<command name="rm">craype</command>
+	<command name="rm">cray-libsci</command>
+        <command name="rm">papi</command>
+        <command name="rm">cmake</command>
+        <command name="rm">cray-petsc</command>
+        <command name="rm">esmf</command>
+      </modules>
+
+      <modules>
+	<command name="rm">craype</command>
+	<command name="load">craype/2.5.5</command>
+	<command name="load">craype-mic-knl</command>
+
+	<command name="load">cray-mpich/7.4.0</command>
+      </modules>
+
+      <modules compiler="intel">
+	<command name="load">PrgEnv-intel</command>
+	<!--command name="switch">intel intel/16.0.3.210</command-->
+	<command name="switch">intel intel/17.0.0.098</command>
+      </modules>
+
+      <modules compiler="cray">
+	<command name="load">PrgEnv-cray</command>
+	<command name="switch">cce cce/8.5.0</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">PrgEnv-gnu</command>
+	<command name="switch">gcc gcc/5.3.0</command>
       </modules>
       <modules compiler="!intel">
 	<command name="switch">cray-libsci/16.06.1</command>
       </modules>
-      <modules>
-	<command name="load">cray-mpich/7.4.0</command>
-      </modules>
+
       <modules mpilib="mpi-serial">
 	<command name="load">cray-hdf5/1.8.16</command>
 	<command name="load">cray-netcdf/4.4.0</command>
@@ -271,8 +410,29 @@
       </modules>
       <modules>
 	<command name="load">cmake/3.3.2</command>
+	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
+	<command name="load">papi/5.4.3.2</command>
+	<command name="load">cray-petsc/3.7.0.0</command>
       </modules>
     </module_system>
+
+    <environment_variables>
+
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+
+   <!-- Where to put commands such as these? -->
+   <!-- module list >& software_environment.txt -->
+   <!-- env >>&  software_environment.txt -->
+   <!-- limit coredumpsize unlimited -->
+   <!-- limit stacksize unlimited -->
+
+    </environment_variables>
 </machine>
 
 
@@ -285,7 +445,8 @@
     <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
     <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/projects/acme/scratch/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CESMSCRATCHROOT>$ENV{HOME}/projects/acme/scratch</CESMSCRATCHROOT>
