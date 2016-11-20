@@ -43,13 +43,13 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("--dir", default=get_python_libs_root(),
-			help="The root directory containing python files to check.")
+                        help="The root directory containing python files to check.")
 
     parser.add_argument("-j", "--num-procs", type=int, default=8,
-			help="The number of files to check in parallel")
+                        help="The number of files to check in parallel")
 
     parser.add_argument("files", nargs="*",
-			help="Restrict checking to specific files. Relative name is fine.")
+                        help="Restrict checking to specific files. Relative name is fine.")
 
     args = parser.parse_args(args[1:])
 
@@ -66,30 +66,30 @@ def run_pylint(on_file):
     cimeroot = get_cime_root()
 
     if "scripts/Tools" in on_file:
-	cmd_options +=",relative-import"
+        cmd_options +=",relative-import"
 
     # add init-hook option
     cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\"))'"%\
-	(os.path.join(cimeroot,"utils","python"),
-	 os.path.join(cimeroot,"scripts","Tools"))
+        (os.path.join(cimeroot,"utils","python"),
+         os.path.join(cimeroot,"scripts","Tools"))
 
     cmd = "%s %s %s" % (pylint, cmd_options, on_file)
     logger.debug("pylint command is %s"%cmd)
     stat, out, err = run_cmd(cmd, verbose=False, from_dir=cimeroot)
     if stat != 0:
-	logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
-	logger.info(out + "\n" + err)
-	return False
+        logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
+        logger.info(out + "\n" + err)
+        return False
     else:
-	logger.info("File %s has no pylint problems" % on_file)
-	return True
+        logger.info("File %s has no pylint problems" % on_file)
+        return True
 
 ###############################################################################
 def matches(file_path, file_ends):
 ###############################################################################
     for file_end in file_ends:
-	if file_path.endswith(file_end):
-	    return True
+        if file_path.endswith(file_end):
+            return True
 
     return False
 
@@ -104,11 +104,11 @@ def check_code(dir_to_check, num_procs, files):
     # Get list of files to check
     files_to_check = run_cmd_no_fail('git ls-files --full-name %s' % dir_to_check, verbose=False).splitlines()
     if files:
-	files_to_check = [item for item in files_to_check if matches(item, files)]
+        files_to_check = [item for item in files_to_check if matches(item, files)]
     else:
-	files_to_check = [item for item in files_to_check if item.endswith(".py")]
+        files_to_check = [item for item in files_to_check if item.endswith(".py")]
     if len(files_to_check) == 0:
-	files_to_check = files
+        files_to_check = files
 
     pool = ThreadPool(num_procs)
     results = pool.map(run_pylint, files_to_check)
@@ -118,8 +118,8 @@ def check_code(dir_to_check, num_procs, files):
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-	test_results = doctest.testmod(verbose=True)
-	sys.exit(1 if test_results.failed > 0 else 0)
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
     pylint = find_executable("pylint")
     expect(pylint is not None, "pylint not found")

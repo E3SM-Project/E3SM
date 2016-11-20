@@ -1,5 +1,5 @@
 from CIME.XML.standard_module_setup import *
-from CIME.build.macroconditiontree import MacroConditionTree
+from CIME.BuildTools.macroconditiontree import MacroConditionTree
 
 logger = logging.getLogger(__name__)
 

@@ -63,14 +63,9 @@ In more detail:
 # pylint: disable=invalid-name,too-few-public-methods,unused-wildcard-import
 # pylint: disable=wildcard-import
 
-from CIME.macros_writers import *
-from CIME.utils import get_cime_root
 from CIME.XML.standard_module_setup import *
-
-__all__ = ["Build"]
-
-
-
+from CIME.BuildTools.valuesetting import ValueSetting
+from CIME.BuildTools.possiblevalues import PossibleValues
 
 class CompilerBlock(object):
 

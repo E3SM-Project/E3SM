@@ -159,7 +159,7 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
                 self._branches[cond_val].write_out(writer)
                 writer.end_ifeq()
 
-def _merge_optional_trees(tree, big_tree):
+def merge_optional_trees(tree, big_tree):
     """Merge two MacroConditionTrees when one or both objects may be `None`."""
     if tree is not None:
         if big_tree is None:
