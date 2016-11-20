@@ -5,15 +5,12 @@ import os
 import re
 import inspect
 
-## Important paths
-thisFile = os.path.realpath(inspect.getfile(inspect.currentframe()))
-currDir = os.path.dirname(thisFile)
-
 ## Regular expression for object file line
 objline = re.compile(r"^([A-Za-z0-9_-]+)[.]o[ ]+:([^:]+)$")
 modfile = re.compile(r"^([A-Za-z0-9_-]+)[.]mod$")
 
 def Usage ():
+  thisFile = os.path.realpath(inspect.getfile(inspect.currentframe()))
   print """
 Usage: %s <Depends file>
 
@@ -76,17 +73,27 @@ def findCircularDep(filename):
   return (len(badMods) == 0)
 # End def
 
-if len(sys.argv) == 2:
-  DepFile = os.path.abspath(sys.argv[1])
-else:
-  Usage()
-  sys.exit(1)
-# End if
+def main(filename):
+  DepFile = os.path.abspath(filename)
+  if (not os.path.exists(DepFile)):
+    print "ERROR: File '%s', does not exist"%filename
+    return 1
+  # End if
+  cleanTree = findCircularDep(DepFile)
+  if (cleanTree):
+    print "No circular dependencies found"
+    return 0
+  else:
+    return -1
+  # End if
+# End def
 
-cleanTree = findCircularDep(DepFile)
-if (cleanTree):
-  print "No circular dependencies found"
-  sys.exit(0)
-else:
-  sys.exit(-1)
+if __name__ == "__main__":
+  if len(sys.argv) == 2:
+    retcode = main(sys.argv[1])
+    exit(retcode)
+  else:
+    Usage()
+    sys.exit(1)
+  # End if
 # End if
