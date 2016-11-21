@@ -4,7 +4,6 @@ CIME HOMME test. This class inherits from SystemTestsCommon
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.build import post_build
-
 import shutil
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ class HOMME(SystemTestsCommon):
             mach     = self._case.get_value("MACH")
             procs    = self._case.get_value("TOTALPES")
             exeroot  = self._case.get_value("EXEROOT")
-            baseline = self._case.get_value("CCSM_BASELINE")
+            baseline = self._case.get_value("BASELINE_ROOT")
             basegen  = self._case.get_value("BASEGEN_CASE")
             basecmp  = self._case.get_value("BASECMP_CASE")
             generate = self._case.get_value("GENERATE_BASELINE")
