@@ -1023,22 +1023,22 @@
          </mpirun>
 </machine>
 
-<machine MACH="mustang">
-	<DESC>LANL Linux Cluster, 24 pes/node, batch system Moab</DESC>
-        <NODENAME_REGEX>mustang</NODENAME_REGEX>
+<machine MACH="grizzly">
+	<DESC>LANL Linux Cluster, 36 pes/node, batch system Moab</DESC>
+        <NODENAME_REGEX>grizzly</NODENAME_REGEX>
         <TESTS>acme_developer</TESTS>
-	<COMPILERS>intel,gnu</COMPILERS>
-	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
+	<COMPILERS>gnu</COMPILERS>
+	<MPILIBS>openmpi</MPILIBS>
 	<OS>LINUX</OS>
-	<RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
+	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
-	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/mustang/cprnc/v0.40/cprnc</CCSM_CPRNC>
+	<CCSM_BASELINE>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+	<CESMSCRATCHROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>
 	<BATCHREDIRECT></BATCHREDIRECT>
@@ -1053,28 +1053,24 @@
 		<executable>mpirun</executable>
 		<arguments>
 			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="map_option"> --map-by node</arg>
+			<arg name="bind_option"> --bind-to core</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
 			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="bind_option"> --bind-to core</arg>
+			<arg name="map_option"> --map-by node</arg>
 		</arguments>
-	</mpirun>
-	<mpirun mpilib="mvapich">
-		<executable>srun</executable>
-		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
-		</arguments>
-	</mpirun>
-	<mpirun mpilib="mpi-serial">
-		<executable></executable>
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
-	<MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
+	<MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+	<PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+	<SUPPORTED_BY>luke.vanroekel @ gmail.com</SUPPORTED_BY>
 </machine>
+
 
 <machine MACH="wolf">
 	<DESC>LANL Linux Cluster, 16 pes/node, batch system Moab</DESC>
@@ -1083,14 +1079,14 @@
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
 	<OS>LINUX</OS>
-	<RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
+	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+	<CCSM_BASELINE>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+	<CESMSCRATCHROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>

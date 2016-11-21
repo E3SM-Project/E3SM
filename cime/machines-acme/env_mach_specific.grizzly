@@ -1,0 +1,30 @@
+#! /bin/csh -f
+
+#-------------------------------------------------------------------------------
+# Modules and library paths
+#-------------------------------------------------------------------------------
+source /etc/profile.d/z00_lmod.csh
+module purge
+module use /usr/projects/climate/SHARED_CLIMATE/modulefiles/all
+
+if ( $COMPILER == "gnu" ) then
+	module load gcc/5.3.0
+endif
+
+if ( $MPILIB == "openmpi" ) then
+	module load openmpi/1.10.3
+endif
+
+
+module load netcdf/4.4.1
+module load parallel-netcdf/1.5.0
+module load cmake/3.5.2
+
+#if ( $COMPILER == "gnu" && $MPILIB == "openmpi" ) then
+#        module load trilinos
+#        module load albany
+#endif
+
+if ( $?PERL ) then
+	printenv
+endif

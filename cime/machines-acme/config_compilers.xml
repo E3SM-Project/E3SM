@@ -1093,48 +1093,6 @@ for mct, etc.
   <TRILINOS_PATH>/project/projectdirs/ccsm1/Trilinos/trilinos-10.12.2/hopper-gnu/install</TRILINOS_PATH>
 </compiler>
 
-<compiler MACH="mustang" COMPILER="pgi">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>pgfortran</SFC>
-	<SCC>pgcc</SCC>
-	<SCXX>pgc++</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="mustang" COMPILER="intel">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>ifort</SFC>
-	<SCC>icc</SCC>
-	<SCXX>icpc</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-<compiler MACH="mustang" COMPILER="gnu">
-	<MPICC>mpicc</MPICC>
-	<MPIFC>mpif90</MPIFC>
-	<MPICXX>mpic++</MPICXX>
-	<SFC>gfortran</SFC>
-	<SCC>gcc</SCC>
-	<SCXX>g++</SCXX>
-	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
-        <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
-	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
-</compiler>
-
 <compiler MACH="wolf" COMPILER="pgi">
 	<MPICC>mpicc</MPICC>
 	<MPIFC>mpif90</MPIFC>
@@ -1176,6 +1134,18 @@ for mct, etc.
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
 	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
+
+<compiler MACH="grizzly" COMPILER="gnu">
+	<MPICC>mpicc</MPICC>
+	<MPIFC>mpif90</MPIFC>
+	<MPICXX>mpic++</MPICXX>
+	<SFC>gfortran</SFC>
+	<SCC>gcc</SCC>
+	<SCXX>g++</SCXX>
+	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+        <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+</compiler>
+
 
 <compiler COMPILER="intel" MACH="lawrencium-lr2">
 	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
