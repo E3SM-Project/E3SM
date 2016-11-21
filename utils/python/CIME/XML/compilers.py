@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Compilers(GenericXML):
 
-    def __init__(self, compiler=None, machine=None, os_= None, mpilib=None, infile=None, files=None):
+    def __init__(self, machobj, infile=None, compiler=None, mpilib=None, files=None):
         """
         initialize an object
         """
@@ -24,11 +24,16 @@ class Compilers(GenericXML):
         GenericXML.__init__(self, infile, schema)
         self._version = self.get_version()
 
-        self.machine        = machine
-        self.os             = os_
-        self.mpilib         = mpilib
-        self.compiler_nodes = None # Listed from last to first
+        self.machine        = machobj.get_machine_name()
+        self.os             = machobj.get_value("OS")
+        if mpilib is None:
+            mpilib         = machobj.get_default_MPIlib()
+        self.mpilib = mpilib
+        if compiler is None:
+            compiler = machobj.get_default_compiler()
         self.compiler       = compiler
+
+        self.compiler_nodes = None # Listed from last to first
         #Append the contents of $HOME/.cime/config_compilers.xml if it exists
         #This could cause problems if node matchs are repeated when only one is expected
         infile = os.path.join(os.environ.get("HOME"),".cime","config_compilers.xml")
@@ -133,12 +138,16 @@ class Compilers(GenericXML):
             # Do worst matches first
             for compiler_node in reversed(self.compiler_nodes):
                 _add_to_macros(compiler_node, macros)
-            return write_macros_file_v1(macros, self.compiler, self.os,
+            write_macros_file_v1(macros, self.compiler, self.os,
                                         self.machine, macros_file,
                                         output_format)
         else:
-            expect(False, "Need to fix this")
-#            return write_macros_file_v2(macros_file, output_format)
+            if output_format == "make":
+                format = "Makefile"
+            elif output_format == "cmake":
+                format = "CMake"
+            with open(macros_file, "w") as macros:
+                write_macros_file_v2(format, self._root, macros)
 
 def _add_to_macros(node, macros):
     for child in node:

@@ -137,7 +137,7 @@ ifeq (,$(SHAREDPATH))
 endif
 INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 
-include $(CASEROOT)/Macros
+include $(CASEROOT)/Macros.make
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), true)
