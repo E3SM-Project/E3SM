@@ -43,18 +43,11 @@
 
   <entry id="COMPILERS_SPEC_FILE">
     <type>char</type>
-    <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_compilers.xml</default_value>
-    <group>case_last</group>
-    <file>env_case.xml</file>
-    <desc>file containing compiler specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="BUILD_SPEC_FILE">
-    <type>char</type>
     <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_build.xml</default_value>
     <group>case_last</group>
     <file>env_case.xml</file>
-    <desc>file containing build specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
+    <desc>file containing compiler specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_build.xsd</schema>
   </entry>
 
   <entry id="PIO_SPEC_FILE">
@@ -332,4 +325,3 @@
   </entry>
 
 </entry_id>
-

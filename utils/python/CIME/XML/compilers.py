@@ -5,7 +5,11 @@ Interface to the config_compilers.xml file.  This class inherits from GenericXML
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.BuildTools.macrowriterbase import write_macros_file_v1 #write_macros_file_v2
+from CIME.XML.compilerblock import CompilerBlock
+from CIME.BuildTools.macrowriterbase import write_macros_file_v1
+from CIME.BuildTools.makemacroswriter import MakeMacroWriter
+from CIME.BuildTools.cmakemacroswriter import CMakeMacroWriter
+from CIME.BuildTools.macroconditiontree import merge_optional_trees
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +26,13 @@ class Compilers(GenericXML):
             schema = files.get_schema("COMPILERS_SPEC_FILE")
 
         GenericXML.__init__(self, infile, schema)
+        self._machobj = machobj
         self._version = self.get_version()
 
-        self.machine        = machobj.get_machine_name()
-        self.os             = machobj.get_value("OS")
+        self.machine  = machobj.get_machine_name()
+        self.os = machobj.get_value("OS")
         if mpilib is None:
-            mpilib         = machobj.get_default_MPIlib()
+            mpilib = machobj.get_default_MPIlib()
         self.mpilib = mpilib
         if compiler is None:
             compiler = machobj.get_default_compiler()
@@ -80,10 +85,10 @@ class Compilers(GenericXML):
     def set_compiler(self, compiler, machine=None, os_=None, mpilib=None):
         """
         Sets the compiler block in the Compilers object
-
-        >>> machobj = Compilers(machine="melvin")
-        >>> machobj.set_compiler("gnu")
-        >>> machobj.get_compiler()
+        >>> from CIME.XML.machines import Machines
+        >>> compobj = Compilers(Machines(machine="melvin"))
+        >>> compobj.set_compiler("gnu")
+        >>> compobj.get_compiler()
         'gnu'
         """
         machine = machine if machine else self.machine
@@ -147,7 +152,70 @@ class Compilers(GenericXML):
             elif output_format == "cmake":
                 format = "CMake"
             with open(macros_file, "w") as macros:
-                write_macros_file_v2(format, self._root, macros)
+                self._write_macros_file_v2(format, macros)
+
+    def _write_macros_file_v2(self, build_system, output):
+        """Write a Macros file for this machine.
+
+        Arguments:
+        build_system - Format of the file to be written. Currently the only
+                       valid values are "Makefile" and "CMake".
+        output - Text I/O object (inheriting from io.TextIOBase) that
+                 output should be written to. Typically, this will be the
+                 Macros file, opened for writing.
+        """
+        # Set up writer for this build system.
+        if build_system == "Makefile":
+            writer = MakeMacroWriter(output)
+        elif build_system == "CMake":
+            writer = CMakeMacroWriter(output)
+        else:
+            expect(False,
+                   "Unrecognized build system provided to write_macros: " +
+                   build_system)
+
+        # Start processing the file.
+        value_lists = dict()
+        for compiler_elem in self.get_nodes("compiler"):
+            block = CompilerBlock(writer, compiler_elem, self._machobj)
+            # If this block matches machine settings, use it.
+            if block.matches_machine():
+                block.add_settings_to_lists(self.flag_vars, value_lists)
+
+        # Now that we've scanned through the input, output the variable
+        # settings.
+        vars_written = set()
+        while value_lists:
+            # Variables that are ready to be written.
+            ready_variables = [
+                var_name for var_name in value_lists.keys()
+                if value_lists[var_name].depends <= vars_written
+            ]
+            expect(len(ready_variables) > 0,
+                   "The config_build XML has bad <var> references. "
+                   "Check for circular references or variables that "
+                   "are in a <var> tag but not actually defined.")
+            big_normal_tree = None
+            big_append_tree = None
+            for var_name in ready_variables:
+                # Note that we're writing this variable.
+                vars_written.add(var_name)
+                # Make the conditional trees and write them out.
+                normal_tree, append_tree = \
+                    value_lists[var_name].to_cond_trees()
+                big_normal_tree = merge_optional_trees(normal_tree,
+                                                        big_normal_tree)
+                big_append_tree = merge_optional_trees(append_tree,
+                                                        big_append_tree)
+                # Remove this variable from the list of variables to handle
+                # next iteration.
+                del value_lists[var_name]
+            if big_normal_tree is not None:
+                big_normal_tree.write_out(writer)
+            if big_append_tree is not None:
+                big_append_tree.write_out(writer)
+
+
 
 def _add_to_macros(node, macros):
     for child in node:
