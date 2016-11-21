@@ -342,6 +342,7 @@ module cesm_comp_mod
    logical  :: atm_c2_wav             ! .true.  => atm to wav coupling on
    logical  :: lnd_c2_atm             ! .true.  => lnd to atm coupling on
    logical  :: lnd_c2_rof             ! .true.  => lnd to rof coupling on
+   logical  :: ocn_c2_rof             ! .true.  => lnd to rof coupling on   
    logical  :: lnd_c2_glc             ! .true.  => lnd to glc coupling on
    logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
    logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
@@ -1344,6 +1345,7 @@ subroutine cesm_init()
    atm_c2_wav = .false.
    lnd_c2_atm = .false.
    lnd_c2_rof = .false.
+   ocn_c2_rof = .false.
    lnd_c2_glc = .false.
    ocn_c2_atm = .false.
    ocn_c2_ice = .false.
@@ -1376,6 +1378,7 @@ subroutine cesm_init()
       if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
       if (ice_prognostic) ocn_c2_ice = .true.
       if (wav_prognostic) ocn_c2_wav = .true.
+      if (rof_prognostic) ocn_c2_rof = .true.
    endif
    if (ice_present) then
       if (atm_prognostic) ice_c2_atm = .true.
@@ -1583,7 +1586,7 @@ subroutine cesm_init()
 
       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, rof_c2_ice )
 
-      call prep_rof_init(infodata, lnd_c2_rof)
+      call prep_rof_init(infodata, lnd_c2_rof,ocn_c2_rof)
 
       call prep_glc_init(infodata, lnd_c2_glc)
 
@@ -2512,6 +2515,10 @@ end subroutine cesm_init
 
             if (lnd_c2_rof) then
                call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
+            endif
+	    
+            if (ocn_c2_rof) then
+               call prep_rof_calc_o2r_rx(fractions_ox, timer='CPL:rofprep_lnd2rof')
             endif
 
             call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r')

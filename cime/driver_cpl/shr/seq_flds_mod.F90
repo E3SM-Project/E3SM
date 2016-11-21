@@ -1432,6 +1432,14 @@ module seq_flds_mod
      attname  = 'So_fswpen'
      call metadata_set(attname, longname, stdname, units)
 
+     call seq_flds_add(o2x_fluxes, "Floo_qice")
+     call seq_flds_add(x2r_fluxes, "Floo_qice")
+     longname = 'Subshelf melt flux (for runoff correction)'
+     stdname  = 'Subshelf_melt_flux'
+     units    = 'kg m-2 s-1'
+     attname  = 'Floo_qice'
+     call metadata_set(attname, longname, stdname, units)
+
      !------------------------------
      ! ice<->ocn only exchange - BGC
      !------------------------------
@@ -2360,14 +2368,6 @@ module seq_flds_mod
         stdname  = 'surface_upward_flux_of_dimethyl_sulfide'
         units    = 'moles m-2 s-1'
         attname  = 'Faoo_fdms'
-        call metadata_set(attname, longname, stdname, units)
-        
-	call seq_flds_add(o2x_fluxes, "Floo_qice")
-	call seq_flds_add(x2r_fluxes, "Floo_qice")	
-        longname = 'Subshelf melt flux (for runoff correction)'
-        stdname  = 'Subshelf_melt_flux'
-        units    = 'kg m-2 s-1'
-        attname  = 'Floo_qice'
         call metadata_set(attname, longname, stdname, units)
 	
         call seq_flds_add(l2x_fluxes, "Fall_fco2_lnd")
