@@ -15,7 +15,7 @@ from CIME.utils import run_cmd, run_cmd_no_fail, get_lids, get_current_commit
 import update_acme_tests
 import CIME.test_scheduler, CIME.wait_for_tests
 from  CIME.test_scheduler import TestScheduler
-from  CIME.XML.build import Build
+from  CIME.XML.compilers import Compilers
 from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
@@ -1252,6 +1252,12 @@ class MockMachines(object):
         """Assume all MPILIB settings are valid."""
         return True
 
+    def get_default_MPIlib(self):
+        return "mpich2"
+
+    def get_default_compiler(self):
+        return "intel"
+
 
 def get_macros(macro_maker, build_xml, build_system):
     """Generate build system ("Macros" file) output from config_build XML.
@@ -1267,7 +1273,12 @@ def get_macros(macro_maker, build_xml, build_system):
     # we need to wrap the strings in StringIO objects.
     xml = io.StringIO(unicode(build_xml))
     output = io.StringIO()
-    macro_maker.write_macros(build_system, xml, output)
+    if build_system == "Makefile":
+        output_format = "make"
+    else:
+        output_format = "cmake"
+    macro_maker.write_macros_file(macros_file=output,
+                                  output_format=output_format, xml=xml)
     return str(output.getvalue())
 
 
@@ -1488,19 +1499,19 @@ class G_TestMacrosBasic(unittest.TestCase):
     def test_script_is_callable(self):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
-        maker = Build(MockMachines("mymachine", "SomeOS"))
+        maker = Compilers(MockMachines("mymachine", "SomeOS"))
         test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
         """The macro writer rejects input that's not valid XML."""
-        maker = Build(MockMachines("mymachine", "SomeOS"))
+        maker = Compilers(MockMachines("mymachine", "SomeOS"))
         with self.assertRaises(ParseError):
             get_macros(maker, "This is not valid XML.", "Makefile")
 
     def test_script_rejects_bad_build_system(self):
         """The macro writer rejects a bad build system string."""
-        maker = Build(MockMachines("mymachine", "SomeOS"))
+        maker = Compilers(MockMachines("mymachine", "SomeOS"))
         bad_string = "argle-bargle."
         with self.assertRaisesRegexp(
                 SystemExit,
@@ -1524,7 +1535,7 @@ class H_TestMakeMacros(unittest.TestCase):
     test_machine = "mymachine"
 
     def setUp(self):
-        self._maker = Build(MockMachines(self.test_machine, self.test_os))
+        self._maker = Compilers(MockMachines(self.test_machine, self.test_os))
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""

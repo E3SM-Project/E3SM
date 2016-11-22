@@ -19,9 +19,7 @@ import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect
 from CIME.XML.compilers import Compilers
-from CIME.XML.files import Files
 from CIME.XML.env_mach_specific import EnvMachSpecific
-from CIME.XML.machines import Machines
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +43,8 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos
         macro_maker.write_macros_file(macros_file=out_file_name, output_format=suffixes[form])
 
     _copy_depends_files(machobj.get_machine_name(), machobj.machines_dir, output_dir, compiler)
-    _generate_env_mach_specific(output_dir, compiler, mpilib, debug, sysos)
+    _generate_env_mach_specific(output_dir, machobj, compiler, mpilib,
+                                debug, sysos)
 
 def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     """
@@ -61,7 +60,7 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
         shutil.copyfile(dfile, outputdfile)
 
-def _generate_env_mach_specific(output_dir, compiler, mpilib, debug, sysos):
+def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug, sysos):
     """
     env_mach_specific generation.
     """

@@ -133,7 +133,7 @@ class Compilers(GenericXML):
 
         return value
 
-    def write_macros_file(self, macros_file="Macros", output_format="make"):
+    def write_macros_file(self, macros_file="Macros", output_format="make", xml=None):
         if self._version == "1.0":
             # Parse the xml settings into the $macros hash structure
             # put conditional settings in the _COND_ portion of the hash
@@ -148,13 +148,16 @@ class Compilers(GenericXML):
                                         output_format)
         else:
             if output_format == "make":
-                format = "Makefile"
+                format_ = "Makefile"
             elif output_format == "cmake":
-                format = "CMake"
+                format_ = "CMake"
+        if isinstance(macros_file, basestring):
             with open(macros_file, "w") as macros:
-                self._write_macros_file_v2(format, macros)
+                self._write_macros_file_v2(format_, macros)
+        else:
+            self._write_macros_file_v2(format_, macros_file, xml)
 
-    def _write_macros_file_v2(self, build_system, output):
+    def _write_macros_file_v2(self, build_system, output, xml=None):
         """Write a Macros file for this machine.
 
         Arguments:
@@ -176,12 +179,15 @@ class Compilers(GenericXML):
 
         # Start processing the file.
         value_lists = dict()
+        if xml is None:
+            node_list = self.get_nodes("compiler")
+        else:
+            node_list = ET.parse(xml).findall("compiler")
         for compiler_elem in self.get_nodes("compiler"):
             block = CompilerBlock(writer, compiler_elem, self._machobj)
             # If this block matches machine settings, use it.
             if block.matches_machine():
                 block.add_settings_to_lists(self.flag_vars, value_lists)
-
         # Now that we've scanned through the input, output the variable
         # settings.
         vars_written = set()
