@@ -297,7 +297,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
-    <mach name="titan|stampede|bluewaters|edison|eos|corip1">
+    <mach name="titan|stampede|bluewaters|edison|eos|cori-haswell">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -371,7 +371,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
-    <mach name="titan|stampede|bluewaters|edison|eos|corip1">
+    <mach name="titan|stampede|bluewaters|edison|eos|cori-haswell">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -5512,7 +5512,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="corip1">
+    <mach name="cori-haswell">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -5660,7 +5660,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4_l%ne120np4_oi%oRRS15to5_r%r0.+_m%oRRS15to5_g%null_w%null">
-    <mach name="titan|edison|corip1">
+    <mach name="titan|edison|cori-haswell">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -5697,7 +5697,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4_l%ne120np4_oi%oRRS18to6_r%r0.+_m%oRRS18to6_g%null_w%null">
-    <mach name="titan|edison|corip1">
+    <mach name="titan|edison|cori-haswell">
       <pes compset="CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -5845,7 +5845,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="edison|corip1">
+    <mach name="edison|cori-haswell">
       <pes compset="any" pesize="T">
         <comment>none</comment>
         <ntasks>
