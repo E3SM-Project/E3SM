@@ -77,7 +77,7 @@
     </mach>
   </grid>
   <grid name="a%1.9x2.5.+l%1.9x2.5.+oi%gx1">
-    <mach name="corip1">
+    <mach name="cori-haswell">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -1072,7 +1072,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
-    <mach name='corip1'>
+    <mach name='cori-haswell'>
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -1523,14 +1523,14 @@
       <pes pesize="any" compset="CAM.+CLM.+CICE.+DOCN%SOM">
 	<comment>none</comment>
 	<ntasks>
-	  <ntasks_atm>192</ntasks_atm>
-	  <ntasks_lnd>192</ntasks_lnd>
-	  <ntasks_rof>192</ntasks_rof>
-	  <ntasks_ice>192</ntasks_ice>
-	  <ntasks_ocn>192</ntasks_ocn>
-	  <ntasks_glc>192</ntasks_glc>
-	  <ntasks_wav>192</ntasks_wav>
-	  <ntasks_cpl>192</ntasks_cpl>
+	  <ntasks_atm>96</ntasks_atm>
+	  <ntasks_lnd>96</ntasks_lnd>
+	  <ntasks_rof>96</ntasks_rof>
+	  <ntasks_ice>96</ntasks_ice>
+	  <ntasks_ocn>96</ntasks_ocn>
+	  <ntasks_glc>96</ntasks_glc>
+	  <ntasks_wav>96</ntasks_wav>
+	  <ntasks_cpl>96</ntasks_cpl>
 	</ntasks>
 	<nthrds>
 	  <nthrds_atm>4</nthrds_atm>
