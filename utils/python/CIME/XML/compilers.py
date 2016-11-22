@@ -151,11 +151,14 @@ class Compilers(GenericXML):
                 format_ = "Makefile"
             elif output_format == "cmake":
                 format_ = "CMake"
-        if isinstance(macros_file, basestring):
-            with open(macros_file, "w") as macros:
-                self._write_macros_file_v2(format_, macros)
-        else:
-            self._write_macros_file_v2(format_, macros_file, xml)
+            else:
+                format_ = output_format
+            
+            if isinstance(macros_file, basestring):
+                with open(macros_file, "w") as macros:
+                    self._write_macros_file_v2(format_, macros)
+            else:
+                self._write_macros_file_v2(format_, macros_file, xml)
 
     def _write_macros_file_v2(self, build_system, output, xml=None):
         """Write a Macros file for this machine.
@@ -179,11 +182,13 @@ class Compilers(GenericXML):
 
         # Start processing the file.
         value_lists = dict()
+        node_list = []
         if xml is None:
             node_list = self.get_nodes("compiler")
         else:
             node_list = ET.parse(xml).findall("compiler")
-        for compiler_elem in self.get_nodes("compiler"):
+
+        for compiler_elem in node_list:
             block = CompilerBlock(writer, compiler_elem, self._machobj)
             # If this block matches machine settings, use it.
             if block.matches_machine():

@@ -1273,10 +1273,14 @@ def get_macros(macro_maker, build_xml, build_system):
     # we need to wrap the strings in StringIO objects.
     xml = io.StringIO(unicode(build_xml))
     output = io.StringIO()
+    output_format = None
     if build_system == "Makefile":
         output_format = "make"
-    else:
+    elif build_system == "CMake":
         output_format = "cmake"
+    else:
+        output_format = build_system
+
     macro_maker.write_macros_file(macros_file=output,
                                   output_format=output_format, xml=xml)
     return str(output.getvalue())
