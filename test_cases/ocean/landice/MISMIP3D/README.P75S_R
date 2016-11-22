@@ -9,6 +9,12 @@ mkdir P75S
 # run set up script from the directory where you plan to run P75R.
 ./setup_mismip3d_perturb_domain.py -f P75S.nc -o ../output_09500.nc -r ../restart_09800.nc -p 75 
 
+# Note there is some unresolved strange behavior with this script, I think when 
+# the restart file as multiple  time levels in it, but a workaround is to use 
+# ncks to pull out the final time level and/or run the script once with the 
+# restart file included and once without it.
+
+
 # Finally, set up graph.info, namelist, and streams files as desired.
 # These are set up by the test case here: full_width/Stnd/P75
 

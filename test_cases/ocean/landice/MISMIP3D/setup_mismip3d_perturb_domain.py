@@ -32,7 +32,7 @@ if not options.filename:
 if not options.outfilename:
    sys.exit('ERROR: outfile required.')
 if not options.restartfilename:
-   sys.exit('ERROR: restartfile required.')
+   print 'WARNING: No restart file specified.  So uReconstructX will not be written.'
 if not options.perturb:
    sys.exit('ERROR: Perturbation amount required.  Specify with -p')
 
@@ -50,12 +50,14 @@ stndfilename = "stnd_final.nc"
 os.system("ncks -O -d Time,-1 " + options.outfilename  + " " + stndfilename)
 
 # Optionally add in the x-velo from the ~final time to help solver on first velo solve
-os.system("ncks -A -v uReconstructX " + options.restartfilename + " " + stndfilename)
+if options.restartfilename:
+   os.system("ncks -A -v uReconstructX " + options.restartfilename + " " + stndfilename)
 
 
 # Open the Stnd output and get the needed info
 fstnd = Dataset(stndfilename, 'r')
 thicknessStnd = fstnd.variables['thickness'][-1,:]
+haveVelo = False
 if 'uReconstructX' in fstnd.variables:
   haveVelo = True
   uXStnd = fstnd.variables['uReconstructX'][-1,:,:]
@@ -173,6 +175,8 @@ else:
            np.logical_and( 
               (edgeMaskStnd[:] & GLbit) / GLbit == 1,
               xEdgeStnd > 0.0) ) [0]
+   print "GL indices east:", GLindEast
+   print "at positions:", yEdgeStnd[GLindEast]
    if len(GLindEast) != 5:
        sys.exit("ERROR: East: There are not 5 unique yEdge GL values in the Stnd file but this appears to be a minimal width domain.")
    # Note that the topmost and bottommost edge positions are effectively outside the domain,
