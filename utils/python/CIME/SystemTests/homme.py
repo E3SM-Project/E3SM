@@ -59,3 +59,12 @@ class HOMME(SystemTestsCommon):
             run_cmd_no_fail("make -j 4 check >& %s" % log, from_dir=exeroot)
         else:
             run_cmd_no_fail("make -j 4 baseline >& %s" % log, from_dir=exeroot)
+
+    # Homme is a bit of an oddball test since it's not really running the ACME model
+    # We need to override some methods to make the core infrastructure work.
+
+    def _generate_baseline(self):
+        pass
+
+    def _compare_baseline(self):
+        pass
