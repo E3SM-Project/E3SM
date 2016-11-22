@@ -1881,7 +1881,6 @@ DOCN%COPY => docn copy mode
 <ATM_NCPL compset="_MPASO"             >  1</ATM_NCPL>  
 
 <ATM_NCPL compset=".+" grid="a%0.23x0.31">96</ATM_NCPL>
-<ATM_NCPL compset=".+" grid="a%ne4np4"   >12</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne11np4"  >12</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne60np4"  >96</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne120np4" >96</ATM_NCPL>
@@ -1917,7 +1916,6 @@ DOCN%COPY => docn copy mode
 <CPL_SEQ_OPTION compset="_MPASCICE.*_MPASO"         >RASM_OPTION1</CPL_SEQ_OPTION>
 
 <ROF_NCPL compset=".+"  >8</ROF_NCPL> 
-<ROF_NCPL compset=".+" grid="a%ne4np4"      >6</ROF_NCPL>
 <ROF_NCPL compset=".+" grid="a%ne11np4"     >6</ROF_NCPL>
 <ROF_NCPL compset="_DATM.*_POP2"            >$ATM_NCPL</ROF_NCPL>
 <ROF_NCPL compset="_DATM.*_MPASO"           >$ATM_NCPL</ROF_NCPL>
@@ -1989,6 +1987,16 @@ DOCN%COPY => docn copy mode
 <OCN_NCPL compset="_CAM.*_CLM.*MPASO" grid="oi%oRRS15to5">96</OCN_NCPL>
 <GLC_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">1</GLC_NCPL>
 <ROF_NCPL compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">8</ROF_NCPL>
+
+<!-- coupler intervals for ne4np4 grids -->
+<NCPL_BASE_PERIOD compset=".+" grid="a%ne4np4">day  </NCPL_BASE_PERIOD>
+<ATM_NCPL compset=".+" grid="a%ne4np4">12</ATM_NCPL>
+<LND_NCPL compset=".+" grid="a%ne4np4">$ATM_NCPL</LND_NCPL>
+<ICE_NCPL compset=".+" grid="a%ne4np4">$ATM_NCPL</ICE_NCPL>
+<OCN_NCPL compset=".+" grid="a%ne4np4">$ATM_NCPL</OCN_NCPL>
+<ROF_NCPL compset=".+" grid="a%ne4np4">6</ROF_NCPL>
+<GLC_NCPL compset=".+" grid="a%ne4np4">1</GLC_NCPL>
+<WAV_NCPL compset=".+" grid="a%ne4np4">$ATM_NCPL</WAV_NCPL>
 
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
