@@ -40,7 +40,7 @@ class HOMME(SystemTestsCommon):
 
         rundir   = self._case.get_value("RUNDIR")
         exeroot  = self._case.get_value("EXEROOT")
-        baseline = self._case.get_value("CCSM_BASELINE")
+        baseline = self._case.get_value("BASELINE_ROOT")
         compare  = self._case.get_value("COMPARE_BASELINE")
         generate = self._case.get_value("GENERATE_BASELINE")
         basegen  = self._case.get_value("BASEGEN_CASE")
