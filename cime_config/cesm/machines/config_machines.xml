@@ -292,7 +292,7 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="corip1">
+  <machine MACH="cori-haswell">
     <DESC>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is Slurm</DESC>
     <NODENAME_REGEX>cori</NODENAME_REGEX>
     <COMPILERS>intel,gnu,cray</COMPILERS>

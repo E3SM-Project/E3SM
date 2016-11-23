@@ -18,7 +18,7 @@ def _get_batch_job_id_for_syslog(case):
     mach = case.get_value("MACH")
     if mach == 'titan':
         return os.environ["PBS_JOBID"]
-    elif mach in ['edison', 'corip1', 'cori-haswell', 'cori-knl']:
+    elif mach in ['edison', 'cori-haswell', 'cori-knl']:
         return os.environ["SLURM_JOB_ID"]
     elif mach == 'mira':
         return os.environ["COBALT_JOBID"]
@@ -118,7 +118,7 @@ def save_prerun_provenance_acme(case, lid=None):
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
-    elif mach in ["edison", "corip1", "cori-haswell", "cori-knl"]:
+    elif mach in ["edison", "cori-haswell", "cori-knl"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
@@ -248,7 +248,7 @@ def save_postrun_provenance_acme(case, lid):
     elif mach == "mira":
         globs_to_copy.append("%s*output" % job_id)
         globs_to_copy.append("%s*cobaltlog" % job_id)
-    elif mach in ["edison", "corip1", "cori-haswell", "cori-knl"]:
+    elif mach in ["edison", "cori-haswell", "cori-knl"]:
         globs_to_copy.append("%s" % case.get_value("CASE"))
 
     globs_to_copy.append("logs/acme.log.%s.gz" % lid)

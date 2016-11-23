@@ -529,6 +529,45 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="cori-haswell" COMPILER="intel">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CFLAGS>
+    <append> -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -xCORE-AVX2 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -mkl -lpthread -lm </append>
+  </SLIBS>
+    <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+ 
+</compiler>
+
+
+<compiler MACH="cori-knl" COMPILER="intel">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CFLAGS>
+    <append> -xMIC-AVX512 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -xMIC-AVX512 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -mkl -lpthread -lm </append>
+  </SLIBS>
+    <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC xs</append>
+  </CPPDEFS> 
+</compiler>
+
+
 <compiler MACH="eastwind" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
