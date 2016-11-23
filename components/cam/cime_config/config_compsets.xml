@@ -516,6 +516,7 @@
 
     <entry id="RUN_STARTDATE"> 
       <values>
+	<value  compset="20TR_CAM">1850-01-01</value> 
 	<value  compset="AMIP_CAM">1979-01-01</value> 
 	<value  compset="HIST_CAM">1850-01-01</value> 
 	<value  compset="PIPD_CAM">1850-01-01</value> 
