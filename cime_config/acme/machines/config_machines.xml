@@ -209,8 +209,7 @@
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
         <!--NOTE: hard-coding -c 2 for now, which is only correct when using full node with no hyper-threading.  need updates from cime5.2 to fix.  (ndk) -->
-	<!--arg name="thread_count" > -c 2 </arg-->
-	<arg name="thread_count" > -c {{ tasks_per_node }} </arg>
+	<arg name="thread_count" > -c 2 </arg>
 	<!--arg name="binding" > dash-dash-cpu_bind=cores</arg-->
       </arguments>
     </mpirun>
@@ -346,8 +345,7 @@
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
         <!--NOTE: hard-coding -c 4 for now, which is only correct when using full node with no hyper-threading.  need updates from cime5.2 to fix.  (ndk) -->
-	<!--arg name="thread_count" > -c 4 </arg-->
-	<arg name="thread_count" > -c {{ tasks_per_node }} </arg>
+	<arg name="thread_count" > -c 4 </arg>
 	<!--arg name="binding" > dash-dash-cpu_bind=cores</arg-->
       </arguments>
     </mpirun>
