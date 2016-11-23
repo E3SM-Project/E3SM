@@ -9,11 +9,11 @@
 !
 !  cice_analysis_driver
 !
-!> \brief Driver for MPAS sea ice analysis core
-!> \author MPAS-Ocean/CICE development team
+!> \brief Driver for MPAS ocean analysis core
+!> \author Mark Petersen
 !> \date   November 2013
 !> \details
-!>  This is the driver for the MPAS sea-ice core.
+!>  This is the driver for the MPAS ocean core.
 !
 !-----------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ module cice_analysis_driver
    use cice_pointwise_stats
    use cice_unit_conversion
    use cice_ice_shelves
-!   use cice_TEMP_LATE
+!   use cice_TEM_PLATE
 
    implicit none
    private
@@ -75,15 +75,23 @@ module cice_analysis_driver
    !
    !--------------------------------------------------------------------
 
+
    character (len=*), parameter :: initReadTimerPrefix = 'init_read_'
    character (len=*), parameter :: initTimerPrefix = 'init_'
-   character (len=*), parameter :: computeTimerPrefix = 'compute_'
    character (len=*), parameter :: precomputeTimerPrefix = 'precompute_'
+   character (len=*), parameter :: computeTimerPrefix = 'compute_'
+   character (len=*), parameter :: computeStartupTimerPrefix = 'compute_startup_'
    character (len=*), parameter :: writeTimerPrefix = 'write_'
    character (len=*), parameter :: alarmTimerPrefix = 'reset_alarm_'
    character (len=*), parameter :: restartTimerPrefix = 'restart_'
    character (len=*), parameter :: finalizeTimerPrefix = 'finalize_'
    character (len=*), parameter :: computeAlarmSuffix = 'CMPALRM'
+
+   character (len=StrKIND), parameter :: timeSeriesDailyTAG = 'Daily'
+   character (len=StrKIND), parameter :: timeSeriesMonthlyTAG = 'Monthly'
+   character (len=StrKIND), parameter :: timeSeriesClimatologyTAG = 'Climatology'
+   character (len=StrKIND), parameter :: timeSeriesCustomTAG = 'Custom'
+
    type (mpas_pool_type), pointer :: analysisMemberList
 
 !***********************************************************************
@@ -94,16 +102,16 @@ contains
 !
 !  routine cice_analysis_setup_packages
 !
-!> \brief   Setup packages for MPAS-CICE analysis driver
-!> \author  MPAS-Ocean/CICE development team
+!> \brief   Setup packages for MPAS-Ocean analysis driver
+!> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine is intended to configure the packages for all
-!>   sea-ice analysis members.
+!>   ocean analysis members.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_analysis_setup_packages(configPool, packagePool, err)!{{{
+   subroutine cice_analysis_setup_packages(configPool, packagePool, iocontext, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -111,8 +119,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
+      type (mpas_pool_type), intent(inout) :: configPool
+      type (mpas_pool_type), intent(inout) :: packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
 
       !-----------------------------------------------------------------
       !
@@ -163,9 +172,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsClimatology', 1)
-   !   write(6,*) ' debug:  mpas_pool_add_config'
-   !  call mpas_pool_add_config(analysisMemberList, 'surfaceAreaWeightedAverages', 1)
-   !  call mpas_pool_add_config(analysisMemberList, 'TEMPLATE', 1)
+!     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
 
@@ -174,12 +181,10 @@ contains
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
          nameLength = len_trim(poolItr % memberName)
          configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
-         !write(6,*) ' debug : ', configName
          call mpas_pool_get_config(configPool, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
             packageName = poolItr % memberName(1:nameLength) // 'AMPKGActive'
-            !write(6,*) ' debug : ', packageName
             call mpas_pool_get_package(packagePool, packageName, AMPackageActive)
             AMPackageActive = .true.
          end if
@@ -263,7 +268,7 @@ contains
       poolErrorLevel = mpas_pool_get_error_level()
       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
 
-      call mpas_timer_start('analysis_bootstrap', .false.)
+      call mpas_timer_start('analysis_bootstrap')
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
@@ -271,12 +276,14 @@ contains
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
          nameLength = len_trim(poolItr % memberName)
          configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
             timerName = trim(initReadTimerPrefix) // poolItr % memberName(1:nameLength)
-            call mpas_timer_start(timerName, .false.)
+            call mpas_timer_start(timerName)
 
+            !write(stderrUnit,*) '      Bootstrapping AM ' // poolItr % memberName(1:nameLength)
             call cice_bootstrap_analysis_members(domain, poolItr % memberName(1:nameLength), ierr=err)
 
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_restart_stream'
@@ -293,7 +300,7 @@ contains
                   ! If the stream is set to 'none' nullify the config, so it doesn't get read in
                   nullify(config_AM_restart_stream)
                else if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_restart_stream) ) then
-                  call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Stream named ''' // trim(config_AM_restart_stream) // &
+                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream named ''' // trim(config_AM_restart_stream) // &
                                                ''' does not exist in config for analysis member ''' // &
                                                trim(poolItr % memberName(1:nameLength)) // '''')
                end if
@@ -305,7 +312,7 @@ contains
                   ! If the stream is set to 'none' nullify the config, so it doesn't get read in
                   nullify(config_AM_input_stream)
                else if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_input_stream) ) then
-                  call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Stream named ''' // trim(config_AM_input_stream) // &
+                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream named ''' // trim(config_AM_input_stream) // &
                                                ''' does not exist in config for analysis member ''' // &
                                                trim(poolItr % memberName(1:nameLength)) // '''')
                end if
@@ -313,23 +320,28 @@ contains
 
             ! Handle reading of streams that exist.
             if ( associated(config_AM_restart_stream) .and. associated(config_AM_input_stream) ) then
+
                if ( config_do_restart ) then
                   call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_restart_stream, ierr=err)
                else
                   call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_input_stream, ierr=err)
                end if
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, direction=MPAS_STREAM_INPUT, ierr=err)
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, &
+                                                 direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, &
+                                                 direction=MPAS_STREAM_INPUT, ierr=err)
             else if ( associated(config_AM_restart_stream) ) then
                if ( config_do_restart ) then
                   call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_restart_stream, ierr=err)
                end if
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, &
+                                                 direction=MPAS_STREAM_INPUT, ierr=err)
             else if ( associated(config_AM_input_stream) ) then
                if ( .not. config_do_restart ) then
                   call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_input_stream, ierr=err)
                end if
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, &
+                                                 direction=MPAS_STREAM_INPUT, ierr=err)
             end if
             call mpas_timer_stop(timerName)
          end if
@@ -345,12 +357,12 @@ contains
 !
 !  routine cice_analysis_init
 !
-!> \brief   Initialize MPAS-CICE analysis driver
-!> \author  MPAS-Ocean/CICE development team
+!> \brief   Initialize MPAS-Ocean analysis driver
+!> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all initializations required for the
-!>  MPAS-CICE analysis driver.
+!>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -388,8 +400,7 @@ contains
 
       character (len=StrKIND) :: configName, alarmName, streamName, timerName
       logical, pointer :: config_AM_enable
-      type(MPAS_pool_type), pointer :: diagnosticsPool
-      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream, simulationStartTime
+      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream, config_start_time
       integer :: nameLength
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -400,7 +411,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_init', .false.)
+      call mpas_timer_start('analysis_init')
 
       call mpas_pool_begin_iteration(analysisMemberList)
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
@@ -409,8 +420,9 @@ contains
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
+            !write(stderrUnit,*) '      Initializing AM ' // poolItr % memberName(1:nameLength)
             timerName = trim(initTimerPrefix) // poolItr % memberName(1:nameLength)
-            call mpas_timer_start(timerName, .false.)
+            call mpas_timer_start(timerName)
             call cice_init_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
 
@@ -437,29 +449,44 @@ contains
                end do
 
                if ( .not. streamFound ) then
-                  call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Stream ' // trim(config_AM_output_stream) // ' does not exist. Exiting...')
+                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream ' // trim(config_AM_output_stream) // &
+                                               ' does not exist. Exiting...')
                end if
             end if
 
-
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream == 'none') then
-               call mpas_dmpar_global_abort('MPAS-seaice: ERROR: Analysis member as compute_interval of ''output_interval'' without an output stream.')
+               call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Analysis member has compute_interval of ''output_interval'' ' // &
+                                            'without an output stream.')
             end if
 
-            if ( config_AM_compute_interval /= 'output_interval') then
+            if ( config_AM_compute_interval /= 'output_interval' ) then
                alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
                call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_compute_interval, ierr=err_tmp)
                if ( config_AM_output_stream /= 'none' ) then
-                  call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+                  call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, &
+                                                    MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
                   call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
                else
-                  call MPAS_pool_get_subpool(domain % blocklist % structs, "diagnostics", diagnosticsPool)
-                  call MPAS_pool_get_array(diagnosticsPool, "simulationStartTime", simulationStartTime)
-                  call mpas_set_time(referenceTime, dateTimeString=simulationStartTime, ierr=err_tmp)
+                  call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
+
+                  ! TODO FIXME I'm not sure what it's supposed to be
+                  !            but 'file' is causing the code to fail
+                  if (trim(config_start_time) == 'file') then
+                    ! FIXME big kludge
+                    call mpas_set_time(referenceTime, &
+                      dateTimeString='0000-01-01_00:00:00', ierr=err_tmp)
+                  else
+                    ! FIXME this is what it was without the if-else
+                    !       I suppose it's supposed to actually read it from
+                    !       the file first
+                    call mpas_set_time(referenceTime, dateTimeString=config_start_time, ierr=err_tmp)
+                  end if
+
                end if
                call mpas_add_clock_alarm(domain % clock, alarmName, referenceTime, alarmTimeStep, ierr=err_tmp)
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
             end if
+
             call mpas_timer_stop(timerName)
          end if
       end do
@@ -472,12 +499,12 @@ contains
 !
 !  routine cice_analysis_compute_startup
 !
-!> \brief   Driver for MPAS-CICE analysis computations
-!> \author  MPAS-Ocean/CICE development team
+!> \brief   Driver for MPAS-Ocean analysis computations
+!> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all computation subroutines required for the
-!>  MPAS-CICE analysis driver.
+!>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -521,7 +548,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_compute', .false.)
+      call mpas_timer_start('analysis_compute_startup')
 
       timeLevel=1
 
@@ -538,29 +565,31 @@ contains
             call mpas_pool_get_config(domain % configs, configName, config_AM_write_on_startup)
 
             if ( config_AM_compute_on_startup ) then
-               timerName = trim(computeTimerPrefix) // poolItr % memberName(1:nameLength)
-               call mpas_timer_start(timerName, .false.)
+               timerName = trim(computeStartupTimerPrefix) // poolItr % memberName(1:nameLength)
+               !write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
+               call mpas_timer_start(timerName)
                call cice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
                err = ior(err, err_tmp)
+            end if
 
-               if ( config_AM_write_on_startup ) then
-                  configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
-                  call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
-                  if ( config_AM_output_stream /= 'none' ) then
-                     call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, forceWriteNow=.true., ierr=err_tmp)
-                  end if
+            if ( config_AM_write_on_startup ) then
+               configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
+               call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
+               if ( config_AM_output_stream /= 'none' ) then
+                  !write(stderrUnit,*) '      Writing AM ' // poolItr % memberName(1:nameLength)
+                  call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, &
+                                             forceWriteNow=.true., ierr=err_tmp)
                end if
-            else
-               if ( config_AM_write_on_startup ) then
+               if (.not. config_AM_compute_on_startup) then
                   write(stderrUnit, *) ' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
-                                        // poolItr % memberName(1:nameLength) // '. Skipping output...'
+                    // poolItr % memberName(1:nameLength) // '.'
                end if
             end if
          end if
       end do
 
-      call mpas_timer_stop('analysis_compute')
+      call mpas_timer_stop('analysis_compute_startup')
 
    end subroutine cice_analysis_compute_startup!}}}
 
@@ -661,12 +690,12 @@ contains
 !
 !  routine cice_analysis_compute
 !
-!> \brief   Driver for MPAS-CICE analysis computations
-!> \author  MPAS-Ocean/CICE development team
+!> \brief   Driver for MPAS-Ocean analysis computations
+!> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all computation subroutines required for the
-!>  MPAS-CICE analysis driver.
+!>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -710,7 +739,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_compute', .false.)
+      call mpas_timer_start('analysis_compute')
 
       timeLevel=1
 
@@ -732,15 +761,17 @@ contains
 
             ! Compute analysis member just before output
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream /= 'none') then
-               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_output_stream, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
-                  call mpas_timer_start(timerName, .false.)
+               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_output_stream, &
+                    direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+                  !write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
+                  call mpas_timer_start(timerName)
                   call cice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                   call mpas_timer_stop(timerName)
                end if
             else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
-
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
-               call mpas_timer_start(timerName, .false.)
+               !write(stderrUnit,*) '      Computing AM ' // poolItr % memberName(1:nameLength)
+               call mpas_timer_start(timerName)
                call cice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
             end if
@@ -755,12 +786,12 @@ contains
 !
 !  routine cice_analysis_restart
 !
-!> \brief   Save restart for MPAS-CICE analysis driver
-!> \author  MPAS-Ocean/CICE development team
+!> \brief   Save restart for MPAS-Ocean analysis driver
+!> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all subroutines required to prepare to save
-!>  the restart state for the MPAS-CICE analysis driver.
+!>  the restart state for the MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -803,7 +834,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_restart', .false.)
+      call mpas_timer_start('analysis_restart')
 
       call mpas_pool_begin_iteration(analysisMemberList)
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
@@ -812,8 +843,9 @@ contains
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
+            !write(stderrUnit,*) '      Preparing AM ' // poolItr % memberName(1:nameLength) // ' for restart write'
             timerName = trim(restartTimerPrefix) // poolItr % memberName(1:nameLength)
-            call mpas_timer_start(timerName, .false.)
+            call mpas_timer_start(timerName)
             call cice_restart_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop(timerName)
@@ -828,12 +860,12 @@ contains
 !
 !  routine cice_analysis_write
 !
-!> \brief   Driver for MPAS-CICE analysis output
-!> \author  MPAS-Ocean/CICE development team
+!> \brief   Driver for MPAS-Ocean analysis output
+!> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all output writing subroutines required for the
-!>  MPAS-CICE analysis driver.
+!>  MPAS-Ocean analysis driver.
 !>  At this time this is just a stub, and all analysis output is written
 !>  to the output file specified by config_output_name.
 !
@@ -847,7 +879,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
+      type (domain_type), intent(in) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -871,15 +903,21 @@ contains
 
       integer :: err_tmp
 
-      character (len=StrKIND) :: configName, timerName
+      character (len=StrKIND) :: configName, timerName, outputTimeString
       character (len=StrKIND), pointer :: config_AM_output_stream
+      character (len=StrKIND), pointer :: config_AM_backwardOffset, config_AM_forwardOffset
       logical, pointer :: config_AM_enable
       type (mpas_pool_iterator_type) :: poolItr
+      type (mpas_time_type) :: outputTime, nowTime
+      type (mpas_timeinterval_type) :: offsetInt
       integer :: nameLength
+
+      integer :: poolErrorLevel
 
       err = 0
 
-      call mpas_timer_start('analysis_write', .false.)
+      call mpas_timer_start('analysis_write')
+      nowTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr=err_tmp)
 
       call mpas_pool_begin_iteration(analysisMemberList)
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
@@ -888,15 +926,46 @@ contains
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
+
+            poolErrorLevel = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+            nullify(config_AM_backwardOffset)
+            nullify(config_AM_forwardOffset)
+            !write(stderrUnit,*) '      Writing AM ' // poolItr % memberName(1:nameLength)
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
             call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_backward_output_offset'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_backwardOffset)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_forward_output_offset'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_forwardOffset)
+
+            call mpas_pool_set_error_level(poolErrorLevel)
             if ( config_AM_output_stream /= 'none' ) then
                timerName = trim(writeTimerPrefix) // poolItr % memberName(1:nameLength)
-               call mpas_timer_start(timerName, .false.)
-               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, ierr=err_tmp)
+               call mpas_timer_start(timerName)
+
+               if ( associated(config_AM_backwardOffset) ) then
+                  if ( associated(config_AM_forwardOffset) ) then
+                     write(stderrUnit, *) 'WARNING: Both backward and forward offsets are set for AM ' // poolItr % memberName(1:nameLength)
+                     write(stderrUnit, *) '         will only use backward offset. Forward offset will be ignored.'
+                  end if
+                  call mpas_set_timeinterval(offsetInt, timeString=config_AM_backwardOffset, ierr=err_tmp)
+                  outputTime = nowTime - offsetInt
+                  call mpas_get_time(outputTime, dateTimeString=outputTimeString, ierr=err_tmp)
+               else if ( associated(config_AM_forwardOffset) ) then
+                  call mpas_set_timeinterval(offsetInt, timeString=config_AM_backwardOffset, ierr=err_tmp)
+                  outputTime = nowTime + offsetInt
+                  call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, ierr=err_tmp)
+               else
+                  outputTime = nowTime
+               end if
+
+               call mpas_get_time(outputTime, dateTimeString=outputTimeString, ierr=err_tmp)
+               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, writeTime=outputTimeString, ierr=err_tmp)
                call mpas_timer_stop(timerName)
                timerName = trim(alarmTimerPrefix) // poolItr % memberName(1:nameLength)
-               call mpas_timer_start(timerName, .false.)
+               call mpas_timer_start(timerName)
                call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_output_stream, ierr=err_tmp)
                call mpas_timer_stop(timerName)
             end if
@@ -911,12 +980,12 @@ contains
 !
 !  routine cice_analysis_finalize
 !
-!> \brief   Finalize MPAS-CICE analysis driver
-!> \author  MPAS-Ocean/CICE development team
+!> \brief   Finalize MPAS-Ocean analysis driver
+!> \author  Mark Petersen
 !> \date    November 2013
 !> \details
 !>  This routine calls all finalize routines required for the
-!>  MPAS-CICE analysis driver.
+!>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -959,7 +1028,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_finalize', .false.)
+      call mpas_timer_start('analysis_finalize')
 
       call mpas_pool_begin_iteration(analysisMemberList)
 
@@ -969,8 +1038,9 @@ contains
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
+            !write(stderrUnit,*) '      Finalizing AM ' // poolItr % memberName(1:nameLength)
             timerName = trim(finalizeTimerPrefix) // poolItr % memberName(1:nameLength)
-            call mpas_timer_start(timerName, .false.)
+            call mpas_timer_start(timerName)
             call cice_finalize_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop(timerName)
@@ -1035,11 +1105,13 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_bootstrap_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_bootstrap_time_series_stats(domain, 'Daily', err_tmp)
+         call cice_bootstrap_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_bootstrap_time_series_stats(domain, 'Monthly', err_tmp)
+         call cice_bootstrap_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_bootstrap_time_series_stats(domain, 'Climatology', err_tmp)
+         call cice_bootstrap_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call cice_bootstrap_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_bootstrap_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1048,7 +1120,7 @@ contains
 
       iErr = ior(iErr, err_tmp)
 
-    end subroutine cice_bootstrap_analysis_members!}}}
+   end subroutine cice_bootstrap_analysis_members!}}}
 
 !***********************************************************************
 !
@@ -1103,11 +1175,13 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_init_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_init_time_series_stats(domain, 'Daily', err_tmp)
+         call cice_init_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_init_time_series_stats(domain, 'Monthly', err_tmp)
+         call cice_init_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_init_time_series_stats(domain, 'Climatology', err_tmp)
+         call cice_init_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call cice_init_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_init_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1171,12 +1245,14 @@ contains
          call cice_precompute_ice_shelves(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_precompute_ice_present(domain, '', timeLevel, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_precompute_time_series_stats(domain, 'Daily', timeLevel, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_precompute_time_series_stats(domain, 'Monthly', timeLevel, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_precompute_time_series_stats(domain, 'Climatology', timeLevel, err_tmp)
+      !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
+      !   call cice_precompute_time_series_stats(domain, timeSeriesDailyTAG, timeLevel, err_tmp)
+      !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
+      !   call cice_precompute_time_series_stats(domain, timeSeriesMonthlyTAG, timeLevel, err_tmp)
+      !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
+      !   call cice_precompute_time_series_stats(domain, timeSeriesClimatologyTAG, timeLevel, err_tmp)
+      !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+      !   call cice_precompute_time_series_stats(domain, timeSeriesCustomTAG, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_precompute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1241,11 +1317,13 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_compute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_compute_time_series_stats(domain, 'Daily', timeLevel, err_tmp)
+         call cice_compute_time_series_stats(domain, timeLevel, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_compute_time_series_stats(domain, 'Monthly', timeLevel, err_tmp)
+         call cice_compute_time_series_stats(domain, timeLevel, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_compute_time_series_stats(domain, 'Climatology', timeLevel, err_tmp)
+         call cice_compute_time_series_stats(domain, timeLevel, timeSeriesClimatologyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call cice_compute_time_series_stats(domain, timeLevel, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_compute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1309,11 +1387,13 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_restart_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_restart_time_series_stats(domain, 'Daily', err_tmp)
+         call cice_restart_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_restart_time_series_stats(domain, 'Monthly', err_tmp)
+         call cice_restart_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_restart_time_series_stats(domain, 'Climatology', err_tmp)
+         call cice_restart_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call cice_restart_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_restart_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1377,11 +1457,13 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_finalize_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
-         call cice_finalize_time_series_stats(domain, 'Daily', err_tmp)
+         call cice_finalize_time_series_stats(domain, timeSeriesDailyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
-         call cice_finalize_time_series_stats(domain, 'Monthly', err_tmp)
+         call cice_finalize_time_series_stats(domain, timeSeriesMonthlyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
-         call cice_finalize_time_series_stats(domain, 'Climatology', err_tmp)
+         call cice_finalize_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
+         call cice_finalize_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_finalize_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1391,8 +1473,6 @@ contains
       iErr = ior(iErr, err_tmp)
 
    end subroutine cice_finalize_analysis_members!}}}
-
-!-----------------------------------------------------------------------
 
 end module cice_analysis_driver
 

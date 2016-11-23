@@ -107,7 +107,7 @@ module cice_core_interface
       call setup_packages_column_physics(configPool, packagePool, ierr)
 
       ! set up analysis member packages
-      call cice_analysis_setup_packages(configPool, packagePool, ierr)
+      call cice_analysis_setup_packages(configPool, packagePool, iocontext, ierr)
 
    end function cice_setup_packages!}}}
 
