@@ -67,7 +67,7 @@
 		<nml_option name="config_calendar_type"              type="character"     default_value="gregorian_noleap"/>
 		<nml_option name="config_start_time"                 type="character"     default_value="2000-01-01_00:00:00"/>
 		<nml_option name="config_stop_time"                  type="character"     default_value="none"/>
-		<nml_option name="config_run_duration"               type="character"     default_value="0000_24:00:00"/>
+		<nml_option name="config_run_duration"               type="character"     default_value="00-00-01_00:00:00"/>
 		<nml_option name="config_num_halos"                  type="integer"       default_value="2"/>
 	</nml_record>
 	<nml_record name="io" in_defaults="true">
@@ -80,7 +80,7 @@
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graphs/graph.info.part."/>
 		<nml_option name="config_number_of_blocks"           type="integer"       default_value="0"/>
-		<nml_option name="config_explicit_proc_decomp"       type="logical"       default_value=".false."/>
+		<nml_option name="config_explicit_proc_decomp"       type="logical"       default_value="false"/>
 		<nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graphs/graph.info.part."/>
 	</nml_record>
 	<nml_record name="restart" in_defaults="true">
@@ -121,7 +121,7 @@
 		<nml_option name="config_forcing_restart_file"        type="character"     default_value="restart_forcing_timestamps"/>
 		<nml_option name="config_forcing_precipitation_units" type="character"     default_value="mm_per_sec"/>
 		<nml_option name="config_forcing_sst_type"            type="character"     default_value="ncar"/>
-		<nml_option name="config_update_ocean_fluxes"         type="logical"       default_value="true"/>
+		<nml_option name="config_update_ocean_fluxes"         type="logical"       default_value="false"/>
 		<nml_option name="config_include_pond_freshwater_feedback" type="logical"       default_value="false"/>
 	</nml_record>
 	<nml_record name="unit_test" in_defaults="true">
@@ -151,9 +151,9 @@
 					description="Type of advection scheme (upwind or incremental remapping)"
 					possible_values="'upwind' and 'incremental_remap'"
 		/>
-		<nml_option name="config_monotonic" type="logical" default_value=".true." units="unitless"
-					description="If .true. then fluxes are limited to produce a monotonic advection scheme"
-					possible_values=".true. and .false."
+		<nml_option name="config_monotonic" type="logical" default_value="true" units="unitless"
+					description="If true then fluxes are limited to produce a monotonic advection scheme"
+					possible_values="true and false"
 		/>
 		<nml_option name="config_conservation_check"           type="logical"       default_value="false" possible_values="true or false"/>
 	        <nml_option name="config_monotonicity_check"           type="logical"       default_value="false" possible_values="true or false"/>
@@ -570,68 +570,6 @@
 		  output_interval="00-01-00_00:00:00"
 		  clobber_mode="replace_files"
 		  runtime_format="single_file">
-	    <var name="xtime"/>
-	    <stream name="mesh"/>
-	    <var name="fVertex"/>
-	    <var name="uVelocity"/>
-	    <var name="vVelocity"/>
-	    <var name="stressDivergenceU"/>
-	    <var name="stressDivergenceV"/>
-	    <var name="uAirVelocity"/>
-	    <var name="vAirVelocity"/>
-	    <var name="uOceanVelocity"/>
-	    <var name="vOceanVelocity"/>
-	    <var name="oceanStressU"/>
-	    <var name="oceanStressV"/>
-	    <var name="oceanStressCoeff"/>
-	    <var name="iceAreaCategory"/>
-	    <var name="iceVolumeCategory"/>
-	    <var name="snowVolumeCategory"/>
-	    <var name="surfaceTemperature"/>
-	    <var name="iceAreaCell"/>
-	    <var name="iceAreaVertex"/>
-	    <var name="iceVolumeCell"/>
-	    <var name="totalMassCell"/>
-	    <var name="totalMassVertex"/>
-	    <var name="airStressCellU"/>
-	    <var name="airStressCellV"/>
-	    <var name="airStressVertexU"/>
-	    <var name="airStressVertexV"/>
-	    <var name="airTemperature"/>
-	    <var name="airPotentialTemperature"/>
-	    <var name="windSpeed"/>
-	    <var name="uAirStress"/>
-	    <var name="vAirStress"/>
-	    <var name="airDensity"/>
-	    <var name="airSpecificHumidity"/>
-	    <var name="shortwaveDown"/>
-	    <var name="longwaveDown"/>
-	    <var name="cloudFraction"/>
-	    <var name="rainfallRate"/>
-	    <var name="snowfallRate"/>
-	    <var name="sensibleTransferCoefficient"/>
-	    <var name="latentTransferCoefficient"/>
-	    <var name="totalSkeletalAlgae"/>
-	    <var name="totalVerticalBiologyIce"/>
-	    <var name="totalVerticalBiologySnow"/>
-	    <var name="totalVerticalSalinity"/>               
-	    <var name="brineFractionCell"/>    
-            <var name="newlyFormedIce"/>   
-	    <var name="verticalAerosolsConc"/>  
-	    <var name="verticalAerosolsSnow"/>  
-	    <var name="verticalAerosolsIce"/>   
-	    <var name="atmosBlackCarbonFlux"/>     
-	    <var name="atmosDustFlux"/> 
-            <var name="oceanDustIronFlux"/>	
-            <var name="atmosBioFluxes"/>	
-            <var name="oceanBioFluxes"/>	
-            <var name="oceanBioConcentrations"/>
-            <var name="snowScatteringAerosol"/>
-            <var name="snowBodyAerosol"/>
-            <var name="iceScatteringAerosol"/>
-            <var name="iceBodyAerosol"/>
-            <var name="atmosAerosolFlux"/>
-            <var name="oceanAerosolFlux"/>     
 	  </stream>
 
         <!-- forcing streams -->

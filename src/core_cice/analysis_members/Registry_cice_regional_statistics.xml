@@ -1,7 +1,7 @@
 	<nml_record name="AM_regionalStatistics" mode="forward;analysis">
-		<nml_option name="config_AM_regionalStatistics_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_regionalStatistics_enable" type="logical" default_value="false" units="unitless"
 			description="If true, ocean analysis member regionalStatistics is called."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_AM_regionalStatistics_compute_interval" type="character" default_value="output_interval" units="unitless"
 			description="Timestamp determining how often analysis member computation should be performed."
@@ -11,13 +11,13 @@
 			description="Name of the stream that the regionalStatistics analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_regionalStatistics_compute_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_regionalStatistics_compute_on_startup" type="logical" default_value="false" units="unitless"
 			description="Logical flag determining if an analysis member computation occurs on start-up."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_regionalStatistics_write_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_regionalStatistics_write_on_startup" type="logical" default_value="false" units="unitless"
 			description="Logical flag determining if an analysis member write occurs on start-up."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_AM_regionalStatistics_ice_extent_limit" type="real" default_value="0.15" units="unitless"
 			description="sea-ice fraction limit for ice extent."
@@ -80,6 +80,7 @@
 				clobber_mode="replace_files"
 				runtime_format="single_file">
 			<var name="xtime"/> 
+			<var name="daysSinceStartOfSim"/>
 			<var name="regionNames"/>
 			<var name="totalIceArea"/> 
 			<var name="totalIceExtent"/> 
