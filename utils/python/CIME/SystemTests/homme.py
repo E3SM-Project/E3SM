@@ -24,7 +24,7 @@ class HOMME(SystemTestsCommon):
             mach     = self._case.get_value("MACH")
             procs    = self._case.get_value("TOTALPES")
             exeroot  = self._case.get_value("EXEROOT")
-            baseline = self._case.get_value("CCSM_BASELINE")
+            baseline = self._case.get_value("BASELINE_ROOT")
             basegen  = self._case.get_value("BASEGEN_CASE")
             basecmp  = self._case.get_value("BASECMP_CASE")
             generate = self._case.get_value("GENERATE_BASELINE")
@@ -42,7 +42,7 @@ class HOMME(SystemTestsCommon):
 
         rundir   = self._case.get_value("RUNDIR")
         exeroot  = self._case.get_value("EXEROOT")
-        baseline = self._case.get_value("CCSM_BASELINE")
+        baseline = self._case.get_value("BASELINE_ROOT")
         compare  = self._case.get_value("COMPARE_BASELINE")
         generate = self._case.get_value("GENERATE_BASELINE")
         basegen  = self._case.get_value("BASEGEN_CASE")
