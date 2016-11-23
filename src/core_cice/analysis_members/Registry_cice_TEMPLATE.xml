@@ -8,9 +8,9 @@
 		 Pools and streams should be named with the camel case name as well (e.g. globalStatsOutput and globalStatsAM)
 	-->
 	<nml_record name="AM_temPlate">
-		<nml_option name="config_AM_temPlate_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_temPlate_enable" type="logical" default_value="false" units="unitless"
 			description="If true, ocean analysis member temPlate is called."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_AM_temPlate_compute_interval" type="character" default_value="output_interval" units="unitless"
 			description="Timestamp determining how often analysis member computation should be performed."
@@ -20,13 +20,13 @@
 			description="Name of the stream that the temPlate analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_temPlate_compute_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_temPlate_compute_on_startup" type="logical" default_value="true" units="unitless"
 			description="Logical flag determining if an analysis member computation occurs on start-up."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_temPlate_write_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_temPlate_write_on_startup" type="logical" default_value="true" units="unitless"
 			description="Logical flag determining if an analysis member write occurs on start-up."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 	</nml_record>
 	<packages>

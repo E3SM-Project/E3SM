@@ -1,7 +1,7 @@
 	<nml_record name="AM_maximumIcePresence">
-		<nml_option name="config_AM_maximumIcePresence_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_maximumIcePresence_enable" type="logical" default_value="false" units="unitless"
 			description="If true, ocean analysis member maximumIcePresence is called."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_AM_maximumIcePresence_compute_interval" type="character" default_value="dt" units="unitless"
 			description="Timestamp determining how often analysis member computation should be performed."
@@ -11,13 +11,13 @@
 			description="Name of the stream that the maximumIcePresence analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_maximumIcePresence_compute_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_maximumIcePresence_compute_on_startup" type="logical" default_value="false" units="unitless"
 			description="Logical flag determining if an analysis member computation occurs on start-up."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_maximumIcePresence_write_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_maximumIcePresence_write_on_startup" type="logical" default_value="false" units="unitless"
 			description="Logical flag determining if an analysis member write occurs on start-up."
-			possible_values=".true. or .false."
+			possible_values="true or false"
 		/>	
 		<nml_option name="config_AM_maximumIcePresence_start_time" type="character" default_value="0000-00-00_00:00:00" units="time"
 			description="Time to start accumulating ice domain"
