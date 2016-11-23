@@ -215,8 +215,8 @@ for mct, etc.
 
 <compiler COMPILER="intel">
   <CFLAGS>
-    <base>  -no-opt-dynamic-align -fp-model precise -std=gnu99 </base>
-    <append compile_threaded="true"> -openmp </append>
+    <base>  -qno-opt-dynamic-align -fp-model precise -std=gnu99 </base>
+    <append compile_threaded="true"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
@@ -232,20 +232,14 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base> -no-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source  </base>
-    <append compile_threaded="true"> -openmp </append>
-    <!-- WJS (8-11-14): For some reason, yellowstone-intel has starting giving lots of
-       messages about array temporaries, leading to a ton of standard output, and
-       sometimes causing runs to die. Adding '-check noarg_temp_created' to suppress these
-       diagnostics. This is a band-aid fix, which should really be addressed at the
-       system-level. (Note: I could not add this in the yellowstone-specific section,
-       beacuse apparently that overrides rather than adds to this ADD_FFLAGS list.) -->
+    <base> -qno-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source  </base>
+    <append compile_threaded="true"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
@@ -255,7 +249,7 @@ for mct, etc.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="true"> -qopenmp </append>
   </LDFLAGS>
   <MPICC> mpicc  </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -272,58 +266,6 @@ for mct, etc.
     <append MPILIB="openmpi"> -mkl=cluster </append>
     <append MPILIB="impi"> -mkl=cluster </append>
     <append MPILIB="mpi-serial"> -mkl </append>
-  </SLIBS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler COMPILER="intelmic">
-  <CFLAGS>
-    <base> -mmic -O2 -fp-model precise -DFORTRANUNDERSCOR </base>
-    <append compile_threaded="true"> -openmp </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base>--host=x86_64-k1om-linux --build=x86_64-unknown-linux</base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16</append>
-    <append> -DCPRINTEL </append>
-  </CPPDEFS>
-  <CXX_LDFLAGS>
-    <base> -cxxlib </base>
-  </CXX_LDFLAGS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -r8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <base> -mmic -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs </base>
-    <append compile_threaded="true"> -openmp </append>
-    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 -mmic </base>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base> -fixed -132 </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -free </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
-    <append> -mmic </append>
-  </LDFLAGS>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpiifort</MPIFC>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
-  <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell></append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -459,81 +401,6 @@ for mct, etc.
   <SFC> pgf95 </SFC>
 </compiler>
 
-<compiler COMPILER="pgicuda">
-  <CFLAGS>
-    <base> -gopt -time </base>
-  </CFLAGS>
-  <CPPDEFS>
-    <!-- http://www.pgroup.com/resources/docs.htm                                              -->
-    <!-- Notes:  (see pgi man page & user's guide for the details) -->
-    <!--  -Mextend        => Allow 132-column source lines -->
-    <!--  -Mfixed         => Assume fixed-format source -->
-    <!--  -Mfree          => Assume free-format source -->
-    <!--  -byteswapio     => Swap byte-order for unformatted i/o (big/little-endian) -->
-    <!--  -target=linux   => Specifies the target architecture to Compute Node Linux (CNL only) -->
-    <!--  -fast           => Chooses generally optimal flags for the target platform -->
-    <!--  -Mnovect        => Disables automatic vector pipelining -->
-    <!--  -Mvect=nosse    => Don't generate SSE, SSE2, 3Dnow, and prefetch instructions in loops    -->
-    <!--  -Mflushz        => Set SSE to flush-to-zero mode (underflow) loops where possible  -->
-    <!--  -Kieee          => Perform fp ops in strict conformance with the IEEE 754 standard.  -->
-    <!--                     Some optimizations disabled, slightly slower, more accurate math.  -->
-    <!--  -mp=nonuma      => Don't use thread/processors affinity (for NUMA architectures)  -->
-    <!-- -->
-    <!--  -g              => Generate symbolic debug information. Turns off optimization.   -->
-    <!--  -gopt           => Generate information for debugger without disabling optimizations  -->
-    <!--  -Mbounds        => Add array bounds checking  -->
-    <!--  -Ktrap=fp       => Determine IEEE Trap conditions fp => inv,divz,ovf   -->
-    <!--                     * inv: invalid operands         -->
-    <!--                     * divz divide by zero           -->
-    <!--                     * ovf: floating point overflow   -->
-    <!--  -Mlist          => Create a listing file             -->
-    <!--  -F              => leaves file.f for each preprocessed file.F file  -->
-    <!--  -time           => Print execution time for each compiler step  -->
-    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </append>
-  </CPPDEFS>
-  <CXX_LINKER>CXX</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -r8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <base>  -i4 -gopt  -time -Mextend -byteswapio -Mflushz -Kieee  </base>
-    <append MODEL="cam"> -ta=nvidia -Mcuda=5.5,cc35  </append>
-    <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
-    <append MODEL="datm"> -Mnovect </append>
-    <append MODEL="dlnd"> -Mnovect </append>
-    <append MODEL="drof"> -Mnovect </append>
-    <append MODEL="dwav"> -Mnovect </append>
-    <append MODEL="dice"> -Mnovect </append>
-    <append MODEL="docn"> -Mnovect </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 -g -Ktrap=fp -Mbounds -Kieee  </base>
-    <append compile_threaded="true"> -mp </append>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base> -Mfixed </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -Mfree </base>
-  </FREEFLAGS>
-  <!-- Note that SUPPORTS_CXX is false for pgi in general, because we
-       need some machine-specific libraries - see hopper pgi for an
-       example -->
-  <!-- Technically, PGI does recognize this keyword during parsing,
-       but support is either buggy or incomplete, notably in that
-       the "contiguous" attribute is incompatible with "intent".-->
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <base> -time -Wl,--allow-multiple-definition -ta=nvidia -Mcuda=5.0,cc35 </base>
-  </LDFLAGS>
-  <MPICC> mpicc </MPICC>
-  <MPICXX> mpicxx </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <SCC> pgcc </SCC>
-  <SCXX> pgc++ </SCXX>
-  <SFC> pgf95 </SFC>
-</compiler>
-
 <compiler OS="AIX" COMPILER="ibm">
   <CFLAGS>
     <append> -qarch=auto -qtune=auto -qcache=auto </append>
@@ -555,56 +422,6 @@ for mct, etc.
     <append> -lmassv -lessl </append>
     <append DEBUG="FALSE"> -lmass </append>
   </SLIBS>
-</compiler>
-
-<compiler OS="BGL" COMPILER="ibm">
-  <CFLAGS>
-    <base> -O3 -qstrict </base>
-    <append> -qtune=440 -qarch=440d </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX -DnoI8 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append> -qtune=440 -qarch=440d </append>
-    <append DEBUG="FALSE"> -O3 -qstrict -qinline=auto </append>
-    <append DEBUG="TRUE"> -qinitauto=FF911299 -qflttrap=ov:zero:inv:en </append>
-    <append> -qextname=flush </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
-  </LDFLAGS>
-  <MLIBS>
-    <base> -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts </base>
-  </MLIBS>
-  <MPICC> blrts_xlc </MPICC>
-  <MPIFC> blrts_xlf2003 </MPIFC>
-  <MPI_LIB_NAME> mpich.rts </MPI_LIB_NAME>
-  <MPI_PATH> /bgl/BlueLight/ppcfloor/bglsys</MPI_PATH>
-  <SCC> blrts_xlc </SCC>
-  <SFC> blrts_xlf2003 </SFC>
-</compiler>
-
-<compiler OS="BGP" COMPILER="ibm">
-  <CFLAGS>
-    <append> -qtune=450 -qarch=450 -I/bgsys/drivers/ppcfloor/arch/include/</append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX -DnoI8 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append>-qspillsize=2500 -qtune=450 -qarch=450 </append>
-    <append> -qextname=flush </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
-  </LDFLAGS>
 </compiler>
 
 <compiler OS="BGQ" COMPILER="ibm">
@@ -659,70 +476,6 @@ for mct, etc.
   </FFLAGS>
 </compiler>
 
-<compiler MACH="babbage">
-  <CFLAGS>
-    <append> -xHost -no-save-temps</append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DHAVE_NANOTIME -DCPRINTEL</append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append> -xHost -no-save-temps</append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append> <env>NETCDF</env> </append>
-  </LDFLAGS>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpiifort </MPIFC>
-  <!-- PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS -->
-  <NETCDF_PATH><env>NETCDF_DIR</env></NETCDF_PATH>
-  <PNETCDF_PATH><env>PNETCDF_DIR</env></PNETCDF_PATH>
-  <SCC> icc </SCC>
-  <SFC> ifort </SFC>
-  <SLIBS>
-    <append> <env>NETCDf</env> <env>MKL</env></append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="babbageKnc">
-  <CFLAGS>
-    <append> -mmic -O3 -fp-model precise -DFORTRANUNDERSCORE -no-save-temps</append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base>--host=x86_64-k1om-linux --build=x86_64-unknown-linux</base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DHAVE_NANOTIME -DCPRINTELMIC -DCPRINTEL</append>
-  </CPPDEFS>
-  <FFLAGS>
-    <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-    <append DEBUG="TRUE"> -O0 -g -check all -check noarg_temp_created</append>
-    <append DEBUG="FALSE"> -O3 -mP2OPT_hpo_matrix_opt_framework=0 </append>
-    <append> -mmic -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -no-save-temps -no-opt-dynamic-align</append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 -mmic </base>
-  </FFLAGS_NOOPT>
-  <LDFLAGS>
-    <append> <env>NETCDF</env> -mmic </append>
-  </LDFLAGS>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpiifort </MPIFC>
-  <!-- PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS -->
-  <NETCDF_PATH><env>NETCDF_DIR</env></NETCDF_PATH>
-  <PNETCDF_PATH><env>PNETCDF_DIR</env></PNETCDF_PATH>
-  <SCC> icc </SCC>
-  <SFC> ifort </SFC>
-  <SLIBS>
-    <append> <env>NETCDF</env> <env>MKL</env></append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="bluewaters">
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_PAPI </append>
@@ -743,16 +496,6 @@ for mct, etc.
     <append> -nofma </append>
   </FFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler MACH="brutus">
-  <CONFIG_ARGS>
-    <base> --host=LINUX </base>
-  </CONFIG_ARGS>
-  <MPI_LIB_NAME MPILIB="mpich"> mpich </MPI_LIB_NAME>
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi </MPI_LIB_NAME>
-  <MPI_PATH> <env>MPI_ROOT</env></MPI_PATH>
-  <NETCDF_PATH> <env>NETCDF</env></NETCDF_PATH>
 </compiler>
 
 <compiler MACH="constance" COMPILER="intel">
@@ -858,70 +601,6 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler MACH="erebus">
-  <CPPDEFS>
-    <!--The following flag is required due to a bug in mpich2 v1208 -->
-    <append MODEL="cam" MPILIB="mpich2"> -DNO_MPI2 </append>
-  </CPPDEFS>
-  <NETCDF_PATH><env>NETCDF</env></NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDF</env></PNETCDF_PATH>
-  <SCC>mpicc</SCC>
-  <SFC>mpif90</SFC>
-</compiler>
-
-<compiler MACH="goldbach">
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
-  <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell></append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="goldbach" COMPILER="intel">
-  <LDFLAGS>
-    <append> -Wl,-rpath,<var>NETCDF_PATH</var>/lib </append>
-    <append> -Wl,-rpath,<env>COMPILER_PATH</env>/lib/intel64 </append>
-    <append> -Wl,-rpath,<env>COMPILER_PATH</env>/mkl/lib/intel64 </append>
-  </LDFLAGS>
-  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_Intel_3_0</PFUNIT_PATH>
-</compiler>
-
-<compiler MACH="goldbach" COMPILER="nag">
-  <CPPDEFS>
-    <append> -DNO_C_SIZEOF </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <!-- needed for nag pio build.. -->
-    <append> -kind=byte </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <!-- Experimental wrapper for OpenMP. -->
-    <append compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,--rpath=/home/santos/lib/fake_omp </append>
-  </LDFLAGS>
-  <MPI_PATH MPILIB="openmpi"> /usr/local/openmpi-gcc-nag</MPI_PATH>
-  <NETCDF_PATH> /usr/local/netcdf-gcc-nag</NETCDF_PATH>
-  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
-</compiler>
-
-<compiler MACH="goldbach" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O0 </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O0 </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append> -lgomp </append>
-    <append> -Wl,-R<var>NETCDF_PATH</var>/lib</append>
-    <append> -Wl,-R<env>COMPILER_PATH</env>/lib</append>
-    <append> -Wl,-R<env>COMPILER_PATH</env>/libso</append>
-  </LDFLAGS>
-</compiler>
-
 <compiler MACH="hera" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -998,32 +677,6 @@ for mct, etc.
     <append> -Wl,-R<env>COMPILER_PATH</env>/lib</append>
     <append> -Wl,-R<env>COMPILER_PATH</env>/libso</append>
   </LDFLAGS>
-</compiler>
-
-<compiler MACH="hopper" COMPILER="gnu">
-  <TRILINOS_PATH>/project/projectdirs/ccsm1/Trilinos/trilinos-10.12.2/hopper-gnu/install</TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="hopper" COMPILER="intel">
-  <ESMF_LIBDIR DEBUG="FALSE">/project/projectdirs/ccsm1/esmf/ESMF_5_3_0_intel12.1.5/lib/libO/Unicos.intel.64.mpi.default/</ESMF_LIBDIR>
-  <ESMF_LIBDIR DEBUG="TRUE">/project/projectdirs/ccsm1/esmf/ESMF_5_3_0_intel12.1.5/lib/libg/Unicos.intel.64.mpi.default/</ESMF_LIBDIR>
-  <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell></append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="hopper" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CXX_LIBS>
-    <base> -lmpichf90_pgi <env>PGI_PATH</env>/linux86-64/<env>PGI_VERSION</env>/lib/f90main.o </base>
-  </CXX_LIBS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <TRILINOS_PATH>/project/projectdirs/ccsm1/Trilinos/trilinos-10.12.2/hopper-pgi/install</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="juqueen" COMPILER="ibm">
@@ -1156,28 +809,6 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler MACH="pronghorn" COMPILER="intel">
-  <CFLAGS>
-    <append> -xHost </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append> -xHost </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append>-L<env>TACC_HDF5_LIB</env> -lhdf5</append>
-  </LDFLAGS>
-  <MPICC>mpiicc</MPICC>
-  <MPICXX>mpicpc</MPICXX>
-  <MPIFC>mpiifort</MPIFC>
-  <SCC>icc</SCC>
-  <SCXX>icpc</SCXX>
-  <SFC>ifort</SFC>
-  <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -L<env>TACC_HDF5_LIB</env> -lhdf5</append>
-  </SLIBS>
-  <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
-</compiler>
-
 <compiler MACH="sierra">
   <LDFLAGS>
     <append> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</append>
@@ -1233,44 +864,6 @@ for mct, etc.
     <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -L<env>TACC_HDF5_LIB</env> -lhdf5</append>
   </SLIBS>
   <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="titan" COMPILER="intel">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <append> <shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> </append>
-  </SLIBS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler MACH="titan" COMPILER="pgi">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CXX_LIBS>
-    <base> -lfmpich -lmpichf90_pgi <env>PGI_PATH</env>/linux86-64/<env>PGI_VERSION</env>/lib/f90main.o </base>
-  </CXX_LIBS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <append> <shell>nf-config --flibs</shell> </append>
-  </SLIBS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <TRILINOS_PATH>/lustre/atlas1/cli900/world-shared/cesm/software/Trilinos/Trilinos-11.12.1/titan-pgi-cesm/install</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="tukey" COMPILER="ibm">
@@ -1345,14 +938,6 @@ for mct, etc.
     <append MPILIB="mpich2"> -Wl,-rpath <var>PAPI_LIB</var> -L<var>PAPI_LIB</var> -lpapi</append>
   </SLIBS>
   <TRILINOS_PATH MPILIB="mpich2"><env>TRILINOS_PATH</env></TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="yellowstone" COMPILER="pathscale">
-  <CPPDEFS>
-    <append> -DNO_MPIMOD </append>
-  </CPPDEFS>
-  <SCC>pathcc</SCC>
-  <SFC>pathf95</SFC>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="pgi">
