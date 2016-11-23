@@ -6,15 +6,12 @@ This file defines compiler flags for building CESM.  General flags are listed fi
 followed by flags specific to particular operating systems, followed by particular machines.
 
 More general flags are replaced by more specific flags.
-Flags of the sort ADD_FLAG indicate that the field should be appended to an already existing FLAG definition.
 
 Attributes indicate that an if clause should be added to the Macros so that these flags are added
 only under the conditions described by the attribute(s).
 
 The env_mach_specific file may set environment variables or load modules which set environment variables
 which are then  used in the Makefile.   For example the NETCDF_PATH on many machines is set by a module.
-
-Do not use variables CPPDEFS and SLIBS here, instead use ADD_CPPDEFS and ADD_SLIBS
 
 ========================================================================
 Serial/MPI compiler specification
@@ -67,12 +64,6 @@ a C++ linker. If CXX_LINKER=FORTRAN, then the above CXX_LDFLAGS line
 should specify extra LDFLAGS needed when linking C++ and fortran code
 using a fortran linker.
 
-These should NOT be specified via <ADD_SLIBS USE_CXX="true"> or
-<ADD_LDFLAGS USE_CXX="true">, because those mess up the configure step
-for mct, etc.
-
-
-===========================
 -->
 <!-- Define default values that can be overridden by specific
      compilers -->
@@ -865,6 +856,22 @@ for mct, etc.
   </SLIBS>
   <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
 </compiler>
+
+<compiler MACH="theta">
+  <CFLAGS>
+    <append> -xMIC-AVX512 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -xMIC-AVX512 </append>
+  </FFLAGS>
+    <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <SLIBS>
+    <append>-L$(NETCDF_DIR)/lib -lnetcdff -L$(NETCDF_DIR)/lib -lnetcdf -Wl,-rpath -Wl,$(NETCDF_DIR)/lib </append>
+  </SLIBS>
+</compiler>
+
 
 <compiler MACH="tukey" COMPILER="ibm">
   <HDF5_PATH>/soft/libraries/hdf5/1.8.10/cnk-xl/current/ </HDF5_PATH>

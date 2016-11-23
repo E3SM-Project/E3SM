@@ -25,6 +25,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "utils", "python"))
 from standard_script_setup import *
 from CIME.utils import expect
 from CIME.BuildTools.configure import configure
+from CIME.XML.machines import Machines
 
 logger = logging.getLogger(__name__)
 
