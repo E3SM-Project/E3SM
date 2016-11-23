@@ -258,6 +258,8 @@ module cice_core
 
       character(len=StrKIND), pointer :: config_restart_timestamp_name
 
+      logical, pointer :: config_write_output_on_startup
+
       iErr = 0
 
       ! configurations
@@ -274,7 +276,10 @@ module cice_core
       ! Avoid writing a restart file at the initial time
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-      call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+      call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
+      if (config_write_output_on_startup) then
+         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+      endif
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       itimestep = 1

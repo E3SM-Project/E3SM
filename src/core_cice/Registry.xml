@@ -73,6 +73,7 @@
 	<nml_record name="io" in_defaults="true">
 		<nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
 		<nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
+		<nml_option name="config_write_output_on_startup"    type="logical"       default_value="false"/>
 		<nml_option name="config_test_case_diag"             type="logical"       default_value="false"/>
 		<nml_option name="config_test_case_diag_type"        type="character"     default_value="none"/>
 	</nml_record>
