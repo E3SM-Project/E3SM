@@ -201,7 +201,8 @@
 
     <batch_system MACH="cori-knl" type="slurm" version="x.y">
       <directives>
-        <directive> --constraint=knl</directive>
+        <directive> --constraint=knl,quad,cache</directive>
+        <directive> --ntasks-per-core=4</directive>
       </directives>
       <queues>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="3000000" default="true">regular</queue>
