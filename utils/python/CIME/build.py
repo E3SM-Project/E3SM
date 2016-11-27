@@ -296,6 +296,8 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
                                 lid, caseroot, cimeroot, compiler))
 
     if not sharedlib_only:
+        # in case component build scripts updated the xml files, update the case object
+        case.read_xml()
         post_build(case, logs)
 
     t3 = time.time()
