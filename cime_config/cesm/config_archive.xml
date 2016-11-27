@@ -123,7 +123,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="ww3" compclass="wav">
-    <rest_file_extension>\.\..*</rest_file_extension>
+    <rest_file_extension>\.r.*</rest_file_extension>
     <hist_file_extension>\.hi.*</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
