@@ -1400,20 +1400,10 @@
     <PES_PER_NODE>16</PES_PER_NODE>
 
     <mpirun mpilib="impi">
-      <executable>srun</executable>
-      <arguments>
-	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n $TOTALPES</arg>
-     	<arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
-      </arguments>
+      <executable>ibrun</executable>
     </mpirun>
     <mpirun mpilib="mvapich2">
-      <executable>srun</executable>
-      <arguments>
-	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n $TOTALPES</arg>
-     	<arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
-      </arguments>
+      <executable>ibrun</executable>
     </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
