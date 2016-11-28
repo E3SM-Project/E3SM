@@ -267,7 +267,7 @@ using a fortran linker.
     <append DEBUG="TRUE"> -g </append>
   </CFLAGS>
   <CPPDEFS>
-    <append> -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS -DNO_SHR_VMATH </append>
+    <append> -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS -DNO_SHR_VMATH -DCPRNAG </append>
   </CPPDEFS>
   <FC_AUTO_R8>
     <base> -r8 </base>
@@ -545,7 +545,7 @@ using a fortran linker.
     <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC </append>
   </CPPDEFS>
- 
+
 </compiler>
 
 
@@ -564,7 +564,7 @@ using a fortran linker.
   </SLIBS>
     <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC xs</append>
-  </CPPDEFS> 
+  </CPPDEFS>
 </compiler>
 
 
