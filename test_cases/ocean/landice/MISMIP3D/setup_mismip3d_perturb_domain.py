@@ -47,16 +47,34 @@ if not options.perturb:
 stndfilename = "stnd_final.nc"
 
 # create a new file that has the state from the final time slice of Stnd
-os.system("ncks -O -d Time,-1 " + options.outfilename  + " " + stndfilename)
+fout = Dataset(options.outfilename, 'r')
+ntOut = len(fout.dimensions['Time'])
+if ntOut > 1:
+   outIndex = -1
+elif ntOut == 1:
+   outIndex = 0
+else:
+   sys.exit("ERROR: The Stnd spinup output file has less than one time level!")
+fout.close()
+os.system("ncks -O -d Time,{} {} {}".format(outIndex, options.outfilename, stndfilename))
 
 # Optionally add in the x-velo from the ~final time to help solver on first velo solve
 if options.restartfilename:
-   os.system("ncks -A -v uReconstructX " + options.restartfilename + " " + stndfilename)
+   frst = Dataset(options.restartfilename, 'r')
+   ntRst = len(frst.dimensions['Time'])
+   if ntRst > 1:
+      rstIndex = -1
+   elif ntRst == 1:
+      rstIndex = 0
+   else:
+      sys.exit("ERROR: The Stnd restart file has less than one time level!")
+   os.system("ncks -A -d Time,{} -v uReconstructX {} {}".format(rstIndex, options.restartfilename, stndfilename))
+   frst.close()
 
 
 # Open the Stnd output and get the needed info
 fstnd = Dataset(stndfilename, 'r')
-thicknessStnd = fstnd.variables['thickness'][-1,:]
+thicknessStnd = fstnd.variables['thickness'][0,:]  # we know this has 1 time level because we built it above
 haveVelo = False
 if 'uReconstructX' in fstnd.variables:
   haveVelo = True
