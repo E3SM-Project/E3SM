@@ -1201,6 +1201,9 @@ contains
          iceScatteringAerosol, &
          iceBodyAerosol
 
+    integer, dimension(:), pointer :: &
+         indexToCellID
+
     ! local
     integer :: &
          iCell, &
@@ -1216,7 +1219,8 @@ contains
          abortFlag
 
     character(len=strKIND) :: &
-         abortMessage
+         abortMessage, &
+         abortLocation
 
     real(kind=RKIND) :: &
          dayOfYear
@@ -1255,6 +1259,7 @@ contains
        call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
 
        call MPAS_pool_get_array(mesh, "latCell", latCell)
+       call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
        call MPAS_pool_get_array(icestate, "iceAreaCellInitial", iceAreaCellInitial)
        call MPAS_pool_get_array(icestate, "iceAreaCategoryInitial", iceAreaCategoryInitial)
@@ -1574,7 +1579,8 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_vertical_thermodynamics")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             call MPAS_dmpar_global_abort("MPAS-seaice: "//trim(abortMessage))
+             write(abortLocation,*) indexToCellID(iCell)
+             call MPAS_dmpar_global_abort("MPAS-seaice: iCell "//trim(abortLocation)//": "//trim(abortMessage))
           endif
 
           ! aerosol
@@ -1704,6 +1710,9 @@ contains
     integer, dimension(:,:), pointer :: &
          newlyFormedIce
 
+    integer, dimension(:), pointer :: &
+         indexToCellID
+
     ! local
     integer :: &
          iCell, &
@@ -1723,7 +1732,8 @@ contains
          setGetBGCTracers
 
     character(len=strKIND) :: &
-         abortMessage
+         abortMessage, &
+         abortLocation
 
     real(kind=RKIND) :: &
          dayOfYear
@@ -1758,6 +1768,8 @@ contains
        call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
        call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
        call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
+
+       call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
        call MPAS_pool_get_array(icestate, "iceAreaCategoryInitial", iceAreaCategoryInitial)
        call MPAS_pool_get_array(icestate, "iceVolumeCategoryInitial", iceVolumeCategoryInitial)
@@ -1889,7 +1901,8 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_itd_thermodynamics")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             call MPAS_dmpar_global_abort("MPAS-seaice: "//trim(abortMessage))
+             write(abortLocation,*) indexToCellID(iCell)
+             call MPAS_dmpar_global_abort("MPAS-seaice: iCell "//trim(abortLocation)//": "//trim(abortMessage))
           endif
 
        enddo ! iCell
@@ -2492,6 +2505,9 @@ contains
     integer, dimension(:,:), pointer :: &
          newlyFormedIce
 
+    integer, dimension(:), pointer :: &
+         indexToCellID
+
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep
 
@@ -2509,7 +2525,8 @@ contains
          setGetBGCTracers
 
     character(len=strKIND) :: &
-         abortMessage
+         abortMessage, &
+         abortLocation
 
     block => domain % blocklist
     do while (associated(block))
@@ -2537,6 +2554,8 @@ contains
        call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
        call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
        call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
+
+       call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
        call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
 
@@ -2654,7 +2673,8 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_ridging")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             call MPAS_dmpar_global_abort("MPAS-seaice: "//trim(abortMessage))
+             write(abortLocation,*) indexToCellID(iCell)
+             call MPAS_dmpar_global_abort("MPAS-seaice: iCell "//trim(abortLocation)//": "//trim(abortMessage))
           endif
 
        enddo ! iCell
@@ -2814,6 +2834,9 @@ contains
     integer, dimension(:,:), pointer :: &
          newlyFormedIce
 
+    integer, dimension(:), pointer :: &
+         indexToCellID
+
     ! local
     integer :: &
          iCell, &
@@ -2840,7 +2863,8 @@ contains
          setGetBGCTracers
 
     character(len=strKIND) :: &
-         abortMessage
+         abortMessage, &
+         abortLocation
 
     block => domain % blocklist
     do while (associated(block))
@@ -2876,6 +2900,8 @@ contains
        call MPAS_pool_get_dimension(mesh, "maxIronType", maxIronType)
        call MPAS_pool_get_dimension(mesh, "maxBCType", maxBCType)
        call MPAS_pool_get_dimension(mesh, "maxDustType", maxDustType)
+
+       call MPAS_pool_get_dimension(mesh, "indexToCellID", indexToCellID)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
@@ -3102,7 +3128,8 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_biogeochemistry")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             call MPAS_dmpar_global_abort("MPAS-seaice: "//trim(abortMessage))
+             write(abortLocation,*) indexToCellID(iCell)
+             call MPAS_dmpar_global_abort("MPAS-seaice: iCell "//trim(abortLocation)//": "//trim(abortMessage))
           endif
 
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -3388,7 +3415,7 @@ contains
 !>  
 !
 !-----------------------------------------------------------------------
-  
+
   subroutine cice_column_aggregate(domain)
 
     use ice_colpkg, only: colpkg_aggregate
