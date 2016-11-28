@@ -55,7 +55,6 @@
       <value compset="^RCP2_">rcp2.6</value>
       <value compset="^HIST_">trans_1850-2000</value>
       <value compset="_DICE.*_POP2">none</value>
-      <value compset="_CICE.*_POP2">none</value>
       <value compset="_DLND.*_DICE.*_DOCN">none</value>
       <value compset="_SLND.*_DICE.*_DOCN">none</value>
       <value compset="_DATM%S1850OCN">cplhist</value>
