@@ -20,7 +20,7 @@ If this tool is missing any feature that you need, please go to github and creat
 from standard_script_setup import *
 
 from CIME.case import Case
-
+from CIME.utils import expect
 import textwrap
 import sys
 
@@ -114,6 +114,7 @@ def xmlquery(caseroot, args, listofattributes,  subgroup=None):
                 logger.debug("Searching for %s", xmlattr)
                 attribute_hits = case.get_full_records(xmlattr, resolved=resolved,
                                                  subgroup=subgroup)
+                expect(len(attribute_hits) > 0,"No variable %s found"%xmlattr)
                 results       += attribute_hits
 
         elif (args.listall):
