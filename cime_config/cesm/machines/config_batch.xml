@@ -131,7 +131,6 @@
 
    <batch_system type="slurm" version="x.y">
      <batch_query>squeue</batch_query>
-     <batch_submit>sbatch</batch_submit>
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
@@ -242,11 +241,12 @@
 
    <!-- hera is SLURM -->
    <batch_system MACH="hera" type="slurm">
-   <batch_directive>#MSUB</batch_directive>
-   <directives>
-     <directive>-A ees</directive>
-     <directive>-l gres=lscratchd</directive>
-   </directives>
+     <batch_submit>sbatch</batch_submit>
+     <batch_directive>#MSUB</batch_directive>
+     <directives>
+       <directive>-A ees</directive>
+       <directive>-l gres=lscratchd</directive>
+     </directives>
    </batch_system>
 
 
@@ -274,6 +274,7 @@
   </batch_system>
 
   <batch_system MACH="olympus" type="slurm">
+    <batch_submit>sbatch</batch_submit>
     <queues>
       <queue walltimemin="0" walltimemax="00:59:00" jobmin="0" jobmax="9999" default="true">queue</queue>
     </queues>
@@ -310,6 +311,7 @@
   </batch_system>
 
   <batch_system MACH="skybridge" type="slurm" version="x.y">
+    <batch_submit>sbatch</batch_submit>
     <queues>
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
     </queues>
@@ -341,23 +343,26 @@
   </batch_system>
 
   <!-- sierra is SLURM -->
-   <batch_system MACH="sierra" type="slurm">
-   <batch_directive>#MSUB</batch_directive>
-   <directives>
-     <directive> </directive>
-     <directive>-A ees </directive>
-     <directive>-l nodes={{ num_nodes }}</directive>
-     <directive>-l gres=lscratchd</directive>
-   </directives>
-   </batch_system>
+  <batch_system MACH="sierra" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <batch_directive>#MSUB</batch_directive>
+    <directives>
+      <directive> </directive>
+      <directive>-A ees </directive>
+      <directive>-l nodes={{ num_nodes }}</directive>
+      <directive>-l gres=lscratchd</directive>
+    </directives>
+  </batch_system>
 
    <batch_system MACH="eastwind" type="slurm" version="x.y">
+     <batch_submit>sbatch</batch_submit>
      <queues>
        <queue jobmin="1" jobmax="9999" default="true">batch</queue>
      </queues>
    </batch_system>
 
    <batch_system MACH="corip1" type="slurm" version="x.y">
+     <batch_submit>sbatch</batch_submit>
      <directives>
        <directive>-C haswell </directive>
      </directives>
@@ -368,6 +373,7 @@
    </batch_system>
 
    <batch_system MACH="edison" type="slurm" version="x.y">
+     <batch_submit>sbatch</batch_submit>
      <queues>
        <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" >regular</queue>
        <queue walltimemax="00:30:00" jobmin="1" jobmax="12288" default="true">debug</queue>
@@ -375,6 +381,7 @@
    </batch_system>
 
    <batch_system MACH="stampede" type="slurm" version="x.y">
+     <batch_submit>ssh stampede.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
      <queues>
        <queue walltimemax="48:00:00" jobmin="1" jobmax="4096" >normal</queue>
        <queue walltimemax="02:00:00" jobmin="1" jobmax="256" default="true">development</queue>
@@ -382,6 +389,7 @@
    </batch_system>
 
    <batch_system MACH="rosa" type="slurm" version="x.y">
+     <batch_submit>sbatch</batch_submit>
      <queues>
        <queue default="true">default</queue>
      </queues>
@@ -395,6 +403,7 @@
   </batch_system>
 
   <batch_system type="slurm" MACH="constance" version="x.y">
+     <batch_submit>sbatch</batch_submit>
   </batch_system>
 
   <batch_system MACH="yellowstone" type="lsf" version="9.1">
