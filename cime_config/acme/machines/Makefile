@@ -364,8 +364,8 @@ else
        # GCC needs to be able to link to
        # nagfor runtime to get autoconf
        # tests to work.
-         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
        endif
     endif
   endif
@@ -399,10 +399,10 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
 
-CONFIG_ARGS +=  CC="$(SCC)" FC="$(SFC)" MPICC="$(MPICC)" \
-                MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
-                CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
-                NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"
+CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
+		MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
+		CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
+		NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"
 ifeq ($(COMPILER),nag)
   CONFIG_ARGS += LIBS="$(SLIBS)"
 endif
@@ -559,18 +559,18 @@ endif
 # doesn't seem to be able to differentiate between free & fixed
 # fortran flags)
 CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
-              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
-              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
-              -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-              -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
-              -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
-              -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
+	      -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
+	      -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
+	      -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+	      -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
+	      -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
+	      -D PIO_ENABLE_TESTS:BOOL=OFF \
+	      -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)"
 else
-        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
+	CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
@@ -586,9 +586,9 @@ ifndef CMAKE_ENV_VARS
   CMAKE_ENV_VARS :=
 endif
 CMAKE_ENV_VARS += CC=$(CC) \
-                  CXX=$(CXX) \
-                  FC=$(FC) \
-                  LDFLAGS="$(LDFLAGS)"
+		  CXX=$(CXX) \
+		  FC=$(FC) \
+		  LDFLAGS="$(LDFLAGS)"
 
 
 # We declare $(GLC_DIR)/Makefile to be a phony target so that cmake is
@@ -675,25 +675,25 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/libatm.a
      ULIBDEP += $(LIBROOT)/libice.a
      ifeq ($(findstring clm5_0,$(CLM_CONFIG_OPTS)),clm5_0)
-          LNDLIB := libclm.a
+	  LNDLIB := libclm.a
      else
-          ifeq ($(findstring clm4_5,$(CLM_CONFIG_OPTS)),clm4_5)
-               LNDLIB := libclm.a
-          else
-               LNDLIB := liblnd.a
-          endif
+	  ifeq ($(findstring clm4_5,$(CLM_CONFIG_OPTS)),clm4_5)
+	       LNDLIB := libclm.a
+	  else
+	       LNDLIB := liblnd.a
+	  endif
      endif
      ifeq ($(findstring libclm.a,$(LNDLIB)),libclm.a)
-        ULIBDEP += $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib/$(LNDLIB)
+	ULIBDEP += $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib/$(LNDLIB)
      else
-        ULIBDEP += $(LIBROOT)/$(LNDLIB)
+	ULIBDEP += $(LIBROOT)/$(LNDLIB)
      endif
      ifeq ($(MODEL),driver)
-         ifeq ($(findstring libclm.a,$(LNDLIB)),libclm.a)
-             INCLDIR += -I$(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
-         else
-             INCLDIR += -I$(EXEROOT)/lnd/obj
-         endif
+	 ifeq ($(findstring libclm.a,$(LNDLIB)),libclm.a)
+	     INCLDIR += -I$(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
+	 else
+	     INCLDIR += -I$(EXEROOT)/lnd/obj
+	 endif
      endif
 
 
@@ -705,7 +705,7 @@ ifeq ($(ULIBDEP),$(null))
      ifeq ($(COMP_GLC), cism)
        ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
        ifeq ($(CISM_USE_TRILINOS), TRUE)
-         ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
+	 ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
        endif
      endif
      ifeq ($(OCN_SUBMODEL),moby)
