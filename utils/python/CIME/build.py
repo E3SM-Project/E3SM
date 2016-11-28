@@ -505,11 +505,11 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
         my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
         with open(file_build, "w") as fd:
             fd.write("Current env:\n%s" % "\n".join(["  %s = %s" % (env, os.environ[env]) for env in sorted(os.environ)]))
-            stat = run_cmd("%s %s %s" %
+            fd.flush()
+            stat = run_cmd("%s %s %s 2>&1" %
                            (my_file, sharedpath, caseroot),
                            from_dir=exeroot,
-                           verbose=True, arg_stdout=fd,
-                           arg_stderr=subprocess.STDOUT)[0]
+                           verbose=True, arg_stdout=fd)[0]
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
 
