@@ -1,6 +1,66 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 11-28-2016
+Tag: cime5.2.0-alpha.10
+Answer Changes: Namelist compare changes expected
+Tests: scripts_regression_tests + various cesm system tests
+Dependencies:
+
+Brief Summary: config_grids.xml refactor, add machines cori-haswell and cori-knl,
+	remove CCSM_BASELINE variable - replaced with BASELINE_ROOT
+	add error checks in xmlquery and xmlchange
+
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/allactive/config_pes.xml
+M       cime_config/acme/allactive/config_pesall.xml
+M       cime_config/acme/machines/config_batch.xml
+M       cime_config/acme/machines/config_build.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/acme/machines/userdefined_laptop_template/config_machines.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/config_archive.xml
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/config_grids.xml
+M       cime_config/cesm/machines/Makefile
+M       cime_config/cesm/machines/config_batch.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       cime_config/cesm/machines/userdefined_laptop_template/config_machines.xml
+M       cime_config/config_tests.xml
+A       cime_config/xml_schemas/config_grids_v2.xsd
+M       components/data_comps/dlnd/cime_config/config_component.xml
+M       driver_cpl/cime_config/config_component.xml
+D       scripts/Testing/Testcases/NOC_script
+M       scripts/Tools/bless_test_results
+M       scripts/Tools/compare_test_results
+M       scripts/Tools/xmlchange
+M       scripts/Tools/xmlconvertors/config_pes_converter.py
+M       scripts/Tools/xmlconvertors/grid_xml_converter.py
+M       scripts/Tools/xmlquery
+A       tools/utils/find_circular_dependency.py
+M       utils/python/CIME/SystemTests/erio.py
+M       utils/python/CIME/SystemTests/homme.py
+D       utils/python/CIME/SystemTests/noc.py
+M       utils/python/CIME/XML/component.py
+M       utils/python/CIME/XML/entry_id.py
+M       utils/python/CIME/XML/generic_xml.py
+M       utils/python/CIME/XML/grids.py
+M       utils/python/CIME/bless_test_results.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_st_archive.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/provenance.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 11-10-2016
 Tag: cime5.2.0-alpha.9
 Answer Changes: None
@@ -9,7 +69,7 @@ Dependencies:
 
 Brief Summary:port to updated cori and new laramie systems, erio test and gmake fix.
 
-User interface changes: 
+User interface changes:
 
 Modified files: git diff --name-status
 A       cime_config/acme/allactive/testmods_dirs/cam/outfrq9s/shell_commands
@@ -143,7 +203,7 @@ Tests: scripts_regression_tests, problem specific tests
 Dependencies:
 
 Brief Summary: Fix for ERP tests, Fix for shr_scam_mod, indentation in cs.status
-                           Fix for testmods recurrsion, pylint testing extended
+			   Fix for testmods recurrsion, pylint testing extended
 User interface changes: none
 
 Modified files: git diff --name-status
@@ -1265,7 +1325,7 @@ Tests:
 Dependencies:
 
 Brief Summary: Addition of ice to ocean coupling fields Fioi_bcphi,
-               Fioi_bcpho, Fioi_flxdst
+	       Fioi_bcpho, Fioi_flxdst
 
 User interface changes:
 
@@ -1278,12 +1338,12 @@ Originator: fischer-ncar, jtruesdal
 Date: 6 July 2016
 Tag: cime4.5.18
 Answer Changes: Answer changes for compset with WaveWatch turned on.
-                All others are bit-for-bit.
+		All others are bit-for-bit.
 Tests: Namelist test ran on yellowstone, WAV_GRID manually looked at.
 Dependencies:
 
 Brief Summary: Add support to run WaveWatch.  Allactive
-               compset not being tested were removed.
+	       compset not being tested were removed.
 
 User interface changes:
 
@@ -1329,4 +1389,3 @@ User interface changes:
 Modified files: git diff --name-status
 
 ======================================================================
-
