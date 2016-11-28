@@ -914,6 +914,22 @@
 
   <entry id="TIMER_LEVEL">
     <type>integer</type>
+    <default_value>20</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>timer output depth</desc>
+  </entry>
+
+  <entry id="TIMER_DETAIL">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>timer output detail</desc>
+  </entry>
+
+  <entry id="TPROF_TOTAL">
+    <type>integer</type>
     <default_value>12</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
