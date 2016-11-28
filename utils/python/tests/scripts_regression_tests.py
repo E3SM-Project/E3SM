@@ -431,7 +431,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._unset_proxy       = setup_proxy()
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._machine           = MACHINE.get_machine_name()
-        self._baseline_area     = MACHINE.get_value("CCSM_BASELINE")
+        self._baseline_area     = MACHINE.get_value("BASELINE_ROOT")
         self._testroot          = MACHINE.get_value("CIME_OUTPUT_ROOT")
         self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH

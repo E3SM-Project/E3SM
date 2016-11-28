@@ -14,7 +14,7 @@
       <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
       <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
       <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/scratch</CIME_OUTPUT_ROOT>
-      <CCSM_BASELINE>$ENV{HOME}/projects/baselines</CCSM_BASELINE>
+      <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
       <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
       <BATCH_SYSTEM>none</BATCH_SYSTEM>
       <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>

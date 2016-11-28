@@ -608,7 +608,7 @@
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>Output root directory for each machine.
-                Base directory for build and run directories.
+		Base directory for build and run directories.
     </desc>
   </entry>
 
@@ -946,8 +946,8 @@
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Turns on component barriers for component timing.
-          This variable is for testing and debugging only and should never
-          be set for a production run.
+	  This variable is for testing and debugging only and should never
+	  be set for a production run.
     </desc>
   </entry>
 
@@ -2974,14 +2974,6 @@
     <desc>Whether to clean the test after it is built/run</desc>
   </entry>
 
-  <entry id="CCSM_BASELINE">
-    <type>char</type>
-    <default_value>/UNSET</default_value>
-    <group>test</group>
-    <file>env_test.xml</file>
-    <desc>standard baselines root directory for testing</desc>
-  </entry>
-
   <entry id="CCSM_CPRNC">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -3644,5 +3636,3 @@
   </help>
 
 </entry_id>
-
-

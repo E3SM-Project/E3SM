@@ -106,7 +106,7 @@ class TestScheduler(object):
         if baseline_cmp_name or baseline_gen_name:
             # Compute baseline_root
             self._baseline_root = baseline_root if baseline_root is not None \
-                else self._machobj.get_value("CCSM_BASELINE")
+                else self._machobj.get_value("BASELINE_ROOT")
 
             if self._project is not None:
                 self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
