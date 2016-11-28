@@ -24,7 +24,7 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
         else:
             return True, None
     else:
-        True, None
+        return True, None
 
 ###############################################################################
 def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root, report_only, force):
