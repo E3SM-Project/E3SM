@@ -564,7 +564,7 @@
     <PROXY>wwwproxy.sandia.gov:80</PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
-    <COMPILERS>gnu</COMPILERS>
+    <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
     <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
@@ -602,7 +602,14 @@
         <command name="load">sems-env</command>
         <command name="load">sems-git</command>
         <command name="load">sems-python/2.7.9</command>
+      </modules>
+      <modules compiler="gnu">
         <command name="load">sems-gcc/5.1.0</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">sems-intel/15.0.2</command>
+      </modules>
+      <modules>
         <command name="load">sems-openmpi/1.8.7</command>
         <command name="load">sems-cmake/2.8.12</command>
         <command name="load">sems-netcdf/4.3.2/parallel</command>
