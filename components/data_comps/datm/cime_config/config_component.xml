@@ -219,6 +219,9 @@
       <value   compset="HIST.*_DATM%QIA">1972</value>
       <value   compset="HIST.*_DATM%CRU">1920</value>
       <value   compset="HIST.*_DATM%GSW">1920</value>
+      <value   compset="20TR.*_DATM%QIA">1972</value>
+      <value   compset="20TR.*_DATM%CRU">1920</value>
+      <value   compset="20TR.*_DATM%GSW">1920</value>
       <value   compset="4804.*_DATM%QIA">2004</value>
       <value   compset="RCP.*_DATM%QIA">2004</value> 
       <value   compset="RCP.*_DATM%CRU">2010</value> 
