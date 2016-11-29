@@ -1054,7 +1054,7 @@ class Case(object):
     def load_env(self):
         if not self._is_env_loaded:
             compiler = self.get_value("COMPILER")
-            debug=self.get_value("DEBUG"),
+            debug=self.get_value("DEBUG")
             mpilib=self.get_value("MPILIB")
             env_module = self.get_env("mach_specific")
             env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
