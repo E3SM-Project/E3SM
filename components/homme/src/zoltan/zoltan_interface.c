@@ -92,12 +92,37 @@ void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, 
         result_parts, partmethod, mappingmethod);
   }
   if (*partmethod == 5 || *mappingmethod > 1){
+#ifdef COMPARESOLUTIONS
+    int *result_parts_copy = (int*) malloc(sizeof(int) * (*nelem));
+
+    for (int i = 0; i < *nelem; ++i){
+      result_parts_copy[i] = result_parts[i];
+    }
     zoltan_map_problem(
             nelem, xadj,adjncy,adjwgt,vwgt,
             nparts,
             c_comm,
             xcoord, ycoord, zcoord, coord_dimension,
-            result_parts, partmethod, mappingmethod);
+            &(result_parts_copy[0]), partmethod, mappingmethod);
+#endif
+    zoltan_mapping_problem(
+                nelem, xadj,adjncy,adjwgt,vwgt,
+                nparts,
+                c_comm,
+                xcoord, ycoord, zcoord, coord_dimension,
+                result_parts, partmethod, mappingmethod);
+
+#ifdef COMPARESOLUTIONS
+
+    for (int i = 0; i < *nelem; ++i){
+      if (result_parts[i] != result_parts_copy[i]){
+        printf ("i:%d result_parts:%d result_parts_copy:%d\n",i, result_parts[i],result_parts_copy[i]);
+        exit(1);
+      }
+    }
+    free(result_parts_copy);
+#endif
+
   }
 #else
   int mype2, size2;
@@ -177,7 +202,15 @@ void z2printmetrics_(
 
 #if HAVE_TRILINOS
 #if TRILINOS_HAVE_ZOLTAN2
+#ifdef COMPARESOLUTIONS
   zoltan2_print_metrics(
+      nelem,
+      xadj,adjncy,adjwgt,vwgt,
+      nparts, c_comm,
+      result_parts);
+#endif
+
+  zoltan2_print_metrics2(
       nelem,
       xadj,adjncy,adjwgt,vwgt,
       nparts, c_comm,

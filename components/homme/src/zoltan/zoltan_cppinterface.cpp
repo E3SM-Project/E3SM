@@ -19,6 +19,10 @@
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 
+#include <Zoltan2_MappingProblem.hpp>
+#include <Zoltan2_MappingSolution.hpp>
+#include <Zoltan2_EvaluatePartition.hpp>
+#include <Zoltan2_EvaluateMapping.hpp>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -71,7 +75,6 @@ void zoltan_partition_problem(
     int *partmethod,
     int *mapmethod){
   using namespace Teuchos;
-
   typedef int zlno_t;
   typedef int zgno_t;
   //typedef int part_t;
@@ -212,7 +215,7 @@ void zoltan_partition_problem(
     break;
   case 22:
     zoltan2_parameters.set("algorithm", "nd");
-
+    break;
   default :
     zoltan2_parameters.set("algorithm", "rcb");
 
@@ -406,7 +409,7 @@ void zoltan_map_problem(
       env,
       false);
   env->timerStop(Zoltan2::MACRO_TIMERS, "CoordinateTaskMapper");
-  timer->printAndResetToZero();
+  //timer->printAndResetToZero();
 
   //then shift the results for fortran base.
   const int fortran_shift = 1;
@@ -416,6 +419,176 @@ void zoltan_map_problem(
   }
 }
 
+void zoltan_mapping_problem(
+    int *nelem,
+    int *xadj,
+    int *adjncy,
+    double *adjwgt,
+    double *vwgt,
+    int *nparts,
+    MPI_Comm comm,
+    double *xcoord,
+    double *ycoord,
+    double *zcoord, int *coord_dimension,
+    int *result_parts,
+    int *partmethod,
+    int *mapmethod){
+
+  using namespace Teuchos;
+
+  typedef int zlno_t;
+  typedef int zgno_t;
+  //typedef int part_t;
+  typedef double zscalar_t;
+
+
+
+  typedef Tpetra::Map<>::node_type znode_t;
+  typedef Tpetra::Map<zlno_t, zgno_t, znode_t> map_t;
+  size_t numGlobalCoords = *nelem;
+
+
+  Teuchos::RCP<const Teuchos::Comm<int> > tcomm =  Teuchos::createSerialComm<int>();
+  Teuchos::RCP<const Teuchos::Comm<int> > global_comm =
+      Teuchos::RCP<const Teuchos::Comm<int> > (new Teuchos::MpiComm<int> (comm));
+
+
+  Teuchos::ParameterList problemParams;
+  Teuchos::RCP<Zoltan2::Environment> env (new Zoltan2::Environment(problemParams, global_comm));
+  RCP<Zoltan2::TimerManager> timer(new Zoltan2::TimerManager(global_comm, &std::cout, Zoltan2::MACRO_TIMERS));
+  env->setTimer(timer);
+
+
+  env->timerStart(Zoltan2::MACRO_TIMERS, "TpetraGraphCreate");
+  RCP<const map_t> map = rcp (new map_t (numGlobalCoords, 0, tcomm));
+
+  typedef Tpetra::CrsGraph<zlno_t, zgno_t, znode_t> tcrsGraph_t;
+  RCP<tcrsGraph_t> TpetraCrsGraph(new tcrsGraph_t (map, 0));
+
+  const zlno_t numMyElements = map->getNodeNumElements ();
+  const zgno_t myBegin = map->getGlobalElement (0);
+
+  for (zlno_t lclRow = 0; lclRow < numMyElements; ++lclRow) {
+    const zgno_t gblRow = map->getGlobalElement (lclRow);
+    zgno_t begin = xadj[gblRow];
+    zgno_t end = xadj[gblRow + 1];
+    const ArrayView< const zgno_t > indices(adjncy+begin, end-begin);
+    TpetraCrsGraph->insertGlobalIndices(gblRow, indices);
+  }
+  TpetraCrsGraph->fillComplete ();
+  env->timerStop(Zoltan2::MACRO_TIMERS, "TpetraGraphCreate");
+
+  env->timerStart(Zoltan2::MACRO_TIMERS, "AdapterCreate");
+  RCP<const tcrsGraph_t> const_data = rcp_const_cast<const tcrsGraph_t>(TpetraCrsGraph);
+  typedef Tpetra::MultiVector<zscalar_t, zlno_t, zgno_t, znode_t> tMVector_t;
+  typedef Zoltan2::XpetraCrsGraphAdapter<tcrsGraph_t, tMVector_t> adapter_t;
+  RCP<adapter_t> ia (new adapter_t(const_data/*,(int)vtx_weights.size(),(int)edge_weights.size()*/, 1, 1));
+
+  /***********************************SET COORDINATES*********************/
+  const int coord_dim = *coord_dimension;
+  //const int coord_dim = 2;
+  // make an array of array views containing the coordinate data
+  Teuchos::Array<Teuchos::ArrayView<const zscalar_t> > coordView(coord_dim);
+
+  if(numMyElements > 0){
+    Teuchos::ArrayView<const zscalar_t> a(xcoord + myBegin, numMyElements);
+    coordView[0] = a;
+    Teuchos::ArrayView<const zscalar_t> b(ycoord + myBegin, numMyElements);
+    coordView[1] = b;
+    if (coord_dim == 3){
+      Teuchos::ArrayView<const zscalar_t> c(zcoord + myBegin, numMyElements);
+      coordView[2] = c;
+    }
+  }
+  else {
+    Teuchos::ArrayView<const zscalar_t> a;
+    coordView[0] = a;
+    coordView[1] = a;
+    if (coord_dim == 3){
+      coordView[2] = a;
+    }
+  }
+
+  RCP<tMVector_t> coords(new tMVector_t(map, coordView.view(0, coord_dim), coord_dim));//= set multivector;
+  RCP<const tMVector_t> const_coords = rcp_const_cast<const tMVector_t>(coords);
+  Zoltan2::XpetraMultiVectorAdapter<tMVector_t> *adapter = (new Zoltan2::XpetraMultiVectorAdapter<tMVector_t>(const_coords));
+
+  ia->setCoordinateInput(adapter);
+  ia->setEdgeWeights(adjwgt, 1, 0);
+  ia->setVertexWeights(vwgt, 1, 0);
+
+  env->timerStop(Zoltan2::MACRO_TIMERS, "AdapterCreate");
+  /***********************************SET COORDINATES*********************/
+
+  //int *parts = result_parts;
+
+
+
+
+
+
+  //partitioning performed using sf curve, or metis and so on.
+  //this was not handled in zoltan part, therefore, for mapping we need to shift the part numbers by 1.
+  if (*partmethod <= 4){
+    for (int i = 0; i <  *nelem; ++i){
+      result_parts[i] = result_parts[i] - 1;
+    }
+  }
+  if (*partmethod == 5){
+    //in this case there is no partitioning performed before mapping.
+    for (int i = 0; i <  *nelem; ++i){
+      result_parts[i] = i;
+    }
+  }
+
+  ArrayRCP<int> initial_part_ids(result_parts, 0,*nelem, false);
+  Zoltan2::PartitioningSolution<adapter_t> partitioning_solution(env, global_comm, 0);
+  partitioning_solution.setParts(initial_part_ids);
+
+  //otherwise part method is > 5 then part numbers are the output of zoltan2 partitioning mehtods.
+  //we do not need to shift them.
+
+
+  if (*mapmethod == 3){
+    //the optimization parameters that are specific to architecture is set here.
+    //this is for BGQ
+    problemParams.set("machine_coord_transformation", "EIGNORE");
+  }
+
+  problemParams.set("mapping_algorithm", "geometric");
+  problemParams.set("distributed_input_adapter", false);
+
+  env->timerStart(Zoltan2::MACRO_TIMERS, "MappingProblemCreate");
+  Zoltan2::MappingProblem<adapter_t> serial_map_problem(
+      ia.getRawPtr(),
+      &problemParams,
+      global_comm,
+      &partitioning_solution);
+
+
+
+  env->timerStop(Zoltan2::MACRO_TIMERS, "MappingProblemCreate");
+  serial_map_problem.solve(true);
+  Zoltan2::MappingSolution<adapter_t> *msoln3 = serial_map_problem.getSolution();
+  int *parts =  (int *)msoln3->getPartListView();
+
+  //timer->printAndResetToZero();
+
+  //then shift the results for fortran base.
+  const int fortran_shift = 1;
+  for (zlno_t lclRow = 0; lclRow < numMyElements; ++lclRow) {
+    int proc = parts[lclRow];
+    result_parts[lclRow] = proc + fortran_shift;
+  }
+/*
+  typedef Zoltan2::EvaluateMapping<adapter_t> quality_t;
+  Teuchos::RCP<quality_t> metricObject_1 = rcp(new quality_t(ia.getRawPtr(),&problemParams,tcomm,msoln3,
+      serial_map_problem.getMachine().getRawPtr()));
+  if (global_comm->getRank() == 0){
+    metricObject_1->printMetrics(std::cout);
+  }
+*/
+}
 
 
 void zoltan2_print_metrics(
@@ -427,6 +600,9 @@ void zoltan2_print_metrics(
     int *nparts,
     MPI_Comm comm,
     int *result_parts){
+
+  sort_graph(nelem,xadj,adjncy,adjwgt,vwgt);
+
 
 
   int nv = *nelem;
@@ -527,6 +703,93 @@ void zoltan2_print_metrics(
   }
   delete [] machine_extent_wrap_around;
   delete [] machine_extent;
+}
+
+
+void zoltan2_print_metrics2(
+    int *nelem,
+    int *xadj,
+    int *adjncy,
+    double *adjwgt,
+    double *vwgt,
+    int *nparts,
+    MPI_Comm comm,
+    int *result_parts){
+
+
+  using namespace Teuchos;
+
+  typedef int zlno_t;
+  typedef int zgno_t;
+  //typedef int part_t;
+  typedef double zscalar_t;
+
+
+
+  typedef Tpetra::Map<>::node_type znode_t;
+  typedef Tpetra::Map<zlno_t, zgno_t, znode_t> map_t;
+  size_t numGlobalCoords = *nelem;
+
+
+  Teuchos::RCP<const Teuchos::Comm<int> > tcomm =  Teuchos::createSerialComm<int>();
+  Teuchos::RCP<const Teuchos::Comm<int> > global_comm =
+      Teuchos::RCP<const Teuchos::Comm<int> > (new Teuchos::MpiComm<int> (comm));
+
+
+  Teuchos::ParameterList problemParams;
+  Teuchos::RCP<Zoltan2::Environment> env (new Zoltan2::Environment(problemParams, global_comm));
+  RCP<Zoltan2::TimerManager> timer(new Zoltan2::TimerManager(global_comm, &std::cout, Zoltan2::MACRO_TIMERS));
+  env->setTimer(timer);
+
+
+  env->timerStart(Zoltan2::MACRO_TIMERS, "TpetraGraphCreate");
+  RCP<const map_t> map = rcp (new map_t (numGlobalCoords, 0, tcomm));
+
+  typedef Tpetra::CrsGraph<zlno_t, zgno_t, znode_t> tcrsGraph_t;
+  RCP<tcrsGraph_t> TpetraCrsGraph(new tcrsGraph_t (map, 0));
+
+  const zlno_t numMyElements = map->getNodeNumElements ();
+  //const zgno_t myBegin = map->getGlobalElement (0);
+
+  for (zlno_t lclRow = 0; lclRow < numMyElements; ++lclRow) {
+    const zgno_t gblRow = map->getGlobalElement (lclRow);
+    zgno_t begin = xadj[gblRow];
+    zgno_t end = xadj[gblRow + 1];
+    const ArrayView< const zgno_t > indices(adjncy+begin, end-begin);
+    TpetraCrsGraph->insertGlobalIndices(gblRow, indices);
+  }
+  TpetraCrsGraph->fillComplete ();
+  env->timerStop(Zoltan2::MACRO_TIMERS, "TpetraGraphCreate");
+
+  env->timerStart(Zoltan2::MACRO_TIMERS, "AdapterCreate");
+  RCP<const tcrsGraph_t> const_data = rcp_const_cast<const tcrsGraph_t>(TpetraCrsGraph);
+  typedef Tpetra::MultiVector<zscalar_t, zlno_t, zgno_t, znode_t> tMVector_t;
+  typedef Zoltan2::XpetraCrsGraphAdapter<tcrsGraph_t, tMVector_t> adapter_t;
+  RCP<adapter_t> ia (new adapter_t(const_data/*,(int)vtx_weights.size(),(int)edge_weights.size()*/, 1, 1));
+
+  /***********************************SET COORDINATES*********************/
+  ia->setEdgeWeights(adjwgt, 1, 0);
+  ia->setVertexWeights(vwgt, 1, 0);
+  env->timerStop(Zoltan2::MACRO_TIMERS, "AdapterCreate");
+  /***********************************SET COORDINATES*********************/
+
+  Zoltan2::MappingSolution<adapter_t> single_phase_mapping_solution(env, global_comm);
+  ArrayRCP<int> initial_part_ids(numMyElements);
+
+  for (zgno_t i = 0; i < numMyElements; ++i){
+    initial_part_ids[i] = result_parts[i] - 1;
+  }
+  single_phase_mapping_solution.setParts(initial_part_ids);
+  typedef Zoltan2::EvaluateMapping<adapter_t> quality_t;
+  Teuchos::ParameterList distributed_problemParams;
+  Zoltan2::MachineRepresentation<double, int> mach(*global_comm);
+
+  RCP<quality_t> metricObject_1 = rcp(new quality_t(ia.getRawPtr(),&distributed_problemParams,tcomm,
+      &single_phase_mapping_solution, &mach));
+
+  if (global_comm->getRank() == 0){
+    metricObject_1->printMetrics(std::cout);
+  }
 }
 
 #else //HAVE_TRILINOS
