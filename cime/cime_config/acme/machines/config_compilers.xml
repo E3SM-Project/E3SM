@@ -660,6 +660,18 @@ for mct, etc.
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
+<compiler COMPILER="intel" MACH="sandia-srn-sems">
+  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/usr/lib64 -L/usr/lib64/atlas -lblas -llapack</ADD_SLIBS>
+  <ADD_SLIBS> /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/mic/libmkl_scalapack_lp64.a -Wl,--start-group /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/intel64/libmkl_intel_lp64.a /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/intel64/libmkl_core.a /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/intel64/libmkl_sequential.a -Wl,--end-group /projects/sems/install/rhel6-x86_64/sems/compiler/intel/15.0.2/base/mkl/lib/mic/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
+  <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="anlworkstation">
   <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
@@ -770,7 +782,7 @@ for mct, etc.
       <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
       <FREEFLAGS> -ffree-form </FREEFLAGS>
       <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
-      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
+      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
                                  so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
       <FFLAGS> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</FFLAGS>
       <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
