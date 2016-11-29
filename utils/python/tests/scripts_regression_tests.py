@@ -1290,7 +1290,7 @@ class MakefileTester(object):
     _makefile_template = """
 include Macros
 query:
-/techo '$({})' > query.out
+\techo '$({})' > query.out
 """
 
     def __init__(self, parent, make_string):
