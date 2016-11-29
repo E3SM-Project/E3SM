@@ -244,7 +244,9 @@ class EnvMachSpecific(EnvBase):
     def _load_module_modules(self, modules_to_load):
         for cmd in self._get_module_commands(modules_to_load, "python"):
             logger.debug("module command is %s"%cmd)
-            py_module_code = run_cmd_no_fail(cmd)
+            stat, py_module_code, errout = run_cmd(cmd)
+            expect(stat==0 and len(errout) == 0, 
+                   "module command %s failed with message:\n%s"%(cmd,errout))
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
