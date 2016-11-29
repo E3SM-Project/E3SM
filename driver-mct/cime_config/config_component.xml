@@ -2974,14 +2974,6 @@
     <desc>Whether to clean the test after it is built/run</desc>
   </entry>
 
-  <entry id="CCSM_BASELINE">
-    <type>char</type>
-    <default_value>/UNSET</default_value>
-    <group>test</group>
-    <file>env_test.xml</file>
-    <desc>standard baselines root directory for testing</desc>
-  </entry>
-
   <entry id="CCSM_CPRNC">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -3511,7 +3503,7 @@
       <value compset="_CLM45.+CISM\d">TRUE</value>
       <value compset="_CLM50.+CISM\d">TRUE</value>
       <!-- Turn on two-way coupling for TG compsets - even though there are no
-	   feedbacks for a TG compset, this will give us additional diagnostics -->
+           feedbacks for a TG compset, this will give us additional diagnostics -->
       <value compset="_DLND.+CISM\d">TRUE</value>
     </values>
     <group>run_glc</group>
@@ -3649,5 +3641,3 @@
   </help>
 
 </entry_id>
-
-
