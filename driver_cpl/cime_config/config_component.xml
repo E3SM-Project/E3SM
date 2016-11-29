@@ -3042,8 +3042,9 @@
     <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
     <default_value>none</default_value>
     <values>
-      <value compset="_CAM\d+"     >CO2A</value>
+      <value compset="_CAM\d+"  >CO2A</value>
       <value compset="_DATM"    >none</value>
+      <value compset="_DATM%S1850.+POP\d">CO2A</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="_BGC%BDRD">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
@@ -3088,6 +3089,7 @@
       <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
       <value compset="_DATM.*_DOCN%US20">24</value>
+      <value compset="_DATM%S1850.+POP\d">48</value> 
       <value compset="_MPAS">1</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne60np4">96</value>
@@ -3176,6 +3178,7 @@
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
       <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
+      <value compset="_DATM%S1850.+POP\d">8</value> 
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
     </values>
@@ -3206,6 +3209,7 @@
     <values>
       <value compset="DATM.+POP\d">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
+      <value compset="DATM%S1850.+POP\d">FALSE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
@@ -3231,6 +3235,7 @@
     <default_value>off</default_value>
     <values>
       <value compset="DATM.+POP\d">ocn</value>
+      <value compset="DATM%S1850.+POP\d">off</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>

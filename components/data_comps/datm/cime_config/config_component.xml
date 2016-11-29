@@ -15,7 +15,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3,CPLHISTForcingForOcnIce</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -35,27 +35,29 @@
       <value compset="%GSW"  >CLMGSWP3</value>
       <value compset="%1PT"  >CLM1PT</value>
       <value compset="%S1850">CPLHIST3HrWx</value>
+      <value compset="%S1850OCN">CPLHISTForcingForOcnIce</value>
     </values>
   </entry>
 
   <entry id="DATM_PRESAERO">
     <type>char</type>
-    <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,pt1_pt1</valid_values>
+    <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,pt1_pt1,cplhist</valid_values>
     <default_value>none</default_value>
     <values>
-      <value compset="1850_">clim_1850</value>
-      <value compset="2000_">clim_2000</value>
-      <value compset="2003_">clim_2000</value>
-      <value compset="4804_">clim_2000</value>
-      <value compset="1850_">clim_1850</value>
-      <value compset="RCP8_">rcp8.5</value>
-      <value compset="RCP6_">rcp6.0</value>
-      <value compset="RCP4_">rcp4.5</value>
-      <value compset="RCP2_">rcp2.6</value>
-      <value compset="HIST_">trans_1850-2000</value>
+      <value compset="^1850_">clim_1850</value>
+      <value compset="^2000_">clim_2000</value>
+      <value compset="^2003_">clim_2000</value>
+      <value compset="^4804_">clim_2000</value>
+      <value compset="^1850_">clim_1850</value>
+      <value compset="^RCP8_">rcp8.5</value>
+      <value compset="^RCP6_">rcp6.0</value>
+      <value compset="^RCP4_">rcp4.5</value>
+      <value compset="^RCP2_">rcp2.6</value>
+      <value compset="^HIST_">trans_1850-2000</value>
       <value compset="_DICE.*_POP2">none</value>
       <value compset="_DLND.*_DICE.*_DOCN">none</value>
       <value compset="_SLND.*_DICE.*_DOCN">none</value>
+      <value compset="_DATM%S1850OCN">cplhist</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -81,16 +83,25 @@
     <valid_values>none,20tr,rcp2.6,rcp4.5,rcp6.0,rcp8.5</valid_values>
     <default_value>none</default_value>
     <values>
-      <value compset="RCP8">rcp8.5</value>
-      <value compset="RCP6">rcp6.0</value>
-      <value compset="RCP4">rcp4.5</value>
-      <value compset="RCP2">rcp2.6</value>
-      <value compset="HIST">20tr</value>
+      <value compset="^RCP8">rcp8.5</value>
+      <value compset="^RCP6">rcp6.0</value>
+      <value compset="^RCP4">rcp4.5</value>
+      <value compset="^RCP2">rcp2.6</value>
+      <value compset="^HIST">20tr</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>DATM CO2 time series</desc>
   </entry>
+
+  <entry id="DATM_CPLHIST_DIR"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>directory for coupler history data mode (only used for CPLHIST3HrWx mode)</desc>
+  </entry> 
 
   <entry id="DATM_CPLHIST_CASE">
     <type>char</type>

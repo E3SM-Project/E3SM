@@ -9,7 +9,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, shutil, sys, glob
+import os, shutil, sys, glob, re
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -118,7 +118,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
         inst_stream = stream + inst_string
         logger.info("DROF stream is %s", inst_stream)
         stream_path = os.path.join(confdir, "drof.streams.txt." + inst_stream)
-        user_stream_path = os.path.join(case.get_case_root(),
+        user_stream_path = os.path.join(case.get_case_root(), 
                                         "user_drof.streams.txt." + inst_stream)
 
         # Use the user's stream file, or create one if necessary.

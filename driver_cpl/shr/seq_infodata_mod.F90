@@ -133,6 +133,8 @@ MODULE seq_infodata_mod
       integer                 :: budget_ltend    ! long term budget level written at end of run
       logical                 :: drv_threading   ! is threading control in driver turned on
       logical                 :: histaux_a2x     ! cpl writes aux hist files: a2x every c2a comm
+      logical                 :: histaux_a2x1hri ! cpl writes aux hist files: a2x 1hr instaneous values
+      logical                 :: histaux_a2x1hr  ! cpl writes aux hist files: a2x 1hr
       logical                 :: histaux_a2x3hr  ! cpl writes aux hist files: a2x 3hr states
       logical                 :: histaux_a2x3hrp ! cpl writes aux hist files: a2x 3hr precip
       logical                 :: histaux_a2x24hr ! cpl writes aux hist files: a2x daily all
@@ -362,6 +364,8 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     integer                :: budget_ltann       ! long term budget level written at end of year
     integer                :: budget_ltend       ! long term budget level written at end of run
     logical                :: histaux_a2x        ! cpl writes aux hist files: a2x every c2a comm
+    logical                :: histaux_a2x1hri    ! cpl writes aux hist files: a2x 1hr instaneous values
+    logical                :: histaux_a2x1hr     ! cpl writes aux hist files: a2x 1hr
     logical                :: histaux_a2x3hr     ! cpl writes aux hist files: a2x 3hr states
     logical                :: histaux_a2x3hrp    ! cpl writes aux hist files: a2x 2hr precip
     logical                :: histaux_a2x24hr    ! cpl writes aux hist files: a2x daily all
@@ -412,7 +416,8 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
          do_budgets, drv_threading,                        &
          budget_inst, budget_daily, budget_month,          &
          budget_ann, budget_ltann, budget_ltend,           &
-         histaux_a2x    ,histaux_a2x3hr,histaux_a2x3hrp,   &
+         histaux_a2x,histaux_a2x1hri,histaux_a2x1hr,       &
+         histaux_a2x3hr,histaux_a2x3hrp,                   &
          histaux_a2x24hr,histaux_l2x   ,histaux_r2x,       &
          histavg_atm, histavg_lnd, histavg_ocn, histavg_ice, &
          histavg_rof, histavg_glc, histavg_wav, histavg_xao, &
@@ -500,6 +505,8 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        budget_ltann          = 1
        budget_ltend          = 0
        histaux_a2x           = .false.
+       histaux_a2x1hri       = .false.
+       histaux_a2x1hr        = .false.
        histaux_a2x3hr        = .false.
        histaux_a2x3hrp       = .false.
        histaux_a2x24hr       = .false.
@@ -604,6 +611,8 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%budget_ltann          = budget_ltann
        infodata%budget_ltend          = budget_ltend
        infodata%histaux_a2x           = histaux_a2x
+       infodata%histaux_a2x1hri       = histaux_a2x1hri
+       infodata%histaux_a2x1hr        = histaux_a2x1hr
        infodata%histaux_a2x3hr        = histaux_a2x3hr
        infodata%histaux_a2x3hrp       = histaux_a2x3hrp
        infodata%histaux_a2x24hr       = histaux_a2x24hr
@@ -873,7 +882,8 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            do_budgets, do_histinit, drv_threading, flux_diurnal,              &
            budget_inst, budget_daily, budget_month, wall_time_limit,          &
            budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
-           histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
+           histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
+           histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr,                  &
            histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
            histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,                &
            histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
@@ -963,6 +973,8 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    integer             ,optional, intent(OUT) :: budget_ltann  ! ltann budget
    integer             ,optional, intent(OUT) :: budget_ltend  ! ltend budget
    logical             ,optional, intent(OUT) :: histaux_a2x
+   logical             ,optional, intent(OUT) :: histaux_a2x1hri
+   logical             ,optional, intent(OUT) :: histaux_a2x1hr
    logical             ,optional, intent(OUT) :: histaux_a2x3hr
    logical             ,optional, intent(OUT) :: histaux_a2x3hrp
    logical             ,optional, intent(OUT) :: histaux_a2x24hr
@@ -1126,6 +1138,8 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(budget_ltann)   ) budget_ltann   = infodata%budget_ltann
     if ( present(budget_ltend)   ) budget_ltend   = infodata%budget_ltend
     if ( present(histaux_a2x)    ) histaux_a2x    = infodata%histaux_a2x
+    if ( present(histaux_a2x1hri)) histaux_a2x1hri= infodata%histaux_a2x1hri
+    if ( present(histaux_a2x1hr) ) histaux_a2x1hr = infodata%histaux_a2x1hr
     if ( present(histaux_a2x3hr) ) histaux_a2x3hr = infodata%histaux_a2x3hr
     if ( present(histaux_a2x3hrp)) histaux_a2x3hrp= infodata%histaux_a2x3hrp
     if ( present(histaux_a2x24hr)) histaux_a2x24hr= infodata%histaux_a2x24hr
@@ -1355,7 +1369,8 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
            do_budgets, do_histinit, drv_threading, flux_diurnal,              &
            budget_inst, budget_daily, budget_month, force_stop_at,            &
            budget_ann, budget_ltann, budget_ltend ,                           &
-           histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
+           histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
+           histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr,                  &
            histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
            histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,                &
            histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
@@ -1444,6 +1459,8 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
    integer             ,optional, intent(IN) :: budget_ltann  ! ltann budget
    integer             ,optional, intent(IN) :: budget_ltend  ! ltend budget
    logical             ,optional, intent(IN) :: histaux_a2x
+   logical             ,optional, intent(IN) :: histaux_a2x1hri
+   logical             ,optional, intent(IN) :: histaux_a2x1hr
    logical             ,optional, intent(IN) :: histaux_a2x3hr
    logical             ,optional, intent(IN) :: histaux_a2x3hrp
    logical             ,optional, intent(IN) :: histaux_a2x24hr
@@ -1606,6 +1623,8 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(budget_ltann)   ) infodata%budget_ltann   = budget_ltann
     if ( present(budget_ltend)   ) infodata%budget_ltend   = budget_ltend
     if ( present(histaux_a2x)    ) infodata%histaux_a2x    = histaux_a2x
+    if ( present(histaux_a2x1hri)) infodata%histaux_a2x1hri= histaux_a2x1hri
+    if ( present(histaux_a2x1hr) ) infodata%histaux_a2x1hr = histaux_a2x1hr
     if ( present(histaux_a2x3hr) ) infodata%histaux_a2x3hr = histaux_a2x3hr
     if ( present(histaux_a2x3hrp)) infodata%histaux_a2x3hrp= histaux_a2x3hrp
     if ( present(histaux_a2x24hr)) infodata%histaux_a2x24hr= histaux_a2x24hr
@@ -1880,6 +1899,8 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%budget_ltann,          mpicom)
     call shr_mpi_bcast(infodata%budget_ltend,          mpicom)
     call shr_mpi_bcast(infodata%histaux_a2x           ,mpicom)
+    call shr_mpi_bcast(infodata%histaux_a2x1hri       ,mpicom)
+    call shr_mpi_bcast(infodata%histaux_a2x1hr        ,mpicom)
     call shr_mpi_bcast(infodata%histaux_a2x3hr        ,mpicom)
     call shr_mpi_bcast(infodata%histaux_a2x3hrp       ,mpicom)
     call shr_mpi_bcast(infodata%histaux_a2x24hr       ,mpicom)
@@ -2527,6 +2548,8 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0S) subname,'budget_ltann             = ', infodata%budget_ltann
        write(logunit,F0S) subname,'budget_ltend             = ', infodata%budget_ltend
        write(logunit,F0L) subname,'histaux_a2x              = ', infodata%histaux_a2x
+       write(logunit,F0L) subname,'histaux_a2x1hri          = ', infodata%histaux_a2x1hri
+       write(logunit,F0L) subname,'histaux_a2x1hr           = ', infodata%histaux_a2x1hr
        write(logunit,F0L) subname,'histaux_a2x3hr           = ', infodata%histaux_a2x3hr
        write(logunit,F0L) subname,'histaux_a2x3hrp          = ', infodata%histaux_a2x3hrp
        write(logunit,F0L) subname,'histaux_a2x24hr          = ', infodata%histaux_a2x24hr
