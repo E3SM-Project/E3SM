@@ -91,6 +91,9 @@ for i in range(len(allx)):
 
 print "start plotting."
 
+############################
+# SHMIP Werder plot with optional comparison to GLADS
+############################
 fig = plt.figure(1, facecolor='w')
 ax1 = fig.add_subplot(311)
 ax2 = fig.add_subplot(312, sharex=ax1)
@@ -259,16 +262,38 @@ plt.legend(loc='best')
 
 
 
+############################
 # plot how close to SS we are
+############################
 fig = plt.figure(2, facecolor='w')
-ax1 = fig.add_subplot(211)
+# thickness over time
+ax1 = fig.add_subplot(321)
 for i in ind:
     plt.plot(days/365.0, f.variables['waterThickness'][:,i])
 plt.xlabel('Years since start')
 plt.ylabel('water thickness (m)')
 plt.grid(True)
 
-ax = fig.add_subplot(212, sharex=ax1)
+ax = fig.add_subplot(323)
+# max change in thickness
+delH =  (f.variables['waterThickness'][-1,:] - f.variables['waterThickness'][-2,:]) / ((days[-1] - days[-2])/365.0)
+plt.plot(f.variables['waterThickness'][-1,:], delH, '.')
+plt.ylabel('dh/dt (m/yr)')
+plt.xlabel('water thickness (m)')
+plt.title('Rate of change on final time step')
+plt.grid(True)
+
+ax = fig.add_subplot(325)
+# max change in thickness
+plt.plot(f.variables['waterThickness'][-1,:], delH/f.variables['waterThickness'][-1,:]*100, '.')
+plt.ylabel('dh/dt (%)')
+plt.xlabel('water thickness (m)')
+plt.title('Rate of change on final time step.  Goal=0.1%?')
+plt.grid(True)
+
+
+# Effective pressure over time
+ax = fig.add_subplot(322, sharex=ax1)
 for i in ind:
     plt.plot(days/365.0, f.variables['effectivePressure'][:,i]/1.0e6)
 plt.xlabel('Years since start')
@@ -276,7 +301,29 @@ plt.ylabel('effective pressure (MPa)')
 plt.grid(True)
 
 
-# plot time steps for various
+ax = fig.add_subplot(324)
+# max change in thickness
+delN =  (f.variables['effectivePressure'][-1,:] - f.variables['effectivePressure'][-2,:]) / ((days[-1] - days[-2])/365.0)
+plt.plot(f.variables['effectivePressure'][-1,:], delN, '.')
+plt.ylabel('dN/dt (Pa/yr)')
+plt.xlabel('N (Pa)')
+plt.title('Rate of change on final time step')
+plt.grid(True)
+
+ax = fig.add_subplot(326)
+# max change in thickness
+plt.plot(f.variables['effectivePressure'][-1,:], delN/f.variables['effectivePressure'][-1,:]*100.0, '.')
+plt.ylabel('dN/dt (%)')
+plt.xlabel('N (Pa)')
+plt.title('Rate of change on final time step. Goal=0.1%?')
+plt.grid(True)
+
+
+
+
+############################
+# plot time steps for various CFL conditions
+############################
 try:
    dtA=f.variables['deltatSGHadvec'][:]
    dtD=f.variables['deltatSGHdiffu'][:]
