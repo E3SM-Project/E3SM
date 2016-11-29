@@ -155,7 +155,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
         # and env_mach_specific.xml if they don't already exist.
-        configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, sysos)
+        if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, sysos)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":

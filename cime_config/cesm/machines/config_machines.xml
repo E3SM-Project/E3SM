@@ -293,8 +293,10 @@
   </machine>
 
   <machine MACH="cori-haswell">
-    <DESC>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is Slurm</DESC>
+    <!-- NODENAME_REGEX makes haswell the default machine for cori -->
+    <!-- to make knl the default comment this line and uncomment the one in cori-knl -->
     <NODENAME_REGEX>cori</NODENAME_REGEX>
+    <DESC>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is Slurm</DESC>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
@@ -396,6 +398,9 @@
     </environment_variables>
   </machine>
   <machine MACH="cori-knl">
+    <!-- NODENAME_REGEX makes haswell the default machine for cori -->
+    <!-- to make knl the default comment this line and uncomment the one in cori-knl -->
+    <!-- <NODENAME_REGEX>cori</NODENAME_REGEX> -->
     <DESC>NERSC XC* KNL, os is CNL, 68 pes/node, batch system is Slurm</DESC>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
@@ -446,7 +451,7 @@
 	<command name="rm">cray-netcdf-hdf5parallel</command>
 	<command name="rm">craype-sandybridge</command>
 	<command name="rm">craype-ivybridge</command>
-	<command name="rm">craype</command>
+	<command name="rm">craype-haswell</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
@@ -470,6 +475,7 @@
 	<command name="switch">gcc gcc/6.1.0</command>
       </modules>
       <modules>
+	<command name="load">craype-mic-knl</command>
 	<command name="load">papi/5.4.3.2</command>
 	<command name="swap">craype craype/2.5.5</command>
       </modules>
