@@ -309,8 +309,8 @@ def parse_test_status(file_contents):
     rv = OrderedDict()
     test_name = None
     for line in file_contents.splitlines():
-        if (line.split()[0] == COMMENT_STATUS):
-            pass # skip comments
+        if (line and line.split()[0] == COMMENT_STATUS):
+            pass # skip comments and lines that are blank
         elif (len(line.split()) == 3):
             status, curr_test_name, phase = line.split()
             if (test_name is None):
