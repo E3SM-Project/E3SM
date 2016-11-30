@@ -253,11 +253,12 @@
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
     </queues>
     <walltimes>
-      <walltime default="true">0:50:00</walltime>
+      <walltime default="true">5:00:00</walltime>
       <walltime ccsm_estcost="0">1:50:00</walltime>
       <walltime ccsm_estcost="1">5:00:00</walltime>
     </walltimes>
   </batch_system>
+
   <batch_system MACH="redsky" type="slurm" version="x.y">
     <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
