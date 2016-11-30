@@ -971,9 +971,10 @@ class Case(object):
         newcase.create_caseroot(clone=True)
         newcase.flush(flushall=True)
 
-        # copy user_nl_files
+        # copy user_ files
         cloneroot = self._caseroot
-        files = glob.glob(cloneroot + '/user_nl_*')
+        files = glob.glob(cloneroot + '/user_*')
+        
         for item in files:
             shutil.copy(item, newcaseroot)
 
