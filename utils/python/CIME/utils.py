@@ -870,6 +870,7 @@ def gzip_existing_file(filepath):
     'Hello World'
     >>> os.remove(gzfile)
     """
+    expect(os.path.exists(filepath), "%s does not exists" % filepath)
     gzpath = '%s.gz' % filepath
     with open(filepath, "rb") as f_in:
         with gzip.open(gzpath, "wb") as f_out:
