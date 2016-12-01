@@ -35,15 +35,15 @@ class Machines(GenericXML):
 
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
         # This could cause problems if node matchs are repeated when only one is expected
-        infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
-        logger.debug("Infile: %s" , infile)
-        if os.path.exists(infile):
-            GenericXML.read(self, infile)
+        local_infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
+        logger.debug("Infile: %s" , local_infile)
+        if os.path.exists(local_infile):
+            GenericXML.read(self, local_infile)
 
         if machine is None:
             machine = self.probe_machine_name()
 
-        expect(machine is not None, "Could not initialize machine object")
+        expect(machine is not None, "Could not initialize machine object from %s or %s"%(infile, local_infile))
         self.set_machine(machine)
 
     def get_machines_dir(self):
