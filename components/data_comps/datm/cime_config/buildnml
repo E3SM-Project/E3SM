@@ -196,13 +196,12 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     nmlgen.write_output_file(namelist_file, data_list_path, groups=['datm_nml','shr_strdata_nml'])
 
 ###############################################################################
-def _main_func():
+def buildnml(caseroot):
 ###############################################################################
 
     # Build the component namelist and required stream txt files
 
     compname = "datm"
-    caseroot = _parse_input(sys.argv)
 
     with Case(caseroot) as case:
         cimeroot = case.get_value("CIMEROOT")
@@ -285,4 +284,5 @@ def _main_func():
 ###############################################################################
 
 if __name__ == "__main__":
-    _main_func()
+    caseroot = _parse_input(sys.argv)
+    buildnml(caseroot)
