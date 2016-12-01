@@ -41,6 +41,7 @@ _TEST_SUITES = {
     "acme_land_developer" : ("acme_runoff_developer",
                              ("ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
+                              "ERS.f09_g16.I20TRCLM45",
                               "SMS.hcru_hcru.I1850CRUCLM45CN",
                               ("SMS_Ly3.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
                               "ERS.ne11_oQU240.I20TRCLM45",
