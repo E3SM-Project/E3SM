@@ -15,32 +15,11 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
-from CIME.utils import expect, handle_standard_logging_options, setup_standard_logging_options
+from CIME.utils import expect
 from CIME.utils import run_cmd_no_fail, get_model
-from CIME.buildnml import create_namelist_infile
+from CIME.buildnml import create_namelist_infile, parse_input
 
 logger = logging.getLogger(__name__)
-
-###############################################################################
-def _parse_input(argv):
-###############################################################################
-
-    if "--test" in argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
-    parser = argparse.ArgumentParser()
-
-    setup_standard_logging_options(parser)
-
-    parser.add_argument("caseroot",
-                        help="Case diretory")
-
-    args = parser.parse_args()
-
-    handle_standard_logging_options(args)
-
-    return args.caseroot
 
 ###############################################################################
 def _create_drv_namelists(case, infiles, definition_file, confdir):
@@ -318,9 +297,11 @@ def buildnml(case, caseroot, component):
         shutil.copy(filename, rundir)
 
 ###############################################################################
-
-if __name__ == "__main__":
-    caseroot = _parse_input(sys.argv)
+def _main_func():
+    caseroot = parse_input(sys.argv)
 
     with Case(caseroot) as case:
         buildnml(case, caseroot, "drv")
+
+if __name__ == "__main__":
+    _main_func()

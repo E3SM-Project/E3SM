@@ -1889,6 +1889,8 @@ def _main_func():
                                         from_dir=cimeroot).splitlines())
         #TODO - get rid of this
         list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs", "unit_test")
+        testnames = []
+        cnt = 0
         for file_ in files_to_test:
             # Dont test template files
             test_this = True
@@ -1898,7 +1900,14 @@ def _main_func():
                     break
             if test_this:
                 pylint_test = make_pylint_test(file_, cimeroot)
-                setattr(B_CheckCode, 'test_pylint_%s'%os.path.basename(file_), pylint_test)
+                testname = "test_pylint_%s"%(os.path.basename(file_))
+                # if two files have the same name this will generate
+                # different test names so that both are tested
+                if testname in testnames:
+                    testname += "_%s"%cnt
+                    cnt = cnt + 1
+                testnames.append(testname)
+                setattr(B_CheckCode, testname, pylint_test)
 
     unittest.main(verbosity=2, catchbreak=True)
 
