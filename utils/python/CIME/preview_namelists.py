@@ -60,13 +60,20 @@ def create_namelists(case):
         model_str = model.lower()
         config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
         config_dir = os.path.dirname(config_file)
+        if model_str == "drv":
+            compname = "drv"
+        else:
+            compname = case.get_value("COMP_%s" % model_str.upper())
         try:
             mod = imp.load_source("buildnml",
                                   os.path.join(config_dir, "buildnml"))
-            mod.buildnml(caseroot)
-        except:
+            logger.info("Calling %s buildnml"%compname)
+            mod.buildnml(case, caseroot, compname)
+        except AttributeError:
             cmd = os.path.join(config_dir, "buildnml")
             run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=True)
+        except:
+            raise
 
     # refresh case xml object from file
     case.read_xml()

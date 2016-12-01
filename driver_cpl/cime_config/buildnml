@@ -261,64 +261,66 @@ def _create_component_modelio_namelists(case):
                 inst_index = inst_index + 1
 
 ###############################################################################
-def _main_func():
+def buildnml(case, caseroot, component):
 ###############################################################################
+    if component != "drv":
+        raise AttributeError
+    cimeroot = case.get_value("CIMEROOT")
 
-    caseroot = _parse_input(sys.argv)
-    with Case(caseroot) as case:
-        cimeroot = case.get_value("CIMEROOT")
+    confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
+    if not os.path.isdir(confdir):
+        os.makedirs(confdir)
 
-        confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
-        if not os.path.isdir(confdir):
-            os.makedirs(confdir)
+    # NOTE: User definition *replaces* existing definition.
+    # TODO: Append instead of replace?
+    user_xml_dir = os.path.join(caseroot, "SourceMods", "src.drv")
+    expect (os.path.isdir(user_xml_dir),
+            "user_xml_dir %s does not exist " %user_xml_dir)
+    namelist_xml_dir = os.path.join(cimeroot, "driver_cpl", "cime_config")
+    definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_drv.xml")]
+    user_definition = os.path.join(user_xml_dir, "namelist_definition_drv.xml")
+    if os.path.isfile(user_definition):
+        definition_file = [user_definition]
 
-        # NOTE: User definition *replaces* existing definition.
-        # TODO: Append instead of replace?
-        user_xml_dir = os.path.join(caseroot, "SourceMods", "src.drv")
-        expect (os.path.isdir(user_xml_dir),
-                "user_xml_dir %s does not exist " %user_xml_dir)
-        namelist_xml_dir = os.path.join(cimeroot, "driver_cpl", "cime_config")
-        definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_drv.xml")]
-        user_definition = os.path.join(user_xml_dir, "namelist_definition_drv.xml")
-        if os.path.isfile(user_definition):
-            definition_file = [user_definition]
+    # create cplconf/namelist
+    infile_text = ""
+    if case.get_value('COMP_ATM') == 'cam':
+        # cam is actually changing the driver namelist settings
+        cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
+        if "adiabatic" in cam_config_opts:
+            infile_text = "atm_adiabatic = .true."
+        if "ideal" in cam_config_opts:
+            infile_text = "atm_ideal_phys = .true."
+        if "aquaplanet" in cam_config_opts:
+            infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
+    user_nl_file = os.path.join(caseroot, "user_nl_cpl")
+    namelist_infile = os.path.join(confdir, "namelist_infile")
+    create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)
+    infile = [namelist_infile]
 
-        # create cplconf/namelist
-        infile_text = ""
-        if case.get_value('COMP_ATM') == 'cam':
-            # cam is actually changing the driver namelist settings
-            cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
-            if "adiabatic" in cam_config_opts:
-                infile_text = "atm_adiabatic = .true."
-            if "ideal" in cam_config_opts:
-                infile_text = "atm_ideal_phys = .true."
-            if "aquaplanet" in cam_config_opts:
-                infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
-        user_nl_file = os.path.join(caseroot, "user_nl_cpl")
-        namelist_infile = os.path.join(confdir, "namelist_infile")
-        create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)
-        infile = [namelist_infile]
+    # create the files drv_in, drv_flds_in and seq_maps.rc
+    _create_drv_namelists(case, infile, definition_file, confdir)
 
-        # create the files drv_in, drv_flds_in and seq_maps.rc
-        _create_drv_namelists(case, infile, definition_file, confdir)
+    # create the files comp_modelio.nml where comp = [atm, lnd...]
+    _create_component_modelio_namelists(case)
 
-        # create the files comp_modelio.nml where comp = [atm, lnd...]
-        _create_component_modelio_namelists(case)
+    # copy drv_in, drv_flds_in, seq_maps.rc and all *modio* fiels to rundir
+    rundir = case.get_value("RUNDIR")
 
-        # copy drv_in, drv_flds_in, seq_maps.rc and all *modio* fiels to rundir
-        rundir = case.get_value("RUNDIR")
+    shutil.copy(os.path.join(confdir,"drv_in"), rundir)
+    drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
+    if os.path.isfile(drv_flds_in):
+        shutil.copy(drv_flds_in, rundir)
 
-        shutil.copy(os.path.join(confdir,"drv_in"), rundir)
-        drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
-        if os.path.isfile(drv_flds_in):
-            shutil.copy(drv_flds_in, rundir)
+    shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
 
-        shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
-
-        for filename in glob.glob(os.path.join(confdir, "*modelio*")):
-            shutil.copy(filename, rundir)
+    for filename in glob.glob(os.path.join(confdir, "*modelio*")):
+        shutil.copy(filename, rundir)
 
 ###############################################################################
 
 if __name__ == "__main__":
-    _main_func()
+    caseroot = _parse_input(sys.argv)
+
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "drv")
