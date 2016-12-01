@@ -61,8 +61,9 @@ def create_namelists(case):
         config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
         config_dir = os.path.dirname(config_file)
         try:
-            mod = imp.load_source("buildnml",config_file)
-            buildnml.buildnml(caseroot)
+            mod = imp.load_source("buildnml",
+                                  os.path.join(config_dir, "buildnml"))
+            mod.buildnml(caseroot)
         except:
             cmd = os.path.join(config_dir, "buildnml")
             run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=True)
