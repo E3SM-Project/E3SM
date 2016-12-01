@@ -9,7 +9,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, shutil, sys, glob, re
+import os, shutil, sys, glob
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -18,32 +18,9 @@ from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect
-from CIME.utils import handle_standard_logging_options
-from CIME.utils import setup_standard_logging_options
-from CIME.buildnml import create_namelist_infile
+from CIME.buildnml import create_namelist_infile, parse_input
 
 logger = logging.getLogger(__name__)
-
-###############################################################################
-def _parse_input(argv):
-###############################################################################
-
-    if "--test" in argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
-    parser = argparse.ArgumentParser()
-
-    setup_standard_logging_options(parser)
-
-    parser.add_argument("caseroot",
-                        help="case directory")
-
-    args = parser.parse_args()
-
-    handle_standard_logging_options(args)
-
-    return args.caseroot
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 ####################################################################################
@@ -60,7 +37,6 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
-    din_loc_root = case.get_value("DIN_LOC_ROOT")
     rof_domain_file = case.get_value("ROF_DOMAIN_FILE")
     rof_domain_path = case.get_value("ROF_DOMAIN_PATH")
     drof_mode = case.get_value("DROF_MODE")
@@ -238,9 +214,11 @@ def buildnml(case, caseroot, compname):
         inst_counter = inst_counter + 1
 
 ###############################################################################
-
-if __name__ == "__main__":
+def _main_func():
     # Build the component namelist and required stream txt files
-    caseroot = _parse_input(sys.argv)
+    caseroot = parse_input(sys.argv)
     with Case(caseroot) as case:
         buildnml(case, caseroot, "drof")
+
+if __name__ == "__main__":
+    _main_func()
