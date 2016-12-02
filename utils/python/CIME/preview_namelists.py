@@ -64,13 +64,20 @@ def create_namelists(case):
             compname = "drv"
         else:
             compname = case.get_value("COMP_%s" % model_str.upper())
+        cmd = os.path.join(config_dir, "buildnml")
         try:
-            mod = imp.load_source("buildnml",
-                                  os.path.join(config_dir, "buildnml"))
+            mod = imp.load_source("buildnml", cmd)
             logger.info("Calling %s buildnml"%compname)
             mod.buildnml(case, caseroot, compname)
+
+        except SyntaxError as detail:
+            with open(cmd, 'r') as f:
+                first_line = f.readline()
+            if 'python' in first_line:
+                expect(False, detail)
+            else:
+                run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=True)
         except AttributeError:
-            cmd = os.path.join(config_dir, "buildnml")
             run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=True)
         except:
             raise
