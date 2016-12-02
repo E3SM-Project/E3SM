@@ -40,7 +40,7 @@ contains
 
 
 
-  subroutine residual(xstate, fx, nelemd, c_ptr_to_object) bind(C,name='calc_f')
+  subroutine residual(xstate, fx, nxstate, c_ptr_to_object) bind(C,name='calc_f')
     ! ===================================
     ! compute the RHS, accumulate into a residual for each dependent variable and apply DSS
     !
@@ -73,7 +73,7 @@ contains
     !
     ! ===================================
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nvar, nelemd
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
@@ -121,25 +121,25 @@ contains
     real (kind=real_kind) ::  vtens1(np,np,nlev)
     real (kind=real_kind) ::  vtens2(np,np,nlev)
     real (kind=real_kind) ::  ttens(np,np,nlev)
-    real (kind=real_kind) ::  fvtens(np,np,2,nlev,nelem)
-    real (kind=real_kind) ::  fttens(np,np,nlev,nelem)
-    real (kind=real_kind) ::  fdptens(np,np,nlev,nelem)
-    real (kind=real_kind) ::  fpstens(np,np,nelem)
+    real (kind=real_kind) ::  fvtens(np,np,2,nlev,nelemd)
+    real (kind=real_kind) ::  fttens(np,np,nlev,nelemd)
+    real (kind=real_kind) ::  fdptens(np,np,nlev,nelemd)
+    real (kind=real_kind) ::  fpstens(np,np,nelemd)
 
     real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
     real (kind=real_kind) ::  glnps1,glnps2,gpterm
     real (kind=real_kind) ::  gam
     integer :: i,j,k,kptr,ie, n_Q
 
-    type (element_t), target     :: elem(nelem)
+    type (element_t), target     :: elem(nelemd)
     type (hvcoord_t)     :: hvcoord
     type (hybrid_t)      :: hybrid
     type (derivative_t)  :: deriv
     type (TimeLevel_t)   :: tl
 
-    integer(c_int) ,intent(in) ,value  :: nelemd
-    real (c_double) ,intent(in)        :: xstate(nelemd)
-    real (c_double) ,intent(out)       :: fx(nelemd)
+    integer(c_int) ,intent(in) ,value  :: nxstate
+    real (c_double) ,intent(in)        :: xstate(nxstate)
+    real (c_double) ,intent(out)       :: fx(nxstate)
     integer                            :: method, nstep
 
     type(derived_type) ,pointer        :: fptr=>NULL()
@@ -811,19 +811,19 @@ contains
 
 
   ! placeholder for precon routines
-  subroutine update_prec_state(xs, nelemd, c_ptr_to_object) bind(C,name='update_prec_state')
+  subroutine update_prec_state(xs, nxs, c_ptr_to_object) bind(C,name='update_prec_state')
 
     use, intrinsic :: iso_c_binding
     use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nvar, nelemd
     use prim_derived_type_mod ,only : derived_type, initialize
     use perf_mod, only : t_startf, t_stopf
     use hybrid_mod, only : hybrid_t
 
     implicit none
 
-    real (c_double) ,intent(in)        :: xs(nelemd)
-    integer(c_int) ,intent(in) ,value  :: nelemd
+    real (c_double) ,intent(in)        :: xs(nxs)
+    integer(c_int) ,intent(in) ,value  :: nxs
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
     integer              :: ns
@@ -868,16 +868,16 @@ contains
 
 
 
-  subroutine test_id(xs, nelemd, fx, c_ptr_to_object) bind(C,name='test_id')
+  subroutine test_id(xs, nxs, fx, c_ptr_to_object) bind(C,name='test_id')
     use ,intrinsic :: iso_c_binding
     use kinds, only : real_kind
     use prim_derived_type_mod ,only : derived_type, initialize
     use perf_mod, only : t_startf, t_stopf
     use hybrid_mod, only : hybrid_t
 
-    integer(c_int) ,intent(in) ,value  :: nelemd
-    real (c_double) ,intent(in)        :: xs(nelemd)
-    real (c_double) ,intent(out)       :: fx(nelemd)
+    integer(c_int) ,intent(in) ,value  :: nxs
+    real (c_double) ,intent(in)        :: xs(nxs)
+    real (c_double) ,intent(out)       :: fx(nxs)
     !type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 
