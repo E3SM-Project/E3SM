@@ -1002,6 +1002,8 @@ contains
     !  always for tracers
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !compute timelevels for tracers (no longer the same as dynamics)
+    ! note: time level update for fvm tracers takes place in fvm_mod
     if (single_column) then
       nets_in=1
       nete_in=1
@@ -1009,9 +1011,10 @@ contains
       nets_in=nets
       nete_in=nete
     endif
-
-    call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
-
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
+#ifndef TRILINOS
+    call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,n0_fvm,nets,nete)
+#endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
