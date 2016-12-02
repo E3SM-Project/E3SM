@@ -555,53 +555,25 @@
 
     <entry id="RUN_TYPE"> 
       <values>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="PIPD_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >hybrid</value>
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >hybrid</value>
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="AMIP_CAM50%L60_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV">hybrid</value>
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="PIPD_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="AMIP_CAM40_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM40_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >hybrid</value>
+	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >hybrid</value>
       </values>
     </entry>
 
     <entry id="RUN_REFCASE"> 
       <values>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >b40_20th_1d_b08c5cn_139jp</value>   
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="PIPD_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >b40_20th_1d_b08c5cn_139jp</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >f.e12.FAMIPC5.ne30_ne30.amip_L30.001</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="AMIP_CAM50%L60_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV">f.e12.FAMIPC5.ne30_ne30.amip_L60.001</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="PIPD_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >f.e12.FAMIPC5.ne30_ne30.amip_L30.001</value>   
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="AMIP_CAM40_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >b40.20th.track1.1deg.004</value>   
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >b40_20th_2d_r07c5cn_161jp</value>   
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM40_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >b40.20th.track1.2deg.001</value > 
+	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >b40_20th_2d_r07c5cn_161jp</value>
       </values>
     </entry>
 
     <entry id="RUN_REFDATE">
       <values>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >1979-01-01</value>   
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="PIPD_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >1979-01-01</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >1979-01-01</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="AMIP_CAM50%L60_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV">1979-01-01</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="PIPD_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >1979-01-01</value>   
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="AMIP_CAM40_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >1979-01-01</value> 
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >1979-01-01</value>   
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM40_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >1979-01-01</value>
+	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >1979-01-01</value>
       </values>
     </entry>
 
     <entry id="RUN_REFDIR">
       <values>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >ccsm4_init</value>   
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="PIPD_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >ccsm4_init</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >ccsm4_init</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="AMIP_CAM50%L60_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV">ccsm4_init</value>   
-	<value grid="a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6"	compset="PIPD_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >ccsm4_init</value>   
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6"	compset="AMIP_CAM40_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >ccsm4_init</value> 
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM50_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >ccsm4_init</value>   
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM40_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >ccsm4_init</value>
+	<value grid="a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6"	compset="AMIP_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV"	 >ccsm4_init</value>
       </values>
     </entry>
 
@@ -614,6 +586,12 @@
     <entry id="STOP_N"> 
       <values>
 	<value compset="AR95_CAM">2</value>
+      </values>
+    </entry>
+
+    <entry id="GET_REFCASE"> 
+      <values>
+	<value compset="AMIP_CAM">TRUE</value>
       </values>
     </entry>
 
