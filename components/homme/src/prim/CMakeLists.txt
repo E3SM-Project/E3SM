@@ -5,23 +5,22 @@ macro(prim_setup)
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
-SET(TARGET_DIR        		${HOMME_SOURCE_DIR}/src/prim)
+# SET(TARGET_DIR              ${HOMME_SOURCE_DIR}/src/prim)
 SET(UTILS_SHARE_DIR   		${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           		${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     		${HOMME_SOURCE_DIR}/src/share)
-SET(SRC_SHARE_PREQX_DIR         ${HOMME_SOURCE_DIR}/src/preqx)
-SET(PHYSICS_DIR       		${HOMME_SOURCE_DIR}/physics)
-SET(UTILS_TIMING_DIR  		${CMAKE_BINARY_DIR}/utils/timing)
-SET(UTILS_TRILINOS_DIR 		${HOMME_SOURCE_DIR}/utils/trilinos)
+SET(SRC_SHARE_PREQX_DIR     ${HOMME_SOURCE_DIR}/src/preqx)
+SET(PHYSICS_DIR             ${HOMME_SOURCE_DIR}/physics)
+SET(UTILS_TIMING_DIR        ${CMAKE_BINARY_DIR}/utils/timing)
+SET(UTILS_TRILINOS_DIR      ${HOMME_SOURCE_DIR}/utils/trilinos)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 
 # Find F90 files in target directory
-FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
+# FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 
 SET(PRIM_SRCS_F90
-  ${TARGET_F90}
   
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
@@ -92,13 +91,15 @@ SET(PRIM_SRCS_F90
   ${SRC_SHARE_DIR}/domain_mod.F90 
   ${SRC_SHARE_DIR}/cg_mod.F90
   ${SRC_SHARE_DIR}/linear_algebra_mod.F90 
+  ${SRC_SHARE_DIR}/solver_mod.F90 
   ${SRC_SHARE_DIR}/namelist_mod.F90
   ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
   ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90
-  ${SRC_SHARE_DIR}/prim_derived_type_mod.F90 
+  ${SRC_SHARE_DIR}/prim_advance_mod.F90 
   ${SRC_SHARE_DIR}/metis_mod.F90
+  ${SRC_SHARE_DIR}/prim_driver_mod.F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
   
   ${SRC_SHARE_PREQX_DIR}/bndry_mod.F90
@@ -116,7 +117,11 @@ SET(PRIM_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_file_mod.F90 
   ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
   ${UTILS_SHARE_DIR}/shr_const_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_spfn_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
+
+  ${SRC_SHARE_DIR}/prim_derived_type_mod.F90
+  ${SRC_SHARE_DIR}/prim_implicit_mod.F90
+  ${SRC_SHARE_DIR}/prim_derived_type_mod.F90 
 
   ${UTILS_TRILINOS_DIR}/belos_helm.cpp
   ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp
