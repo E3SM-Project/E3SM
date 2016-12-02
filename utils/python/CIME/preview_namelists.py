@@ -69,7 +69,7 @@ def create_namelists(case):
                                   os.path.join(config_dir, "buildnml"))
             logger.info("Calling %s buildnml"%compname)
             mod.buildnml(case, caseroot, compname)
-        except AttributeError:
+        except (AttributeError, SyntaxError):
             cmd = os.path.join(config_dir, "buildnml")
             run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=True)
         except:
