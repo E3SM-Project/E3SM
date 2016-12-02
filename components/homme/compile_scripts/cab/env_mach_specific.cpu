@@ -1,0 +1,23 @@
+#! /bin/bash -f
+
+#===============================================================================
+# Cab machine specific settings
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# Modules
+#-------------------------------------------------------------------------------
+
+source /usr/local/tools/dotkit/init.sh
+
+# intel compiler
+use ic-12.1.339
+source /usr/local/tools/icc-12.1.339/bin/compilervars.sh intel64
+source /usr/local/tools/ifort-12.1.339/bin/compilervars.sh intel64
+
+use openmpi-intel-1.6.5
+use hdf5-intel-parallel-1.8.10 # sets $HDF5
+use netcdf-fortran-intel-4.2   # sets $NETCDF
+
+# list loaded modules
+use
