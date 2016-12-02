@@ -127,7 +127,6 @@
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
-       <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
        <directive> --output={{ output_error_path }}   </directive>
        <directive> --exclusive                        </directive>
        <directive> --time={{ job_wallclock_time }}</directive>
@@ -164,14 +163,9 @@
     <!-- edison is SLURM as of Jan-4-2016 -->
     <batch_system MACH="edison" type="slurm" version="x.y">
       <queues>
-        <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288">debug</queue>
+        <queue walltimemax="01:30:00" jobmin="1" jobmax="100" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="100">debug</queue>
       </queues>
-      <walltimes>
-        <walltime default="true">01:15:00</walltime>
-        <walltime ccsm_estcost="1">01:50:00</walltime>
-        <walltime ccsm_estcost="3">05:00:00</walltime>
-      </walltimes>
     </batch_system>
 
     <!-- eos is PBS -->
@@ -190,17 +184,24 @@
     </walltimes>
    </batch_system>
 
-    <batch_system MACH="corip1" type="slurm" version="x.y">
+    <batch_system MACH="cori-haswell" type="slurm" version="x.y">
+      <directives>
+        <directive>--constraint=haswell</directive>
+      </directives>
       <queues>
-        <queue walltimemax="24:00:00" jobmin="1" jobmax="16384" default="true">regular</queue>
-        <queue walltimemax="12:00:00" jobmin="16385" jobmax="45440">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096">debug</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="100" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="100">debug</queue>
       </queues>
-      <walltimes>
-        <walltime default="true">01:15:00</walltime>
-        <walltime ccsm_estcost="1">01:50:00</walltime>
-        <walltime ccsm_estcost="3">05:00:00</walltime>
-      </walltimes>
+    </batch_system>
+
+    <batch_system MACH="cori-knl" type="slurm" version="x.y">
+      <directives>
+        <directive>--constraint=knl</directive>
+      </directives>
+      <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="100" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="100">debug</queue>
+      </queues>
     </batch_system>
 
     <batch_system MACH="mira" type="cobalt">
@@ -223,6 +224,7 @@
 
    <batch_system MACH="constance" type="slurm" version="x.y">
     <directives>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
        <directive>--mail-type=END</directive>
        <directive>--mail-user=email@pnnl.gov</directive>
        <directive>--output=slurm.out</directive>
@@ -234,6 +236,9 @@
    </batch_system>
 
   <batch_system MACH="skybridge" type="slurm" version="x.y">
+    <directives>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
     <queues>
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
     </queues>
@@ -244,6 +249,9 @@
     </walltimes>
   </batch_system>
   <batch_system MACH="redsky" type="slurm" version="x.y">
+    <directives>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
     <queues>
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
     </queues>
@@ -362,29 +370,25 @@
    <batch_system MACH="lawrencium-lr2" type="slurm" version="x.y">
      <directives>
        <directive>--partition=lr2</directive>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
        <directive>--account={{ project }}</directive>
        <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="72:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">00:59:00</walltime>
-    </walltimes>
    </batch_system>
 
    <batch_system MACH="lawrencium-lr3" type="slurm" version="x.y">
      <directives>
        <directive>--partition=lr3</directive>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
        <directive>--account={{ project }}</directive>
        <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="72:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">00:59:00</walltime>
-    </walltimes>
    </batch_system>
 
   <batch_jobs>
