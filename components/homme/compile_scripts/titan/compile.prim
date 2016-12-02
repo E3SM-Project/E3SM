@@ -3,8 +3,10 @@
 # Change next four lines to your paths
 export ACME_ROOT=/ccs/home/$USER/tmp
 export Install_DIR=/ccs/home/$USER/test_bld_prim
+
+NP=4
+NLEVELS=26
 NTRACERS=0
-NLEVELS=64
 
 # Start Build #
 source $ACME_ROOT/ACME/components/homme/compile_scripts/titan/env_mach_specific.cpu
@@ -13,30 +15,40 @@ export HOMME_ROOT=$ACME_ROOT/ACME/components/homme
 export CRAYPE_LINK_TYPE='dynamic'
 
 rm -rf $Install_DIR
-mkdir -p $Install_DIR     || exit -1
+mkdir -p $Install_DIR || exit -1
 cd $Install_DIR
  
-cmake                                                                          \
-  -C $HOMME_ROOT/cmake/machineFiles/titan.cmake                                \
-  -DCMAKE_Fortran_COMPILER=ftn                                                 \
-  -DCMAKE_C_COMPILER=cc                                                        \
-  -DCMAKE_CXX_COMPILER=CC                                                      \
-  -DOPT_FLAGS="-fastsse -Kieee -Minfo=accel"                                   \
-  -DCMAKE_CXX_FLAGS="-c11"                                                     \
-  -DNETCDF_DIR=$NETCDF_DIR                                                     \
-  -DWITH_PNETCDF=FALSE                                                         \
-  -DHDF5_DIR=$HDF5_DIR                                                         \
-  -DPRIM_NP=$NLEVELS                                                           \
-  -DPREQX_QSIZE_D=$NTRACERS 		                                           \
-  -DBUILD_HOMME_PRIM=TRUE                                                      \
-  -DENABLE_OPENMP=TRUE                                                         \
-  -DHOMME_PROJID=CLI106ms                                                      \
-  -DENABLE_OPENACC=FALSE                                                       \
-  -DHOMME_FIND_BLASLAPACK=TRUE                                                 \
-                                                                               \
-                                                                               \
-  $HOMME_ROOT                                               
+cmake \
+  -C $HOMME_ROOT/cmake/machineFiles/titan.cmake \
+  \
+  -DCMAKE_Fortran_COMPILER=ftn                  \
+  -DCMAKE_C_COMPILER=cc                         \
+  -DCMAKE_CXX_COMPILER=CC                       \
+  \
+  -DOPT_FLAGS="-fastsse -Kieee -Minfo=accel"    \
+  -DCMAKE_CXX_FLAGS="-c11"                      \
+  \
+  -DNETCDF_DIR=$NETCDF_DIR                      \
+  -DWITH_PNETCDF=FALSE                          \
+  -DHDF5_DIR=$HDF5_DIR                          \
+  \
+  -DPRIM_NP=$NP                                 \
+  -DPRIM_PLEV=$NLEVELS                          \
+  \
+  -DBUILD_HOMME_PRIM=TRUE                       \
+  -DBUILD_HOMME_SWIM=FALSE                      \
+  -DBUILD_HOMME_SWEQX=FALSE                     \
+  -DBUILD_HOMME_PREQX=FALSE                     \
+  -DBUILD_HOMME_PREQX_ACC=FALSE                 \
+  \
+  -DENABLE_OPENMP=TRUE                          \
+  -DENABLE_OPENACC=FALSE                        \
+  \
+  -DHOMME_PROJID=CLI106ms                       \
+  -DHOMME_FIND_BLASLAPACK=TRUE                  \
+  \
+  $HOMME_ROOT
 
-make -j6 prim                                            || exit -1
+make -j6 prim || exit -1
 
 
