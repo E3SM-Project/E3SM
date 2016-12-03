@@ -116,7 +116,7 @@ class Case(object):
         logger.debug("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
         self.num_nodes = env_mach_pes.get_total_nodes(total_tasks, self.thread_count)
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
-        smt_factor = self.get_value("MAX_TASKS_PER_NODE")/self.get_value("PES_PER_NODE")
+        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE")/self.get_value("PES_PER_NODE")))
 
         self.cores_per_task = ((self.get_value("MAX_TASKS_PER_NODE")/smt_factor) \
                                / self.tasks_per_node) * 2
@@ -974,7 +974,7 @@ class Case(object):
         # copy user_ files
         cloneroot = self._caseroot
         files = glob.glob(cloneroot + '/user_*')
-        
+
         for item in files:
             shutil.copy(item, newcaseroot)
 
