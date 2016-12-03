@@ -560,11 +560,14 @@ using a fortran linker.
     <append> -xMIC-AVX512 </append>
   </FFLAGS>
   <SLIBS>
-    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -mkl -lpthread -lm </append>
+    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
   </SLIBS>
     <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC xs</append>
+    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC</append>
   </CPPDEFS>
+  <LDFLAGS>
+    <append>-mkl -lmemkind -ljemalloc -zmuldefs</append>
+  </LDFLAGS>
 </compiler>
 
 

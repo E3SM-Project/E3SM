@@ -364,7 +364,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.1</command>
+	<command name="switch">cce cce/8.5.4</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -381,12 +381,12 @@
 	<command name="load">cray-mpich/7.4.1</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.8.16</command>
-	<command name="load">cray-netcdf/4.4.0</command>
+	<command name="load">cray-hdf5/1.10.0</command>
+	<command name="load">cray-netcdf/4.4.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-	<command name="load">cray-hdf5-parallel/1.8.16</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.1</command>
+	<command name="load">cray-hdf5-parallel/1.10.0</command>
 	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
@@ -435,6 +435,8 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
+	<command name="rm">craype-mic-knl</command>
+	<command name="rm">craype-haswell</command>
 	<command name="rm">PrgEnv-intel</command>
 	<command name="rm">PrgEnv-cray</command>
 	<command name="rm">PrgEnv-gnu</command>
@@ -449,15 +451,13 @@
 	<command name="rm">cray-netcdf</command>
 	<command name="rm">cray-hdf5</command>
 	<command name="rm">cray-netcdf-hdf5parallel</command>
-	<command name="rm">craype-sandybridge</command>
-	<command name="rm">craype-ivybridge</command>
-	<command name="rm">craype-haswell</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
 	<command name="switch">intel intel/17.0.0.098</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
+        <command name="load">memkind</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
 	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
@@ -468,7 +468,7 @@
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.1</command>
+	<command name="switch">cce cce/8.5.4</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -486,12 +486,12 @@
 	<command name="load">cray-mpich/7.4.1</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.8.16</command>
-	<command name="load">cray-netcdf/4.4.0</command>
+	<command name="load">cray-hdf5/1.10.0</command>
+	<command name="load">cray-netcdf/4.4.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
-	<command name="load">cray-hdf5-parallel/1.8.16</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.1</command>
+	<command name="load">cray-hdf5-parallel/1.10.0</command>
 	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>

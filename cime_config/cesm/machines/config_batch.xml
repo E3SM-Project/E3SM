@@ -378,7 +378,7 @@
        <directive>-C knl </directive>
      </directives>
      <queues>
-       <queue walltimemax="06:00:00" jobmin="1" jobmax="45440">regular</queue>
+       <queue walltimemax="02:00:00" jobmin="1" jobmax="45440">regular</queue>
      <!--  <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue> -->
      </queues>
    </batch_system>
