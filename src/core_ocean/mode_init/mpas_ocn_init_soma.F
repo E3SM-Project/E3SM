@@ -83,9 +83,8 @@ contains
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool, forcingPool, tracersPool
-      type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
 
-      integer :: iCell, k
+      integer :: iCell, iEdge, iVertex, k
       real (kind=RKIND) :: distance, deltaLon, deltaLat, xDistance, yDistance, zMid, sphereRadius
       real (kind=RKIND) :: lonCurrent, latCurrent
       real (kind=RKIND) :: deltay, depth, factor, latCenter, lonCenter, windStress
@@ -113,21 +112,18 @@ contains
       real (kind=RKIND), pointer :: config_soma_density_difference
 
       ! Define dimension pointers
-      integer, pointer :: nVertLevels, nCells, nVertLevelsP1
+      integer, pointer :: nVertLevels, nCells, nVertLevelsP1, nCellsSolve, nEdgesSolve, nVerticesSolve
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
       logical, pointer :: on_a_sphere
       integer, dimension(:), pointer :: maxLevelCell
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomCell, refZMid
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomCell, refZMid, fCell, fEdge, fVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), pointer :: sphere_radius
-      real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, bottomDepth
+      real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, latEdge, latVertex, bottomDepth
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
-      real (kind=RKIND), dimension(:), pointer :: sensibleHeatFlux
       real (kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional
-      real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
-      real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
 
       ! assume no error
       iErr = 0
@@ -170,13 +166,13 @@ contains
        write(stderrUnit, *) 'SOMA test case using spherical radius of size: ', sphereRadius
       end if
 
-      ! Define interface locations
-      allocate( interfaceLocations( nVertLevelsP1 ) )
-      call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
-
       ! assign config variables
       nVertLevels  = config_soma_vert_levels
       nVertLevelsP1 = nVertLevels + 1
+
+      ! Define interface locations
+      allocate( interfaceLocations( nVertLevelsP1 ) )
+      call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
 
       ! set center of SOMA domain
       ! Convert center locations to radians from degrees
@@ -189,6 +185,9 @@ contains
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+        call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+        call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -221,6 +220,9 @@ contains
         call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
         call mpas_pool_get_array(meshPool, 'latCell', latCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+        call mpas_pool_get_array(meshPool, 'fCell', fCell)
+        call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
@@ -290,6 +292,8 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
         call mpas_pool_get_array(meshPool, 'latCell', latCell)
+        call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+        call mpas_pool_get_array(meshPool, 'latVertex', latVertex)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
@@ -300,18 +304,8 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-        call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
         call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
         call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional, 1)
-        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
-        call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
-                                 activeTracersSurfaceRestoringValue, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', &
-                                 activeTracersInteriorRestoringRate, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', &
-                                 activeTracersInteriorRestoringValue, 1)
 
         do iCell = 1, nCells
            lonCurrent = lonCell(iCell)
@@ -323,13 +317,14 @@ contains
 
               distance = config_soma_ref_density &
                   - (1.0_RKIND - config_soma_density_difference_linear) * config_soma_density_difference &
-                  * tanh(zMid / config_soma_thermocline_depth) - config_soma_density_difference_linear &
-                  * config_soma_density_difference * zMid / config_soma_bottom_depth
+                  * tanh(zMid / config_soma_thermocline_depth) &
+                  - config_soma_density_difference_linear * config_soma_density_difference &
+                  * zMid / config_soma_bottom_depth
               factor = (config_soma_ref_density - distance) / config_eos_linear_alpha
               temperature = config_soma_surface_temperature + factor
 
               factor = - zMid / config_soma_bottom_depth
-              salinity = config_soma_surface_salinity + factor
+              salinity = config_soma_surface_salinity + 2.0_RKIND * factor
 
               if ( associated(activeTracers) ) then
                  activeTracers(index_temperature, k, iCell) = temperature
@@ -351,14 +346,25 @@ contains
            latCurrent = latCell(iCell)
 
            deltay =  sphereRadius * ( latCurrent - latCenter )
-           factor = 1.0_RKIND - 0.5 * deltay / config_soma_domain_width
-           windstress = factor * 0.1 * exp( -(deltay / config_soma_domain_width)**2 ) &
+           factor = 1.0_RKIND - 0.5_RKIND * deltay / config_soma_domain_width
+           windstress = factor * 0.1_RKIND * exp( -(deltay / config_soma_domain_width)**2 ) &
                  * cos(pii * deltay / config_soma_domain_width)
 
            windStressZonal(iCell) = windStress
            windStressMeridional(iCell) = 0.0_RKIND
 
         end do
+
+       ! Set Coriolis parameters
+       do iCell = 1, nCellsSolve
+          fCell(iCell) = 2.0_RKIND * omega * sin(latCell(iCell))
+       end do
+       do iEdge = 1, nEdgesSolve
+          fEdge(iEdge) = 2.0_RKIND * omega * sin(latEdge(iEdge))
+       end do
+       do iVertex = 1, nVerticesSolve
+          fVertex(iVertex) = 2.0_RKIND * omega * sin(latVertex(iVertex))
+       end do
 
         block_ptr => block_ptr % next
       end do
