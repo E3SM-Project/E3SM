@@ -457,7 +457,7 @@
 	<command name="switch">intel intel/17.0.0.098</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
-        <command name="load">memkind</command>
+	<command name="load">memkind</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
 	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
@@ -1548,7 +1548,6 @@
       <env name="MP_INFOLEVEL">2</env>
       <env name="MP_SHARED_MEMORY">yes</env>
       <env name="MP_EUILIB">us</env>
-      <env name="MP_MPILIB">$MPILIB</env>
       <env name="MP_STDOUTMODE">unordered</env>
       <env name="MP_RC_USE_LMC">yes</env>
     </environment_variables>
