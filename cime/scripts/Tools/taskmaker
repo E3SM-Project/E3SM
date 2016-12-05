@@ -7,14 +7,14 @@ from standard_script_setup import *
 
 from CIME.task_maker import TaskMaker
 from CIME.case import Case
-
+from CIME.XML.machines  import Machines
 import argparse, doctest
 
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [--task-geom|-thread-geom|--sum-pes|--sum-tasks|--max-threads|--aprun|--pbsrs (wes|san|ivy|has) [--verbose]
+        usage="""\n%s [--task-geom|-thread-geom|--sum-pes|--sum-tasks|--max-threads|--aprun|--mpirun|--pbsrs (wes|san|ivy|has) [--verbose]
 OR
 %s --help
 OR
@@ -58,13 +58,16 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("--all", action="store_true",
                         help="report everything")
+    
+    parser.add_argument("--mpirun", action="store_true",
+                        help="report mpirun command per model")
 
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.sum_pes, args.sum_tasks, args.max_threads, args.task_geom, args.thread_geom, args.aprun, args.pbsrs, args.all
-
+    return args.caseroot, args.sum_pes, args.sum_tasks, args.max_threads, args.task_geom, args.thread_geom, args.aprun, args.pbsrs, args.mpirun, args.all
+    
 ###############################################################################
 def _main_func(description):
 ###############################################################################
@@ -72,7 +75,7 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, sum_pes, sum_tasks, max_threads, task_geom, thread_geom, aprun, pbsrs, all_ = \
+    caseroot, sum_pes, sum_tasks, max_threads, task_geom, thread_geom, aprun, pbsrs, mpirun, all_ = \
         parse_command_line(sys.argv, description)
 
     with Case(caseroot) as case:
@@ -92,6 +95,8 @@ def _main_func(description):
             print tm.aprun
         if pbsrs is not None:
             print tm.pbsrs.replace("$MODEL", pbsrs)
+        if mpirun:
+            print get_mpirun(tm,case)
 
         if all_:
             print "# ----------------------------------------"
@@ -114,6 +119,14 @@ def _main_func(description):
                 logging.warning("#  There appear to be some IDLE hw pes")
                 logging.warning("#  Please consider reviewing your env_mach_pes.xml file")
 
+
+###############################################################################
+def get_mpirun(tm,case):
+###############################################################################
+     machine = Machines(machine=case.get_value("MACH"))
+     cmd = machine.get_full_mpirun(tm, case, "case.run")
+     cmd = case.get_resolved_value(cmd)
+     return cmd
 
 ###############################################################################
 
