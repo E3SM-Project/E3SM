@@ -969,6 +969,9 @@
 	<command name="add">+pnetcdf-1.6.1-pgi-16.3-openmpi-1.10.2-acme</command>
       </modules>
     </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+    </environment_variables>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/soft/spack/opt/spack/linux-centos6-x86_64/intel-16.0.3/netcdf-4.4.0-ds5gqquzjytf4efz3d5njsvpkfmmrwq7</env>
     </environment_variables>
