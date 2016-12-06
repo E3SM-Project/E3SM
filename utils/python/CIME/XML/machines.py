@@ -268,8 +268,14 @@ class Machines(GenericXML):
         default_match = None
         best_num_matched_default = -1
         args = {}
+
+        # 1. Check for multiple mpirun nodes and return the one with best 
+        #    parameter coverage 
+        # 2. Compute arguments
+
         for mpirun_node in mpirun_nodes:
             xml_attribs = mpirun_node.attrib
+            print attribs, xml_attribs , mpirun_node.tag , mpirun_node.items()
             all_match = True
             matches = 0
             is_default = False
@@ -281,7 +287,7 @@ class Machines(GenericXML):
                         xml_attrib = True
                     else:
                         xml_attrib = xml_attribs[key]
-
+                    print xml_attrib , value , key , "1"    
                     if xml_attrib == value:
                         matches += 1
                     elif key == "mpilib" and xml_attrib == "default":
@@ -289,7 +295,7 @@ class Machines(GenericXML):
                     else:
                         all_match = False
                         break
-
+            print "IS_DEFAULT" , is_default        
             for key in xml_attribs:
                 expect(key in attribs, "Unhandled MPI property '%s'" % key)
 
@@ -309,10 +315,12 @@ class Machines(GenericXML):
         the_match = best_match if best_match is not None else default_match
 
         # Now that we know the best match, compute the arguments
+
         arg_node = self.get_optional_node("arguments", root=the_match)
         if arg_node is not None:
             arg_nodes = self.get_nodes("arg", root=arg_node)
             for arg_node in arg_nodes:
+                print "ARG" , arg_node.tag , arg_node.text , arg_node.get("default")
                 arg_value = transform_vars(arg_node.text,
                                            case=case,
                                            subgroup=job,
@@ -344,8 +352,17 @@ class Machines(GenericXML):
         batch_system = self.get_value("BATCH_SYSTEM")
         if batch_system == "cobalt":
             mpi_arg_string += " : "
-
-        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
+          
+        # aprun and Titan specific
+        m = re.search("__DEFAULT_RUN_EXE__" , mpi_arg_string)
+        if m.group() :
+            mpi_arg_string = mpi_arg_string.replace(m.group() , default_run_exe)
+            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_misc_suffix)
+        else:
+            print "DEBUG" , m.group()
+            print "DEBUG" , executable , mpi_arg_string , default_run_suffix
+            print "DEBUG" , check_members.tasks_per_node
+            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def print_values(self):
         # write out machines
