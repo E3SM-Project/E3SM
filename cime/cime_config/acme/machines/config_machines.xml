@@ -1420,12 +1420,14 @@
     <mpirun mpilib="default">
       <executable args="default">aprun</executable>
       <arguments>
-	<arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
+	<!-- <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
         <arg name="num_tasks" > -n {{ num_tasks }}</arg>
         <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
         <arg name="thread_count" > -d {{ thread_count }}</arg>
         <arg name="numa_node" > -cc numa_node </arg>
+	-->
+	<arg name="aprun"> {{ aprun }}</arg>
       </arguments>
 
     </mpirun>
