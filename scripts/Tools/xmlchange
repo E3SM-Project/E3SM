@@ -95,7 +95,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def xmlchange(caseroot, listofsettings=None, xmlid=None, xmlval=None, subgroup=None,
               append=None, noecho=False, force=False , dryrun=False):
     with Case(caseroot, read_only=False) as case:
-
         if len(listofsettings):
             logger.debug("List of attributes to change: %s" , listofsettings)
 
@@ -115,7 +114,8 @@ def xmlchange(caseroot, listofsettings=None, xmlid=None, xmlval=None, subgroup=N
                     xmlval = convert_to_type(xmlval, type_str, xmlid)
 
                 if not dryrun :
-                    case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+                    newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+                    expect(newval is not None,"No variable \"%s\" found"%xmlid)
                 else :
                     logger.warning("'%s' = '%s'" , xmlid , xmlval )
         else:
@@ -125,7 +125,8 @@ def xmlchange(caseroot, listofsettings=None, xmlid=None, xmlval=None, subgroup=N
             type_str = case.get_type_info(xmlid)
             if not force:
                 xmlval = convert_to_type(xmlval, type_str, xmlid)
-            case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+            newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+            expect(newval is not None,"No variable \"%s\" found"%xmlid)
 
     if not noecho:
         argstr = ""
