@@ -18,7 +18,7 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
     print "Test '%s' had a namelist diff" % test_name
     if (not report_only and
         (force or raw_input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
-        stat, _, err = run_cmd("%s/create_test -n -g %s -b %s --baseline-root %s" % (get_scripts_root, test_name, baseline_name, baseline_root))
+        stat, _, err = run_cmd("%s/create_test -n -g %s -b %s --baseline-root %s -o" % (get_scripts_root(), test_name, baseline_name, baseline_root))
         if stat != 0:
             return False, "Namelist regen failed: '%s'" % err
         else:
