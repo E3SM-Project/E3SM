@@ -26,6 +26,6 @@
 <stream_year_first_popdens phys="clm5_0" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_popdens>
 <stream_year_last_popdens  phys="clm5_0" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_popdens>
 
-<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</fsnowoptics>
+<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
 
 </namelist_defaults>

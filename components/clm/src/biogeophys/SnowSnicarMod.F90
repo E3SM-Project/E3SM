@@ -1551,7 +1551,7 @@ contains
             asm_prm_bc1(1,1), asm_prm_bc1(1,2), asm_prm_bc1(2,1), asm_prm_bc1(5,1), asm_prm_bc1(1,10), asm_prm_bc2(1,10)
        write (iulog,*) 'SNICAR: Subset of BC absorption enhancement factors: ', &
             bcenh(1,1,1), bcenh(1,2,1), bcenh(1,1,2), bcenh(2,1,1), bcenh(5,10,1), bcenh(5,1,8), bcenh(5,10,8)
-       ! test comparison: ncks -H -C -F -d wvl,5 -d ncl_rds,1 -d ice_rds,8 -v ss_alb_bc_mam,asm_prm_bc_mam,ext_cff_mss_bc_mam,bcint_enh_mam snicar_optics_5bnd_mam_c140303.nc
+       ! test comparison: ncks -H -C -F -d wvl,5 -d ncl_rds,1 -d ice_rds,8 -v ss_alb_bc_mam,asm_prm_bc_mam,ext_cff_mss_bc_mam,bcint_enh_mam snicar_optics_5bnd_mam_c160322.nc
        !mgf--
 #else
         write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophillic BC: ', &
