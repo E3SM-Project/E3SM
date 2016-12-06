@@ -375,6 +375,7 @@
                                   config_camrad_abs_update,      &
                                   config_greeness_update
 
+ logical,pointer:: config_sst_update
  logical,pointer:: config_frac_seaice
  logical,pointer:: config_microp_re
 
@@ -413,6 +414,7 @@
  call mpas_pool_get_config(configs,'config_bucket_update'    ,config_bucket_update    )
  call mpas_pool_get_config(configs,'config_camrad_abs_update',config_camrad_abs_update)
  call mpas_pool_get_config(configs,'config_greeness_update'  ,config_greeness_update  )
+ call mpas_pool_get_config(configs,'config_sst_update'       ,config_sst_update       )
  call mpas_pool_get_config(configs,'config_frac_seaice'      ,config_frac_seaice      )
  call mpas_pool_get_config(configs,'config_microp_re'        ,config_microp_re        )
 
@@ -548,9 +550,9 @@
        call physics_error_fatal('subroutine physics_init: error creating alarm greeness')
 
 !set alarm for updating the surface boundary conditions:
- call MPAS_stream_mgr_get_property(stream_manager, 'surface', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
-                                   direction=MPAS_STREAM_INPUT, ierr=ierr)
- if(trim(stream_interval) /= 'none') then
+ if (config_sst_update) then
+    call MPAS_stream_mgr_get_property(stream_manager, 'surface', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                      direction=MPAS_STREAM_INPUT, ierr=ierr)
     call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
     alarmStartTime = startTime
     call mpas_add_clock_alarm(clock,sfcbdyAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
