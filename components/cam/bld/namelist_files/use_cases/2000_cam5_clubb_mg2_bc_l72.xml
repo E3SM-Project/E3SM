@@ -10,7 +10,7 @@
 <history_aero_optics>.true.</history_aero_optics>
 
 <!-- File for BC dep in snow feature -->
-<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc.nc</fsnowoptics>
+<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
 
 <!-- Tunable parameters for 72 layer model-->
 
