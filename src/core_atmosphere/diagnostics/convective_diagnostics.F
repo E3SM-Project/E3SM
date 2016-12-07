@@ -359,14 +359,14 @@ module convective_diagnostics
 
             do iCell = 1,nCells
             do k = 1,nVertLevels
-                temperature(k,iCell) = (theta_m(k,iCell)/(1._RKIND+rvord*scalars(index_qv,k,iCell)))*exner(k,iCell) 
+                temperature(k,iCell) = (theta_m(k,iCell)/(1._RKIND+rvord*scalars(index_qv,k,iCell)))*exner(k,iCell)
                 tempC = temperature(k,iCell) - 273.15
-                relhum(k,iCell) = max(1.e-08,min(1.,relhum(k,iCell)))
-                logrelhum = log(relhum(k,iCell))
-                dewpoint(k,iCell) = 243.04*(logrelhum+(17.625*tempC/(243.04+tempC))) & 
-                                    /(17.625-logrelhum-((17.625*tempC)/(243.04+tempC))) 
-            end do
-            end do
+                logrelhum = log(max(1.e-08,min(100.,relhum(k,iCell)))*0.01)
+                dewpoint(k,iCell) = 243.04*(logrelhum+(17.625*tempC/(243.04+tempC))) &
+                                    /(17.625-logrelhum-((17.625*tempC)/(243.04+tempC)))
+            enddo
+            enddo
+
 
             ! first the shear values.  We will use lowest model level velocity for surface velocity
             do iCell=1,nCellsSolve
