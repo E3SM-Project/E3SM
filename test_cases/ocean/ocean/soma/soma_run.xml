@@ -1,0 +1,79 @@
+<template>
+
+	<namelist>
+		<option name="config_ocean_run_mode">'forward'</option>
+		<option name="config_use_mom_del4">.true.</option>
+		<option name="config_mom_del4_div_factor">10.0</option>
+		<option name="config_convective_visc">1.0</option>
+		<option name="config_convective_diff">1.0</option>
+		<option name="config_use_rich_visc">.true.</option>
+		<option name="config_use_rich_diff">.true.</option>
+		<option name="config_use_cvmix">.true.</option>
+		<option name="config_use_cvmix_background">.true.</option>
+		<option name="config_use_cvmix_convection">.true.</option>
+		<option name="config_cvmix_background_diffusion">5.0e-6</option>
+		<option name="config_cvmix_convective_basedOnBVF">.true.</option>
+		<option name="config_use_cvmix_shear">.true.</option>
+		<option name="config_cvmix_shear_mixing_scheme">'KPP'</option>
+		<option name="config_use_cvmix_kpp">.true.</option>
+		<option name="config_use_bulk_wind_stress">.true.</option>
+		<option name="config_density0">1014.65</option>
+		<option name="config_eos_type">'jm'</option>
+		<option name="config_eos_linear_alpha">0.255</option>
+		<option name="config_eos_linear_beta">0.764</option>
+		<option name="config_eos_linear_Tref">19.0</option>
+		<option name="config_eos_linear_Sref">35.0</option>
+		<option name="config_eos_linear_densityref">1025.022</option>
+		<option name="config_bottom_drag_coeff">1.0e-3</option>
+		<option name="config_use_activeTracers_surface_bulk_forcing">.false.</option>
+		<option name="config_use_activeTracers_surface_restoring">.false.</option>
+		<option name="config_use_activeTracers_interior_restoring">.false.</option>
+		<option name="config_pio_num_iotasks">1</option>
+		<option name="config_pio_stride">4</option>
+		<option name="config_write_output_on_startup">.false.</option>
+	</namelist>
+
+	<streams>
+		<stream name="mesh">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="restart">
+			<attribute name="output_interval">0030_00:00:00</attribute>
+		</stream>
+		<stream name="output">
+			<attribute name="output_interval">0000-01-00_00:00:00</attribute>
+			<add_contents>
+				<member name="velocityZonal" type="var"/>
+				<member name="velocityMeridional" type="var"/>
+				<member name="density" type="var"/>
+				<member name="divergence" type="var"/>
+				<member name="displacedDensity" type="var"/>
+				<member name="potentialDensity" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="indexBoundaryLayerDepth" type="var"/>
+				<member name="indexSurfaceLayerDepth" type="var"/>
+				<member name="surfaceFrictionVelocity" type="var"/>
+				<member name="surfaceBuoyancyForcing" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="BruntVaisalaFreqTop" type="var"/>
+			</add_contents>
+			<remove_contents>
+				<member name="areaCellGlobal"/>
+				<member name="areaEdgeGlobal"/>
+				<member name="areaTriangleGlobal"/>
+				<member name="volumeCellGlobal"/>
+				<member name="volumeEdgeGlobal"/>
+				<member name="CFLNumberGlobal"/>
+			</remove_contents>
+		</stream>
+		<stream name="forcing_data">
+			<attribute name="filename_template">forcing.nc</attribute>
+		</stream>
+	</streams>
+
+</template>
