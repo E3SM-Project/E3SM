@@ -137,7 +137,7 @@ ifeq (,$(SHAREDPATH))
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
-include $(CASEROOT)/Macros
+include $(CASEROOT)/Macros.make
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), true)
@@ -399,7 +399,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
 
-CONFIG_ARGS +=  CC="$(SCC)" FC="$(SFC)" MPICC="$(MPICC)" \
+CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
                 NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"

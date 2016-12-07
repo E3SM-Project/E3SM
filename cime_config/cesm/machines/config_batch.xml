@@ -10,7 +10,7 @@
      batch_redirect:   Whether a redirect character is needed to submit jobs.
      batch_directive:  The string that prepends a batch directive for the batch system.
      jobid_pattern:    A perl regular expression used to filter out the returned job id from a
-                       queue submission.
+		       queue submission.
      depend_pattern:
 
  ===============================================================
@@ -180,7 +180,7 @@
       <directive default="/bin/bash" > -S {{ shell }} </directive>
     </directives>
       <queues>
-        <queue walltimemax="24:00:00" default="true">regular</queue>
+	<queue walltimemax="24:00:00" default="true">regular</queue>
 	<queue walltimemax="00:30:00" jobmin="1" jobmax="512">debug</queue>
       </queues>
    </batch_system>
@@ -361,13 +361,24 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="corip1" type="slurm" version="x.y">
+   <batch_system MACH="cori-haswell" type="slurm" version="x.y">
      <batch_submit>sbatch</batch_submit>
      <directives>
        <directive>-C haswell </directive>
      </directives>
      <queues>
        <queue walltimemax="06:00:00" jobmin="1" jobmax="45440">regular</queue>
+     <!--  <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue> -->
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="cori-knl" type="slurm" version="x.y">
+     <batch_submit>sbatch</batch_submit>
+     <directives>
+       <directive>-C knl </directive>
+     </directives>
+     <queues>
+       <queue walltimemax="02:00:00" jobmin="1" jobmax="45440">regular</queue>
      <!--  <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue> -->
      </queues>
    </batch_system>
@@ -446,4 +457,3 @@
 
 
 </config_batch>
-

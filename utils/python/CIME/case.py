@@ -11,7 +11,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.utils                     import get_build_threaded, get_current_commit
-from CIME.XML.build                 import Build
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -811,42 +810,6 @@ class Case(object):
                 os.symlink(toolfile, destfile)
             except Exception as e:
                 logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))
-
-        # Create Macros file.
-        machine = self.get_value("MACH")
-        files = Files()
-        # Use config_build if the environment variable is set, or if there is no
-        # config_compilers file.
-        if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE" or \
-           files.get_value("COMPILERS_SPEC_FILE") is None:
-            build_file = files.get_value("BUILD_SPEC_FILE")
-            machobj = Machines(machine=machine, files=files)
-            macro_maker = Build(machobj)
-            macros_path = os.path.join(self._caseroot, "Macros")
-            with open(macros_path, "w") as macros_file:
-                macro_maker.write_macros('Makefile', build_file, macros_file)
-
-        # Copy any system or compiler Depends files to the case.
-        compiler = self.get_value("COMPILER")
-        for dep in (machine, compiler):
-            dfile = "Depends.%s"%dep
-            if os.path.isfile(os.path.join(machines_dir,dfile)):
-                shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(self._caseroot,dfile))
-        dfile = "Depends.%s.%s"%(machine,compiler)
-        if os.path.isfile(os.path.join(machines_dir,dfile)):
-            shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(self._caseroot, dfile))
-            # set up infon files
-            # infofiles = os.path.join(os.path.join(toolsdir, README.post_process")
-            #FIXME - the following does not work
-            # print "DEBUG: infofiles are ",infofiles
-            #    try:
-            #        for infofile in infofiles:
-            #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
-            #            dst_file = caseroot + "/" + os.path.basename(infofile)
-            #            shutil.copyfile(infofile, dst_file)
-            #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
-            #    except Exception as e:
-            #        logger.warning("FAILED to set up infofiles: %s" % str(e))
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()

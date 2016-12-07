@@ -158,7 +158,6 @@ class EnvMachSpecific(EnvBase):
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
         modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
         envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
-
         filename = ".env_mach_specific.%s" % shell
         lines = []
         if modules_to_load is not None:
@@ -245,7 +244,7 @@ class EnvMachSpecific(EnvBase):
         for cmd in self._get_module_commands(modules_to_load, "python"):
             logger.debug("module command is %s"%cmd)
             stat, py_module_code, errout = run_cmd(cmd)
-            expect(stat==0 and len(errout) == 0, 
+            expect(stat==0 and len(errout) == 0,
                    "module command %s failed with message:\n%s"%(cmd,errout))
             exec(py_module_code)
 
@@ -416,4 +415,3 @@ class EnvMachSpecific(EnvBase):
         executable = exec_node.text
 
         return executable, args
-

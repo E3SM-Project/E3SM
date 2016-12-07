@@ -7,7 +7,8 @@ from CIME.XML.standard_module_setup import *
 from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
-from CIME.XML.compilers     import Compilers
+from CIME.XML.machines      import Machines
+from CIME.BuildTools.configure import configure
 from CIME.utils             import append_status, get_cime_root
 from CIME.test_status       import *
 
@@ -145,18 +146,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         case.load_env()
 
         models = case.get_values("COMP_CLASSES")
-
-        mach, compiler, debug, mpilib = \
-            case.get_value("MACH"), case.get_value("COMPILER"), case.get_value("DEBUG"), case.get_value("MPILIB")
+        mach = case.get_value("MACH")
+        compiler = case.get_value("COMPILER")
+        debug = case.get_value("DEBUG")
+        mpilib = case.get_value("MPILIB")
+        sysos = case.get_value("OS")
         expect(mach is not None, "xml variable MACH is not set")
 
-        # Create Macros file only if it does not exist
-        if not os.path.exists("Macros"):
-            logger.debug("Creating Macros file for %s" % mach)
-            compilers = Compilers(compiler=compiler, machine=mach, os_=case.get_value("OS"), mpilib=mpilib)
-            compilers.write_macros_file()
-        else:
-            logger.debug("Macros script already created ...skipping")
+        # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
+        # and env_mach_specific.xml if they don't already exist.
+        if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, sysos)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":

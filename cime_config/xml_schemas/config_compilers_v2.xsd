@@ -3,32 +3,17 @@
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
     elementFormDefault="qualified">
 
-  <!-- Root element and its type; config_build is just a list of "compiler"
-       elements. -->
-  <xs:element name="config_build">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="compiler" type="compilerType" maxOccurs="unbounded">
-        </xs:element>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
+  <!-- attributes -->
+  <xs:attribute name="version" type="xs:decimal"/>
+  <xs:attribute name="COMPILER" type="xs:token"/>
+  <xs:attribute name="OS" type="xs:token"/>
+  <xs:attribute name="MACH" type="xs:token"/>
+  <xs:attribute name="compile_threaded" type="xs:boolean"/>
+  <xs:attribute name="DEBUG" type="upperBoolean"/>
+  <xs:attribute name="MODEL" type="xs:token"/>
+  <xs:attribute name="MPILIB" type="xs:token"/>
 
-  <!-- A "compiler" element is a list of one or more variables to be passed to
-       the build system, which can be specified in any order. The three
-       attributes on this element, if present, specify which compiler/system
-       combinations these settings are relevant for. Non-matches are typically
-       not passed to the build system at all. (For instance, they are not
-       written to a "Macros" file by the SetupTools module.) -->
-  <xs:complexType name="compilerType">
-    <xs:sequence>
-      <xs:group ref="compilerVars" maxOccurs="unbounded"/>
-    </xs:sequence>
-    <xs:attribute name="COMPILER" type="xs:token"/>
-    <xs:attribute name="OS" type="xs:token"/>
-    <xs:attribute name="MACH" type="xs:token"/>
-  </xs:complexType>
-
+  <!--  simple types -->
   <!-- For historical and user-interface reasons, we have uppercase TRUE and
        FALSE all over the place. This means we have to define an enumeration
        instead of using "xs:boolean". -->
@@ -39,12 +24,21 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <!-- Block containing a list of conditional flag settings. -->
-  <xs:complexType name="flagsVar">
+
+  <!-- complex types -->
+  <!-- A "compiler" element is a list of one or more variables to be passed to
+       the build system, which can be specified in any order. The three
+       attributes on this element, if present, specify which compiler/system
+       combinations these settings are relevant for. Non-matches are typically
+       not passed to the build system at all. (For instance, they are not
+       written to a "Macros" file by the SetupTools module.) -->
+  <xs:complexType name="compilerType">
     <xs:sequence>
-      <xs:element name="base" type="flags" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="append" type="flags" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="compilerVars" maxOccurs="unbounded"/>
     </xs:sequence>
+    <xs:attribute ref="COMPILER" />
+    <xs:attribute ref="OS" />
+    <xs:attribute ref="MACH" />
   </xs:complexType>
 
   <!-- For variables that represent command-line flags. The text inside these
@@ -54,21 +48,22 @@
     <xs:sequence>
       <xs:group ref="envTags" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="compile_threaded" type="xs:boolean"/>
-    <xs:attribute name="DEBUG" type="upperBoolean"/>
+    <xs:attribute ref="compile_threaded"/>
+    <xs:attribute ref="DEBUG"/>
     <!-- We could try enumerating all the valid names for models, but that could
-         complicate the process of adding new models. -->
-    <xs:attribute name="MODEL" type="xs:token"/>
-    <xs:attribute name="MPILIB" type="xs:token"/>
+	 complicate the process of adding new models. -->
+    <xs:attribute ref="MODEL"/>
+    <xs:attribute ref="MPILIB"/>
   </xs:complexType>
 
-  <xs:group name="envTags">
-    <xs:choice>
-      <xs:element name="shell" type="shellCommand"/>
-      <xs:element name="env" type="xs:token"/>
-      <xs:element name="var" type="xs:token"/>
-    </xs:choice>
-  </xs:group>
+
+  <!-- Block containing a list of conditional flag settings. -->
+  <xs:complexType name="flagsVar">
+    <xs:sequence>
+      <xs:element ref="base" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="append" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
 
   <!-- We want to allow env tags in a shell command, but it's not clear if we
        want (or really need) to allow nested shell commands. For now, just
@@ -78,13 +73,6 @@
       <xs:group ref="shellTags" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
-  <xs:group name="shellTags">
-    <xs:choice>
-      <xs:element name="env" type="xs:token"/>
-      <xs:element name="var" type="xs:token"/>
-    </xs:choice>
-  </xs:group>
 
   <!-- Since both C++ and Fortran can have somewhat complex linking
        requirements, normally handled by the compiler, we have to specify which
@@ -105,10 +93,47 @@
     <xs:sequence>
       <xs:group ref="envTags" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="compile_threaded" type="xs:boolean"/>
-    <xs:attribute name="DEBUG" type="upperBoolean"/>
-    <xs:attribute name="MPILIB" type="xs:token"/>
+    <xs:attribute ref="compile_threaded"/>
+    <xs:attribute ref="DEBUG" />
+    <xs:attribute ref="MPILIB" />
   </xs:complexType>
+
+  <!-- simple elements -->
+  <xs:element name="compiler" type="compilerType"/>
+  <xs:element name="base" type="flags"/>
+  <xs:element name="append" type="flags"/>
+
+
+  <!-- complex elements -->
+
+
+  <!-- Root element and its type; config_compilers is just a list of "compiler"
+       elements. -->
+  <xs:element name="config_compilers">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="compiler" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- groups -->
+  <xs:group name="envTags">
+    <xs:choice>
+      <xs:element name="shell" type="shellCommand"/>
+      <xs:element name="env" type="xs:token"/>
+      <xs:element name="var" type="xs:token"/>
+    </xs:choice>
+  </xs:group>
+
+  <xs:group name="shellTags">
+    <xs:choice>
+      <xs:element name="env" type="xs:token"/>
+      <xs:element name="var" type="xs:token"/>
+    </xs:choice>
+  </xs:group>
+
 
   <!-- All the variables that can be defined for a compiler/system
        combination. -->

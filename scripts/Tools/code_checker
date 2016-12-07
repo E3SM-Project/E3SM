@@ -74,7 +74,7 @@ def run_pylint(on_file):
          os.path.join(cimeroot,"scripts","Tools"))
 
     cmd = "%s %s %s" % (pylint, cmd_options, on_file)
-
+    logger.debug("pylint command is %s"%cmd)
     stat, out, err = run_cmd(cmd, verbose=False, from_dir=cimeroot)
     if stat != 0:
         logger.info("File %s has pylint problems, please fix\n    Use command: %s" % (on_file, cmd))
@@ -102,11 +102,15 @@ def check_code(dir_to_check, num_procs, files):
     Returns True if all files had no problems
     """
     # Get list of files to check
-    files_to_check = run_cmd_no_fail('git ls-files --full-name %s' % dir_to_check, verbose=False).splitlines()
-    if files:
-        files_to_check = [item for item in files_to_check if matches(item, files)]
+    if '/' in files:
+        files_to_check = files
     else:
-        files_to_check = [item for item in files_to_check if item.endswith(".py")]
+        files_to_check = run_cmd_no_fail('git ls-files --full-name %s' % dir_to_check, verbose=False).splitlines()
+        if files:
+            files_to_check = [item for item in files_to_check if matches(item, files)]
+        else:
+            files_to_check = [item for item in files_to_check if item.endswith(".py")]
+
 
     pool = ThreadPool(num_procs)
     results = pool.map(run_pylint, files_to_check)
