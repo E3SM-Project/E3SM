@@ -2406,7 +2406,7 @@
     <group>ccsm_pes</group>
     <desc>
       the number of threads per mpi task for the lnd component.
-      set by NTHRDS_LND in env_configure.xml.
+      set by NTHRDS_ROF in env_configure.xml.
     </desc>
     <values>
       <value>$NTHRDS_ROF</value>
