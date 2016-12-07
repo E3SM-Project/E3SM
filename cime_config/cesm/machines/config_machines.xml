@@ -385,8 +385,8 @@
 	<command name="load">cray-netcdf/4.4.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.1</command>
-	<command name="load">cray-hdf5-parallel/1.10.0</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+	<command name="load">cray-hdf5-parallel/1.8.16</command>
 	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
@@ -490,8 +490,8 @@
 	<command name="load">cray-netcdf/4.4.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.1</command>
-	<command name="load">cray-hdf5-parallel/1.10.0</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+	<command name="load">cray-hdf5-parallel/1.8.16</command>
 	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
