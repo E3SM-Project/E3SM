@@ -474,78 +474,6 @@ class TestCreateTestCommon(unittest.TestCase):
                     os.remove(file_to_clean)
 
 ###############################################################################
-class N_TestCreateTest(TestCreateTestCommon):
-###############################################################################
-
-    ###########################################################################
-    def simple_test(self, expect_works, extra_args):
-    ###########################################################################
-        if NO_BATCH:
-            extra_args += " --no-batch"
-        run_cmd_assert_result(self, "%s/create_test cime_test_only_pass %s" % (SCRIPT_DIR, extra_args),
-                              expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
-
-    ###############################################################################
-    def test_create_test_rebless_namelist(self):
-    ###############################################################################
-        # Generate some namelist baselines
-        if CIME.utils.get_model() == "acme":
-            genarg = "-g -o -b %s" % self._baseline_name
-            comparg = "-c -b %s" % self._baseline_name
-        else:
-            genarg = "-g %s -o" % self._baseline_name
-            comparg = "-c %s" % self._baseline_name
-
-        self.simple_test(True, "%s -n -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_timestamp()))
-
-        # Basic namelist compare
-        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        self.simple_test(True, "%s -n -t %s" % (comparg, test_id))
-
-        # Check standalone case.cmpgen_namelists
-        casedir = os.path.join(self._testroot,
-                               "%s.C.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), test_id))
-        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir)
-
-        # Modify namelist
-        fake_nl = """
- &fake_nml
-   fake_item = 'fake'
-   fake = .true.
-/"""
-        baseline_area = self._baseline_area
-        baseline_glob = glob.glob(os.path.join(baseline_area, self._baseline_name, "TEST*"))
-        self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
-
-        import stat
-        for baseline_dir in baseline_glob:
-            nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
-            self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
-
-            os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
-            with open(nl_path, "a") as nl_file:
-                nl_file.write(fake_nl)
-
-        # Basic namelist compare should now fail
-        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        self.simple_test(False, "%s -n -t %s" % (comparg, test_id))
-        casedir = os.path.join(self._testroot,
-                               "%s.C.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), test_id))
-        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=100)
-
-        # preview namelists should work
-        run_cmd_assert_result(self, "./preview_namelists", from_dir=casedir)
-
-        # This should still fail
-        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=100)
-
-        # Regen
-        self.simple_test(True, "%s -n -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_timestamp()))
-
-        # Basic namelist compare should now pass again
-        self.simple_test(True, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
-
-###############################################################################
 class O_TestTestScheduler(TestCreateTestCommon):
 ###############################################################################
 
@@ -838,8 +766,6 @@ class P_TestJenkinsGenericJob(TestCreateTestCommon):
 class Q_TestBlessTestResults(TestCreateTestCommon):
 ###############################################################################
 
-    _test_name = "TESTRUNDIFF_P1.f19_g16_rx1.A"
-
     ###########################################################################
     def tearDown(self):
     ###########################################################################
@@ -854,10 +780,10 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         if NO_BATCH:
             extra_args += " --no-batch"
 
-        run_cmd_assert_result(self, "%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args),
+        run_cmd_assert_result(self, "%s/create_test %s" % (SCRIPT_DIR, extra_args),
                               expected_stat=(0 if expect_works or self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
 
-        if self._hasbatch:
+        if self._hasbatch and " -n " not in extra_args:
             test_id = extra_args.split()[extra_args.split().index("-t") + 1]
             run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id),
                                   from_dir=self._testroot, expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
@@ -865,13 +791,15 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
     ###############################################################################
     def test_bless_test_results(self):
     ###############################################################################
-        # Generate some namelist baselines
+        # Generate some baselines
+        test_name = "TESTRUNDIFF_P1.f19_g16_rx1.A"
+
         if CIME.utils.get_model() == "acme":
-            genarg = "-g -o -b %s"%self._baseline_name
-            comparg = "-c -b %s"%self._baseline_name
+            genarg = "-g -o -b %s %s" % (self._baseline_name, test_name)
+            comparg = "-c -b %s %s" % (self._baseline_name, test_name)
         else:
-            genarg = "-g %s -o"%self._baseline_name
-            comparg = "-c %s"%self._baseline_name
+            genarg = "-g %s -o %s" % (self._baseline_name, test_name)
+            comparg = "-c %s %s" % (self._baseline_name, test_name)
 
         self.simple_test(True, "%s -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_timestamp()))
 
@@ -890,7 +818,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
-        expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % self._test_name)
+        expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
         the_match = expected_pattern.search(output)
         self.assertNotEqual(the_match, None,
                             msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
@@ -900,6 +828,88 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         # Hist compare should now pass again
         self.simple_test(True, "%s -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
+
+    ###############################################################################
+    def test_rebless_namelist(self):
+    ###############################################################################
+        # Generate some namelist baselines
+        test_to_change = "TESTRUNPASS_P1.f19_g16_rx1.A"
+        if CIME.utils.get_model() == "acme":
+            genarg = "-g -o -b %s cime_test_only_pass" % self._baseline_name
+            comparg = "-c -b %s cime_test_only_pass" % self._baseline_name
+        else:
+            genarg = "-g %s -o cime_test_only_pass" % self._baseline_name
+            comparg = "-c %s cime_test_only_pass" % self._baseline_name
+
+        self.simple_test(True, "%s -n -t %s-%s" % (genarg, self._baseline_name, CIME.utils.get_timestamp()))
+
+        # Basic namelist compare
+        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
+        self.simple_test(True, "%s -n -t %s" % (comparg, test_id))
+
+        # Check standalone case.cmpgen_namelists
+        casedir = os.path.join(self._testroot,
+                               "%s.C.%s" % (CIME.utils.get_full_test_name(test_to_change, machine=self._machine, compiler=self._compiler), test_id))
+        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir)
+
+        # compare_test_results should pass
+        cpr_cmd = "%s/compare_test_results -n -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        output = run_cmd_assert_result(self, cpr_cmd)
+
+        # use regex
+        expected_pattern = re.compile(r'PASS %s[^\s]* NLCOMP' % test_to_change)
+        the_match = expected_pattern.search(output)
+        self.assertNotEqual(the_match, None,
+                            msg="Cmd '%s' failed to display passed test in output:\n%s" % (cpr_cmd, output))
+
+
+        # Modify namelist
+        fake_nl = """
+ &fake_nml
+   fake_item = 'fake'
+   fake = .true.
+/"""
+        baseline_area = self._baseline_area
+        baseline_glob = glob.glob(os.path.join(baseline_area, self._baseline_name, "TEST*"))
+        self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
+
+        import stat
+        for baseline_dir in baseline_glob:
+            nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
+            self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
+
+            os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+            with open(nl_path, "a") as nl_file:
+                nl_file.write(fake_nl)
+
+        # Basic namelist compare should now fail
+        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
+        self.simple_test(False, "%s -n -t %s" % (comparg, test_id))
+        casedir = os.path.join(self._testroot,
+                               "%s.C.%s" % (CIME.utils.get_full_test_name(test_to_change, machine=self._machine, compiler=self._compiler), test_id))
+        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=100)
+
+        # preview namelists should work
+        run_cmd_assert_result(self, "./preview_namelists", from_dir=casedir)
+
+        # This should still fail
+        run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=100)
+
+        # compare_test_results should fail
+        cpr_cmd = "%s/compare_test_results -n -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
+
+        # use regex
+        expected_pattern = re.compile(r'FAIL %s[^\s]* NLCOMP' % test_to_change)
+        the_match = expected_pattern.search(output)
+        self.assertNotEqual(the_match, None,
+                            msg="Cmd '%s' failed to display passed test in output:\n%s" % (cpr_cmd, output))
+
+        # Bless
+        run_cmd_no_fail("%s/bless_test_results -n --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
+
+        # Basic namelist compare should now pass again
+        self.simple_test(True, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
 
 ###############################################################################
 @unittest.skip("Disabling this test until we figure out how to integrate ACME tests and CIME xml files.")

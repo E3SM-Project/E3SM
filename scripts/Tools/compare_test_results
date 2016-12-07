@@ -66,6 +66,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.setup_standard_logging_options(parser)
 
+    parser.add_argument("-n", "--namelists-only", action="store_true",
+                        help="Only analyze namelists.")
+
+    parser.add_argument("--hist-only", action="store_true",
+                        help="Only analyze history files.")
+
     parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
                         help="Name of baselines to use, corresponds to branch used.")
 
@@ -88,7 +94,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.baseline_name, args.baseline_root, args.test_root, args.compiler, args.test_id, args.compare_tests
+    return args.baseline_name, args.baseline_root, args.test_root, args.compiler, args.test_id, args.compare_tests, args.namelists_only, args.hist_only
 
 ###############################################################################
 def _main_func(description):
@@ -97,10 +103,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    baseline_name, baseline_root, test_root, compiler, test_id, compare_tests = \
+    baseline_name, baseline_root, test_root, compiler, test_id, compare_tests, namelists_only, hist_only = \
         parse_command_line(sys.argv, description)
 
-    success = compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id, compare_tests)
+    success = compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id, compare_tests, namelists_only, hist_only)
     sys.exit(0 if success else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################

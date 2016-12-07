@@ -1,26 +1,33 @@
-from __future__ import print_function
-
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.utils import expect
 from CIME.test_status import *
 from CIME.hist_utils import compare_baseline
+from CIME.case_cmpgen_namelists import case_cmpgen_namelists
 from CIME.case import Case
 
-import os, glob
+import os, glob, logging
 
 ###############################################################################
-def compare_history(testcase_dir_for_test, baseline_name, baseline_root, log_id):
+def compare_namelists(case, baseline_name, baseline_root, logfile_name):
 ###############################################################################
-    with Case(testcase_dir_for_test) as case:
-        baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
-        outfile_suffix = "%s.%s"%(baseline_name, log_id)
-        result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
-                                            outfile_suffix=outfile_suffix)
-
-        return result, comments
+    log_lvl = logging.getLogger().getEffectiveLevel()
+    logging.disable(logging.CRITICAL)
+    success = case_cmpgen_namelists(case, compare=True, compare_name=baseline_name, baseline_root=baseline_root, logfile_name=logfile_name)
+    logging.getLogger().setLevel(log_lvl)
+    return success
 
 ###############################################################################
-def compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, compare_tests=None):
+def compare_history(case, baseline_name, baseline_root, log_id):
+###############################################################################
+    baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
+    outfile_suffix = "%s.%s" % (baseline_name, log_id)
+    result, comments = compare_baseline(case, baseline_dir=baseline_full_dir,
+                                        outfile_suffix=outfile_suffix)
+
+    return result, comments
+
+###############################################################################
+def compare_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, compare_tests=None, namelists_only=False, hist_only=False):
     """Compares with baselines for all matching tests
 
     Outputs results for each test to stdout (one line per test); possible status
@@ -44,7 +51,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
     # ID to use in the log file names, to avoid file name collisions with
     # earlier files that may exist.
     log_id = CIME.utils.get_timestamp()
-    logfile_name = "compare.log.%s.%s"%(baseline_name, log_id)
+    logfile_name = "compare.log.%s.%s" % (baseline_name.replace("/", "_"), log_id)
 
     all_pass_or_skip = True
 
@@ -60,39 +67,74 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                 caseroot = test_dir,
                 sfile = logfile_name)
 
-            run_result = ts.get_status(RUN_PHASE)
-            compare_comment = ""
-            detailed_comments = ""
-            if (run_result is None):
-                compare_result = "SKIP"
-                compare_comment = "Test did not make it to run phase"
-                do_compare = False
-            elif (run_result != TEST_PASS_STATUS):
-                compare_result = "SKIP"
-                compare_comment = "Run phase did not pass"
-                do_compare = False
-            else:
-                do_compare = True
-
-            if do_compare:
-                # Compare hist files
-                success, detailed_comments = compare_history(test_dir, baseline_name, baseline_root, log_id)
-                if success:
-                    compare_result = TEST_PASS_STATUS
+            if (not hist_only):
+                nl_compare_result = None
+                nl_compare_comment = ""
+                nl_result = ts.get_status(SETUP_PHASE)
+                if (nl_result is None):
+                    nl_compare_result = "SKIP"
+                    nl_compare_comment = "Test did not make it to setup phase"
+                    nl_do_compare = False
                 else:
-                    compare_result = TEST_FAIL_STATUS
-                    all_pass_or_skip = False
+                    nl_do_compare = True
+            else:
+                nl_do_compare = False
 
-                # Following the logic in SystemTestsCommon._compare_baseline:
-                # We'll print the comment if it's a brief one-liner; otherwise
-                # the comment will only appear in the log file
-                if "\n" not in detailed_comments:
-                    compare_comment = detailed_comments
+            detailed_comments = ""
+            if (not namelists_only):
+                compare_result = None
+                compare_comment = ""
+                run_result = ts.get_status(RUN_PHASE)
+                if (run_result is None):
+                    compare_result = "SKIP"
+                    compare_comment = "Test did not make it to run phase"
+                    do_compare = False
+                elif (run_result != TEST_PASS_STATUS):
+                    compare_result = "SKIP"
+                    compare_comment = "Run phase did not pass"
+                    do_compare = False
+                else:
+                    do_compare = True
+            else:
+                do_compare = False
 
-            brief_result = "%s %s %s"%(compare_result, test_name, BASELINE_PHASE)
-            if compare_comment:
-                brief_result += " %s"%(compare_comment)
-            print(brief_result)
+            if nl_do_compare or do_compare:
+                with Case(test_dir) as case:
+                    if nl_do_compare:
+                        nl_success = compare_namelists(case, baseline_name, baseline_root, logfile_name)
+                        if nl_success:
+                            nl_compare_result = TEST_PASS_STATUS
+                            nl_compare_comment = ""
+                        else:
+                            nl_compare_result = TEST_FAIL_STATUS
+                            nl_compare_comment = "See %s/%s" % (test_dir, logfile_name)
+                            all_pass_or_skip = False
+
+                    if do_compare:
+                        success, detailed_comments = compare_history(case, baseline_name, baseline_root, log_id)
+                        if success:
+                            compare_result = TEST_PASS_STATUS
+                        else:
+                            compare_result = TEST_FAIL_STATUS
+                            all_pass_or_skip = False
+
+                        # Following the logic in SystemTestsCommon._compare_baseline:
+                        # We'll print the comment if it's a brief one-liner; otherwise
+                        # the comment will only appear in the log file
+                        if "\n" not in detailed_comments:
+                            compare_comment = detailed_comments
+
+            brief_result = ""
+            if not hist_only:
+                brief_result += "%s %s %s %s\n" % (nl_compare_result, test_name, NAMELIST_PHASE, nl_compare_comment)
+
+            if not namelists_only:
+                brief_result += "%s %s %s" % (compare_result, test_name, BASELINE_PHASE)
+                if compare_comment:
+                    brief_result += " %s" % compare_comment
+                brief_result += "\n"
+
+            print brief_result,
 
             CIME.utils.append_status(
                 msg = brief_result,
@@ -106,4 +148,3 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
                     sfile = logfile_name)
 
     return all_pass_or_skip
-
