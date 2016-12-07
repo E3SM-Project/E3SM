@@ -1,7 +1,8 @@
 timing_161207: Replaced strncpy and snprintf where applied to 
                non-null-terminated strings, to avoid memory issues
-               when strncpy and snprintf implementations use strlen
+               when strncpy and snprintf implementations use strnlen
                to check validity of passed in string length parameter.
+               (Why this causes problems is still a mystery.)
                [Patrick Worley and Gautam Bisht]
 timing_160320: Added routines t_set_prefixf and t_unset_prefixf.
                Setting the prefix adds this to the beginning of all subsequent 
