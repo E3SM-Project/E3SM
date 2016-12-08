@@ -134,7 +134,7 @@ class TaskMaker(object):
                     aprun += " -S %d -cc numa_node " % task_per_numa
 
                 aprun += " -n %d -N %d -d %d %s :" % (task_count, tasks_per_node, thread_count, self.DEFAULT_RUN_EXE_TEMPLATE_STR)
-                print (task_count, tasks_per_node, thread_count)
+                
                 node_count = int(math.ceil(float(task_count) / tasks_per_node))
 
                 total_node_count += node_count
