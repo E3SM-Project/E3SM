@@ -275,7 +275,7 @@ class Machines(GenericXML):
 
         for mpirun_node in mpirun_nodes:
             xml_attribs = mpirun_node.attrib
-            print attribs, xml_attribs , mpirun_node.tag , mpirun_node.items()
+            
             all_match = True
             matches = 0
             is_default = False
@@ -287,7 +287,7 @@ class Machines(GenericXML):
                         xml_attrib = True
                     else:
                         xml_attrib = xml_attribs[key]
-                    print xml_attrib , value , key , "1"    
+                    
                     if xml_attrib == value:
                         matches += 1
                     elif key == "mpilib" and xml_attrib == "default":
@@ -295,7 +295,7 @@ class Machines(GenericXML):
                     else:
                         all_match = False
                         break
-            print "IS_DEFAULT" , is_default        
+            
             for key in xml_attribs:
                 expect(key in attribs, "Unhandled MPI property '%s'" % key)
 
@@ -320,7 +320,7 @@ class Machines(GenericXML):
         if arg_node is not None:
             arg_nodes = self.get_nodes("arg", root=arg_node)
             for arg_node in arg_nodes:
-                print "ARG" , arg_node.tag , arg_node.text , arg_node.get("default")
+                
                 arg_value = transform_vars(arg_node.text,
                                            case=case,
                                            subgroup=job,
@@ -359,10 +359,7 @@ class Machines(GenericXML):
             mpi_arg_string = mpi_arg_string.replace(m.group() , default_run_exe)
             return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_misc_suffix)
         else:
-            print "DEBUG" , m.group()
-            print "DEBUG" , executable , mpi_arg_string , default_run_suffix
-            print "DEBUG" , check_members.tasks_per_node
-            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
+             return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def print_values(self):
         # write out machines
