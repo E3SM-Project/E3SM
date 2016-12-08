@@ -138,7 +138,7 @@ class Compilers(GenericXML):
 
         return value
 
-    def write_macros_file(self, macros_file="Macros", output_format="make", xml=None):
+    def write_macros_file(self, macros_file="Macros.make", output_format="make", xml=None):
         if self._version == "1.0":
             # Parse the xml settings into the $macros hash structure
             # put conditional settings in the _COND_ portion of the hash
@@ -149,7 +149,7 @@ class Compilers(GenericXML):
             for compiler_node in reversed(self.compiler_nodes):
                 _add_to_macros(compiler_node, macros)
             write_macros_file_v1(macros, self.compiler, self.os,
-                                        self.machine, macros_file="Macros",
+                                        self.machine, macros_file="Macros.make",
                                         output_format=output_format)
         else:
             if output_format == "make":
