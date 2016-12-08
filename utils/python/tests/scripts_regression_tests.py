@@ -1503,19 +1503,19 @@ class G_TestMacrosBasic(unittest.TestCase):
     def test_script_is_callable(self):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
-        maker = Compilers(MockMachines("mymachine", "SomeOS"))
+        maker = Compilers(MockMachines("mymachine", "SomeOS"), version="2.0")
         test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
         """The macro writer rejects input that's not valid XML."""
-        maker = Compilers(MockMachines("mymachine", "SomeOS"))
+        maker = Compilers(MockMachines("mymachine", "SomeOS"), version="2.0")
         with self.assertRaises(ParseError):
             get_macros(maker, "This is not valid XML.", "Makefile")
 
     def test_script_rejects_bad_build_system(self):
         """The macro writer rejects a bad build system string."""
-        maker = Compilers(MockMachines("mymachine", "SomeOS"))
+        maker = Compilers(MockMachines("mymachine", "SomeOS"), version="2.0")
         bad_string = "argle-bargle."
         with self.assertRaisesRegexp(
                 SystemExit,
@@ -1539,7 +1539,7 @@ class H_TestMakeMacros(unittest.TestCase):
     test_machine = "mymachine"
 
     def setUp(self):
-        self._maker = Compilers(MockMachines(self.test_machine, self.test_os))
+        self._maker = Compilers(MockMachines(self.test_machine, self.test_os), version="2.0")
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""

@@ -15,10 +15,11 @@ logger = logging.getLogger(__name__)
 
 class Compilers(GenericXML):
 
-    def __init__(self, machobj, infile=None, compiler=None, mpilib=None, files=None):
+    def __init__(self, machobj, infile=None, compiler=None, mpilib=None, files=None, version=None):
         """
         initialize an object
         """
+
         if infile is None:
             if files is None:
                 files = Files()
@@ -27,7 +28,11 @@ class Compilers(GenericXML):
 
         GenericXML.__init__(self, infile, schema)
         self._machobj = machobj
-        self._version = self.get_version()
+        if version is not None:
+            # this is used in scripts_regression_tests to force version 2, it should not be used otherwise
+            self._version = version
+        else:
+            self._version = self.get_version()
 
         self.machine  = machobj.get_machine_name()
         self.os = machobj.get_value("OS")
@@ -144,8 +149,8 @@ class Compilers(GenericXML):
             for compiler_node in reversed(self.compiler_nodes):
                 _add_to_macros(compiler_node, macros)
             write_macros_file_v1(macros, self.compiler, self.os,
-                                        self.machine, macros_file,
-                                        output_format)
+                                        self.machine, macros_file="Macros",
+                                        output_format=output_format)
         else:
             if output_format == "make":
                 format_ = "Makefile"
@@ -153,7 +158,7 @@ class Compilers(GenericXML):
                 format_ = "CMake"
             else:
                 format_ = output_format
-            
+
             if isinstance(macros_file, basestring):
                 with open(macros_file, "w") as macros:
                     self._write_macros_file_v2(format_, macros)
