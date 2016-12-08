@@ -122,10 +122,10 @@ def save_prerun_provenance_acme(case, lid=None):
             gzip_existing_file(os.path.join(full_timing_dir, filename))
     elif mach == "titan":
         for cmd, filename in [("xtdb2proc -f", "xtdb2proc"),
-                              ("qstat -f >", "qstat"),
+                              ("qstat -f >", "qstatf"),
                               ("qstat -f %s >" % job_id, "qstatf_jobid"),
                               ("xtnodestat >", "xtnodestat"),
-                              ("showq >", "showqf")]:
+                              ("showq >", "showq")]:
             full_cmd = cmd + " " + filename
             run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
