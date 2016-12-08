@@ -3601,6 +3601,7 @@
     <default_value>FALSE</default_value>
     <values>
       <value compset="_CLM45.+CISM\d">TRUE</value>
+      <value compset="_CLM45.*_MPASLI">TRUE</value>
       <value compset="_CLM50.+CISM\d">TRUE</value>
       <!-- Turn on two-way coupling for TG compsets - even though there are no
 	   feedbacks for a TG compset, this will give us additional diagnostics -->
