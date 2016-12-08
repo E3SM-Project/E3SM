@@ -157,6 +157,11 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          fff(c) = 0.5_r8
+         if(soilroot_water_method .eq. zengdecker2009 .and. do_varsoil) then
+           nlevbed = nlev2bed(c)
+           fff(c) = 0.5_r8 * col%zi(c,nlevsoi) / min(col%zi(c,nlevbed), col%zi(
+c,nlevsoi))
+        end if
          if (use_vichydro) then 
             top_moist(c) = 0._r8
             top_ice(c) = 0._r8
@@ -1435,7 +1440,7 @@ contains
              endif
           endif
 
-          if (use_vsfm .or. do_varsoil) qflx_rsub_sat(c) = 0._r8
+          if (use_vsfm) qflx_rsub_sat(c) = 0._r8
 
           ! add in ice check
           xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)

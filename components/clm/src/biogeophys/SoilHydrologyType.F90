@@ -218,7 +218,7 @@ contains
     use shr_log_mod     , only : errMsg => shr_log_errMsg
     use shr_spfn_mod    , only : shr_spfn_erf
     use shr_kind_mod    , only : r8 => shr_kind_r8
-    use clm_varctl      , only : fsurdat, iulog, use_vichydro
+    use clm_varctl      , only : fsurdat, iulog, use_vichydro, do_varsoil
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use clm_varcon      , only : denice, denh2o, sb, bdsno 
     use clm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
@@ -236,6 +236,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer            :: p,c,j,l,g,lev,nlevs 
+    integer            :: nlevbed
     integer            :: ivic,ivicstrt,ivicend   
     real(r8)           :: maxslope, slopemax, minslope
     real(r8)           :: d, fd, dfdd, slope0,slopebeta
@@ -270,11 +271,17 @@ contains
 
     do c = bounds%begc,bounds%endc
        l = col%landunit(c)
+       nlevbed = col%nlev2bed(c)
        if (.not. lun%lakpoi(l)) then  !not lake
           if (lun%urbpoi(l)) then
              if (col%itype(c) == icol_road_perv) then
+	      if(do_varsoil) then
+                this%wa_col(c)  = 0._r8
+                this%zwt_col(c) = col%zi(c,nlevbed)  ! At bedrock depth for variable soil thickness
+	      else
                 this%wa_col(c)  = 4800._r8
                 this%zwt_col(c) = (25._r8 + col%zi(c,nlevsoi)) - this%wa_col(c)/0.2_r8 /1000._r8  ! One meter below soil column
+              end if
              else
                 this%wa_col(c)  = spval
                 this%zwt_col(c) = spval
@@ -283,11 +290,19 @@ contains
              this%zwt_perched_col(c) = spval
              this%frost_table_col(c) = spval
           else
+	   if(do_varsoil) then
+             this%wa_col(c)  = 0._r8
+             this%zwt_col(c) = col%zi(c,nlevbed)  ! At bedrock depth for variable soil thickness
+             ! initialize frost_table, zwt_perched to bottom of soil column
+             this%zwt_perched_col(c) = col%zi(c,nlevbed)
+             this%frost_table_col(c) = col%zi(c,nlevbed)
+	   else
              this%wa_col(c)  = 4000._r8
              this%zwt_col(c) = (25._r8 + col%zi(c,nlevsoi)) - this%wa_col(c)/0.2_r8 /1000._r8  ! One meter below soil column
              ! initialize frost_table, zwt_perched to bottom of soil column
              this%zwt_perched_col(c) = col%zi(c,nlevsoi)
              this%frost_table_col(c) = col%zi(c,nlevsoi)
+           end if
           end if
        end if
     end do
