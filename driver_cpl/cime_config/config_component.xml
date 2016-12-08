@@ -2224,7 +2224,7 @@
 
   <entry id="NTHRDS_ESP">
     <type>integer</type>
-    <default_value>0</default_value>
+    <default_value>1</default_value>
     <group>mach_pes_esp</group>
     <file>env_mach_pes.xml</file>
     <desc>number of external processing tool mpi threads</desc>
@@ -3601,6 +3601,7 @@
     <default_value>FALSE</default_value>
     <values>
       <value compset="_CLM45.+CISM\d">TRUE</value>
+      <value compset="_CLM45.*_MPASLI">TRUE</value>
       <value compset="_CLM50.+CISM\d">TRUE</value>
       <!-- Turn on two-way coupling for TG compsets - even though there are no
 	   feedbacks for a TG compset, this will give us additional diagnostics -->
