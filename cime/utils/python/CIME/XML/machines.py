@@ -269,13 +269,13 @@ class Machines(GenericXML):
         best_num_matched_default = -1
         args = {}
 
-        # 1. Check for multiple mpirun nodes and return the one with best 
-        #    parameter coverage 
+        # 1. Check for multiple mpirun nodes and return the one with best
+        #    parameter coverage
         # 2. Compute arguments
 
         for mpirun_node in mpirun_nodes:
             xml_attribs = mpirun_node.attrib
-            
+
             all_match = True
             matches = 0
             is_default = False
@@ -287,7 +287,7 @@ class Machines(GenericXML):
                         xml_attrib = True
                     else:
                         xml_attrib = xml_attribs[key]
-                    
+
                     if xml_attrib == value:
                         matches += 1
                     elif key == "mpilib" and xml_attrib == "default":
@@ -295,7 +295,7 @@ class Machines(GenericXML):
                     else:
                         all_match = False
                         break
-            
+
             for key in xml_attribs:
                 expect(key in attribs, "Unhandled MPI property '%s'" % key)
 
@@ -320,7 +320,7 @@ class Machines(GenericXML):
         if arg_node is not None:
             arg_nodes = self.get_nodes("arg", root=arg_node)
             for arg_node in arg_nodes:
-                
+
                 arg_value = transform_vars(arg_node.text,
                                            case=case,
                                            subgroup=job,
@@ -352,10 +352,10 @@ class Machines(GenericXML):
         batch_system = self.get_value("BATCH_SYSTEM")
         if batch_system == "cobalt":
             mpi_arg_string += " : "
-          
+
         # aprun and Titan specific
         m = re.search("__DEFAULT_RUN_EXE__" , mpi_arg_string)
-        if m.group() :
+        if m is not None and m.group():
             mpi_arg_string = mpi_arg_string.replace(m.group() , default_run_exe)
             return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_misc_suffix)
         else:
