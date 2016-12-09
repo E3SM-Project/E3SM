@@ -434,20 +434,20 @@ contains
       do iCell=1,nCellsSolve
         if(latCell(iCell).lt. 60.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(stdoutUnit,*) ' Arctic ', sum(workMask)
+!      write(stdoutUnit,*) ' Arctic ', sum(workMask)
    elseif (iRegion.eq.2) then
       ! Equatorial
       do iCell=1,nCellsSolve
         if(latCell(iCell).gt. 15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
         if(latCell(iCell).lt.-15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(stdoutUnit,*) ' Equatorial ', sum(workMask)
+!      write(stdoutUnit,*) ' Equatorial ', sum(workMask)
    elseif (iRegion.eq.3) then
       ! Southern Ocean
       do iCell=1,nCellsSolve
         if(latCell(iCell).gt.-50.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(stdoutUnit,*) ' Southern Ocean ', sum(workMask)
+!      write(stdoutUnit,*) ' Southern Ocean ', sum(workMask)
    elseif (iRegion.eq.4) then
       ! Nino 3
       do iCell=1,nCellsSolve
@@ -456,7 +456,7 @@ contains
         if(lonCell(iCell).lt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.270.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(stdoutUnit,*) ' Nino 3 ', sum(workMask)
+!      write(stdoutUnit,*) ' Nino 3 ', sum(workMask)
    elseif (iRegion.eq.5) then
       ! Nino 4
       do iCell=1,nCellsSolve
@@ -465,7 +465,7 @@ contains
         if(lonCell(iCell).lt.160.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(stdoutUnit,*) ' Nino 4 ', sum(workMask)
+!      write(stdoutUnit,*) ' Nino 4 ', sum(workMask)
    elseif (iRegion.eq.6) then
       ! Nino 3.4
       do iCell=1,nCellsSolve
@@ -474,10 +474,10 @@ contains
         if(lonCell(iCell).lt.190.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.240.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(stdoutUnit,*) ' Nino 3.4 ', sum(workMask)
+!      write(stdoutUnit,*) ' Nino 3.4 ', sum(workMask)
    else
       ! global (do nothing!)
-      write(stdoutUnit,*) ' Global ', sum(workMask)
+!      write(stdoutUnit,*) ' Global ', sum(workMask)
    endif
 
    end subroutine compute_mask
