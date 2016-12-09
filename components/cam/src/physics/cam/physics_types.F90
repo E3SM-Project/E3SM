@@ -491,8 +491,9 @@ contains
                             stop "Shouldn't be here in physics_update"
                          endif
 
-                         state%t(icol,k) = state%t(icol,k) + &
-                           (latheat)*(qmin(m)-state%q(icol,k,m))/cpairv_loc(icol,k,state%lchnk)
+!                        V. Larson updated ptend%s here so that tend%dtdt is updated later
+                         ptend%s(icol,k) = ptend%s(icol,k) + &
+                           (latheat) * (qmin(m)-state%q(icol,k,m)) / dt
 
                          ! Set the mixing ratio to 0
                          state%q(icol,k,m) = qmin(m)

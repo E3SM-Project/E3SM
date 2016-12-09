@@ -2466,8 +2466,9 @@ end if
 
              call physics_update (state_sc, ptend_sc, ztodt, tend_sc)
              call check_energy_chng(state_sc, tend_sc, "microp_tend_subcol", &
-                  nstep, ztodt, zero_sc, prec_str_sc(:ncol)/cld_macmic_num_steps, &
-                  snow_str_sc(:ncol)/cld_macmic_num_steps, zero_sc)
+                  nstep, ztodt, zero_sc, &
+                  prec_str_sc(:state_sc%ncol)/cld_macmic_num_steps, &
+                  snow_str_sc(:state_sc%ncol)/cld_macmic_num_steps, zero_sc)
 
              call physics_state_dealloc(state_sc)
              call physics_tend_dealloc(tend_sc)
@@ -2496,7 +2497,7 @@ end if
           call outfld('LNEGCLPTEND', liqcliptend, pcols, lchnk   )
           call outfld('VNEGCLPTEND', vapcliptend, pcols, lchnk   )
 
-          call physics_update (state, ptend, ztodt, tend)
+          call physics_update (state, ptend, ztodt, tend, do_hole_fill=.true.)
           call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
                zero, prec_str(:ncol)/cld_macmic_num_steps, &
                snow_str(:ncol)/cld_macmic_num_steps, zero)

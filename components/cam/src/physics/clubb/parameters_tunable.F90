@@ -858,7 +858,7 @@ module parameters_tunable
     if (clubb_C2rt /= init_value) then
        C2rt = clubb_C2rt
        if (clubb_C2thl == init_value) C2thl = C2rt
-       if (clubb_C2rtthl == init_value) C2rtthl = C2rt*1.3_core_rknd
+       if (clubb_C2rtthl == init_value) C2rtthl = C2rt*2.0_core_rknd
     end if
     ! Allows C2thl and C2rtthl to vary separately
     if (clubb_C2thl /= init_value) C2thl = clubb_C2thl
