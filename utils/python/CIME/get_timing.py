@@ -70,7 +70,7 @@ class _TimingParser:
         nprocs = 0
         ncount = 0
 
-        heading = heading_padded.strip()
+        heading = '"' + heading_padded.strip() + '"'
         for line in self.finlines:
             m = re.match(r'\s*%s\s*(\d+)\s*\d+\s*(\S+)'%heading, line)
             if m:
@@ -87,7 +87,7 @@ class _TimingParser:
 
     def gettime(self, heading_padded):
         found = False
-        heading = heading_padded.strip()
+        heading = '"' + heading_padded.strip() + '"'
         minval = 0
         maxval = 0
 
