@@ -101,16 +101,16 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/config_pes.xml</value>
+      <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
       <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/config_pes.xml</value>
-      <value component="cam"      >$SRCROOT/components/cam/cime_config/config_pes.xml</value>
-      <value component="clm"      >$SRCROOT/components/clm/cime_config/config_pes.xml</value>
-      <value component="mpaso"    >$SRCROOT/components/mpas-o/cime_config/config_pes.xml</value>
-      <value component="mpasli"   >$SRCROOT/components/mpasli/cime_config/config_pes.xml</value>
-      <value component="mpascice" >$SRCROOT/components/mpas-cice/cime_config/config_pes.xml</value>
-      <value component="cism"     >$SRCROOT/components/cism/cime_config/config_pes.xml</value>
-      <value component="cice"     >$SRCROOT/components/cice/cime_config/config_pes.xml</value>
-      <value component="pop"      >$SRCROOT/components/pop/cime_config/config_pes.xml</value>
+      <value component="cam"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="cism"     >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="clm"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="cice"     >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="pop"     >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="mpaso"   >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="mpasli"   >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="mpascice"   >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
