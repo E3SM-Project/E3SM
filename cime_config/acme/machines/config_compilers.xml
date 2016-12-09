@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<config_build>
+<config_compilers version="2.0">
 <!--
 ===========================
 This file defines compiler flags for building CIME.  General flags are listed first
@@ -1622,4 +1622,4 @@ for mct, etc.
   <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
 </compiler>
 
-</config_build>
+</config_compilers>
