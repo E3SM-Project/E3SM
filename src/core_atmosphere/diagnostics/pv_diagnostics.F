@@ -1234,8 +1234,7 @@ module pv_diagnostics
       integer, pointer :: nCells, nVertLevels, index_qv
       real (kind=RKIND) :: pvuVal, missingVal, stratoPV
       real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz, dtheta_dt_mix, tend_theta_euler
-      type (field2DReal), pointer :: theta_f, uReconstructX_f, uReconstructY_f, uReconstructZ_f, w_f
-      type (field2DReal), pointer :: rthratenlw_f, rthratensw_f, rthcuten_f, rthblten_f, dtheta_dt_mp_f, theta_euler_f, dtheta_dt_mix_f
+      type (field2DReal), pointer :: theta_f, uReconstructX_f, uReconstructY_f, uReconstructZ_f, w_f, epv_f
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
@@ -1275,6 +1274,10 @@ module pv_diagnostics
       call mpas_dmpar_exch_halo_field(w_f)
       
       call calc_epv(mesh, time_lev, state, diag)
+      
+      !halo cells need to be valid for flood fill
+      call mpas_pool_get_field(diag, 'ertel_pv', epv_f)
+      call mpas_dmpar_exch_halo_field(epv_f)
       
       pvuVal = 2.0_RKIND
       missingVal = -99999.0_RKIND
