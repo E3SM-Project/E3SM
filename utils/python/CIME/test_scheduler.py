@@ -458,8 +458,7 @@ class TestScheduler(object):
 
         with Case(test_dir, read_only=False) as case:
             case.set_value("SHAREDLIBROOT",
-                           os.path.join(self._test_root,
-                                        "sharedlibroot.%s"%self._test_id))
+                           os.path.join(test_dir, "sharedlibroot.%s" % self._test_id))
             envtest.set_initial_values(case)
             if self._save_timing:
                 case.set_value("SAVE_TIMING", True)
@@ -583,16 +582,7 @@ class TestScheduler(object):
             test_dir = self._get_test_dir(test)
             out = run_cmd_no_fail("./xmlquery TOTALPES -value", from_dir=test_dir)
             return int(out)
-        elif (phase == SHAREDLIB_BUILD_PHASE):
-            # Will force serialization of sharedlib builds
-            # TODO - instead of serializing, compute all library configs needed and build
-            # them all in parallel
-            for _, _, running_phase in threads_in_flight.values():
-                if (running_phase == SHAREDLIB_BUILD_PHASE):
-                    return self._proc_pool + 1
-
-            return 1
-        elif (phase == MODEL_BUILD_PHASE):
+        elif phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]:
             # Model builds now happen in parallel
             return 4
         else:
