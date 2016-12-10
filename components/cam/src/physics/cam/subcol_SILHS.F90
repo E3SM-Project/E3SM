@@ -139,7 +139,7 @@ contains
 !                                 subcol_SILHS_c8, subcol_SILHS_c11, subcol_SILHS_c11b, &
 !                                 subcol_SILHS_gamma_coef, subcol_SILHS_mult_coef, subcol_SILHS_mu
 
-      real( kind = core_rknd ), parameter, private :: &
+      real( kind = core_rknd ), parameter :: &
       init_value = -999._core_rknd ! Initial value for the parameters, used to detect missing values
 
 
