@@ -908,7 +908,8 @@
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>72</MAX_TASKS_PER_NODE>
+    <!-- have not seen any performance benefit in smt -->
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>36</PES_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
@@ -948,7 +949,7 @@
       </modules>
       <modules mpilib="mpt">
 	<command name="load">netcdf-mpi/4.4.1</command>
-<!--	<command name="load">pnetcdf/1.7.0</command> -->
+	<command name="load">pnetcdf/1.7.x</command>
       </modules>
     </module_system>
     <environment_variables>

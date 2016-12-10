@@ -960,6 +960,25 @@ using a fortran linker.
   <PNETCDF_PATH><env>PNETCDF</env></PNETCDF_PATH>
 </compiler>
 
+<compiler MACH="laramie">
+  <CPPDEFS>
+    <!-- these flags enable nano timers -->
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <NETCDF_PATH><env>NETCDF</env></NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH><env>PNETCDF</env></PNETCDF_PATH>
+</compiler>
+<compiler MACH="laramie" COMPILER="intel">
+  <CFLAGS>
+    <append> -vec-report </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -vec-report </append>
+  </FFLAGS>
+
+</compiler>
+
 <compiler MACH="yellowstone" COMPILER="gnu">
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
 </compiler>
