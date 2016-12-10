@@ -131,7 +131,10 @@ class TaskMaker(object):
                 task_per_numa = int(math.ceil(tasks_per_node / 2.0))
                 # Option for Titan
                 if self.machine.lower() == "titan" and tasks_per_node > 1:
-                    aprun += " -S %d -cc numa_node " % task_per_numa
+		    if self.COMPILER == "intel":
+                        aprun += " -S %d -cc numa_node " % task_per_numa
+                    else:
+                        aprun += " -S %d " % task_per_numa
 
                 aprun += " -n %d -N %d -d %d %s :" % (task_count, tasks_per_node, thread_count, self.DEFAULT_RUN_EXE_TEMPLATE_STR)
                 
