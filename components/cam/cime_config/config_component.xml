@@ -159,14 +159,14 @@
       <value compset="1850_CAM5.*AV1C-04">1850_cam5_av1c-04</value>
       <value compset="1850_CAM5.*AV1C-04P">1850_cam5_av1c-04p</value>
       <value compset="1850_CAM5.*AV1C-04P2">1850_cam5_av1c-04p2</value>
-      <value compset="1850_CAM5.*AV1C-L" >1850_cam5_av1c-04p2</value>
+      <value compset="1850_CAM5.*AV1C-L" >1850_cam5_av1c-04p</value>
       <value compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</value>
       <value compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</value>
       <value compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</value>
       <value compset="2000_CAM5.*AV1C-04">2000_cam5_av1c-04</value>
       <value compset="2000_CAM5.*AV1C-04P">2000_cam5_av1c-04p</value>
       <value compset="2000_CAM5.*AV1C-04P2">2000_cam5_av1c-04p2</value>
-      <value compset="2000_CAM5.*AV1C-L" >2000_cam5_av1c-04p2</value>
+      <value compset="2000_CAM5.*AV1C-L" >2000_cam5_av1c-04p</value>
       <value compset="2000_CAM5.*AV1F"   >2000_cam5_av1f</value>
       <value compset="2000_CAM5.*AV1F-00">2000_cam5_av1f-00</value>
       <value compset="2000_CAM5.*AV1F-01">2000_cam5_av1f-01</value>
@@ -174,7 +174,7 @@
       <value compset="20TR_CAM5.*AV1C-04">20TR_cam5_av1c-04</value>
       <value compset="20TR_CAM5.*AV1C-04P">20TR_cam5_av1c-04p</value>
       <value compset="20TR_CAM5.*AV1C-04P2">20TR_cam5_av1c-04p2</value>
-      <value compset="20TR_CAM5.*AV1C-L">20TR_cam5_av1c-04p2</value>
+      <value compset="20TR_CAM5.*AV1C-L">20TR_cam5_av1c-04p</value>
       <value compset="2000_CAM5%COSP"   >2000_cam5_cosp</value>
       <value compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</value>
       <value compset="1996_CAM4%WCMX"   >waccmx_1996_cam4</value>
@@ -256,7 +256,7 @@
     <desc compset="_CAM5.*AV1C-04"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04:</desc>
     <desc compset="_CAM5.*AV1C-04P"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p:</desc>
     <desc compset="_CAM5.*AV1C-04P2"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p2:</desc>
-    <desc compset="_CAM5.*AV1C-L"   >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p2:</desc>
+    <desc compset="_CAM5.*AV1C-L"   >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v04p:</desc>
     <desc compset="_CAM5.*AV1F"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model):</desc>
     <desc compset="_CAM5.*AV1F-00"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model)- v00:</desc>
     <desc compset="_CAM5.*AV1F-01"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model) and ACES4BGC SOAG emissions- v01:</desc>
