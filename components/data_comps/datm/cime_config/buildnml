@@ -61,10 +61,10 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
-    logger.debug("DATM mode is %s", datm_mode)
-    logger.debug("DATM grid is %s", atm_grid)
-    logger.debug("DATM presaero mode is %s", datm_presaero)
-    logger.debug("DATM topo mode is %s", datm_topo)
+    logger.info("DATM mode is %s", datm_mode)
+    logger.info("DATM grid is %s", atm_grid)
+    logger.info("DATM presaero mode is %s", datm_presaero)
+    logger.info("DATM topo mode is %s", datm_topo)
 
     #----------------------------------------------------
     # Clear out old data.
@@ -140,7 +140,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
             config = {'ispresaerostream': 'FALSE'}
 
         inst_stream = stream + inst_string
-        logger.debug("DATM stream is %s", inst_stream)
+        logger.info("DATM stream is %s", inst_stream)
         stream_path = os.path.join(confdir, "datm.streams.txt." + inst_stream)
         user_stream_path = os.path.join(case.get_case_root(), "user_datm.streams.txt." + inst_stream)
 
@@ -190,7 +190,7 @@ def buildnml(case, caseroot, compname):
 
     if not os.path.isdir(din_loc_root):
         os.makedirs(din_loc_root)
-        logger.debug("Created input root directory %s" %din_loc_root)
+        logger.info("Created input root directory %s" %din_loc_root)
 
         # determine directory for user modified namelist_definitions.xml and namelist_defaults.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
