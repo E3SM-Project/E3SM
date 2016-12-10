@@ -61,7 +61,7 @@ def findCircularDep(filename):
       lmatch = objline.match(line.strip())
       if (lmatch is not None):
         obj = lmatch.group(1)
-        deps = [ x.split(".")[0].lower() for x in lmatch.group(2).strip().split(" ") if x.split(".")[1] == "mod" ]
+        deps = [ x.split(".")[0].lower() for x in lmatch.group(2).strip().split(" ") if "." in x and x.split(".")[1] == "mod" ]
         depends[obj.strip().lower()] = deps
       # End if
     # End for
