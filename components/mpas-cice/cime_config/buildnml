@@ -56,11 +56,6 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$grid_prefix = 'cice.EC60to30km.restartFrom_eos1b';
 	$decomp_date .= '151020';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oEC60to30wLI' ) {
-        $grid_date .= '160830';
-        $grid_prefix .= 'cice.EC60to30wLI';
-        $decomp_date .= '160830';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'mpas120' ) {
 	$grid_date .= '121116';
 	$grid_prefix .= 'cice120km';
@@ -76,11 +71,6 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$grid_prefix .= 'seaice.oQU240km';
 	$decomp_date .= '151209';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oQU240wLI' ) {
-        $grid_date .= '160929';
-        $grid_prefix .= 'cice.QU240wLI';
-        $decomp_date .= '160929';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'mpasgx1' ) {
 	$grid_date .= '121116';
 	$grid_prefix .= 'grid_gx1';
@@ -90,11 +80,6 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
         $grid_date .= '151031';
         $grid_prefix .= 'seaice.RRS.30-10km';
         $decomp_date .= '151031';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
-} elsif ( $ICE_GRID eq 'oRRS30to10wLI' ) {
-        $grid_date .= '160930';
-        $grid_prefix .= 'seaice.RRS30-10wLI';
-        $decomp_date .= '160930';
         $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS18to6' ) {
         $grid_date .= '160830';
@@ -433,8 +418,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '	<var name="icePressure"/>' . "\n";
 	print $stream_file '	<var name="divergence"/>' . "\n";
 	print $stream_file '	<var name="shear"/>' . "\n";
-	print $stream_file '	<var name="principalStress1Var"/>' . "\n";
-	print $stream_file '	<var name="principalStress2Var"/>' . "\n";
+	print $stream_file '	<var name="principalStress1"/>' . "\n";
+	print $stream_file '	<var name="principalStress2"/>' . "\n";
 	print $stream_file '	<var name="iceVolumeTendencyThermodynamics"/>' . "\n";
 	print $stream_file '	<var name="iceVolumeTendencyTransport"/>' . "\n";
 	print $stream_file '	<var name="iceAreaTendencyThermodynamics"/>' . "\n";
@@ -493,16 +478,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
-        print $stream_file '<stream name="landIceMasks"' . "\n";
-        print $stream_file '       type="input"' . "\n";
-        print $stream_file '       input_interval="initial_only"' . "\n";
-        print $stream_file "       filename_template=" . '"'
-                                                . "$DIN_LOC_ROOT/ice/mpas-cice/$ICE_MASK/$grid_prefix.$grid_date.nc"
-                                                . '">' . "\n";
-        print $stream_file '' . "\n";
-        print $stream_file '       <var name="landIceMask"/>' . "\n";
-        print $stream_file '</stream>' . "\n";
-        print $stream_file '' . "\n";
 	print $stream_file '</streams>' . "\n";
 
 }
