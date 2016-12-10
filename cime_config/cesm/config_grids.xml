@@ -154,13 +154,6 @@
       <mask>usgs</mask>
     </model_grid>
 
-    <model_grid alias="T42_T42" not_compset="_POP">
-      <grid name="atm">T42</grid>
-      <grid name="lnd">T42</grid>
-      <grid name="ocnice">T42</grid>
-      <mask>usgs</mask>
-    </model_grid>
-
     <model_grid alias="T85_T85" not_compset="_POP">
       <grid name="atm">T85</grid>
       <grid name="lnd">T85</grid>
