@@ -409,6 +409,7 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
 
     case.flush()
     if not model_only:
+        logger.info("Generating component namelists as part of build")
         create_namelists(case)
 
     return sharedpath

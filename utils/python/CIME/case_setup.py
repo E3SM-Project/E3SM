@@ -255,6 +255,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
 
+        # Some tests need namelists created here (ERP) - so do this if are in test mode
+        if test_mode:
+            logger.info("Generating component namelists as part of setup")
+            create_namelists(case)
+
         msg = "case.setup complete"
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
