@@ -692,20 +692,23 @@ end subroutine clubb_init_cnst
 
     ! Eric Raut (UWM) added these parameter settings changes.
     l_stability_correct_tau_zm = .false.
-    clubb_params(iC1)  = 1.0_core_rknd
-    clubb_params(iC1b) = 1.0_core_rknd
-    clubb_params(iC2rt) = 0.2_core_rknd ! Default 1.0
-    clubb_params(iC2thl) = 0.2_core_rknd ! Default 1.0
-    clubb_params(iC2rtthl) = 0.2_core_rknd ! (CAM) Default 1.3
+
+! let the following list of variables be controlled by namelist
+
+!   clubb_params(iC1)  = 1.0_core_rknd
+!   clubb_params(iC1b) = 1.0_core_rknd
+!   clubb_params(iC2rt) = 0.2_core_rknd ! Default 1.0
+!   clubb_params(iC2thl) = 0.2_core_rknd ! Default 1.0
+!   clubb_params(iC2rtthl) = 0.2_core_rknd ! (CAM) Default 1.3
+!   clubb_params(igamma_coef) = 0.24_core_rknd
+!   clubb_params(igamma_coefb) = 0.37_core_rknd
+!   clubb_params(ic_K10) = 0.3_core_rknd
+!   clubb_params(iC14) = 0.5_core_rknd
+!   clubb_params(iC8) = 2.5_core_rknd
+
     clubb_params(ic_K_hm) = 0.2_core_rknd
-    clubb_params(igamma_coef) = 0.24_core_rknd
-    clubb_params(igamma_coefb) = 0.37_core_rknd
     clubb_params(imult_coef) = 1.5_core_rknd
     clubb_params(iSkw_denom_coef) = 4.0_core_rknd
-    clubb_params(ic_K10) = 0.3_core_rknd
-
-    clubb_params(iC14) = 0.5_core_rknd
-    clubb_params(iC8) = 2.5_core_rknd
     clubb_params(iup2_vp2_factor) = 4.0_core_rknd
 
     l_use_C7_Richardson = .true.

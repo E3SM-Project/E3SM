@@ -139,13 +139,28 @@ contains
 !                                 subcol_SILHS_c8, subcol_SILHS_c11, subcol_SILHS_c11b, &
 !                                 subcol_SILHS_gamma_coef, subcol_SILHS_mult_coef, subcol_SILHS_mu
 
+      real( kind = core_rknd ), parameter, private :: &
+      init_value = -999._core_rknd ! Initial value for the parameters, used to detect missing values
+
+
       !-----------------------------------------------------------------------------
       ! Set defaults
+
       subcol_SILHS_var_covar_src = .true.  ! TODO: put this in namelist
       subcol_SILHS_destroy_massless_droplets = .true.  ! TODO: put this in namelist
 
       ! Eric Raut changed a default.
-      hmp2_ip_on_hmm2_ip_ratios%Nip2_ip_on_Nim2_ip = 0.5_core_rknd
+      ! hmp2_ip_on_hmm2_ip_ratios%Nip2_ip_on_Nim2_ip = 0.5_core_rknd
+      ! initialize the namelist varriables in hmp2_ip_on_hmm2_ip_ratios
+      ! If not specified via namelist, all set to be equal to rrp2_ip_on_rrm2_ip
+      ! after processing the namelist file.
+
+      hmp2_ip_on_hmm2_ip_ratios%rrp2_ip_on_rrm2_ip = 1.0_core_rknd
+      hmp2_ip_on_hmm2_ip_ratios%Nrp2_ip_on_Nrm2_ip = init_value
+      hmp2_ip_on_hmm2_ip_ratios%rsp2_ip_on_rsm2_ip = init_value
+      hmp2_ip_on_hmm2_ip_ratios%Nsp2_ip_on_Nsm2_ip = init_value
+      hmp2_ip_on_hmm2_ip_ratios%rip2_ip_on_rim2_ip = init_value
+      hmp2_ip_on_hmm2_ip_ratios%Nip2_ip_on_Nim2_ip = init_value
 
       if (masterproc) then
          unitn = getunit()
@@ -159,6 +174,26 @@ contains
          end if
          close(unitn)
          call freeunit(unitn)
+         if (hmp2_ip_on_hmm2_ip_ratios%Nrp2_ip_on_Nrm2_ip == init_value) &
+             hmp2_ip_on_hmm2_ip_ratios%Nrp2_ip_on_Nrm2_ip =  &
+             hmp2_ip_on_hmm2_ip_ratios%rrp2_ip_on_rrm2_ip
+
+         if (hmp2_ip_on_hmm2_ip_ratios%rsp2_ip_on_rsm2_ip == init_value) &
+             hmp2_ip_on_hmm2_ip_ratios%rsp2_ip_on_rsm2_ip = &
+             hmp2_ip_on_hmm2_ip_ratios%rrp2_ip_on_rrm2_ip
+
+         if (hmp2_ip_on_hmm2_ip_ratios%Nsp2_ip_on_Nsm2_ip == init_value) &
+             hmp2_ip_on_hmm2_ip_ratios%Nsp2_ip_on_Nsm2_ip = &
+             hmp2_ip_on_hmm2_ip_ratios%rrp2_ip_on_rrm2_ip
+
+         if (hmp2_ip_on_hmm2_ip_ratios%rip2_ip_on_rim2_ip == init_value) &
+             hmp2_ip_on_hmm2_ip_ratios%rip2_ip_on_rim2_ip = &
+             hmp2_ip_on_hmm2_ip_ratios%rrp2_ip_on_rrm2_ip
+
+         if (hmp2_ip_on_hmm2_ip_ratios%Nip2_ip_on_Nim2_ip == init_value) &
+             hmp2_ip_on_hmm2_ip_ratios%Nip2_ip_on_Nim2_ip = &
+             hmp2_ip_on_hmm2_ip_ratios%rrp2_ip_on_rrm2_ip
+
       end if
 
 #ifdef SPMD
