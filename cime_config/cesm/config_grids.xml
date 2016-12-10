@@ -518,55 +518,55 @@
 
     <domain name="1x1_numaIA">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-numaIA_navy.110106.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-numaIA_navy.110106.nc</file>
       <desc>1x1 Numa Iowa -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_brazil">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-brazil_navy.090715.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-brazil_navy.090715.nc</file>
       <desc>1x1 Brazil -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_smallvilleIA">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-smallvilleIA_test.110106.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-smallvilleIA_test.110106.nc</file>
       <desc>1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_camdenNJ">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-camdenNJ_navy.111004.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-camdenNJ_navy.111004.nc</file>
       <desc>1x1 Camden New Jersey -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_mexicocityMEX">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</file>
       <desc>1x1 Mexico City Mexico -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_vancouverCAN">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc</file>
       <desc>1x1 Vancouver Canada -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_tropicAtl">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-tropicAtl_test.111004.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-tropicAtl_test.111004.nc</file>
       <desc>1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_urbanc_alpha">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-urbanc_alpha_test.110201.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-urbanc_alpha_test.110201.nc</file>
       <desc>1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="5x5_amazon">
       <nx>1</nx> <ny>1</ny>
-      <file grid="lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.5x5pt-amazon_navy.090715.nc</file>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.5x5pt-amazon_navy.090715.nc</file>
       <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
     </domain>
 
@@ -1201,39 +1201,50 @@
     </gridmap>
 
     <gridmap rof_grid="rx1" ocn_grid="gx3v7" >
-      <map name="ROF2OCN_RMAPNAME">cpl/cpl6/map_rx1_to_gx3v7_e1000r500_090903.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_gx3v7_e1000r500_090903.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_gx3v7_e1000r500_090903.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="gx1v6" >
-      <map name="ROF2OCN_RMAPNAME">cpl/cpl6/map_rx1_to_gx1v6_e1000r300_090318.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_gx1v6_e1000r300_090318.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_gx1v6_e1000r300_090318.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="tx1v1" >
-      <map name="ROF2OCN_RMAPNAME">cpl/cpl6/map_rx1_to_tx1v1_e1000r300_090318.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_tx1v1_e1000r300_090318.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_tx1v1_e1000r300_090318.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="tx0.1v2" >
-      <map name="ROF2OCN_RMAPNAME">cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="oQU120" >
-      <map name="ROF2OCN_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_oQU120_nn.160527.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_oQU120_nn.160527.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_oQU120_nn.160527.nc</map>
     </gridmap>
 
     <gridmap rof_grid="r05" ocn_grid="gx3v7" >
-      <map name="ROF2OCN_RMAPNAME">cpl/cpl6/map_r05_to_gx3v7_e1000r500_090903.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_gx3v7_e1000r500_090903.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_gx3v7_e1000r500_090903.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="gx1v6" >
-      <map name="ROF2OCN_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v6_e1000r300_151109.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v6_e1000r300_151109.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v6_e1000r300_151109.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="gx1v7" >
-      <map name="ROF2OCN_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v7_e1000r300_151109b.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v7_e1000r300_151109b.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v7_e1000r300_151109b.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="tx1v1" >
-      <map name="ROF2OCN_RMAPNAME">cpl/cpl6/map_r05_to_tx1v1_e1000r500_080505.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_tx1v1_e1000r500_080505.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_tx1v1_e1000r500_080505.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="tx0.1v2" >
-      <map name="ROF2OCN_RMAPNAME">cpl/cpl6/map_r05_to_tx0.1v2_r500e1000_080620.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_tx0.1v2_r500e1000_080620.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_tx0.1v2_r500e1000_080620.nc</map>
     </gridmap>
 
     <gridmap rof_grid="r01" ocn_grid="gx1v6" >
-      <map name="ROF2OCN_RMAPNAME">cpl/cpl6/map_r01_to_gx1v6_120711.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r01_to_gx1v6_120711.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r01_to_gx1v6_120711.nc</map>
     </gridmap>
 
     <!--- river flooding variables -->
