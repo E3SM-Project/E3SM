@@ -55,9 +55,9 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
-    logger.debug("DLND mode is %s", dlnd_mode)
-    logger.debug("DLND grid is %s", lnd_grid)
-    logger.debug("DLND glc_nec is %s", glc_nec)
+    logger.info("DLND mode is %s", dlnd_mode)
+    logger.info("DLND grid is %s", lnd_grid)
+    logger.info("DLND glc_nec is %s", glc_nec)
 
     #----------------------------------------------------
     # Clear out old data.
@@ -95,7 +95,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
             continue
 
         inst_stream = stream + inst_string
-        logger.debug("DLND stream is %s", inst_stream)
+        logger.info("DLND stream is %s", inst_stream)
         stream_path = os.path.join(confdir, "dlnd.streams.txt." + inst_stream)
         user_stream_path = os.path.join(case.get_case_root(),
                                         "user_dlnd.streams.txt." + inst_stream)
@@ -147,7 +147,7 @@ def buildnml(case, caseroot, compname):
 
     if not os.path.isdir(din_loc_root):
         os.makedirs(din_loc_root)
-        logger.debug("Created input root directory %s" %din_loc_root)
+        logger.info("Created input root directory %s" %din_loc_root)
 
     # determine directory for user modified namelist_definitions.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)

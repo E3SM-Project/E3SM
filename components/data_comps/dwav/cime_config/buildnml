@@ -56,8 +56,8 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
-    logger.debug("DWAV mode is %s", dwav_mode)
-    logger.debug("DWAV grid is %s", wav_grid)
+    logger.info("DWAV mode is %s", dwav_mode)
+    logger.info("DWAV grid is %s", wav_grid)
 
     #----------------------------------------------------
     # Clear out old data.
@@ -95,7 +95,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
             continue
 
         inst_stream = stream + inst_string
-        logger.debug("DWAV stream is %s", inst_stream)
+        logger.info("DWAV stream is %s", inst_stream)
         stream_path = os.path.join(confdir,
                                    "dwav.streams.txt." + inst_stream)
         user_stream_path = os.path.join(case.get_case_root(),
@@ -141,7 +141,7 @@ def buildnml(case, caseroot, compname):
 
     if not os.path.isdir(din_loc_root):
         os.makedirs(din_loc_root)
-        logger.debug("Created input root directory %s" %din_loc_root)
+        logger.info("Created input root directory %s" %din_loc_root)
 
     # determine directory for user modified namelist_definitions.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
