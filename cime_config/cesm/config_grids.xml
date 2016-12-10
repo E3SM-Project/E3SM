@@ -661,6 +661,13 @@
       <desc>T31 is Gaussian grid:</desc>
     </domain>
 
+    <domain name="T42">
+      <nx>128</nx> <ny>64</ny>
+      <file grid="atm|lnd" mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.T42_USGS.111004.nc</file>
+      <file grid="ocnice"  mask="usgs">$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.64x128_USGS_070807.nc</file>
+      <desc>T42 is Gaussian grid:</desc>
+    </domain>
+
     <domain name="ne16np4">
       <nx>13826</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.ne16np4_gx3v7.120406.nc</file>
