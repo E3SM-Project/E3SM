@@ -742,21 +742,24 @@ contains
 
       write(cdetail,'(i2.2)') cur_timing_detail
       if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-3,len_trim(event))
+         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
          ierr = GPTLstart( &
-            cdetail//"_"//event_prefix(1:prefix_len)//event(1:str_length))
+            '"'//cdetail//"_"//event_prefix(1:prefix_len)// &
+            event(1:str_length)//'"')
       else
-         str_length = min(SHR_KIND_CM-3,len_trim(event))
-         ierr = GPTLstart(cdetail//"_"//event(1:str_length))
+         str_length = min(SHR_KIND_CM-5,len_trim(event))
+         ierr = GPTLstart('"'//cdetail//"_"//event(1:str_length)//'"')
       endif
 
    else
 
       if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len,len_trim(event))
-         ierr = GPTLstart(event_prefix(1:prefix_len)//event(1:str_length))
+         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
+         ierr = GPTLstart('"'//event_prefix(1:prefix_len)// &
+              event(1:str_length)//'"')
       else
-         ierr = GPTLstart(trim(event))
+         str_length = min(SHR_KIND_CM-2,len_trim(event))
+         ierr = GPTLstart('"'//trim(event)//'"')
       endif
 
 !pw   if ( present (handle) ) then
@@ -803,21 +806,24 @@ contains
 
       write(cdetail,'(i2.2)') cur_timing_detail
       if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len-3,len_trim(event))
+         str_length = min(SHR_KIND_CM-prefix_len-5,len_trim(event))
          ierr = GPTLstop( &
-           cdetail//"_"//event_prefix(1:prefix_len)//event(1:str_length))
+              '"'//cdetail//"_"//event_prefix(1:prefix_len)// &
+              event(1:str_length)//'"')
       else
-         str_length = min(SHR_KIND_CM-3,len_trim(event))
-         ierr = GPTLstop(cdetail//"_"//event(1:str_length))
+         str_length = min(SHR_KIND_CM-5,len_trim(event))
+         ierr = GPTLstop('"'//cdetail//"_"//event(1:str_length)//'"')
       endif
 
    else
 
       if (prefix_len > 0) then
-         str_length = min(SHR_KIND_CM-prefix_len,len_trim(event))
-         ierr = GPTLstop(event_prefix(1:prefix_len)//event(1:str_length))
+         str_length = min(SHR_KIND_CM-prefix_len-2,len_trim(event))
+         ierr = GPTLstop('"'//event_prefix(1:prefix_len)// &
+              event(1:str_length)//'"')
      else
-         ierr = GPTLstop(trim(event))
+         str_length = min(SHR_KIND_CM-2,len_trim(event))
+         ierr = GPTLstop('"'//trim(event)//'"')
      endif
 
 !pw   if ( present (handle) ) then
