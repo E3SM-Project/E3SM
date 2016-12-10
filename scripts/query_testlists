@@ -157,6 +157,10 @@ def _main_func(description):
         xml_compiler = args.xml_compiler,
         xml_testlist = args.xml_testlist)
 
+    expect(test_data, "No tests found with the following options (where 'None' means no subsetting on that attribute):\n"
+           "\tMachine = %s\n\tCategory = %s\n\tCompiler = %s\n\tTestlist = %s"%
+           (args.xml_machine, args.xml_category, args.xml_compiler, args.xml_testlist))
+
     if args.count:
         count_test_data(test_data)
     elif args.list_type:
