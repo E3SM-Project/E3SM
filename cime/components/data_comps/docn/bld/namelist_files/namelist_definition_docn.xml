@@ -13,18 +13,18 @@
 <!--- shr_strmdata_nml (file docn_ocn_in)       -->
 <!-- =========================================  -->
 
-<entry id="datamode" 
-type="char*256"  
+<entry id="datamode"
+type="char*256"
 category="streams"
-group="shr_strdata_nml" 
+group="shr_strdata_nml"
 valid_values="SSTDATA,SOM,IAF,NULL,COPYALL">
 valid values: SSTDATA,SOM,IAF,NULL,COPYALL
 General method that operates on the data. This is generally
 implemented in the data models but is set in the strdata method for
-convenience.  
+convenience.
 
 datamode = "NULL"
-  NULL is always a valid option and means no data will be generated.  
+  NULL is always a valid option and means no data will be generated.
   Turns off the data model as a provider of data to the coupler.  The
   ice_present flag will be set to false and the coupler will assume no
   exchange of data to or from the data model.
@@ -57,7 +57,7 @@ dataMode = "SOM"
   the box, the default SOM forcing file is not scientifically
   appropriate and is provided for testing and development purposes only.
   Users must create scientifically appropriate data for their particular
-  application.  A tool is available to derive valid SOM forcing. 
+  application.  A tool is available to derive valid SOM forcing.
 
 Set by the xml variable DOCN_MODE in env_run.xml
 Currently, DOCN_MODE can be [prescribed,som,interannual,null]
@@ -69,41 +69,41 @@ Currently, DOCN_MODE can be [prescribed,som,interannual,null]
 default: SSTDATA (prescribed setting for DOCN_MODE)'
 </entry>
 
-<entry id="domainfile" 
-type="char*256" 
+<entry id="domainfile"
+type="char*256"
 category="streams"
-input_pathname="abs" 
+input_pathname="abs"
 group="shr_strdata_nml" >
 spatial gridfile associated with the strdata.  grid information will
 be read from this file and that grid will serve as the target grid
-for all input data for this strdata input.  
+for all input data for this strdata input.
 </entry>
 
-<entry id="fillalgo" 
-type="char*256(30)"  
+<entry id="fillalgo"
+type="char*256(30)"
 category="streams"
 group="shr_strdata_nml"
-valid_values="copy,bilinear,nn,nnoni,nnonj,spval">
+valid_values="copy,none,bilinear,nn,nnoni,nnonj,spval">
 array (up to 30 elements) of fill algorithms associated with the array
 of streams.  valid options are just copy (ie. no fill), special value,
 nearest neighbor, nearest neighbor in "i" direction, or nearest
 neighbor in "j" direction.
-valid values:  'copy','spval','nn','nnoni','nnonj'  
+valid values:  'copy','none','spval','nn','nnoni','nnonj'
 default: "nn".
 </entry>
 
 <entry id="fillmask"
 type="char*256(30)"
 category="streams"
-group="shr_strdata_nml" 
+group="shr_strdata_nml"
 valid_values="nomask,srcmask,dstmask,bothmask">
-plays no role is fill algorithm at the present time.  
+plays no role is fill algorithm at the present time.
 valid values: "nomask,srcmask,dstmask,bothmask"
 default: "nomask"
 </entry>
 
-<entry id="fillread" 
-type="char*256(30)"  
+<entry id="fillread"
+type="char*256(30)"
 category="streams"
 group="shr_strdata_nml" >
 array (up to 30 elements) of filenames associated with the array of
@@ -113,18 +113,18 @@ and fillmask are ignored.
 default: unset
 </entry>
 
-<entry id="fillwrite" 
-type="char*256(30)"  
+<entry id="fillwrite"
+type="char*256(30)"
 category="streams"
 group="shr_strdata_nml">
 array (up to 30 elements)  of filenames associated with the array of
 streams.  specifies the weights file to generate after weights are
 computed on the fly for the fill operation.  this allows a user to
-save and reuse a set of weights later.  
+save and reuse a set of weights later.
 default="unset".
 </entry>
 
-<entry id="mapmask" 
+<entry id="mapmask"
 type="char*256(30)"
 category="streams"
 group="shr_strdata_nml"
@@ -137,31 +137,31 @@ valid values: srcmask, dstmask, nomask,bothmask
 default: dstmask
 </entry>
 
-<entry id="mapalgo" 
-type="char*256(30)"  
+<entry id="mapalgo"
+type="char*256(30)"
 category="streams"
-group="shr_strdata_nml" 
+group="shr_strdata_nml"
 valid_values="copy,bilinear,nn,nnoni,nnonj,spval">
 array (up to 30 elements) of fill algorithms associated with the array
 of streams.  valid options are copy by index, set to special value,
 nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
-in "j" direction, or bilinear.  
+in "j" direction, or bilinear.
 valid values: copy,spval,nn,nnoni,nnonj,bilinear
 default: bilinear
 </entry>
 
-<entry id="mapread" 
-type="char*256(30)"  
+<entry id="mapread"
+type="char*256(30)"
 category="streams"
-group="shr_strdata_nml"> 
+group="shr_strdata_nml">
 array (up to 30 elements) of filenames associated with the array of
 streams.  specifies the weights file to read instead of computing
 weights on the fly for the mapping (interpolation) operation.  if this
 is set, mapalgo and mapmask are ignored.  default="unset".
 </entry>
 
-<entry id="mapwrite" 
-type="char*256(30)"  
+<entry id="mapwrite"
+type="char*256(30)"
 category="streams"
 group="shr_strdata_nml" >
 array (up to 30 elements) of filenames associated with the array of
@@ -171,13 +171,13 @@ allows a user to save and reuse a set of weights later.
 default="unset".
 </entry>
 
-<entry id="tintalgo" 
-type="char*256(30)"  
+<entry id="tintalgo"
+type="char*256(30)"
 category="streams"
-group="shr_strdata_nml" 
+group="shr_strdata_nml"
 valid_values="coszen,nearest,linear,lower,upper">
 array (up to 30 elements) of time interpolation options associated with the array of
-streams.  
+streams.
 valid values: lower,upper,nearest,linear,coszen
   lower   = Use lower time-value
   upper   = Use upper time-value
@@ -187,13 +187,13 @@ valid values: lower,upper,nearest,linear,coszen
 default="linear".
 </entry>
 
-<entry id="taxmode" 
-type="char*256(30)"  
+<entry id="taxmode"
+type="char*256(30)"
 category="streams"
-group="shr_strdata_nml" 
+group="shr_strdata_nml"
 valid_values="extend,cycle,limit">
 array of time axis modes associated with the array of streams for
-handling data outside the specified stream time axis.  
+handling data outside the specified stream time axis.
 valid options are to cycle the data based on the first, last, and
 align settings associated with the stream dataset, to extend the first
 and last valid value indefinitely, or to limit the interpolated data
@@ -205,8 +205,8 @@ valid values: cycle,extend,limit
 default="cycle".
 </entry>
 
-<entry id="dtlimit" 
-type="real(30)"  
+<entry id="dtlimit"
+type="real(30)"
 category="streams"
 group="shr_strdata_nml" >
 array (up to 30 elements) of delta time ratio limits placed on the
@@ -221,11 +221,11 @@ maximum ratio should be about 1.1.  the running value of the delta
 time is computed as data is read and any wraparound or cycling is also
 included.  this input helps trap missing data or errors in cycling.
 to turn off trapping, set the value to 1.0e30 or something similar.
-default=1.5. 
+default=1.5.
 </entry>
 
-<entry id="streams" 
-type="char*256(30)" 
+<entry id="streams"
+type="char*256(30)"
 category="streams"
 group="shr_strdata_nml" >
 character array (up to 30 elements) of stream input files.  this
@@ -235,7 +235,7 @@ specified by the stream module.  this string consists of a
 stream_input_filename is a stream text input file and the format and
 options are described elsewhere.  year_align, year_first, and
 year_last provide information about the time axis of the file and how
-to relate the input time axis to the model time axis.  
+to relate the input time axis to the model time axis.
 default="null".
 </entry>
 
@@ -243,46 +243,46 @@ default="null".
 <!--- docn_nml (in file docn_in)                -->
 <!-- =========================================  -->
 
-<entry id="ocn_in" 
-type="char*256" 
+<entry id="ocn_in"
+type="char*256"
 category="docn"
-group="docn_nml" 
+group="docn_nml"
 valid_values="">
 Namelist filename for data model share stream data namelist
 </entry>
 
-<entry id="decomp" 
-type="char*4" 
+<entry id="decomp"
+type="char*4"
 category="docn"
-group="docn_nml" 
+group="docn_nml"
 valid_values="1d,root" >
 DOCN Decomposition strategy
     1d   = Vector decomposition
     root = run only on the master task
 </entry>
 
-<entry id="restfilm" 
-type="char*256" 
+<entry id="restfilm"
+type="char*256"
 category="docn"
-group="docn_nml" 
+group="docn_nml"
 valid_values="">
 Master restart file name for docn model
 </entry>
 
-<entry id="restfils" 
-type="char*256" 
+<entry id="restfils"
+type="char*256"
 category="docn"
-group="docn_nml" 
+group="docn_nml"
 valid_values="">
 Stream restart file name for docn model, needed for branch simulations
 </entry>
 
 <entry id="force_prognostic_true"
-type="logical" 
+type="logical"
 category="docn"
 group="docn_nml">
 If TRUE, prognostic is forced to true.
-default=false 
+default=false
 </entry>
 
 </namelist_definition>

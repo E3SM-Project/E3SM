@@ -1,8 +1,8 @@
 !================================================================================
-! This reads the carma_inparm namelist in drv_flds_in and makes the relavent 
-! information available to CAM, CLM, and driver. The driver sets up CLM to CAM 
+! This reads the carma_inparm namelist in drv_flds_in and makes the relavent
+! information available to CAM, CLM, and driver. The driver sets up CLM to CAM
 ! communication for the  VOC flux fields. CLM needs to know what specific VOC
-! fluxes need to be passed to the coupler and how to assimble the fluxes.  
+! fluxes need to be passed to the coupler and how to assimble the fluxes.
 ! CAM needs to know what specific VOC fluxes to expect from CLM.
 !
 ! Mariana Vertenstein -- 24 Sep 2012
@@ -33,12 +33,12 @@ contains
     use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
 
     character(len=*),  intent(in)  :: NLFileName
-    character(len=CX), intent(out) :: carma_fields	
+    character(len=CX), intent(out) :: carma_fields
 
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
-    character(*),parameter :: F00   = "('(shr_carma_readnl) ',2a)" 
+    character(*),parameter :: F00   = "('(shr_carma_readnl) ',2a)"
 
     namelist /carma_inparm/ carma_fields
 

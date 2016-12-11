@@ -8,7 +8,7 @@ SET(UTILS_SHARE_DIR ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/share)
 SET(PHYSICS_DIR     ${HOMME_SOURCE_DIR}/physics)
-SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
+SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}

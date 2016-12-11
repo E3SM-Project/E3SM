@@ -4,7 +4,7 @@
 
 <namelist_defaults>
 
-<use_case_desc>Running an IG case with the ice sheet model glimmer</use_case_desc>
+<use_case_desc>Running an IG case with the ice sheet model</use_case_desc>
 
 <glc_nec>10</glc_nec>
 

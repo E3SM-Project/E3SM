@@ -33,7 +33,7 @@ data. We also give a more detailed description of &cesm; restarts.
 
 <para> The case initialization type is set in &env_run.xml;. A &cesm;
 run can be initialized in one of three ways; startup, branch, or
-hybrid. 
+hybrid.
 </para>
 
 <variablelist>
@@ -54,9 +54,9 @@ the second day).
 
 <varlistentry><term>branch</term>
 <listitem>
-<para> 
+<para>
 In a branch run, all components are initialized using a
-consistent set of restart files from a previous run (determined by 
+consistent set of restart files from a previous run (determined by
 the $<envar>RUN_REFCASE</envar> and $<envar>RUN_REFDATE</envar> variables in &env_run.xml;).
 The case name is generally changed for a branch run, although it does
 not have to be. In a branch run, setting $<envar>RUN_STARTDATE</envar>
@@ -65,7 +65,7 @@ start date from their restart datasets. Therefore, the start date
 cannot be changed for a branch run. This is the same mechanism that is
 used for performing a restart run (where $<envar>CONTINUE_RUN</envar>
 is set to TRUE in the &env_run.xml; file).</para>
-<para> 
+<para>
 Branch runs are typically used when sensitivity or parameter
 studies are required, or when settings for history file output streams
 need to be modified while still maintaining bit-for-bit
@@ -75,12 +75,12 @@ an exact bit-for-bit restart in the same manner as a continuation run
 are modified. All models use restart files to perform this type of
 run. $<envar>RUN_REFCASE</envar> and $<envar>RUN_REFDATE</envar> are
 required for branch runs.</para>
-<para> 
+<para>
 To set up a branch run, locate the restart tar file or restart
-directory for $<envar>RUN_REFCASE</envar> and $<envar>RUN_REFDATE</envar> 
+directory for $<envar>RUN_REFCASE</envar> and $<envar>RUN_REFDATE</envar>
 from a previous run, then place those
 files in the $<envar>RUNDIR</envar> directory. See <link
-linkend="use_case_branch">setting up a branch run</link> for an 
+linkend="use_case_branch">setting up a branch run</link> for an
 example.</para>
 </listitem>
 </varlistentry>
@@ -99,7 +99,7 @@ $<envar>RUN_STARTDATE</envar>) can be modified relative to the
 reference case. In a hybrid run, the model does not continue in a
 bit-for-bit fashion with respect to the reference case. The resulting
 climate, however, should be continuous provided that no model source
-code or namelists are changed in the hybrid run. 
+code or namelists are changed in the hybrid run.
 In a hybrid initialization, the
 ocean model does not start until the second ocean coupling (normally
 the second day), and the coupler does a "cold start" without a restart file.
@@ -132,9 +132,9 @@ check that the batch submission lines in
 should be checked and modified accordingly for appropriate account
 numbers, time limits, and stdout/stderr file names.  You should
 then modify &env_run.xml; to determine the key run-time settings.  See
-<ulink url="../modelnl/env_run.html#run_stop">controlling run termination</ulink>, 
-<ulink url="../modelnl/env_run.html#run_rest">controlling run restarts</ulink>, and 
-<link linkend="running_ccsm_restarts">performing model restarts </link> for more details.  
+<ulink url="../modelnl/env_run.html#run_stop">controlling run termination</ulink>,
+<ulink url="../modelnl/env_run.html#run_rest">controlling run restarts</ulink>, and
+<link linkend="running_ccsm_restarts">performing model restarts </link> for more details.
 A brief note on restarting runs. When you first begin a branch, hybrid
 or startup run, CONTINUE_RUN must be set to FALSE. When you
 successfully run and get a restart file, you will need to change
@@ -153,12 +153,12 @@ STOP_DATE = -999
 </para>
 
 <para>
-The default setting is only appropriate for initial testing. Before a 
-longer run is started, update the stop times based on the case 
-throughput and batch queue limits.  For  example, if the model runs 5 
+The default setting is only appropriate for initial testing. Before a
+longer run is started, update the stop times based on the case
+throughput and batch queue limits.  For  example, if the model runs 5
 model years/day, set <envar>RESUBMIT</envar>=30, <envar>STOP_OPTION</envar>= nyears,
-and <envar>STOP_N</envar>= 5. 
-The model will then run in five year increments, and stop after 30 
+and <envar>STOP_N</envar>= 5.
+The model will then run in five year increments, and stop after 30
 submissions.
 </para>
 
@@ -184,7 +184,7 @@ associated <command>configure</command> utility that sets up compile
 time configuration options and is also called from the corresponding
 Buildconf/*.buildnml.csh (e.g. Buildconf/cam.buildnml.csh).</para>
 
-<para> 
+<para>
 <command>In the CESM1.2 series, user specific component namelist
 changes should only be made only by editing the
 <filename>$CASEROOT/user_nl_xxx</filename> files OR by
@@ -212,9 +212,9 @@ controlling and modifying component-specific run-time settings:
 <variablelist>
 
 <varlistentry>
-<term>DRV</term> 
-<listitem> 
-<para> 
+<term>DRV</term>
+<listitem>
+<para>
 In CESM1.2, <ulink url="../modelnl/nl_drv.html">driver
 namelist</ulink> are in two groups - those that are set directly from
 xml variables in <ulink
@@ -237,20 +237,20 @@ call <filename>preview_namelists</filename> and verify that this new
 value appears in <filename>CaseDocs/drv_in</filename>. </para>
 <screen>
 The following namelist variables MAY NOT be changed in user_nl_cpl -
-but must be changed in the appropriate $CASEROOT xml file.  
+but must be changed in the appropriate $CASEROOT xml file.
 XXX  refers to ATM,LND,ICE,OCN,ROF,GLC,WAV
 ======================================
-drv namelist   => xml variable 
-variable       
+drv namelist   => xml variable
+variable
 ======================================
-case_name      => CASE                
-username       => CCSMUSER         
-hostname       => MACH                
-model_version  => CCSM_REPOTAG  
-start_type     => RUN_TYPE          
-start_ymd      => RUN_STARTDATE  
+case_name      => CASE
+username       => CCSMUSER
+hostname       => MACH
+model_version  => CCSM_REPOTAG
+start_type     => RUN_TYPE
+start_ymd      => RUN_STARTDATE
 start_tod      => START_TOD
-XXX_cpl_dt     => XXX_NCPL          
+XXX_cpl_dt     => XXX_NCPL
 XXX_ntasks     => NTASKS_XXX
 XXX_nthreads   => NTHRDS_XXX
 XXX_rootpe     => ROOTPE_XXX
@@ -263,8 +263,8 @@ XXX_layout     => NINST_XXX_LAYOUT
 
 <varlistentry>
 <term>CAM</term>
-<listitem> 
-<para> 
+<listitem>
+<para>
 CAM's <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.1/cam/docs/ug5_2/book1.html">configure
 </ulink> and <ulink
@@ -292,9 +292,9 @@ that this new value appears in <filename>CaseDocs/atm_in</filename>.
 </varlistentry>
 
 <varlistentry>
-<term>CLM</term> 
-<listitem> 
-<para> 
+<term>CLM</term>
+<listitem>
+<para>
 CLM's <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.0/clm/models/lnd/clm/doc/UsersGuide/book1.html">
 configure</ulink> and <ulink
@@ -317,11 +317,11 @@ changes appear correctly in <filename>CaseDocs/lnd_in</filename>.
 </varlistentry>
 
 <varlistentry>
-<term>RTM</term> 
-<listitem> 
-<para> 
+<term>RTM</term>
+<listitem>
+<para>
 RTM's <command>build-namelist</command> utility is called by
-<filename>Buildconf/rtm.buildnml.csh</filename>. 
+<filename>Buildconf/rtm.buildnml.csh</filename>.
 For a complete documentation of namelist
 settings, see <ulink url="../modelnl/nl_rtm.html">RTM namelist
 variables</ulink>.  To modify RTM namelist settings, you should add
@@ -335,9 +335,9 @@ appear correctly in <filename>CaseDocs/rof_in</filename>.
 </varlistentry>
 
 <varlistentry>
-<term>CICE</term> 
-<listitem> 
-<para> 
+<term>CICE</term>
+<listitem>
+<para>
 CICE's <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.1/cice/doc/index.html">
 configure</ulink> and
@@ -359,15 +359,15 @@ file at the top of that file).  To see the result of your change, call
 correctly in <filename>CaseDocs/ice_in</filename>.
 </para>
 <para>
-In addition, <command>cesm_setup</command> creates CICE's compile time 
-<ulink url="../modelnl/env_build.html#build_cice">block decomposition variables</ulink> 
+In addition, <command>cesm_setup</command> creates CICE's compile time
+<ulink url="../modelnl/env_build.html#build_cice">block decomposition variables</ulink>
 in &env_build.xml; as follows:
 <screen>
   ./cesm_setup
      &dArr;
   Buildconf/cice.buildnml.csh and $NTASKS_ICE and $NTHRDS_ICE
      &dArr;
-  env_build.xml variables CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS, CICE_DECOMPTYPE 
+  env_build.xml variables CICE_BLCKX, CICE_BLCKY, CICE_MXBLCKS, CICE_DECOMPTYPE
   CPP variables in cice.buildexe.csh
 </screen>
 </para>
@@ -375,9 +375,9 @@ in &env_build.xml; as follows:
 </varlistentry>
 
 <varlistentry>
-<term>POP2</term> 
-<listitem> 
-<para> 
+<term>POP2</term>
+<listitem>
+<para>
 See <ulink url="../modelnl/nl_pop2.html">POP2 namelist
 variables</ulink> for a complete description of the POP2 run-time
 namelist variables.  Note that <ulink
@@ -400,11 +400,11 @@ also generates POP2's compile time compile time <ulink
 url="../modelnl/env_build.html#build_pop2">block decomposition
 variables</ulink> in &env_build.xml; as follows:
 <screen>
-  ./cesm_setup  
+  ./cesm_setup
      &dArr;
   Buildconf/pop2.buildnml.csh and $NTASKS_OCN and $NTHRDS_OCN
      &dArr;
-  env_build.xml variables POP2_BLCKX, POP2_BLCKY, POP2_MXBLCKS, POP2_DECOMPTYPE 
+  env_build.xml variables POP2_BLCKX, POP2_BLCKY, POP2_MXBLCKS, POP2_DECOMPTYPE
   CPP variables in pop2.buildexe.csh
 </screen>
 </para>
@@ -412,9 +412,9 @@ variables</ulink> in &env_build.xml; as follows:
 </varlistentry>
 
 <varlistentry>
-<term>CISM</term> 
-<listitem> 
-<para> 
+<term>CISM</term>
+<listitem>
+<para>
 See <ulink url="../modelnl/nl_cism.html">CISM namelist
 variables</ulink> for a complete description of the CISM run-time
 namelist variables. This includes variables that appear both in
@@ -439,9 +439,9 @@ determines the default value of a number of other namelist parameters.
 </varlistentry>
 
 <varlistentry>
-<term>DATM </term> 
+<term>DATM </term>
 <listitem>
-<para> 
+<para>
 DATM is discussed in detail in <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.1/data8/doc/book1.html">Data
 Model's User's Guide</ulink>. DATM is normally used to provide
@@ -451,9 +451,9 @@ and POP2/CICE (G compset). As a result, DATM variable settings are
 specific to the compset that will be targeted.  </para>
 <para>
 DATM can be user
-configured in three different ways.  
+configured in three different ways.
 </para>
-<para> 
+<para>
 You can set <ulink url="../modelnl/env_run.html#run_datm">DATM
 run-time variables</ulink> my modifying control settings for CLM and
 CPLHIST forcing.
@@ -464,8 +464,8 @@ namelist changes in the form of "namelist_var =
 new_namelist_value". Note that any namelist variable from
 shr_strdata_nml and datm_nml can be modified below using the this
 syntax. Use <command>preview_namelists</command> to view (not modify)
-the output namelist in <filename>CaseDocs</filename>. 
-</para> 
+the output namelist in <filename>CaseDocs</filename>.
+</para>
 <para>
 You can modify the contents of a DATM stream txt file. To do this:
 <itemizedlist>
@@ -484,7 +484,7 @@ writeable</command> (chmod 644)
 <listitem><para>
 Modify the <filename>user_datm.streams.txt.*</filename> file.
 </para></listitem>
-</itemizedlist> 
+</itemizedlist>
 As an example, if the stream txt file in <filename>CaseDocs/</filename>
 is <filename>datm.streams.txt.CORE2_NYF.GISS</filename>, the modified
 copy in $&CASEROOT; should be
@@ -497,9 +497,9 @@ modifications appear in
 </varlistentry>
 
 <varlistentry>
-<term>DOCN</term> 
+<term>DOCN</term>
 <listitem>
-<para> DOCN is discussed in detail in 
+<para> DOCN is discussed in detail in
 <ulink url="http://www.cesm.ucar.edu/models/cesm1.1/data8/doc/book1.html">Data
 Model's User's Guide</ulink>. </para>
 <para>
@@ -538,11 +538,11 @@ appropriate data for their particular application.  A tool is
 available to derive valid SOM forcing.
 </para>
 <para>
-DOCN can be user-customized in three ways.  
+DOCN can be user-customized in three ways.
 </para>
-<para> 
+<para>
 You can set <ulink url="../modelnl/env_run.html#run_docn">DOCN
-run-time variables</ulink>. 
+run-time variables</ulink>.
 </para>
 <para> You can edit <filename>user_nl_docn</filename> to change
 namelist settings by adding all user specific
@@ -550,7 +550,7 @@ namelist changes in the form of "namelist_var =
 new_namelist_value". Note that any namelist variable from
 shr_strdata_nml and datm_nml can be modified below using the this
 syntax. Use <command>preview_namelists</command> to view (not modify)
-the output namelist in <filename>CaseDocs</filename>. 
+the output namelist in <filename>CaseDocs</filename>.
 </para>
 <para>
 You can modify the contents of a DOCN stream txt file. To do this:
@@ -570,7 +570,7 @@ writeable</command> (chmod 644)
 <listitem><para>
 Modify the <filename>user_docn.streams.txt.*</filename> file.
 </para></listitem>
-</itemizedlist> 
+</itemizedlist>
 As an example, if the stream text file in
 <filename>CaseDocs/</filename> is <filename>
 doc.stream.txt.prescribed</filename>, the modified copy in $&CASEROOT;
@@ -583,24 +583,24 @@ again, you should see your new modifications appear in
 </varlistentry>
 
 <varlistentry>
-<term>DICE </term> 
+<term>DICE </term>
 <listitem>
-<para> DICE is discussed in detail in 
+<para> DICE is discussed in detail in
 <ulink url="http://www.cesm.ucar.edu/models/cesm1.1/data8/doc/book1.html">Data Model's User's Guide</ulink>. </para>
 <para>
-DICE can be user-customized in three ways.  
+DICE can be user-customized in three ways.
 </para>
-<para> 
+<para>
 You can set <ulink url="../modelnl/env_run.html#run_dice">DICE
-run-time variables</ulink>. 
+run-time variables</ulink>.
 </para>
 <para> You can edit <filename>user_nl_dice</filename> to change
 namelist settings by adding all user specific
-namelist changes in the form of "namelist_var = new_namelist_value". 
+namelist changes in the form of "namelist_var = new_namelist_value".
 Note that any namelist variable from shr_strdata_nml and datm_nml can be modified below using the this
 syntax. Use <command>preview_namelists</command> to view (not modify)
-the output namelist in <filename>CaseDocs/</filename>. 
-</para> 
+the output namelist in <filename>CaseDocs/</filename>.
+</para>
 <para>
 You can modify the contents of a DICE stream txt file. To do this:
 <itemizedlist>
@@ -619,27 +619,27 @@ writeable</command> (chmod 644)
 <listitem><para>
 Modify the <filename>user_dice.streams.txt.*</filename> file.
 </para></listitem>
-</itemizedlist> 
+</itemizedlist>
 </para>
 </listitem>
 </varlistentry>
 
 <varlistentry>
-<term>DLND</term> 
-<listitem> 
+<term>DLND</term>
+<listitem>
 <para> DLND is discussed in detail in <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.1/data8/doc/book1.html">Data
 Model's User's Guide</ulink>. The data land model is different from
-the other data models because it can run 
+the other data models because it can run
 as a purely data-land model (reading
 in coupler history data for atm/land fluxes and land albedos produced
 by a previous run), or to read in model output from CLM to send to CISM. </para>
 <para>DLND can be user-customized in three ways:</para>
-<para> 
+<para>
 You can set <ulink url="../modelnl/env_run.html#run_dlnd">DLND
 run-time variables</ulink>.
 </para>
-<para> 
+<para>
 You can edit <filename>user_nl_dlnd</filename> OR
 <filename>user_nl_dsno</filename> depending on the component set, to
 change namelist settings namelists settings by adding all user
@@ -648,7 +648,7 @@ new_namelist_value". Note that any namelist variable from
 shr_strdata_nml and dlnd_nml or dsno_nml can be modified below using
 the this syntax. Use <command>preview_namelists</command> to view (not
 modify) the output namelist in <filename>CaseDocs/</filename>.
-</para> 
+</para>
 <para>
 You can modify the contents of a DLND stream txt file. To do this:
 <itemizedlist>
@@ -667,14 +667,14 @@ writeable</command> (chmod 644)
 <listitem><para>
 Modify the <filename>user_dlnd.streams.txt.*</filename> file.
 </para></listitem>
-</itemizedlist> 
+</itemizedlist>
 </para>
 </listitem>
 </varlistentry>
 
 <varlistentry>
-<term>DROF </term> 
-<listitem> 
+<term>DROF </term>
+<listitem>
 <para> DROF is discussed in  <ulink
 url="http://www.cesm.ucar.edu/models/cesm1.1/data8/doc/book1.html">Data
 Model's User's Guide</ulink>. The data river runoff model reads in runoff data
@@ -682,19 +682,19 @@ and sends it back to the coupler. In general, the data river runoff model is onl
 used to provide runoff forcing data to POP2 when running C or G
 compsets</para>
 <para>DROF can be user-customized in three ways:</para>
-<para> 
+<para>
 You can set <ulink url="../modelnl/env_run.html#run_drof">DROF
 run-time variables</ulink>.
 </para>
-<para> 
-You can edit <filename>user_nl_drof</filename> 
+<para>
+You can edit <filename>user_nl_drof</filename>
 to change namelist settings namelists settings by adding all user
 specific namelist changes in the form of "namelist_var =
 new_namelist_value". Note that any namelist variable from
 shr_strdata_nml and drof_nml can be modified using
 the this syntax. Use <command>preview_namelists</command> to view (not
 modify) the output namelist in <filename>CaseDocs/</filename>.
-</para> 
+</para>
 <para>
 You can modify the contents of a DROF stream txt file. To do this:
 <itemizedlist>
@@ -713,7 +713,7 @@ writeable</command> (chmod 644)
 <listitem><para>
 Modify the <filename>user_drof.streams.txt.*</filename> file.
 </para></listitem>
-</itemizedlist> 
+</itemizedlist>
 </para>
 </listitem>
 </varlistentry>
@@ -772,10 +772,10 @@ separate batch job after the successful completion of a model run.
 Users should generally turn off short term-archiving when developing
 new &cesm; code.
 </para></listitem>
-<listitem><para> 
+<listitem><para>
 If long-term archiving is not enabled, users must monitor quotas and
 usage in the $<envar>DOUT_S_ROOT/</envar> directory and should
-manually clean up these areas on a frequent basis.  
+manually clean up these areas on a frequent basis.
 </para></listitem>
 </itemizedlist>
 
@@ -864,7 +864,7 @@ components across different hardware processors. In general, there are
 seven unique models (atm, lnd, rof, ocn, ice, glc, cpl) that are managed
 independently in CESM, each with a unique MPI communicator. In
 addition, the driver runs on the union of all processors and controls
-the sequencing and hardware partitioning.  
+the sequencing and hardware partitioning.
 </para>
 
 <para>
@@ -881,7 +881,7 @@ changing the PE layout </link>.
 <para>
 In order to perform a load balancing exercise, you must first be
 aware of the different types of timing information produced by every
-&cesm; run. How this information is used is described in detail in 
+&cesm; run. How this information is used is described in detail in
 <link linkend="using_timing_info"> using model timing data. </link>
 </para>
 
@@ -910,7 +910,7 @@ processor load imbalances.
 <para>
 The second section in the timing output, "DRIVER TIMING FLOWCHART",
 provides timing information for the driver in sequential order and
-indicates which processors are involved in the cost. Finally, the 
+indicates which processors are involved in the cost. Finally, the
 timings for the coupler are broken out at the bottom of the timing
 output file.
 </para>
@@ -932,7 +932,7 @@ useful for tracking down temporal variability in model cost either due
 to inherent model variability cost (I/O, spin-up, seasonal, etc) or
 possibly due to variability due to hardware. The model daily
 cost is generally pretty constant unless I/O is written intermittently
-such as at the end of the month.  
+such as at the end of the month.
 </para>
 
 </sect2>
@@ -963,7 +963,7 @@ used to compare test runs to help determine the optimal load balance.
 
 <para>
 Changing the pe layout of the model has NO IMPACT on the scientific
-results.  The basic order of operations and calling sequence is hardwired 
+results.  The basic order of operations and calling sequence is hardwired
 into the driver and that doesn't change when the pe layout is changed.
 There are some constraints on the ability of CESM to run fully concurrent.
 In particular, the atmosphere model always run sequentially with the ice
@@ -971,8 +971,8 @@ and land for scientific reasons.  As a result, running the atmosphere
 concurrently with the ice and land will result in idle processors
 in these components at some point in the timestepping sequence.  For
 more information about how the driver is implemented, see
-(Craig, A.P., Vertenstein, M., Jacob, R.,  2012: A new flexible coupler for 
-earth system modeling developed for CCSM4 and CESM1.0. International Journal of 
+(Craig, A.P., Vertenstein, M., Jacob, R.,  2012: A new flexible coupler for
+earth system modeling developed for CCSM4 and CESM1.0. International Journal of
 High Performance Computing Applications, 26, 31-42, 10.1177/1094342011428141).
 As of CESM1.1.1, there is a new separate rof component.  That component is implemented
 in the driver just like the land model.  It can run concurrently with the
@@ -996,13 +996,13 @@ or decrease cost.
 </para>
 
 <para>
-In determining an optimal load balance for a specific 
-configuration, two pieces of information are useful. 
+In determining an optimal load balance for a specific
+configuration, two pieces of information are useful.
 </para>
 
-<itemizedlist> 
+<itemizedlist>
 <listitem><para>
-Determine which component or components are most expensive. 
+Determine which component or components are most expensive.
 </para></listitem>
 
 <listitem><para> Understand the scaling of the individual components,
@@ -1020,7 +1020,7 @@ One method for determining an optimal load balance is as follows
 <itemizedlist>
 <listitem><para>
 start with the most expensive component and a fixed optimal
-processor count and decomposition for that component 
+processor count and decomposition for that component
 </para></listitem>
 
 <listitem><para>
@@ -1083,8 +1083,8 @@ should not be waiting on a component running on 16 processors.
 
 <listitem><para>
 Before running the job, make sure the batch queue settings in the
-<filename>$CASE.run</filename> script are set correctly for the specific run being 
-targetted.  The account numbers, queue names, time limits should be 
+<filename>$CASE.run</filename> script are set correctly for the specific run being
+targetted.  The account numbers, queue names, time limits should be
 reviewed.  The ideal time limit, queues, and run length are all
 dependent on each other and on the current model throughput.
 </para></listitem>
@@ -1163,9 +1163,9 @@ and <filename>xmlchange</filename> should be invoked as follows in &CASEROOT;:
 
 <screen>
 ./xmlchange STOP_OPTION=nyears
-./xmlchange STOP_N=1 
+./xmlchange STOP_N=1
 ./xmlchange REST_OPTION=nyears
-./xmlchange REST_N=1 
+./xmlchange REST_N=1
 </screen>
 
 </sect2>
@@ -1181,7 +1181,7 @@ system using the <filename>$CASE.submit</filename> command.
 </para>
 
 <screen>
-> $CASE.submit 
+> $CASE.submit
 </screen>
 
 <para>
@@ -1313,8 +1313,8 @@ be created for a component set using full active model components.
 If short-term archiving is turned on, then the model archives the
 component restart datasets and pointer files into
 <filename>$DOUT_S_ROOT/rest/yyyy-mm-dd-sssss</filename>, where
-yyyy-mm-dd-sssss is the model date at the time of the restart (<link 
-linkend="running_ccsm_starch">see below for more details</link>). 
+yyyy-mm-dd-sssss is the model date at the time of the restart (<link
+linkend="running_ccsm_starch">see below for more details</link>).
 If long-term archiving these restart then
 archived in
 <filename>$DOUT_L_MSROOT/rest</filename>. <envar>DOUT_S_ROOT</envar>
@@ -1334,7 +1334,7 @@ directory ($<envar>RUNDIR</envar>). You can then continue the run
 and these restarts will be used.  It is important to make sure the new
 rpointer.* files overwrite the rpointer.* files that were in
 $<envar>RUNDIR</envar>, or the job may not restart in the correct
-place. </para> 
+place. </para>
 
 <para> Occasionally, when a run has problems restarting, it is
 because the rpointer files are out of sync with the restart files. The
@@ -1353,8 +1353,8 @@ should have the same date. </para>
 <para> All component log files are copied to the directory specified
 by the &env_run.xml; variable $<envar>LOGDIR</envar> which by default
 is set to <filename>$CASEROOT/logs</filename>. This location is
-where log files are copied when the job completes successfully.  If the 
-job aborts, the log files will NOT be copied out of the <filename>$RUNDIR</filename> directory. 
+where log files are copied when the job completes successfully.  If the
+job aborts, the log files will NOT be copied out of the <filename>$RUNDIR</filename> directory.
 </para>
 
 <para> Once a model run has completed successfully, the output data
@@ -1378,25 +1378,25 @@ allowed. </para>
 
 <para> If short-term archiving is enabled, the component output files will be
 moved to the short term archiving area on local disk, as specified by
-$<envar>DOUT_S_ROOT</envar>.  The directory DOUT_S_ROOT is normally  
-set to <envar>$EXEROOT/../archive/$CASE</envar>. 
+$<envar>DOUT_S_ROOT</envar>.  The directory DOUT_S_ROOT is normally
+set to <envar>$EXEROOT/../archive/$CASE</envar>.
 and will
 contain the following directory structure: </para>
 
 <screen>
 atm/
     hist/ logs/
-cpl/ 
+cpl/
     hist/ logs/
-glc/ 
+glc/
     logs/
-ice/ 
+ice/
     hist/ logs/
-lnd/ 
+lnd/
     hist/ logs/
-ocn/ 
+ocn/
     hist/ logs/
-rest/ 
+rest/
     yyyy-mm-dd-sssss/
     ....
     yyyy-mm-dd-sssss/

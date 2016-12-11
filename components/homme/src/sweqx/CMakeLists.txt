@@ -8,7 +8,7 @@ SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/sweqx)
 SET(SRC_BASE          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE         ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_UTILS         ${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/timing)
+SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)

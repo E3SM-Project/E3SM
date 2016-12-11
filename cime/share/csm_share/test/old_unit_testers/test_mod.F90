@@ -31,7 +31,7 @@ character(*), parameter :: formatRClose   = &
     '(" ( value within", 1pe9.1e2, " )")'
 character(*), parameter :: formatRNotClose = &
     '(" ( value within", 1pe9.1e2, " diff= ", 1pe9.1e2, ")")'
- 
+
 interface test_is
   module procedure test_is_logical
   module procedure test_is_logical1D
@@ -115,7 +115,7 @@ subroutine test_is_logical1D( value, expected, description )
   call test_is_logical( pass, trim(description)//trim(descrip) )
 
 end subroutine test_is_logical1D
-   
+
 
 subroutine test_is_string( value, expected, description )
 

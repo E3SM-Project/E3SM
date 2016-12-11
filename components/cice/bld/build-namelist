@@ -59,7 +59,7 @@ OPTIONS
      -version [or -v]      Echo the SVN tag name used to check out this CICE distribution.
      -caseroot             CASEROOT directory variable
      -rundir               RUNDIR directory variable
-     -scriptsroot          SCRIPTSROOT directory variable
+     -cimeroot             CIMEROOT directory variable
      -inst_string          INST_STRING variable
 
 
@@ -101,7 +101,7 @@ my %opts = ( config      => $cfg_cache,
 	     silent      => 0,
 	     caseroot    => undef,
 	     rundir      => undef,
-	     scriptsroot => undef,
+	     cimeroot     => undef,
 	     inst_string => undef,
 	    );
 
@@ -118,7 +118,7 @@ GetOptions(
     "version"       => \$opts{'version'},
     "caseroot=s"    => \$opts{'caseroot'},
     "rundir=s"      => \$opts{'rundir'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
+    "cimeroot=s"    => \$opts{'cimeroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
 )  or usage();
 
@@ -158,9 +158,9 @@ if ( defined $opts{'caseroot'} ) {
     $CASEROOT    = $opts{'caseroot'}; 
 }
 
-my $SCRIPTSROOT;     
-if ( defined $opts{'scriptsroot'} ) {
-    $SCRIPTSROOT = $opts{'scriptsroot'};     
+my $CIMEROOT;     
+if ( defined $opts{'cimeroot'} ) {
+    $CIMEROOT = $opts{'cimeroot'};     
 }
 
 my $INST_STRING;
@@ -180,12 +180,12 @@ validate_options("commandline", \%opts);
 
 # The root directory for the input data files must be specified.
 
-my $cesmroot = abs_path("$SCRIPTSROOT/../../");
+my $cesmroot = abs_path("$CIMEROOT/../");
 if (! -d "$cesmroot") {
     die "** Invalid CESM root directory: $cesmroot ** ";
 }
 
-my $perl5lib = "$cesmroot/cime/utils/perl5lib";
+my $perl5lib = "$CIMEROOT/utils/perl5lib";
 if (! -d "$perl5lib") {
     die "** Invalid perl5lib root directory: $perl5lib ** ";
 }
@@ -232,12 +232,12 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-unshift @INC, "$perl5lib", "$CASEROOT/Tools", "$cesmroot/cime/scripts/Tools";
+unshift @INC, "$perl5lib";
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
-require SetupTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the CICE config_cache.xml file. 
@@ -305,7 +305,7 @@ if (defined $opts{'infile'}) {
 }
 
 #-----------------------------------------------------------------------------------------------
-# Get cice mode - not that cice_mode must be a configure time option since it sets
+# Get cice mode - note that cice_mode must be a configure time option since it sets
 # NCAT which is a CPP variable
 
 my $cice_mode = $cfg->get('cice_mode');
@@ -363,7 +363,7 @@ if ( defined $opts{'caseroot'} ) {
 	$SSTICE_STREAM        = $xmlvars{'SSTICE_STREAM'};
     }
 
-    # Check that the CESM inputdata root directory has been specified.  This must be
+    # Check that the CIME inputdata root directory has been specified.  This must be
     # a local or nfs mounted directory.
     if (defined($opts{'csmdata'})) {
 	$inputdata_rootdir = $opts{'csmdata'};
@@ -371,7 +371,7 @@ if ( defined $opts{'caseroot'} ) {
 	$inputdata_rootdir = $xmlvars{'DIN_LOC_ROOT'};
     }
 }
-if ($print>=2) { print "CESM inputdata root directory: $inputdata_rootdir$eol"; }
+if ($print>=2) { print "CIME inputdata root directory: $inputdata_rootdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add default values for required namelist variables that have not been previously set.

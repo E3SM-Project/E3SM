@@ -10,13 +10,13 @@ The model and coupler run on separate pools of processors.
 
 master.F90  - the top level program
 model.F90   - the first component, an atmosphere model.
-               sends data to the coupler. 
+               sends data to the coupler.
 coupler.F90 - the second component, a coupler which takes
                  the received atmosphere data and maps it to
                  the ocean grid.
 
 -----------------------------------------------------
-To compile: 
+To compile:
 First make sure you have compiled MCT. See instructions in
 MCT/README
 

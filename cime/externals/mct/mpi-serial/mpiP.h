@@ -25,7 +25,7 @@
  * If config.h is not present, default to the old
  * approach.
  */
- 
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 /* config.h should define FC_FUNC */

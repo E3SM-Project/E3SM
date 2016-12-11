@@ -4,7 +4,7 @@
 !
 program mpiserial_test
  implicit none
- include 'mpif.h' 
+ include 'mpif.h'
  integer :: i
  select case(i)
  case(mpi_cart)

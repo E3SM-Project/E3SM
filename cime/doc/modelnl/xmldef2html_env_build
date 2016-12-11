@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 
@@ -48,7 +48,7 @@ contain only matched variables.  </p>
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -73,10 +73,10 @@ contain only matched variables.  </p>
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -94,15 +94,15 @@ $name eq "config_definition" or die
 
 # Print table for env_build.xml
 my @groups = ("build_macros",
-	      "build_def", 
-	      "build_component_cam", 
-	      "build_component_cice", 
-	      "build_component_clm", 
+	      "build_def",
+	      "build_component_cam",
+	      "build_component_cice",
+	      "build_component_clm",
 	      "build_component_pop2",
 	      "build_status",
 	      "build_derived",
 	      "build_grid",
-	      ); 
+	      );
 
 my %cat_headings = ('build_macros'         => '<a name="build_model">Macro Generation Settings (used by setup)</a>',
 		    'build_def'            => '<a name="build_model">Build Control Settings (used by $CASE.build)</a>',
@@ -115,16 +115,16 @@ my %cat_headings = ('build_macros'         => '<a name="build_model">Macro Gener
 		    'build_grid'           => '<a name="build_grid">Model Grid Specification (Experts Only: in general DO NOT EDIT)</a>',
 		    );
 
-foreach my $group (@groups) { 
+foreach my $group (@groups) {
     print_start_table($group, $cat_headings{$group});
     my @e = $xml->elements_by_name( "entry" );
     my %a = ();
     while ( my $e = shift @e ) {
 	%a = $e->get_attributes();
 	my $var = $a{'id'};
-	my $doc = $a{'sdesc'}; 
+	my $doc = $a{'sdesc'};
 	if ($a{'ldesc'}) {
-	    $doc = "$doc . $a{'ldesc'}";	
+	    $doc = "$doc . $a{'ldesc'}";
 	}
 	my $valid_values = $a{'valid_values'};
 	if ($valid_values ne "") {
@@ -132,7 +132,7 @@ foreach my $group (@groups) {
 	}
 	my $grp = $a{'group'};
 	$grp =~ m/([^_]*)_(.*)/;
-	$grp = "env_$1.xml"; 
+	$grp = "env_$1.xml";
 	if (($grp eq "env_build.xml") && ($a{'group'} eq "$group")) {
 	    print_row($var, $doc, $grp, $valid_values);
 	}

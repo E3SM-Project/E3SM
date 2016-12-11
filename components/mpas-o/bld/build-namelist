@@ -43,7 +43,7 @@ OPTIONS
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
      -casebuild            CASEBUILD directory variable          
-     -scriptsroot          SCRIPTSROOT directory variable
+     -cimeroot             CIMEROOT directory variable
      -ocn_grid             OCN_GRID variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPAS-O configuration scripts.
@@ -87,7 +87,7 @@ my %opts = ( help        => 0,
              preview     => 0,
              caseroot    => undef,
              casebuild   => undef,
-             scriptsroot => undef,
+             cimeroot => undef,
              inst_string => undef,
              ocn_grid    => undef,
              date_stamp    => undef,
@@ -101,7 +101,7 @@ GetOptions(
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
     "casebuild=s"   => \$opts{'casebuild'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
+    "cimeroot=s"    => \$opts{'cimeroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
     "ocn_grid=s"    => \$opts{'ocn_grid'},
     "date_stamp=s"  => \$opts{'date_stamp'},
@@ -132,11 +132,17 @@ if ($print>=2) { print "Setting MPAS-O configuration script directory to $cfgdir
 
 my $CASEROOT    = $opts{'caseroot'};
 my $CASEBUILD   = $opts{'casebuild'};
-my $SCRIPTSROOT = $opts{'scriptsroot'};
+my $CIMEROOT = $opts{'cimeroot'};
 my $inst_string = $opts{'inst_string'};
 my $OCN_GRID    = $opts{'ocn_grid'};
 my $date_stamp  = $opts{'date_stamp'};
 $cfgdir         = $opts{'cfg_dir'};
+
+my $CIMEROOT;
+if ( defined $opts{'cimeroot'} ) {
+    $CIMEROOT = $opts{'cimeroot'};
+}
+
 
 # Validate some of the commandline option values.
 validate_options("commandline", \%opts);
@@ -164,14 +170,14 @@ EOF
 
 # The root directory for the input data files must be specified.
 
-my $cesmroot = abs_path("$SCRIPTSROOT/../../");
+my $cesmroot = abs_path("$CIMEROOT/../");
 if (! -d "$cesmroot") {
     die "** Invalid CESM root directory: $cesmroot ** ";
 }
 
 print "CESM ROOT IS: $cesmroot\n";
 
-my $perl5lib = "$cesmroot/cime/utils/perl5lib";
+my $perl5lib = "$CIMEROOT/utils/perl5lib";
 if (! -d "$perl5lib") {
     die "** Invalid perl5lib root directory: $perl5lib ** ";
 }
@@ -234,13 +240,13 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $perl5lib_dir to the list of paths that Perl searches for modules
-unshift @INC, "$perl5lib", "$CASEROOT/Tools", "$cesmroot/cime/scripts/Tools";
+unshift @INC, "$perl5lib";
 #require XML::Lite;
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
-require SetupTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the MPAS-O config_cache.xml file-  created by 

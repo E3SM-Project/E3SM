@@ -2,22 +2,22 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_GlobalToLocal - Global to Local Index Translation
 !
 ! !DESCRIPTION:
-! This module contains routines for translating global array indices 
-! into their local counterparts (that is, the indices into the local 
+! This module contains routines for translating global array indices
+! into their local counterparts (that is, the indices into the local
 ! data structure holding a given process' chunk of a distributed array).
-! The MCT domain decomposition descriptors {\tt GlobalMap} and 
-! {\tt GlobalSegMap} are both supported.   Indices can be translated 
-! one-at-a-time using the {\tt GlobalToLocalIndex} routine or many 
+! The MCT domain decomposition descriptors {\tt GlobalMap} and
+! {\tt GlobalSegMap} are both supported.   Indices can be translated
+! one-at-a-time using the {\tt GlobalToLocalIndex} routine or many
 ! at once using the {\tt GlobalToLocalIndices} routine.
 !
-! This module also provides facilities for setting the local row and 
-! column indices for a {\tt SparseMatrix} through the 
+! This module also provides facilities for setting the local row and
+! column indices for a {\tt SparseMatrix} through the
 ! {\tt GlobalToLocalMatrix} routines.
 !
 ! !INTERFACE:
@@ -35,12 +35,12 @@
 
       public :: GlobalToLocalIndex   ! Translate Global to Local index
                                      ! (i.e. recover local index for a
-                                     ! point from its global index). 
+                                     ! point from its global index).
 
       public :: GlobalToLocalIndices ! Translate Global to Local indices
-                                     ! (i.e. recover local starts/lengths 
+                                     ! (i.e. recover local starts/lengths
                                      ! of distributed data segments).
-                                     
+
       public :: GlobalToLocalMatrix  ! Re-indexing of row or column
                                      ! indices for a SparseMatrix
 
@@ -62,10 +62,10 @@
 
 ! !SEE ALSO:
 !
-! The MCT modules {\tt m\_GlobalMap} and {m\_GlobalSegMap} for more 
+! The MCT modules {\tt m\_GlobalMap} and {m\_GlobalSegMap} for more
 ! information regarding MCT's domain decomposition descriptors.
 !
-! The MCT module {\tt m\_SparseMatrix} for more information regarding 
+! The MCT module {\tt m\_SparseMatrix} for more information regarding
 ! the {\tt SparseMatrix} datatype.
 !
 ! !REVISION HISTORY:
@@ -83,13 +83,13 @@
 ! !IROUTINE: GlobalSegMapToIndices_ - Return _local_ indices in arrays.
 !
 ! !DESCRIPTION:  {\tt GlobalSegMapToIndices\_()} takes a user-supplied
-! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition 
-! on the input MPI communicator corresponding to the Fortran {\tt INTEGER} 
-! handle {\tt comm} to translate the global directory of segment locations 
-! into local indices for referencing the on-pe storage of the mapped 
+! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition
+! on the input MPI communicator corresponding to the Fortran {\tt INTEGER}
+! handle {\tt comm} to translate the global directory of segment locations
+! into local indices for referencing the on-pe storage of the mapped
 ! distributed data.
 !
-! {\bf N.B.:}  This routine returns two allocated arrays---{\tt start(:)} 
+! {\bf N.B.:}  This routine returns two allocated arrays---{\tt start(:)}
 ! and {\tt length(:)}---which must be deallocated once the user no longer
 ! needs them.  Failure to do this will create a memory leak.
 !
@@ -125,7 +125,7 @@
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToIndices_'
 
   integer :: myID, ierr, ngseg, nlseg, n, count
- 
+
           ! determine local process id myID
 
   call MP_COMM_RANK(comm, myID, ierr)
@@ -167,7 +167,7 @@
      call die(myname_,'too few pe matches',ierr)
   endif
 
-          ! translate global start indices to their local 
+          ! translate global start indices to their local
           ! values, based on their storage order and number
           ! of elements in each segment
 
@@ -188,11 +188,11 @@
 ! !IROUTINE: GlobalSegMapToIndex_ - Global to Local Index Translation
 !
 ! !DESCRIPTION:  This {\tt INTEGER} query function takes a user-supplied
-! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition 
-! on the input MPI communicator corresponding to the Fortran {\tt INTEGER} 
-! handle {\tt comm}, and the input global index value {\tt i\_g}, and 
-! returns a positive local index value if the datum {\tt i\_g}.   If 
-! the datum {\tt i\_g} is not stored on the local process ID, a value 
+! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition
+! on the input MPI communicator corresponding to the Fortran {\tt INTEGER}
+! handle {\tt comm}, and the input global index value {\tt i\_g}, and
+! returns a positive local index value if the datum {\tt i\_g}.   If
+! the datum {\tt i\_g} is not stored on the local process ID, a value
 ! of {\tt -1} is returned.
 !
 ! !INTERFACE:
@@ -258,8 +258,8 @@
 
   n = 0
 
-  SEARCH_LOOP: do 
-     
+  SEARCH_LOOP: do
+
      n = n+1
      if (n > ngseg) EXIT
 
@@ -308,9 +308,9 @@
 ! !IROUTINE: GlobalSegMapToIndexArr_ - Global to Local Index Array Translation
 !
 ! !DESCRIPTION:  Given a {\tt GlobalSegMap} data type {\tt GSMap}
-! and MPI communicator corresponding to the Fortran {\tt INTEGER} 
+! and MPI communicator corresponding to the Fortran {\tt INTEGER}
 ! handle {\tt comm}, convert an array of global index values
-! {\tt i\_global()} to an array of local index values {\tt i\_local()}.  If 
+! {\tt i\_global()} to an array of local index values {\tt i\_local()}.  If
 ! the datum {\tt i\_global(j)} is not stored on the local process ID,
 ! then {\tt i\_local(j)} will be set to {\tt -1}/
 !
@@ -366,8 +366,8 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
   allocate( mygs_lstart(nlseg) )
 
 
-!! 
-!! determine the global segments on this processor 
+!!
+!! determine the global segments on this processor
 !! just once, so the info be used repeatedly below
 !!
 
@@ -392,15 +392,15 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
   enddo
 
 
-!! 
+!!
 !! this loop is optimized for the case that the indices in iglobal()
 !! are in the same order that they appear in the global segments,
-!! which seems usually (always?) to be the case. 
+!! which seems usually (always?) to be the case.
 !!
 !! note that the j loop exit condition is only executed when the index
 !! is not found in the current segment, which saves a factor of 2
 !! since many consecutive indices are in the same segment.
-!! 
+!!
 
 
   j=1
@@ -461,13 +461,13 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
 !
 ! !IROUTINE: GlobalMapToIndex_ - Global to Local Index Translation
 !
-! !DESCRIPTION:  
+! !DESCRIPTION:
 ! This {\tt INTEGER} query function takes as its input a user-supplied
-! {\tt GlobalMap} data type {\tt GMap}, which desribes a decomposition 
-! on the input MPI communicator corresponding to the Fortran {\tt INTEGER} 
-! handle {\tt comm}, and the input global index value {\tt i\_g}, and 
-! returns a positive local index value if the datum {\tt i\_g}.   If 
-! the datum {\tt i\_g} is not stored on the local process ID, a value 
+! {\tt GlobalMap} data type {\tt GMap}, which desribes a decomposition
+! on the input MPI communicator corresponding to the Fortran {\tt INTEGER}
+! handle {\tt comm}, and the input global index value {\tt i\_g}, and
+! returns a positive local index value if the datum {\tt i\_g}.   If
+! the datum {\tt i\_g} is not stored on the local process ID, a value
 ! of {\tt -1} is returned.
 !
 ! !INTERFACE:
@@ -512,7 +512,7 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
   found = .false.
 
   lower_bound = GMap%displs(myID) + 1
-  upper_bound = GMap%displs(myID) + GMap%counts(myID) 
+  upper_bound = GMap%displs(myID) + GMap%counts(myID)
 
   if((lower_bound <= i_g) .and. (i_g <= upper_bound)) then
      found = .true.
@@ -533,17 +533,17 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
 !
 ! !IROUTINE: GlobalSegMapToNavigator_ - Return Navigator to Local Segments
 !
-! !DESCRIPTION:  
+! !DESCRIPTION:
 ! This routine takes as its input takes a user-supplied
-! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition 
-! on the input MPI communicator corresponding to the Fortran {\tt INTEGER} 
-! handle {\tt comm}, and returns the local segment start index and length 
+! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition
+! on the input MPI communicator corresponding to the Fortran {\tt INTEGER}
+! handle {\tt comm}, and returns the local segment start index and length
 ! information for referencing the on-pe storage of the mapped distributed
-! data.  These data are returned in the form of the output {\tt Navigator} 
+! data.  These data are returned in the form of the output {\tt Navigator}
 ! argument {Nav}.
 !
 ! {\bf N.B.:}  This routine returns a {\tt Navigator} variable {\tt Nav},
-! which must be deallocated once the user no longer needs it.  Failure to 
+! which must be deallocated once the user no longer needs it.  Failure to
 ! do this will create a memory leak.
 !
 ! !INTERFACE:
@@ -579,7 +579,7 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToNavigator_'
 
   integer :: myID, ierr, ngseg, nlseg, n, count
- 
+
           ! determine local process id myID
 
   call MP_COMM_RANK(comm, myID, ierr)
@@ -608,19 +608,19 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
 !
 ! !IROUTINE: GlobalSegMapToLocalMatrix_ - Set Local SparseMatrix Indices
 !
-! !DESCRIPTION:  
-! This routine takes as its input a user-supplied {\tt GlobalSegMap} 
-! domain decomposition {\tt GSMap}, which describes the decomposition of 
-! either the rows or columns of the input/output {\tt SparseMatrix} 
+! !DESCRIPTION:
+! This routine takes as its input a user-supplied {\tt GlobalSegMap}
+! domain decomposition {\tt GSMap}, which describes the decomposition of
+! either the rows or columns of the input/output {\tt SparseMatrix}
 ! argument {\tt sMat} on the communicator associated with the {\tt INTEGER}
-! handle {\tt comm}, and to translate the global row or column indices 
+! handle {\tt comm}, and to translate the global row or column indices
 ! of {\tt sMat} into their local counterparts.  The choice of either row
-! or column is governed by the value of the input {\tt CHARACTER} 
-! argument {\tt RCFlag}.  One sets this variable to either {\tt 'ROW'} or 
+! or column is governed by the value of the input {\tt CHARACTER}
+! argument {\tt RCFlag}.  One sets this variable to either {\tt 'ROW'} or
 ! {\tt 'row'} to specify row re-indexing (which are stored in
-! {\tt sMat} and retrieved by indexing the attribute {\tt lrow}), and 
-! {\tt 'COLUMN'} or {\tt 'column'} to specify column re-indexing (which 
-! are stored in {\tt sMat} and retrieved by indexing the {\tt SparseMatrix} 
+! {\tt sMat} and retrieved by indexing the attribute {\tt lrow}), and
+! {\tt 'COLUMN'} or {\tt 'column'} to specify column re-indexing (which
+! are stored in {\tt sMat} and retrieved by indexing the {\tt SparseMatrix}
 ! attribute {\tt lcol}).
 !
 ! !INTERFACE:
@@ -653,7 +653,7 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
       type(SparseMatrix), intent(inout) :: sMat
 
 ! !SEE ALSO:
-! The MCT module m_SparseMatrix for more information about the 
+! The MCT module m_SparseMatrix for more information about the
 ! SparseMatrix type and its storage of global and local row-and
 ! column indices.
 !
@@ -703,7 +703,7 @@ subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
      temp_gindex(i) = sMat%data%iAttr(gindex,i)
   end do
 
-  call GlobalSegMapToIndexArr_(GSMap, temp_gindex, temp_lindex, lsize, comm)  
+  call GlobalSegMapToIndexArr_(GSMap, temp_gindex, temp_lindex, lsize, comm)
 
   do i=1,lsize
     sMat%data%iAttr(lindex,i) = temp_lindex(i)

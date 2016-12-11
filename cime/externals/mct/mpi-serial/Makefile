@@ -62,7 +62,7 @@ LIB	= lib$(MODULE).a
 #RULES
 
 .SUFFIXES:
-.SUFFIXES: .F90 .c .o 
+.SUFFIXES: .F90 .c .o
 
 .c.o:
 	$(CC) -c $(INCPATH) $(DEFS) $(CPPDEFS) $(CFLAGS) $<

@@ -60,7 +60,7 @@
       public :: StringLinkedList_next	! iterator, go to the next node.
 
       public :: StringLinkedList_count	! counter
-      
+
 		! Count the number of nodes from this reference pointer,
 		! starting from and including the logical node but
 		! excluding the end-node.

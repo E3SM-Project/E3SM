@@ -62,9 +62,9 @@
 #      PFUNIT_MPIRUN gives this prefix (e.g., "mpirun")
 #
 # Does everything needed to create a pFUnit-based test, wrapping
-# add_pFUnit_executable, add_test, and define_pFUnit_failure. 
+# add_pFUnit_executable, add_test, and define_pFUnit_failure.
 #
-# Example, using defaults for the optional arguments: 
+# Example, using defaults for the optional arguments:
 # create_pFUnit_test(mytest mytest_exe "${pfunit_sources}" "${test_sources}")
 #
 # Example, specifying values for the optional arguments:
@@ -157,7 +157,7 @@ function(add_pFUnit_executable name pf_file_list output_directory
   get_target_property(includes ${name} INCLUDE_DIRECTORIES)
   if(NOT includes)
     unset(includes)
-  endif() 
+  endif()
   list(APPEND includes ${output_directory} "${PFUNIT_INCLUDE_DIRS}")
   set_target_properties(${name} PROPERTIES
     INCLUDE_DIRECTORIES "${includes}")

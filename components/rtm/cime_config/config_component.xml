@@ -44,6 +44,7 @@
     <values>
       <value compset="1850.*_RTM">-simyr 1850</value>
       <value compset="HIST.*_RTM">-simyr 1850</value>
+      <value compset="20TR.*_RTM">-simyr 1850</value>
       <value compset="PIPD.*_RTM">-simyr 1850</value>
       <value compset="2000.*_RTM">-simyr 2000</value>
     </values>

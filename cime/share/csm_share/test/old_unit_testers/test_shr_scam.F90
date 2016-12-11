@@ -48,13 +48,13 @@ program test_shr_scam
   if ( rc /= NF90_NOERR ) call shr_sys_abort( "NetCDF error opening file: "//trim(filename) )
   call shr_scam_getCloseLatLon( ncid, targetLat,  targetLon, closeLat, closeLon, &
                                 closeLatIdx, closeLonIdx, found=found )
-  
+
   call test_is( found, "Test that a a simple call to NetCDF id works" )
   call test_is( expect, (/ closeLat, closeLon /), "Test lat/lon found correct" )
   call shr_scam_getCloseLatLon( ncid, targetLat,  targetLon, closeLat, closeLon, &
                                 closeLatIdx, closeLonIdx )
   call test_is( expect, (/ closeLat, closeLon /), "Test OK without found" )
-  
+
   if ( nf90_close( ncid ) /= NF90_NOERR ) call shr_sys_abort( "NetCDF error closing file" )
   write(6,*) "init mpi"
   call shr_mpi_init( )
@@ -77,7 +77,7 @@ program test_shr_scam
   call test_is( expect, (/ closeLat, closeLon /), "Test OK without found" )
   call pio_closefile(pioid)
 
-  ! Test that can find periodic longitudes 
+  ! Test that can find periodic longitudes
   targetLat = 1.0
   targetLon = 842.0
   expect = (/ 0.947368421052549d00, 122.5d00 /)

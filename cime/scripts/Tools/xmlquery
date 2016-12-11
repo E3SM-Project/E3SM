@@ -1,260 +1,188 @@
-#!/usr/bin/env perl
-#-----------------------------------------------------------------------------------------------
-#
-# xmlquery
-#
-# This utility allows the CESM user to view a field in a env_*xml file via a commandline interface.
-#
-#-----------------------------------------------------------------------------------------------
+#!/usr/bin/env python
 
-use strict;
-#use warnings;
-#use diagnostics;
-use Cwd qw( getcwd abs_path chdir);
-use English;
-use Getopt::Long;
-use IO::File;
-use IO::Handle;
-use XML::LibXML;
-#-----------------------------------------------------------------------------------------------
+"""
+This utility allows the CIME user to view a field in a env_*xml file via a commandline interface.
 
-sub usage {
-    die <<EOF;
-SYNOPSIS
-     xmlquery id [options]
-DESCRIPTION
-     allows user to view a field in a env*.xml file
-REQUIRED INPUT
-     id                   Variable name of the field to view (such as CASE, GRID or MACH)
-                          (can also be a comma-seperated list of ids to query [NO-WHITESPACE])
-                          (list to list ALL variables)
-OPTIONS
-     User supplied values are denoted in angle brackets (<>).  Any value that contains
-     white-space must be quoted.  Long option names may be supplied with either single
-     or double leading dashes.  A consequence of this is that single letter options may
-     NOT be bundled.
-
-     -fileonly            Only print the filename that the field is in.
-     -valonly             Only print the value of the field.
-     -value               Only print the value of the field without any equal or identifier.
-     -noexpandxml         Do not expand any xml variables that the value is dependent on.
-     -help [or -h]        Print usage to STDOUT.
-     -verbose [or -v]     Turn on verbose echoing of what xmlquery is doing.
-
-EOF
-}
-
-#-----------------------------------------------------------------------------------------------
-
-if ($#ARGV == -1) {
-    print "ERROR: no arguments sent in -- id  name is REQUIRED\n";
-    usage();
-}
-
-#-----------------------------------------------------------------------------------------------
-# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
-# descriptions to be printed to STDOUT before the error messages start.
-
-*STDOUT->autoflush();                  
-
-#-----------------------------------------------------------------------------------------------
-# Set the directory that contains the CESM configuration scripts.  If the create_newcase command was
-# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
-# command was issued from the current working directory.
-
-(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
-my $ProgDir = $1;                      # name of directory containing this script -- may be a
-                                       # relative or absolute path, or null if the script is in
-                                       # the user's PATH
-my $cwd = getcwd();                    # current working directory
-my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
-    $cfgdir = abs_path($ProgDir);
-} else {
-    $cfgdir = $cwd;
-}
-
-#-----------------------------------------------------------------------------------------------
-# Parse command-line options.
-my %opts = (
-    fileonly		=>0,
-    valonly		=>0,
-    value	        =>0,
-    noexpandxml	        =>0,
-    help		=>0,
-    listall		=>0,
-    verbose		=>0,
-    );
-
-GetOptions(
-    "fileonly"     => \$opts{'fileonly'},
-    "valonly"      => \$opts{'valonly'},
-    "value"        => \$opts{'value'},
-    "noexpandxml"  => \$opts{'noexpandxml'},
-    "h|help"       => \$opts{'help'},
-    "v|verbose"    => \$opts{'verbose'},
-)  or usage();
-
-# Give usage message.
-usage() if $opts{'help'};
-
-# Get id from anything left over
-my $idlist = shift( @ARGV );
-my @ids;
-if ( $idlist eq "list" ) {
-  $opts{'listall'} = 1;
-} else {
-  @ids = split( /,/, $idlist );
-}
-
-# Check for unparsed arguments
-if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV\n";
-    print "A list of ID's needs to be comma-delimited with NO-WHITESPACE!\n";
-    usage();
-}
-#
-if ($opts{'value'} && $opts{'fileonly'} ) {
-    die "value and fileonly modes can NOT both be set\n";
-}
-if ($opts{'valonly'} && $opts{'fileonly'} ) {
-    die "valonly and fileonly modes can NOT both be set\n";
-}
-
-# Define 3 print levels:
-# 0 - only issue fatal error messages
-# 1 - only informs what files are created (default)
-# 2 - verbose
-my $print = 1;
-if ($opts{'verbose'}) { $print = 2; }
-my $eol = "\n";
-
-my %cfg = ();           # build configuration
-
-#-----------------------------------------------------------------------------------------------
-# Make sure we can find required perl modules and configuration files.
-# Look for them in the directory that contains the configure script.
-
-# Check for the main configuration definition file.
-my $config_def_file = "config_definition.xml";
-my $dir  = "$cfgdir/Tools";
-my $cdir = abs_path( "$cfgdir" );
-if      ( -f "$dir/$config_def_file" )  {
-   $config_def_file = "$dir/$config_def_file";
-} elsif ( -f "$cfgdir/$config_def_file" ) {
-   $dir  = $cdir;
-   $config_def_file = "$cdir/$config_def_file";
-} else {
-   die <<"EOF";
-** Cannot find configuration definition file \"$config_def_file\" in directory Tools **
-EOF
-}
-
-my $parser = XML::LibXML->new( no_blanks => 1);
-
-# search config_definition file to determine if id is a valid name
-# and exit early if id is NOT a valid name
-my $xml = $parser->parse_file($config_def_file);
-
-my @nodes = $xml->findnodes("//entry");
-if ( ! $opts{'listall'} ) {
-   foreach my $id ( @ids ) {
-       chomp($id);
-       my $match;
-       foreach my $node (@nodes) {
-	   my $id_attr = $node->getAttribute('id');
-	   chomp($id_attr);
-	   if ($id eq $id_attr) {
-	       $match = 1;
-	       last;
-	   }
-       }
-       if (! defined $match) {	
-	   die "ERROR: id $id NOT a valid name in the config_definition file\n"; 
-       }
-   }
-}
-
-#-----------------------------------------------------------------------------------------------
-my @dirs = ( "$cfgdir", "$cfgdir/Tools" );
-unshift @INC, @dirs;
-require SetupTools;
-#-----------------------------------------------------------------------------------------------
-
-# Loop over all of the files and fill the hashes
-
-my @filenames = glob( "env_*.xml" );
-my %myfile;
-my %xmlvars;
-FILELOOP:
-foreach my $file ( @filenames ) {
-   # Verify that file is NOT empty
-   if ( ! -r $file ) {
-      die "ERROR: file $file does NOT exist\n"; 
-   }
-   # Add the list of ALL *xml fields to a hash
-   my $xml = $parser->parse_file($file);
-   my @nodes = $xml->findnodes("//entry");
-   foreach my $node (@nodes) {
-       my $id_attr = $node->getAttribute('id');
-       my $val_attr = $node->getAttribute('value');
-       $xmlvars{$id_attr} = $val_attr;
-
-       # check if any of the id's input are in this file
-       if ( ! $opts{'listall'} ) {
-	   foreach my $id ( @ids ) {
-	       if ($id eq $id_attr) {
-		   $myfile{$id} = $file;
-	       }
-	   }
-       } else {
-	   # if listall option is set, add this id to id array, and add file to myfile hash
-	   push( @ids, $id_attr );
-	   $myfile{$id_attr} = $file;
-       }
-   }
-}
-
-# Report the results
-foreach my $id ( @ids ) {
-   unless (defined($myfile{$id}) ) { 
-       if ( $opts{'value'} ) {
-	   exit(1);
-       } else {
-	   die "WARNING: id $id not found in any of the files: @filenames \n"; 
-       }
-   }
-
-   if ( ! $opts{'value'} ) {
-       if ( ! $opts{'valonly'} ) {
-	   print "$myfile{$id}";
-	   print ": ";
-       }
-
-       print "$id" if $print > 0;
-
-       if ( ! $opts{'fileonly'} ) {
-	   print " = " if $print > 0;
-	   my $value = $xmlvars{$id};
-	   if ( ! $opts{'noexpandxml'} ) {
-	       $value = SetupTools::expand_xml_var( $value, \%xmlvars );
-	   }
-	   print "$value";
-       }
-       print "\n";
-
-   } else {
-       my $value = $xmlvars{$id};
-       if ( ! $opts{'noexpandxml'} ) {
-	   $value = SetupTools::expand_xml_var( $value, \%xmlvars );
-       }
-       $value =~ s/&apos;/'/g;
-       $value =~ s/&lt;/\</g;
-       print "$value";
-   }
-
-}
-if ($print>=2) { print "$ProgName done.\n"; }
-exit;
+If this tool is missing any feature that you need, please go to github and create an issue (https://github.com/ESMCI/cime/issues). Detailed information is available at https://github.com/ESMCI/cime.
 
 
+    AUTHOR AND CREDITS
+        Authors: Jim Edwards , ....
+
+        Based on legacy code with many contributers. (see ...)
+
+    COPYRIGHT AND LICENSE
+
+        This library is free software; you can redistribute it and/or modify
+        it under the same terms as Python itself.
+"""
+
+from standard_script_setup import *
+
+from CIME.utils import expect
+from CIME.case import Case
+
+import argparse, doctest, shutil, glob
+import textwrap
+import sys
+
+logger = logging.getLogger("xmlquery")
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(   description="Querry the xml files for attributes and return their values." ,
+                                        formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(__doc__) )
+    CIME.utils.setup_standard_logging_options(parser)
+
+    # Set command line options
+    parser.add_argument("attributes", nargs="*"  ,
+                        help="attribute value in env_*.xml file ( <element_name attribute='attribute_value'>value</element_name> )")
+
+    parser.add_argument("-file" , "--file",
+                        help="env*.xml file")
+
+    parser.add_argument("-attribute", "--attribute",
+                        nargs="*" , help="list of attribute/option names" , default=[])
+
+    parser.add_argument("-subgroup","--subgroup",
+                        help="apply to this subgroup only")
+
+    parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
+                        help="Case directory to build")
+
+    parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
+                        help="List all attributes and their values")
+
+    parser.add_argument("--listofsettings", nargs="*", default=[] ,
+                        help="Comma seperated list of option names (attribute values)")
+
+    parser.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
+                        help="Only print the filename that the field is defined in.")
+
+    parser.add_argument("-valonly", "--valonly", default=False, action="store_true",
+                        help="Only print the field name and value.")
+
+    parser.add_argument("-value", "--value", default=False, action="store_true",
+                        help="Only print one value without newline character. If more than one has been found print first value in list.")
+    parser.add_argument("-no-resolve", "--no-resolve", action="store_true",
+                        help="Do not resolve variable values")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    if (len(sys.argv) == 1) :
+        parser.print_help()
+        exit()
+
+    # merge list from to command line options and remove duplicate names
+    if( len(args.listofsettings) == 1 ):
+        args.attribute = args.attribute + args.listofsettings[0].split(',')
+
+    if( len(args.attributes) > 1) :
+        args.attribute =  args.attribute + args.attributes
+
+    # in case it is a comma separated list
+    if( len(args.attributes) == 1) :
+        args.attribute =  args.attribute + args.attributes[0].split(',')
+
+    # remove duplicate names
+    args.attribute = list( set (args.attribute ))
+
+    return args
+
+def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False, warn=None ):
+    """
+    Return list of attributes and their values , print formatted
+
+    Test:
+
+    >>> list_of_attributes = xmlquery(os.getcwd(),{ "valonly" :True})
+    >>> type(list_of_attributes) is list
+    True
+    >>> len(list_of_attributes) > 0
+    True
+    """
+    # Initialize case ; read in all xml files from caseroot
+    with Case(caseroot) as case:
+        values  = []
+        results = [] # List of formatted strings containing the search results
+        resolved = not args.no_resolve
+        if(listofattributes and len(listofattributes) >= 1):
+
+            for xmlattr in listofattributes:
+                # type_str = case.get_type_info(xmlattr)
+                logger.debug("Searching for %s", xmlattr)
+                attribute_hits = case.get_values(xmlattr, resolved=resolved,
+                                                 subgroup=subgroup)
+                results       += attribute_hits
+
+        elif (args.listall):
+            logger.warning("Retrieving all values.")
+            results = case.get_values(None, resolved=resolved,
+                                      subgroup=subgroup)
+        else:
+            logger.warning("No attributes (%s) or listall option",
+                           listofattributes)
+
+    # Formatting of return strings
+    if ( len(results) > 0) :
+
+        for node in results :
+
+            val = ""
+
+            # attribute formatting - add group if present
+
+            attr = node['attribute']
+            if node['group'] :
+                attr = "%s:%s" % (node['group'] , node['attribute'])
+
+            # Formatting for different options
+            if args.fileonly :
+                val = "%s\t%s" % (attr , node["file"] )
+            elif args.valonly :
+                val = "%s\t%s" % (attr , node["value"])
+            elif args.value :
+                val = "%s" % (node["value"])
+            else :
+                if (node['description']) :
+                    wrapper=textwrap.TextWrapper()
+                    wrapper.initial_indent = "\t\t"
+                    wrapper.subsequent_indent = "\t\t"
+                    val = "%s\t%s\ttype:%s\n%s\n" %  (attr , node["value"] , node['type'] , wrapper.fill(node['description']) )
+                else :
+                    val = "%s\t%s\ttype:%s\t%s" %  (attr , node["value"] , node['type'] , node['description'] )
+
+            values.append(val)
+
+    return values
+
+def _main_func(description):
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    # Initialize command line parser and get command line options
+    args = parse_command_line(sys.argv, description)
+
+    # Debug statement - obvious
+    logger.debug("CLI arguments: %s" , args)
+    logger.debug("Searching for attributes '%s'" , args.attribute)
+
+    # querry for attributes and print results
+    results = xmlquery(args.caseroot , args, args.attribute , args.subgroup)
+
+    # if called with value option omit newline and return only one value
+    if args.value == True :
+        # l = list( set (results) )
+        if len(results) > 0 :
+            sys.stdout.write(results[0])
+    else :
+        for res in xmlquery(args.caseroot , args, args.attribute ) :
+            print res
+
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -4,7 +4,7 @@
 
 <namelist_defaults>
 
-<use_case_desc>Running an IG case for 1850 conditions with the ice sheet model glimmer</use_case_desc>
+<use_case_desc>Running an IG case for 1850 conditions with the ice sheet model</use_case_desc>
 
 <sim_year>1850</sim_year>
 

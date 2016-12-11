@@ -221,6 +221,14 @@ for a variety of "plug and play" combinations.
 </para>
 
 <para>
+In addition to the geophysical model types, CESM can support an external
+processing module which interacts with CESM run data but does not
+participate in the coupling scheme (see below). Data interaction is
+currently through model restart files. External system processing
+(esp) have "stub" and "data" versions as well as "active".
+</para>
+
+<para>
 During the course of a CESM run, the model components integrate
 forward in time, periodically stopping to exchange information with
 the coupler. The coupler meanwhile receives fields from the component

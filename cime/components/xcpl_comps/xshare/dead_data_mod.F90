@@ -36,7 +36,7 @@ MODULE dead_data_mod
   integer(IN) :: dead_grid_aream  = 6   ! area from mapping file
   integer(IN) :: dead_grid_index  = 7   ! global index
   integer(IN) :: dead_grid_pid    = 8   ! proc id number
-  integer(IN) :: dead_grid_total  = 8    
+  integer(IN) :: dead_grid_total  = 8
 
 !EOP
 
