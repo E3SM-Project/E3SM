@@ -161,6 +161,9 @@ def _parse_namelists(namelist_lines, filename):
                 logger.debug("    Adding list entries: %s" % ", ".join(tokens))
 
             elif (compress_item_re.match(value) is not None):
+                # the following ensure that the following to namelist settings trigger a match
+                # nmlvalue = 1,1,1 versus nmlvalue = 3*1
+
                 repeat, value = compress_item_re.match(value).groups()
                 rv[current_namelist][name] = list(value) * int(repeat)
 
