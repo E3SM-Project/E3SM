@@ -88,6 +88,9 @@ def xmlquery(case, variables=[], listall=False, fileonly=False, value=False, res
 
     """
     results = {}
+    if listall:
+        variables = case.get_record_field(None, "varid").split(",")
+
     for var in variables:
         if raw:
             results[var] = {'raw': case.get_record_field(var, "raw")}

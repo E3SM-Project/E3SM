@@ -272,14 +272,20 @@ class Case(object):
 
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
-            logger.debug("(get_record_field) Searching in %s" , env_file.__class__.__name__)
-            roots = env_file.get_nodes_by_id(variable)
+            logger.debug("(get_record_field) Searching in %s",
+                         env_file.__class__.__name__)
+            if field == "varid":
+                roots = env_file.get_nodes("entry")
+            else:
+                roots = env_file.get_nodes_by_id(variable)
             for root in roots:
                 if root is not None:
                     if field == "raw":
                         result += env_file.get_raw_record(root)
                     elif field == "desc":
                         result += env_file._get_description(root)
+                    elif field == "varid":
+                        result += root.get("id")+","
 
         if result is None:
             for env_file in self._env_generic_files:
