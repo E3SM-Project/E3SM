@@ -726,20 +726,30 @@
       <command name="load">sems-env</command>
       <command name="load">sems-git</command>
       <command name="load">sems-python/2.7.9</command>
+      <command name="load">sems-cmake</command>
       <command name="load">gnu/4.9.2</command>
       <command name="load">intel/intel-15.0.3.187</command>
       <command name="load" mpilib="!mpi-serial">openmpi-intel/1.6</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
-      <command name="load">libraries/intel-mkl-15.0.2.164</command>
-      <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command>
-      <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command>
-      <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command>
-      <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command>
+      <!-- We want to use these modules but the segfault comes back if we do, maybe wait for new PIO? -->
+      <!-- <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command> -->
+      <!-- <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command> -->
+      <!-- <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command> -->
+      <!-- <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command> -->
     </modules>
   </module_system>
   <environment_variables>
-    <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-    <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
+    <!-- <env name="PATH">/projects/ccsm/cmake-2.8.10.2-Linux-i386/bin:$PATH</env> -->
+    <env name="PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/bin:$PATH</env>
+    <env name="LD_LIBRARY_PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib:$LD_LIBRARY_PATH</env>
+    <env name="NETCDF_INCLUDES">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/include</env>
+    <env name="NETCDF_LIBS">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib</env>
+    <env name="NETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env>
+    <env name="PNETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env>
+    <!-- <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env> -->
+    <!-- <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env> -->
+    <!-- <env name="NETCDF_INCLUDES">$SEMS_NETCDF_ROOT/include</env> -->
+    <!-- <env name="NETCDF_LIBS">$SEMS_NETCDF_ROOT/lib</env> -->
     <env name="OMP_STACKSIZE">64M</env>
   </environment_variables>
 </machine>
@@ -796,20 +806,30 @@
       <command name="load">sems-env</command>
       <command name="load">sems-git</command>
       <command name="load">sems-python/2.7.9</command>
+      <command name="load">sems-cmake</command>
       <command name="load">gnu/4.9.2</command>
       <command name="load">intel/intel-15.0.3.187</command>
       <command name="load" mpilib="!mpi-serial">openmpi-intel/1.6</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
-      <command name="load">libraries/intel-mkl-15.0.2.164</command>
-      <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command>
-      <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command>
-      <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command>
-      <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command>
+      <!-- We want to use these modules but the segfault comes back if we do, maybe wait for new PIO? -->
+      <!-- <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command> -->
+      <!-- <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command> -->
+      <!-- <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command> -->
+      <!-- <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command> -->
     </modules>
   </module_system>
   <environment_variables>
-    <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-    <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
+    <!-- <env name="PATH">/projects/ccsm/cmake-2.8.10.2-Linux-i386/bin:$PATH</env> -->
+    <env name="PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/bin:$PATH</env>
+    <env name="LD_LIBRARY_PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib:$LD_LIBRARY_PATH</env>
+    <env name="NETCDF_INCLUDES">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/include</env>
+    <env name="NETCDF_LIBS">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib</env>
+    <env name="NETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env>
+    <env name="PNETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env>
+    <!-- <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env> -->
+    <!-- <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env> -->
+    <!-- <env name="NETCDF_INCLUDES">$SEMS_NETCDF_ROOT/include</env> -->
+    <!-- <env name="NETCDF_LIBS">$SEMS_NETCDF_ROOT/lib</env> -->
     <env name="OMP_STACKSIZE">64M</env>
   </environment_variables>
 </machine>
