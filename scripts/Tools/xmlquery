@@ -58,14 +58,13 @@ def parse_command_line(args):
     group.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
                         help="Only print the filename that the field is defined in.")
 
-    group.add_argument("-valonly", "--valonly", default=False, action="store_true",
-                        help="Only print the field name and value.")
-
     group.add_argument("-value", "--value", default=False, action="store_true",
                         help="Only print one value without newline character. If more than one has been found print first value in list.")
 
     group.add_argument("--raw", default=False, action="store_true",
                         help="Print the complete raw record associated with this variable")
+    group.add_argument("--description", default=False, action="store_true",
+                        help="Print the description associated with this variable")
 
     args = parser.parse_args(args[1:])
 
@@ -80,25 +79,20 @@ def parse_command_line(args):
     else:
         variables = args.variables
 
-    return variables, args.file, args.caseroot, args.listall, args.fileonly, args.valonly, \
-        args.value, args.no_resolve, args.raw
+    return variables, args.file, args.caseroot, args.listall, args.fileonly, \
+        args.value, args.no_resolve, args.raw, args.description
 
-def xmlquery(case, variables=[], listall=False, fileonly=False, valonly=False, value=False, resolved=True, raw=False):
+def xmlquery(case, variables=[], listall=False, fileonly=False, value=False, resolved=True, raw=False, description=False):
     """
     Return list of attributes and their values , print formatted
 
-    Test:
-
-    >>> list_of_attributes = xmlquery(os.getcwd(),{ "valonly" :True})
-    >>> type(list_of_attributes) is list
-    True
-    >>> len(list_of_attributes) > 0
-    True
     """
     results = {}
     for var in variables:
         if raw:
-            results[var] = {'raw': case.get_raw_record(var)}
+            results[var] = {'raw': case.get_record_field(var, "raw")}
+        elif description:
+            results[var] = {'desc': case.get_record_field(var, "desc")}
         else:
             results[var] = {'value': case.get_value(var, resolved=resolved)}
 
@@ -111,18 +105,23 @@ def _main_func():
         sys.exit(1 if test_results.failed > 0 else 0)
 
     # Initialize command line parser and get command line options
-    variables, infile, caseroot, listall, fileonly, valonly, \
-        value, no_resolve, raw = parse_command_line(sys.argv)
+    variables, infile, caseroot, listall, fileonly,  \
+        value, no_resolve, raw, description = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
-        results = xmlquery(case, variables, listall, fileonly, valonly, value, resolved=not no_resolve, raw=raw)
+        results = xmlquery(case, variables, listall, fileonly, value, resolved=not no_resolve, raw=raw, description=description)
 
-    if raw:
-        for var in iter(results):
+    for var in iter(variables):
+        if raw:
             print results[var]['raw']
+        elif value:
+            sys.stdout.write("%s"%results[var]['value'])
+        elif description:
+            print "%s: %s"%(var, results[var]['desc'])
+        else:
+            print "%s: %s"%(var, results[var]['value'])
 
-    print results
 
 if (__name__ == "__main__"):
     _main_func()

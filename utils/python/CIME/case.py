@@ -262,33 +262,31 @@ class Case(object):
         return result
 
 
-    def get_raw_record(self, variable):
+    def get_record_field(self, variable, field):
 
         """
-        Return info object for given item, return all info for all item if item is empty.
+
         """
         # Empty result
-        result = None
+        result = ""
 
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
-            logger.debug("(get_full_records) Searching in %s" , env_file.__class__.__name__)
+            logger.debug("(get_record_field) Searching in %s" , env_file.__class__.__name__)
             roots = env_file.get_nodes_by_id(variable)
             for root in roots:
                 if root is not None:
-                        if result is None:
-                            result = env_file.get_raw_record(root)
-                        else:
-                            result += env_file.get_raw_record(root)
+                    if field == "raw":
+                        result += env_file.get_raw_record(root)
+                    elif field == "desc":
+                        result += env_file._get_description(root)
 
         if result is None:
             for env_file in self._env_generic_files:
                 roots = env_file.get_nodes(variable)
                 for root in roots:
                     if root is not None:
-                        if result is None:
-                            result = env_file.get_raw_record(root)
-                        else:
+                        if field == "raw":
                             result += env_file.get_raw_record(root)
 
 
