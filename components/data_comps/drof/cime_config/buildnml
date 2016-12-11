@@ -100,6 +100,8 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
         # Use the user's stream file, or create one if necessary.
         if os.path.exists(user_stream_path):
             shutil.copyfile(user_stream_path, stream_path)
+            config['stream'] = stream
+            nmlgen.update_shr_strdata_nml(config, stream, stream_path)
         else:
             nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
 
