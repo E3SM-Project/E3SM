@@ -34,14 +34,11 @@ def parse_command_line(args):
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
-    parser.add_argument("attributes", nargs="*"  ,
-                        help="attribute value in env_*.xml file ( <element_name attribute='attribute_value'>value</element_name> )")
+    parser.add_argument("variables", nargs="*"  ,
+                        help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> )")
 
     parser.add_argument("-file" , "--file",
                         help="env*.xml file")
-
-    parser.add_argument("-attribute", "--attribute",
-                        nargs="*" , help="list of attribute/option names" , default=[])
 
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
@@ -52,19 +49,23 @@ def parse_command_line(args):
     parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
                         help="List all attributes and their values")
 
-    parser.add_argument("--listofsettings", nargs="*", default=[] ,
-                        help="Comma seperated list of option names (attribute values)")
-
-    parser.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
-                        help="Only print the filename that the field is defined in.")
-
-    parser.add_argument("-valonly", "--valonly", default=False, action="store_true",
-                        help="Only print the field name and value.")
-
-    parser.add_argument("-value", "--value", default=False, action="store_true",
-                        help="Only print one value without newline character. If more than one has been found print first value in list.")
     parser.add_argument("-no-resolve", "--no-resolve", action="store_true",
                         help="Do not resolve variable values")
+
+    group = parser.add_mutually_exclusive_group()
+
+
+    group.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
+                        help="Only print the filename that the field is defined in.")
+
+    group.add_argument("-valonly", "--valonly", default=False, action="store_true",
+                        help="Only print the field name and value.")
+
+    group.add_argument("-value", "--value", default=False, action="store_true",
+                        help="Only print one value without newline character. If more than one has been found print first value in list.")
+
+    group.add_argument("--raw", default=False, action="store_true",
+                        help="Print the complete raw record associated with this variable")
 
     args = parser.parse_args(args[1:])
 
@@ -74,23 +75,15 @@ def parse_command_line(args):
         parser.print_help()
         exit()
 
-    # merge list from to command line options and remove duplicate names
-    if( len(args.listofsettings) == 1 ):
-        args.attribute = args.attribute + args.listofsettings[0].split(',')
+    if len(args.variables) == 1:
+        variables = args.variables[0].split(',')
+    else:
+        variables = args.variables
 
-    if( len(args.attributes) > 1) :
-        args.attribute =  args.attribute + args.attributes
+    return variables, args.file, args.caseroot, args.listall, args.fileonly, args.valonly, \
+        args.value, args.no_resolve, args.raw
 
-    # in case it is a comma separated list
-    if( len(args.attributes) == 1) :
-        args.attribute =  args.attribute + args.attributes[0].split(',')
-
-    # remove duplicate names
-    args.attribute = list( set (args.attribute ))
-
-    return args
-
-def xmlquery(caseroot, args, listofattributes,  subgroup=None):
+def xmlquery(case, variables=[], listall=False, fileonly=False, valonly=False, value=False, resolved=True, raw=False):
     """
     Return list of attributes and their values , print formatted
 
@@ -102,61 +95,15 @@ def xmlquery(caseroot, args, listofattributes,  subgroup=None):
     >>> len(list_of_attributes) > 0
     True
     """
-    # Initialize case ; read in all xml files from caseroot
-    with Case(caseroot) as case:
-        values  = []
-        results = [] # List of formatted strings containing the search results
-        resolved = not args.no_resolve
-        if(listofattributes and len(listofattributes) >= 1):
-
-            for xmlattr in listofattributes:
-                # type_str = case.get_type_info(xmlattr)
-                logger.debug("Searching for %s", xmlattr)
-                attribute_hits = case.get_full_records(xmlattr, resolved=resolved,
-                                                 subgroup=subgroup)
-                expect(len(attribute_hits) > 0,"No variable %s found"%xmlattr)
-                results       += attribute_hits
-
-        elif (args.listall):
-            logger.warning("Retrieving all values.")
-            results = case.get_full_records(None, resolved=resolved,
-                                      subgroup=subgroup)
+    results = {}
+    for var in variables:
+        if raw:
+            results[var] = {'raw': case.get_raw_record(var)}
         else:
-            logger.warning("No attributes (%s) or listall option",
-                           listofattributes)
+            results[var] = {'value': case.get_value(var, resolved=resolved)}
 
-    # Formatting of return strings
-    if ( len(results) > 0) :
 
-        for node in results :
-
-            val = ""
-
-            # attribute formatting - add group if present
-
-            attr = node['attribute']
-            if node['group'] :
-                attr = "%s:%s" % (node['group'] , node['attribute'])
-
-            # Formatting for different options
-            if args.fileonly :
-                val = "%s\t%s" % (attr , node["file"] )
-            elif args.valonly :
-                val = "%s\t%s" % (attr , node["value"])
-            elif args.value :
-                val = "%s" % (node["value"])
-            else :
-                if (node['description']) :
-                    wrapper=textwrap.TextWrapper()
-                    wrapper.initial_indent = "\t\t"
-                    wrapper.subsequent_indent = "\t\t"
-                    val = "%s\t%s\ttype:%s\n%s\n" %  (attr , node["value"] , node['type'] , wrapper.fill(node['description']) )
-                else :
-                    val = "%s\t%s\ttype:%s\t%s" %  (attr , node["value"] , node['type'] , node['description'] )
-
-            values.append(val)
-
-    return values
+    return results
 
 def _main_func():
     if ("--test" in sys.argv):
@@ -164,24 +111,18 @@ def _main_func():
         sys.exit(1 if test_results.failed > 0 else 0)
 
     # Initialize command line parser and get command line options
-    args = parse_command_line(sys.argv)
+    variables, infile, caseroot, listall, fileonly, valonly, \
+        value, no_resolve, raw = parse_command_line(sys.argv)
 
-    # Debug statement - obvious
-    logger.debug("CLI arguments: %s" , args)
-    logger.debug("Searching for attributes '%s'" , args.attribute)
+    # Initialize case ; read in all xml files from caseroot
+    with Case(caseroot) as case:
+        results = xmlquery(case, variables, listall, fileonly, valonly, value, resolved=not no_resolve, raw=raw)
 
-    # querry for attributes and print results
-    results = xmlquery(args.caseroot , args, args.attribute , args.subgroup)
+    if raw:
+        for var in iter(results):
+            print results[var]['raw']
 
-    # if called with value option omit newline and return only one value
-    if args.value == True :
-        # l = list( set (results) )
-        if len(results) > 0 :
-            sys.stdout.write(results[0])
-    else :
-        for res in xmlquery(args.caseroot , args, args.attribute ) :
-            print res
-
+    print results
 
 if (__name__ == "__main__"):
     _main_func()

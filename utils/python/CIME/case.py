@@ -262,50 +262,37 @@ class Case(object):
         return result
 
 
-    def get_full_records(self, item=None, attribute=None, resolved=True, subgroup=None):
+    def get_raw_record(self, variable):
 
         """
         Return info object for given item, return all info for all item if item is empty.
         """
-
-        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
-
-        # Empty result list
-        results = []
+        # Empty result
+        result = None
 
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
             logger.debug("(get_full_records) Searching in %s" , env_file.__class__.__name__)
-            result = None
+            roots = env_file.get_nodes_by_id(variable)
+            for root in roots:
+                if root is not None:
+                        if result is None:
+                            result = env_file.get_raw_record(root)
+                        else:
+                            result += env_file.get_raw_record(root)
 
-            try:
-                # env_batch has its own implementation of get_full_records otherwise in entry_id
-                result = env_file.get_full_records(item, attribute, resolved=False, subgroup=subgroup)
-                # Method exists, and was used.
-            except AttributeError:
-                # Method does not exist.  What now?
-                traceback.print_exc()
-                logger.debug("(get_full_records) No get_full_records method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
+        if result is None:
+            for env_file in self._env_generic_files:
+                roots = env_file.get_nodes(variable)
+                for root in roots:
+                    if root is not None:
+                        if result is None:
+                            result = env_file.get_raw_record(root)
+                        else:
+                            result += env_file.get_raw_record(root)
 
-            if result is not None and (len(result) >= 1):
 
-                if resolved :
-                    for r in result :
-                        if type(r['value']) is str:
-                            logger.debug("(get_full_records) Resolving %s" , r['value'])
-                            r['value'] = self.get_resolved_value(r['value'])
-
-                if subgroup :
-                    found = []
-                    for r in result :
-                        if r['group'] == subgroup :
-                            found.append(r)
-                    results += found
-                else:
-                    results = results + result
-
-        logger.debug("(get_full_records) Return value:  %s" , results )
-        return results
+        return result
 
     def get_type_info(self, item):
         result = None

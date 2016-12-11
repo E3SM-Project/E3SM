@@ -70,11 +70,8 @@ class GenericXML(object):
             outfile = self.filename
 
         logger.debug("write: " + outfile)
-        try:
-            xmlstr = ET.tostring(self.root)
-        except ET.ParseError as e:
-            ET.dump(self.root)
-            expect(False, "Could not write file %s, xml formatting error '%s'" % (self.filename, e))
+
+        xmlout = self.get_raw_record()
 
         # xmllint provides a better format option for the output file
         xmllint = find_executable("xmllint")
@@ -275,3 +272,13 @@ class GenericXML(object):
             element_node.text = new_text
             return new_text
         return None
+
+    def get_raw_record(self, root=None):
+        if root is None:
+            root = self.root
+        try:
+            xmlstr = ET.tostring(root)
+        except ET.ParseError as e:
+            ET.dump(root)
+            expect(False, "Could not write file %s, xml formatting error '%s'" % (self.filename, e))
+        return xmlstr
