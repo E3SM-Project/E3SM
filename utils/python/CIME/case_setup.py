@@ -105,16 +105,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Create batch script
     if reset or clean:
-        # Clean batch script
-
-        backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
-        if not os.path.isdir(backup_dir):
-            os.makedirs(backup_dir)
-
         # back up relevant files
-        for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
-            for filename in glob.glob(fileglob):
-                shutil.copy(filename, backup_dir)
         if os.path.exists("case.run"):
             os.remove("case.run")
 
@@ -125,19 +116,14 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             # backup and then clean test script
             if os.path.exists("case.test"):
-                shutil.copy("case.test", backup_dir)
                 os.remove("case.test")
                 logger.info("Successfully cleaned test script case.test")
 
             if os.path.exists("case.testdriver"):
-                shutil.copy("case.testdriver", backup_dir)
                 os.remove("case.testdriver")
                 logger.info("Successfully cleaned test script case.testdriver")
 
         logger.info("Successfully cleaned batch script case.run")
-
-        logger.info("Successfully cleaned batch script case.run")
-        logger.info("Some files have been saved to %s" % backup_dir)
 
         msg = "case.setup clean complete"
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
