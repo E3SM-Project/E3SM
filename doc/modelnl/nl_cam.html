@@ -35,7 +35,7 @@ only matched variables.
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -60,10 +60,10 @@ only matched variables.
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -267,7 +267,7 @@ if .true. then output CLUBBs history statistics
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Name of the IOP case so case specific adjustments can be made in CLUBB.  
+Name of the IOP case so case specific adjustments can be made in CLUBB.
 <br/>Default: none.
 </pre>
         </div>
@@ -1304,7 +1304,7 @@ yearly, or never.  Valid values: 'NONE', '6-HOURLY', 'DAILY', 'MONTHLY',
              #cccccc;">
 	     <pre>
 If false then include only REQUIRED fields on IC file.  If true then
-include required AND optional fields on IC file.  
+include required AND optional fields on IC file.
 <br/>Default: FALSE
 </pre>
         </div>
@@ -1323,10 +1323,10 @@ include required AND optional fields on IC file.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Array containing the starting time of day for local time history averaging. 
-Used in conjuction with lcltod_stop. If lcltod_stop is less than lcltod_start, 
-then the time range wraps around 24 hours. The start time is included in the 
-interval. Time is in seconds and defaults to 39600 (11:00 AM).  The first value 
+Array containing the starting time of day for local time history averaging.
+Used in conjuction with lcltod_stop. If lcltod_stop is less than lcltod_start,
+then the time range wraps around 24 hours. The start time is included in the
+interval. Time is in seconds and defaults to 39600 (11:00 AM).  The first value
 applies to the primary hist. file, the second to the first aux. hist. file, etc.
 <br/>Default: none
 </pre>
@@ -1346,10 +1346,10 @@ applies to the primary hist. file, the second to the first aux. hist. file, etc.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Array containing the stopping time of day for local time history averaging. 
-Used in conjuction with lcltod_start. If lcltod_stop is less than lcltod_start, 
-then the time range wraps around 24 hours. The stop time is not included in the 
-interval. Time is in seconds and defaults to 0 (midnight).  The first value 
+Array containing the stopping time of day for local time history averaging.
+Used in conjuction with lcltod_start. If lcltod_stop is less than lcltod_start,
+then the time range wraps around 24 hours. The stop time is not included in the
+interval. Time is in seconds and defaults to 0 (midnight).  The first value
 applies to the primary hist. file, the second to the first aux. hist. file, etc.
 <br/>Default: none
 </pre>
@@ -1389,7 +1389,7 @@ through sixth to the auxillary history files.
         <div id="ndens_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre> 
+	     <pre>
 
 Array specifying the precision of real data written to each history file
 series. Valid values are 1 or 2. '1' implies output real values are 8-byte
@@ -1412,7 +1412,7 @@ and '2' implies output real values are 4-byte.
         <div id="nhtfrq_help" style="display: none;
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
-	     <pre> 
+	     <pre>
 
 Array of write frequencies for each history file series.
 If <varname>nhtfrq(1)</varname> = 0, the file will be a monthly average.
@@ -1478,7 +1478,7 @@ Satellite track history filename specifier.  See <varname>hfilename_spec</varnam
              #cccccc;">
 	     <pre>
 Sets the number of observation columns written the satellite track history file
-series. 
+series.
 <br/>Default: 100000
 </pre>
         </div>
@@ -1537,9 +1537,9 @@ this to a number greater than 1 allows for temporal interpolation in the post pr
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of the satellite track data used by the satellite track history 
+Full pathname of the satellite track data used by the satellite track history
 output feature.
-<br/>Default: none 
+<br/>Default: none
 </pre>
         </div>
     </td>
@@ -1775,7 +1775,7 @@ Switch for diagnostics specific to CLUBB.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Switch for diagnostic output of eddy variables 
+Switch for diagnostic output of eddy variables
 <br/>Default: .false.
 </pre>
         </div>
@@ -1851,7 +1851,7 @@ Switch for diagnostic output used primarily for WACCM-X runs.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Turn on verbose output identifying columns that fail energy/water 
+Turn on verbose output identifying columns that fail energy/water
 conservation checks.
 <br/>Default: FALSE
 </pre>
@@ -1877,11 +1877,11 @@ conservation checks.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, the active COSP cloud simulators are run to produce 
+If true, the active COSP cloud simulators are run to produce
 select output for the AMWG diagnostics package.
-sets cosp_ncolumns=10 and cosp_nradsteps=3 
+sets cosp_ncolumns=10 and cosp_nradsteps=3
 (appropriate for COSP statistics derived from seasonal averages),
-and runs CloudSat radar and CALIPSO lidar simulators 
+and runs CloudSat radar and CALIPSO lidar simulators
 (cosp_lradar_sim=.true.,cosp_llidar_sim=.true.).
 This default logical is set in cospsimulator_intr.F90.
 <br/>Default: FALSE
@@ -1902,11 +1902,11 @@ This default logical is set in cospsimulator_intr.F90.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, COSP cloud simulators are run to produce 
+If true, COSP cloud simulators are run to produce
 all output required for the COSP plots in the AMWG diagnostics package.
-sets cosp_ncolumns=10 and cosp_nradsteps=3 
+sets cosp_ncolumns=10 and cosp_nradsteps=3
 (appropriate for COSP statistics derived from seasonal averages),
-and runs MISR, ISCCP, MODIS, CloudSat radar and CALIPSO lidar simulators 
+and runs MISR, ISCCP, MODIS, CloudSat radar and CALIPSO lidar simulators
 (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true.,
 cosp_lmodis_sim=.true.,cosp_lradar_sim=.true.,cosp_llidar_sim=.true.).
 This default logical is set in cospsimulator_intr.F90.
@@ -1929,7 +1929,7 @@ This default logical is set in cospsimulator_intr.F90.
              #cccccc;">
 	     <pre>
 Path for the Atrain orbit data file provided by CFMIP.
-There is no default for this, but sample_atrain = .true. will not work 
+There is no default for this, but sample_atrain = .true. will not work
 if this namelist variable is undefined.
 currently /project/cms/jenkay/SCAM/repository/cloudsat_orbit_08921_14250.nc
 <br/>Default: no default set now, need to specify in namelist
@@ -1950,7 +1950,7 @@ currently /project/cms/jenkay/SCAM/repository/cloudsat_orbit_08921_14250.nc
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, the COSP cloud simulator is run for CFMIP 3-hourly 
+If true, the COSP cloud simulator is run for CFMIP 3-hourly
 experiments.
 This default logical is set in cospsimulator_intr.F90
 <br/>Default: FALSE
@@ -1971,7 +1971,7 @@ This default logical is set in cospsimulator_intr.F90
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, the COSP cloud simulator is run for CFMIP daily 
+If true, the COSP cloud simulator is run for CFMIP daily
 experiments.
 This default logical is set in cospsimulator_intr.F90
 <br/>Default: FALSE
@@ -2013,7 +2013,7 @@ This default logical is set in cospsimulator_intr.F90
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, the COSP cloud simulator is run for CFMIP off-line  
+If true, the COSP cloud simulator is run for CFMIP off-line
 monthly experiments.
 This default logical is set in cospsimulator_intr.F90
 <br/>Default: FALSE
@@ -2099,9 +2099,9 @@ This default is set in cospsimulator_intr.F90
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, the ISCCP cloud simulator is run to produce 
+If true, the ISCCP cloud simulator is run to produce
 select output for the AMWG diagnostics package.
-sets cosp_ncolumns=10 and cosp_nradsteps=3 
+sets cosp_ncolumns=10 and cosp_nradsteps=3
 (appropriate for COSP statistics derived from seasonal averages),
 and runs ISCCP simulator
 (cosp_lmisr_sim=.false.,cosp_lisccp_sim=.true.,
@@ -2168,11 +2168,11 @@ columns.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, the COSP cloud simulators are run to produce 
+If true, the COSP cloud simulators are run to produce
 select output for the AMWG diagnostics package.
-sets cosp_ncolumns=10 and cosp_nradsteps=3 
+sets cosp_ncolumns=10 and cosp_nradsteps=3
 (appropriate for COSP statistics derived from seasonal averages),
-and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators 
+and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators
 (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true.,
 cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).
 This default logical is set in cospsimulator_intr.F90.
@@ -2256,7 +2256,7 @@ will be saved.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, COSP radar simulator will be run and all non-subcolumn output 
+If true, COSP radar simulator will be run and all non-subcolumn output
 will be saved.
 <br/>Default: FALSE
 </pre>
@@ -2296,7 +2296,7 @@ This default logical is set in cospsimulator_intr.F90
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-This specifies the frequency at which is COSP is called, 
+This specifies the frequency at which is COSP is called,
 every cosp_nradsteps radiation timestep.
 
 This default is set in cospsimulator_intr.F90
@@ -2318,11 +2318,11 @@ This default is set in cospsimulator_intr.F90
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If true, the passive COSP cloud simulators are run to produce 
+If true, the passive COSP cloud simulators are run to produce
 select output for the AMWG diagnostics package.
-sets cosp_ncolumns=10 and cosp_nradsteps=3 
+sets cosp_ncolumns=10 and cosp_nradsteps=3
 (appropriate for COSP statistics derived from seasonal averages),
-and runs MISR, ISCCP, and MODIS simulators 
+and runs MISR, ISCCP, and MODIS simulators
 (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true.,cosp_lmodis_sim=.true.).
 This default logical is set in cospsimulator_intr.F90.
 <br/>Default: FALSE
@@ -2390,7 +2390,7 @@ Setting this namelist variable happens automatically if you compile with COSP.
 COSP will not run unless this is set to .true. in the namelist!
 Turn on the desired simulators using lXXX_sim namelist vars
 If no specific simulators are specified, all of the simulators
-are run on all columns and all output is saved. (useful for testing). 
+are run on all columns and all output is saved. (useful for testing).
 COSP is available with CAM4 and CAM5 physics.
 This default logical is set in cospsimulator_intr.F90.
 <br/>Default: FALSE
@@ -2668,7 +2668,7 @@ used.  This is intended for debugging purposes only.
              #cccccc;">
 	     <pre>
 Geopotential method 2 pipeline parameter (routine geopk_d).
-geopk_d implements a pipeline algorithm by dividing the 
+geopk_d implements a pipeline algorithm by dividing the
 information that must be moved between processes into blocks. geopkblocks
 specifies the number of blocks to use. The larger the number of blocks,
 the greater the opportunity for overlapping communication with computation
@@ -2694,15 +2694,15 @@ See geopk_d within geopk.F90.
              #cccccc;">
 	     <pre>
 Geopotential method (routines geopk, geopk16, or geopk_d).
-0 for transpose method, 1 for method using semi-global z communication 
+0 for transpose method, 1 for method using semi-global z communication
 with optional 16-byte arithmetic, 2 for method using local
-z communication; method 0, method 1 with 16-byte arithmetic and method 2 
-are all bit-for-bit across decompositions; method 0 scales better than 
+z communication; method 0, method 1 with 16-byte arithmetic and method 2
+are all bit-for-bit across decompositions; method 0 scales better than
 method 1 with npr_z, and method 1 is superior to method 0 for small npr_z.
-The optimum speed is attained using either method 1 with 8-byte 
-arithmetic (standard for geopk16) or method 2 when utilizing the 
-optimal value for the associated parameter geopkblocks; for the last 
-two subcycles of a timestep, method 0 is automatically used; see 
+The optimum speed is attained using either method 1 with 8-byte
+arithmetic (standard for geopk16) or method 2 when utilizing the
+optimal value for the associated parameter geopkblocks; for the last
+two subcycles of a timestep, method 0 is automatically used; see
 geopk.F90 and cd_core.F90.
 
 <br/>Default: 0
@@ -2879,7 +2879,7 @@ True for mod_comm irregular communication handshaking for multiple tracers
 	     <pre>
 Maximum number of outstanding nonblocking MPI requests to allow when
 using mp_swapirr and point-to-point communications for cd_core/geopk.
-Setting this less than the maximum can improve robustness for large process 
+Setting this less than the maximum can improve robustness for large process
 count runs. If set to less than zero, then do not limit the number of
 outstanding send/receive requests.
 <br/>Default: -1 (so no limit)
@@ -2901,8 +2901,8 @@ outstanding send/receive requests.
              #cccccc;">
 	     <pre>
 Maximum number of outstanding nonblocking MPI requests to allow when
-using mp_swapirr and point-to-point communications for dyn_run/misc. 
-Setting this less than the maximum can improve robustness for large process 
+using mp_swapirr and point-to-point communications for dyn_run/misc.
+Setting this less than the maximum can improve robustness for large process
 count runs. If set to less than zero, then do not limit the number of
 outstanding send/receive requests.
 <br/>Default: -1 (so no limit)
@@ -2925,7 +2925,7 @@ outstanding send/receive requests.
 	     <pre>
 Maximum number of outstanding nonblocking MPI requests to allow when
 using mp_swapirr and point-to-point communications for gather.
-Setting this less than the maximum can improve robustness for large process 
+Setting this less than the maximum can improve robustness for large process
 count runs. If set to less than zero, then do not limit the number of
 outstanding send/receive requests.
 <br/>Default: -1 (so no limit)
@@ -2948,7 +2948,7 @@ outstanding send/receive requests.
 	     <pre>
 Maximum number of outstanding nonblocking MPI requests to allow when
 using mp_swapirr and point-to-point communications for scatter.
-Setting this less than the maximum can improve robustness for large process 
+Setting this less than the maximum can improve robustness for large process
 count runs. If set to less than zero, then do not limit the number of
 outstanding send/receive requests.
 <br/>Default: -1 (so no limit)
@@ -2971,7 +2971,7 @@ outstanding send/receive requests.
 	     <pre>
 Maximum number of outstanding nonblocking MPI requests to allow when
 using mp_swaptrirr and point-to-point communications for multiple tracers.
-Setting this less than the maximum can improve robustness for large process 
+Setting this less than the maximum can improve robustness for large process
 count runs. If set to less than zero, then do not limit the number of
 outstanding send/receive requests.
 <br/>Default: -1 (so no limit)
@@ -3011,7 +3011,7 @@ One or two simultaneous mod_comm irregular communications (excl. tracers)
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-True for geopk_d and mod_comm irregular communication blocking send for 
+True for geopk_d and mod_comm irregular communication blocking send for
 cd_core/geopk; false for nonblocking send.
 <br/>Default: .true.
 </pre>
@@ -3506,7 +3506,7 @@ Name of file that contains names of the offline meteorology data files.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-switch to turn on/off mass fixer for offline driver 
+switch to turn on/off mass fixer for offline driver
 <br/>Default: true
 </pre>
         </div>
@@ -3623,7 +3623,7 @@ Relaxation time (hours) applied to specified meteorology.
              #cccccc;">
 	     <pre>
 (km) top of relaxation region of winds for offline waccm
-<br/>Default: 
+<br/>Default:
 </pre>
         </div>
     </td>
@@ -4012,7 +4012,7 @@ Critical RH for ice clouds (Wilson & Ballard scheme).
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Scheme for ice cloud fraction: 1=wang & sassen, 2=schiller (iciwc),  
+Scheme for ice cloud fraction: 1=wang & sassen, 2=schiller (iciwc),
 3=wood & field, 4=Wilson (based on smith), 5=modified slingo (ssat & empyt cloud)
 <br/>Default: 5
 </pre>
@@ -4252,8 +4252,8 @@ will also reduce value in the boundary layer.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Bottom pressure level at which namelist values for eddy_leng_max and 
-eddy_lbulk_max are applied. Default values are used at lower levels (i.e. the 
+Bottom pressure level at which namelist values for eddy_leng_max and
+eddy_lbulk_max are applied. Default values are used at lower levels (i.e. the
 boundary layer).
 <br/>Default: 100.e3 (hPa)
 </pre>
@@ -5033,7 +5033,7 @@ parameter for shallow convection cloud fraction.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Factor applied to the ice fall velocity computed from 
+Factor applied to the ice fall velocity computed from
 Stokes terminal velocity.
 <br/>Default: set by build-namelist
 </pre>
@@ -5079,7 +5079,7 @@ diffusion solver routine.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Logical switch to turn on turbulent mountain stress calculation in 
+Logical switch to turn on turbulent mountain stress calculation in
 vertical diffusion routine.
 <br/>Default: set by build-namelist
 </pre>
@@ -5674,7 +5674,7 @@ Analogous to rad_diag_1, but for the 9th diagnostic calculation.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Type of radiation scheme employed. 
+Type of radiation scheme employed.
 <br/>Default: set by build-namelist
 </pre>
         </div>
@@ -6078,7 +6078,7 @@ Total solar irradiance (W/m2).
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset for file that contains the solar photon enerspectra or TSI data 
+Full pathname of dataset for file that contains the solar photon enerspectra or TSI data
 as a time series
 <br/>Default: none
 </pre>
@@ -6138,7 +6138,7 @@ Can be set to "FIXED" or "SERIAL".
              #cccccc;">
 	     <pre>
 If <varname>solar_data_type</varname> is "FIXED" then solar_data_ymd
-is the date the solar data is fixed to.  If <varname>solar_data_type</varname> 
+is the date the solar data is fixed to.  If <varname>solar_data_type</varname>
 is "SERIAL" the solar_data_ymd is the start date of the time series
 of solar data.
 Format: YYYYMMDD
@@ -6160,7 +6160,7 @@ Format: YYYYMMDD
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Use spectral scaling in the radiation heating 
+Use spectral scaling in the radiation heating
 <br/>Default: false
 </pre>
         </div>
@@ -6757,7 +6757,7 @@ Type of time interpolation type for data in  <varname>chlorine_loading_file</var
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset containing soil moisture fraction information used in 'xactive_atm' 
+Full pathname of dataset containing soil moisture fraction information used in 'xactive_atm'
 method of calculating dry deposition of chemical tracers.
 <br/>Default: set by build-namelist.
 </pre>
@@ -6777,7 +6777,7 @@ method of calculating dry deposition of chemical tracers.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset which contains the prescribed deposition velocities used 
+Full pathname of dataset which contains the prescribed deposition velocities used
 in the 'table' method of calculating dry deposition  of chemical tracers.
 <br/>Default: set by build-namelist.
 </pre>
@@ -6797,7 +6797,7 @@ in the 'table' method of calculating dry deposition  of chemical tracers.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset which contains land vegitation information used in 'xactive_atm' 
+Full pathname of dataset which contains land vegitation information used in 'xactive_atm'
 method of calculating dry deposition of chemical tracers.
 <br/>Default: set by build-namelist.
 </pre>
@@ -6856,7 +6856,7 @@ Tuning parameter for dust emissions.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset of O2 and 03 column densities above the model for look-up-table photolysis 
+Full pathname of dataset of O2 and 03 column densities above the model for look-up-table photolysis
 <br/>Default: set by build-namelist.
 </pre>
         </div>
@@ -6956,8 +6956,8 @@ read in the sources are summed to give a total emission field for the
 corresponding species.  The emission can be read in as time series of data,
 cycle over a given year, or be fixed to a given date.
 
-The vertical coordinate in these emissions files should be 'altitude' (km) so that the 
-vertical redistribution to the model layers is done using a mass conserving method.  
+The vertical coordinate in these emissions files should be 'altitude' (km) so that the
+vertical redistribution to the model layers is done using a mass conserving method.
 If the vertical coordinate is altitude then data needs to be ordered from the
 surface to the top (increasing altitude).
 
@@ -7258,8 +7258,8 @@ Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Filename of file that contains a sequence of filenames for ionization 
-rates by galactic cosmic rays.  The filenames in this file are relative 
+Filename of file that contains a sequence of filenames for ionization
+rates by galactic cosmic rays.  The filenames in this file are relative
 to the directory specied by <varname>gcr_ionization_datapath</varname>.
 <br/>Default: set by build-namelist.
 </pre>
@@ -7379,7 +7379,7 @@ files for the aircraft emissions.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset for land mask applied to the lighting NOx production  
+Full pathname of dataset for land mask applied to the lighting NOx production
 <br/>Default: set by build-namelist.
 </pre>
         </div>
@@ -7398,7 +7398,7 @@ Full pathname of dataset for land mask applied to the lighting NOx production
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Multiplication factor  applied to the lighting NOx production  
+Multiplication factor  applied to the lighting NOx production
 <br/>Default: 1.0.
 </pre>
         </div>
@@ -7457,7 +7457,7 @@ Filename of dataset for LINOZ data.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Filename of file that contains a sequence of filenames of the linoz data.  
+Filename of file that contains a sequence of filenames of the linoz data.
 The filenames in this file are relative to the directory specied
 by <varname>linoz_data_datapath</varname>.
 <br/>Default: set by build-namelist.
@@ -7721,7 +7721,7 @@ Format: YYYYMMDD
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset of O2 cross sections for fast-tuv photolysis 
+Full pathname of dataset of O2 cross sections for fast-tuv photolysis
 <br/>Default: set by build-namelist.
 </pre>
         </div>
@@ -7864,7 +7864,7 @@ Format: YYYYMMDD
              #cccccc;">
 	     <pre>
 Switch used to indicate which type of aerosols are prescribed -- bulk or modal.
-This is used to set the default <varname>prescribed_aero_specifier</varname> and 
+This is used to set the default <varname>prescribed_aero_specifier</varname> and
 <varname>aerodep_flx_specifier</varname> namelist variables.
 <br/>Default: set by build-namelist
 </pre>
@@ -8691,12 +8691,12 @@ Full pathname of dataset for radiative source function used in look up table pho
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Give the user the ability to specify rate families (or groupings) diagnostics based 
+Give the user the ability to specify rate families (or groupings) diagnostics based
 on reaction tag names. These group names can be added to history fincl variables.
 Example:
- rate_sums = 
-   'OX_P = NO_HO2 + CH3O2_NO + 2*jo2_b ... ', 
-   'OX_L = NO2_O_M + HO2_O3 + CLO_O ...', 
+ rate_sums =
+   'OX_P = NO_HO2 + CH3O2_NO + 2*jo2_b ... ',
+   'OX_L = NO2_O_M + HO2_O3 + CLO_O ...',
  fincl1 = 'OX_P','OX_L', ...
 <br/>Default: none
 </pre>
@@ -8716,7 +8716,7 @@ Example:
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset which contains season information used in 'xactive_atm' 
+Full pathname of dataset which contains season information used in 'xactive_atm'
 method of calculating dry deposition of chemical tracers.
 <br/>Default: set by build-namelist.
 </pre>
@@ -8912,7 +8912,7 @@ cycle over a given year, or be fixed to a given date.
 	     <pre>
 Type of time interpolation of emission datasets specified.
 Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
-by <varname>srf_emis_specifier</varname>. 
+by <varname>srf_emis_specifier</varname>.
 <br/>Default: 'CYCLICAL'
 </pre>
         </div>
@@ -9172,7 +9172,7 @@ Filename of dataset for the prescribed chemical constituents.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Filename of file that contains a sequence of filenames for the prescribed chemical constituents.  
+Filename of file that contains a sequence of filenames for the prescribed chemical constituents.
 The filenames in this file are relative to the directory specied
 by <varname>tracer_cnst_datapath</varname>.
 <br/>Default: set by build-namelist.
@@ -9595,7 +9595,7 @@ List of species that undergo dry deposition.
              #cccccc;">
 	     <pre>
 Dry deposition method used.  This specifies the method used to calculate dry
-deposition velocities of gas-phase chemical species.  The available methods 
+deposition velocities of gas-phase chemical species.  The available methods
 are:
  'table'       - prescribed method in CAM
  'xactive_atm' - interactive method in CAM
@@ -9734,7 +9734,7 @@ Full pathname of the directory that contains the files specified in
              #cccccc;">
 	     <pre>
 Filename of the prescribed waccm forcing data used with waccm_ghg chemistry.
-This contains prescribed constituents for non-LTE calculations and heating rates 
+This contains prescribed constituents for non-LTE calculations and heating rates
 for wavelengths less than 200 nm.
 <br/>Default: set by build-namelist.
 </pre>
@@ -9754,8 +9754,8 @@ for wavelengths less than 200 nm.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-A file that contains a sequence of filenames for prescribed waccm forcing data.  
-The filenames in this file are relative to the directory specied 
+A file that contains a sequence of filenames for prescribed waccm forcing data.
+The filenames in this file are relative to the directory specied
 by <varname>waccm_forcing_datapath</varname>.
 <br/>Default: set by build-namelist.
 </pre>
@@ -9881,7 +9881,7 @@ Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset for the neutral species absorption cross sections for EUV 
+Full pathname of dataset for the neutral species absorption cross sections for EUV
 photo reactions producing electrons.
 <br/>Default: set by build-namelist.
 </pre>
@@ -9920,7 +9920,7 @@ Full pathname of dataset for EUVAC solar EUV model (0.05-121nm).
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset for variables used to compute the solar flux in the EUV 
+Full pathname of dataset for variables used to compute the solar flux in the EUV
 wavelength regime.  Used to compute EUV photorates and heating from EUV photolysis.
 <br/>Default: set by build-namelist.
 </pre>
@@ -9940,7 +9940,7 @@ wavelength regime.  Used to compute EUV photorates and heating from EUV photolys
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Multiplication factor applied to the upper boundary NO mass mixing ratio. 
+Multiplication factor applied to the upper boundary NO mass mixing ratio.
 <br/>Default: 1.0
 </pre>
         </div>
@@ -9978,7 +9978,7 @@ Full pathname of dataset for the neutral species absorption cross sections.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset for the coefficients of the NOEM nitric oxide model used 
+Full pathname of dataset for the coefficients of the NOEM nitric oxide model used
 to calculate its upper boundary concentration.
 <br/>Default: set by build-namelist.
 </pre>
@@ -9998,7 +9998,7 @@ to calculate its upper boundary concentration.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of time-variant boundary dataset for the time-dependent proxies for 
+Full pathname of time-variant boundary dataset for the time-dependent proxies for
 solar and geomagnetic activity( F10.7, F10.7a, Kp, Ap ).
 <br/>Default: set by build-namelist.
 </pre>
@@ -10056,7 +10056,7 @@ Filepath for file that lists a series of solar proton ionization dataset files.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-TRUE implies the offline solar proton ionization data file will be deleted when 
+TRUE implies the offline solar proton ionization data file will be deleted when
 finished with it.
 <br/>Default: FALSE
 </pre>
@@ -10235,8 +10235,8 @@ Format: YYYY
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Runtime options of upper thermosphere WACCM-X.  'ionosphere' for 
-full ionopshere and neutral thermosphere, 'neutral' for just 
+Runtime options of upper thermosphere WACCM-X.  'ionosphere' for
+full ionopshere and neutral thermosphere, 'neutral' for just
 neutral thermosphere, and off for no WACCM-X.
 <br/>Default: 'off'
 </pre>
@@ -10262,7 +10262,7 @@ neutral thermosphere, and off for no WACCM-X.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
+Full pathname of dataset for coefficient data used in WACCM to calculate ion drag
 for high solar fluxes from the Scherliess low latitude electric potential model.
 <br/>Default: set by build-namelist.
 </pre>
@@ -10282,7 +10282,7 @@ for high solar fluxes from the Scherliess low latitude electric potential model.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
+Full pathname of dataset for coefficient data used in WACCM to calculate ion drag
 for low solar fluxes from the Scherliess low latitude electric potential model.
 <br/>Default: set by build-namelist.
 </pre>
@@ -10302,7 +10302,7 @@ for low solar fluxes from the Scherliess low latitude electric potential model.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Full pathname of dataset for coefficient data used in WACCM to calculate ion drag 
+Full pathname of dataset for coefficient data used in WACCM to calculate ion drag
 from the Weimer96 high latitude electric potential model.
 <br/>Default: set by build-namelist.
 </pre>
@@ -10533,7 +10533,7 @@ of CO2 if no time varying values are specified.
 	     <pre>
 User override for the prescribed CO2 volume mixing ratio used by the radiation
 calculation.  Note however that the prescribed value of CO2 which is sent
-to the surface models is still the one that is set using either the 
+to the surface models is still the one that is set using either the
 <varname>co2vmr</varname> or the <varname>scenario_ghg</varname> variables.
 <br/>Default: not used
 </pre>
@@ -10716,7 +10716,7 @@ the form YYYYMMDD.  Only used if <varname>scenario_ghg</varname> = 'RAMP_CO2_ONL
              #cccccc;">
 	     <pre>
 If <varname>scenario_ghg</varname> is set to "RAMPED" then the greenhouse
-gas surface values are interpolated between the annual average values 
+gas surface values are interpolated between the annual average values
 read from the file specified by <varname>bndtvghg</varname>.
 In that case, the value of this variable (&gt; 0) fixes the year of the
 lower bounding value (i.e., the value for calendar day 1.0) used in the
@@ -11010,10 +11010,10 @@ source of invalid data in state.
 	     <pre>
 fc_gather flow control option:
  &lt; 0 : use MPI_Gather
- &gt;= 0: use point-to-point with handshaking messages and preposting 
-       receive requests up to 
-         max(min(1,fc_gather_flow_cntl),max_gather_block_size) 
-       ahead. Default value is defined by private parameter 
+ &gt;= 0: use point-to-point with handshaking messages and preposting
+       receive requests up to
+         max(min(1,fc_gather_flow_cntl),max_gather_block_size)
+       ahead. Default value is defined by private parameter
        max_gather_block_size, which is currently set to 64.
 <br/>Default: 64
 </pre>
@@ -11109,7 +11109,7 @@ String identifying a hardware counter to the papi library.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-If TRUE, print CPU timing per model timestep. 
+If TRUE, print CPU timing per model timestep.
 <br/>Default: FALSE
 </pre>
         </div>
@@ -11242,7 +11242,7 @@ Maximum number of processes writing out timing data (for this component communic
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Separation between process ids for processes that are writing out timing data 
+Separation between process ids for processes that are writing out timing data
 (for this component communicator).
 <br/>Default: 1
 </pre>
@@ -11379,8 +11379,8 @@ MPI-1 implementation. 3: use Co-Array Fortran implementation if supported,
 otherwise use MPI-1 implementation. 11-13: use mod_comm, choosing any of
 several methods internal to mod_comm.  The method within mod_comm (denoted
 mod_method) has possible values 0,1,2 and is set according to mod_method =
-phys_alltoall - modmin_alltoall, where modmin_alltoall is 11. -1: use 
-option 1 when each process communicates with less than half of the other 
+phys_alltoall - modmin_alltoall, where modmin_alltoall is 11. -1: use
+option 1 when each process communicates with less than half of the other
 processes, otherwise use option 0 (approx.).
 <br/>Default: -1
 </pre>
@@ -11605,7 +11605,7 @@ Freezing point of water [K].
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Turbulent mountain stress parameter used when turbulent mountain stress calculation 
+Turbulent mountain stress parameter used when turbulent mountain stress calculation
 is turned on. See <varname>do_tms</varname>.
 <br/>Default: 1.0 for CAM, set by build-namelist for WACCM, T31
 </pre>
@@ -11625,7 +11625,7 @@ is turned on. See <varname>do_tms</varname>.
              padding-left: 16px; margin-top: 4px; border-top: 1px dashed
              #cccccc;">
 	     <pre>
-Factor determining z_0 from orographic standard deviation [ no unit ] 
+Factor determining z_0 from orographic standard deviation [ no unit ]
 Used when turbulent mountain stress calc is turned on. See <varname>do_tms</varname>.
 set by build-namelist for WACCM, T31
 </pre>

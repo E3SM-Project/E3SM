@@ -22,12 +22,14 @@ ifeq ($(strip $(MACFILE)),)
    MACFILE  := Macros
 endif
 
-# Machine specific macros file 
-# This must be included before any settings are overwritten 
+# Machine specific macros file
+# This must be included before any settings are overwritten
 # But must be AFTER any definitions it uses are defined.
 # So be careful if moving this either earlier or later in the makefile!!!
 include $(MACFILE)
-
+ifdef GPTL_CPPDEFS
+  CPPDEFS+=$(GPTL_CPPDEFS)  -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
+endif
 INCLDIR += -I$(GPTL_DIR)
 
 ifeq ($(strip $(MPILIB)), mpi-serial)
@@ -42,7 +44,7 @@ else
   CPPDEFS += -DHAVE_MPI
 endif
 ifdef CPRE
-  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS)) 
+  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS))
 else
   FPPDEFS := $(CPPDEFS)
 endif
@@ -68,7 +70,7 @@ libgptl.a: $(OBJS)
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FPPDEFS) $(FREEFLAGS)  $<
 
 mostlyclean:
-	$(RM) -f *.f *.f90 
+	$(RM) -f *.f *.f90
 
 clean:
 	$(RM) -f *.f *.f90 *.d *.$(MOD_SUFFIX) $(OBJS)

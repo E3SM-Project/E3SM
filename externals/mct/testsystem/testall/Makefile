@@ -24,12 +24,12 @@ include ../../Makefile.conf
 
 all:    testall
 
-testall: $(OBJS_ALL) 
+testall: $(OBJS_ALL)
 	$(FC) -o $@ $(OBJS_ALL) $(UTLDFLAGS) $(MCTLIBS) $(MPILIBS)
 
 # ADDITIONAL FLAGS SPECIFIC FOR UTMCT COMPILATION
 
-MCTLIBS    = -L$(MPEUPATH) -L$(MCTPATH) -lmct -lmpeu 
+MCTLIBS    = -L$(MPEUPATH) -L$(MCTPATH) -lmct -lmpeu
 UTLDFLAGS  = $(REAL8)
 UTCMPFLAGS = $(PROGFCFLAGS) $(REAL8) $(INCFLAG)$(MPEUPATH) $(INCFLAG)$(MCTPATH)
 

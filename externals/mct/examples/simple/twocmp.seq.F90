@@ -2,11 +2,11 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: twocmp.seq.F90,v 1.6 2006-07-25 17:09:42 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE:  twocomponent.sequential
-!  
+!
 !
 ! !DESCRIPTION:  Provide a simple example of using MCT to connect
 ! two components executing in sequence in a single executable.
@@ -50,7 +50,7 @@
       integer,dimension(1) :: start1,length1
       integer,dimension(:),pointer :: start2,length2
 !-----------------------------------------------------------------------
-!  The Main program. 
+!  The Main program.
 ! We are implementing a single-executable, sequential-execution system.
 ! In this example, communication occurs through main using
 ! arguments.  Both components share the same processors.
@@ -96,7 +96,7 @@
        start2(i)= (i-1)*ngx + 1 + myproc*length2(i)
        write(6,*) 'gsmap2',myproc,i,length2(i),start2(i)
       enddo
-   
+
 
       call MCT_GSMap_init(GSMap2,start2,length2,0,comm2,2)
 
@@ -118,7 +118,7 @@
       do i=1,MCT_AtrVt_lsize(av1)
         write(6,*) "model 1 data", myproc,i,av1%rAttr(1,i),av1%rAttr(2,i)
       enddo
-      
+
 ! rearrange data from model1 so that model2 can use it.
       call MCT_Rearrange(av1,av2,Rearr)
 
@@ -133,7 +133,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model1(comm1,mod1av)   ! the first model
 
       implicit none
@@ -142,7 +142,7 @@
       integer :: fieldindx,avsize,i
       integer,dimension(1) :: start,length
       real,pointer :: testarray(:)
-      
+
       type(GlobalSegMap) :: GSmap
       type(AttrVect) :: mod1av
 !---------------------------
@@ -175,14 +175,14 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model2(comm2,mod2av)
 
       implicit none
 
       integer :: comm2,mysize,ier,asize,myproc
       integer :: i
-      type(AttrVect) :: mod2av 
+      type(AttrVect) :: mod2av
 !---------------------------
 
 !  find local rank and size

@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -103,7 +103,7 @@
 !		  declaration.
 !		. Then limited to only variables current expected to
 !		  be used.
-!	
+!
 !EOP
 !_______________________________________________________________________
 

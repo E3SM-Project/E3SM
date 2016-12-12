@@ -58,7 +58,8 @@ usage() {
 fix_run_script() {
 
   if [ -z "$1" ]; then
-    FileName=$CASENAME
+    #FileName=$CASENAME
+    FileName='case'
   else
     FileName=$1
   fi
@@ -367,7 +368,7 @@ fi
 
 # Unset LS_COLORS before configure runs
 LS_COLORS=
-./cesm_setup || { echo "Error running cesm_setup, probably a bad NP value"; exit 1; }
+./case.setup || { echo "Error running case_setup, probably a bad NP value"; exit 1; }
 chmod u+w user_nl_*
 if [ $LENS -eq 1 ]; then
   cp -f $ThisDir/user_nl_cam_LENS ./user_nl_cam
@@ -476,16 +477,16 @@ if [ $nobuild != 'on' ]; then
     if [ "$MACH" == "janus" ]; then
       ssh janus-compile1 "cd $PWD; ./$CASENAME.build" || { echo "Error building!"; exit 1; }
     else
-      ./$CASENAME.build || { echo "Error building!"; exit 1; }
+      ./case.build || { echo "Error building!"; exit 1; }
     fi
 fi
 
 # Submit job to queue
-if [ $nosubmit != 'on' ]; then 
+if [ $nosubmit != 'on' ]; then
     if [ "$MACH" == "mira" ]; then
-      ./$CASENAME.run
+      ./case.run
     else
-      ./$CASENAME.submit
+      ./case.submit
     fi
 fi
 

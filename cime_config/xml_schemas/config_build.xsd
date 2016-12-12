@@ -1,0 +1,160 @@
+<?xml version="1.0"?>
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    elementFormDefault="qualified">
+
+  <!-- Root element and its type; config_build is just a list of "compiler"
+       elements. -->
+  <xs:element name="config_build">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="compiler" type="compilerType" maxOccurs="unbounded">
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- A "compiler" element is a list of one or more variables to be passed to
+       the build system, which can be specified in any order. The three
+       attributes on this element, if present, specify which compiler/system
+       combinations these settings are relevant for. Non-matches are typically
+       not passed to the build system at all. (For instance, they are not
+       written to a "Macros" file by the SetupTools module.) -->
+  <xs:complexType name="compilerType">
+    <xs:sequence>
+      <xs:group ref="compilerVars" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="COMPILER" type="xs:token"/>
+    <xs:attribute name="OS" type="xs:token"/>
+    <xs:attribute name="MACH" type="xs:token"/>
+  </xs:complexType>
+
+  <!-- For historical and user-interface reasons, we have uppercase TRUE and
+       FALSE all over the place. This means we have to define an enumeration
+       instead of using "xs:boolean". -->
+  <xs:simpleType name="upperBoolean">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="TRUE"/>
+      <xs:enumeration value="FALSE"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Block containing a list of conditional flag settings. -->
+  <xs:complexType name="flagsVar">
+    <xs:sequence>
+      <xs:element name="base" type="flags" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="append" type="flags" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- For variables that represent command-line flags. The text inside these
+       tags follows a primitive markup language to include environment variables
+       and the output of shell commands. -->
+  <xs:complexType name="flags" mixed="true">
+    <xs:sequence>
+      <xs:group ref="envTags" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="compile_threaded" type="xs:boolean"/>
+    <xs:attribute name="DEBUG" type="upperBoolean"/>
+    <!-- We could try enumerating all the valid names for models, but that could
+         complicate the process of adding new models. -->
+    <xs:attribute name="MODEL" type="xs:token"/>
+    <xs:attribute name="MPILIB" type="xs:token"/>
+  </xs:complexType>
+
+  <xs:group name="envTags">
+    <xs:choice>
+      <xs:element name="shell" type="shellCommand"/>
+      <xs:element name="env" type="xs:token"/>
+      <xs:element name="var" type="xs:token"/>
+    </xs:choice>
+  </xs:group>
+
+  <!-- We want to allow env tags in a shell command, but it's not clear if we
+       want (or really need) to allow nested shell commands. For now, just
+       specify this type instead of something that uses envTags. -->
+  <xs:complexType name="shellCommand" mixed="true">
+    <xs:sequence>
+      <xs:group ref="shellTags" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:group name="shellTags">
+    <xs:choice>
+      <xs:element name="env" type="xs:token"/>
+      <xs:element name="var" type="xs:token"/>
+    </xs:choice>
+  </xs:group>
+
+  <!-- Since both C++ and Fortran can have somewhat complex linking
+       requirements, normally handled by the compiler, we have to specify which
+       compiler to link with. -->
+  <xs:simpleType name="cxxLinker">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="CXX"/>
+      <xs:enumeration value="FORTRAN"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- We don't try to determine whether a string could be a valid POSIX path,
+       but we do need to allow certain attributes to influence the path used,
+       since there may be, for instance, parallel and serial builds of the same
+       library on a system. We also need to be able to use environment variables
+       and shell commands to find paths. -->
+  <xs:complexType name="systemPath" mixed="true">
+    <xs:sequence>
+      <xs:group ref="envTags" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="compile_threaded" type="xs:boolean"/>
+    <xs:attribute name="DEBUG" type="upperBoolean"/>
+    <xs:attribute name="MPILIB" type="xs:token"/>
+  </xs:complexType>
+
+  <!-- All the variables that can be defined for a compiler/system
+       combination. -->
+  <xs:group name="compilerVars">
+    <xs:choice>
+      <xs:element name="ALBANY_PATH" type="systemPath"/>
+      <xs:element name="CFLAGS" type="flagsVar"/>
+      <xs:element name="CMAKE_OPTS" type="flagsVar"/>
+      <xs:element name="CONFIG_ARGS" type="flagsVar"/>
+      <xs:element name="CONFIG_SHELL" type="systemPath"/>
+      <xs:element name="CPPDEFS" type="flagsVar"/>
+      <xs:element name="CPRE" type="xs:token"/>
+      <xs:element name="CXX_LDFLAGS" type="flagsVar"/>
+      <xs:element name="CXX_LIBS" type="flagsVar"/>
+      <xs:element name="CXX_LINKER" type="cxxLinker"/>
+      <xs:element name="ESMF_LIBDIR" type="systemPath"/>
+      <xs:element name="FC_AUTO_R8" type="flagsVar"/>
+      <xs:element name="FFLAGS" type="flagsVar"/>
+      <xs:element name="FFLAGS_NOOPT" type="flagsVar"/>
+      <xs:element name="FIXEDFLAGS" type="flagsVar"/>
+      <xs:element name="FREEFLAGS" type="flagsVar"/>
+      <xs:element name="HAS_F2008_CONTIGUOUS" type="upperBoolean"/>
+      <xs:element name="HDF5_PATH" type="systemPath"/>
+      <xs:element name="LAPACK_LIBDIR" type="systemPath"/>
+      <xs:element name="LD" type="systemPath"/>
+      <xs:element name="LDFLAGS" type="flagsVar"/>
+      <xs:element name="MLIBS" type="flagsVar"/>
+      <xs:element name="MPI_LIB_NAME" type="systemPath"/>
+      <xs:element name="MPI_PATH" type="systemPath"/>
+      <xs:element name="MPICC" type="systemPath"/>
+      <xs:element name="MPICXX" type="systemPath"/>
+      <xs:element name="MPIFC" type="systemPath"/>
+      <xs:element name="NETCDF_PATH" type="systemPath"/>
+      <xs:element name="PAPI_INC" type="systemPath"/>
+      <xs:element name="PAPI_LIB" type="systemPath"/>
+      <xs:element name="PETSC_PATH" type="systemPath"/>
+      <xs:element name="PFUNIT_PATH" type="systemPath"/>
+      <xs:element name="PIO_FILESYSTEM_HINTS" type="xs:token"/>
+      <xs:element name="PNETCDF_PATH" type="systemPath"/>
+      <xs:element name="SCC" type="systemPath"/>
+      <xs:element name="SCXX" type="systemPath"/>
+      <xs:element name="SFC" type="systemPath"/>
+      <xs:element name="SLIBS" type="flagsVar"/>
+      <xs:element name="SUPPORTS_CXX" type="upperBoolean"/>
+      <xs:element name="TRILINOS_PATH" type="systemPath"/>
+    </xs:choice>
+  </xs:group>
+
+</xs:schema>

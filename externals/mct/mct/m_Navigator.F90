@@ -2,30 +2,30 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_Navigator - An Object for Indexing Segments of a Vector
 !
 ! !DESCRIPTION:
-! A {\em Navigator} is a table used to {\em index} or {\em Navigate} 
-!  segments of a vector, or segments of a dimension of a 
-! higher-dimensional array.  In MCT, this concept is embodied in 
-! the {\tt Navigator} datatype, which contains 
+! A {\em Navigator} is a table used to {\em index} or {\em Navigate}
+!  segments of a vector, or segments of a dimension of a
+! higher-dimensional array.  In MCT, this concept is embodied in
+! the {\tt Navigator} datatype, which contains
 ! the following components:
 ! \begin{itemize}
 ! \item The {\em number} of segments;
-! \item The {\em displacement} of the starting index of each segment 
+! \item The {\em displacement} of the starting index of each segment
 ! from the vector's first element (i.e. the starting index minus 1);
 ! \item The {\em length} of each segment; and
-! \item The {\em total length} of the vector or array dimension for which 
-! segments are defined.  This last item is optional, but if defined 
+! \item The {\em total length} of the vector or array dimension for which
+! segments are defined.  This last item is optional, but if defined
 ! provides the ability for the {\tt Navigator} to check for erroneous
 ! segment entries (i.e., segments that are out-of-bounds).
 ! \end{itemize}
 !
-! This module defines the {\tt Navigator} datatype, creation and 
-! destruction methods, a variety of query methods, and a method for 
+! This module defines the {\tt Navigator} datatype, creation and
+! destruction methods, a variety of query methods, and a method for
 ! resizing the {\tt Navigator}.
 !
 ! !INTERFACE:
@@ -100,14 +100,14 @@
 ! !IROUTINE: init_ - Create a Navigator
 !
 ! !DESCRIPTION:
-! This routine creates a {\tt Navigator} {\tt Nav} capable of storing 
-! information about {\tt NumSegments} segments.  The user can supply the 
-! length of the vector (or array subspace) being indexed by supplying the 
-! optional input {\tt INTEGER} argument {\tt VectorLength} (if it is not 
-! supplied, this component of {\tt Nav} will be set to zero, signifying 
-! to other {\tt Navigator} routines that vector length information is 
-! unavailable).  The success (failure) of this operation is signified by 
-! the zero (non-zero) value of the optional output {\tt INTEGER} argument 
+! This routine creates a {\tt Navigator} {\tt Nav} capable of storing
+! information about {\tt NumSegments} segments.  The user can supply the
+! length of the vector (or array subspace) being indexed by supplying the
+! optional input {\tt INTEGER} argument {\tt VectorLength} (if it is not
+! supplied, this component of {\tt Nav} will be set to zero, signifying
+! to other {\tt Navigator} routines that vector length information is
+! unavailable).  The success (failure) of this operation is signified by
+! the zero (non-zero) value of the optional output {\tt INTEGER} argument
 ! {\tt stat}.
 !
 ! !INTERFACE:
@@ -139,7 +139,7 @@
   character(len=*),parameter :: myname_=myname//'::init_'
   integer :: ier
 
-! If the argument VectorLength is present, use this value to set 
+! If the argument VectorLength is present, use this value to set
 ! Nav%VectorLength.  Otherwise, set Nav%VectorLength to zero.
 
   if(present(VectorLength)) then
@@ -178,10 +178,10 @@
 ! !IROUTINE: clean_ - Destroy a Navigator
 !
 ! !DESCRIPTION:
-! This routine deallocates allocated memory associated with the 
-! input/output {\tt Navigator} argument {\tt Nav}, and clears the 
-! vector length and number of segments components  The success (failure) 
-! of this operation is signified by the zero (non-zero) value of the 
+! This routine deallocates allocated memory associated with the
+! input/output {\tt Navigator} argument {\tt Nav}, and clears the
+! vector length and number of segments components  The success (failure)
+! of this operation is signified by the zero (non-zero) value of the
 ! optional output {\tt INTEGER} argument {\tt stat}.
 !
 ! !INTERFACE:
@@ -235,8 +235,8 @@
 ! !IROUTINE: NumSegments_ - Return the Number of Segments
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} query function returns the number of segments 
-! in the input {\tt Navigator} argument {\tt Nav} for which segment 
+! This {\tt INTEGER} query function returns the number of segments
+! in the input {\tt Navigator} argument {\tt Nav} for which segment
 ! start and length information are defined .
 !
 ! !INTERFACE:
@@ -269,8 +269,8 @@
 ! !IROUTINE: msize_ - Return the Maximum Capacity for Segment Storage
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} query function returns the maximum number of 
-! segments for which start and length information can be stored in the 
+! This {\tt INTEGER} query function returns the maximum number of
+! segments for which start and length information can be stored in the
 ! input {\tt Navigator} argument {\tt Nav}.
 !
 ! !INTERFACE:
@@ -302,10 +302,10 @@
 ! !IROUTINE: VectorLength_ - Return the Navigated Vector's Length
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} query function returns the total length of the 
+! This {\tt INTEGER} query function returns the total length of the
 ! vector navigated by the input {\tt Navigator} argument {\tt Nav}.
-! Note that the vector length is a quantity the user must have set 
-! when {\tt Nav} was initialized.  If it has not been set, the return 
+! Note that the vector length is a quantity the user must have set
+! when {\tt Nav} was initialized.  If it has not been set, the return
 ! value will be zero.
 !
 ! !INTERFACE:
@@ -337,20 +337,20 @@
 ! !IROUTINE: resize_ - Reset the Number of Segments
 !
 ! !DESCRIPTION:
-! This routine resets the number of segments stored in the input/output 
-! {\tt Navigator} argument {\tt Nav}.  It behaves in one of two modes:  
-! If the optional {\tt INTEGER} input argument {\tt NumSegments} is 
+! This routine resets the number of segments stored in the input/output
+! {\tt Navigator} argument {\tt Nav}.  It behaves in one of two modes:
+! If the optional {\tt INTEGER} input argument {\tt NumSegments} is
 ! provided, then this value is taken to be the new number of segments.
-! If this routine is invoked without {\tt NumSegments} provided, then 
-! the new number of segments is set as per the result of the Fortran 
+! If this routine is invoked without {\tt NumSegments} provided, then
+! the new number of segments is set as per the result of the Fortran
 ! {\tt size()} function applied to the segment table arrays.
 !
 ! !INTERFACE:
 
  subroutine resize_(Nav, NumSegments)
- 
+
 ! !USES:
-   
+
       use m_stdio, only : stderr
       use m_die,  only : die
 
@@ -395,24 +395,24 @@
 ! !IROUTINE: get_ - Retrieve Characteristics of a Segment
 !
 ! !DESCRIPTION:
-! This multi-purpose query routine can be used to retrieve various 
-! characteristics of a given segment (identified by the input 
+! This multi-purpose query routine can be used to retrieve various
+! characteristics of a given segment (identified by the input
 ! {\tt INTEGER} argument {\tt iSeg}) stored in the input {\tt Navigator}
 ! argument {\tt Nav}:
 ! \begin{enumerate}
-! \item The {\em displacement} of the first element in this segment from 
-! the first element of the vector.  This quantity is returned in the 
+! \item The {\em displacement} of the first element in this segment from
+! the first element of the vector.  This quantity is returned in the
 ! optional output {\tt INTEGER} argument {\tt displ}
-! \item The {\em number of elements} in this segment.  This quantity 
+! \item The {\em number of elements} in this segment.  This quantity
 ! is returned in the optional output {\tt INTEGER} argument {\tt displ}
-! \item The {\em index} of the first element in this segment  This 
-! quantity is returned in the optional output {\tt INTEGER} argument 
+! \item The {\em index} of the first element in this segment  This
+! quantity is returned in the optional output {\tt INTEGER} argument
 ! {\tt lc}.
-! \item The {\em index} of the final element in this segment  This 
-! quantity is returned in the optional output {\tt INTEGER} argument 
+! \item The {\em index} of the final element in this segment  This
+! quantity is returned in the optional output {\tt INTEGER} argument
 ! {\tt le}.
 ! \end{enumerate}
-! Any combination of the above characteristics may be obtained by 
+! Any combination of the above characteristics may be obtained by
 ! invoking this routine with the corresponding optional arguments.
 !
 ! !INTERFACE:
@@ -468,24 +468,24 @@
 ! !IROUTINE: ptr_displs_ - Returns Pointer to the displs(:) Component
 !
 ! !DESCRIPTION:
-! This pointer-valued query function returns a pointer to the 
-! {\em displacements} information (the displacement of the first element 
-! of each segment from the beginning of the vector) contained in the 
-! input {\tt Navigator} argument {\tt Nav}.  It has four basic modes 
-! of behavior, depending on which (if any) of the optional input 
+! This pointer-valued query function returns a pointer to the
+! {\em displacements} information (the displacement of the first element
+! of each segment from the beginning of the vector) contained in the
+! input {\tt Navigator} argument {\tt Nav}.  It has four basic modes
+! of behavior, depending on which (if any) of the optional input
 ! {\tt INTEGER} arguments {\tt lbnd} and {\tt ubnd} are supplied.
 ! \begin{enumerate}
-! \item  If neither {\tt lbnd} nor {\tt ubnd} is supplied, then 
-! {\tt ptr\_displs\_} returns a pointer to {\em all} the elements in 
+! \item  If neither {\tt lbnd} nor {\tt ubnd} is supplied, then
+! {\tt ptr\_displs\_} returns a pointer to {\em all} the elements in
 ! the array {\tt Nav\%displs(:)}.
-! \item  If both {\tt lbnd} and {\tt ubnd} are supplied, then 
+! \item  If both {\tt lbnd} and {\tt ubnd} are supplied, then
 ! {\tt ptr\_displs\_} returns a pointer to the segment of the
 ! array {\tt Nav\%displs(lbnd:ubnd)}.
-! \item  If {\tt lbnd} is supplied but {\tt ubnd} is not, then 
+! \item  If {\tt lbnd} is supplied but {\tt ubnd} is not, then
 ! {\tt ptr\_displs\_} returns a pointer to the segment of the
-! array {\tt Nav\%displs(lbnd:msize)}, where {\tt msize} is the 
+! array {\tt Nav\%displs(lbnd:msize)}, where {\tt msize} is the
 ! length of the array {\tt Nav\%displs(:)}.
-! \item  If {\tt lbnd} is not supplied but {\tt ubnd} is, then 
+! \item  If {\tt lbnd} is not supplied but {\tt ubnd} is, then
 ! {\tt ptr\_displs\_} returns a pointer to the segment of the
 ! array {\tt Nav\%displs(1:ubnd)}.
 ! \end{enumerate}
@@ -498,7 +498,7 @@
 
       use m_stdio, only : stderr
       use m_die,  only : die
- 
+
       implicit none
 
 ! !INPUT PARAMETERS:
@@ -569,24 +569,24 @@
 ! !IROUTINE: ptr_counts_ - Returns Pointer to counts(:) Component
 !
 ! !DESCRIPTION:
-! This pointer-valued query function returns a pointer to the 
-! {\em counts} information (that is, the number of elements in each 
-! of each segment the vector being navigated) contained in the 
-! input {\tt Navigator} argument {\tt Nav}.  It has four basic modes 
-! of behavior, depending on which (if any) of the optional input 
+! This pointer-valued query function returns a pointer to the
+! {\em counts} information (that is, the number of elements in each
+! of each segment the vector being navigated) contained in the
+! input {\tt Navigator} argument {\tt Nav}.  It has four basic modes
+! of behavior, depending on which (if any) of the optional input
 ! {\tt INTEGER} arguments {\tt lbnd} and {\tt ubnd} are supplied.
 ! \begin{enumerate}
-! \item  If neither {\tt lbnd} nor {\tt ubnd} is supplied, then 
-! {\tt ptr\_counts\_} returns a pointer to {\em all} the elements in 
+! \item  If neither {\tt lbnd} nor {\tt ubnd} is supplied, then
+! {\tt ptr\_counts\_} returns a pointer to {\em all} the elements in
 ! the array {\tt Nav\%counts(:)}.
-! \item  If both {\tt lbnd} and {\tt ubnd} are supplied, then 
+! \item  If both {\tt lbnd} and {\tt ubnd} are supplied, then
 ! {\tt ptr\_counts\_} returns a pointer to the segment of the
 ! array {\tt Nav\%counts(lbnd:ubnd)}.
-! \item  If {\tt lbnd} is supplied but {\tt ubnd} is not, then 
+! \item  If {\tt lbnd} is supplied but {\tt ubnd} is not, then
 ! {\tt ptr\_counts\_} returns a pointer to the segment of the
-! array {\tt Nav\%counts(lbnd:msize)}, where {\tt msize} is the 
+! array {\tt Nav\%counts(lbnd:msize)}, where {\tt msize} is the
 ! length of the array {\tt Nav\%counts(:)}.
-! \item  If {\tt lbnd} is not supplied but {\tt ubnd} is, then 
+! \item  If {\tt lbnd} is not supplied but {\tt ubnd} is, then
 ! {\tt ptr\_counts\_} returns a pointer to the segment of the
 ! array {\tt Nav\%counts(1:ubnd)}.
 ! \end{enumerate}

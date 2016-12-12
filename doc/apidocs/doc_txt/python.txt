@@ -17,7 +17,7 @@
 
 /*! \page python Python markup conventions
 
-Python code documentation uses the doxypypy.py Doxygen input filter which is 
+Python code documentation uses the doxypypy.py Doxygen input filter which is
 specified in the Doxyfile configuration file. There are a number of sites
 available that demonstrate good documentation markup for Python code using the doxypypy.py
 input filter. They include:

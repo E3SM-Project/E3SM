@@ -14,7 +14,7 @@ begin
     status_exit(1)
 ;    run_file = "../single_run_data.BC5.ne30_g16/cesm1_3_testing/yellowstone.pgi-a03e-001.BC5.cam.h0.0001-01-01-00000.nc"
   end if
-  
+
   if (.not.isdefined("monthly")) then
     monthly=False
   end if

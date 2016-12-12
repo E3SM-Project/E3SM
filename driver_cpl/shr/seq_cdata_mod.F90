@@ -30,7 +30,7 @@ module seq_cdata_mod
      type(mct_gsMap)         ,pointer :: gsMap => null()    ! decomp info
      type(seq_infodata_type) ,pointer :: infodata => null() ! Input init object
   end type seq_cdata
-  
+
   public seq_cdata
 
 !==============================================================================
