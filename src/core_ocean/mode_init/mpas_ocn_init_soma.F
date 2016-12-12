@@ -83,8 +83,9 @@ contains
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool, forcingPool, tracersPool
+      type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
 
-      integer :: iCell, iEdge, iVertex, k
+      integer :: iCell, iEdge, iVertex, k, idx
       real (kind=RKIND) :: distance, deltaLon, deltaLat, xDistance, yDistance, zMid, sphereRadius
       real (kind=RKIND) :: lonCurrent, latCurrent
       real (kind=RKIND) :: deltay, depth, factor, latCenter, lonCenter, windStress
@@ -110,19 +111,24 @@ contains
       real (kind=RKIND), pointer :: config_soma_phi
       real (kind=RKIND), pointer :: config_soma_ref_density
       real (kind=RKIND), pointer :: config_soma_density_difference
+      real (kind=RKIND), pointer :: config_soma_surface_temp_restoring_at_center_latitude
+      real (kind=RKIND), pointer :: config_soma_surface_temp_restoring_latitude_gradient
+      real (kind=RKIND), pointer :: config_soma_restoring_temp_piston_vel
 
       ! Define dimension pointers
       integer, pointer :: nVertLevels, nCells, nVertLevelsP1, nCellsSolve, nEdgesSolve, nVerticesSolve
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
-      logical, pointer :: on_a_sphere
+      logical, pointer :: on_a_sphere, config_soma_use_surface_temp_restoring
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomCell, refZMid, fCell, fEdge, fVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), pointer :: sphere_radius
       real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, latEdge, latVertex, bottomDepth
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
+      real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
+      real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
       real (kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional
 
       ! assume no error
@@ -149,6 +155,10 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_soma_phi', config_soma_phi)
       call mpas_pool_get_config(domain % configs, 'config_soma_ref_density', config_soma_ref_density)
       call mpas_pool_get_config(domain % configs, 'config_soma_density_difference', config_soma_density_difference)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temp_restoring_at_center_latitude', config_soma_surface_temp_restoring_at_center_latitude)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temp_restoring_latitude_gradient', config_soma_surface_temp_restoring_latitude_gradient)
+      call mpas_pool_get_config(domain % configs, 'config_soma_restoring_temp_piston_vel', config_soma_restoring_temp_piston_vel)
+      call mpas_pool_get_config(domain % configs, 'config_soma_use_surface_temp_restoring', config_soma_use_surface_temp_restoring)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -307,6 +317,11 @@ contains
         call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
         call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional, 1)
 
+        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, &
+          'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
+
         do iCell = 1, nCells
            lonCurrent = lonCell(iCell)
            latCurrent = latCell(iCell)
@@ -330,8 +345,22 @@ contains
                  activeTracers(index_temperature, k, iCell) = temperature
                  activeTracers(index_salinity, k, iCell) = salinity
               end if
-
            enddo
+
+           if (config_soma_use_surface_temp_restoring) then
+             ! surface restoring
+             idx = index_temperature
+             activeTracersSurfaceRestoringValue(idx,iCell) = &
+               config_soma_surface_temp_restoring_at_center_latitude &
+               + config_soma_surface_temp_restoring_latitude_gradient &
+               *(latCurrent*180.0_RKIND/pii - config_soma_center_latitude)
+             activeTracersPistonVelocity(idx,iCell) = config_soma_restoring_temp_piston_vel
+
+             idx = index_salinity
+             activeTracersSurfaceRestoringValue(idx,iCell) = 34.0_RKIND
+             activeTracersPistonVelocity(idx,iCell) = 0.0_RKIND
+           end if
+
 
            ! Set up debugging tracers
            if ( associated(debugTracers) ) then
