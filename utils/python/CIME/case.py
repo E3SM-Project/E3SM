@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy   import deepcopy
-import glob, os, shutil, traceback, math
+import glob, os, shutil, traceback, math, string
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
@@ -908,6 +908,21 @@ class Case(object):
         newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
         newcase.set_value("CIMEROOT", newcase_cimeroot)
 
+        # if we are cloning to a different user modify the output directory
+        olduser = self.get_value("USER")
+        newuser = os.environ.get("USER")
+        if olduser != newuser:
+            outputroot = self.get_value("CIME_OUTPUT_ROOT")
+            outputroot = string.replace(outputroot, olduser, newuser)
+            # try to make the new output directory and raise an exception
+            # on any error other than directory already exists.
+            try:
+                os.makedirs(outputroot)
+            except OSError:
+                if not os.path.isdir(outputroot):
+                    raise
+            newcase.set_value("CIME_OUTPUT_ROOT", outputroot)
+            newcase.set_value("USER", newuser)
         # determine if will use clone executable or not
         if keepexe:
             orig_exeroot = self.get_value("EXEROOT")

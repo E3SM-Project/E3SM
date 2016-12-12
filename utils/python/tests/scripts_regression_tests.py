@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import io, glob, os, re, shutil, signal, sys, tempfile, \
-    threading, time, logging, unittest, getpass
+    threading, time, logging, unittest, getpass, string
 
 from xml.etree.ElementTree import ParseError
 
@@ -170,34 +170,36 @@ def setup_proxy():
 ###############################################################################
 class J_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
-    def setUp(self):
-        self._testroot = MACHINE.get_value("CIME_OUTPUT_ROOT")
+    @classmethod
+    def setUpClass(self):
         self._testdirs = []
         self._do_teardown = []
+        self._testroot = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
+                                      'TestCreateNewcase.%s'% CIME.utils.get_timestamp())
 
-    def test_createnewcase(self):
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase.%s'% CIME.utils.get_timestamp())
+    def test_a_createnewcase(self):
+        testdir = os.path.join(self._testroot, 'testcreatenewcase')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
 
         self._testdirs.append(testdir)
 
-        run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16" % (SCRIPT_DIR, testdir), from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --output-root %s" % (SCRIPT_DIR, testdir, self._testroot), from_dir=SCRIPT_DIR)
         run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
         run_cmd_assert_result(self, "./case.build", from_dir=testdir)
 
         self._do_teardown.append(testdir)
 
-    def test_user_mods(self):
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testusermods.%s'% CIME.utils.get_timestamp())
+    def test_b_user_mods(self):
+        testdir = os.path.join(self._testroot, 'testusermods')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
 
         self._testdirs.append(testdir)
 
         user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "tests", "user_mods_test1")
-        run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --user-mods-dir %s" % (SCRIPT_DIR, testdir, user_mods_dir),
-                              from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "%s/create_newcase --case %s --compset X --res f19_g16 --user-mods-dir %s --output-root %s"
+                              % (SCRIPT_DIR, testdir, user_mods_dir, self._testroot),from_dir=SCRIPT_DIR)
 
         self.assertTrue(os.path.isfile(os.path.join(testdir,"SourceMods","src.drv","somefile.F90")), msg="User_mods SourceMod missing")
         with open(os.path.join(testdir,"user_nl_cpl"),"r") as fd:
@@ -205,9 +207,42 @@ class J_TestCreateNewcase(unittest.TestCase):
             self.assertTrue("a different cpl test option" in contents, msg="User_mods contents of user_nl_cpl missing")
             self.assertTrue("a cpl namelist option" in contents, msg="User_mods contents of user_nl_cpl missing")
 
+    def test_c_create_clone_keepexe(self):
+        testdir = os.path.join(self._testroot, 'test_create_clone_keepexe')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        prevtestdir = self._testdirs[0]
+        self._testdirs.append(testdir)
+
+        run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s --keepexe" %
+                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
+
+        self._do_teardown.append(prevtestdir)
         self._do_teardown.append(testdir)
 
-    def tearDown(self):
+    def test_d_create_clone_new_user(self):
+        testdir = os.path.join(self._testroot, 'test_create_clone_new_user')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        prevtestdir = self._testdirs[0]
+        self._testdirs.append(testdir)
+        # change the USER and CIME_OUTPUT_ROOT to nonsense values
+        # this is intended as a test of whether create_clone is independent of user
+        run_cmd_assert_result(self, "./xmlchange USER=this_is_not_a_user",
+                              from_dir=prevtestdir)
+        fakeoutputroot = string.replace(self._testroot, os.environ.get("USER"), "this_is_not_a_user")
+        run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT=%s"%fakeoutputroot,
+                              from_dir=prevtestdir)
+
+        run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s" %
+                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
+
+        self._do_teardown.append(prevtestdir)
+        self._do_teardown.append(testdir)
+        self._do_teardown.append(self._testroot)
+
+    @classmethod
+    def tearDownClass(self):
         do_teardown = len(self._do_teardown) > 0 and sys.exc_info() == (None, None, None)
 
         for tfile in self._testdirs:
