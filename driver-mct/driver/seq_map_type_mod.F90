@@ -7,11 +7,6 @@ module seq_map_type_mod
   use shr_const_mod
   use seq_comm_mct,  only: logunit, CPLID, seq_comm_iamroot
   use mct_mod
-#ifdef USE_ESMF_LIB
-  use esmf
-  use esmfshr_mod
-  use seq_map_esmf
-#endif
 
   type seq_map
      logical                 :: copy_only
@@ -39,12 +34,6 @@ module seq_map_type_mod
      real(R8), pointer       :: clat_d(:)
      integer(IN)             :: mpicom    ! mpicom
      !
-#ifdef USE_ESMF_LIB
-     !---- import and export States for this mapper object, 
-     !---- routehandle is stored in the exp_state for repeated remapping use
-     type(ESMF_State)        :: imp_state
-     type(ESMF_State)        :: exp_state
-#endif
   end type seq_map
   public seq_map
 
@@ -55,7 +44,7 @@ module seq_map_type_mod
   ! seq_map_maxcnt is the total number of mappings supported
   ! seq_map_cnt is the total number of mappings initialized any any time
   ! seq_maps are the mappers that have been initialized
-  
+
   integer(IN),parameter :: seq_map_maxcnt = 5000
   integer(IN)           :: seq_map_cnt = 0
   type(seq_map),private,target  :: seq_maps(seq_map_maxcnt)
@@ -73,7 +62,7 @@ contains
 
   subroutine seq_map_mapmatch(mapid,gsMap_s,gsMap_d,mapfile,strategy)
 
-    ! This method searches through the current seq_maps to find a 
+    ! This method searches through the current seq_maps to find a
     ! mapping file that matches the values passed in
 
     implicit none
@@ -153,7 +142,7 @@ contains
 
  subroutine seq_map_mappoint(mapid,mapper)
 
-    ! This method searches through the current seq_maps to find a 
+    ! This method searches through the current seq_maps to find a
     ! mapping file that matches the values passed in
 
     implicit none

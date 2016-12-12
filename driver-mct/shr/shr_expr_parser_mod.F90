@@ -1,7 +1,7 @@
 !=============================================================================
-! expression parser utility -- 
-!   for parsing simple linear mathematical expressions of the form 
-!   X = a*Y + b*Z + ... 
+! expression parser utility --
+!   for parsing simple linear mathematical expressions of the form
+!   X = a*Y + b*Z + ...
 !
 !=============================================================================
 module shr_expr_parser_mod
@@ -11,7 +11,7 @@ module shr_expr_parser_mod
   implicit none
   private
 
-  public :: shr_exp_parse     ! parses simple strings which contain expressions 
+  public :: shr_exp_parse     ! parses simple strings which contain expressions
   public :: shr_exp_item_t    ! user defined type which contains an expression component
   public :: shr_exp_list_destroy ! destroy the linked list returned by shr_exp_parse
 
@@ -34,7 +34,7 @@ contains
     character(len=*), intent(in)   :: exp_array(:) ! contains a expressions
     integer, optional, intent(out) :: nitems       ! number of expressions parsed
     type(shr_exp_item_t), pointer  :: exp_items_list ! linked list of items returned
-    
+
     integer :: i,j, jj, nmax, nterms, n_exp_items
     character(len=cx) :: tmp_str
     type(shr_exp_item_t), pointer :: exp_item, list_item
@@ -45,13 +45,13 @@ contains
 
     n_exp_items = 0
     nmax = size( exp_array )
-    
+
     do i = 1,nmax
        if (len_trim(exp_array(i))>0) then
 
           j = scan( exp_array(i), '=' )
 
-          if ( j>0 ) then 
+          if ( j>0 ) then
 
              n_exp_items = n_exp_items + 1
 
@@ -61,14 +61,14 @@ contains
 
              tmp_str = trim(adjustl(exp_array(i)(j+1:)))
 
-             nterms = 1             
+             nterms = 1
              jj = scan( tmp_str, '+' )
              do while(jj>0)
                 nterms = nterms + 1
                 tmp_str = tmp_str(jj+1:)
                 jj = scan( tmp_str, '+' )
              enddo
-             
+
              allocate( exp_item%vars(nterms) )
              allocate( exp_item%coeffs(nterms) )
 
@@ -111,7 +111,7 @@ contains
 
           endif
 
-          
+
           if (associated(exp_item)) then
              if (associated(exp_items_list)) then
                 list_item => exp_items_list
@@ -158,7 +158,7 @@ contains
   end subroutine  shr_exp_list_destroy
 
  !==========================
- ! Private Methods 
+ ! Private Methods
 
   ! -----------------------------------------------------------------
   ! -----------------------------------------------------------------
