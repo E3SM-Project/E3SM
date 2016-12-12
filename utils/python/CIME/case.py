@@ -628,12 +628,12 @@ class Case(object):
             for component_class in self._component_classes:
                 if component_class == "DRV":
                     component_class = "CPL"
-                string = "NTASKS_" + component_class
-                pes_ntasks[string] = opti_tasks
-                string = "NTHRDS_" + component_class
-                pes_nthrds[string] = opti_thrds
-                string = "ROOTPE_" + component_class
-                pes_rootpe[string] = 0
+                string_ = "NTASKS_" + component_class
+                pes_ntasks[string_] = opti_tasks
+                string_ = "NTHRDS_" + component_class
+                pes_nthrds[string_] = opti_thrds
+                string_ = "ROOTPE_" + component_class
+                pes_rootpe[string_] = 0
         else:
             pesobj = Pes(self._pesfile)
 
