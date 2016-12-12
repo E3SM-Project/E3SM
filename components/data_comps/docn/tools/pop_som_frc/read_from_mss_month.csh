@@ -5,7 +5,7 @@
 # get the monthly files from Mass Storage System if needed
 #*****************************************************************
 
-# This file reads in files from MSS 
+# This file reads in files from MSS
 # $DATE_FORMAT  form of date in history file name (eg. yyyy-mm), input
 # $read_dir     case name of file to read   , input
 # $BEG_READ     first year of data to read  , input
@@ -29,7 +29,7 @@ set month = $5
 if ( $read_dir == b20.003 ) then
   set msspwd = '-rpwd ccsm1330'
 else
-  set msspwd = ' ' 
+  set msspwd = ' '
 endif
 
 echo GETTING MONTHLY FILES FROM THE MSS

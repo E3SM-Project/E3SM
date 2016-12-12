@@ -8,6 +8,7 @@
 
 use Test::More;
 use IO::File;
+use Cwd qw(abs_path);
 
 #########################
 
@@ -19,9 +20,9 @@ sub usage {
 SYNOPSIS
      build-namelist_test.pl [options]
 
-     Test the the datm build-namelist 
+     Test the the datm build-namelist
 OPTIONS
-     -help [or -h]                 Print usage to STDOUT.                               
+     -help [or -h]                 Print usage to STDOUT.
      -compare <directory>          Compare namelists for this version to namelists
                                    created by another version.
      -generate                     Leave the namelists in place to do a later compare.
@@ -29,7 +30,8 @@ OPTIONS
 EOF
 }
 # The env variables that will need to be set
-my %xmlenv = ( "DATM_CO2_TSERIES", "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID", "GRID" );
+my %xmlenv = ( "DATM_CO2_TSERIES", "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID",
+"GRID", "DATM_TOPO" );
 my $envxmlfile = "env_utrun.xml";   # Filename to write env settings to
 #
 # Process command-line options.
@@ -70,22 +72,22 @@ my $CASEROOT = "$cwd/testcase";
 print "CASEROOT = $CASEROOT\n";
 my $confdir = "$CASEROOT/Buildconf/datmconf";
 
-# Check that SCRIPTSROOT set so can run
-if ( $ENV{'SCRIPTSROOT'} eq "" ) {
-   my $dir = "../../../../../scripts"; 
-   if ( ! -d "$dir" ) {
-      die "SCRIPTSROOT NOT set, and scripts directory $dir does not exist\n";
+# Check that CIMEROOT set so can run
+if ( $ENV{'CIMEROOT'} eq "" ) {
+   my $dir = abs_path("../../../../..");
+   if ( ! -d "$dir/scripts" ) {
+      die "CIMEROOT NOT set, and scripts directory $dir/scripts does not exist\n";
    }
-   $ENV{'SCRIPTSROOT'} = $dir;
-   print "SCRIPTSROOT = $ENV{'SCRIPTSROOT'}\n";
+   $ENV{'CIMEROOT'} = $dir;
+   print "CIMEROOT = $ENV{'CIMEROOT'}\n";
 } else {
-   if ( ! -d "$ENV{'SCRIPTSROOT'}" ) {
-      die "SCRIPTSROOT dir does not exist\n";
+   if ( ! -d "$ENV{'CIMEROOT'}"."/scripts" ) {
+      die "CIMEROOT scripts dir does not exist\n";
    }
 }
 #
-# 
-my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -scriptsroot $ENV{'SCRIPTSROOT'}";
+#
+my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -cimeroot $ENV{'CIMEROOT'}";
 
 my $tempfile = "temp_file.txt";
 if ( -f $tempfile ) {
@@ -104,6 +106,7 @@ $xmlenv{'ATM_DOMAIN_PATH'}          = "\$DIN_LOC_ROOT/share/domains";
 $xmlenv{'ATM_GRID'}                 = "48x96";
 $xmlenv{'GRID'}                     = "48x96_g37";
 $xmlenv{'DATM_MODE'}                = "CLMQIAN";
+$xmlenv{'DATM_TOPO'}                = "observed";
 $xmlenv{'DATM_PRESAERO'}            = "clim_2000";
 $xmlenv{'DATM_CO2_TSERIES'}         = "none";
 # Set some ENV vars needed for CLM_QIAN
@@ -147,8 +150,8 @@ if ( defined($opts{'compare'}) ) {
 system( "/bin/rm -rf $confdir"         );
 
 my %wc;
-# Run all the different options 
-foreach my $option ( "-print 0", "-print 1", "-print 2", "-test -print 2", 
+# Run all the different options
+foreach my $option ( "-print 0", "-print 1", "-print 2", "-test -print 2",
                      "-namelist \"&datm_exp taxmode='extend'/\"",
                      "-user_xml_dir .",
                      "-user_xml_dir $cwd/user_xml_dir -print 2"  ) {
@@ -207,17 +210,17 @@ foreach my $run_type ( "startup", "branch", "hybrid" ) {
 $xmlenv{'RUN_TYPE'} = "startup";
 print "RUN_TYPE = $xmlenv{'RUN_TYPE'}\n";
 # Run different presaero
-foreach my $presaero ( 
-    "1x1_brazil", 
+foreach my $presaero (
+    "1x1_brazil",
     "1x1_camdenNJ",
-    "1x1_tropicAtl", 
-    "1x1_asphaltjungleNJ", 
+    "1x1_tropicAtl",
+    "1x1_asphaltjungleNJ",
     "1x1_vancouverCAN",
-    "1x1_mexicocityMEX", 
+    "1x1_mexicocityMEX",
     "1x1_urbanc_alpha",
-    "1x1_numaIA",   
+    "1x1_numaIA",
     "1x1_smallvilleIA",
-    "5x5_amazon",   
+    "5x5_amazon",
     "clim_1850.1x1_tropicAtl",
     "clim_2000.1x1_tropicAtl",,
     "trans_1850-2000.1x1_tropicAtl",
@@ -321,9 +324,14 @@ my $stat = `fgrep \$ $confdir/datm_atm_in`;
 isnt( $?, 0, "check for unresolved env variables" );
 system( "/bin/rm -rf $confdir"         );
 # Run different DATM_MODE
-foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCRUNCEP_V5" ) {
+foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCRUNCEP_V5", "CLMGSWP3" ) {
    $xmlenv{'DATM_MODE'} = $mode;
    print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
+   if ( $mode =~ /^CLM/ ) {
+      $xmlenv{'DATM_TOPO'}   = "observed";
+   } else {
+      $xmlenv{'DATM_TOPO'}   = "none";
+   }
    &writeEnv( %xmlenv );
    eval{ system( "$bldnml" ); };
    ok( ! $?, "mode=$mode" );
@@ -338,6 +346,7 @@ foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCR
 # Run with presaero="none";
 $xmlenv{'DATM_MODE'}     = "CORE2_NYF";
 $xmlenv{'DATM_PRESAERO'} = "none";
+$xmlenv{'DATM_TOPO'}   = "none";
 print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
 print "DATM_PRESAERO   = $xmlenv{'DATM_PRESAERO'}\n";
 &writeEnv( %xmlenv );
@@ -348,6 +357,7 @@ ok( ! $?, "presaero=none" );
 system( "/bin/rm -rf $confdir"         );
 $xmlenv{'DATM_MODE'}     = "CLM_QIAN";
 $xmlenv{'DATM_PRESAERO'} = "clim_2000";
+$xmlenv{'DATM_TOPO'}   = "observed";
 print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
 print "DATM_PRESAERO   = $xmlenv{'DATM_PRESAERO'}\n";
 
@@ -367,6 +377,7 @@ foreach my $option ( "-zztop", "-namelist '&datm_exp zztop=24/'", "-user_xml_dir
 # Bad ENV settings
 my %bad_env = (
    CLMQIAN_N_PAERONONE =>{ DATM_MODE    =>"CLM_QIAN",   DATM_PRESAERO=>"none"     },
+   TOPONONEAND_CLM     =>{ DATM_MODE    =>"CLM_QIAN",   DATM_TOPO    =>"none"     },
    BAD_DATM_MODE       =>{ DATM_MODE    =>"zztop"       },
    BAD_PRESAERO        =>{ DATM_PRESAERO=>"zztop"       },
    BAD_CQYR_RANGE      =>{ DATM_CLMNCEP_YR_START=>2004, DATM_CLMNCEP_YR_END=>1948 },
@@ -376,7 +387,7 @@ my %bad_env = (
    MISSING_CHYR_START  =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_START=>undef },
    MISSING_CHYR_END    =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_END  =>undef },
    MISSING_CHYR_ALIGN  =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_ALIGN=>undef },
-   BAD_CHYR_RANGE      =>{ DATM_MODE    =>"CPLHIST3HrWx", 
+   BAD_CHYR_RANGE      =>{ DATM_MODE    =>"CPLHIST3HrWx",
                            DATM_CPLHIST_YR_START=>1000, DATM_CPLHIST_YR_END=>500 },
    BAD_DATM_CO2TSERIES =>{ DATM_CO2_TSERIES=>"thing" },
    READONLY_USERSTRM   =>{ DATM_MODE    =>"CLM_QIAN" },
@@ -442,10 +453,10 @@ sub checkfilesexist {
 #
 # Check that files exist
 #
-   my @files = ( 
+   my @files = (
                  "atm_modelio.nml",  "../datm.input_data_list",
                  "config_cache.xml", "datm_atm_in",
-                 "datm_in" 
+                 "datm_in"
                );
    foreach my $file ( glob("$confdir/datm.streams.txt.*") ) {
       $file =~ s|$confdir/||;
@@ -556,10 +567,10 @@ sub shownmldiff {
          return;
       }
       print "Diff in in $file to $type $comp_mode version";
-      system( "diff $file1 $file2" ); 
+      system( "diff $file1 $file2" );
    }
 
-} 
+}
 
 sub dodiffonfile {
 #
@@ -575,7 +586,7 @@ sub dodiffonfile {
   my $mode = $xmlenv{'DATM_MODE'};
   if ( exists($$diffref{$mode}{$type}{$file}) ) {
      $$diffref{$mode}{$type}{$file} = 1;
-  } 
+  }
 }
 
 sub doNOTdodiffonfile {
@@ -585,12 +596,12 @@ sub doNOTdodiffonfile {
   my $diffref = shift;
   my $file    = shift;
   my $type    = shift;
-  
+
   if ( ! defined($type) ) {
      $type = "default";
   }
   my $mode = $xmlenv{'DATM_MODE'};
   if ( exists($$diffref{$mode}{$type}{$file}) ) {
      $$diffref{$mode}{$type}{$file} = 0;
-  } 
+  }
 }
