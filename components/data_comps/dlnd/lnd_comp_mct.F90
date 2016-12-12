@@ -85,7 +85,7 @@ subroutine lnd_run_mct( EClock, cdata_l,  x2l, l2x)
 
    type(ESMF_Clock)            ,intent(inout) :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata_l
-   type(mct_aVect)             ,intent(inout) :: x2l, l2x 
+   type(mct_aVect)             ,intent(inout) :: x2l, l2x
 
 !EOP
 
@@ -116,7 +116,7 @@ subroutine lnd_final_mct( EClock, cdata, x2l, l2x)
 
     type(ESMF_Clock)            ,intent(inout) :: EClock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2l, l2x        
+    type(mct_aVect)             ,intent(inout) :: x2l, l2x
 
 !EOP
 

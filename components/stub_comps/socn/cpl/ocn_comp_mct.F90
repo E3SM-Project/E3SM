@@ -73,8 +73,8 @@ subroutine ocn_run_mct( EClock, cdata, x2d, d2x)
 
    type(ESMF_Clock)            ,intent(inout) :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2d        
-   type(mct_aVect)             ,intent(inout) :: d2x        
+   type(mct_aVect)             ,intent(inout) :: x2d
+   type(mct_aVect)             ,intent(inout) :: d2x
 
 !EOP
 !-------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ end subroutine ocn_run_mct
 ! !IROUTINE: ocn_final_mct
 !
 ! !DESCRIPTION:
-!     stub ocn model finalize 
+!     stub ocn model finalize
 !
 ! !REVISION HISTORY:
 !

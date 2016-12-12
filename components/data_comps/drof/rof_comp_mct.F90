@@ -49,7 +49,7 @@ subroutine rof_init_mct( EClock, cdata, x2r, r2x, NLFilename )
     type(ESMF_Clock)            , intent(inout) :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
     type(mct_aVect)             , intent(inout) :: x2r, r2x
-    character(len=*), optional  , intent(in)    :: NLFilename 
+    character(len=*), optional  , intent(in)    :: NLFilename
 
 !EOP
 
