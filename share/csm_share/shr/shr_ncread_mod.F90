@@ -84,8 +84,10 @@ module shr_ncread_mod
    end interface
 
    interface shr_ncread_tField  ; module procedure &
+      shr_ncread_tField3dR8, &
       shr_ncread_tField2dR8, &
       shr_ncread_tField1dR8, &
+      shr_ncread_tField3dIN, &
       shr_ncread_tField2dIN, &
       shr_ncread_tField1dIN
    end interface
@@ -136,7 +138,7 @@ logical function shr_ncread_varExists(fileName, varName)
    character(*),parameter :: F01     = "('(shr_ncread_varExists) ',a,i6)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    !--- turn off debug writing ---
@@ -193,14 +195,14 @@ subroutine shr_ncread_varDimNum(fileName, varName, ns, rc)
    character(*),parameter :: F01     = "('(shr_ncread_varDimNum) ',a,i6)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    call shr_ncread_open(fileName,fid,rCode)
 
    !--- read variable info ---
    rcode = nf90_inq_varid(fid,trim(varName),vid)
-   call shr_ncread_handleErr(rCode, subName//" ERROR inq varid")
+   call shr_ncread_handleErr(rCode, subName//" ERROR inq varid: "//trim(varName))
    rcode = nf90_inquire_variable(fid,vid,ndims=ns)
    call shr_ncread_handleErr(rCode, subName//" ERROR inq var")
    if (debug > 1 .and. s_loglev > 0) write(s_logunit,F01) trim(varName)//' has dims = ',ns
@@ -216,7 +218,7 @@ end subroutine shr_ncread_varDimNum
 ! !IROUTINE: shr_ncread_varDimSizeName -- return var dim size by dim name
 !
 ! !DESCRIPTION:
-! Returns the size of a dimension of a variable, both dimension and 
+! Returns the size of a dimension of a variable, both dimension and
 ! variable are named.
 ! \newline
 ! General Usage:
@@ -250,7 +252,7 @@ subroutine shr_ncread_varDimSizeName(fileName, varName, dimName,  ns, rc)
    character(*),parameter :: F01     = "('(shr_ncread_varDimSizeName) ',a,i6)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    call shr_ncread_dimSizeName(fileName,dimName,ns,rCode)
@@ -303,13 +305,13 @@ subroutine shr_ncread_varDimSizeID(fileName, varName, dnum,  ns, rc)
    character(*),parameter :: F01     = "('(shr_ncread_varDimSizeID) ',a,i6)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    call shr_ncread_open(fileName,fid,rCode)
 
    rCode = nf90_inq_varid(fid,trim(varName),vid)
-   call shr_ncread_handleErr(rCode,subName//' ERROR inq varid vid')
+   call shr_ncread_handleErr(rCode,subName//' ERROR inq varid: '//trim(varName))
    rCode = nf90_inquire_variable(fid,vid,ndims=ndims)
    call shr_ncread_handleErr(rCode,subName//' ERROR inquire variable ndims')
    allocate(dids(ndims))
@@ -328,7 +330,7 @@ end subroutine shr_ncread_varDimSizeID
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: shr_ncread_varDimSizes -- return var dim sizes 
+! !IROUTINE: shr_ncread_varDimSizes -- return var dim sizes
 !
 ! !DESCRIPTION:
 ! Returns the dimension sizes of a named variable using optional arguments.
@@ -376,13 +378,13 @@ subroutine shr_ncread_varDimSizes(fileName, varName, n1, n2, n3, n4, n5, n6, rc)
    character(*),parameter :: F01     = "('(shr_ncread_varDimSizes) ',a,i6)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    call shr_ncread_open(fileName,fid,rCode)
 
    rCode = nf90_inq_varid(fid,trim(varName),vid)
-   call shr_ncread_handleErr(rCode,subName//' ERROR inq varid vid')
+   call shr_ncread_handleErr(rCode,subName//' ERROR inq varid: '//trim(varName))
    rCode = nf90_inquire_variable(fid,vid,ndims=ndims)
    call shr_ncread_handleErr(rCode,subName//' ERROR inquire variable ndims')
    allocate(dids(ndims))
@@ -465,7 +467,7 @@ subroutine shr_ncread_dimSizeName(fileName, dimName, ns, rc)
    character(*),parameter :: F01     = "('(shr_ncread_dimSizeName) ',a,i6)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    call shr_ncread_open(fileName,fid,rCode)
@@ -552,10 +554,10 @@ subroutine shr_ncread_domain(fn, lonName,  lon,  latName,  lat, &
    character(*),parameter :: F04     = "('(shr_ncread_domain) ',a,2g17.8)"
 
    logical :: readmask
-   logical :: readarea 
-   logical :: readfrac 
+   logical :: readarea
+   logical :: readfrac
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    rCode = 0
@@ -598,7 +600,7 @@ subroutine shr_ncread_domain(fn, lonName,  lon,  latName,  lat, &
         varName = trim(latName)
         allocate(P2d(size(lat,1),size(lat,2)))
      elseif (n > 2) then
-        if (present(maskName) .and. readmask) then 
+        if (present(maskName) .and. readmask) then
            varName = trim(maskName)
            !--- since mask in an integer, allocate P2d and copy back later ---
            allocate(P2d(size(mask,1),size(mask,2)))
@@ -685,7 +687,7 @@ subroutine shr_ncread_domain(fn, lonName,  lon,  latName,  lat, &
      deallocate(A4d)
      deallocate(P2d,stat=rCode)
 !     nullify(P2d)
-     
+
    enddo
 
    if (debug > 1 .and. s_loglev > 0) then
@@ -702,13 +704,105 @@ end subroutine shr_ncread_domain
 !===============================================================================
 !BOP ===========================================================================
 !
+! !IROUTINE: shr_ncread_tField3dR8 -- read in field data from a file
+!
+! !DESCRIPTION:
+!     Read in field data from a netcdf file.  This is a special routine
+!     built specificallly for CCSM.  The idea is to read a snapshot of
+!     (possibly) time-varying data from a netcdf file.  The array is a
+!     3d real*8 field in this case.  Inputs are filename, timeslice
+!     (integer), and variable name.  Optional inputs include the
+!     time dimension name and the 2 dimension names for the array.
+!     If dim1 is sent as an optional argument, dim2 must also be sent.
+!     Otherwise, the time dimension is assumed to be the third
+!     dimension and the first 2 dimensions are associated with the
+!     3d array.
+!
+! \newline
+! General Usage:
+!    call shr_ncread_tField('myfile',6,'sst',a3d)
+! \newline
+! !REVISION HISTORY:
+!     2005-Apr-28 - T. Craig - first version
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine shr_ncread_tField3dR8(fn, tIndex, fldName, fld, dim1, dim2, dim3, tName, fidi, rc)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   character(*)        ,intent(in)           :: fn       ! nc file name
+   integer(SHR_KIND_IN),intent(in)           :: tIndex   ! time-coord index
+   character(*)        ,intent(in)           :: fldName  ! name of field
+   real(SHR_KIND_R8)   ,intent(out)          :: fld(:,:,:) ! field array
+   character(*)        ,intent(in) ,optional :: dim1     ! name of dim1 in fld
+   character(*)        ,intent(in) ,optional :: dim2     ! name of dim2 in fld
+   character(*)        ,intent(in) ,optional :: dim3     ! name of dim3 in fld
+   character(*)        ,intent(in) ,optional :: tName    ! name of tIndex dim
+   integer(SHR_KIND_IN),intent(in) ,optional :: fidi     ! file id
+   integer(SHR_KIND_IN),intent(out),optional :: rc       ! return code
+
+!EOP
+
+   !----- local -----
+   real(SHR_KIND_R8),allocatable :: lfld(:,:,:,:)   ! local 4d array
+   integer(SHR_KIND_IN) :: rCode                    ! error code
+
+   !----- formats -----
+   character(*),parameter :: subName = "(shr_ncread_tField3dR8)"
+   character(*),parameter :: F00     = "('(shr_ncread_tField3dR8) ',4a)"
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+   allocate(lfld(size(fld,1),size(fld,2),size(fld,3),1))
+
+   if (present(dim1).and.present(dim2).and.present(dim3).and.present(tName)) then
+     if (.not.present(fidi)) then
+       call shr_ncread_field4dG(fn,fldName,rfld=lfld,dim1=dim1,dim2=dim2,dim3=dim3,dim4=tName,dim4i=tIndex,rc=rCode)
+     else
+       call shr_ncread_field4dG(fn,fldName,rfld=lfld,dim1=dim1,dim2=dim2,dim3=dim3,dim4=tName,dim4i=tIndex,fidi=fidi,rc=rCode)
+     endif
+   elseif (present(dim1).and.present(dim2).and.present(dim3)) then
+     if (.not.present(fidi)) then
+       call shr_ncread_field4dG(fn,fldName,rfld=lfld,dim1=dim1,dim2=dim2,dim3=dim3,dim4i=tIndex,rc=rCode)
+     else
+       call shr_ncread_field4dG(fn,fldName,rfld=lfld,dim1=dim1,dim2=dim2,dim3=dim3,dim4i=tIndex,fidi=fidi,rc=rCode)
+     endif
+   elseif (present(tName)) then
+     if (.not.present(fidi)) then
+       call shr_ncread_field4dG(fn,fldName,rfld=lfld,dim4=tName,dim4i=tIndex,rc=rCode)
+     else
+       call shr_ncread_field4dG(fn,fldName,rfld=lfld,dim4=tName,dim4i=tIndex,fidi=fidi,rc=rCode)
+     endif
+   elseif (.not.present(dim1).and..not.present(dim2).and..not.present(dim3).and..not.present(tName)) then
+     if (.not.present(fidi)) then
+       call shr_ncread_field4dG(fn,fldName,rfld=lfld,dim4i=tIndex,rc=rCode)
+     else
+       call shr_ncread_field4dG(fn,fldName,rfld=lfld,dim4i=tIndex,fidi=fidi,rc=rCode)
+     endif
+   else
+     call shr_ncread_abort(subName//' ERROR argument combination not supported')
+   endif
+
+   fld(:,:,:) = lfld(:,:,:,1)
+   deallocate(lfld)
+
+   if (present(rc)) rc = rCode
+
+end subroutine shr_ncread_tField3dR8
+!===============================================================================
+!BOP ===========================================================================
+!
 ! !IROUTINE: shr_ncread_tField2dR8 -- read in field data from a file
 !
 ! !DESCRIPTION:
 !     Read in field data from a netcdf file.  This is a special routine
 !     built specificallly for CCSM.  The idea is to read a snapshot of
 !     (possibly) time-varying data from a netcdf file.  The array is a
-!     2d real*8 field in this case.  Inputs are filename, timeslice 
+!     2d real*8 field in this case.  Inputs are filename, timeslice
 !     (integer), and variable name.  Optional inputs include the
 !     time dimension name and the 2 dimension names for the array.
 !     If dim1 is sent as an optional argument, dim2 must also be sent.
@@ -752,7 +846,7 @@ subroutine shr_ncread_tField2dR8(fn, tIndex, fldName, fld, dim1, dim2, tName, fi
    character(*),parameter :: F00     = "('(shr_ncread_tField2dR8) ',4a)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
    allocate(lfld(size(fld,1),size(fld,2),1,1))
 
@@ -799,7 +893,7 @@ end subroutine shr_ncread_tField2dR8
 !     Read in field data from a netcdf file.  This is a special routine
 !     built specificallly for CCSM.  The idea is to read a snapshot of
 !     (possibly) time-varying data from a netcdf file.  The array is a
-!     1d real*8 field in this case.  Inputs are filename, timeslice 
+!     1d real*8 field in this case.  Inputs are filename, timeslice
 !     (integer), and variable name.  Optional inputs include the
 !     time dimension name and the dimension name for the array.
 !     Otherwise, the time dimension is assumed to be the second
@@ -840,7 +934,7 @@ subroutine shr_ncread_tField1dR8(fn, tIndex, fldName, fld, dim1, tName, fidi, rc
    character(*),parameter :: F00     = "('(shr_ncread_tField1dR8) ',4a)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    allocate(lfld(size(fld,1),1,1,1))
@@ -882,13 +976,106 @@ end subroutine shr_ncread_tField1dR8
 !===============================================================================
 !BOP ===========================================================================
 !
+! !IROUTINE: shr_ncread_tField3dIN -- read in field data from a file
+!
+! !DESCRIPTION:
+!     Read in field data from a netcdf file.  This is a special routine
+!     built specificallly for CCSM.  The idea is to read a snapshot of
+!     (possibly) time-varying data from a netcdf file.  The array is a
+!     3d integer field in this case.  Inputs are filename, timeslice
+!     (integer), and variable name.  Optional inputs include the
+!     time dimension name and the 2 dimension names for the array.
+!     If dim1 is sent as an optional argument, dim2 must also be sent.
+!     Otherwise, the time dimension is assumed to be the third
+!     dimension and the first 2 dimensions are associated with the
+!     3d array.
+!
+! \newline
+! General Usage:
+!    call shr_ncread_tField('myfile',1,'index',i3d)
+! \newline
+! !REVISION HISTORY:
+!     2005-Apr-28 - T. Craig - first version
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine shr_ncread_tField3dIN(fn, tIndex, fldName, fld, dim1, dim2, dim3, tName, fidi, rc)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   character(*)        ,intent(in)           :: fn       ! nc file name
+   integer(SHR_KIND_IN),intent(in)           :: tIndex   ! time-coord index
+   character(*)        ,intent(in)           :: fldName  ! name of field
+   integer(SHR_KIND_IN),intent(out)          :: fld(:,:,:) ! field array
+   character(*)        ,intent(in) ,optional :: dim1     ! name of dim1 in fld
+   character(*)        ,intent(in) ,optional :: dim2     ! name of dim2 in fld
+   character(*)        ,intent(in) ,optional :: dim3     ! name of dim3 in fld
+   character(*)        ,intent(in) ,optional :: tName    ! name of tIndex dim
+   integer(SHR_KIND_IN),intent(in) ,optional :: fidi     ! file id
+   integer(SHR_KIND_IN),intent(out),optional :: rc       ! return code
+
+!EOP
+
+   !----- local -----
+   integer(SHR_KIND_IN),allocatable :: lfld(:,:,:,:)  ! local 4d array
+   integer(SHR_KIND_IN) :: rCode                      ! error code
+
+   !----- formats -----
+   character(*),parameter :: subName = "(shr_ncread_tField3dIN)"
+   character(*),parameter :: F00     = "('(shr_ncread_tField3dIN) ',4a)"
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   allocate(lfld(size(fld,1),size(fld,2),size(fld,3),1))
+
+   if (present(dim1).and.present(dim2).and.present(dim3).and.present(tName)) then
+     if (.not.present(fidi)) then
+       call shr_ncread_field4dG(fn,fldName,ifld=lfld,dim1=dim1,dim2=dim2,dim3=dim3,dim4=tName,dim4i=tIndex,rc=rCode)
+     else
+       call shr_ncread_field4dG(fn,fldName,ifld=lfld,dim1=dim1,dim2=dim2,dim3=dim3,dim4=tName,dim4i=tIndex,fidi=fidi,rc=rCode)
+     endif
+   elseif (present(dim1).and.present(dim2).and.present(dim3)) then
+     if (.not.present(fidi)) then
+       call shr_ncread_field4dG(fn,fldName,ifld=lfld,dim1=dim1,dim2=dim2,dim3=dim3,dim4i=tIndex,rc=rCode)
+     else
+       call shr_ncread_field4dG(fn,fldName,ifld=lfld,dim1=dim1,dim2=dim2,dim3=dim3,dim4i=tIndex,fidi=fidi,rc=rCode)
+     endif
+   elseif (present(tName)) then
+     if (.not.present(fidi)) then
+       call shr_ncread_field4dG(fn,fldName,ifld=lfld,dim4=tName,dim4i=tIndex,rc=rCode)
+     else
+       call shr_ncread_field4dG(fn,fldName,ifld=lfld,dim4=tName,dim4i=tIndex,fidi=fidi,rc=rCode)
+     endif
+   elseif (.not.present(dim1).and..not.present(dim2).and..not.present(dim3).and..not.present(tName)) then
+     if (.not.present(fidi)) then
+       call shr_ncread_field4dG(fn,fldName,ifld=lfld,dim4i=tIndex,rc=rCode)
+     else
+       call shr_ncread_field4dG(fn,fldName,ifld=lfld,dim4i=tIndex,fidi=fidi,rc=rCode)
+     endif
+   else
+     call shr_ncread_abort(subName//' ERROR argument combination not supported')
+   endif
+
+   fld(:,:,:) = lfld(:,:,:,1)
+   deallocate(lfld)
+
+   if (present(rc)) rc = rCode
+
+end subroutine shr_ncread_tField3dIN
+!===============================================================================
+!BOP ===========================================================================
+!
 ! !IROUTINE: shr_ncread_tField2dIN -- read in field data from a file
 !
 ! !DESCRIPTION:
 !     Read in field data from a netcdf file.  This is a special routine
 !     built specificallly for CCSM.  The idea is to read a snapshot of
 !     (possibly) time-varying data from a netcdf file.  The array is a
-!     2d integer field in this case.  Inputs are filename, timeslice 
+!     2d integer field in this case.  Inputs are filename, timeslice
 !     (integer), and variable name.  Optional inputs include the
 !     time dimension name and the 2 dimension names for the array.
 !     If dim1 is sent as an optional argument, dim2 must also be sent.
@@ -932,7 +1119,7 @@ subroutine shr_ncread_tField2dIN(fn, tIndex, fldName, fld, dim1, dim2, tName, fi
    character(*),parameter :: F00     = "('(shr_ncread_tField2dIN) ',4a)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    allocate(lfld(size(fld,1),size(fld,2),1,1))
@@ -980,7 +1167,7 @@ end subroutine shr_ncread_tField2dIN
 !     Read in field data from a netcdf file.  This is a special routine
 !     built specificallly for CCSM.  The idea is to read a snapshot of
 !     (possibly) time-varying data from a netcdf file.  The array is a
-!     1d integer field in this case.  Inputs are filename, timeslice 
+!     1d integer field in this case.  Inputs are filename, timeslice
 !     (integer), and variable name.  Optional inputs include the
 !     time dimension name and the dimension name for the array.
 !     Otherwise, the time dimension is assumed to be the second
@@ -1021,7 +1208,7 @@ subroutine shr_ncread_tField1dIN(fn, tIndex, fldName, fld, dim1, tName, fidi, rc
    character(*),parameter :: F00     = "('(shr_ncread_tField1dIN) ',4a)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    allocate(lfld(size(fld,1),1,1,1))
@@ -1073,7 +1260,7 @@ end subroutine shr_ncread_tField1dIN
 !        4d pointer or array to use this subroutine.
 !     Can read in a subset of data from a netcdf file that's up
 !        to 6 dimensions large.
-!     Supports real*8 and integer arrays, must specify either rfld 
+!     Supports real*8 and integer arrays, must specify either rfld
 !        or ifld in optional arguments
 !     dimN are the dimension names associated with the 4d input array,
 !        if N>4, this represents dimensions outside a 4d array which can
@@ -1145,7 +1332,7 @@ subroutine shr_ncread_field4dG(fn, fldName, rfld, ifld, &
    character(*),parameter :: F01   = "('(shr_ncread_field4dG) ',2a,3i6,2x,a)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    !--- check that rfld or ifld is present ---
@@ -1457,7 +1644,7 @@ subroutine shr_ncread_close(fid,rCode)
    character(*),parameter :: F00     = "('(shr_ncread_close) ',4a)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
    !--- close the data file ---
@@ -1495,8 +1682,8 @@ subroutine shr_ncread_handleErr(rCode, str)
 !EOP
 
    !----- formats -----
-   character(*),parameter :: F00     = "('(shr_ncread_handleErr) ',4a)" 
-   
+   character(*),parameter :: F00     = "('(shr_ncread_handleErr) ',4a)"
+
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
@@ -1540,7 +1727,7 @@ subroutine shr_ncread_setAbort(flag)
   character(*),parameter :: F00     = "('(shr_ncread_setAbort) ',a) "
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
   doabort = flag
@@ -1579,7 +1766,7 @@ subroutine shr_ncread_setDebug(iflag)
   character(*),parameter :: F00     = "('(shr_ncread_setDebug) ',a) "
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
   debug = iflag
@@ -1617,7 +1804,7 @@ subroutine shr_ncread_abort(string)
   character(*),parameter :: F00     = "('(shr_ncread_abort) ',a)"
 
 !-------------------------------------------------------------------------------
-! 
+!
 !-------------------------------------------------------------------------------
 
   lstring = ''

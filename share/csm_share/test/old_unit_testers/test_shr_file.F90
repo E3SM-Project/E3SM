@@ -4,7 +4,7 @@ use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit, &
                         shr_file_chDir, shr_file_chStdIn, shr_file_chStdOut
 !
 ! unit test of the shr_file_mod module
-! 
+!
 write(6,*) 'Test file get/put: '
 call test_getput()
 
