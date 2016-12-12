@@ -428,13 +428,8 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
 
          map%area_a(n) = 0.5 * 0.5 * cos(lat*DEGtoRAD) * DEGtoRAD * DEGtoRAD
 
-         if (abs(rdirc) < 0.5) then
-            map%mask_a(n) = 1
-            map%frac_a(n) = 1.0_r8
-         else
-            map%mask_a(n) = 0
-            map%frac_a(n) = 0.0_r8
-         endif
+         map%mask_a(n) = 1
+         map%frac_a(n) = 1.0_r8
       enddo
 
       close(fid)
