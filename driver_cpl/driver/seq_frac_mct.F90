@@ -14,11 +14,11 @@
 !    lfrin = land fraction defined by the land model
 !    ifrad = fraction of ocn on a grid at last radiation time
 !    ofrad = fraction of ice on a grid at last radiation time
-!      afrac, lfrac, ifrac, and ofrac are the self-consistent values in the 
+!      afrac, lfrac, ifrac, and ofrac are the self-consistent values in the
 !      system.  lfrin is the fraction on the land grid and is allowed to
 !      vary from the self-consistent value as descibed below.  ifrad
 !      and ofrad are needed for the swnet calculation.
-!  the fractions fields are defined for each grid in the fraction bundles as 
+!  the fractions fields are defined for each grid in the fraction bundles as
 !    needed as follows.
 !    character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
 !    character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
@@ -34,25 +34,25 @@
 !    the land model fraction does not.  the ocean fraction then
 !    is just the complement of the ice fraction over the region
 !    of the ocean/ice mask.
-!  we assume that component domains are filled with the total 
+!  we assume that component domains are filled with the total
 !    potential mask/fraction on that grid, but that the fractions
 !    sent at run time are always the relative fraction covered.
-!    for example, if an ice cell can be up to 50% covered in 
+!    for example, if an ice cell can be up to 50% covered in
 !    ice and 50% land, then the ice domain should have a fraction
 !    value of 0.5 at that grid cell.  at run time though, the ice
 !    fraction will be between 0.0 and 1.0 meaning that grid cells
-!    is covered with between 0.0 and 0.5 by ice.  the "relative" fractions 
+!    is covered with between 0.0 and 0.5 by ice.  the "relative" fractions
 !    sent at run-time are corrected by the model to be total fractions
 !    such that
 !  in general, on every grid,
 !              fractions_*(afrac) = 1.0
 !              fractions_*(ifrac) + fractions_*(ofrac) + fractions_*(lfrac) = 1.0
-!  where fractions_* are a bundle of fractions on a particular grid and 
+!  where fractions_* are a bundle of fractions on a particular grid and
 !    *frac (ie afrac) is the fraction of a particular component in the bundle.
 !
 !  fraclist_g and fraclist_r don't yet interact with atm, lnd, ice, ocn.
 !
-!  the fractions are computed fundamentally as follows (although the 
+!  the fractions are computed fundamentally as follows (although the
 !    detailed implementation might be slightly different)
 !  initialization (frac_init):
 !    afrac is set on all grids
@@ -85,7 +85,7 @@
 !      fractions_o(ofrac) = mapi2o(fractions_i(ofrac))
 !      fractions_a(ifrac) = mapi2a(fractions_i(ifrac))
 !      fractions_a(ofrac) = mapi2a(fractions_i(ofrac))
-! 
+!
 !  fractions used in merging are as follows
 !    mrg_x2a uses fractions_a(lfrac,ofrac,ifrac)
 !    mrg_x2o needs to use fractions_o(ofrac,ifrac) normalized to one
@@ -116,14 +116,14 @@
 !    run time:
 !      fractions_a(lfrac) + fractions_a(ofrac) + fractions_a(ifrac) ~ 1.0
 !      0.0-eps < fractions_*(*) < 1.0+eps
-!    
+!
 !!
 !
 ! !REVISION HISTORY:
 !    2007-may-07 - M. Vertenstein - initial port to cpl7.
 !
 ! !INTERFACE: ------------------------------------------------------------------
-                                                                                      
+
 module seq_frac_mct
 
 ! !USES:
@@ -140,14 +140,14 @@ module seq_frac_mct
 
   use prep_lnd_mod, only: prep_lnd_get_mapper_Fa2l
   use prep_ocn_mod, only: prep_ocn_get_mapper_Fa2o
-  use prep_ocn_mod, only: prep_ocn_get_mapper_SFi2o  
+  use prep_ocn_mod, only: prep_ocn_get_mapper_SFi2o
   use prep_ice_mod, only: prep_ice_get_mapper_SFo2i
   use prep_rof_mod, only: prep_rof_get_mapper_Fl2r
   use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
   use prep_atm_mod, only: prep_atm_get_mapper_Fi2a
-  use prep_atm_mod, only: prep_atm_get_mapper_Fl2a   
+  use prep_atm_mod, only: prep_atm_get_mapper_Fl2a
   use prep_glc_mod, only: prep_glc_get_mapper_Fl2g
-  
+
   use component_type_mod
 
   implicit none
@@ -174,17 +174,17 @@ module seq_frac_mct
   logical, private :: seq_frac_dead
 
   !--- standard ---
-  real(r8),parameter :: eps_fracsum = 1.0e-02   ! allowed error in sum of fracs 
+  real(r8),parameter :: eps_fracsum = 1.0e-02   ! allowed error in sum of fracs
   real(r8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
   real(r8),parameter :: eps_fraclim = 1.0e-03   ! truncation limit in fractions_a(lfrac)
   logical ,parameter :: atm_frac_correct = .false. ! turn on frac correction on atm grid
   !--- standard plus atm fraction consistency ---
-  !  real(r8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs 
+  !  real(r8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
   !  real(r8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
   !  real(r8),parameter :: eps_fraclim = 1.0e-03   ! truncation limit in fractions_a(lfrac)
   !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
   !--- unconstrained and area conserving? ---
-  !  real(r8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs 
+  !  real(r8),parameter :: eps_fracsum = 1.0e-12   ! allowed error in sum of fracs
   !  real(r8),parameter :: eps_fracval = 1.0e-02   ! allowed error in any frac +- 0,1
   !  real(r8),parameter :: eps_fraclim = 1.0e-20   ! truncation limit in fractions_a(lfrac)
   !  logical ,parameter :: atm_frac_correct = .true. ! turn on frac correction on atm grid
@@ -198,7 +198,7 @@ module seq_frac_mct
   type(seq_map)  , pointer :: mapper_a2l
   type(seq_map)  , pointer :: mapper_l2r
   type(seq_map)  , pointer :: mapper_l2g
-  
+
   private seq_frac_check
 
 !===============================================================================
@@ -208,7 +208,7 @@ contains
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: seq_frac_init 
+! !IROUTINE: seq_frac_init
 !
 ! !DESCRIPTION:
 !    Initialize fraction attribute vectors and necessary ocn/ice domain
@@ -262,7 +262,7 @@ subroutine seq_frac_init( infodata,         &
 
    integer :: j,n            ! indices
    integer :: ka, ki, kl, ko ! indices
-   integer :: kf, kk, kr, kg ! indices 
+   integer :: kf, kk, kr, kg ! indices
    integer :: lsize          ! local size of ice av
    integer :: debug_old      ! old debug value
 
@@ -291,13 +291,13 @@ subroutine seq_frac_init( infodata,         &
         wav_present=wav_present,       &
         dead_comps=dead_comps)
 
-   dom_a => component_get_dom_cx(atm)   
-   dom_l => component_get_dom_cx(lnd)   
-   dom_i => component_get_dom_cx(ice)   
-   dom_o => component_get_dom_cx(ocn)   
-   dom_r => component_get_dom_cx(rof)   
-   dom_g => component_get_dom_cx(glc)   
-   dom_w => component_get_dom_cx(wav)   
+   dom_a => component_get_dom_cx(atm)
+   dom_l => component_get_dom_cx(lnd)
+   dom_i => component_get_dom_cx(ice)
+   dom_o => component_get_dom_cx(ocn)
+   dom_r => component_get_dom_cx(rof)
+   dom_g => component_get_dom_cx(glc)
+   dom_w => component_get_dom_cx(wav)
 
    debug_old = seq_frac_debug
    seq_frac_debug = 2
@@ -324,14 +324,14 @@ subroutine seq_frac_init( infodata,         &
       kf = mct_aVect_indexRA(dom_g%data ,"frac" ,perrWith=subName)
       fractions_g%rAttr(kg,:) = dom_g%data%rAttr(kf,:)
    end if
-      
+
    ! Initialize fractions on land grid decomp, just an initial "guess", updated later
 
    if (lnd_present) then
       lSize = mct_aVect_lSize(dom_l%data)
       call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=lsize)
       call mct_aVect_zero(fractions_l)
-      
+
       kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
       kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
       fractions_l%rAttr(kk,:) = dom_l%data%rAttr(kf,:)
@@ -344,7 +344,7 @@ subroutine seq_frac_init( infodata,         &
       endif
 
    end if
-      
+
    ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
 
    if (rof_present) then
@@ -352,7 +352,7 @@ subroutine seq_frac_init( infodata,         &
       call mct_aVect_init(fractions_r,rList=fraclist_r,lsize=lsize)
       call mct_aVect_zero(fractions_r)
 
-      kr = mct_aVect_indexRa(fractions_r,"rfrac",perrWith=subName)	
+      kr = mct_aVect_indexRa(fractions_r,"rfrac",perrWith=subName)
       kf = mct_aVect_indexRA(dom_r%data ,"frac" ,perrWith=subName)
       fractions_r%rAttr(kr,:) = dom_r%data%rAttr(kf,:)
    end if
@@ -372,8 +372,8 @@ subroutine seq_frac_init( infodata,         &
       lSize = mct_aVect_lSize(dom_i%data)
       call mct_aVect_init(fractions_i,rList=fraclist_i,lsize=lsize)
       call mct_aVect_zero(fractions_i)
-      
-      ko = mct_aVect_indexRa(fractions_i,"ofrac",perrWith=subName)	
+
+      ko = mct_aVect_indexRa(fractions_i,"ofrac",perrWith=subName)
       kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
       fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:)
 
@@ -390,12 +390,12 @@ subroutine seq_frac_init( infodata,         &
       lSize = mct_aVect_lSize(dom_o%data)
       call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=lsize)
       call mct_aVect_zero(fractions_o)
-      
+
       if (ice_present) then
          mapper_i2o => prep_ocn_get_mapper_SFi2o()
          call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac',norm=.false.)
       else
-         ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)	
+         ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
          kf = mct_aVect_indexRA(dom_o%data ,"frac" ,perrWith=subName)
          fractions_o%rAttr(ko,:) = dom_o%data%rAttr(kf,:)
          mapper_o2a => prep_atm_get_mapper_Fo2a()
@@ -420,10 +420,10 @@ subroutine seq_frac_init( infodata,         &
 
    if (atm_present) then
       ka = mct_aVect_indexRa(fractions_a,"afrac",perrWith=subName)
-      ki = mct_aVect_indexRa(fractions_a,"ifrac",perrWith=subName)	
+      ki = mct_aVect_indexRa(fractions_a,"ifrac",perrWith=subName)
       kl = mct_aVect_indexRa(fractions_a,"lfrac",perrWith=subName)
-      ko = mct_aVect_indexRa(fractions_a,"ofrac",perrWith=subName)	
-      kk = mct_aVect_indexRa(fractions_a,"lfrin",perrWith=subName)	
+      ko = mct_aVect_indexRa(fractions_a,"ofrac",perrWith=subName)
+      kk = mct_aVect_indexRa(fractions_a,"lfrin",perrWith=subName)
       lSize = mct_aVect_lSize(fractions_a)
 
       if (ice_present .or. ocn_present) then
@@ -500,9 +500,9 @@ subroutine seq_frac_set(infodata, ice, fractions_a, fractions_i, fractions_o)
 ! !INPUT/OUTPUT PARAMETERS:
    type(seq_infodata_type) , intent(in)    :: infodata
    type(component_type)    , intent(in)    :: ice
-   type(mct_aVect)         , intent(inout) :: fractions_a   ! Fractions on atm 
-   type(mct_aVect)         , intent(inout) :: fractions_i   ! Fractions on ice 
-   type(mct_aVect)         , intent(inout) :: fractions_o   ! Fractions on ocn 
+   type(mct_aVect)         , intent(inout) :: fractions_a   ! Fractions on atm
+   type(mct_aVect)         , intent(inout) :: fractions_i   ! Fractions on ice
+   type(mct_aVect)         , intent(inout) :: fractions_o   ! Fractions on ocn
 !EOP
 
    !----- local -----
@@ -525,7 +525,7 @@ subroutine seq_frac_set(infodata, ice, fractions_a, fractions_i, fractions_o)
 
    !----------------------------------------------------------------------
    ! Update fractions
-   ! - Update ice fraction on ice grid first, normalize to total fraction 
+   ! - Update ice fraction on ice grid first, normalize to total fraction
    !   available for cover
    ! - Update ocn fraction on ice grid as residual
    ! - Map ice/ocn fractions from ice grid to ocean and atm grids
@@ -536,7 +536,7 @@ subroutine seq_frac_set(infodata, ice, fractions_a, fractions_i, fractions_o)
         ice_present=ice_present,       &
         ocn_present=ocn_present)
 
-   dom_i => component_get_dom_cx(ice)   
+   dom_i => component_get_dom_cx(ice)
    i2x_i => component_get_c2x_cx(ice)
 
    if (ice_present) then
@@ -562,7 +562,7 @@ subroutine seq_frac_set(infodata, ice, fractions_a, fractions_i, fractions_o)
          call seq_map_map(mapper_i2a, fractions_i, fractions_a, &
               fldlist='ofrac:ifrac', norm=.false.)
 
-         !tcx---  fraction correction, this forces the fractions_a to sum to 1.0_r8.  
+         !tcx---  fraction correction, this forces the fractions_a to sum to 1.0_r8.
          !   ---  but it introduces a conservation error in mapping
          if (atm_frac_correct) then
             ki = mct_aVect_indexRA(fractions_a,"ifrac")

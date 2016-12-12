@@ -3,12 +3,7 @@
 #
 # build-namelist
 #
-# The simplest use of build-namelist is to execute it from the build directory where configure
-# was run.  
-#
-# Date        Contributor      Modification
-# -------------------------------------------------------------------------------------------
-# 2012-03-10  Vertenstein      Updated for cesm1.1
+# This is the build-namelist script for the CIME dice (Data Ice Model).
 #--------------------------------------------------------------------------------------------
 
 use strict;
@@ -28,22 +23,22 @@ sub usage {
 SYNOPSIS
      build-namelist [options]
 
-     Build the dice namelist 
+     Build the dice namelist
 OPTIONS
-     -help [or -h]            	   Print usage to STDOUT.					    
-     -infile "filepath"       	   Specify a file or list of files (comma delimited) 	    
-                              	   containing namelists to read values from.			    
-     -namelist "namelist"     	   Specify namelist settings directly on the commandline by 	    
-                              	   supplying a string containing FORTRAN namelist syntax, e.g.,  
-                              	      -namelist "&dice_exp taxmode='extend'/"		    
-     -print "level"           	   Print level for debugging:				    
-                              	      0 = silent						    
-                              	      1 = regular						    
-                              	      2 = verbose						    
+     -help [or -h]            	   Print usage to STDOUT.
+     -infile "filepath"       	   Specify a file or list of files (comma delimited)
+                              	   containing namelists to read values from.
+     -namelist "namelist"     	   Specify namelist settings directly on the commandline by
+                              	   supplying a string containing FORTRAN namelist syntax, e.g.,
+                              	      -namelist "&dice_exp taxmode='extend'/"
+     -print "level"           	   Print level for debugging:
+                              	      0 = silent
+                              	      1 = regular
+                              	      2 = verbose
      -caseroot                     CASEROOT directory variable
-     -scriptsroot                  SCRIPTSROOT directory variable
+     -cimeroot                     CIMEROOT directory variable
      -inst_string                  INST_STRING variable
-     -user_xml_dir "directory"     Directory of where to look for user versions of 
+     -user_xml_dir "directory"     Directory of where to look for user versions of
                                       namelist XML files (usually your SourceMods/src.dice directory)
                                       (such as namelist_definition_dice.xml, or namelist_defaults_dice.xml)
 
@@ -70,7 +65,7 @@ my $cmdline = "@ARGV";                 # Command line arguments to script
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 my $nm = "ProgName::";                 # name to use if script dies
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -84,7 +79,7 @@ my $outdirname = "$cwd";                  # Default name of output directory nam
 my %opts = ( help        => 0,
 	     silent      => 0,
 	     caseroot    => undef,
-	     scriptsroot => undef,
+	     cimeroot    => undef,
 	     inst_string => undef,
              user_xml_dir=> undef,
 	    );
@@ -95,8 +90,8 @@ GetOptions(
     "namelist=s"    => \$opts{'namelist'},
     "print=i"       => \$opts{'print'},
     "caseroot=s"    => \$opts{'caseroot'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
-    "inst_string=s" => \$opts{'inst_string'},	   
+    "cimeroot=s"    => \$opts{'cimeroot'},
+    "inst_string=s" => \$opts{'inst_string'},
     "user_xml_dir=s" => \$opts{'user_xml_dir'},
 )  or usage();
 
@@ -127,9 +122,9 @@ EOF
    }
 }
 
-my $CASEROOT    = $opts{'caseroot'}; 
-my $SCRIPTSROOT = $opts{'scriptsroot'};       
-my $INST_STRING = $opts{'inst_string'}; 
+my $CASEROOT    = $opts{'caseroot'};
+my $CIMEROOT    = $opts{'cimeroot'};
+my $INST_STRING = $opts{'inst_string'};
 
 if ($print>=2) { print "Setting dice configuration script directory to $cfgdir$eol"; }
 
@@ -153,20 +148,20 @@ EOF
 # Make sure we can find required perl modules, definition, and defaults files.
 # Look for them under the directory that contains the configure script.
 
-# The root directory to cesm utils Tools
-my $cimeroot = abs_path( "${SCRIPTSROOT}/../" );
+# The root directory to utils Tools
+my $cimeroot = abs_path( $CIMEROOT );
 my $perl5lib = "$cimeroot/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
 (-f "$perl5lib/XML/Lite.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory 
+** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory
     \"$perl5lib\" **
 EOF
 
 # The Build::Config module provides utilities to access the configuration information
 # in the config_cache.xml file
 (-f "$perl5lib/Build/Config.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory 
+** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory
     \"$perl5lib\" **
 EOF
 
@@ -192,12 +187,12 @@ if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol";
 # The Build::NamelistDefinition module provides utilities to validate that the output
 # namelists are consistent with the namelist definition file
 (-f "$perl5lib/Build/NamelistDefinition.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory 
+** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory
     \"$perl5lib\" **
 EOF
 
 # The namelist defaults file contains default values for all required namelist variables.
-my $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_dice.xml"; 
+my $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_dice.xml";
 
 # If user has user namelist defaults files
 if (defined $opts{'user_xml_dir'}) {
@@ -218,20 +213,20 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 # The Build::NamelistDefaults module provides a utility to obtain default values of namelist
 # variables based on finding a best fit with the attributes specified in the defaults file.
 (-f "$perl5lib/Build/NamelistDefaults.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory 
+** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory
     \"$perl5lib\" **
 EOF
 
 # The Build::Namelist module provides utilities to parse input namelists, to query and modify
 # namelists, and to write output namelists.
 (-f "$perl5lib/Build/Namelist.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory 
+** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory
     \"$perl5lib\" **
 EOF
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ( "$cfgdir/..", "$perl5lib", "$CASEROOT/Tools");
+my @dirs = ( "$cfgdir/..", "$perl5lib");
 unshift @INC, @dirs;
 require XML::Lite;
 require Build::Config;
@@ -239,10 +234,10 @@ require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
 require Streams::TemplateGeneric;
-require SetupTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the DICE config_cache.xml file. 
+# Create a configuration object from the DICE config_cache.xml file.
 my $cfg = Build::Config->new('config_cache.xml');
 
 # Validate some of the commandline option values.
@@ -311,8 +306,11 @@ if (defined $opts{'infile'}) {
 
 my %xmlvars = ();
 SetupTools::getxmlvars(${CASEROOT},\%xmlvars);
+# need to expand DIN_LOC_ROOT first
+$xmlvars{DIN_LOC_ROOT}=SetupTools::expand_xml_var($xmlvars{DIN_LOC_ROOT}, \%xmlvars);
+
 foreach my $attr (keys %xmlvars) {
-    $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars); 
+    $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 
 my $RUN_TYPE        = $xmlvars{'RUN_TYPE'};
@@ -323,8 +321,9 @@ my $ICE_GRID        = $xmlvars{'ICE_GRID'};
 my $DICE_MODE       = $xmlvars{'DICE_MODE'};
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
-if ($print>=2) { 
-    print "  CESM inputdata root directory: $DIN_LOC_ROOT$eol"; 
+
+if ($print>=2) {
+    print "  Inputdata root directory: $DIN_LOC_ROOT$eol";
     print "  dice_mode is $DICE_MODE \n";
     print "  dice grid is $ICE_GRID \n";
 }
@@ -359,7 +358,7 @@ foreach my $stream ( @streams ) {
 
     # Set stream specific part of default_namelist_opts hash
     $default_namelist_opts{'stream'} = $stream;
-	
+
     my $outstream = "dice.streams.txt" . ".$stream" . "$INST_STRING";
     if ($print>=1) { print "  dice stream is $stream$INST_STRING \n"; }
 
@@ -367,7 +366,7 @@ foreach my $stream ( @streams ) {
 
 	# do nothing
 
-    } elsif (-e "$CASEROOT/user_$outstream") {  
+    } elsif (-e "$CASEROOT/user_$outstream") {
 
 	my $command = "cp -p $CASEROOT/user_$outstream $CASEROOT/Buildconf/diceconf/$outstream";
 	system($command) == 0  or die "system $command failed: $? \n";
@@ -385,17 +384,17 @@ foreach my $stream ( @streams ) {
 	$stream_template_opts{'ProgName'}   = $ProgName;
 	$stream_template_opts{'ProgDir'}    = "$cfgdir";
 	$stream_template_opts{'cmdline'}    = $cmdline;
-	
+
         if ($stream eq "prescribed" || $stream eq "copyall") {
 	    # Currently ASSUME ONLY 1 FILE for prescribed mode
             my $grid_file = $defaults->get_value( "strm_grid_file", \%default_namelist_opts );
             my $data_file = $defaults->get_value( "strm_data_file", \%default_namelist_opts );
             my $grid_file = SetupTools::expand_xml_var($grid_file, \%xmlvars);
             my $data_file = SetupTools::expand_xml_var($data_file, \%xmlvars);
-            $stream_template_opts{'domainpath'} = dirname($grid_file);  
-            $stream_template_opts{'domain'}     = basename($grid_file);  
-            $stream_template_opts{'filepath'}   = dirname($data_file);  
-            $stream_template_opts{'filenames'}  = basename($data_file);  
+            $stream_template_opts{'domainpath'} = dirname($grid_file);
+            $stream_template_opts{'domain'}     = basename($grid_file);
+            $stream_template_opts{'filepath'}   = dirname($data_file);
+            $stream_template_opts{'filenames'}  = basename($data_file);
         } else {
             $stream_template_opts{'filepath'}   = $defaults->get_value( "strm_datdir"    , \%default_namelist_opts );
             $stream_template_opts{'filenames'}  = $defaults->get_value( "strm_datfil"    , \%default_namelist_opts );
@@ -407,26 +406,26 @@ foreach my $stream ( @streams ) {
 	$stream_template_opts{'domvarnames'}= $defaults->get_value( "strm_domvar"    , \%default_namelist_opts );
 	$stream_template_opts{'yearfirst'}  = $defaults->get_value( "strm_year_start", \%default_namelist_opts );
 	$stream_template_opts{'yearlast'}   = $defaults->get_value( "strm_year_end"  , \%default_namelist_opts );
-	
+
 	$stream_template_opts{'filepath'}   = SetupTools::expand_xml_var($stream_template_opts{'filepath'}  , \%xmlvars);
 	$stream_template_opts{'filenames'}  = SetupTools::expand_xml_var($stream_template_opts{'filenames'} , \%xmlvars);
 	$stream_template_opts{'domainpath'} = SetupTools::expand_xml_var($stream_template_opts{'domainpath'}, \%xmlvars);
 	$stream_template_opts{'domain'}     = SetupTools::expand_xml_var($stream_template_opts{'domain'}    , \%xmlvars);
 	$stream_template_opts{'yearfirst'}  = SetupTools::expand_xml_var($stream_template_opts{'yearfirst'} , \%xmlvars);
 	$stream_template_opts{'yearlast'}   = SetupTools::expand_xml_var($stream_template_opts{'yearlast'}  , \%xmlvars);
-	
-	
+
+
 	# Create the streams txt file for this stream (from a generic template)
 	my $stream_template = Streams::TemplateGeneric->new( \%stream_template_opts );
 	$stream_template->Read( "${CASEROOT}/Buildconf/dice.template.streams.xml" );
 	$stream_template->Write( $outstream );
-	
-	
+
+
 	# Append to dice.input_data_list
 	my @filenames = $stream_template->GetDataFilenames( 'domain');
 	my $i = 0;
 	foreach my $file ( @filenames ) {
-	    $i++; 
+	    $i++;
 	    print $fh_out "domain${i} = $file\n";
 	}
 
@@ -478,7 +477,7 @@ foreach my $stream ( @streams ) {
 }
 
 $fh_out->close;
-    
+
 #########################################################
 # namelist group: shr_strdata_nml (in file dice_ice_in) #
 #########################################################
@@ -578,7 +577,7 @@ sub add_default {
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
 #  $defaults          -- the namelist defaults object
-#  $DIN_LOC_ROOT      -- CESM inputdata root directory
+#  $DIN_LOC_ROOT      -- inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -612,7 +611,7 @@ sub add_default {
 	   $val = $defaults->get_value($var, \%opts);
 
            # Truncate model_version appropriately
-   
+
            if ( $var eq "model_version" ) {
                $val =~ /(URL: https:\/\/[a-zA-Z0-9._-]+\/)([a-zA-Z0-9\/._-]+)(\/bld\/.+)/;
                $val = $2;
@@ -621,7 +620,7 @@ sub add_default {
 
        unless ( defined($val) ) {
 	   unless ($opts{'nofail'}) {
-	       die "$ProgName - No default value found for $var.\n" . 
+	       die "$ProgName - No default value found for $var.\n" .
                    "            Are defaults provided? \n";
 	   }
 	   else {
@@ -635,7 +634,7 @@ sub add_default {
 
        # The default values for input pathnames are relative.  If the namelist
        # variable is defined to be an absolute pathname, then prepend
-       # the CESM inputdata root directory.
+       # the inputdata root directory.
        if (not defined $opts{'no_abspath'}) {
 	   if (defined $opts{'set_abspath'}) {
 	       $val = set_abs_filepath($val, $opts{'set_abspath'});

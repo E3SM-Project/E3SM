@@ -5,24 +5,24 @@
 
 cd $CASEROOT
 
-set RUN_STARTDATE      = `./xmlquery RUN_STARTDATE -value`
-set DOUT_S_ROOT        = `./xmlquery DOUT_S_ROOT   -value`
-set DOUT_L_MSROOT      = `./xmlquery DOUT_L_MSROOT -value`
+set RUN_STARTDATE      = `./xmlquery RUN_STARTDATE --value`
+set DOUT_S_ROOT        = `./xmlquery DOUT_S_ROOT   --value`
+set DOUT_L_MSROOT      = `./xmlquery DOUT_L_MSROOT --value`
 
-echo "doing an initial test" >>& $TESTSTATUS_LOG 
+echo "doing an initial test" >>& $TESTSTATUS_LOG
 
 set start_date = $RUN_STARTDATE
 set start_year = `echo $start_date | cut -f 1 -d "-"`
 set start_date = $start_year-11-01
 
-./xmlchange -file env_run.xml   -id START_DATE		-val $start_yearp2-01-01
-./xmlchange -file env_build.xml -id BUILD_COMPLETE	-val TRUE
-./xmlchange -file env_run.xml   -id CONTINUE_RUN	-val FALSE
-./xmlchange -file env_run.xml   -id REST_OPTION		-val none
+./xmlchange --file env_run.xml   --id START_DATE		--val $start_yearp2-01-01
+./xmlchange --file env_build.xml --id BUILD_COMPLETE	--val TRUE
+./xmlchange --file env_run.xml   --id CONTINUE_RUN	--val FALSE
+./xmlchange --file env_run.xml   --id REST_OPTION		--val none
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -31,10 +31,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -42,21 +42,21 @@ else
     exit -1
 endif
 
-echo "running long-term archiver" >>& $TESTSTATUS_LOG 
+echo "running long-term archiver" >>& $TESTSTATUS_LOG
 
-./$CASE.l_archive
+./case.lt_archive
 
 #======================================================================
 # (2) do a restart run test
 #======================================================================
 
-echo "doing a continue run" >>& $TESTSTATUS_LOG 
+echo "doing a continue run" >>& $TESTSTATUS_LOG
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val TRUE
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -65,10 +65,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -76,8 +76,8 @@ else
     exit -1
 endif
 
-echo "running long-term archiver" >>& $TESTSTATUS_LOG 
-./$CASE.l_archive
+echo "running long-term archiver" >>& $TESTSTATUS_LOG
+./case.lt_archive
 
 # TODO ??? What should be done here?
 

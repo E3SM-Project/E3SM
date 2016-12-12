@@ -10,7 +10,7 @@
 #  repeat while nz<=Nlev {
 #     let nz := nz+1;
 #     # test that $nz divides $ntasks
-#     let remainder := ntasks mod nz; 
+#     let remainder := ntasks mod nz;
 #     if remainder == 0.0 then {
 #        let ny := ntasks/nz;
 #        # test that y subdomains contain at least 3 latitudes
@@ -20,7 +20,7 @@
 #           printf "%s %s\n", taskcounter, ntasks;
 #           break;
 #        };
-#     };        
+#     };
 #  };
 #};
 subject to SOS1_2:         1 = sum {i in AtmSet} z1_2[i];
@@ -48,7 +48,7 @@ for {i in M} {
   let b := 1;
   let c := .01;
   let k := 10;
-  solve fitData; 
+  solve fitData;
   let A[i] := a;
   let B[i] := b;
   let C[i] := c;
@@ -69,7 +69,7 @@ display etaT, etaTi_m1, eta_m1;
 
 printf "##%4s  %8s %10s\n", "Comp", "NTASKS", "seconds/model-day";
 for {i in M} {
-  printf "%s  %8.0f  %8.0f  %10.3f\n", i, n[i], n[i]*CPN, (A[i]/n[i] + B[i]*(n[i]^C[i]) + K[i]); 
+  printf "%s  %8.0f  %8.0f  %10.3f\n", i, n[i], n[i]*CPN, (A[i]/n[i] + B[i]*(n[i]^C[i]) + K[i]);
 }
 printf "Total esimated total time:  %10.3f\n", etaT;
 

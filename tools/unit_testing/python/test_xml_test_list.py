@@ -124,7 +124,7 @@ class TestSuitesFromXML(unittest.TestCase):
 </root>
 """
         self.check_spec_list(xml_str,
-                             ["suite1", "suite2"], 
+                             ["suite1", "suite2"],
                              [["/the/path"], ["/other/path"]])
 
     def test_path_relative_to_known(self):
@@ -139,7 +139,7 @@ class TestSuitesFromXML(unittest.TestCase):
 </root>
 """
         self.check_spec_list(xml_str,
-                             ["suite1"], 
+                             ["suite1"],
                              [["/foodir/path"]],
                              known_paths={"foo": "/foodir"})
 

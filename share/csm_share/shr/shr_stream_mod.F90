@@ -7,22 +7,22 @@
 ! !MODULE: shr_stream_mod -- Data type and methods to manage input data streams.
 !
 ! !DESCRIPTION:
-!    A "data stream" is a sequence of input files where each file contains the 
+!    A "data stream" is a sequence of input files where each file contains the
 !    same set of data fields and all the data fields are on the same grid.
-!    The sequence of input data files provides an uninterupted time series of 
+!    The sequence of input data files provides an uninterupted time series of
 !    data.
 !
 !    A stream data type stores information about one data stream, including the
-!    range of data date years to use and how data dates align with model dates.  
+!    range of data date years to use and how data dates align with model dates.
 !
-!    Given a model date, this module can return data dates that are upper and 
+!    Given a model date, this module can return data dates that are upper and
 !    lower time bounds around the given model date and the names of the files
 !    containing those dates.
 !
 ! !REMARKS:
 !
 ! !REVISION HISTORY:
-!     2005-Apr-13 - B. Kauffman - moved code from dshr to shr 
+!     2005-Apr-13 - B. Kauffman - moved code from dshr to shr
 !     2005-Apr-01 - B. Kauffman - first functional version of findBounds
 !     2004-Dec-xx - B. Kauffman - initial module
 !
@@ -41,6 +41,7 @@ module shr_stream_mod
    use shr_log_mod, only : s_loglev   => shr_log_Level
    use shr_log_mod, only : s_logunit  => shr_log_Unit
    use shr_log_mod, only : OOBMsg => shr_log_OOBMsg
+   use pio, only : file_desc_t
    use perf_mod
 
    implicit none
@@ -50,7 +51,7 @@ module shr_stream_mod
 ! !PUBLIC TYPES:
 
    public :: shr_stream_streamType        ! stream data type with private components
-   public :: shr_stream_fileType 
+   public :: shr_stream_fileType
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
@@ -72,6 +73,8 @@ module shr_stream_mod
    public :: shr_stream_getFile           ! acquire file, return name of file to open
    public :: shr_stream_getNFiles         ! get the number of files in a stream
    public :: shr_stream_getCalendar       ! get the stream calendar
+   public :: shr_stream_getCurrFile       ! get the currfile, fileopen, and currpioid
+   public :: shr_stream_setCurrFile       ! set the currfile, fileopen, and currpioid
    public :: shr_stream_dataDump          ! internal stream data for debugging
    public :: shr_stream_restWrite         ! write a streams restart file
    public :: shr_stream_restRead          ! read  a streams restart file
@@ -136,6 +139,11 @@ module shr_stream_mod
       integer(SHR_KIND_IN) :: k_gvd,n_gvd         ! file/sample of greatest valid date
       logical              :: found_gvd           ! T <=> k_gvd,n_gvd have been set
 
+      !---- for keeping files open
+      logical                 :: fileopen         ! is current file open
+      character(SHR_KIND_CL)  :: currfile         ! current filename
+      type(file_desc_t)       :: currpioid        ! current pio file desc
+
       !--- stream data not used by stream module itself ---
       character(SHR_KIND_CXX):: fldListFile       ! field list: file's  field names
       character(SHR_KIND_CXX):: fldListModel      ! field list: model's field names
@@ -143,7 +151,8 @@ module shr_stream_mod
       character(SHR_KIND_CL) :: domFileName       ! domain file: name
       character(SHR_KIND_CS) :: domTvarName       ! domain file: time-dim var name
       character(SHR_KIND_CS) :: domXvarName       ! domain file: x-dim var name
-      character(SHR_KIND_CS) :: domYvarName       ! domain file: y-dim var ame
+      character(SHR_KIND_CS) :: domYvarName       ! domain file: y-dim var name
+      character(SHR_KIND_CS) :: domZvarName       ! domain file: z-dim var name
       character(SHR_KIND_CS) :: domAreaName       ! domain file: area  var name
       character(SHR_KIND_CS) :: domMaskName       ! domain file: mask  var name
 
@@ -177,7 +186,7 @@ contains
 !     2007-Sep-17 - B. Kauffman - reworked wrt new streams.txt format
 !     2005-Feb-03 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc)
 
@@ -185,12 +194,12 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
 
    type(shr_stream_streamType)    ,intent(out) :: strm      ! data stream
    character(*)                   ,intent(in)  :: infoFile  ! file with stream info, must read
-   integer  (SHR_KIND_IN)         ,intent(in)  :: yearFirst ! first year to use 
-   integer  (SHR_KIND_IN)         ,intent(in)  :: yearLast  ! last  year to use 
+   integer  (SHR_KIND_IN)         ,intent(in)  :: yearFirst ! first year to use
+   integer  (SHR_KIND_IN)         ,intent(in)  :: yearLast  ! last  year to use
    integer  (SHR_KIND_IN)         ,intent(in)  :: yearAlign ! align yearFirst with this model year
    character(*)          ,optional,intent(in)  :: taxMode   ! time axis cycling option
    integer  (SHR_KIND_IN),optional,intent(out) :: rc        ! return code
- 
+
 !EOP
 
    !----- local -----
@@ -212,11 +221,11 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    type(fileVector)       :: fileVec       ! Vector used to construct file array.
 
    !----- formats -----
-   character(*),parameter :: subName = '(shr_stream_init) ' 
-   character(*),parameter :: F00   = "('(shr_stream_init) ',8a)" 
+   character(*),parameter :: subName = '(shr_stream_init) '
+   character(*),parameter :: F00   = "('(shr_stream_init) ',8a)"
 
 !-------------------------------------------------------------------------------
-! notes: 
+! notes:
 ! * should this use standard namelist input?
 ! * needs more robust error checking
 ! o yearFirst,yearLast,yearAlign are provided by calling routine
@@ -237,9 +246,9 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
       strm%taxMode       = trim(taxMode)
    endif
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading data source'
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    nUnit = shr_file_getUnit() ! get unused unit number
 
@@ -260,9 +269,9 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    close(nUnit)
    call shr_file_freeUnit(nUnit)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading field data variable names'
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    !--- find start tag ---
    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
@@ -295,7 +304,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
       if (n==1) then
          strm%fldListFile  = trim(fldNameFile )
          strm%fldListModel = trim(fldNameModel)
-      else  
+      else
          strm%fldListFile  = trim(strm%fldListFile ) // ":" // trim(fldNameFile )
          strm%fldListModel = trim(strm%fldListModel) // ":" // trim(fldNameModel)
       end if
@@ -308,11 +317,11 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
       call shr_stream_abort(subName//"ERROR: no input field names")
    end if
 
-   close(nUnit) 
+   close(nUnit)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading time-interpolation alogrithm '
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    !--- find start tag ---
    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
@@ -324,11 +333,11 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
       goto 999
    end if
 
-   close(nUnit) 
+   close(nUnit)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading offset'
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    !--- find start tag ---
    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
@@ -351,11 +360,11 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    end if
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * offset ',strm%offset
 
-   close(nUnit) 
+   close(nUnit)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading data file path'
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    !--- find start tag ---
    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
@@ -383,11 +392,11 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    strm%FilePath = str
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * data file path = ', trim(strm%FilePath)
 
-   close(nUnit) 
+   close(nUnit)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading field data file names'
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    !--- find start tag ---
    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
@@ -425,11 +434,11 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
       call shr_stream_abort(subName//"ERROR: no input file names")
    end if
 
-   close(nUnit) 
+   close(nUnit)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading domain data variable names'
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    !--- find start tag ---
    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
@@ -468,7 +477,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
       if (n==1) then
          fldListFile  = trim(fldNameFile )
          fldListModel = trim(fldNameModel)
-      else  
+      else
          fldListFile  = trim(fldListFile ) // ":" // trim(fldNameFile )
          fldListModel = trim(fldListModel) // ":" // trim(fldNameModel)
       end if
@@ -511,6 +520,17 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
          call shr_string_listGetName (fldListFile,n,substr,rc)
          strm%domYvarName = subStr
       endif
+      !--- get vertical variable name ---
+      n = shr_string_listGetIndexF(fldListModel,"hgt")
+      if (n==0) then
+!         rCode = 1
+!         write(s_logunit,F00) "ERROR: no input field names"
+!         call shr_stream_abort(subName//"ERROR: no lat variable name")
+         strm%domZvarName = 'unknownname'
+      else
+         call shr_string_listGetName (fldListFile,n,substr,rc)
+         strm%domZvarName = subStr
+      endif
       !--- get area variable name ---
       n = shr_string_listGetIndexF(fldListModel,"area")
       if (n==0) then
@@ -535,11 +555,11 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
       endif
    end if
 
-   close(nUnit) 
+   close(nUnit)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading domain data file path'
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    !--- find start tag ---
    startTag =  "<domainInfo>"
@@ -567,10 +587,10 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    strm%domFilePath = str
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * data file path = ', trim(strm%domFilePath)
 
-   close(nUnit) 
-   !-----------------------------------------------------------------------------  
+   close(nUnit)
+   !-----------------------------------------------------------------------------
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  reading domain data file name'
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
 
    !--- find start tag ---
    open(nUnit,file=infoFile,STATUS='OLD',FORM='FORMATTED',ACTION='READ')
@@ -595,17 +615,17 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    strm%domFileName = str
    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * ',trim(strm%domFileName)
 
-   close(nUnit) 
+   close(nUnit)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    ! get initial calendar value
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    call shr_stream_getCalendar(strm,1,calendar)
    strm%calendar = trim(calendar)
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    ! normal return or end-of-file problem?
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    call shr_stream_setInit(strm)
    if ( present(rc) ) rc = rCode
    call shr_file_freeUnit(nUnit)
@@ -615,10 +635,10 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    write(s_logunit,F00) "ERROR: unexpected end-of-file while reading ",trim(startTag)
    write(s_logunit,F00) " error code = ", rCode
    call shr_stream_abort(subName//"ERROR: unexpected end-of-file")
-   close(nUnit) 
+   close(nUnit)
    if ( present(rc) ) rc = rCode
    call shr_file_freeUnit(nUnit)
-   
+
 end subroutine shr_stream_init
 
 !===============================================================================
@@ -634,18 +654,19 @@ end subroutine shr_stream_init
 ! !REVISION HISTORY:
 !     2010-Apr-20 - T. Craig - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
                           fldListFile,fldListModel,domFilePath,domFileName, &
-                          domTvarName,domXvarName,domYvarName,domAreaName,domMaskName, &
+                          domTvarName,domXvarName,domYvarName,domZvarName,  &
+                          domAreaName,domMaskName, &
                           filePath,filename,dataSource,rc)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
    type(shr_stream_streamType)    ,intent(inout) :: strm      ! data stream
-   integer  (SHR_KIND_IN),optional,intent(in)    :: yearFirst ! first year to use 
-   integer  (SHR_KIND_IN),optional,intent(in)    :: yearLast  ! last  year to use 
+   integer  (SHR_KIND_IN),optional,intent(in)    :: yearFirst ! first year to use
+   integer  (SHR_KIND_IN),optional,intent(in)    :: yearLast  ! last  year to use
    integer  (SHR_KIND_IN),optional,intent(in)    :: yearAlign ! align yearFirst with this model year
    integer  (SHR_KIND_IN),optional,intent(in)    :: offset    ! offset in seconds of stream data
    character(*)          ,optional,intent(in)    :: taxMode   ! time axis mode
@@ -655,14 +676,15 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
    character(*)          ,optional,intent(in)    :: domFileName  ! domain file name
    character(*)          ,optional,intent(in)    :: domTvarName  ! domain time dim name
    character(*)          ,optional,intent(in)    :: domXvarName  ! domain x dim name
-   character(*)          ,optional,intent(in)    :: domYvarName  ! domain y dim nam
+   character(*)          ,optional,intent(in)    :: domYvarName  ! domain y dim name
+   character(*)          ,optional,intent(in)    :: domZvarName  ! domain z dim name
    character(*)          ,optional,intent(in)    :: domAreaName  ! domain area name
    character(*)          ,optional,intent(in)    :: domMaskName  ! domain mask name
    character(*)          ,optional,intent(in)    :: filePath   ! path for filenames
    character(*)          ,optional,intent(in)    :: filename(:)  ! input filenames
    character(*)          ,optional,intent(in)    :: dataSource ! comment line
    integer  (SHR_KIND_IN),optional,intent(out)   :: rc        ! return code
- 
+
 !EOP
 
    !----- local -----
@@ -673,9 +695,9 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
    type(fileVector)       :: fileVec       ! Vector used to construct file array.
 
    !----- formats -----
-   character(*),parameter :: subName = '(shr_stream_set) ' 
-   character(*),parameter :: F00   = "('(shr_stream_set) ',8a)" 
-   character(*),parameter :: F01   = "('(shr_stream_set) ',1a,i6)" 
+   character(*),parameter :: subName = '(shr_stream_set) '
+   character(*),parameter :: F00   = "('(shr_stream_set) ',8a)"
+   character(*),parameter :: F01   = "('(shr_stream_set) ',1a,i6)"
 
 !-------------------------------------------------------------------------------
 
@@ -719,6 +741,9 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
    if (present(domYvarName)) then
       strm%domYvarName = trim(domYvarName)
    endif
+   if (present(domZvarName)) then
+      strm%domZvarName = trim(domZvarName)
+   endif
    if (present(domAreaName)) then
       strm%domAreaName = trim(domAreaName)
    endif
@@ -729,8 +754,10 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
       strm%filePath = trim(filePath)
    endif
    if (present(filename)) then
-      !write(s_logunit,F01) "size of filename = ",size(filename)
-      !write(s_logunit,F00) "filename = ",filename
+      if (debug>1 .and. s_loglev > 0) then
+         write(s_logunit,F01) "size of filename = ",size(filename)
+         write(s_logunit,F00) "filename = ",filename
+      endif
 
       do n = 1,size(filename)
          ! Ignore null file names.
@@ -744,9 +771,9 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
       call fileVec%move_out(strm%file)
    endif
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    ! get initial calendar value
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    call shr_stream_getCalendar(strm,1,calendar)
    strm%calendar = trim(calendar)
 
@@ -767,7 +794,7 @@ end subroutine shr_stream_set
 ! !REVISION HISTORY:
 !     2010-Oct-20 - T. Craig - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_default(strm,rc)
 
@@ -775,24 +802,24 @@ subroutine shr_stream_default(strm,rc)
 
    type(shr_stream_streamType)    ,intent(inout) :: strm      ! data stream
    integer  (SHR_KIND_IN),optional,intent(out)   :: rc        ! return code
- 
+
 !EOP
 
    !----- local -----
    integer(SHR_KIND_IN) :: n
 
    !----- formats -----
-   character(*),parameter :: subName = '(shr_stream_default) ' 
-   character(*),parameter :: F00   = "('(shr_stream_default) ',8a)" 
-   character(*),parameter :: F01   = "('(shr_stream_default) ',1a,i6)" 
+   character(*),parameter :: subName = '(shr_stream_default) '
+   character(*),parameter :: F00   = "('(shr_stream_default) ',8a)"
+   character(*),parameter :: F01   = "('(shr_stream_default) ',1a,i6)"
 
 !-------------------------------------------------------------------------------
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    ! set default values for everything in stream
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    call shr_stream_clearInit(strm)
-   strm%nFiles           = 0  
+   strm%nFiles           = 0
    strm%dataSource       = 'undefined'
    strm%filePath         = ' '
 
@@ -804,12 +831,15 @@ subroutine shr_stream_default(strm,rc)
    strm%offset           = 0
    strm%taxMode          = trim(shr_stream_taxis_cycle)
 
-   strm%k_lvd            = -1 
-   strm%n_lvd            = -1 
+   strm%k_lvd            = -1
+   strm%n_lvd            = -1
    strm%found_lvd        = .false.
-   strm%k_gvd            = -1 
-   strm%n_gvd            = -1 
+   strm%k_gvd            = -1
+   strm%n_gvd            = -1
    strm%found_gvd        = .false.
+
+   strm%fileopen         = .false.
+   strm%currfile         = ''
 
    strm%fldListFile      = ' '
    strm%fldListModel     = ' '
@@ -818,6 +848,7 @@ subroutine shr_stream_default(strm,rc)
    strm%domTvarName      = ' '
    strm%domXvarName      = ' '
    strm%domYvarName      = ' '
+   strm%domZvarName      = ' '
    strm%domAreaName      = ' '
    strm%domMaskName      = ' '
 
@@ -841,8 +872,8 @@ subroutine shr_stream_readUpToTag(nUnit,tag,optionalTag,rc)
    logical                          :: localOptionalTag ! local version of optionalTag
 
    !----- formats -----
-   character(*),parameter :: subName = '(shr_stream_readUpToTag) ' 
-   character(*),parameter :: F00   = "('(shr_stream_readUpToTag) ',8a)" 
+   character(*),parameter :: subName = '(shr_stream_readUpToTag) '
+   character(*),parameter :: F00   = "('(shr_stream_readUpToTag) ',8a)"
 
 !-------------------------------------------------------------------------------
 ! Note: does not rewind to start of file
@@ -866,7 +897,7 @@ subroutine shr_stream_readUpToTag(nUnit,tag,optionalTag,rc)
       write(s_logunit,F00) "ERROR: tag not found: ",trim(tag)
       call shr_stream_abort(subName//"ERROR: tag not found")
    end if
-   
+
 end subroutine shr_stream_readUpToTag
 
 !===============================================================================
@@ -883,7 +914,7 @@ end subroutine shr_stream_readUpToTag
 ! !REVISION HISTORY:
 !     2007-Aug-01 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_parseInput(str,fileName,yearAlign,yearFirst,yearLast,rc)
 
@@ -891,11 +922,11 @@ subroutine shr_stream_parseInput(str,fileName,yearAlign,yearFirst,yearLast,rc)
 
    character(*)                   ,intent(in)  :: str       ! string to parse
    character(*)                   ,intent(out) :: fileName  ! file name
-   integer  (SHR_KIND_IN)         ,intent(out) :: yearFirst ! first year to use 
-   integer  (SHR_KIND_IN)         ,intent(out) :: yearLast  ! last  year to use 
+   integer  (SHR_KIND_IN)         ,intent(out) :: yearFirst ! first year to use
+   integer  (SHR_KIND_IN)         ,intent(out) :: yearLast  ! last  year to use
    integer  (SHR_KIND_IN)         ,intent(out) :: yearAlign ! align yearFirst with this model year
    integer  (SHR_KIND_IN),optional,intent(out) :: rc        ! return code
- 
+
 !EOP
 
    !----- local -----
@@ -903,14 +934,14 @@ subroutine shr_stream_parseInput(str,fileName,yearAlign,yearFirst,yearLast,rc)
    character(SHR_KIND_CL) :: str2     ! temp work string
 
    !----- formats -----
-   character(*),parameter :: subName = '(shr_stream_parseInput) ' 
-   character(*),parameter :: F00   = "('(shr_stream_parseInput) ',8a)" 
-   character(*),parameter :: F01   = "('(shr_stream_parseInput) ',a,3i10)" 
+   character(*),parameter :: subName = '(shr_stream_parseInput) '
+   character(*),parameter :: F00   = "('(shr_stream_parseInput) ',8a)"
+   character(*),parameter :: F01   = "('(shr_stream_parseInput) ',a,3i10)"
 
 !-------------------------------------------------------------------------------
-! notes: 
+! notes:
 ! - this routine exists largely because of the difficulty of reading file names
-!   that include dir paths, ie. containing "/", from char strings 
+!   that include dir paths, ie. containing "/", from char strings
 !   because the "/" is interpreted as an end-of-record.
 !-------------------------------------------------------------------------------
 
@@ -929,7 +960,7 @@ subroutine shr_stream_parseInput(str,fileName,yearAlign,yearFirst,yearLast,rc)
    end if
 
    if (present(rc)) rc = 0
-   
+
 end subroutine shr_stream_parseInput
 
 !===============================================================================
@@ -947,7 +978,7 @@ end subroutine shr_stream_parseInput
 !     2009-Sep-01 - T. Craig - modified
 !     2005-Apr-01 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_findBounds(strm,mDateIn,        secIn,               &
                                   &   mDateLB,dDateLB,secLB,n_lb,fileLB,   &
@@ -998,18 +1029,18 @@ subroutine shr_stream_findBounds(strm,mDateIn,        secIn,               &
    logical                :: limit         ! is limiting on or off
 
    !----- formats -----
-   character(*),parameter :: subName = '(shr_stream_findBounds) ' 
-   character(*),parameter :: F00   = "('(shr_stream_findBounds) ',8a)" 
-   character(*),parameter :: F01   = "('(shr_stream_findBounds) ',a,i9.8,a)" 
-   character(*),parameter :: F02   = "('(shr_stream_findBounds) ',a,2i9.8,i6,i5,1x,a)" 
-   character(*),parameter :: F03   = "('(shr_stream_findBounds) ',a,i4)" 
-   character(*),parameter :: F04   = "('(shr_stream_findBounds) ',2a,i4)" 
+   character(*),parameter :: subName = '(shr_stream_findBounds) '
+   character(*),parameter :: F00   = "('(shr_stream_findBounds) ',8a)"
+   character(*),parameter :: F01   = "('(shr_stream_findBounds) ',a,i9.8,a)"
+   character(*),parameter :: F02   = "('(shr_stream_findBounds) ',a,2i9.8,i6,i5,1x,a)"
+   character(*),parameter :: F03   = "('(shr_stream_findBounds) ',a,i4)"
+   character(*),parameter :: F04   = "('(shr_stream_findBounds) ',2a,i4)"
 
 !-------------------------------------------------------------------------------
 ! Purpose:
 !   1) take the model date, map it into the data date range
 !   2) find the upper and lower bounding data dates
-!   3) return the bounding data and model dates, file names, & t-coord indicies 
+!   3) return the bounding data and model dates, file names, & t-coord indicies
 !-------------------------------------------------------------------------------
 
    if (debug>0 .and. s_loglev > 0) write(s_logunit,F02) "DEBUG: ---------- enter ------------------"
@@ -1071,7 +1102,7 @@ subroutine shr_stream_findBounds(strm,mDateIn,        secIn,               &
 
    if (.not. strm%found_lvd) then
 A:    do k=1,strm%nFiles
-         if (.not. strm%file(k)%haveData) then  
+         if (.not. strm%file(k)%haveData) then
             call shr_stream_readtCoord(strm, k, rCode)
             if ( rCode /= 0 )then
                call shr_stream_abort(trim(subName)//" ERROR: readtCoord1")
@@ -1086,7 +1117,7 @@ A:    do k=1,strm%nFiles
                strm%found_lvd = .true.
                exit A
             end if
-         end do 
+         end do
       end do A
       if (.not. strm%found_lvd) then
          rCode = 1
@@ -1102,7 +1133,7 @@ A:    do k=1,strm%nFiles
       end if
       if (debug>1 .and. s_loglev > 0) then
          if (strm%found_lvd) write(s_logunit,F01) "DEBUG: found LVD = ",strm%file(k)%date(n)
-      end if 
+      end if
    end if
 
    if (strm%found_lvd) then
@@ -1111,7 +1142,7 @@ A:    do k=1,strm%nFiles
       rDatelvd = strm%file(k)%date(n) + strm%file(k)%secs(n)/spd ! LVD date + frac day
    else
       write(s_logunit,F00)  "ERROR: LVD not found yet"
-      call shr_stream_abort(trim(subName)//" ERROR: LVD not found yet")      
+      call shr_stream_abort(trim(subName)//" ERROR: LVD not found yet")
    endif
 
    if (strm%found_gvd) then
@@ -1166,7 +1197,7 @@ A:    do k=1,strm%nFiles
             !--- start search at last file & move toward first file ---
 B:          do k=strm%nFiles,1,-1
                !--- read data for file number k ---
-               if (.not. strm%file(k)%haveData) then  
+               if (.not. strm%file(k)%haveData) then
                   call shr_stream_readtCoord(strm, k, rCode)
                   if ( rCode /= 0 )then
                      call shr_stream_abort(trim(subName)//" ERROR: readtCoord2")
@@ -1281,7 +1312,7 @@ B:          do k=strm%nFiles,1,-1
       n_lb = strm%n_lvd
 C:    do k=strm%k_lvd,strm%nFiles
          !--- read data for file number k ---
-         if (.not. strm%file(k)%haveData) then  
+         if (.not. strm%file(k)%haveData) then
             call shr_stream_readtCoord(strm, k, rCode)
             if ( rCode /= 0 )then
                call shr_stream_abort(trim(subName)//" ERROR: readtCoord3")
@@ -1436,7 +1467,7 @@ end subroutine shr_stream_findBounds
 !     2009-Sep-01 - T. Craig - modified
 !     2005-Apr-18 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_readTCoord(strm,k,rc)
 
@@ -1449,7 +1480,7 @@ subroutine shr_stream_readTCoord(strm,k,rc)
    type(shr_stream_streamType)  ,intent(inout) :: strm ! data stream to query
    integer(SHR_KIND_IN)         ,intent(in)    :: k    ! stream index
    integer(SHR_KIND_IN),optional,intent(out)   :: rc   ! return code
- 
+
 !EOP
 
    !----- local -----
@@ -1470,7 +1501,7 @@ subroutine shr_stream_readTCoord(strm,k,rc)
    real(SHR_KIND_R8),allocatable :: tvar(:)
    !----- formats -----
    character(*),parameter :: subname = '(shr_stream_readTCoord) '
-   character(*),parameter :: F01   = "('(shr_stream_readTCoord) ',a,2i7)" 
+   character(*),parameter :: F01   = "('(shr_stream_readTCoord) ',a,2i7)"
 
 !-------------------------------------------------------------------------------
 
@@ -1564,7 +1595,7 @@ end subroutine shr_stream_readTCoord
 ! !REVISION HISTORY:
 !     2005-Apr-18 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_verifyTCoord(strm,k,rc)
 
@@ -1573,7 +1604,7 @@ subroutine shr_stream_verifyTCoord(strm,k,rc)
    type(shr_stream_streamType),intent(in) :: strm  ! data stream
    integer(SHR_KIND_IN)                   :: k     ! index of file to check
    integer(SHR_KIND_IN)                   :: rc    ! return code
- 
+
 !EOP
 
    !----- local -----
@@ -1584,10 +1615,10 @@ subroutine shr_stream_verifyTCoord(strm,k,rc)
    logical                :: checkIt     ! have data / do comparison
 
    !----- formats -----
-   character(*),parameter :: subName = '(shr_stream_verifyTCoord) ' 
-   character(*),parameter :: F00   = "('(shr_stream_verifyTCoord) ',8a)" 
-   character(*),parameter :: F01   = "('(shr_stream_verifyTCoord) ',a,2i7)" 
-   character(*),parameter :: F02   = "('(shr_stream_verifyTCoord) ',a,2i9.8)" 
+   character(*),parameter :: subName = '(shr_stream_verifyTCoord) '
+   character(*),parameter :: F00   = "('(shr_stream_verifyTCoord) ',8a)"
+   character(*),parameter :: F01   = "('(shr_stream_verifyTCoord) ',a,2i7)"
+   character(*),parameter :: F02   = "('(shr_stream_verifyTCoord) ',a,2i9.8)"
 
 !-------------------------------------------------------------------------------
 ! Notes:
@@ -1595,7 +1626,7 @@ subroutine shr_stream_verifyTCoord(strm,k,rc)
 !   o does not check for valid dates (eg. day=0 & month = 13 are "OK")
 !   o checks that secs are strictly increasing within any one day
 !   o checks that 0 <= secs <= spd (seconds per day)
-!   o checks all dates from one file plus last date of previous file and 
+!   o checks all dates from one file plus last date of previous file and
 !     first date of next file
 !-------------------------------------------------------------------------------
 
@@ -1616,7 +1647,7 @@ subroutine shr_stream_verifyTCoord(strm,k,rc)
       if (n==1) then
          !--- compare with previous file? ---
          if (k>1) then
-            if ( strm%file(k-1)%haveData ) then 
+            if ( strm%file(k-1)%haveData ) then
                nt    = strm%file(k-1)%nt
                date1 = strm%file(k-1)%date(nt)
                secs1 = strm%file(k-1)%secs(nt)
@@ -1876,7 +1907,7 @@ end subroutine shr_stream_getModelFieldName
 ! !REVISION HISTORY:
 !     2005-Nov-23 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_getFilepath(strm,path)
 
@@ -1884,7 +1915,7 @@ subroutine shr_stream_getFilepath(strm,path)
 
    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
    character(*)               ,intent(out) :: path      ! file path
- 
+
 !EOP
 
 !-------------------------------------------------------------------------------
@@ -1906,7 +1937,7 @@ end subroutine shr_stream_getFilePath
 ! !REVISION HISTORY:
 !     2005-Feb-18 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_getDataSource(strm,str)
 
@@ -1914,7 +1945,7 @@ subroutine shr_stream_getDataSource(strm,str)
 
    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
    character(*)               ,intent(out) :: str       ! meta data
- 
+
 !EOP
 
 !-------------------------------------------------------------------------------
@@ -1936,7 +1967,7 @@ end subroutine shr_stream_getDataSource
 ! !REVISION HISTORY:
 !     2010-Oct-11 - T. Craig - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_getCalendar(strm,k,calendar)
 
@@ -1947,7 +1978,7 @@ subroutine shr_stream_getCalendar(strm,k,calendar)
    type(shr_stream_streamType),intent(in)  :: strm     ! data stream
    integer(SHR_KIND_IN)       ,intent(in)  :: k        ! file to query
    character(*)               ,intent(out) :: calendar ! calendar name
- 
+
 !EOP
 
    integer(SHR_KIND_IN)   :: fid, vid, n
@@ -1989,6 +2020,86 @@ end subroutine shr_stream_getCalendar
 !===============================================================================
 !BOP ===========================================================================
 !
+! !IROUTINE: shr_stream_getCurrFile -- return open file information
+!
+! !DESCRIPTION:
+!    returns current file information
+!
+! !REVISION HISTORY:
+!     2015-Nov-24 - T. Craig
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine shr_stream_getCurrFile(strm,fileopen,currfile,currpioid)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(shr_stream_streamType),intent(in)  :: strm     ! data stream
+   logical           ,optional,intent(out) :: fileopen ! file open flag
+   character(*)      ,optional,intent(out) :: currfile ! current filename
+   type(file_desc_t) ,optional,intent(out) :: currpioid ! current pioid
+
+!EOP
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   if (present(fileopen)) then
+      fileopen = strm%fileopen
+   endif
+   if (present(currfile)) then
+      currfile = strm%currfile
+   endif
+   if (present(currpioid)) then
+      currpioid = strm%currpioid
+   endif
+
+end subroutine shr_stream_getCurrFile
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: shr_stream_setCurrFile -- return open file information
+!
+! !DESCRIPTION:
+!    returns current file information
+!
+! !REVISION HISTORY:
+!     2015-Nov-24 - T. Craig
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine shr_stream_setCurrFile(strm,fileopen,currfile,currpioid)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(shr_stream_streamType),intent(inout) :: strm     ! data stream
+   logical           ,optional,intent(in) :: fileopen ! file open flag
+   character(*)      ,optional,intent(in) :: currfile ! current filename
+   type(file_desc_t) ,optional,intent(in) :: currpioid ! current pioid
+
+!EOP
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   if (present(fileopen)) then
+      strm%fileopen = fileopen
+   endif
+   if (present(currfile)) then
+      strm%currfile = currfile
+   endif
+   if (present(currpioid)) then
+      strm%currpioid = currpioid
+   endif
+
+end subroutine shr_stream_setCurrFile
+
+!===============================================================================
+!BOP ===========================================================================
+!
 ! !IROUTINE: shr_stream_getDomainInfo -- return domain information
 !
 ! !DESCRIPTION:
@@ -1997,9 +2108,9 @@ end subroutine shr_stream_getCalendar
 ! !REVISION HISTORY:
 !     2005-Mar-13 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
-subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,maskName,areaName)
+subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,hgtName,maskName,areaName)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -2009,9 +2120,10 @@ subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latN
    character(*)               ,intent(out) :: timeName ! domain time var name
    character(*)               ,intent(out) ::  lonName ! domain lon  var name
    character(*)               ,intent(out) ::  latName ! domain lat  var name
+   character(*)               ,intent(out) ::  hgtName ! domain hgt  var name
    character(*)               ,intent(out) :: maskName ! domain mask var name
    character(*)               ,intent(out) :: areaName ! domain area var name
- 
+
 !EOP
 
 !-------------------------------------------------------------------------------
@@ -2020,11 +2132,12 @@ subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latN
 
    filePath = strm%domFilePath
    fileName = strm%domFileName
-   timeName = strm%domTvarName 
-    lonName = strm%domXvarName 
-    latName = strm%domYvarName 
-   maskName = strm%domMaskName 
-   areaName = strm%domAreaName 
+   timeName = strm%domTvarName
+    lonName = strm%domXvarName
+    latName = strm%domYvarName
+    hgtName = strm%domZvarName
+   maskName = strm%domMaskName
+   areaName = strm%domAreaName
 
 end subroutine shr_stream_getDomainInfo
 
@@ -2068,15 +2181,15 @@ subroutine shr_stream_getFile(filePath,fileName,localFile,rc)
 
 !-------------------------------------------------------------------------------
 ! Notes:
-! - this routine reflects an added stream file handling requirement: 
-!   for files on an nfs-mounted file system (available via unix cp), 
+! - this routine reflects an added stream file handling requirement:
+!   for files on an nfs-mounted file system (available via unix cp),
 !   there are two options...
 !   1) read the file without making a local copy: read path/file
 !   2) copy path/file to file, and then read file
 ! - the shr_file_get/put file name format is used to select the option:
 !   using shr_file_queryPrefix -- if recognized prefix found -- do shr_file_get
 !   otherwise use the file in place.
-! - if   optional argument localFile is present 
+! - if   optional argument localFile is present
 !   then fileName is unaltered and localFile is the file to be read
 !   else fileName is altered and contains the name of the file to be read
 ! - this routine is somewhat awkward but reduces redundant code
@@ -2092,7 +2205,7 @@ subroutine shr_stream_getFile(filePath,fileName,localFile,rc)
    end if
 
    if (debug>0 .and. s_loglev > 0) then
-      write(s_logunit,F00) "DEBUG: remote file : ",trim(filePath)//trim(fileName) 
+      write(s_logunit,F00) "DEBUG: remote file : ",trim(filePath)//trim(fileName)
       write(s_logunit,F00) "DEBUG: local  file : ",trim(localFn)
    end if
 
@@ -2106,7 +2219,7 @@ end subroutine shr_stream_getFile
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: shr_stream_getFirstFileName -- returns first file name 
+! !IROUTINE: shr_stream_getFirstFileName -- returns first file name
 !
 ! !DESCRIPTION:
 !    Returns first file name in stream.
@@ -2114,7 +2227,7 @@ end subroutine shr_stream_getFile
 ! !REVISION HISTORY:
 !     2005-Feb-18 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_getFirstFileName(strm,file,path)
 
@@ -2123,7 +2236,7 @@ subroutine shr_stream_getFirstFileName(strm,file,path)
    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
    character(*)               ,intent(out) :: file      ! file name
    character(*),optional      ,intent(out) :: path      ! file path
- 
+
 !EOP
 
 !-------------------------------------------------------------------------------
@@ -2146,7 +2259,7 @@ end subroutine shr_stream_getFirstFileName
 ! !REVISION HISTORY:
 !     2005-Nov-18 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
    subroutine shr_stream_getNextFileName(strm,fn,fnNext,path,rc)
 
@@ -2157,7 +2270,7 @@ end subroutine shr_stream_getFirstFileName
    character(*)               ,intent(out)   :: fnNext ! next file name
    character(*),optional      ,intent(out)   :: path   ! file path
    integer(SHR_KIND_IN),optional,intent(out) :: rc     ! return code
- 
+
 !EOP
 
    !--- local ---
@@ -2166,8 +2279,8 @@ end subroutine shr_stream_getFirstFileName
    logical              :: found  ! file name found?
 
    !--- formats ---
-   character(*),parameter :: subName = '(shr_stream_getNextFileName) ' 
-   character(*),parameter :: F00   = "('(shr_stream_getNextFileName) ',8a)" 
+   character(*),parameter :: subName = '(shr_stream_getNextFileName) '
+   character(*),parameter :: F00   = "('(shr_stream_getNextFileName) ',8a)"
 
 !-------------------------------------------------------------------------------
 ! Note: will wrap-around data loop if lvd & gvd are known
@@ -2217,7 +2330,7 @@ end subroutine shr_stream_getNextFileName
 ! !REVISION HISTORY:
 !     2005-Nov-18 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
    subroutine shr_stream_getPrevFileName(strm,fn,fnPrev,path,rc)
 
@@ -2228,7 +2341,7 @@ end subroutine shr_stream_getNextFileName
    character(*)                 ,intent(out) :: fnPrev ! preciding file name
    character(*),optional        ,intent(out) :: path   ! file path
    integer(SHR_KIND_IN),optional,intent(out) :: rc     ! return code
- 
+
 !EOP
 
    !--- local ---
@@ -2237,8 +2350,8 @@ end subroutine shr_stream_getNextFileName
    logical                :: found ! file name found?
 
    !--- formats ---
-   character(*),parameter :: subName = '(shr_stream_getPrevFileName) ' 
-   character(*),parameter :: F00   = "('(shr_stream_getPrevFileName) ',8a)" 
+   character(*),parameter :: subName = '(shr_stream_getPrevFileName) '
+   character(*),parameter :: F00   = "('(shr_stream_getPrevFileName) ',8a)"
 
 !-------------------------------------------------------------------------------
 ! Note: will wrap-around data loop if lvd & gvd are known
@@ -2287,7 +2400,7 @@ end subroutine shr_stream_getPrevFileName
 ! !REVISION HISTORY:
 !     2010-Apr-28 - T. Craig - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_getNFiles(strm,nfiles)
 
@@ -2295,7 +2408,7 @@ subroutine shr_stream_getNFiles(strm,nfiles)
 
    type(shr_stream_streamType),intent(in)  :: strm      ! data stream
    integer(SHR_KIND_IN)       ,intent(out) :: nfiles    ! number of input files in stream
- 
+
 !EOP
 
 !-------------------------------------------------------------------------------
@@ -2336,7 +2449,7 @@ subroutine  shr_stream_restWrite(strm,fileName,caseName,caseDesc,nstrms,rc)
 
    !--- local ---
    integer  (SHR_KIND_IN) :: rCode       ! return code
-   integer(SHR_KIND_IN)   :: nStreams    ! number of streams 
+   integer(SHR_KIND_IN)   :: nStreams    ! number of streams
    integer(SHR_KIND_IN)   :: k,n         ! generic loop index
    character( 8)          :: dStr        ! F90 wall clock date str yyyymmdd
    character(10)          :: tStr        ! F90 wall clock time str hhmmss.sss
@@ -2400,7 +2513,7 @@ subroutine  shr_stream_restWrite(strm,fileName,caseName,caseDesc,nstrms,rc)
          rCode = 1
          write(s_logunit,F01) "ERROR: can't write uninitialized stream to a restart file, k = ",k
          call shr_stream_abort(subName//": ERROR: given uninitialized stream")
-      end if         
+      end if
 
       write(nUnit) strm(k)%init         ! has stream been initialized?
       write(nUnit) strm(k)%nFiles       ! number of data files
@@ -2447,7 +2560,8 @@ subroutine  shr_stream_restWrite(strm,fileName,caseName,caseDesc,nstrms,rc)
       write(nUnit) strm(k)%domFilePath  ! domain file: path
       write(nUnit) strm(k)%domTvarName  ! domain file: time-dim var name
       write(nUnit) strm(k)%domXvarName  ! domain file: x-dim var name
-      write(nUnit) strm(k)%domYvarName  ! domain file: y-dim var ame
+      write(nUnit) strm(k)%domYvarName  ! domain file: y-dim var name
+      write(nUnit) strm(k)%domZvarName  ! domain file: z-dim var name
       write(nUnit) strm(k)%domAreaName  ! domain file: area  var name
       write(nUnit) strm(k)%domMaskName  ! domain file: mask  var name
 
@@ -2456,7 +2570,7 @@ subroutine  shr_stream_restWrite(strm,fileName,caseName,caseDesc,nstrms,rc)
    close(nUnit)
    call shr_file_freeUnit(nUnit)
    if ( present(rc) ) rc = rCode
-   
+
 end subroutine  shr_stream_restWrite
 
 !===============================================================================
@@ -2489,7 +2603,7 @@ subroutine  shr_stream_restRead(strm,fileName,nstrms,rc)
 
    !--- local ---
    integer  (SHR_KIND_IN) :: rCode       ! return code
-   integer(SHR_KIND_IN)   :: nStreams    ! number of streams 
+   integer(SHR_KIND_IN)   :: nStreams    ! number of streams
    integer(SHR_KIND_IN)   :: k,n         ! generic loop index
    character(SHR_KIND_CS) :: str         ! generic text string
    integer(SHR_KIND_IN)   :: nUnit       ! a file unit number
@@ -2530,7 +2644,7 @@ subroutine  shr_stream_restRead(strm,fileName,nstrms,rc)
    ! read the  data
    !----------------------------------------------------------------------------
 
-   nUnit = shr_file_getUnit() ! get an unused unit number 
+   nUnit = shr_file_getUnit() ! get an unused unit number
    open(nUnit,file=trim(fileName),form="unformatted",status="old",action="read", iostat=rCode)
    if ( rCode /= 0 )then
       call shr_file_freeUnit(nUnit)
@@ -2540,11 +2654,11 @@ subroutine  shr_stream_restRead(strm,fileName,nstrms,rc)
    end if
 
    read(nUnit) str         ! case name
-   if (s_loglev > 0) write(s_logunit,F00) trim(str)  
+   if (s_loglev > 0) write(s_logunit,F00) trim(str)
    read(nUnit) str         ! case description
-   if (s_loglev > 0) write(s_logunit,F00) trim(str)  
+   if (s_loglev > 0) write(s_logunit,F00) trim(str)
    read(nUnit) str         ! file creation date
-   if (s_loglev > 0) write(s_logunit,F00) trim(str)  
+   if (s_loglev > 0) write(s_logunit,F00) trim(str)
 
    read(nUnit) nStreams
    if (present(nstrms)) then
@@ -2557,12 +2671,12 @@ subroutine  shr_stream_restRead(strm,fileName,nstrms,rc)
    if (s_loglev > 0) write(s_logunit,F01) "Number of streams ",nStreams
 
    do k = 1,nStreams
-      read(nUnit) strm(k)%init         ! has stream been initialized? 
-      if (.not. strm(k)%init) then 
+      read(nUnit) strm(k)%init         ! has stream been initialized?
+      if (.not. strm(k)%init) then
          rCode = 1
          write(s_logunit,F01) "ERROR: uninitialized stream in restart file, k = ",k
          call shr_stream_abort(subName//": ERROR: reading uninitialized stream")
-      end if         
+      end if
       call shr_stream_setInit(strm(k))
 
       readok = .true.
@@ -2667,7 +2781,8 @@ subroutine  shr_stream_restRead(strm,fileName,nstrms,rc)
       read(nUnit) inpcl !  domFilePath  ! domain file: path
       read(nUnit) inpcs !  domTvarName  ! domain file: time-dim var name
       read(nUnit) inpcs !  domXvarName  ! domain file: x-dim var name
-      read(nUnit) inpcs !  domYvarName  ! domain file: y-dim var ame
+      read(nUnit) inpcs !  domYvarName  ! domain file: y-dim var name
+      read(nUnit) inpcs !  domZvarName  ! domain file: z-dim var name
       read(nUnit) inpcs !  domAreaName  ! domain file: area  var name
       read(nUnit) inpcs !  domMaskName  ! domain file: mask  var name
 
@@ -2695,46 +2810,46 @@ end subroutine  shr_stream_restRead
 ! !REVISION HISTORY:
 !     2005-Mar-23 - B. Kauffman - first version
 !
-! !INTERFACE: ------------------------------------------------------------------  
+! !INTERFACE: ------------------------------------------------------------------
 
 subroutine shr_stream_dataDump(strm)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
    type(shr_stream_streamType),intent(in) :: strm      ! data stream
- 
+
 !EOP
 
    !----- local -----
    integer(SHR_KIND_IN)   :: k ! generic loop index
 
    !----- formats -----
-   character(*),parameter :: subName = '(shr_stream_dataDump) ' 
-   character(*),parameter :: F00   = "('(shr_stream_dataDump) ',8a)" 
-   character(*),parameter :: F01   = "('(shr_stream_dataDump) ',a,3i5)" 
-   character(*),parameter :: F02   = "('(shr_stream_dataDump) ',a,365i9.8)" 
-   character(*),parameter :: F03   = "('(shr_stream_dataDump) ',a,365i6)" 
+   character(*),parameter :: subName = '(shr_stream_dataDump) '
+   character(*),parameter :: F00   = "('(shr_stream_dataDump) ',8a)"
+   character(*),parameter :: F01   = "('(shr_stream_dataDump) ',a,3i5)"
+   character(*),parameter :: F02   = "('(shr_stream_dataDump) ',a,365i9.8)"
+   character(*),parameter :: F03   = "('(shr_stream_dataDump) ',a,365i6)"
 
 !-------------------------------------------------------------------------------
-! notes: 
+! notes:
 !-------------------------------------------------------------------------------
 
    if (s_loglev <= 0) return
 
    write(s_logunit,F00) "dump internal data for debugging..."
 
-   !-----------------------------------------------------------------------------  
+   !-----------------------------------------------------------------------------
    ! dump internal data
-   !-----------------------------------------------------------------------------  
-   write(s_logunit,F01) "nFiles        = ", strm%nFiles            
+   !-----------------------------------------------------------------------------
+   write(s_logunit,F01) "nFiles        = ", strm%nFiles
    write(s_logunit,F00) "filePath      = ", trim(strm%filePath)
    do k=1,strm%nFiles
       write(s_logunit,F01) "data for file k = ",k
       write(s_logunit,F00)    "* file(k)%name    = ", trim(strm%file(k)%name)
       if ( strm%file(k)%haveData ) then
          write(s_logunit,F01) "* file(k)%nt      = ", strm%file(k)%nt
-         write(s_logunit,F02) "* file(k)%date(:) = ", strm%file(k)%date(:)    
-         write(s_logunit,F03) "* file(k)%Secs(:) = ", strm%file(k)%secs(:)    
+         write(s_logunit,F02) "* file(k)%date(:) = ", strm%file(k)%date(:)
+         write(s_logunit,F03) "* file(k)%Secs(:) = ", strm%file(k)%secs(:)
       else
          write(s_logunit,F00) "* time coord data not read in yet for this file"
       end if
@@ -2750,6 +2865,7 @@ subroutine shr_stream_dataDump(strm)
    write(s_logunit,F00) "domTvarName  = ", trim(strm%domTvarName)
    write(s_logunit,F00) "domXvarName  = ", trim(strm%domXvarName)
    write(s_logunit,F00) "domYvarName  = ", trim(strm%domYvarName)
+   write(s_logunit,F00) "domZvarName  = ", trim(strm%domZvarName)
    write(s_logunit,F00) "domAreaName  = ", trim(strm%domAreaName)
    write(s_logunit,F00) "domMaskName  = ", trim(strm%domMaskName)
 
@@ -3088,6 +3204,8 @@ subroutine shr_stream_bcast(stream,comm,rc)
    call shr_mpi_bcast(stream%k_gvd       ,comm,subName)
    call shr_mpi_bcast(stream%n_gvd       ,comm,subName)
    call shr_mpi_bcast(stream%found_gvd   ,comm,subName)
+   call shr_mpi_bcast(stream%fileopen    ,comm,subName)
+   call shr_mpi_bcast(stream%currfile    ,comm,subName)
    call shr_mpi_bcast(stream%fldListFile ,comm,subName)
    call shr_mpi_bcast(stream%fldListModel,comm,subName)
    call shr_mpi_bcast(stream%domFileName ,comm,subName)
@@ -3095,6 +3213,7 @@ subroutine shr_stream_bcast(stream,comm,rc)
    call shr_mpi_bcast(stream%domTvarName ,comm,subName)
    call shr_mpi_bcast(stream%domXvarName ,comm,subName)
    call shr_mpi_bcast(stream%domYvarName ,comm,subName)
+   call shr_mpi_bcast(stream%domZvarName ,comm,subName)
    call shr_mpi_bcast(stream%domMaskName ,comm,subName)
    call shr_mpi_bcast(stream%calendar    ,comm,subName)
 

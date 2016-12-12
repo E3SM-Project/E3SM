@@ -5,7 +5,7 @@
 #
 # Create needed mapping files for gen_domain and coupler mapping
 # Currently supported on yellowstone, geyser, caldera, pronghorn, and jaguarpf
-# 
+#
 #===============================================================================
 echo $0
 date
@@ -27,7 +27,7 @@ usage() {
   echo 'create_ESMF_map.sh '
   echo '  --filesrc|-fsrc  input source grid_filename (required) '
   echo '  --filedst|-fdst  input destination grid_filename (required)'
-  echo '  --namesrc|-nsrc  output source name in mapping file (required)' 
+  echo '  --namesrc|-nsrc  output source name in mapping file (required)'
   echo '  --namedst|-ndst  output destination name in mapping file (required)'
   echo '  --maptype|-map   type of mapping [aave|blin|bilin|patc|nearestdtos|neareststod] (required)'
   echo '  [ --typesrc|tsrc ] [regional|global]'
@@ -211,7 +211,7 @@ while [ $# -gt 0 ]; do
     ;;
   esac
 
-  shift 
+  shift
 done
 
 #-------------------------------------------------------------------------------
@@ -239,7 +239,7 @@ if [ $MACH == "UNSET" ]; then
     ;;
     *)
       echo "Machine $hostname NOT recognized"
-    ;;   
+    ;;
   esac
 fi
 
@@ -307,7 +307,7 @@ fi
 #-------------------------------------------------------------------------------
 # Machine specific env stuff
 #-------------------------------------------------------------------------------
- 
+
 case $MACH in
   ## yellowstone, geyser, caldera, or pronghorn
   "yellowstone" | "geyser" | "caldera" | "pronghorn" )
@@ -339,14 +339,14 @@ case $MACH in
       module load esmf/5.2.0-p1_with-netcdf_g
       ESMFBIN_PATH=$ESMF_BINDIR
     fi
-    
+
     if [ -z "$MPIEXEC" ]; then
       MPIEXEC="aprun -n $REGRID_PROC"
     fi
   ;;
   *)
     echo "Machine $MACH NOT recognized"
-  ;;   
+  ;;
 esac
 
 #-------------------------------------------------------------------------------

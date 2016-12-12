@@ -5,8 +5,8 @@
 
 cd $CASEROOT
 
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set STOP_N      = `./xmlquery STOP_N      --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
 # Reset user_nl_files from previous runs
 if (-e user_nl_cice_0001.base) then
@@ -33,18 +33,18 @@ cp -f user_nl_cice_0002 user_nl_cice_0002.mod
 #EOF
 
 #======================================================================
-# do an initial run test with NINST 2, with the 
-# user_nl_cice_0001 and user_nl_cice_0002 different - and the mod to 
-# instance 1 
+# do an initial run test with NINST 2, with the
+# user_nl_cice_0001 and user_nl_cice_0002 different - and the mod to
+# instance 1
 #======================================================================
 
 cd $CASEROOT
-echo "doing an initial test with mod to instance 1, with length taken from compset default" >>& $TESTSTATUS_LOG 
+echo "doing an initial test with mod to instance 1, with length taken from compset default" >>& $TESTSTATUS_LOG
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-./xmlchange -file env_run.xml -id REST_OPTION  -val none
-./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
+./xmlchange --file env_run.xml --id REST_OPTION  --val none
+./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N       --val ${STOP_N}
 
 # Note that user_nl_cice_0001 and user_nl_cice_0002 are different below
 rm user_nl_cice_0001
@@ -52,9 +52,9 @@ rm user_nl_cice_0002
 cp -f user_nl_cice_0001.mod  user_nl_cice_0001
 cp -f user_nl_cice_0002.base user_nl_cice_0002
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -63,10 +63,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -75,28 +75,28 @@ else
 endif
 
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move base" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" 
+$SCRIPTSROOT/Tools/component_compare_move base
 
 #======================================================================
-# do an initial run test with NINST 2, with the 
-# user_nl_cice_0001 and user_nl_cice_0002 different - and the mod to 
-# instance 2 
+# do an initial run test with NINST 2, with the
+# user_nl_cice_0001 and user_nl_cice_0002 different - and the mod to
+# instance 2
 #======================================================================
 
 cd $CASEROOT
-echo "doing a second test with mod to instance 2" >>& $TESTSTATUS_LOG 
+echo "doing a second test with mod to instance 2" >>& $TESTSTATUS_LOG
 
 rm user_nl_cice_0001
 rm user_nl_cice_0002
 cp -f user_nl_cice_0001.base user_nl_cice_0001
 cp -f user_nl_cice_0002.mod  user_nl_cice_0002
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -105,10 +105,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -117,10 +117,10 @@ else
 endif
 
 echo "moving relevant history files to suffix with commands " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix inst2mod"  >>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move inst2mod"  >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "inst2mod"
+$SCRIPTSROOT/Tools/component_compare_move inst2mod
 
 #======================================================================
 # Check test status for all relevant component history files
@@ -130,10 +130,7 @@ echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >>& $TESTST
 echo "" >>& $TESTSTATUS_LOG
 
 echo "obtaining test functionality from history files with commands " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 multiinst -msg compare .base with .inst2mod" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_test base multiinst" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "multiinst" -msg "compare .base with .inst2mod" >>& $TESTSTATUS_OUT
-
-
-
+$SCRIPTSROOT/Tools/component_compare_test base multiinst >>& $TESTSTATUS_OUT

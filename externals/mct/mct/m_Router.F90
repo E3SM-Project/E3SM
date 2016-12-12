@@ -5,7 +5,7 @@
 ! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_Router -- Router class 
+! !MODULE: m_Router -- Router class
 !
 ! !DESCRIPTION:
 ! The Router data type contains all the information needed
@@ -63,7 +63,7 @@
       integer :: comp2id                           ! id of second component
       integer :: nprocs	                           ! number of procs to talk to
       integer :: maxsize                           ! maximum amount of data going to a processor
-      integer :: lAvsize                           ! The local size of AttrVect which can be 
+      integer :: lAvsize                           ! The local size of AttrVect which can be
                                                    ! used with this Router in MCT_Send/MCT_Recv
       integer :: numiatt                           ! Number of integer attributes currently in use
       integer :: numratt                           ! Number of real attributes currently in use
@@ -94,7 +94,7 @@
 
 ! !REVISION HISTORY:
 ! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize 
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize
 !           to Router type
 ! 25Sep02 - R. Jacob <jacob@mcs.anl.gov> Remove type string.  Add lAvsize
 ! 23Jul03 - R. Jacob <jacob@mcs.anl.gov> Add status and reqs arrays used
@@ -152,7 +152,7 @@
 ! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 ! 06Feb01 - R. Jacob <jacob@mcs.anl.gov> - Finish initialization
 !           of the Router.  Router now works both ways.
-! 25Apr01 - R. Jacob <jacob@mcs.anl.gov> - Eliminate early 
+! 25Apr01 - R. Jacob <jacob@mcs.anl.gov> - Eliminate early
 !           custom code to exchange GSMap components and instead
 !           the more general purpose routine in m_ExchangeMaps.
 !           Use new subroutine OrderedPoints in m_GlobalSegMap
@@ -171,11 +171,11 @@
 
 !--------------------------begin code-----------------------
 
-!!!!!!!!!!!!!!!!!Exchange of global map data 
+!!!!!!!!!!!!!!!!!Exchange of global map data
 
   if(present(name)) then
     tagname='01'//name//'ExGSMap'
-    
+
     call zeit_ci(trim(tagname))
     call MCT_ExGSMap(GSMap,mycomm,RGSMap,othercomp,ier)
     if(ier /= 0) call die(myname_,'ExGSMap',ier)
@@ -260,7 +260,7 @@
 !           Rewrote to reduce number of loops and temp storage
 ! 26Apr06 - R. Loy <rloy@mcs.anl.gov> - recode the search through
 !           the remote GSMap to improve efficiency
-! 05Jan07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of 
+! 05Jan07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of
 !           tmpsegcount and tmpsegstart
 ! 15May07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of
 !           rgs_lb and rgs_ub
@@ -372,12 +372,12 @@
   othercomp = GSMap_comp_id(RGSMap)
 
 
-!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
+!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
 
 
 
-!! 
-!! determine the global segments on this processor 
+!!
+!! determine the global segments on this processor
 !! just once, so the info be used repeatedly below
 !! same code was used in m_GlobalToLocal - should make a subroutine...
 !!
@@ -430,7 +430,7 @@
   !! further reduction could be made by flattening it to one dimension
   !!   of size (r_ngseg) and allocating another array to index into it.
   !!   would not improve overall mem use unless this were also done for
-  !!   tmpsegstart()/count() and possibly seg_starts()/lengths (the 
+  !!   tmpsegstart()/count() and possibly seg_starts()/lengths (the
   !!   latter would be a major change).
 
   if(present(name)) then
@@ -456,13 +456,13 @@
      rgs_count(proc) = rgs_count(proc) +1
      rgs_lb( rgs_count(proc) , proc )=RGSMap%start(i)
      rgs_ub( rgs_count(proc) , proc )=RGSMap%start(i) + RGSMap%length(i) -1
-  enddo 
+  enddo
 
   if(present(name)) then
     call zeit_co(trim(tagname))
   endif
 
-!!! 
+!!!
 !!! this is purely for error checking
 
   if(present(name)) then
@@ -594,7 +594,7 @@
 
 
 
-!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
+!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
 
 
 !!!!!!!!!!!!!!!!!!!!end of search through remote GSMap
@@ -632,10 +632,10 @@
   if(ier/=0) call die(myname_,'allocate(rp1)',ier)
 
 
-    
+
   m=0
   do i=1,ThisMCTWorld%nprocspid(othercomp)
-      if(tmppe_list(i))then 
+      if(tmppe_list(i))then
       m=m+1
       ! load processor rank in MCT_comm
       Rout%pe_list(m)=ThisMCTWorld%idGprocid(othercomp,i-1)
@@ -660,7 +660,7 @@
     Rout%maxsize=lmaxsize
     Rout%lAvsize=mysize
 
-      
+
   deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
   if(ier/=0) call die(myname_,'deallocate()',ier)
 
@@ -789,7 +789,7 @@
     integer myrank
     integer ier
     character(len=*),parameter :: myname_=myname//'::print_'
-  
+
     call MP_comm_rank(mycomm,myrank,ier)
     if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
 
@@ -798,7 +798,7 @@
       if (rout%num_segs(iproc) > 0) then
         write(lun,*) myrank,rout%pe_list(iproc),rout%locsize(iproc)
       endif
-    end do        
+    end do
 
 
   end subroutine print_

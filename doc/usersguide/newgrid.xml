@@ -3,7 +3,7 @@
 
 <para> Support for numerous out-of-the box <ulink
 url="../modelnl/grid.html">model resolutions</ulink> accompany the CESM
-release. (In addition to the link above, you can also view a listing of 
+release. (In addition to the link above, you can also view a listing of
 supported "out-of-the-box" resolutions by running <command>create_newcase
 -l</command>.) In general, CESM grids are associated with a specific
 combination of atmosphere, land, land-ice, river-runoff and ocean/ice grids.
@@ -13,7 +13,7 @@ and ocean/ice grid specifications.
 <para>
 The most common resolutions have the atmosphere and land components on one grid
 and the ocean and ice on a second grid. The naming convention looks like
-<emphasis>f19_g16</emphasis>, where the f19 indicates that the atmosphere and 
+<emphasis>f19_g16</emphasis>, where the f19 indicates that the atmosphere and
 land are on the 1.9x2.5 (finite volume dycore) grid while the g16 means the
 ocean and ice are on the gx1v6 one-degree displaced pole grid. While it is not
 supported, CESM 1.1 does have the ability to run with the atmosphere and land
@@ -41,7 +41,7 @@ running on the same grid.
 <command>Start with SCRIP grid files for atmosphere, land, and ocean.</command>
 </para>
 <para>
-You must first create or obtain SCRIP format grid files for the atmosphere, 
+You must first create or obtain SCRIP format grid files for the atmosphere,
 land and ocean grids. At present there is no supported functionality for
 creating the SCRIP format file, although that is planned for CESM1.2.
 </para>
@@ -64,7 +64,7 @@ this utility.
 <para>
 To build this tool, follow the instructions in
 <filename>$CIMEROOT/tools/mapping/check_maps/INSTALL</filename>. As with many of the
-steps in this document, you will need to have the 
+steps in this document, you will need to have the
 <ulink url="http://www.earthsystemmodeling.org">ESMF</ulink> toolkit installed.
 It is installed by default on most NCAR computers.
 </para>
@@ -72,7 +72,7 @@ It is installed by default on most NCAR computers.
 
 <listitem>
 <para>
-<command>Generate atm&lt;-&gt;ocn, atm&lt;-&gt;lnd, lnd&lt;-&gt;rtm, and 
+<command>Generate atm&lt;-&gt;ocn, atm&lt;-&gt;lnd, lnd&lt;-&gt;rtm, and
 ocn-&gt;lnd mapping files.</command>
 </para>
 <para>
@@ -99,10 +99,10 @@ $ ./gen_cesm_maps.sh \
     --fileatm  &lt;input SCRIP atm grid full pathname&gt;  \
     --filelnd  &lt;input SCRIP lnd grid full pathname&gt;  \
     --filertm  &lt;input SCRIP rtm grid full pathname&gt;  \
-    --nameocn  &lt;ocnname in output mapping file&gt; \ 
-    --nameatm  &lt;atmname in output mapping file&gt; \ 
-    --namelnd  &lt;lndname in output mapping file&gt; \ 
-    --namertm  &lt;rtmname in output mapping file&gt; 
+    --nameocn  &lt;ocnname in output mapping file&gt; \
+    --nameatm  &lt;atmname in output mapping file&gt; \
+    --namelnd  &lt;lndname in output mapping file&gt; \
+    --namertm  &lt;rtmname in output mapping file&gt;
 </screen>
 </para>
 <para>
@@ -141,7 +141,7 @@ runoff grid, then only the 5 atm&lt;-&gt;ocn maps will be generated.
 <listitem>
 <para>
 ESMF_RegridWeightGen runs in parallel, and the <filename>gen_cesm_maps.sh
-</filename> script has been written to run on 
+</filename> script has been written to run on
 yellowstone. To run on any other machine, you may need to add some environment
 variables to
 <filename>$CIMEROOT/tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh</filename>
@@ -185,7 +185,7 @@ map_r05_TO_ne16np4_aave.121105.nc
 </para>
 <para>
 Using the conservative ocean to land and ocean to atmosphere mapping files
-created in the previous step, you can create domain files for the atmosphere, 
+created in the previous step, you can create domain files for the atmosphere,
 land, and ocean; these are basically grid files with consistent masks and
 fractions. You make these files by calling <command>gen_domain</command> in
 <filename>$CIMEROOT/tools/mapping/gen_domain_files</filename>.
@@ -221,7 +221,7 @@ domain.ocn.ocnname.yymmdd.nc
 Notes:
 </para>
 
-<orderedlist>  
+<orderedlist>
 
 <listitem>
 <para>
@@ -264,13 +264,13 @@ mapping file should already exist and you do not need to generate it.
 </listitem>
 
 <listitem>
-<para> 
+<para>
 <command>If you are adding a new new lnd grid, create a new CLM surface
 dataset.</command> (Otherwise you can skip this step.)
 </para>
 <para>
 
-<orderedlist>  
+<orderedlist>
 
 <listitem>
 <para>
@@ -288,7 +288,7 @@ $ ./mkmapdata.sh --gridfile &lt;lnd SCRIP grid file&gt; \
 <para>
 Generate CLM surface dataset. Below is an example for a current day surface
 dataset (model year 2000).
-<screen>   
+<screen>
 $ cd  $CIMEROOT/../components/clm/tools/mksurfdata_map
 $ ./mksurfdata.pl -res usrspec -usr_gname &lt;atm resolution name&gt; \
                   -usr_gdate yymmdd -y 2000
@@ -296,7 +296,7 @@ $ ./mksurfdata.pl -res usrspec -usr_gname &lt;atm resolution name&gt; \
 </para>
 </listitem>
 
-</orderedlist>  
+</orderedlist>
 
 </para>
 </listitem>
@@ -319,7 +319,7 @@ of this file should be
 &lt;horiz_grid GLOB_GRID="lndgrid" nx="[size of lndgrid]" ny="[size of lndgrid]" /&gt;
 &lt;horiz_grid GLOB_GRID="ocngrid" nx="[size of ocngrid]" ny="[size of ocngrid]" /&gt;
 &lt;horiz_grid GRID="atmgrid_lndgrid_ocngrid" SHORTNAME="atm_lnd_ocn"
-            ATM_GRID="atmgrid" LND_GRID="lndgrid" OCN_GRID="ocngrid" ICE_GRID="ocngrid" 
+            ATM_GRID="atmgrid" LND_GRID="lndgrid" OCN_GRID="ocngrid" ICE_GRID="ocngrid"
             ATM_NCPL="48" OCN_NCPL="1"
             ATM_DOMAIN_FILE="domain.lnd.atmgrid_ocngrid.$YYYYMMDD.nc"
             LND_DOMAIN_FILE="domain.lnd.lndgrid_ocngrid.$YYYYMMDD.nc"
@@ -398,7 +398,7 @@ be reflected in <filename>$RUNDIR/seq_maps.rc</filename>.
 <command>Test new grid.</command>
 </para>
 <para>
-Below assume that the new grid is an atmosphere grid. 
+Below assume that the new grid is an atmosphere grid.
 </para>
 <para>
 <screen>

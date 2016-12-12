@@ -1,10 +1,10 @@
 #!/bin/make
 #-----------------------------------------------------------------------
 # Documentation
-all: 
+all:
 	cd texsrc; make
 	make apis
-	
+
 html:
 	latex2html -white -toc_depth 5 -split 4 -show_section_numbers \
 	-address "<A HREF="mailto:jacob@mcs.anl.gov">jacob@mcs.anl.gov</A>" \
