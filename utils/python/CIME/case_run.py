@@ -60,6 +60,8 @@ def pre_run_check(case):
     os.makedirs(os.path.join(rundir, "timing", "checkpoints"))
 
     # This needs to be done everytime the LID changes in order for log files to be set up correctly
+    # The following also needs to be called in case a user changes a user_nl_xxx file OR an env_run.xml
+    # variable while the job is in the queue
     create_namelists(case)
 
     # document process

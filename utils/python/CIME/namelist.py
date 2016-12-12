@@ -973,7 +973,7 @@ class Namelist(object):
                     merged_val = merge_literal_lists(other_val, self_val)
                 self.set_variable_value(group_name, variable_name, merged_val)
 
-    def write(self, out_file, groups=None, append=False, format_='nml'):
+    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True):
         """Write a Fortran namelist to a file.
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -994,12 +994,12 @@ class Namelist(object):
             logger.debug("Writing namelist to: %s", out_file)
             flag = 'a' if append else 'w'
             with open(out_file, flag) as file_obj:
-                self._write(file_obj, groups, format_)
+                self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing namelist to file object")
-            self._write(out_file, groups, format_)
+            self._write(out_file, groups, format_, sorted_groups=sorted_groups)
 
-    def _write(self, out_file, groups, format_):
+    def _write(self, out_file, groups, format_, sorted_groups):
         """Unwrapped version of `write` assuming that a file object is input."""
         if groups is None:
             groups = self._groups.keys()
@@ -1007,7 +1007,11 @@ class Namelist(object):
             equals = ' ='
         elif format_ == 'rc':
             equals = ':'
-        for group_name in sorted(group.lower() for group in groups):
+        if (sorted_groups):
+            group_names = sorted(group.lower() for group in groups)
+        else:
+            group_names = groups
+        for group_name in group_names:
             if format_ == 'nml':
                 out_file.write("&%s\n" % group_name)
             group = self._groups[group_name]

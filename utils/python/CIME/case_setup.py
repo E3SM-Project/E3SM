@@ -221,7 +221,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # loop over models
         for model in models:
             comp = case.get_value("COMP_%s" % model)
-            logger.info("Building %s usernl files"%model)
+            logger.debug("Building %s usernl files"%model)
             _build_usernl_files(case, model, comp)
             if comp == "cism":
                 run_cmd_no_fail("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
@@ -241,8 +241,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
 
-        # some tests need namelists created here (ERP)
+        # Some tests need namelists created here (ERP) - so do this if are in test mode
         if test_mode:
+            logger.info("Generating component namelists as part of setup")
             create_namelists(case)
 
         msg = "case.setup complete"

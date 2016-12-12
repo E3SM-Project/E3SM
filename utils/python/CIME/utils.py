@@ -770,6 +770,7 @@ def append_status(msg, caseroot='.', sfile="CaseStatus"):
         ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
     with open(os.path.join(caseroot,sfile), "a") as fd:
         fd.write(ctime + msg + "\n")
+        fd.write("\n ---------------------------------------------------\n\n")
 
 def does_file_have_string(filepath, text):
     """

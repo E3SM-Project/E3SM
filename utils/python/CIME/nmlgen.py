@@ -530,6 +530,7 @@ class NamelistGenerator(object):
                 if literal == '':
                     continue
                 file_path = character_literal_to_string(literal)
+                # NOTE - these are hard-coded here and a better way is to make these extensible
                 if file_path == 'UNSET' or file_path == 'idmap':
                     continue
                 if file_path == 'null':
@@ -565,6 +566,9 @@ class NamelistGenerator(object):
                                                                  variable_name)
                     for literal in literals:
                         file_path = character_literal_to_string(literal)
+                        # NOTE - these are hard-coded here and a better way is to make these extensible
+                        if file_path == 'UNSET' or file_path == 'idmap':
+                            continue
                         if input_pathname == 'abs':
                             # No further mangling needed for absolute paths.
                             pass
@@ -579,10 +583,9 @@ class NamelistGenerator(object):
                                    "Bad input_pathname value: %s." %
                                    input_pathname)
                         # Write to the input data list.
-                        input_data_list.write("%s = %s\n" %
-                                              (variable_name, file_path))
+                        input_data_list.write("%s = %s\n" % (variable_name, file_path))
 
-    def write_output_file(self, namelist_file, data_list_path=None, groups=None):
+    def write_output_file(self, namelist_file, data_list_path=None, groups=None, sorted_groups=True):
         """Write out the namelists and input data files.
 
         The `namelist_file` and `modelio_file` are the locations to which the
@@ -601,7 +604,7 @@ class NamelistGenerator(object):
             groups.remove("seq_maps")
 
         # write namelist file
-        self._namelist.write(namelist_file, groups=groups)
+        self._namelist.write(namelist_file, groups=groups, sorted_groups=sorted_groups)
 
         if data_list_path is not None:
             # append to input_data_list file

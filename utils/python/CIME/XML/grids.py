@@ -399,13 +399,8 @@ class Grids(GenericXML):
                 if grid1_value != grid2_value and grid1_value != 'null' and grid2_value != 'null':
                     map_ = gridmaps[node.text]
                     if map_ == 'idmap':
-                        if node.text in ("ROF2OCN_LIQ_RMAPNAME" , "ROF2OCN_ICE_RMAPNAME") and \
-                                "ROF2OCN_RMAPNAME" in gridmaps and gridmaps["ROF2OCN_RMAPNAME"] != "idmap":
-                            map_ = gridmaps["ROF2OCN_RMAPNAME"]
-                            gridmaps[node.text] = map_
-                        else:
-                            logger.warning("Warning: missing non-idmap %s for %s, %s and %s %s "
-                                           %(node.text, grid1_name, grid1_value, grid2_name, grid2_value))
+                        logger.warning("Warning: missing non-idmap %s for %s, %s and %s %s "
+                                       %(node.text, grid1_name, grid1_value, grid2_name, grid2_value))
 
         return gridmaps
 

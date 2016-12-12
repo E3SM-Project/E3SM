@@ -296,6 +296,8 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
                                 lid, caseroot, cimeroot, compiler))
 
     if not sharedlib_only:
+        # in case component build scripts updated the xml files, update the case object
+        case.read_xml()
         post_build(case, logs)
 
     t3 = time.time()
@@ -407,6 +409,7 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
 
     case.flush()
     if not model_only:
+        logger.info("Generating component namelists as part of build")
         create_namelists(case)
 
     return sharedpath

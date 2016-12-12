@@ -54,8 +54,8 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
-    logger.info("DOCN mode is %s", docn_mode)
-    logger.info("DOCN grid is %s", ocn_grid)
+    logger.debug("DOCN mode is %s", docn_mode)
+    logger.debug("DOCN grid is %s", ocn_grid)
 
     #----------------------------------------------------
     # Clear out old data.
@@ -94,7 +94,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
             continue
 
         inst_stream = stream + inst_string
-        logger.info("DOCN stream is %s", inst_stream)
+        logger.debug("DOCN stream is %s", inst_stream)
         stream_path = os.path.join(confdir, "docn.streams.txt." + inst_stream)
         user_stream_path = os.path.join(case.get_case_root(),
                                         "user_docn.streams.txt." + inst_stream)
@@ -102,6 +102,8 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
         # Use the user's stream file, or create one if necessary.
         if os.path.exists(user_stream_path):
             shutil.copyfile(user_stream_path, stream_path)
+            config['stream'] = stream
+            nmlgen.update_shr_strdata_nml(config, stream, stream_path)
         else:
             nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
 
@@ -145,7 +147,7 @@ def buildnml(case, caseroot, compname):
 
     if not os.path.isdir(din_loc_root):
         os.makedirs(din_loc_root)
-        logger.info("Created input root directory %s" %din_loc_root)
+        logger.debug("Created input root directory %s" %din_loc_root)
 
     # determine directory for user modified namelist_definitions.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)

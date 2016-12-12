@@ -72,6 +72,7 @@ def _parse_namelists(namelist_lines, filename):
     rcline_re = re.compile(r"^([^&\s':]+)\s*:\s*(.+)$")
     dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
     comma_re = re.compile(r'\s*,\s*')
+    compress_item_re = re.compile(r'([0-9]+)[*](.+)$')
 
     rv = OrderedDict()
     current_namelist = None
@@ -158,6 +159,13 @@ def _parse_namelists(namelist_lines, filename):
                 rv[current_namelist][name] = tokens
 
                 logger.debug("    Adding list entries: %s" % ", ".join(tokens))
+
+            elif (compress_item_re.match(value) is not None):
+                # the following ensure that the following to namelist settings trigger a match
+                # nmlvalue = 1,1,1 versus nmlvalue = 3*1
+
+                repeat, value = compress_item_re.match(value).groups()
+                rv[current_namelist][name] = list(value) * int(repeat)
 
             else:
                 rv[current_namelist][name] = value

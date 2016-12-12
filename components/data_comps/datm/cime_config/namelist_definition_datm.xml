@@ -2508,7 +2508,7 @@
     </desc>
     <values>
       <value>1</value>
-      <value stream="CPLHISTForcingForOcnIce">-1</value>
+      <value datm_mode="CPLHISTForcingForOcnIce">-1</value>
     </values>
   </entry>
 

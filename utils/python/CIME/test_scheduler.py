@@ -289,8 +289,8 @@ class TestScheduler(object):
                 # succeeded was the submission.
                 if phase != RUN_PHASE or self._no_batch:
                     self._log_output(test,
-                                     "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
-                                     (phase, test, cmd, output, errput))
+                                     "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s" %
+                                     (phase, test, cmd, output))
                 break
 
         return rc == 0
