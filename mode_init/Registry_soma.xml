@@ -55,4 +55,21 @@
                                         description="Surface salinity value used in initial condition."
                                         possible_values="Any real positive number."
                 />
+              <nml_option name="config_soma_use_surface_temp_restoring" type="logical" default_value="false" units="unitless"
+                                        description="Logical flag that determines if surface temperature restoring is to be used."
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_soma_surface_temp_restoring_at_center_latitude" type="real" default_value="7.5" units="degrees"
+                                        description="Surface restoring temperature value at center latitutde."
+                                        possible_values="Any real positive number."
+                />
+              <nml_option name="config_soma_surface_temp_restoring_latitude_gradient" type="real" default_value="0.5"
+                                        units="degrees C / degrees latitude"
+                                        description="Surface restoring temperature gradient in latitudal direction."
+                                        possible_values="Any real positive number."
+                />
+              <nml_option name="config_soma_restoring_temp_piston_vel" type="real" default_value="1.0e-5" units="m s^{-1}"
+                                        description="Restoring piston velocity for surface temperature."
+                                        possible_values="Any real number."
+                />
         </nml_record>
