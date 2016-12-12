@@ -196,6 +196,7 @@ module atm_time_integration
       type (field2DReal), pointer :: rho_pp_field
       type (field2DReal), pointer :: pv_edge_field
       type (field2DReal), pointer :: rho_edge_field
+      type (field2DReal), pointer :: exner_field
 
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructZonal, uReconstructMeridional, uReconstructX, uReconstructY, uReconstructZ
@@ -463,6 +464,9 @@ module atm_time_integration
             block => block % next
          end do
          call mpas_timer_stop('atm_compute_vert_imp_coefs')
+
+         call mpas_pool_get_field(diag, 'exner', exner_field)
+         call mpas_dmpar_exch_halo_field(exner_field)
 
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -990,6 +994,14 @@ module atm_time_integration
             call mpas_dmpar_exch_halo_field(theta_m_field)
             call mpas_dmpar_exch_halo_field(pressure_p_field)
             call mpas_dmpar_exch_halo_field(rtheta_p_field)
+
+            !
+            ! Note: A halo exchange for 'exner' here as well as after the call
+            ! to driver_microphysics() can substitute for the exchange at
+            ! the beginning of each dynamics subcycle. Placing halo exchanges
+            ! here and after microphysics may in future allow for aggregation of
+            ! the 'exner' exchange with other exchanges.
+            !
          end if
 
          !  dynamics-transport split, WCS 18 November 2014
@@ -1274,6 +1286,14 @@ module atm_time_integration
          end if
          block => block % next
       end do
+
+      !
+      ! Note: A halo exchange for 'exner' here as well as at the end of
+      ! the first (n-1) dynamics subcycles can substitute for the exchange at
+      ! the beginning of each dynamics subcycle. Placing halo exchanges here
+      ! and at the end of dynamics subcycles may in future allow for aggregation
+      ! of the 'exner' exchange with other exchanges.
+      !
 #endif
 
       call summarize_timestep(domain)
