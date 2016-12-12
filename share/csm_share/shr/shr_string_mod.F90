@@ -290,7 +290,7 @@ function shr_string_getParentDir(str)
    else
       shr_string_getParentDir = str(1:i-1)
    end if
-   
+
    if (debug>1) call shr_timer_stop (t01)
 
 end function shr_string_getParentDir
@@ -331,7 +331,7 @@ integer function shr_string_lastIndex(string,substr,rc)
    character(*),parameter :: F00     = "('(shr_string_lastIndex) ',4a)"
 
 !-------------------------------------------------------------------------------
-! Note: 
+! Note:
 ! - "new" F90 back option to index function makes this home-grown solution obsolete
 !-------------------------------------------------------------------------------
 
@@ -384,7 +384,7 @@ integer function shr_string_endIndex(string,substr,rc)
 !-------------------------------------------------------------------------------
 ! Notes:
 ! * returns zero if substring not found, uses len_trim() intrinsic
-! * very similar to: i = index(str,substr,back=.true.) 
+! * very similar to: i = index(str,substr,back=.true.)
 ! * do we need this function?
 !-------------------------------------------------------------------------------
 
@@ -445,7 +445,7 @@ subroutine shr_string_leftAlign(str,rc)
    character(*),parameter :: F00     = "('(shr_string_leftAlign) ',4a)"
 
 !-------------------------------------------------------------------------------
-! note: 
+! note:
 ! * ?? this routine isn't needed, use the intrisic adjustL instead ??
 !-------------------------------------------------------------------------------
 
@@ -454,7 +454,7 @@ subroutine shr_string_leftAlign(str,rc)
 
 !  -------------------------------------------------------------------
 !  --- I used this until I discovered the intrinsic function below - BK
-!  do while (len_trim(str) > 0 ) 
+!  do while (len_trim(str) > 0 )
 !     if (str(1:1) /= ' ') exit
 !     str = str(2:len_trim(str))
 !  end do
@@ -870,7 +870,7 @@ logical function shr_string_listIsValid(list,rc)
    if (nChar < 1) then                           ! list is an empty string
       rCode = 1
    else if (    list(1:1)     == listDel  ) then ! first char is delimiter
-      rCode = 2 
+      rCode = 2
    else if (list(nChar:nChar) == listDel  ) then ! last  char is delimiter
       rCode = 3
    else if (index(trim(list)," " )     > 0) then ! white-space in a field name
@@ -878,7 +878,7 @@ logical function shr_string_listIsValid(list,rc)
    else if (index(trim(list),listDel2) > 0) then ! found zero length field
       rCode = 5
    end if
-   
+
    if (rCode /= 0) then
       shr_string_listIsValid = .false.
       if (s_loglev > 0) write(s_logunit,F00) "WARNING: invalid list = ",trim(list)
@@ -1143,17 +1143,17 @@ subroutine shr_string_listDiff(list1,list2,listout,rc)
    character(SHR_KIND_CS) :: name     ! field name
    integer(SHR_KIND_IN)   :: rCode    ! return code
    integer(SHR_KIND_IN)   :: t01 = 0  ! timer
-   
+
    !----- formats -----
    character(*),parameter :: subName =   "(shr_string_listDiff) "
-   
+
 !-------------------------------------------------------------------------------
 ! Notes:
 !-------------------------------------------------------------------------------
 
    if (debug>1 .and. t01<1) call shr_timer_get(t01,subName)
    if (debug>1) call shr_timer_start(t01)
-   
+
    rCode = 0
 
    num_fields = shr_string_listGetNum(list1)
@@ -1170,7 +1170,7 @@ subroutine shr_string_listDiff(list1,list2,listout,rc)
    if (debug>1) call shr_timer_stop (t01)
 
 end subroutine shr_string_listDiff
-   
+
 
 !===============================================================================
 !BOP ===========================================================================
@@ -1502,9 +1502,9 @@ subroutine shr_string_listGetIndex(string,fldStr,kFld,print,rc)
       !--------------------------------------------------------
       !--- get end index of of field number k ---
       n = index(string(i0:len_trim(string)),listDel)
-      if (n > 0) then   
+      if (n > 0) then
          i1 = i0 + n - 2       ! *not*  the  last field name in fieldNames
-      else               
+      else
          i1 = len_trim(string) ! this is the last field name in fieldNames
       endif
       !--- sanity check ---
@@ -1689,8 +1689,8 @@ end subroutine shr_string_listGetDel
 
 !===============================================================================
 !
-! shr_string_listCreateField 
-!                           
+! shr_string_listCreateField
+!
 !   Returns a string of colon delimited fields for use in shr_strdata_create
 !   arguments, fldListFile and fldListModel.
 !   Use to create actual args for shr_strdata_create (fldListFile and
@@ -1698,7 +1698,7 @@ end subroutine shr_string_listGetDel
 !
 !   This works for numFields up to 999.  Modify the string write if you want
 !   more range.
-!     
+!
 !   retString = shr_string_listCreateField(numFields, strBase)
 !        given numFields = 5 and strBase = LAI, returns:
 !            LAI_1:LAI_2:LAI_3:LAI_4:LAI_5
@@ -1714,8 +1714,8 @@ function shr_string_listCreateField( numFields, strBase ) result ( retString )
 
    integer                          :: idx         ! index for looping over numFields
    integer(SHR_KIND_IN)             :: t01 = 0     ! timer
-   character(SHR_KIND_CX)           :: tmpString   ! temporary 
-   character(SHR_KIND_CX)           :: intAsChar   ! temporary 
+   character(SHR_KIND_CX)           :: tmpString   ! temporary
+   character(SHR_KIND_CX)           :: intAsChar   ! temporary
    character(1), parameter          :: colonStr = ':'
    character(1), parameter          :: underStr = '_'
 
@@ -1743,21 +1743,21 @@ function shr_string_listCreateField( numFields, strBase ) result ( retString )
 
      ! string conversion based on 1,2,3 digits
      if ( idx < 10 ) then
-       write(intAsChar, "(I1)") idx 
+       write(intAsChar, "(I1)") idx
      else if ( idx >= 10 .and. idx < 100 ) then
-       write(intAsChar, "(I2)") idx 
+       write(intAsChar, "(I2)") idx
      else
-       write(intAsChar, "(I3)") idx 
+       write(intAsChar, "(I3)") idx
      end if
-             
+
      tmpString = trim(StrBase)//trim(underStr)//trim(intAsChar)
-  
+
      if ( idx > 1 ) then
        tmpString = trim(colonStr)//trim(tmpString)
      end if
 
      retString = trim(retString)//trim(tmpString)
-       
+
    end do
 
    if ( debug > 1 ) call shr_timer_stop ( t01 )
@@ -1788,10 +1788,10 @@ subroutine shr_string_listAddSuffix(list, suffix, new_list)
   character(SHR_KIND_CS) :: this_field
   character(len(this_field) + len(suffix)) :: this_field_with_suffix
   character(len(new_list)) :: temp_list
-  
+
   num_fields = shr_string_listGetNum(list)
   new_list = ' '
-  
+
   do field_num = 1, num_fields
      call shr_string_listGetName(list, field_num, this_field)
      this_field_with_suffix = trim(this_field) // suffix
@@ -1799,7 +1799,7 @@ subroutine shr_string_listAddSuffix(list, suffix, new_list)
      call shr_string_listMerge(temp_list, this_field_with_suffix, new_list)
   end do
 end subroutine shr_string_listAddSuffix
-     
+
 !===============================================================================
 !BOP ===========================================================================
 !

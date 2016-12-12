@@ -1009,7 +1009,7 @@ real(r8) elemental function shr_spfn_igamma(a, x)
   end if
 
   xam = -x + a * log(x)
-  
+
   if ((xam > 700.0_r8) .or. (a > xbig_gamma)) then
      ! Out of bounds
      ! Return "huge" value.
@@ -1026,10 +1026,10 @@ real(r8) elemental function shr_spfn_igamma(a, x)
 
         if (abs(r/s) < 1.0e-15_r8) exit
      end do
-        
-     gin = exp(xam) * s           
+
+     gin = exp(xam) * s
      shr_spfn_igamma = shr_spfn_gamma(a) - gin
-        
+
   else
      t0 = 0.0_r8
 
