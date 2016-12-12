@@ -66,6 +66,9 @@ def parse_command_line(args):
     group.add_argument("--description", default=False, action="store_true",
                         help="Print the description associated with this variable")
 
+    group.add_argument("--group", default=False, action="store_true",
+                        help="Print the group associated with this variable")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -80,9 +83,10 @@ def parse_command_line(args):
         variables = args.variables
 
     return variables, args.file, args.caseroot, args.listall, args.fileonly, \
-        args.value, args.no_resolve, args.raw, args.description
+        args.value, args.no_resolve, args.raw, args.description, args.group
 
-def xmlquery(case, variables=[], listall=False, fileonly=False, value=False, resolved=True, raw=False, description=False):
+def xmlquery(case, variables=[], listall=False, fileonly=False, value=False,
+             resolved=True, raw=False, description=False, group=False):
     """
     Return list of attributes and their values , print formatted
 
@@ -92,12 +96,15 @@ def xmlquery(case, variables=[], listall=False, fileonly=False, value=False, res
         variables = case.get_record_field(None, "varid").split(",")
 
     for var in variables:
+        results[var] = {}
         if raw:
-            results[var] = {'raw': case.get_record_field(var, "raw")}
+            results[var]['raw'] = case.get_record_field(var, "raw")
         elif description:
-            results[var] = {'desc': case.get_record_field(var, "desc")}
+            results[var]['desc'] = case.get_record_field(var, "desc")
+        elif group:
+            results[var]['group'] = case.get_record_field(var, "group")
         else:
-            results[var] = {'value': case.get_value(var, resolved=resolved)}
+            results[var]['value'] = case.get_value(var, resolved=resolved)
 
 
     return results
@@ -109,11 +116,11 @@ def _main_func():
 
     # Initialize command line parser and get command line options
     variables, infile, caseroot, listall, fileonly,  \
-        value, no_resolve, raw, description = parse_command_line(sys.argv)
+        value, no_resolve, raw, description, group = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
-        results = xmlquery(case, variables, listall, fileonly, value, resolved=not no_resolve, raw=raw, description=description)
+        results = xmlquery(case, variables, listall, fileonly, value, resolved=not no_resolve, raw=raw, description=description, group=group)
 
     for var in iter(variables):
         if raw:
@@ -122,6 +129,8 @@ def _main_func():
             sys.stdout.write("%s"%results[var]['value'])
         elif description:
             print "%s: %s"%(var, results[var]['desc'])
+        elif group:
+            print "%s: %s"%(var, results[var]['group'])
         else:
             print "%s: %s"%(var, results[var]['value'])
 

@@ -131,6 +131,7 @@ class EntryID(GenericXML):
     # Get group , expect node with tag "group"
     # entry id nodes are children of group nodes
     def _get_group (self, node):
+
         return self._get_node_element_info(node, "group")
 
     def get_valid_values(self, vid):

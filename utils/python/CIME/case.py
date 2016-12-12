@@ -286,7 +286,8 @@ class Case(object):
                         result += env_file._get_description(root)
                     elif field == "varid":
                         result += root.get("id")+","
-
+                    elif field == "group":
+                        result += env_file._get_group(root)
         if result is None:
             for env_file in self._env_generic_files:
                 roots = env_file.get_nodes(variable)
