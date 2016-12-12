@@ -780,13 +780,17 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         if NO_BATCH:
             extra_args += " --no-batch"
 
-        run_cmd_assert_result(self, "%s/create_test %s" % (SCRIPT_DIR, extra_args),
-                              expected_stat=(0 if expect_works or self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
+        if " -n " in extra_args:
+            run_cmd_assert_result(self, "%s/create_test %s" % (SCRIPT_DIR, extra_args),
+                                  expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
+        else:
+            run_cmd_assert_result(self, "%s/create_test %s" % (SCRIPT_DIR, extra_args),
+                                  expected_stat=(0 if expect_works or self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
 
-        if self._hasbatch and " -n " not in extra_args:
-            test_id = extra_args.split()[extra_args.split().index("-t") + 1]
-            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id),
-                                  from_dir=self._testroot, expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
+            if self._hasbatch:
+                test_id = extra_args.split()[extra_args.split().index("-t") + 1]
+                run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, test_id),
+                                      from_dir=self._testroot, expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
 
     ###############################################################################
     def test_bless_test_results(self):
