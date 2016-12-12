@@ -37,7 +37,7 @@ module seq_hist_mod
 
    use prep_ocn_mod,      only: prep_ocn_get_r2x_ox
    use prep_ocn_mod,      only: prep_ocn_get_x2oacc_ox
-   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_ox_cnt  
+   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_ox_cnt
    use prep_atm_mod,      only: prep_atm_get_o2x_ax
    use prep_aoflux_mod,   only: prep_aoflux_get_xao_ox
    use prep_aoflux_mod,   only: prep_aoflux_get_xao_ax
@@ -49,7 +49,7 @@ module seq_hist_mod
    private
 
 ! !PUBLIC TYPES:
-  
+
    ! no public types
 
 ! !PUBLIC MEMBER FUNCTIONS
@@ -84,7 +84,7 @@ module seq_hist_mod
    logical     :: rof_present            ! .true.  => land runoff is present
    logical     :: glc_present            ! .true.  => glc is present
    logical     :: wav_present            ! .true.  => wav is present
-   
+
    logical     :: atm_prognostic         ! .true.  => atm comp expects input
    logical     :: lnd_prognostic         ! .true.  => lnd comp expects input
    logical     :: ice_prognostic         ! .true.  => ice comp expects input
@@ -207,7 +207,7 @@ subroutine seq_hist_write(infodata, EClock_d, &
         glc_nx=glc_nx, glc_ny=glc_ny,        &
         wav_nx=wav_nx, wav_ny=wav_ny,        &
         ocn_nx=ocn_nx, ocn_ny=ocn_ny,        &
-        cpl_cdf64=cdf64,                     & 
+        cpl_cdf64=cdf64,                     &
         case_name=case_name)
 
    !--- Get current date from clock needed to label the history pointer file ---
@@ -472,7 +472,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
         ice_present=ice_present,             &
         ocn_present=ocn_present,             &
         glc_present=glc_present,             &
-        wav_present=wav_present,             & 
+        wav_present=wav_present,             &
         atm_prognostic=atm_prognostic,       &
         lnd_prognostic=lnd_prognostic,       &
         ice_prognostic=ice_prognostic,       &
@@ -821,10 +821,10 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
                     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma')
 
-               call seq_io_write(hist_file, gsmap, x2a_ax_avg, 'x2a_ax',  & 
+               call seq_io_write(hist_file, gsmap, x2a_ax_avg, 'x2a_ax',  &
                     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
                     pre='x2aavg', tavg=.true.)
-               call seq_io_write(hist_file, gsmap, a2x_ax_avg, 'a2x_ax',  & 
+               call seq_io_write(hist_file, gsmap, a2x_ax_avg, 'a2x_ax',  &
                     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
                     pre='a2xavg', tavg=.true.)
             endif
@@ -953,7 +953,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                call mct_aVect_zero(g2x_gx_avg(iidx))
                call mct_aVect_zero(x2g_gx_avg(iidx))
             enddo
-         endif 
+         endif
          if (wav_present .and. histavg_wav) then
             do iidx = 1,  num_inst_wav
                call mct_aVect_zero(w2x_wx_avg(iidx))
@@ -1020,7 +1020,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
    logical                  :: first_call
    integer(IN)              :: found = -10
    logical                  :: useavg
-   logical                  :: lwrite_now     
+   logical                  :: lwrite_now
    logical                  :: whead, wdata  ! for writing restart/history cdf files
    real(r8)                 :: tbnds(2)
 
@@ -1070,7 +1070,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
       useavg = .true.
       lwrite_now = write_now
    endif
- 
+
    call seq_timemgr_EClockGetData( EClock_d, &
         curr_ymd=curr_ymd,                   &
         curr_tod=curr_tod,                   &
@@ -1088,7 +1088,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
       endif
    enddo
 
-   if (iamin_CPLID) then 
+   if (iamin_CPLID) then
       if (flow == 'c2x') then
          av => component_get_c2x_cx(comp)
       else if (flow == 'x2c') then
@@ -1118,7 +1118,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
 
    if (iamin_CPLID) then !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-      samples_per_file = nt      
+      samples_per_file = nt
 
       if (useavg) then
          if (lwrite_now) then
@@ -1129,35 +1129,35 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
             avavg(found)%rAttr = avavg(found)%rAttr + av%rAttr
          endif
       endif
-      
+
       if (lwrite_now) then
-         
+
          ncnt(found) = ncnt(found) + 1
          if (ncnt(found) < 1 .or. ncnt(found) > samples_per_file) ncnt(found) = 1
-         
+
          time_units = 'days since ' &
               // seq_io_date2yyyymmdd(start_ymd) // ' ' // seq_io_sec2hms(start_tod)
          tbnds2(found) = curr_time
-         
+
          if (ncnt(found) == 1) then
             fk1 = 1
             call seq_infodata_GetData( infodata,  case_name=case_name)
             call shr_cal_date2ymd(curr_ymd, yy, mm, dd)
-            
+
             ! Adjust yyyy in file name by yr_offset,  if present
             ! For example,  for a field written once a year,  this will make it so the file
-            ! with fields from year 1 has time stamp 0001-01-01 rather than 0002-01-01, 
+            ! with fields from year 1 has time stamp 0001-01-01 rather than 0002-01-01,
             ! which can simplify later reading by a data model
             if (present(yr_offset)) then
                yy = yy + yr_offset
             end if
-            
+
             write(hist_file(found), "(a, i4.4, a, i2.2, a, i2.2, a)") &
                  trim(case_name)//'.cpl.h'//trim(aname)//'.',  yy, '-', mm, '-', dd, '.nc'
          else
             fk1 = 2
          endif
-         
+
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (fk1 == 1) then
          call seq_io_wopen(hist_file(found), clobber=.true., cdf64=cdf64)
@@ -1227,7 +1227,7 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
                               nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
                               use_float=.true.)
          endif
-   
+
          if (present(flds)) then
             if (fk == 2) then
                call mct_aVect_clean(avflds)
@@ -1278,7 +1278,7 @@ subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, fl
    logical                 :: first_call
    integer(IN)             :: found = -10
    logical                 :: useavg
-   logical                 :: lwrite_now     
+   logical                 :: lwrite_now
    logical                 :: whead,wdata  ! for writing restart/history cdf files
    real(r8)                :: tbnds(2)
 
@@ -1325,7 +1325,7 @@ subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, fl
       useavg = .true.
       lwrite_now = write_now
    endif
- 
+
    first_call = .true.
    do n = 1, ntout
       if (trim(tname(n)) == trim(aname)) then
@@ -1355,7 +1355,7 @@ subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, fl
 !  if (.not. iamin_CPLID) return
    if (iamin_CPLID) then !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-   samples_per_file = nt      
+   samples_per_file = nt
 
    if (useavg) then
       if (lwrite_now) then
@@ -1445,7 +1445,7 @@ subroutine seq_hist_spewav(infodata, aname, gsmap, av, nx, ny, nt, write_now, fl
                               nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
                               use_float=.true.)
          endif
-   
+
          if (present(flds)) then
             if (fk == 2) then
                call mct_aVect_clean(avflds)

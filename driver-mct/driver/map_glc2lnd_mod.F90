@@ -23,7 +23,7 @@ module map_glc2lnd_mod
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
 
-  
+
   implicit none
   save
   private
@@ -42,9 +42,9 @@ module map_glc2lnd_mod
   private :: get_frac_this_ec              ! get fraction in a given elevation class
   private :: set_topo_in_virtual_columns
   private :: make_aVect_frac_times_icemask
-  
+
   character(len=*), parameter :: frac_times_icemask_field = 'Sg_frac_times_icemask'
-  
+
 contains
 
   !-----------------------------------------------------------------------
@@ -84,7 +84,7 @@ contains
     character(len=*), intent(in) :: extra_fields
     type(seq_map), intent(inout) :: mapper
     type(mct_aVect), intent(inout) :: g2x_l
-    
+
     !
     ! !LOCAL VARIABLES:
     integer :: lsize_g
@@ -102,7 +102,7 @@ contains
     character(len=len(extra_fields)+100) :: fields_to_map
     character(len=2*len(extra_fields)+100) :: fields_to_map_ec  ! fields_to_map with elev class suffixes
     integer :: num_fields_to_map
-    
+
     ! attribute vector holding glc fraction in one elev class, on the glc grid
     type(mct_aVect) :: glc_frac_this_ec_g
 
@@ -112,11 +112,11 @@ contains
     ! attribute vector holding the product of (glc fraction in one elev class) x
     ! (icemask), on the glc grid
     type(mct_aVect) :: glc_frac_this_ec_times_icemask_g
-    
+
     ! attribute vector holding fields to map (other than fraction) in one elevation
     ! class, on the land grid
     type(mct_aVect) :: glc_fields_this_ec_l
-    
+
     character(len=*), parameter :: subname = 'map_glc2lnd_ec'
     !-----------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ contains
     allocate(glc_topo(lsize_g))
     call mct_aVect_exportRattr(g2x_g, frac_field, glc_frac)
     call mct_aVect_exportRattr(g2x_g, topo_field, glc_topo)
-    
+
     ! ------------------------------------------------------------------------
     ! Determine elevation class of each glc point
     ! ------------------------------------------------------------------------
@@ -149,7 +149,7 @@ contains
     ! ------------------------------------------------------------------------
 
     call shr_string_listMerge(extra_fields, topo_field, fields_to_map)
-    
+
     do n = 0, glc_get_num_elevation_classes()
 
        ! ------------------------------------------------------------------------
@@ -173,10 +173,10 @@ contains
        frac_field_ec = frac_field // elevclass_as_string
        call mct_aVect_copy(glc_frac_this_ec_l, g2x_l, &
             rList = frac_field, TrList = frac_field_ec)
-       
+
        ! ------------------------------------------------------------------------
        ! Map other fields to the land grid
-       ! 
+       !
        ! Note that bare land values are mapped in the same way as ice-covered values
        ! ------------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ contains
        ! ------------------------------------------------------------------------
        ! Clean up
        ! ------------------------------------------------------------------------
-       
+
        call mct_aVect_clean(glc_frac_this_ec_l)
        call mct_aVect_clean(glc_frac_this_ec_g)
        call mct_aVect_clean(glc_frac_this_ec_times_icemask_g)
@@ -218,7 +218,7 @@ contains
     deallocate(glc_frac)
     deallocate(glc_topo)
     deallocate(glc_frac_this_ec)
-    
+
   end subroutine map_glc2lnd_ec
 
 
@@ -243,7 +243,7 @@ contains
     integer :: npts
     integer :: glc_pt
     integer :: err_code
-    
+
     character(len=*), parameter :: subname = 'get_glc_elevation_classes'
     !-----------------------------------------------------------------------
 
@@ -264,7 +264,7 @@ contains
           call shr_sys_abort(subname//': ERROR getting elevation class')
        end select
     end do
-       
+
   end subroutine get_glc_elevation_classes
 
   !-----------------------------------------------------------------------
@@ -286,14 +286,14 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: npts
-    
+
     character(len=*), parameter :: subname = 'get_frac_this_ec'
     !-----------------------------------------------------------------------
 
     npts = size(glc_frac_this_ec)
     SHR_ASSERT((size(glc_frac) == npts), errMsg(__FILE__, __LINE__))
     SHR_ASSERT((size(glc_elevclass) == npts), errMsg(__FILE__, __LINE__))
-    
+
     if (this_elevclass == 0) then
        glc_frac_this_ec(:) = 1._r8 - glc_frac(:)
     else
@@ -303,7 +303,7 @@ contains
           glc_frac_this_ec = 0._r8
        end where
     end if
-       
+
   end subroutine get_frac_this_ec
 
   !-----------------------------------------------------------------------
@@ -334,7 +334,7 @@ contains
     ! The following need to be pointers to satisfy the MCT interface:
     real(r8), pointer :: frac_l(:)  ! ice fraction in this elev class, land grid
     real(r8), pointer :: topo_l(:)  ! topographic height in this elev class, land grid
-    
+
     character(len=*), parameter :: subname = 'set_virtual_elevation_classes'
     !-----------------------------------------------------------------------
 
@@ -351,13 +351,13 @@ contains
     where (frac_l <= 0)
        topo_l = topo_virtual
     end where
-    
+
     ! Put updated field back in attribute vector
     call mct_aVect_importRattr(glc_topo_this_ec_l, topo_field, topo_l)
-    
+
     deallocate(frac_l)
     deallocate(topo_l)
-    
+
   end subroutine set_topo_in_virtual_columns
 
   !-----------------------------------------------------------------------
@@ -383,7 +383,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: lsize
-    
+
     character(len=*), parameter :: subname = 'make_aVect_frac_times_icemask'
     !-----------------------------------------------------------------------
 
@@ -394,9 +394,9 @@ contains
     call mct_aVect_copy(aVin = frac_av, aVout = frac_times_icemask_av, &
          rList = frac_field, TrList = frac_times_icemask_field)
     call mct_aVect_mult(frac_times_icemask_av, mask_av, icemask_field)
-    
+
   end subroutine make_aVect_frac_times_icemask
-  
+
 end module map_glc2lnd_mod
 
-  
+
