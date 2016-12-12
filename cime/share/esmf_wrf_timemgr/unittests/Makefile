@@ -37,12 +37,12 @@ libesmf_time.a : $(OBJS)
 .F90.o :
 	$(FC) -c $(FFLAGS) $<
 
-clean: 
+clean:
 	/bin/rm -f *.o libesmf_time.a *.mod test
 
-# DEPENDENCIES : only dependencies after this line 
+# DEPENDENCIES : only dependencies after this line
 
-#$$$ update dependencies!  
+#$$$ update dependencies!
 
 ESMF_BaseMod.o : ESMF_BaseMod.F90 wrf_stuff.o
 ESMF_FractionMod.o: ESMF_FractionMod.F90

@@ -2,17 +2,54 @@
 
 <compsets>
 
+  <help>
+
+    =========================================
+    compset naming convention
+    =========================================
+    The compset longname below has the specified order
+    atm, lnd, ice, ocn, river, glc wave model-options
+
+    The notation for the compset longname is
+    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
+    Where for the CAM specific compsets below the following is supported
+    TIME = Time period (e.g. 2000, HIST, RCP8...)
+    ATM  = [CAM4, CAM5, SATM]
+    LND  = [CLM40, CLM45, CLM50, SLND]
+    ICE  = [MPASCICE, CICE, DICE, SICE]
+    OCN  = [MPASO, DOCN, ,AQUAP, SOCN]
+    ROF  = [RTM, MOSART, SROF]
+    GLC  = [MPASLISIA, MPASLIALB, CISM1, CISM2, SGLC]
+    WAV  = [WW3, DWAV, XWAV, SWAV]
+    ESP  = [SESP]
+    BGC  = optional BGC scenario
+
+    The OPTIONAL %phys attributes specify submodes of the given system
+    For example DOCN%DOM is the data ocean model for DOCN
+    ALL the possible %phys choices for each component are listed
+    with the -list command for create_newcase
+    ALL data models must have a %phys option that corresponds to the data  model mode
+
+    Each compset node is associated with the following elements
+    - lname
+    - alias
+    - support  (optional description of the support level for this compset)
+    Each compset node can also have the following attributes
+    - grid  (optional regular expression match for grid to work with the compset)
+
+  </help>
+
   <!-- ACME C/G compsets -->
 
   <compset>
-    <alias>CMPASO-NYF</alias> 
-    <lname>2000_DATM%NYF_SLND_DICE%SSMI_MPASO_DROF%NYF_SGLC_SWAV</lname>
+    <alias>CMPASO-NYF</alias>
+    <lname>2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_SGLC_SWAV</lname>
     <support_level>"Experimental, under development"</support_level>
   </compset>
 
   <compset>
     <alias>CMPASO-IAF</alias>
-    <lname>2000_DATM%IAF_SLND_DICE%SIAF_MPASO_DROF%IAF_SGLC_SWAV</lname>
+    <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO_DROF%IAF_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 

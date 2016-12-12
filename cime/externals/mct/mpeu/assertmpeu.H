@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: assertmpeu.H - an #include section of ASSERT() macro for Fortran
@@ -23,7 +23,7 @@
 !	This macro requires Fortran friendly cpp() for macro processing.
 !
 ! !REVISION HISTORY:
-!       17Aug07 - R. Jacob <jacob@mcs.anl.gov> - renamed from assert.H to 
+!       17Aug07 - R. Jacob <jacob@mcs.anl.gov> - renamed from assert.H to
 !                 prevent namespace collision with assert.h on Mac
 ! 	28Aug00	- Jing Guo <guo@dao.gsfc.nasa.gov>
 !		- modified

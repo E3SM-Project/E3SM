@@ -2,62 +2,62 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_GeneralGrid -- Physical Coordinate Grid Information Storage
 !
 ! !DESCRIPTION:
-! The {\tt GeneralGrid} data type is a flexible, generic structure for 
-! storing physical coordinate grid information.  The {\tt GeneralGrid} 
-! may be employed to store coordinate grids of arbitrary dimension, and 
-! is also capable of supporting unstructured grids such as meteorological 
-! observation data streams.  The grid is representated by a literal 
-! listing of the gridpoint coordinates, along with other integer and real 
-! {\em attributes} associated with each location.  Examples of real 
-! non-coordinate attributes are grid cell length, cross-sectional area, and 
-! volume elements, projections of local directional unit vectors onto 
-! {\em et cetera}  A {\tt GeneralGrid} as at minimum one integer 
-! attribute---{\em the global grid point number}, or {\tt GlobGridNum}, 
+! The {\tt GeneralGrid} data type is a flexible, generic structure for
+! storing physical coordinate grid information.  The {\tt GeneralGrid}
+! may be employed to store coordinate grids of arbitrary dimension, and
+! is also capable of supporting unstructured grids such as meteorological
+! observation data streams.  The grid is representated by a literal
+! listing of the gridpoint coordinates, along with other integer and real
+! {\em attributes} associated with each location.  Examples of real
+! non-coordinate attributes are grid cell length, cross-sectional area, and
+! volume elements, projections of local directional unit vectors onto
+! {\em et cetera}  A {\tt GeneralGrid} as at minimum one integer
+! attribute---{\em the global grid point number}, or {\tt GlobGridNum},
 ! which serves as a unique identifier for each physical grid location.
 !
-! The real attributes of of the {\tt GeneralGrid} are grouped as {\tt List} 
+! The real attributes of of the {\tt GeneralGrid} are grouped as {\tt List}
 ! components:
 ! \begin{itemize}
-! \item {\tt GGrid\%coordinate\_list} contains the list of the physical 
-! dimension names of the grid.  The user initializes a {\tt List} by 
-! supplying the items in it as a string with the items delimitted by 
-! colons.  For example, setting the coordinates for Euclidean 3-space 
-! is accomplished by a choice of {\tt 'x:y:z'}, cylindrical coordinates 
-! by {\tt 'rho:theta:z'}, spherical coordinates by {\tt 'r:theta:phi'}, 
+! \item {\tt GGrid\%coordinate\_list} contains the list of the physical
+! dimension names of the grid.  The user initializes a {\tt List} by
+! supplying the items in it as a string with the items delimitted by
+! colons.  For example, setting the coordinates for Euclidean 3-space
+! is accomplished by a choice of {\tt 'x:y:z'}, cylindrical coordinates
+! by {\tt 'rho:theta:z'}, spherical coordinates by {\tt 'r:theta:phi'},
 ! {\em et cetera}.
-! \item {\tt GGrid\%weight\_list} contains the names of the spatial 
-! cell length, area, and volume weights associated with the grid.  These 
+! \item {\tt GGrid\%weight\_list} contains the names of the spatial
+! cell length, area, and volume weights associated with the grid.  These
 ! are also stored in {\tt List} form, and are set by the user in the same
-! fashion as described above for coordinates.  For example, one might 
-! wish create cell weight attributes for a cylindrical grid by defining 
+! fashion as described above for coordinates.  For example, one might
+! wish create cell weight attributes for a cylindrical grid by defining
 ! a weight list of {\tt 'drho:dphi:rhodphi:dz}.
-! \item {\tt GGrid\%other\_list} is space for the user to define other 
+! \item {\tt GGrid\%other\_list} is space for the user to define other
 ! real attributes.  For example, one might wish to do vector calculus
-! operatons in spherical coordinates.  Since the spherical coordinate 
+! operatons in spherical coordinates.  Since the spherical coordinate
 ! unit vectors ${\hat r}$, ${\hat \theta}$, and ${\hat \phi}$
-! vary in space, it is sometimes useful to store their projections on 
-! the fixed Euclidean unit vectors ${\bf \hat x}$, ${\bf \hat y}$, and 
-! ${\bf \hat z}$.  To do this one might set up a list of attributes 
+! vary in space, it is sometimes useful to store their projections on
+! the fixed Euclidean unit vectors ${\bf \hat x}$, ${\bf \hat y}$, and
+! ${\bf \hat z}$.  To do this one might set up a list of attributes
 ! using the string
 ! \begin{verbatim}
 ! 'rx:ry:rz:thetax:thetay:thetaz:phix:phiy:phyz'
 ! \end{verbatim}
-! \item {\tt GGrid\%index\_list} provides space for the user to define 
-! integer attributes such as alternative indexing schemes, indices for 
+! \item {\tt GGrid\%index\_list} provides space for the user to define
+! integer attributes such as alternative indexing schemes, indices for
 ! defining spatial regions, {\em et cetera}.  This attribute list contains
-! all the integer attributes for the {\tt GeneralGrid} save one:  the 
-! with the ever-present {\em global gridpoint number attribute} 
+! all the integer attributes for the {\tt GeneralGrid} save one:  the
+! with the ever-present {\em global gridpoint number attribute}
 ! {\tt GlobGridNum}, which is set automatically by MCT.
 ! \end{itemize}
 !
-! This module contains the definition of the {\tt GeneralGrid} datatype, 
-! various methods for creating and destroying it, query methods, and tools 
+! This module contains the definition of the {\tt GeneralGrid} datatype,
+! various methods for creating and destroying it, query methods, and tools
 ! for multiple-key sorting of gridpoints.
 !
 ! !INTERFACE:
@@ -165,7 +165,7 @@
 ! 31Oct00 - J.W. Larson <larson@mcs.anl.gov> - modified the
 !           GeneralGrid type to allow inclusion of grid cell
 !           dimensions (lengths) and area/volume weights.
-! 15Jan01 - J.W. Larson implemented new GeneralGrid type 
+! 15Jan01 - J.W. Larson implemented new GeneralGrid type
 !           definition and added numerous APIs.
 ! 17Jan01 - J.W. Larson fixed minor bug in module header use
 !           statement.
@@ -177,7 +177,7 @@
 ! 13Dec01 - J.W. Larson - added import and export methods.
 ! 27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Corrected usage of
 !           m_die routines throughout this module.
-!  5Aug02 - E. Ong <eong@mcs.anl.gov> - Modified GeneralGrid usage 
+!  5Aug02 - E. Ong <eong@mcs.anl.gov> - Modified GeneralGrid usage
 !           to allow user-defined grid numbering schemes.
 !EOP ___________________________________________________________________
 
@@ -193,12 +193,12 @@
 !
 ! !DESCRIPTION:
 ! The routine {\tt init\_()} creates the storage space for grid point
-! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
+! coordinates, area/volume weights, and other coordinate data ({\em e.g.},
 ! local cell dimensions).  These data are referenced by {\tt List}
-! components that are also created by this routine (see the documentation 
-! of the declaration section of this module for more details about setting 
-! list information).  Each of the input {\tt CHARACTER} arguments is a 
-! colon-delimited string of attribute names, each corrsponding to a 
+! components that are also created by this routine (see the documentation
+! of the declaration section of this module for more details about setting
+! list information).  Each of the input {\tt CHARACTER} arguments is a
+! colon-delimited string of attribute names, each corrsponding to a
 ! {\tt List} element of the output {\tt GeneralGrid} argument {\tt GGrid},
 ! and are summarized in the table below:
 !
@@ -227,13 +227,13 @@
 !\end{center}
 !\end{table}
 !
-! The input {\tt INTEGER} argument {\tt lsize} defines the number of grid points 
+! The input {\tt INTEGER} argument {\tt lsize} defines the number of grid points
 ! to be stored in {\tt GGrid}.
 !
-! If a set of sorting keys is supplied in the argument {\tt CoordSortOrder}, 
-! the user can control whether the sorting by each key is in descending or 
-! ascending order by supplying the input {\tt LOGICAL} array {\tt descend(:)}.  
-! By default, all sorting is in {\em ascending} order for each key if the 
+! If a set of sorting keys is supplied in the argument {\tt CoordSortOrder},
+! the user can control whether the sorting by each key is in descending or
+! ascending order by supplying the input {\tt LOGICAL} array {\tt descend(:)}.
+! By default, all sorting is in {\em ascending} order for each key if the
 ! argument {\tt descend} is not provided.
 !
 ! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt GGrid} is dynamically
@@ -281,22 +281,22 @@
 ! !REVISION HISTORY:
 ! 25Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 ! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - modified to fit
-!           new GeneralGrid definition.  
+!           new GeneralGrid definition.
 ! 19Mar01 - Jay Larson <larson@mcs.anl.gov> - added OtherChars
 ! 25Apr01 - Jay Larson <larson@mcs.anl.gov> - added GlobGridNum
 !           as a mandatory integer attribute.
-! 13Jun01 - Jay Larson <larson@mcs.anl.gov> - No longer define 
+! 13Jun01 - Jay Larson <larson@mcs.anl.gov> - No longer define
 !           blank List attributes of the GeneralGrid.  Previous
 !           versions of this routine had this feature, and this
 !           caused problems with the GeneralGrid Send and Receive
 !           operations on the AIX platform.
 ! 13Jun01 - R. Jacob <jacob@mcs.anl.gov> - nullify any pointers
 !           for lists not declared.
-! 15Feb02 - Jay Larson <larson@mcs.anl.gov> - made the input 
+! 15Feb02 - Jay Larson <larson@mcs.anl.gov> - made the input
 !           argument CoordSortOrder mandatory (rather than
 !           optional).
-! 18Jul02 - E. Ong <eong@mcs.anl.gov> - replaced this version of 
-!           init with one that calls initl_. 
+! 18Jul02 - E. Ong <eong@mcs.anl.gov> - replaced this version of
+!           init with one that calls initl_.
 !  5Aug02 - E. Ong <eong@mcs.anl.gov> - made the input argument
 !           CoordSortOrder optional to allow user-defined grid
 !           numbering schemes.
@@ -324,7 +324,7 @@
   nullify(GGrid%descend)
 
         ! Convert the Character arguments to the appropriate
-        ! GeneralGrid components. 
+        ! GeneralGrid components.
 
         ! Set up the integer and real attribute lists.
 
@@ -364,7 +364,7 @@
      call die(myname_,'List_nitem(CoordList) <= 0',nitems)
   endif
 
-        ! Check the items in the coordinate list and the 
+        ! Check the items in the coordinate list and the
         ! coordinate grid sort keys...they should contain
         ! the same items.
 
@@ -375,7 +375,7 @@
 
      deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
      if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
-     
+
      if(NumShared /= nitems) then
 	call die(myname_,'CoordSortOrder must have the same items &
 	         & as CoordList',abs(nitems-NumShared))
@@ -393,7 +393,7 @@
      if( ( (.not.associated(descend)) .or. &
 	   (.not.present(CoordSortOrder)) ) .or. &
 	   (size(descend) /= nitems) ) then
-	
+
 	write(stderr,*) myname_, &
 	     ':: ERROR using descend argument, &
 	     &associated(descend) = ', associated(descend), &
@@ -428,9 +428,9 @@
         enddo
 
      endif
-        
+
   endif
-  
+
        ! Initialize GGrid%data using IAList, RAList, and lsize (if
        ! present).
 
@@ -444,7 +444,7 @@
 
   call List_clean(IAList)
   call List_clean(RAList)
-  
+
  end subroutine init_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -455,12 +455,12 @@
 !
 ! !DESCRIPTION:
 ! The routine {\tt initl\_()} creates the storage space for grid point
-! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
+! coordinates, area/volume weights, and other coordinate data ({\em e.g.},
 ! local cell dimensions).  These data are referenced by {\tt List}
-! components that are also created by this routine (see the documentation 
-! of the declaration section of this module for more details about setting 
-! list information).  Each of the input {\tt List} arguments is used 
-! directly to create the corresponding 
+! components that are also created by this routine (see the documentation
+! of the declaration section of this module for more details about setting
+! list information).  Each of the input {\tt List} arguments is used
+! directly to create the corresponding
 ! {\tt List} element of the output {\tt GeneralGrid} argument {\tt GGrid},
 ! and are summarized in the table below:
 !
@@ -489,13 +489,13 @@
 !\end{center}
 !\end{table}
 !
-! The input {\tt INTEGER} argument {\tt lsize} defines the number of grid points 
+! The input {\tt INTEGER} argument {\tt lsize} defines the number of grid points
 ! to be stored in {\tt GGrid}.
 !
-! If a set of sorting keys is supplied in the argument {\tt CoordSortOrder}, 
-! the user can control whether the sorting by each key is in descending or 
-! ascending order by supplying the input {\tt LOGICAL} array {\tt descend(:)}.  
-! By default, all sorting is in {\em ascending} order for each key if the 
+! If a set of sorting keys is supplied in the argument {\tt CoordSortOrder},
+! the user can control whether the sorting by each key is in descending or
+! ascending order by supplying the input {\tt LOGICAL} array {\tt descend(:)}.
+! By default, all sorting is in {\em ascending} order for each key if the
 ! argument {\tt descend} is not provided.
 !
 ! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt GGrid} is dynamically
@@ -546,7 +546,7 @@
 ! 10May01 - Jay Larson <larson@mcs.anl.gov> - initial version
 !  8Aug01 - E.T. Ong <eong@mcs.anl.gov> - changed list assignment(=)
 !           to list copy to avoid compiler bugs with pgf90
-! 17Jul02 - E. Ong <eong@mcs.anl.gov> - general revision; 
+! 17Jul02 - E. Ong <eong@mcs.anl.gov> - general revision;
 !           added error checks
 !  5Aug02 - E. Ong <eong@mcs.anl.gov> - made input argument
 !           CoordSortOrder optional to allow for user-defined
@@ -586,7 +586,7 @@
      call die(myname_,'List_nitem(CoordList) <= 0',nitems)
   endif
 
-        ! Check the items in the coordinate list and the 
+        ! Check the items in the coordinate list and the
         ! coordinate grid sort keys...they should contain
         ! the same items.
 
@@ -597,7 +597,7 @@
 
      deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
      if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
-     
+
      if(NumShared /= nitems) then
         call die(myname_,'CoordSortOrder must have the same items &
                  & as CoordList',abs(nitems-NumShared))
@@ -615,7 +615,7 @@
      if( ( (.not.associated(descend)) .or. &
            (.not.present(CoordSortOrder)) ) .or. &
            (size(descend) /= nitems) ) then
-        
+
         write(stderr,*) myname_, &
              ':: ERROR using descend argument, &
              &associated(descend) = ', associated(descend), &
@@ -653,7 +653,7 @@
      endif
 
   endif
-  
+
        ! Process input lists and create the appropriate GeneralGrid
        ! List components
 
@@ -721,15 +721,15 @@
 !
 ! !DESCRIPTION:
 ! The routine {\tt initgg\_()} creates the storage space for grid point
-! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
-! nearest-neighbor coordinates).  These data are all copied from the 
-! already initialized input {\tt GeneralGrid} argument {\tt iGGrid}.  This 
-! routine initializes the output {\tt GeneralGrid} argument {\tt oGGrid} 
+! coordinates, area/volume weights, and other coordinate data ({\em e.g.},
+! nearest-neighbor coordinates).  These data are all copied from the
+! already initialized input {\tt GeneralGrid} argument {\tt iGGrid}.  This
+! routine initializes the output {\tt GeneralGrid} argument {\tt oGGrid}
 ! with the same {\tt List} data as {\tt iGGrid}, but with storage space
 ! for {\tt lsize} gridpoints.
 !
-! {\bf N.B.}:  Though the attribute lists and gridpoint sorting strategy 
-! of {\tt iGGrid} is copied to {\tt oGGrid}, the actual values of the 
+! {\bf N.B.}:  Though the attribute lists and gridpoint sorting strategy
+! of {\tt iGGrid} is copied to {\tt oGGrid}, the actual values of the
 ! attributes are not.
 !
 ! {\bf N.B.}:  It is assumed that {\tt iGGrid} has been initialized.
@@ -758,7 +758,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid), intent(in)  :: iGGrid
       integer, optional, intent(in)  :: lsize
@@ -770,7 +770,7 @@
 ! !REVISION HISTORY:
 !  2May01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
 ! 13Jun01 - Jay Larson <larson@mcs.anl.gov> - Now, undefined List
-!           components of the GeneralGrid iGGrid are no longer 
+!           components of the GeneralGrid iGGrid are no longer
 !           copied to oGGrid.
 !  8Aug01 - E.T. Ong <eong@mcs.anl.gov> - changed list assignment(=)
 !           to list copy to avoid compiler bugs with pgf90
@@ -797,9 +797,9 @@
   nullify(oGGrid%descend)
 
         ! Brief argument check:
-        
+
   ncoord = dims_(iGGrid)    ! dimensionality of the GeneralGrid
-  
+
   if(associated(iGGrid%descend)) then
 
      if(size(iGGrid%descend) /= ncoord) then ! size mismatch
@@ -826,7 +826,7 @@
 
   endif
 
-       ! Copy list data from iGGrid to oGGrid. 
+       ! Copy list data from iGGrid to oGGrid.
 
   call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
   if(List_allocated(iGGrid%coordinate_sort_order)) then
@@ -847,7 +847,7 @@
   n = 0
   if(present(lsize)) n=lsize
 
-       ! Now, initialize oGGrid%data from iGGrid%data, but 
+       ! Now, initialize oGGrid%data from iGGrid%data, but
        ! with length n.
 
   call AttrVect_init(oGGrid%data, iGGrid%data, n)
@@ -862,56 +862,56 @@
 !
 ! !DESCRIPTION:
 ! The routine {\tt initCartesian\_()} creates the storage space for grid point
-! coordinates, area and volume weights, and other coordinate data ({\em e.g.}, 
+! coordinates, area and volume weights, and other coordinate data ({\em e.g.},
 ! cell area and volume weights).  The names of the Cartesian axes are supplied
 ! by the user as a colon-delimitted string in the input {\tt CHARACTER}
 ! argument {\tt CoordChars}.  For example, a Cartesian grid for Euclidian
-! 3-space would have ${\tt CoordChars} = {\tt 'x:y:z'}$.  The user can 
-! define named real attributes for spatial weighting data in the input 
-! {\tt CHARACTER} argument {\tt WeightChars}.  For example, one could 
-! define attributes for Euclidean 3-space length elements by setting 
-! ${\tt WeightChars} = {\tt 'dx:dy:dz'}$.  The input {\tt CHARCTER} 
-! argument {\tt OtherChars} provides space for defining other real 
+! 3-space would have ${\tt CoordChars} = {\tt 'x:y:z'}$.  The user can
+! define named real attributes for spatial weighting data in the input
+! {\tt CHARACTER} argument {\tt WeightChars}.  For example, one could
+! define attributes for Euclidean 3-space length elements by setting
+! ${\tt WeightChars} = {\tt 'dx:dy:dz'}$.  The input {\tt CHARCTER}
+! argument {\tt OtherChars} provides space for defining other real
 ! attributes (again as a colon-delimited string of attribute names).
-! One can define integer attributes by supplying a colon-delimitted 
-! string of names in the input {\tt CHARACTER} argument 
-! {\tt IndexChars}.  For example, on could set aside storage space 
-! for the {\tt x}-, {\tt y}-, and {\tt z}-indices by setting 
+! One can define integer attributes by supplying a colon-delimitted
+! string of names in the input {\tt CHARACTER} argument
+! {\tt IndexChars}.  For example, on could set aside storage space
+! for the {\tt x}-, {\tt y}-, and {\tt z}-indices by setting
 ! ${\tt IndexChars} = {\tt 'xIndex:yIndex:zIndex'}$.
 !
-! Once the storage space in {\tt GGrid} is initialized, The gridpoint 
-! coordinates are evaluated using the input arguments {\tt Dims} (the 
-! number of points on each coordinate axis) and {\tt AxisData} (the 
-! coordinate values on all of the points of all of the axes).  The user 
+! Once the storage space in {\tt GGrid} is initialized, The gridpoint
+! coordinates are evaluated using the input arguments {\tt Dims} (the
+! number of points on each coordinate axis) and {\tt AxisData} (the
+! coordinate values on all of the points of all of the axes).  The user
 ! presents the axes with each axis stored in a column of {\tt AxisData},
-! and the axes are laid out in the same order as the ordering of the 
-! axis names in {\tt CoordChars}.  The number of points on each axis 
-! is defined by the entries of the input {\tt INTEGER} array 
-! {\tt Dims(:)}.  Continuing with the Euclidean 3-space example given 
-! above, setting ${\tt Dims(1:3)} = {\tt (256, 256, 128)}$ will result 
+! and the axes are laid out in the same order as the ordering of the
+! axis names in {\tt CoordChars}.  The number of points on each axis
+! is defined by the entries of the input {\tt INTEGER} array
+! {\tt Dims(:)}.  Continuing with the Euclidean 3-space example given
+! above, setting ${\tt Dims(1:3)} = {\tt (256, 256, 128)}$ will result
 ! in a Cartesian grid with 256 points in the {\tt x}- and {\tt y}-directions,
-! and 128 points in the {\tt z}-direction.  Thus the appropriate dimensions 
+! and 128 points in the {\tt z}-direction.  Thus the appropriate dimensions
 ! of {\tt AxisData} are 256 rows (the maximum number of axis points among
-! all the axes) by 3 columns (the number of physical dimensions).  The 
-! {\tt x}-axis points are stored in {\tt AxisData(1:256,1)}, the 
-! {\tt y}-axis points are stored in {\tt AxisData(1:256,2)}, and the 
+! all the axes) by 3 columns (the number of physical dimensions).  The
+! {\tt x}-axis points are stored in {\tt AxisData(1:256,1)}, the
+! {\tt y}-axis points are stored in {\tt AxisData(1:256,2)}, and the
 ! {\tt z}-axis points are stored in {\tt AxisData(1:128,3)}.
 !
-! The sorting order of the gridpoints can be either user-defined, or 
-! set automatically by MCT.  If the latter is desired, the user must 
-! supply the argument {\tt CoordSortOrder}, which defines the 
-! lexicographic ordering (by coordinate).  The entries optional input 
-! {\tt LOGICAL} array {\tt descend(:)} stipulates whether the ordering 
+! The sorting order of the gridpoints can be either user-defined, or
+! set automatically by MCT.  If the latter is desired, the user must
+! supply the argument {\tt CoordSortOrder}, which defines the
+! lexicographic ordering (by coordinate).  The entries optional input
+! {\tt LOGICAL} array {\tt descend(:)} stipulates whether the ordering
 ! with respect to the corresponding key in {\tt CoordChars} is to be
-! {\em descending}.  If {\tt CoordChars} is supplied, but {\tt descend(:)} 
-! is not, the gridpoint information is placed in {\em ascending} order 
-! for each key.  Returning to our Euclidian 3-space example, a choice of  
-! ${\tt CoordSortOrder} = {\tt y:x:z}$ and ${\tt descend(1:3)} = 
-! ({\tt .TRUE.}, {\tt .FALSE.}, {\tt .FALSE.})$ will result in the entries of 
-! {\tt GGrid} being orderd lexicographically by {\tt y} (in descending 
+! {\em descending}.  If {\tt CoordChars} is supplied, but {\tt descend(:)}
+! is not, the gridpoint information is placed in {\em ascending} order
+! for each key.  Returning to our Euclidian 3-space example, a choice of
+! ${\tt CoordSortOrder} = {\tt y:x:z}$ and ${\tt descend(1:3)} =
+! ({\tt .TRUE.}, {\tt .FALSE.}, {\tt .FALSE.})$ will result in the entries of
+! {\tt GGrid} being orderd lexicographically by {\tt y} (in descending
 ! order), {\tt x} (in ascending order), and {\tt z} (in ascending order).
-! Regardless of the gridpoint sorting strategy, MCT will number each of 
-! the gridpoints in {\tt GGrid}, storing this information in the integer 
+! Regardless of the gridpoint sorting strategy, MCT will number each of
+! the gridpoints in {\tt GGrid}, storing this information in the integer
 ! attribute named {\tt 'GlobGridNum'}.
 !
 ! !INTERFACE:
@@ -1002,8 +1002,8 @@
 
        ! Are the definitions of Dims(:) and AxisData(:,:) compatible?
        ! The number of elements in Dims(:) should match the number of
-       ! columns in AxisData(:,:), and the maximum value stored in Dims(:) 
-       ! (DimMax determined above in this routine) must not exceed the 
+       ! columns in AxisData(:,:), and the maximum value stored in Dims(:)
+       ! (DimMax determined above in this routine) must not exceed the
        ! number of rows in AxisData(:,:).
 
   if(size(AxisData,2) /= size(Dims)) then
@@ -1022,11 +1022,11 @@
      call die(myname_)
   endif
 
-       ! If the LOGICAL descend(:) flags for sorting are present, 
-       ! make sure that (1) descend is associated, and 
-       ! (2) CoordSortOrder is also present, and 
+       ! If the LOGICAL descend(:) flags for sorting are present,
+       ! make sure that (1) descend is associated, and
+       ! (2) CoordSortOrder is also present, and
        ! (3) The size of descend(:) matches the size of Dims(:),
-       ! both of which correspond to the number of axes on the 
+       ! both of which correspond to the number of axes on the
        ! Cartesian Grid.
 
   if(present(descend)) then
@@ -1054,12 +1054,12 @@
 
   endif
 
-       ! Initialize GGrid%coordinate_list and use the number of items 
-       ! in it to set the number of dimensions of the Cartesian 
+       ! Initialize GGrid%coordinate_list and use the number of items
+       ! in it to set the number of dimensions of the Cartesian
        ! Grid (NumDims):
 
   call List_init(GGrid%coordinate_list, CoordChars)
-  
+
   NumDims = List_nitem(GGrid%coordinate_list)
 
        ! Check the number of arguments
@@ -1089,7 +1089,7 @@
        ! and INTEGER attribute lists for the AttrVect GGrid%data
 
        ! Start off with things *guaranteed* to be in IAList and RAList.
-       ! The variable GlobGridNum is a CHARACTER parameter inherited 
+       ! The variable GlobGridNum is a CHARACTER parameter inherited
        ! from the declaration section of this module.
 
   call List_init(IAList, GlobGridNum)
@@ -1099,7 +1099,7 @@
 
      call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
 
-        ! Check the items in the coordinate list and the 
+        ! Check the items in the coordinate list and the
         ! coordinate grid sort keys...they should contain
         ! the same items.
 
@@ -1108,7 +1108,7 @@
 
      deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
      if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
-     
+
      if(NumShared /= NumDims) then
 	call die(myname_,'CoordSortOrder must have the same items &
 	         & as CoordList',abs(NumDims-NumShared))
@@ -1148,9 +1148,9 @@
            GGrid%descend(n) = .FALSE.
         end do
      endif
-        
+
   endif ! if(present(CoordSortOrder))...
-  
+
        ! Compute the total number of grid points in the GeneralGrid.
        ! This is merely the product of the elements of Dims(:)
 
@@ -1169,7 +1169,7 @@
 
   do n=1,NumDims
 
-       ! Retrieve first coordinate axis name from GGrid%coordinate_list 
+       ! Retrieve first coordinate axis name from GGrid%coordinate_list
        ! (as a String)
      call List_get(AxisName, n, GGrid%coordinate_list)
 
@@ -1182,13 +1182,13 @@
 	call die(myname_)
      endif
 
-       ! Now, clear the String AxisName for use in the next 
+       ! Now, clear the String AxisName for use in the next
        ! cycle of this loop:
 
      call String_clean(AxisName)
 
-       ! Compute the number of times we cycle through the axis 
-       ! values (nCycles), and the number of times each axis 
+       ! Compute the number of times we cycle through the axis
+       ! values (nCycles), and the number of times each axis
        ! value is repeated in each cycle (nRepeat)
 
      nCycles = 1
@@ -1208,7 +1208,7 @@
        ! Loop over the number of cycles for which we run through
        ! all the axis points.  Within each cycle, loop over all
        ! of the axis points, repeating each value nRepeat times.
-       ! This produces a set of grid entries that are in 
+       ! This produces a set of grid entries that are in
        ! lexicographic order with respect to how the axes are
        ! presented to this routine.
 
@@ -1226,7 +1226,7 @@
 
        ! If the argument CoordSortOrder was supplied, the entries
        ! of GGrid will be sorted/permuted with this lexicographic
-       ! ordering, and the values of the GGrid INTEGER attribute 
+       ! ordering, and the values of the GGrid INTEGER attribute
        ! GlobGridNum will be numbered to reflect this new ordering
        ! scheme.
 
@@ -1350,8 +1350,8 @@
 
        ! Are the definitions of Dims(:) and AxisData(:,:) compatible?
        ! The number of elements in Dims(:) should match the number of
-       ! columns in AxisData(:,:), and the maximum value stored in Dims(:) 
-       ! (DimMax determined above in this routine) must not exceed the 
+       ! columns in AxisData(:,:), and the maximum value stored in Dims(:)
+       ! (DimMax determined above in this routine) must not exceed the
        ! number of rows in AxisData(:,:).
 
   if(size(AxisData,2) /= size(Dims)) then
@@ -1370,11 +1370,11 @@
      call die(myname_)
   endif
 
-       ! If the LOGICAL descend(:) flags for sorting are present, 
-       ! make sure that (1) descend is associated, and 
-       ! (2) CoordSortOrder is also present, and 
+       ! If the LOGICAL descend(:) flags for sorting are present,
+       ! make sure that (1) descend is associated, and
+       ! (2) CoordSortOrder is also present, and
        ! (3) The size of descend(:) matches the size of Dims(:),
-       ! both of which correspond to the number of axes on the 
+       ! both of which correspond to the number of axes on the
        ! Cartesian Grid.
 
   if(present(descend)) then
@@ -1402,12 +1402,12 @@
 
   endif
 
-       ! Initialize GGrid%coordinate_list and use the number of items 
-       ! in it to set the number of dimensions of the Cartesian 
+       ! Initialize GGrid%coordinate_list and use the number of items
+       ! in it to set the number of dimensions of the Cartesian
        ! Grid (NumDims):
 
   call List_init(GGrid%coordinate_list, CoordChars)
-  
+
   NumDims = List_nitem(GGrid%coordinate_list)
 
        ! Check the number of arguments
@@ -1437,7 +1437,7 @@
        ! and INTEGER attribute lists for the AttrVect GGrid%data
 
        ! Start off with things *guaranteed* to be in IAList and RAList.
-       ! The variable GlobGridNum is a CHARACTER parameter inherited 
+       ! The variable GlobGridNum is a CHARACTER parameter inherited
        ! from the declaration section of this module.
 
   call List_init(IAList, GlobGridNum)
@@ -1447,7 +1447,7 @@
 
      call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
 
-        ! Check the items in the coordinate list and the 
+        ! Check the items in the coordinate list and the
         ! coordinate grid sort keys...they should contain
         ! the same items.
 
@@ -1456,7 +1456,7 @@
 
      deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
      if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
-     
+
      if(NumShared /= NumDims) then
 	call die(myname_,'CoordSortOrder must have the same items &
 	         & as CoordList',abs(NumDims-NumShared))
@@ -1496,9 +1496,9 @@
            GGrid%descend(n) = .FALSE.
         end do
      endif
-        
+
   endif ! if(present(CoordSortOrder))...
-  
+
        ! Compute the total number of grid points in the GeneralGrid.
        ! This is merely the product of the elements of Dims(:)
 
@@ -1517,7 +1517,7 @@
 
   do n=1,NumDims
 
-       ! Retrieve first coordinate axis name from GGrid%coordinate_list 
+       ! Retrieve first coordinate axis name from GGrid%coordinate_list
        ! (as a String)
      call List_get(AxisName, n, GGrid%coordinate_list)
 
@@ -1530,13 +1530,13 @@
 	call die(myname_)
      endif
 
-       ! Now, clear the String AxisName for use in the next 
+       ! Now, clear the String AxisName for use in the next
        ! cycle of this loop:
 
      call String_clean(AxisName)
 
-       ! Compute the number of times we cycle through the axis 
-       ! values (nCycles), and the number of times each axis 
+       ! Compute the number of times we cycle through the axis
+       ! values (nCycles), and the number of times each axis
        ! value is repeated in each cycle (nRepeat)
 
      nCycles = 1
@@ -1556,7 +1556,7 @@
        ! Loop over the number of cycles for which we run through
        ! all the axis points.  Within each cycle, loop over all
        ! of the axis points, repeating each value nRepeat times.
-       ! This produces a set of grid entries that are in 
+       ! This produces a set of grid entries that are in
        ! lexicographic order with respect to how the axes are
        ! presented to this routine.
 
@@ -1574,7 +1574,7 @@
 
        ! If the argument CoordSortOrder was supplied, the entries
        ! of GGrid will be sorted/permuted with this lexicographic
-       ! ordering, and the values of the GGrid INTEGER attribute 
+       ! ordering, and the values of the GGrid INTEGER attribute
        ! GlobGridNum will be numbered to reflect this new ordering
        ! scheme.
 
@@ -1609,13 +1609,13 @@
 !
 ! !DESCRIPTION:
 ! This routine creates the storage space for grid point
-! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
-! local cell dimensions), and fills in user-supplied values for the grid 
+! coordinates, area/volume weights, and other coordinate data ({\em e.g.},
+! local cell dimensions), and fills in user-supplied values for the grid
 ! point coordinates.  These data are referenced by {\tt List}
-! components that are also created by this routine (see the documentation 
-! of the declaration section of this module for more details about setting 
-! list information).  Each of the input {\tt CHARACTER} arguments is a 
-! colon-delimited string of attribute names, each corrsponding to a 
+! components that are also created by this routine (see the documentation
+! of the declaration section of this module for more details about setting
+! list information).  Each of the input {\tt CHARACTER} arguments is a
+! colon-delimited string of attribute names, each corrsponding to a
 ! {\tt List} element of the output {\tt GeneralGrid} argument {\tt GGrid},
 ! and are summarized in the table below:
 !
@@ -1644,20 +1644,20 @@
 !\end{center}
 !\end{table}
 !
-! The number of physical dimensions of the grid is set by the user in 
-! the input {\tt INTEGER} argument {\tt nDims}, and the number of grid 
-! points stored in {\tt GGrid} is set using the input {\tt INTEGER} 
-! argument {\tt nPoints}.  The grid point coordinates are input via the 
-! {\tt REAL} array {\tt PointData(:)}.  The number of entries in 
+! The number of physical dimensions of the grid is set by the user in
+! the input {\tt INTEGER} argument {\tt nDims}, and the number of grid
+! points stored in {\tt GGrid} is set using the input {\tt INTEGER}
+! argument {\tt nPoints}.  The grid point coordinates are input via the
+! {\tt REAL} array {\tt PointData(:)}.  The number of entries in
 ! {\tt PointData} must equal the product of {\tt nDims} and {\tt nPoints}.
-! The grid points are grouped in {\tt nPoints} consecutive groups of 
-! {\tt nDims} entries, with the coordinate values for each point set in 
+! The grid points are grouped in {\tt nPoints} consecutive groups of
+! {\tt nDims} entries, with the coordinate values for each point set in
 ! the same order as the dimensions are named in the list {\tt CoordChars}.
 !
-! If a set of sorting keys is supplied in the argument {\tt CoordSortOrder}, 
-! the user can control whether the sorting by each key is in descending or 
-! ascending order by supplying the input {\tt LOGICAL} array {\tt descend(:)}.  
-! By default, all sorting is in {\em ascending} order for each key if the 
+! If a set of sorting keys is supplied in the argument {\tt CoordSortOrder},
+! the user can control whether the sorting by each key is in descending or
+! ascending order by supplying the input {\tt LOGICAL} array {\tt descend(:)}.
+! By default, all sorting is in {\em ascending} order for each key if the
 ! argument {\tt descend} is not provided.
 !
 ! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt GGrid} is dynamically
@@ -1730,11 +1730,11 @@
 
        ! Sanity checks on input arguments:
 
-       ! If the LOGICAL descend(:) flags for sorting are present, 
-       ! make sure that (1) it is associated, 
-       ! (2) CoordSortOrder is also present, and 
+       ! If the LOGICAL descend(:) flags for sorting are present,
+       ! make sure that (1) it is associated,
+       ! (2) CoordSortOrder is also present, and
        ! (3) The size of descend(:) matches the size of Dims(:),
-       ! both of which correspond to the number of axes on the 
+       ! both of which correspond to the number of axes on the
        ! Cartesian Grid.
 
   if(present(descend)) then
@@ -1764,7 +1764,7 @@
 
   endif
 
-       ! Initialize GGrid%coordinate_list and comparethe number of items 
+       ! Initialize GGrid%coordinate_list and comparethe number of items
        ! to the number of dimensions of the unstructured nDims:
 
   call List_init(GGrid%coordinate_list, CoordChars)
@@ -1777,7 +1777,7 @@
 	  'argument CoordChars must equal the number of dimensions ', &
 	  'specified by the argument nDims.  nDims = ',nDims, &
 	  ' CoordChars = ',CoordChars, ' number of dimensions in CoordChars = ', &
-	  List_nitem(GGrid%coordinate_list) 
+	  List_nitem(GGrid%coordinate_list)
      call die(myname_)
   endif
 
@@ -1797,14 +1797,14 @@
 	  ' size(PointData) = ',size(PointData)
      call die(myname_)
   endif
-     
+
        ! End of input argument sanity checks.
 
        ! Create other List components of GGrid and build REAL
        ! and INTEGER attribute lists for the AttrVect GGrid%data
 
        ! Start off with things *guaranteed* to be in IAList and RAList.
-       ! The variable GlobGridNum is a CHARACTER parameter inherited 
+       ! The variable GlobGridNum is a CHARACTER parameter inherited
        ! from the declaration section of this module.
 
   call List_init(IAList, GlobGridNum)
@@ -1819,7 +1819,7 @@
 
      deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
      if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
-     
+
      if(NumShared /= nDims) then
 	call die(myname_,'CoordSortOrder must have the same items &
 	         & as CoordList',abs(nDims-NumShared))
@@ -1859,9 +1859,9 @@
            GGrid%descend(n) = .FALSE.
         end do
      endif
-        
+
   endif ! if(present(CoordSortOrder))...
-  
+
        ! Create Grid attribute data storage AttrVect GGrid%data:
 
   call AttrVect_init(GGrid%data, IAList, RAList, nPoints)
@@ -1869,7 +1869,7 @@
 
        ! Load up gridpoint coordinate data into GGrid%data.
        ! Given how we've set up the real attributes of GGrid%data,
-       ! we have guaranteed the first nDims real attributes are 
+       ! we have guaranteed the first nDims real attributes are
        ! the gridpoint coordinates.
 
   do n=1,nPoints
@@ -1881,7 +1881,7 @@
 
        ! If the argument CoordSortOrder was supplied, the entries
        ! of GGrid will be sorted/permuted with this lexicographic
-       ! ordering, and the values of the GGrid INTEGER attribute 
+       ! ordering, and the values of the GGrid INTEGER attribute
        ! GlobGridNum will be numbered to reflect this new ordering
        ! scheme.
 
@@ -1983,11 +1983,11 @@
 
        ! Sanity checks on input arguments:
 
-       ! If the LOGICAL descend(:) flags for sorting are present, 
-       ! make sure that (1) it is associated, 
-       ! (2) CoordSortOrder is also present, and 
+       ! If the LOGICAL descend(:) flags for sorting are present,
+       ! make sure that (1) it is associated,
+       ! (2) CoordSortOrder is also present, and
        ! (3) The size of descend(:) matches the size of Dims(:),
-       ! both of which correspond to the number of axes on the 
+       ! both of which correspond to the number of axes on the
        ! Cartesian Grid.
 
   if(present(descend)) then
@@ -2017,7 +2017,7 @@
 
   endif
 
-       ! Initialize GGrid%coordinate_list and comparethe number of items 
+       ! Initialize GGrid%coordinate_list and comparethe number of items
        ! to the number of dimensions of the unstructured nDims:
 
   call List_init(GGrid%coordinate_list, CoordChars)
@@ -2030,7 +2030,7 @@
 	  'argument CoordChars must equal the number of dimensions ', &
 	  'specified by the argument nDims.  nDims = ',nDims, &
 	  ' CoordChars = ',CoordChars, ' number of dimensions in CoordChars = ', &
-	  List_nitem(GGrid%coordinate_list) 
+	  List_nitem(GGrid%coordinate_list)
      call die(myname_)
   endif
 
@@ -2050,14 +2050,14 @@
 	  ' size(PointData) = ',size(PointData)
      call die(myname_)
   endif
-     
+
        ! End of input argument sanity checks.
 
        ! Create other List components of GGrid and build REAL
        ! and INTEGER attribute lists for the AttrVect GGrid%data
 
        ! Start off with things *guaranteed* to be in IAList and RAList.
-       ! The variable GlobGridNum is a CHARACTER parameter inherited 
+       ! The variable GlobGridNum is a CHARACTER parameter inherited
        ! from the declaration section of this module.
 
   call List_init(IAList, GlobGridNum)
@@ -2072,7 +2072,7 @@
 
      deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
      if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
-     
+
      if(NumShared /= nDims) then
 	call die(myname_,'CoordSortOrder must have the same items &
 	         & as CoordList',abs(nDims-NumShared))
@@ -2112,9 +2112,9 @@
            GGrid%descend(n) = .FALSE.
         end do
      endif
-        
+
   endif ! if(present(CoordSortOrder))...
-  
+
        ! Create Grid attribute data storage AttrVect GGrid%data:
 
   call AttrVect_init(GGrid%data, IAList, RAList, nPoints)
@@ -2122,7 +2122,7 @@
 
        ! Load up gridpoint coordinate data into GGrid%data.
        ! Given how we've set up the real attributes of GGrid%data,
-       ! we have guaranteed the first nDims real attributes are 
+       ! we have guaranteed the first nDims real attributes are
        ! the gridpoint coordinates.
 
   do n=1,nPoints
@@ -2134,7 +2134,7 @@
 
        ! If the argument CoordSortOrder was supplied, the entries
        ! of GGrid will be sorted/permuted with this lexicographic
-       ! ordering, and the values of the GGrid INTEGER attribute 
+       ! ordering, and the values of the GGrid INTEGER attribute
        ! GlobGridNum will be numbered to reflect this new ordering
        ! scheme.
 
@@ -2171,7 +2171,7 @@
 ! This routine deallocates all attribute storage space for the input/output
 ! {\tt GeneralGrid} argument {\tt GGrid}, and destroys all of its {\tt List}
 ! components and sorting flags.  The success (failure) of this operation is
-! signified by the zero (non-zero) value of the optional {\tt INTEGER} 
+! signified by the zero (non-zero) value of the optional {\tt INTEGER}
 ! output argument {\tt stat}.
 !
 ! !INTERFACE:
@@ -2189,7 +2189,7 @@
 
       implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(GeneralGrid), intent(inout) :: GGrid
       integer, optional, intent(out)   :: stat
@@ -2225,12 +2225,12 @@
 	if(ierr/=0) stat=ierr
      endif
 
-     if(List_allocated(GGrid%other_list)) then 
+     if(List_allocated(GGrid%other_list)) then
 	call List_clean(GGrid%other_list,ierr)
 	if(ierr/=0) stat=ierr
      endif
 
-     if(List_allocated(GGrid%index_list)) then 
+     if(List_allocated(GGrid%index_list)) then
 	call List_clean(GGrid%index_list,ierr)
 	if(ierr/=0) stat=ierr
      endif
@@ -2254,17 +2254,17 @@
 	call List_clean(GGrid%weight_list)
      endif
 
-     if(List_allocated(GGrid%other_list)) then 
+     if(List_allocated(GGrid%other_list)) then
 	call List_clean(GGrid%other_list)
      endif
 
-     if(List_allocated(GGrid%index_list)) then 
+     if(List_allocated(GGrid%index_list)) then
 	call List_clean(GGrid%index_list)
      endif
 
      if(associated(GGrid%descend)) then
 	deallocate(GGrid%descend, stat=ierr)
-	if(ierr/=0) call die(myname_,'deallocate(GGrid%descend)',ierr) 
+	if(ierr/=0) call die(myname_,'deallocate(GGrid%descend)',ierr)
      endif
 
   endif
@@ -2273,12 +2273,12 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: zero_ - Set GeneralGrid Data to Zero 
+! !IROUTINE: zero_ - Set GeneralGrid Data to Zero
 !
 ! !DESCRIPTION:
-! This routine sets all of the point values of the integer and real 
+! This routine sets all of the point values of the integer and real
 ! attributes of an the input/output {\tt GeneralGrid} argument {\tt GGrid}
-! to zero.  The default action is to set the values of all the real and  
+! to zero.  The default action is to set the values of all the real and
 ! integer attributes to zero.
 !
 ! !INTERFACE:
@@ -2336,7 +2336,7 @@
 ! !IROUTINE: dims_ - Return the Dimensionality of a GeneralGrid
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} function returns the number of physical dimensions 
+! This {\tt INTEGER} function returns the number of physical dimensions
 ! of the input {\tt GeneralGrid} argument {\tt GGrid}.
 !
 ! !INTERFACE:
@@ -2352,7 +2352,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid), intent(in)  :: GGrid
 
@@ -2378,32 +2378,32 @@
 ! !IROUTINE: indexIA - Index an Integer Attribute
 !
 ! !DESCRIPTION:
-! This function returns an {\tt INTEGER}, corresponding to the location 
-! of an integer attribute within the input {\tt GeneralGrid} argument 
-! {\tt GGrid}.  For example, every {\tt GGrid} has at least one integer 
+! This function returns an {\tt INTEGER}, corresponding to the location
+! of an integer attribute within the input {\tt GeneralGrid} argument
+! {\tt GGrid}.  For example, every {\tt GGrid} has at least one integer
 ! attribute (namely the global gridpoint index {\tt 'GlobGridNum'}).
-! The array of integer values for the attribute {\tt 'GlobGridNum'} is 
-! stored in 
+! The array of integer values for the attribute {\tt 'GlobGridNum'} is
+! stored in
 ! \begin{verbatim}
 ! {\tt GGrid%data%iAttr(indexIA_(GGrid,'GlobGridNum'),:)}.
 ! \end{verbatim}
 ! If {\tt indexIA\_()} is unable to match {\tt item} to any of the integer
-! attributes present in {\tt GGrid}, the resulting value is zero which is 
-! equivalent to an error.  The optional input {\tt CHARACTER} arguments 
-! {\tt perrWith} and {\tt dieWith} control how such errors are handled.  
-! Below are the rules how error handling is controlled by using 
+! attributes present in {\tt GGrid}, the resulting value is zero which is
+! equivalent to an error.  The optional input {\tt CHARACTER} arguments
+! {\tt perrWith} and {\tt dieWith} control how such errors are handled.
+! Below are the rules how error handling is controlled by using
 ! {\tt perrWith} and {\tt dieWith}:
 ! \begin{enumerate}
-! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present,
 ! {\tt indexIA\_()} terminates execution with an internally generated
 ! error message;
-! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
-! message is written to {\tt stderr} incorporating user-supplied 
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error
+! message is written to {\tt stderr} incorporating user-supplied
 ! traceback information stored in the argument {\tt perrWith};
-! \item if {\tt dieWith} is present, execution terminates with an error 
-! message written to {\tt stderr} that incorporates user-supplied 
-! traceback information stored in the argument {\tt dieWith}; and 
-! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! \item if {\tt dieWith} is present, execution terminates with an error
+! message written to {\tt stderr} that incorporates user-supplied
+! traceback information stored in the argument {\tt dieWith}; and
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution
 ! terminates with an error message using {\tt dieWith}, and the argument
 ! {\tt perrWith} is ignored.
 ! \end{enumerate}
@@ -2429,7 +2429,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid),          intent(in) :: GGrid
       character(len=*),           intent(in) :: item
@@ -2485,32 +2485,32 @@
 !
 ! !DESCRIPTION:
 
-! This function returns an {\tt INTEGER}, corresponding to the location 
-! of an integer attribute within the input {\tt GeneralGrid} argument 
-! {\tt GGrid}.  For example, every {\tt GGrid} has at least one integer 
+! This function returns an {\tt INTEGER}, corresponding to the location
+! of an integer attribute within the input {\tt GeneralGrid} argument
+! {\tt GGrid}.  For example, every {\tt GGrid} has at least one integer
 ! attribute (namely the global gridpoint index {\tt 'GlobGridNum'}).
-! The array of integer values for the attribute {\tt 'GlobGridNum'} is 
-! stored in 
+! The array of integer values for the attribute {\tt 'GlobGridNum'} is
+! stored in
 ! \begin{verbatim}
 ! {\tt GGrid%data%iAttr(indexRA_(GGrid,'GlobGridNum'),:)}.
 ! \end{verbatim}
 ! If {\tt indexRA\_()} is unable to match {\tt item} to any of the integer
-! attributes present in {\tt GGrid}, the resulting value is zero which is 
-! equivalent to an error.  The optional input {\tt CHARACTER} arguments 
-! {\tt perrWith} and {\tt dieWith} control how such errors are handled.  
-! Below are the rules how error handling is controlled by using 
+! attributes present in {\tt GGrid}, the resulting value is zero which is
+! equivalent to an error.  The optional input {\tt CHARACTER} arguments
+! {\tt perrWith} and {\tt dieWith} control how such errors are handled.
+! Below are the rules how error handling is controlled by using
 ! {\tt perrWith} and {\tt dieWith}:
 ! \begin{enumerate}
-! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present,
 ! {\tt indexRA\_()} terminates execution with an internally generated
 ! error message;
-! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
-! message is written to {\tt stderr} incorporating user-supplied 
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error
+! message is written to {\tt stderr} incorporating user-supplied
 ! traceback information stored in the argument {\tt perrWith};
-! \item if {\tt dieWith} is present, execution terminates with an error 
-! message written to {\tt stderr} that incorporates user-supplied 
-! traceback information stored in the argument {\tt dieWith}; and 
-! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! \item if {\tt dieWith} is present, execution terminates with an error
+! message written to {\tt stderr} that incorporates user-supplied
+! traceback information stored in the argument {\tt dieWith}; and
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution
 ! terminates with an error message using {\tt dieWith}, and the argument
 ! {\tt perrWith} is ignored.
 ! \end{enumerate}
@@ -2535,7 +2535,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid),          intent(in)  :: GGrid
       character(len=*),           intent(in)  :: item
@@ -2587,9 +2587,9 @@
 ! !IROUTINE: lsize - Number of Grid Points
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} function returns the number of grid points stored 
-! in the input {\tt GeneralGrid} argument {\tt GGrid}.  Note that the 
-! value returned will be the number of points stored on a local process 
+! This {\tt INTEGER} function returns the number of grid points stored
+! in the input {\tt GeneralGrid} argument {\tt GGrid}.  Note that the
+! value returned will be the number of points stored on a local process
 ! in the case of a distributed {\tt GeneralGrid}.
 !
 ! !INTERFACE:
@@ -2601,12 +2601,12 @@
       use m_List,     only : List
       use m_List,     only : List_allocated => allocated
       use m_AttrVect, only : AttrVect_lsize => lsize
-      use m_die,      only : die    
-      
+      use m_die,      only : die
+
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid), intent(in)  :: GGrid
 
@@ -2614,7 +2614,7 @@
 ! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
 ! 27Mar02 - Jay Larson <larson@mcs.anl.gov> - slight logic change.
 ! 27Mar02 - Jay Larson <larson@mcs.anl.gov> - Bug fix and use of
-!           List_allocated() function to check for existence of 
+!           List_allocated() function to check for existence of
 !           attributes.
 !  5Aug02 - E. Ong <eong@mcs.anl.gov> - more rigorous revision
 !EOP ___________________________________________________________________
@@ -2641,16 +2641,16 @@
 ! !IROUTINE: exportIAttr_ - Return GeneralGrid INTEGER Attribute as a Vector
 !
 ! !DESCRIPTION:
-! This routine extracts from the input {\tt GeneralGrid} argument 
-! {\tt GGrid} the integer attribute corresponding to the tag defined in 
-! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in 
-! the {\tt INTEGER} output array {\tt outVect}, and its length in the 
+! This routine extracts from the input {\tt GeneralGrid} argument
+! {\tt GGrid} the integer attribute corresponding to the tag defined in
+! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in
+! the {\tt INTEGER} output array {\tt outVect}, and its length in the
 ! output {\tt INTEGER} argument {\tt lsize}.
 !
-! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in
 ! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%iList}.
 !
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer
 ! association status of the output argument {\tt outVect} means the
 ! user must invoke this routine with care.  If the user wishes this
 ! routine to fill a pre-allocated array, then obviously this array
@@ -2660,8 +2660,8 @@
 ! must nullify this pointer) before this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt outVect}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
+! associated with the pointer {\tt outVect}, then the user is responsible
+! for deallocating this array once it is no longer needed.  Failure to
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -2670,19 +2670,19 @@
 !
 ! !USES:
 !
-      use m_die 
+      use m_die
       use m_stdio
 
       use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(GeneralGrid),      intent(in)  :: GGrid
       character(len=*),       intent(in)  :: AttrTag
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       integer,  dimension(:), pointer     :: outVect
       integer,  optional,     intent(out) :: lsize
@@ -2709,16 +2709,16 @@
 ! !IROUTINE: exportRAttrSP_ - Return GeneralGrid REAL Attribute as a Vector
 !
 ! !DESCRIPTION:
-! This routine extracts from the input {\tt GeneralGrid} argument 
-! {\tt GGrid} the real attribute corresponding to the tag defined in 
-! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in 
-! the {\tt REAL} output array {\tt outVect}, and its length in the 
+! This routine extracts from the input {\tt GeneralGrid} argument
+! {\tt GGrid} the real attribute corresponding to the tag defined in
+! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in
+! the {\tt REAL} output array {\tt outVect}, and its length in the
 ! output {\tt INTEGER} argument {\tt lsize}.
 !
-! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in
 ! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%rList}.
 !
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer
 ! association status of the output argument {\tt outVect} means the
 ! user must invoke this routine with care.  If the user wishes this
 ! routine to fill a pre-allocated array, then obviously this array
@@ -2728,8 +2728,8 @@
 ! must nullify this pointer) before this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt outVect}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
+! associated with the pointer {\tt outVect}, then the user is responsible
+! for deallocating this array once it is no longer needed.  Failure to
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -2747,12 +2747,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(GeneralGrid),          intent(in)  :: GGrid
       character(len=*),           intent(in)  :: AttrTag
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       real(SP),  dimension(:),    pointer     :: outVect
       integer,   optional,        intent(out) :: lsize
@@ -2798,12 +2798,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(GeneralGrid),          intent(in)  :: GGrid
       character(len=*),           intent(in)  :: AttrTag
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       real(DP),  dimension(:),    pointer     :: outVect
       integer,   optional,        intent(out) :: lsize
@@ -2831,14 +2831,14 @@
 ! !IROUTINE: importIAttr_ - Import GeneralGrid INTEGER Attribute
 !
 ! !DESCRIPTION:
-! This routine imports data provided in the input {\tt INTEGER} vector 
-! {\tt inVect} into the {\tt GeneralGrid} argument {\tt GGrid}, storing 
-! it as the integer attribute corresponding to the tag defined in 
-! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input 
-! {\tt INTEGER} argument {\tt lsize} is used to ensure there is 
+! This routine imports data provided in the input {\tt INTEGER} vector
+! {\tt inVect} into the {\tt GeneralGrid} argument {\tt GGrid}, storing
+! it as the integer attribute corresponding to the tag defined in
+! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input
+! {\tt INTEGER} argument {\tt lsize} is used to ensure there is
 ! sufficient space in the {\tt GeneralGrid} to store the data.
 !
-! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in
 ! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%iList}.
 !
 ! !INTERFACE:
@@ -2854,13 +2854,13 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       character(len=*),       intent(in)    :: AttrTag
       integer,  dimension(:), pointer       :: inVect
       integer,                intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(GeneralGrid),      intent(inout) :: GGrid
 
@@ -2892,14 +2892,14 @@
 ! !IROUTINE: importRAttrSP_ - Import GeneralGrid REAL Attribute
 !
 ! !DESCRIPTION:
-! This routine imports data provided in the input {\tt REAL} vector 
-! {\tt inVect} into the {\tt GeneralGrid} argument {\tt GGrid}, storing 
-! it as the real attribute corresponding to the tag defined in 
-! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input 
-! {\tt INTEGER} argument {\tt lsize} is used to ensure there is 
+! This routine imports data provided in the input {\tt REAL} vector
+! {\tt inVect} into the {\tt GeneralGrid} argument {\tt GGrid}, storing
+! it as the real attribute corresponding to the tag defined in
+! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input
+! {\tt INTEGER} argument {\tt lsize} is used to ensure there is
 ! sufficient space in the {\tt GeneralGrid} to store the data.
 !
-! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in
 ! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%rList}.
 !
 ! !INTERFACE:
@@ -2918,13 +2918,13 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       character(len=*),           intent(in)    :: AttrTag
       real(SP), dimension(:),     pointer       :: inVect
       integer,                    intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(GeneralGrid),          intent(inout) :: GGrid
 
@@ -2974,13 +2974,13 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       character(len=*),           intent(in)    :: AttrTag
       real(DP), dimension(:),     pointer       :: inVect
       integer,                    intent(in)    :: lsize
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(GeneralGrid),          intent(inout) :: GGrid
 
@@ -3013,15 +3013,15 @@
 !
 ! !DESCRIPTION:
 ! The subroutine {\tt Sort\_()} uses the list of keys present in the
-! input  {\tt List} variable {\tt key\_List}.  This list of keys is 
-! checked to ensure that {\em only} coordinate attributes are present 
-! in the sorting keys, and that there are no redundant keys.  Once 
+! input  {\tt List} variable {\tt key\_List}.  This list of keys is
+! checked to ensure that {\em only} coordinate attributes are present
+! in the sorting keys, and that there are no redundant keys.  Once
 ! checked, this list is used to find the appropriate real attributes
-! referenced by the items in {\tt key\_list} ( that is, it identifies the 
-! appropriate entries in {\tt GGrid\%data\%rList}), and then uses these 
+! referenced by the items in {\tt key\_list} ( that is, it identifies the
+! appropriate entries in {\tt GGrid\%data\%rList}), and then uses these
 ! keys to generate a an output permutation {\tt perm} that will put
-! the entries of the attribute vector {\tt GGrid\%data} in lexicographic 
-! order as defined by {\tt key\_list} (the ordering in {\tt key\_list} 
+! the entries of the attribute vector {\tt GGrid\%data} in lexicographic
+! order as defined by {\tt key\_list} (the ordering in {\tt key\_list}
 ! being from left to right.
 !
 ! !INTERFACE:
@@ -3039,13 +3039,13 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid),               intent(in) :: GGrid
       type(List),                      intent(in) :: key_list
       logical, dimension(:), optional, intent(in) :: descend
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, dimension(:), pointer              :: perm
 
@@ -3075,8 +3075,8 @@
   endif
 
         ! This is a straightforward call to AttrVect_Sort().
-  
-  call AttrVect_Sort(GGrid%data, key_list, perm, descending) 
+
+  call AttrVect_Sort(GGrid%data, key_list, perm, descending)
 
         ! Clean up...
 
@@ -3094,20 +3094,20 @@
 ! !IROUTINE: Sortg_ - Generate Sort Permutation Based on GeneralGrid Keys.
 !
 ! !DESCRIPTION:
-! The subroutine {\tt Sortg\_()} uses the list of sorting keys present in 
+! The subroutine {\tt Sortg\_()} uses the list of sorting keys present in
 ! the input  {\tt GeneralGrid} variable {\tt GGrid\%coordinate\_sort\_order}
 ! to create a sort permutation {\tt perm(:)}.  Sorting is either in ascending
 ! or descending order based on the entries of {\tt GGrid\%descend(:)}.
-! The output index permutation is stored in the array {\tt perm(:)} that 
-! will put the entries of the attribute vector {\tt GGrid\%data} in 
-! lexicographic order as defined by {\tt GGrid\%coordinate\_sort\_order}. The 
+! The output index permutation is stored in the array {\tt perm(:)} that
+! will put the entries of the attribute vector {\tt GGrid\%data} in
+! lexicographic order as defined by {\tt GGrid\%coordinate\_sort\_order}. The
 ! ordering in {\tt GGrid\%coordinate\_sort\_order} being from left to right.
 !
-! {\bf N.B.:}  This routine returnss an allocatable array perm(:).  This 
-! allocated array must be deallocated when the user no longer needs it.  
+! {\bf N.B.:}  This routine returnss an allocatable array perm(:).  This
+! allocated array must be deallocated when the user no longer needs it.
 ! Failure to do so will cause a memory leak.
 !
-! {\bf N.B.:}  This routine will fail if {\tt GGrid} has not been initialized 
+! {\bf N.B.:}  This routine will fail if {\tt GGrid} has not been initialized
 ! with sort keys in the {\tt List} component {\tt GGrid\%coordinate\_sort\_order}.
 !
 ! !INTERFACE:
@@ -3119,14 +3119,14 @@
 !
       use m_List, only : List_allocated => allocated
       use m_die,  only : die
-   
+
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid),     intent(in) :: GGrid
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, dimension(:), pointer    :: perm
 
@@ -3159,8 +3159,8 @@
 ! !IROUTINE: Permute_ - Permute GeneralGrid Attributes Using Supplied Index Permutation
 !
 ! !DESCRIPTION:
-! The subroutine {\tt Permute\_()} uses an input index permutation {\tt perm} 
-! to re-order the coordinate data stored in the {\tt GeneralGrid} argument 
+! The subroutine {\tt Permute\_()} uses an input index permutation {\tt perm}
+! to re-order the coordinate data stored in the {\tt GeneralGrid} argument
 ! {\tt GGrid}.  This permutation can be generated by either of the routines
 ! {\tt Sort\_()} or {\tt Sortg\_()} contained in this module.
 !
@@ -3180,11 +3180,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer, dimension(:), intent(in)    :: perm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(GeneralGrid),     intent(inout) :: GGrid
 
@@ -3210,15 +3210,15 @@
 ! !IROUTINE: SortPermute_ - Sort and Permute GeneralGrid Attributes
 !
 ! !DESCRIPTION:
-! The subroutine {\tt SortPermute\_()} uses the list of keys defined in 
-! {\tt GGrid\%coordinate\_sort\_order} to create an index permutation 
-! {\tt perm}, which is then applied to re-order the coordinate data stored 
-! in the {\tt GeneralGrid} argument {\tt GGrid} (more specifically, the 
-! gridpoint data stored in {\tt GGrid\%data}.  This permutation is generated  
-! by the routine {\tt Sortg\_()} contained in this module.  The permutation 
+! The subroutine {\tt SortPermute\_()} uses the list of keys defined in
+! {\tt GGrid\%coordinate\_sort\_order} to create an index permutation
+! {\tt perm}, which is then applied to re-order the coordinate data stored
+! in the {\tt GeneralGrid} argument {\tt GGrid} (more specifically, the
+! gridpoint data stored in {\tt GGrid\%data}.  This permutation is generated
+! by the routine {\tt Sortg\_()} contained in this module.  The permutation
 ! is carried out by the routine {\tt Permute\_()} contained in this module.
 !
-! {\bf N.B.:}  This routine will fail if {\tt GGrid} has not been initialized 
+! {\bf N.B.:}  This routine will fail if {\tt GGrid} has not been initialized
 ! with sort keys in the {\tt List} component {\tt GGrid\%coordinate\_sort\_order}.
 !
 ! !INTERFACE:
@@ -3233,7 +3233,7 @@
 
       implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(GeneralGrid),     intent(inout)   :: GGrid
 

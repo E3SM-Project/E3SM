@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 use Data::Dumper;
@@ -43,7 +43,7 @@ only matched variables.
                  type="button">
           <br>
           <label>
-            <input id="logical_operator_and" name="logical_operator" value="AND" 
+            <input id="logical_operator_and" name="logical_operator" value="AND"
                    type="radio" checked> AND
           </label>
           <label>
@@ -68,10 +68,10 @@ only matched variables.
 <p>
 
 <center>
-<input id="btn_expand_help" value="Show All Help Text" 
+<input id="btn_expand_help" value="Show All Help Text"
        onclick="expandAllHelp();return false;"
        type="button">
-<input id="btn_collapse_help" value="Collapse All Help Text" 
+<input id="btn_collapse_help" value="Collapse All Help Text"
        onclick="collapseAllHelp();return false;"
        type="button">
 </center>
@@ -88,14 +88,14 @@ my $parser = XML::LibXML->new;
 my $list = $parser->parse_file('../../ccsm_utils/Case.template/config_compsets.xml');
 my $root = $list->getDocumentElement();
 
-foreach my $compset ($root->findnodes('/config_compset/COMPSET')) { 
+foreach my $compset ($root->findnodes('/config_compset/COMPSET')) {
     my $alias = $compset->getAttribute('alias');
     if (! defined $alias) {$alias = 'NOT_DEFINED';}
     my $sname = $compset->getAttribute('sname');
-    my $lname = $compset->textContent; 
+    my $lname = $compset->textContent;
     my $doc = "";
-    foreach my $desc ($root->findnodes('/config_compset/desc')) { 
-	my $text = $desc->textContent; 
+    foreach my $desc ($root->findnodes('/config_compset/desc')) {
+	my $text = $desc->textContent;
 	my $comp = $desc->getAttribute('compset');
 	if ($comp) {
 	    if ($lname =~ m/$comp/) {

@@ -41,6 +41,7 @@ module shr_pio_mod
      integer :: pio_stride
      integer :: pio_numiotasks
      integer :: pio_iotype
+     integer :: pio_rearranger
   end type pio_comp_t
 
   character(len=16), allocatable :: io_compname(:)
@@ -51,7 +52,9 @@ module shr_pio_mod
   integer, allocatable :: io_compid(:)
   integer :: pio_debug_level=0, pio_blocksize=0
   integer(kind=pio_offset_kind) :: pio_buffer_size_limit=-1
+#ifdef PIO1
   type(pio_rearr_opt_t)  :: pio_rearr_opts
+#endif
   integer :: total_comps=0
 
 #define DEBUGI 1
@@ -62,11 +65,13 @@ module shr_pio_mod
 
 
 contains
-!> 
+!>
 !! @public
-!! @brief should be the first routine called after mpi_init. It reads the pio default settings from file drv_in, namelist pio_default_inparm
-!! and, if pio_async_interface is true, splits the IO tasks away from the Compute tasks.  It then returns the new compute comm in  
-!! Global_Comm and sets module variable io_comm.   
+!! @brief should be the first routine called after mpi_init. 
+!! It reads the pio default settings from file drv_in, namelist pio_default_inparm
+!! and, if pio_async_interface is true, splits the IO tasks away from the 
+!! Compute tasks.  It then returns the new compute comm in
+!! Global_Comm and sets module variable io_comm.
 !!
 !<
   subroutine shr_pio_init1(ncomps, nlfilename, Global_Comm)
@@ -75,13 +80,13 @@ contains
     integer, intent(inout) :: Global_Comm
 
 
-    integer :: i, pio_root, pio_stride, pio_numiotasks, pio_iotype
+    integer :: i, pio_root, pio_stride, pio_numiotasks, pio_iotype, pio_rearranger
     integer :: mpigrp_world, mpigrp, ierr, mpicom
     character(*),parameter :: subName =   '(shr_pio_init1) '
     integer :: pelist(3,1)
 
     call shr_pio_read_default_namelist(nlfilename, Global_Comm, pio_stride, pio_root, pio_numiotasks, &
-         pio_iotype, pio_async_interface)
+         pio_iotype, pio_async_interface, pio_rearranger)
 
 
     call MPI_comm_rank(Global_Comm, drank, ierr)
@@ -93,6 +98,7 @@ contains
        pio_comp_settings(i)%pio_stride = pio_stride
        pio_comp_settings(i)%pio_numiotasks = pio_numiotasks
        pio_comp_settings(i)%pio_iotype = pio_iotype
+       pio_comp_settings(i)%pio_rearranger = pio_rearranger
     end do
     if(pio_async_interface) then
 #ifdef NO_MPI2
@@ -119,13 +125,13 @@ contains
     end if
     total_comps = ncomps
   end subroutine shr_pio_init1
-!> 
+!>
 !! @public
-!! @brief if pio_async_interface is true, tasks in io_comm do not return from this subroutine.  
-!! 
+!! @brief if pio_async_interface is true, tasks in io_comm do not return from this subroutine.
+!!
 !! if pio_async_interface is false each component namelist pio_inparm is read from compname_modelio.nml
 !! Then a subset of each components compute tasks are Identified as IO tasks using the root, stride and count
-!! variables to select the tasks.   
+!! variables to select the tasks.
 !!
 !<
 
@@ -170,17 +176,15 @@ contains
     io_compid = comp_id
     io_compname = comp_name
     allocate(iosystems(total_comps))
-    
-    if(pio_async_interface) then
-       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems, rearr_opts=pio_rearr_opts)
-       i=1
-       if(comp_comm_iam(i)==0) then
-          write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
-          write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
-          write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
-          write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
-       end if
 
+    if(pio_async_interface) then
+#ifdef PIO1
+       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems, rearr_opts=pio_rearr_opts)
+
+#else
+       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems)
+#endif
+       i=1
     else
        do i=1,total_comps
           if(comp_iamin(i)) then
@@ -193,26 +197,38 @@ contains
 
              call shr_pio_read_component_namelist(nlfilename , comp_comm(i), pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_root, pio_comp_settings(i)%pio_numiotasks, &
-                  pio_comp_settings(i)%pio_iotype)
+                  pio_comp_settings(i)%pio_iotype, pio_comp_settings(i)%pio_rearranger)
+#ifdef PIO1
              call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
                   pio_comp_settings(i)%pio_stride, &
-                  pio_rearr_subset, iosystems(i), &
+                  pio_comp_settings(i)%pio_rearranger, iosystems(i), &
                   base=pio_comp_settings(i)%pio_root, rearr_opts=pio_rearr_opts)
-
              if(comp_comm_iam(i)==0) then
                 write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
                 write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
                 write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
                 write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
              end if
-
+#else
+             call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
+                  pio_comp_settings(i)%pio_stride, &
+                  pio_comp_settings(i)%pio_rearranger, iosystems(i), &
+                  base=pio_comp_settings(i)%pio_root)
+#endif
 
 
           end if
        end do
     end if
-
-
+    do i=1,total_comps
+       if(comp_comm_iam(i)==0) then
+          write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
+          write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
+          write(shr_log_unit,*) io_compname(i),' : pio_rearranger = ',pio_comp_settings(i)%pio_rearranger
+          write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
+          write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
+       end if
+    enddo
 
 
   end subroutine shr_pio_init2
@@ -284,7 +300,7 @@ contains
      implicit none
      integer, intent(in) :: compid
      integer :: i
-     
+
      index = -1
      do i=1,total_comps
         if(io_compid(i)==compid) then
@@ -303,14 +319,14 @@ contains
      use shr_string_mod, only : shr_string_toupper
 
      implicit none
-     
+
      ! 'component' must be equal to some element of io_compname(:)
      ! (but it is case-insensitive)
      character(len=*), intent(in) :: component
 
      character(len=len(component)) :: component_ucase
      integer :: i
-     
+
      ! convert component name to upper case in order to match case in io_compname
      component_ucase = shr_string_toUpper(component)
 
@@ -352,34 +368,37 @@ contains
 
 
   subroutine shr_pio_read_default_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, &
-       pio_iotype, pio_async_interface)
-    
+       pio_iotype, pio_async_interface, pio_rearranger)
+
     character(len=*), intent(in) :: nlfilename
     integer, intent(in) :: Comm
     logical, intent(out) :: pio_async_interface
-    integer, intent(out) :: pio_stride, pio_root, pio_numiotasks, pio_iotype
+    integer, intent(out) :: pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger
 
     character(len=shr_kind_cs) :: pio_typename
     character(len=shr_kind_cs) :: pio_rearr_comm_type, pio_rearr_comm_fcd
     integer :: pio_rearr_comm_max_pend_req_comp2io
-    logical :: pio_rearr_comm_enable_hs_comp2io
-    logical :: pio_rearr_comm_enable_isend_comp2io
+    logical :: pio_rearr_comm_enable_hs_comp2io, pio_rearr_comm_enable_isend_comp2io
     integer :: pio_rearr_comm_max_pend_req_io2comp
-    logical :: pio_rearr_comm_enable_hs_io2comp
-    logical :: pio_rearr_comm_enable_isend_io2comp
+    logical :: pio_rearr_comm_enable_hs_io2comp, pio_rearr_comm_enable_isend_io2comp
     character(*),parameter :: subName =   '(shr_pio_read_default_namelist) '
 
     integer :: iam, ierr, npes, unitn
     logical :: iamroot
-
+#ifdef PIO1
     namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
-         pio_typename, pio_async_interface, pio_debug_level, pio_blocksize,&
-         pio_buffer_size_limit, pio_rearr_comm_type, pio_rearr_comm_fcd, &
-         pio_rearr_comm_max_pend_req_comp2io, pio_rearr_comm_enable_hs_comp2io, &
-         pio_rearr_comm_enable_isend_comp2io, &
-         pio_rearr_comm_max_pend_req_io2comp, pio_rearr_comm_enable_hs_io2comp, &
-         pio_rearr_comm_enable_isend_io2comp
-
+          pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
+          pio_buffer_size_limit, pio_rearranger, &
+          pio_rearr_comm_type, pio_rearr_comm_fcd, &
+          pio_rearr_comm_max_pend_req_comp2io, pio_rearr_comm_enable_hs_comp2io, &
+          pio_rearr_comm_enable_isend_comp2io, &
+          pio_rearr_comm_max_pend_req_io2comp, pio_rearr_comm_enable_hs_io2comp, &
+          pio_rearr_comm_enable_isend_io2comp
+#else
+    namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
+          pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
+          pio_buffer_size_limit, pio_rearranger
+#endif
 
 
     call mpi_comm_rank(Comm, iam  , ierr)
@@ -394,7 +413,7 @@ contains
     end if
 
     !--------------------------------------------------------------------------
-    ! read io nml parameters 
+    ! read io nml parameters
     !--------------------------------------------------------------------------
     pio_stride   = -99 ! set based on pio_numiotasks value when initialized < 0
     pio_numiotasks = -99 ! set based on pio_stride   value when initialized < 0
@@ -404,6 +423,7 @@ contains
     pio_buffer_size_limit = -99 ! io task memory buffer maximum set internally in pio when < 0
     pio_debug_level = 0 ! no debug info by default
     pio_async_interface = .false.   ! pio tasks are a subset of component tasks
+    pio_rearranger = PIO_REARR_SUBSET
 
     if(iamroot) then
        unitn=shr_file_getunit()
@@ -422,41 +442,59 @@ contains
           close(unitn)
           call shr_file_freeUnit( unitn )
 
+          ! BUG(wjs, 2015-11-09, cime issue #292) It should be up to the scripts to
+          ! ensure that the runtime pio_typename is compatible with the build-time
+          ! setting of whether pnetcdf or netcdf4p are included in the build. But the
+          ! scripts currently are not handling this correctly, so we need this workaround
+          ! in the code. Once issue #292 is resolved, we can remove this workaround, so
+          ! that the code listens to whatever the runtime settings dictate. (See also
+          ! comments in cime PR #291.)
+          if(npes .eq. 1 .and. pio_typename .eq. "pnetcdf" .or. &
+               pio_typename .eq. "netcdf4p") then
+             write(shr_log_unit,*) 'WARNING: for npes == 1, using netcdf instead of '//&
+                  trim(pio_typename)
+             pio_typename = "netcdf"
+          endif
+
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_iotype_netcdf)
        end if
     end if
 
+     call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
+          iamroot, pio_rearranger)
 
-
-    call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, iamroot)
     call shr_mpi_bcast(pio_debug_level, Comm)
     call shr_mpi_bcast(pio_blocksize, Comm)
     call shr_mpi_bcast(pio_buffer_size_limit, Comm)
     call shr_mpi_bcast(pio_async_interface, Comm)
-    call shr_pio_rearr_opts_set(Comm, pio_rearr_comm_type, pio_rearr_comm_fcd, &
-          pio_rearr_comm_max_pend_req_comp2io, pio_rearr_comm_enable_hs_comp2io, &
-          pio_rearr_comm_enable_isend_comp2io, &
-          pio_rearr_comm_max_pend_req_io2comp, pio_rearr_comm_enable_hs_io2comp, &
-          pio_rearr_comm_enable_isend_io2comp, &
-          pio_numiotasks)
+    call shr_mpi_bcast(pio_rearranger, Comm)
+
+#ifdef PIO1
+     call shr_pio_rearr_opts_set(Comm, pio_rearr_comm_type, pio_rearr_comm_fcd, &
+           pio_rearr_comm_max_pend_req_comp2io, pio_rearr_comm_enable_hs_comp2io, &
+           pio_rearr_comm_enable_isend_comp2io, &
+           pio_rearr_comm_max_pend_req_io2comp, pio_rearr_comm_enable_hs_io2comp, &
+           pio_rearr_comm_enable_isend_io2comp, pio_numiotasks)
+#endif
 
   end subroutine shr_pio_read_default_namelist
 
-  subroutine shr_pio_read_component_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype)
+  subroutine shr_pio_read_component_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger)
     character(len=*), intent(in) :: nlfilename
     integer, intent(in) :: Comm
 
-    integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks, pio_iotype
+    integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger
     character(len=SHR_KIND_CS) ::  pio_typename
     integer :: unitn
-    
+
     integer :: iam, ierr, npes
     logical :: iamroot
     character(*),parameter :: subName =   '(shr_pio_read_component_namelist) '
     integer :: pio_default_stride, pio_default_root, pio_default_numiotasks, pio_default_iotype
+    integer :: pio_default_rearranger
 
     namelist /pio_inparm/ pio_stride, pio_root, pio_numiotasks, &
-         pio_typename
+         pio_typename, pio_rearranger
 
 
 
@@ -475,21 +513,28 @@ contains
     pio_default_root = pio_root
     pio_default_numiotasks = pio_numiotasks
     pio_default_iotype = pio_iotype
+    pio_default_rearranger = pio_rearranger
 
 
     !--------------------------------------------------------------------------
-    ! read io nml parameters 
+    ! read io nml parameters
     !--------------------------------------------------------------------------
     pio_stride   = -99 ! set based on pio_numiotasks value when initialized < 0
     pio_numiotasks = -99 ! set based on pio_stride   value when initialized < 0
     pio_root     = -99
     pio_typename = 'nothing'
+    pio_rearranger = -99
 
     if(iamroot) then
        unitn=shr_file_getunit()
        open( unitn, file=trim(nlfilename), status='old' , iostat=ierr)
        if( ierr /= 0) then
           write(shr_log_unit,*) 'No ',trim(nlfilename),' found, using defaults for pio settings'
+           pio_stride     = pio_default_stride
+           pio_root       = pio_default_root
+           pio_numiotasks = pio_default_numiotasks
+           pio_iotype     = pio_default_iotype
+           pio_rearranger = pio_default_rearranger
        else
           ierr = 1
           do while( ierr /= 0 )
@@ -502,25 +547,35 @@ contains
           close(unitn)
           call shr_file_freeUnit( unitn )
 
-          call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
-
-          if(pio_stride== -99) pio_stride = pio_default_stride
-          if(pio_root == -99) pio_root = pio_default_root
-          if(pio_numiotasks == -99) then
-#if defined(BGP) || defined(BGL)
-             if(pio_default_numiotasks < 0 ) then
-                pio_numiotasks = pio_default_numiotasks
-             else
-                pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
-             end if
-#else
-             pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
-#endif
+          ! BUG(wjs, 2015-11-09, cime issue #292) It should be up to the scripts to
+          ! ensure that the runtime pio_typename is compatible with the build-time
+          ! setting of whether pnetcdf or netcdf4p are included in the build. But the
+          ! scripts currently are not handling this correctly, so we need this workaround
+          ! in the code. Once issue #292 is resolved, we can remove this workaround, so
+          ! that the code listens to whatever the runtime settings dictate. (See also
+          ! comments in cime PR #291.)
+          if(npes .eq. 1 .and. pio_typename .eq. "pnetcdf" .or. &
+               pio_typename .eq. "netcdf4p") then
+             write(shr_log_unit,*) 'WARNING: for npes == 1, using netcdf instead of '//&
+                  trim(pio_typename)
+             pio_typename = "netcdf"
           endif
-       endif
-    end if
 
-    call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, iamroot)
+
+          call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
+       end if
+       if(pio_stride== -99) pio_stride = pio_default_stride
+       if(pio_root == -99) pio_root = pio_default_root
+       if(pio_rearranger == -99) pio_rearranger = pio_default_rearranger
+       if(pio_numiotasks == -99) then
+          pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
+       endif
+    endif
+
+
+
+    call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
+         iamroot, pio_rearranger)
 
 
   end subroutine shr_pio_read_component_namelist
@@ -555,10 +610,11 @@ contains
   end subroutine shr_pio_getiotypefromname
 
 !===============================================================================
-  subroutine shr_pio_namelist_set(npes,mycomm, pio_stride, pio_root, pio_numiotasks, pio_iotype, iamroot)
+  subroutine shr_pio_namelist_set(npes,mycomm, pio_stride, pio_root, pio_numiotasks, &
+       pio_iotype, iamroot, pio_rearranger)
     integer, intent(in) :: npes, mycomm
     integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks
-    integer, intent(inout) :: pio_iotype
+    integer, intent(inout) :: pio_iotype, pio_rearranger
     logical, intent(in) :: iamroot
     character(*),parameter :: subName =   '(shr_pio_namelist_set) '
 
@@ -566,37 +622,40 @@ contains
     call shr_mpi_bcast(pio_stride  , mycomm)
     call shr_mpi_bcast(pio_root    , mycomm)
     call shr_mpi_bcast(pio_numiotasks, mycomm)
+    call shr_mpi_bcast(pio_rearranger, mycomm)
 
     if (pio_root<0) then
        pio_root = 1
     endif
     pio_root = min(pio_root,npes-1)
 
-
-#if defined(BGP) || defined(BGL)
-! On Bluegene machines a negative numiotasks refers to the number of iotasks per ionode, this code
-! allows for that special case.
-    if(pio_numiotasks<0) then
-       pio_stride=0       
-    else
-#endif
-
-
-
-
+! If you are asking for parallel IO then you should use at least two io pes
+    if(npes > 1 .and. pio_numiotasks == 1 .and. &
+         (pio_iotype .eq. PIO_IOTYPE_PNETCDF .or. &
+         pio_iotype .eq. PIO_IOTYPE_NETCDF4P)) then
+       pio_numiotasks = 2
+    endif
 
     !--------------------------------------------------------------------------
     ! check/set/correct io pio parameters
     !--------------------------------------------------------------------------
     if (pio_stride>0.and.pio_numiotasks<0) then
-       pio_numiotasks = npes/pio_stride
+       pio_numiotasks = max(1,npes/pio_stride)
     else if(pio_numiotasks>0 .and. pio_stride<0) then
-       pio_stride = npes/pio_numiotasks
+       pio_stride = max(1,npes/pio_numiotasks)
     else if(pio_numiotasks<0 .and. pio_stride<0) then
-       pio_stride = 4
-       pio_numiotasks = npes/pio_stride
-       pio_numiotasks = max(1, pio_numiotasks)
+       pio_stride = max(1,npes/4)
+       pio_numiotasks = max(1,npes/pio_stride)
     end if
+    if(pio_stride == 1) then
+       pio_root = 0
+    endif
+    if(pio_rearranger .ne. PIO_REARR_SUBSET .and. pio_rearranger .ne. PIO_REARR_BOX) then
+       write(shr_log_unit,*) 'pio_rearranger value, ',pio_rearranger,&
+            ', not supported - using PIO_REARR_BOX'
+       pio_rearranger = PIO_REARR_BOX
+
+    endif
 
 
     if (pio_root + (pio_stride)*(pio_numiotasks-1) >= npes .or. &
@@ -621,12 +680,9 @@ contains
                pio_stride,pio_numiotasks, pio_root
        end if
     end if
-#if defined(BGP) || defined(BGL)
-    end if
-#endif
 
   end subroutine shr_pio_namelist_set
-
+#ifdef PIO1
   ! This subroutine sets the global PIO rearranger options
   ! The input args that represent the rearranger options are valid only
   ! on the root proc of comm
@@ -699,13 +755,16 @@ contains
       ! buf(3) = max_pend_req_comp2io
       if((pio_rearr_comm_max_pend_req_comp2io <= 0) .and. &
           (pio_rearr_comm_max_pend_req_comp2io /= PIO_REARR_COMM_UNLIMITED_PEND_REQ)) then
+
         ! Small multiple of pio_numiotasks has proven to perform
-        ! well empirically, and we do not want to allow maximum for 
-        ! very large process count runs. Can improve this by 
-        ! communicating between iotasks first, and then non-iotasks 
-        ! to iotasks (TO DO).
-        write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (comp2io), ", pio_rearr_comm_max_pend_req_comp2io
-        write(shr_log_unit, *) "Resetting PIO rearranger comm max pend req (comp2io) to ", max(PIO_REARR_COMM_DEF_MAX_PEND_REQ, 2 * pio_numiotasks)
+        ! well empirically, and we do not want to allow maximum for
+        ! very large process count runs. Can improve this by
+        ! communicating between iotasks first, and then non-iotasks
+        ! to iotasks (TO DO)
+        write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (comp2io), ",&
+             pio_rearr_comm_max_pend_req_comp2io
+        write(shr_log_unit, *) "Resetting PIO rearranger comm max pend req (comp2io) to ", &
+             max(PIO_REARR_COMM_DEF_MAX_PEND_REQ, 2 * pio_numiotasks)
         buf(3) = max(PIO_REARR_COMM_DEF_MAX_PEND_REQ, 2 * pio_numiotasks)
       else
         buf(3) = pio_rearr_comm_max_pend_req_comp2io
@@ -754,11 +813,11 @@ contains
       write(shr_log_unit, *) "  comm type     =", pio_rearr_comm_type
       write(shr_log_unit, *) "  comm fcd      =", pio_rearr_comm_fcd
       write(shr_log_unit, *) "  max pend req (comp2io)  =", pio_rearr_comm_max_pend_req_comp2io
-      write(shr_log_unit, *) "  enable_hs (comp2io)    =", pio_rearr_comm_enable_hs_comp2io
-      write(shr_log_unit, *) "  enable_isend (comp2io) =", pio_rearr_comm_enable_isend_comp2io
+      write(shr_log_unit, *) "  enable_hs (comp2io)     =", pio_rearr_comm_enable_hs_comp2io
+      write(shr_log_unit, *) "  enable_isend (comp2io)  =", pio_rearr_comm_enable_isend_comp2io
       write(shr_log_unit, *) "  max pend req (io2comp)  =", pio_rearr_comm_max_pend_req_io2comp
       write(shr_log_unit, *) "  enable_hs (io2comp)    =", pio_rearr_comm_enable_hs_io2comp
-      write(shr_log_unit, *) "  enable_isend (io2comp) =", pio_rearr_comm_enable_isend_io2comp
+      write(shr_log_unit, *) "  enable_isend (io2comp)  =", pio_rearr_comm_enable_isend_io2comp
     end if
 
     call shr_mpi_bcast(buf, comm)
@@ -796,7 +855,7 @@ contains
       pio_rearr_opts%comm_fc_opts_io2comp%enable_isend = .true.
     end if
   end subroutine
-
+#endif
 !===============================================================================
 
 end module shr_pio_mod

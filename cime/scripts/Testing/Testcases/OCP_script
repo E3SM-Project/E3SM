@@ -7,9 +7,9 @@ cd $CASEROOT
 
 touch pop_perf.out
 
-./xmlchange -file env_run.xml   -id CONTINUE_RUN     -val FALSE
-./xmlchange -file env_run.xml   -id REST_OPTION      -val none
-./xmlchange -file env_build.xml -id POP_AUTO_DECOMP  -val false
+./xmlchange --file env_run.xml   --id CONTINUE_RUN     --val FALSE
+./xmlchange --file env_run.xml   --id REST_OPTION      --val none
+./xmlchange --file env_build.xml --id POP_AUTO_DECOMP  --val false
 
 #======================================================================
 # do an initial run test
@@ -29,22 +29,22 @@ touch pop_perf.out
 
     if (-e env_build.xml.${acnt}) then
       cp -f env_build.xml.${acnt} env_build.xml
-      cp -f env_build.xml LockedFiles/env_build.xml.locked
-      cp -f $EXEROOT/cesm.exe.${acnt} $EXEROOT/cesm.exe
+      cp -f env_build.xml LockedFiles/env_build.xml
+      cp -f $EXEROOT/${CIME_MODEL}.exe.${acnt} $EXEROOT/${CIME_MODEL}.exe
 
-      ./$CASE.run
+      ./case.run
       if ($status != 0) then
-	  echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+	  echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
 	  exit -1
       endif
 
-      set OCN_GRID	 = `./xmlquery OCN_GRID	      -value`
-      set POP_BLCKX	 = `./xmlquery POP_BLCKX      -value`
-      set POP_BLCKY	 = `./xmlquery POP_BLCKY      -value`
-      set POP_MXBLCKS	 = `./xmlquery POP_MXBLCKS    -value`
-      set POP_DECOMPTYPE = `./xmlquery POP_DECOMPTYPE -value`  
-      set NTASKS_OCN	 = `./xmlquery NTASKS_OCN     -value`
-      set NTHRDS_OCN	 = `./xmlquery NTHRDS_OCN     -value`
+      set OCN_GRID	 = `./xmlquery OCN_GRID	      --value`
+      set POP_BLCKX	 = `./xmlquery POP_BLCKX      --value`
+      set POP_BLCKY	 = `./xmlquery POP_BLCKY      --value`
+      set POP_MXBLCKS	 = `./xmlquery POP_MXBLCKS    --value`
+      set POP_DECOMPTYPE = `./xmlquery POP_DECOMPTYPE --value`
+      set NTASKS_OCN	 = `./xmlquery NTASKS_OCN     --value`
+      set NTHRDS_OCN	 = `./xmlquery NTHRDS_OCN     --value`
 
       set LID = `ls -1t $RUNDIR/cpl.log* | head -1 | sed 's/.*cpl.log.//' | sed 's/.gz//' `
       @ ocn_pes = ${NTASKS_OCN} * ${NTHRDS_OCN}
@@ -67,10 +67,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

@@ -163,7 +163,7 @@ if (@ARGV) {
 # 0 - only issue fatal error messages
 # 1 - only informs what files are created (default)
 # 2 - verbose
-my $print = 1;
+my $print = 2;
 if ($opts{'silent'})  { $print = 0; }
 if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
@@ -350,7 +350,7 @@ my $cice_cppdefs = " -DCCSMCOUPLED -Dcoupled -Dncdf -DNCAT=$ncat -DNXGLOB=$nlon 
 # CICE ice model
 # BC deposition to ice and snow turned on
 if ($bc_dep_to_snow_updates) {
-    $cice_cppdefs .= " -DMODAL_AER";
+    $cice_cppdefs = "$cice_cppdefs -DMODAL_AER";
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -500,13 +500,14 @@ if ($set_decomp) {
 #-----------------------------------------------------------------------------------------------
 # Makefile configuration #######################################################################
 #-----------------------------------------------------------------------------------------------
+#
 
 # the CPP definitions that were explicitly set in the defaults 
 my $cfg_cppdefs = ' ';
 
 # CICE ice model
 $cfg_cppdefs .= $cice_cppdefs;
-
+#
 # CPP defines to put on Makefile
 my $make_cppdefs = "$cfg_cppdefs";
 
@@ -523,9 +524,11 @@ my $cpp_filename     = 'CICE_cppdefs';         # name of output file for cice's 
 write_filepath("$cice_bld/$fp_filename", $cesmroot);
 if ($print>=2) { print "creating $cice_bld/$fp_filename\n"; }
 
+my $CASEROOT = "$ENV{'CASEROOT'}";
+
 # Write the file for cice's cppdefs 
 write_cppdefs("$cice_bld/$cpp_filename", $make_cppdefs);
-if ($print>=2) { print "creating $cice_bld/$cpp_filename\n"; }
+if ($print>=2) { print "creating $cice_bld/$cpp_filename\n"; }#
 
 # Write the configuration file.
 $cfg_ref->write_file("$config_cache_file", $commandline);

@@ -2,7 +2,7 @@ module seq_comm_mct
 
 !---------------------------------------------------------------------
 !
-! Purpose: MCT utitlity functions used in sequential CCSM.
+! Purpose: Set up necessary communications
 !          Note that if no MPI, will call MCTs fake version
 !          (including mpif.h) will be utilized
 !
@@ -20,9 +20,6 @@ module seq_comm_mct
   use shr_sys_mod , only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
   use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
-#ifdef USE_ESMF_LIB
-  use esmf
-#endif
 
   implicit none
 
@@ -53,10 +50,6 @@ module seq_comm_mct
   public seq_comm_getnthreads
   public seq_comm_printcomms
   public seq_comm_get_ncomps
-#ifdef USE_ESMF_LIB
-  public seq_comm_getcompstates
-  public seq_comm_setcompstates
-#endif
 
 !--------------------------------------------------------------------------
 ! Public data
@@ -70,7 +63,9 @@ module seq_comm_mct
 
   !!! Note - NUM_COMP_INST_XXX are cpp variables set in buildlib.csm_share
 
-  integer, parameter :: nphysmod = 7  ! number of physical models
+  integer, parameter :: ncomptypes = 8  ! total number of component types
+  integer, parameter :: nphysmod   = 7  ! number of physical component types
+  integer, parameter :: ncouplers  = 1  ! number of couplers
   integer, parameter, public :: num_inst_atm = NUM_COMP_INST_ATM
   integer, parameter, public :: num_inst_lnd = NUM_COMP_INST_LND
   integer, parameter, public :: num_inst_ocn = NUM_COMP_INST_OCN
@@ -78,6 +73,7 @@ module seq_comm_mct
   integer, parameter, public :: num_inst_glc = NUM_COMP_INST_GLC
   integer, parameter, public :: num_inst_wav = NUM_COMP_INST_WAV
   integer, parameter, public :: num_inst_rof = NUM_COMP_INST_ROF
+  integer, parameter, public :: num_inst_esp = NUM_COMP_INST_ESP
 
   integer, parameter, public :: num_inst_total= num_inst_atm + &
                                                 num_inst_lnd + &
@@ -85,7 +81,8 @@ module seq_comm_mct
                                                 num_inst_ice + &
                                                 num_inst_glc + &
                                                 num_inst_wav + &
-                                                num_inst_rof + 1
+                                                num_inst_rof + &
+                                                num_inst_esp + 1
 
   integer, public :: num_inst_min, num_inst_max
   integer, public :: num_inst_xao    ! for xao flux
@@ -95,12 +92,19 @@ module seq_comm_mct
   !!! instance, and one for communicating with the coupler.
   !!! Additionally, one communicator is needed for the coupler's
   !!! internal communications, and one is needed for the global space.
+  !!! All instances of a component type also share a separate communicator
+  !!! All instances of a component type share a communicator with the coupler
+  !!! Note that ESP models do not need coupler communicators
 
   integer, parameter, public :: num_inst_phys = num_inst_atm + num_inst_lnd + &
                                                 num_inst_ocn + num_inst_ice + &
                                                 num_inst_glc + num_inst_rof + &
+                                                num_inst_wav + num_inst_esp
+  integer, parameter, public :: num_cpl_phys  = num_inst_atm + num_inst_lnd + &
+                                                num_inst_ocn + num_inst_ice + &
+                                                num_inst_glc + num_inst_rof + &
                                                 num_inst_wav
-  integer, parameter :: ncomps = (2 + 2*nphysmod + (2 * num_inst_phys))
+  integer, parameter :: ncomps = (1 + ncouplers + ncomptypes + nphysmod + num_inst_phys + num_cpl_phys)
 
   integer, public :: GLOID
   integer, public :: CPLID
@@ -112,6 +116,7 @@ module seq_comm_mct
   integer, public :: ALLGLCID
   integer, public :: ALLROFID
   integer, public :: ALLWAVID
+  integer, public :: ALLESPID
 
   integer, public :: CPLALLATMID
   integer, public :: CPLALLLNDID
@@ -120,6 +125,7 @@ module seq_comm_mct
   integer, public :: CPLALLGLCID
   integer, public :: CPLALLROFID
   integer, public :: CPLALLWAVID
+  integer, public, parameter :: CPLALLESPID = -1
 
   integer, public :: ATMID(num_inst_atm)
   integer, public :: LNDID(num_inst_lnd)
@@ -128,6 +134,7 @@ module seq_comm_mct
   integer, public :: GLCID(num_inst_glc)
   integer, public :: ROFID(num_inst_rof)
   integer, public :: WAVID(num_inst_wav)
+  integer, public :: ESPID(num_inst_esp)
 
   integer, public :: CPLATMID(num_inst_atm)
   integer, public :: CPLLNDID(num_inst_lnd)
@@ -136,6 +143,7 @@ module seq_comm_mct
   integer, public :: CPLGLCID(num_inst_glc)
   integer, public :: CPLROFID(num_inst_rof)
   integer, public :: CPLWAVID(num_inst_wav)
+  integer, public :: CPLESPID(num_inst_esp)
 
   integer, parameter, public :: seq_comm_namelen=16
   type seq_comm_type
@@ -157,12 +165,6 @@ module seq_comm_mct
     logical :: set             ! has this datatype been set
     integer, pointer    :: petlist(:)  ! esmf pet list
     logical :: petlist_allocated ! whether the petlist pointer variable was allocated
-#ifdef USE_ESMF_LIB
-    type(ESMF_GridComp) :: esmf_comp   ! esmf gridded component
-                                       ! The following state members are not needed in 520r.
-    type(ESMF_State)    :: imp_state   ! esmf import state for the gridded component
-    type(ESMF_State)    :: exp_state   ! esmf export state for the gridded component
-#endif
   end type seq_comm_type
 
   type(seq_comm_type) :: seq_comms(ncomps)
@@ -179,7 +181,7 @@ module seq_comm_mct
 
   character(len=32), public :: &
        atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
-       ocn_layout, wav_layout
+       ocn_layout, wav_layout, esp_layout
   
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
@@ -208,7 +210,7 @@ contains
     integer :: mpi_group_world   ! MPI_COMM_WORLD group
     integer :: mype,numpes,myncomps,max_threads,gloroot
     integer :: atm_inst_tasks, lnd_inst_tasks, ocn_inst_tasks, ice_inst_tasks, &
-               glc_inst_tasks, rof_inst_tasks, wav_inst_tasks
+               glc_inst_tasks, rof_inst_tasks, wav_inst_tasks, esp_inst_tasks
     integer :: current_task_rootpe, droot
     integer :: amin(num_inst_atm), amax(num_inst_atm), astr(num_inst_atm)
     integer :: lmin(num_inst_lnd), lmax(num_inst_lnd), lstr(num_inst_lnd)
@@ -217,6 +219,7 @@ contains
     integer :: gmin(num_inst_glc), gmax(num_inst_glc), gstr(num_inst_glc)
     integer :: wmin(num_inst_wav), wmax(num_inst_wav), wstr(num_inst_wav)
     integer :: rmin(num_inst_rof), rmax(num_inst_rof), rstr(num_inst_rof)
+    integer :: emin(num_inst_esp), emax(num_inst_esp), estr(num_inst_esp)
     integer :: cmin,cmax,cstr
     integer :: pelist(3,1)       ! start, stop, stride for group
     integer, pointer :: comps(:) ! array with component ids
@@ -231,6 +234,7 @@ contains
          wav_ntasks, wav_rootpe, wav_pestride, wav_nthreads, &
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
+         esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
     namelist /ccsm_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
@@ -240,6 +244,7 @@ contains
          wav_ntasks, wav_rootpe, wav_pestride, wav_nthreads, wav_layout, &
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout, &
+         esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads 
     !----------------------------------------------------------
 
@@ -292,7 +297,7 @@ contains
 
     if (mype == 0) then
 
-       !! Set up default atmosphere process parameters
+       !! Set up default component process parameters
 
        atm_ntasks = numpes
        atm_rootpe = 0
@@ -336,6 +341,12 @@ contains
        wav_nthreads = 1
        wav_layout = trim(layout_concurrent)
 
+       esp_ntasks = numpes
+       esp_rootpe = 0
+       esp_pestride = 1
+       esp_nthreads = 1
+       esp_layout = trim(layout_concurrent)
+
        cpl_ntasks = numpes
        cpl_rootpe = 0
        cpl_pestride = 1
@@ -374,6 +385,7 @@ contains
     num_inst_min = min(num_inst_min, num_inst_glc)
     num_inst_min = min(num_inst_min, num_inst_wav)
     num_inst_min = min(num_inst_min, num_inst_rof)
+    num_inst_min = min(num_inst_min, num_inst_esp)
     num_inst_max = num_inst_atm
     num_inst_max = max(num_inst_max, num_inst_lnd)
     num_inst_max = max(num_inst_max, num_inst_ocn)
@@ -381,6 +393,7 @@ contains
     num_inst_max = max(num_inst_max, num_inst_glc)
     num_inst_max = max(num_inst_max, num_inst_wav)
     num_inst_max = max(num_inst_max, num_inst_rof)
+    num_inst_max = max(num_inst_max, num_inst_esp)
 
     if (num_inst_min /= num_inst_max .and. num_inst_min /= 1) error_state = .true.
     if (num_inst_atm /= num_inst_min .and. num_inst_atm /= num_inst_max) error_state = .true.
@@ -390,6 +403,7 @@ contains
     if (num_inst_glc /= num_inst_min .and. num_inst_glc /= num_inst_max) error_state = .true.
     if (num_inst_wav /= num_inst_min .and. num_inst_wav /= num_inst_max) error_state = .true.
     if (num_inst_rof /= num_inst_min .and. num_inst_rof /= num_inst_max) error_state = .true.
+    if (num_inst_esp /= num_inst_min .and. num_inst_esp /= num_inst_max) error_state = .true.
 
     if (error_state) then
        write(logunit,*) trim(subname),' ERROR: num_inst inconsistent'
@@ -419,6 +433,8 @@ contains
     ALLROFID = count
     count = count + 1
     ALLWAVID = count
+    count = count + 1
+    ALLESPID = count
 
     count = count + 1
     CPLALLATMID = count
@@ -484,6 +500,12 @@ contains
        CPLWAVID(n) = count
     end do
 
+    do n = 1, num_inst_esp
+       count = count + 1
+       ESPID(n) = count
+       CPLESPID(n) = -1
+    end do
+
     if (count /= ncomps) then
        write(logunit,*) trim(subname),' ERROR in ID count ',count,ncomps
        call shr_sys_abort(trim(subname)//' ERROR in ID count')
@@ -502,35 +524,13 @@ contains
        if (glc_rootpe < 0) error_state = .true.
        if (wav_rootpe < 0) error_state = .true.
        if (rof_rootpe < 0) error_state = .true.
+       if (esp_rootpe < 0) error_state = .true.
        if (cpl_rootpe < 0) error_state = .true.
        
        if (error_state) then
           write(logunit,*) trim(subname),' ERROR: rootpes must be >= 0'
           call shr_sys_abort(trim(subname)//' ERROR: rootpes >= 0')
        endif
-
-!       ! nthreads = 1, temporary
-!       if (atm_nthreads /= 1 .or. lnd_nthreads /= 1 .or. ice_nthreads /= 1 .or. &
-!           ocn_nthreads /= 1 .or. cpl_nthreads /= 1) then
-!          write(logunit,*) trim(subname),' ERROR: nthreads must be 1'
-!          call shr_sys_abort()
-!       endif
-
-!       ! nthreads should be 1 or something consistent, compute max nthreads
-!       amax = max(atm_nthreads,lnd_nthreads)
-!       amax = max(amax        ,ice_nthreads)
-!       amax = max(amax        ,ocn_nthreads)
-!       amax = max(amax        ,cpl_nthreads)
-
-!       ! check that everything is either 1 or max nthreads
-!       if ((atm_nthreads /= 1 .and. atm_nthreads /= amax) .or. &
-!           (lnd_nthreads /= 1 .and. lnd_nthreads /= amax) .or. &
-!           (ice_nthreads /= 1 .and. ice_nthreads /= amax) .or. &
-!           (ocn_nthreads /= 1 .and. ocn_nthreads /= amax) .or. &
-!           (cpl_nthreads /= 1 .and. cpl_nthreads /= amax)) then
-!          write(logunit,*) trim(subname),' ERROR: nthreads must be consistent'
-!          call shr_sys_abort()
-!       endif
 
        !! Determine the process layout
        !!
@@ -676,6 +676,26 @@ contains
           current_task_rootpe = current_task_rootpe + droot
        end do
 
+       !! External System Processing instance tasks
+       
+       if (trim(esp_layout) == trim(layout_concurrent)) then
+          esp_inst_tasks = esp_ntasks / num_inst_esp
+          droot = (esp_inst_tasks * esp_pestride)
+       elseif (trim(esp_layout) == trim(layout_sequential)) then
+          esp_inst_tasks = esp_ntasks
+          droot = 0
+       else
+          call shr_sys_abort(subname//' ERROR invalid esp_layout ')
+       endif
+       current_task_rootpe = esp_rootpe
+       do n = 1, num_inst_esp
+          emin(n) = current_task_rootpe
+          emax(n) = current_task_rootpe &
+                    + ((esp_inst_tasks - 1) * esp_pestride)
+          estr(n) = esp_pestride
+          current_task_rootpe = current_task_rootpe + droot
+       end do
+
        !! Coupler tasks
 
        cmin = cpl_rootpe
@@ -683,79 +703,6 @@ contains
        cstr = cpl_pestride
     end if
 
-#if (1 == 0)
-    ! create petlist for ESMF components, doesn't work for ensembles 
-    if(present(atm_petlist)) then
-        call shr_mpi_bcast(atm_ntasks, GLOBAL_COMM, 'atm_ntasks')
-        call shr_mpi_bcast(atm_rootpe, GLOBAL_COMM, 'atm_rootpe')
-        call shr_mpi_bcast(atm_pestride, GLOBAL_COMM, 'atm_pestride')
-        allocate(atm_petlist(atm_ntasks))
-        do i = 1, atm_ntasks
-            atm_petlist(i) = atm_rootpe + (i-1)*atm_pestride
-        enddo
-    endif
-
-    if(present(lnd_petlist)) then
-        call shr_mpi_bcast(lnd_ntasks, GLOBAL_COMM, 'lnd_ntasks')
-        call shr_mpi_bcast(lnd_rootpe, GLOBAL_COMM, 'lnd_rootpe')
-        call shr_mpi_bcast(lnd_pestride, GLOBAL_COMM, 'lnd_pestride')
-        allocate(lnd_petlist(lnd_ntasks))
-        do i = 1, lnd_ntasks
-            lnd_petlist(i) = lnd_rootpe + (i-1)*lnd_pestride
-        enddo
-    endif
-
-    if(present(ice_petlist)) then
-        call shr_mpi_bcast(ice_ntasks, GLOBAL_COMM, 'ice_ntasks')
-        call shr_mpi_bcast(ice_rootpe, GLOBAL_COMM, 'ice_rootpe')
-        call shr_mpi_bcast(ice_pestride, GLOBAL_COMM, 'ice_pestride')
-        allocate(ice_petlist(ice_ntasks))
-        do i = 1, ice_ntasks
-            ice_petlist(i) = ice_rootpe + (i-1)*ice_pestride
-        enddo
-    endif
-
-    if(present(ocn_petlist)) then
-        call shr_mpi_bcast(ocn_ntasks, GLOBAL_COMM, 'ocn_ntasks')
-        call shr_mpi_bcast(ocn_rootpe, GLOBAL_COMM, 'ocn_rootpe')
-        call shr_mpi_bcast(ocn_pestride, GLOBAL_COMM, 'ocn_pestride')
-        allocate(ocn_petlist(ocn_ntasks))
-        do i = 1, ocn_ntasks
-            ocn_petlist(i) = ocn_rootpe + (i-1)*ocn_pestride
-        enddo
-    endif
-
-    if(present(glc_petlist)) then
-        call shr_mpi_bcast(glc_ntasks, GLOBAL_COMM, 'glc_ntasks')
-        call shr_mpi_bcast(glc_rootpe, GLOBAL_COMM, 'glc_rootpe')
-        call shr_mpi_bcast(glc_pestride, GLOBAL_COMM, 'glc_pestride')
-        allocate(glc_petlist(glc_ntasks))
-        do i = 1, glc_ntasks
-            glc_petlist(i) = glc_rootpe + (i-1)*glc_pestride
-        enddo
-    endif
-
-    if(present(rof_petlist)) then
-        call shr_mpi_bcast(rof_ntasks, GLOBAL_COMM, 'rof_ntasks')
-        call shr_mpi_bcast(rof_rootpe, GLOBAL_COMM, 'rof_rootpe')
-        call shr_mpi_bcast(rof_pestride, GLOBAL_COMM, 'rof_pestride')
-        allocate(rof_petlist(rof_ntasks))
-        do i = 1, rof_ntasks
-            rof_petlist(i) = rof_rootpe + (i-1)*rof_pestride
-        enddo
-    endif
-
-    if(present(wav_petlist)) then
-        call shr_mpi_bcast(wav_ntasks, GLOBAL_COMM, 'wav_ntasks')
-        call shr_mpi_bcast(wav_rootpe, GLOBAL_COMM, 'wav_rootpe')
-        call shr_mpi_bcast(wav_pestride, GLOBAL_COMM, 'wav_pestride')
-        allocate(wav_petlist(wav_ntasks))
-        do i = 1, wav_ntasks
-            wav_petlist(i) = wav_rootpe + (i-1)*wav_pestride
-        enddo
-    endif
-#endif
-       
     call shr_mpi_bcast(atm_nthreads,GLOBAL_COMM,'atm_nthreads')
     call shr_mpi_bcast(lnd_nthreads,GLOBAL_COMM,'lnd_nthreads')
     call shr_mpi_bcast(ocn_nthreads,GLOBAL_COMM,'ocn_nthreads')
@@ -763,6 +710,7 @@ contains
     call shr_mpi_bcast(glc_nthreads,GLOBAL_COMM,'glc_nthreads')
     call shr_mpi_bcast(wav_nthreads,GLOBAL_COMM,'wav_nthreads')
     call shr_mpi_bcast(rof_nthreads,GLOBAL_COMM,'rof_nthreads')
+    call shr_mpi_bcast(esp_nthreads,GLOBAL_COMM,'esp_nthreads')
     call shr_mpi_bcast(cpl_nthreads,GLOBAL_COMM,'cpl_nthreads')
 
     ! Create MPI communicator groups
@@ -873,6 +821,17 @@ contains
     end do
     call seq_comm_jcommarr(WAVID,ALLWAVID,'ALLWAVID',1,1)
     call seq_comm_joincomm(CPLID,ALLWAVID,CPLALLWAVID,'CPLALLWAVID',1,1)
+
+    do n = 1, num_inst_esp
+       if (mype == 0) then
+          pelist(1,1) = emin(n)
+          pelist(2,1) = emax(n)
+          pelist(3,1) = estr(n)
+       end if
+       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
+       call seq_comm_setcomm(ESPID(n), pelist, esp_nthreads, 'ESP', n, num_inst_esp)
+    end do
+    call seq_comm_jcommarr(ESPID,ALLESPID,'ALLESPID',1,1)
 
     !! Count the total number of threads
 
@@ -1352,11 +1311,7 @@ contains
 
     implicit none
     character(*),parameter :: subName =   '(seq_comm_printcomms) '
-    integer :: m,n,mype,npes,ierr
-    character(len=256) :: iamstring
-    character(*),parameter :: F01 = "(4x,a4,4x   ,40(1x,a8))"
-    character(*),parameter :: F02 = "(4x,i4,3x,a1,40(2x,i6,1x))"
-    character(*),parameter :: F03 = "(4x,i4,3x,a1,a)"
+    integer :: n,mype,npes,ierr
 
     call mpi_comm_size(GLOBAL_COMM, npes  , ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_size comm_world')
@@ -1371,34 +1326,8 @@ contains
              seq_comms(n)%gloroot,seq_comms(n)%npes,seq_comms(n)%nthreads, &
              trim(seq_comms(n)%name),':',trim(seq_comms(n)%suffix)
        enddo
-!       write(logunit,*) ' '
-!       write(logunit,*) trim(subName),' ID layout : global pes vs local pe for each ID'
-!       write(logunit,F01) ' gpe',(seq_comms(n)%name,n=1,ncomps),'nthrds'
-!       write(logunit,F01) ' ---',(' ------ '       ,n=1,ncomps),'------'
        call shr_sys_flush(logunit)
     endif
-!    iamstring = ' '
-!   do n = 1,ncomps
-!      if (seq_comms(n)%iam >= 0) then
-!         write(iamstring((n-1)*9+1:n*9),"(2x,i6,1x)") seq_comms(n)%iam
-!      endif
-!   enddo
-!   n = ncomps + 1
-!   write(iamstring((n-1)*9+1:n*9),"(2x,i6,1x)") seq_comms(GLOID)%pethreads
-
-!    call shr_sys_flush(logunit)
-!    call mpi_barrier(GLOBAL_COMM,ierr)
-!   do m = 0,npes-1
-!      if (mype == m) then
-!!          write(logunit,F02) mype,':',(seq_comms(n)%iam,n=1,ncomps)
-!         write(logunit,F03) mype,':',trim(iamstring)
-!         if (m == npes-1) then
-!            write(logunit,*) ' '
-!         endif
-!      endif
-!      call shr_sys_flush(logunit)
-!      call mpi_barrier(GLOBAL_COMM,ierr)
-!   enddo
 
   end subroutine seq_comm_printcomms
 
@@ -1422,60 +1351,107 @@ contains
     character(len=seq_comm_namelen)  , intent(out), optional :: name
     character(*),parameter :: subName =   '(seq_comm_setptrs) '
 
-    if (ID < 1 .or. ID > ncomps) then
+    ! Negative ID means there is no comm, return default or inactive values
+    if ((ID == 0) .or. (ID > ncomps)) then
        write(logunit,*) subname,' ID out of range, return ',ID
        return
     endif 
 
     if (present(mpicom)) then
-       mpicom = seq_comms(ID)%mpicom
+       if (ID > 0) then
+          mpicom = seq_comms(ID)%mpicom
+       else
+          mpicom = MPI_COMM_NULL
+       end if
     endif
 
     if (present(mpigrp)) then
-       mpigrp = seq_comms(ID)%mpigrp
+       if (ID > 0) then
+          mpigrp = seq_comms(ID)%mpigrp
+       else
+          mpigrp = MPI_GROUP_NULL
+       end if
     endif
 
     if (present(npes)) then
-       npes = seq_comms(ID)%npes
+       if (ID > 0) then
+          npes = seq_comms(ID)%npes
+       else
+          npes = 0
+       end if
     endif
 
     if (present(nthreads)) then
-       nthreads = seq_comms(ID)%nthreads
+       if (ID > 0) then
+          nthreads = seq_comms(ID)%nthreads
+       else
+          nthreads = 1
+       end if
     endif
 
     if (present(iam)) then
-       iam = seq_comms(ID)%iam
+       if (ID > 0) then
+          iam = seq_comms(ID)%iam
+       else
+          iam = -1
+       end if
     endif
 
     if (present(iamroot)) then
-       iamroot = seq_comms(ID)%iamroot
+       if (ID > 0) then
+          iamroot = seq_comms(ID)%iamroot
+       else
+          iamroot = .false.
+       end if
     endif
 
     if (present(gloiam)) then
-       gloiam = seq_comms(ID)%gloiam
+       if (ID > 0) then
+          gloiam = seq_comms(ID)%gloiam
+       else
+          gloiam = -1
+       end if
     endif
 
     if (present(gloroot)) then
-       gloroot = seq_comms(ID)%gloroot
+       if (ID > 0) then
+          gloroot = seq_comms(ID)%gloroot
+       else
+          gloroot = -1
+       end if
     endif
 
     if (present(cplpe)) then
-       cplpe = seq_comms(ID)%cplpe
+       if (ID > 0) then
+          cplpe = seq_comms(ID)%cplpe
+       else
+          cplpe = -1
+       end if
     endif
 
     if (present(cmppe)) then
-       cmppe = seq_comms(ID)%cmppe
+       if (ID > 0) then
+          cmppe = seq_comms(ID)%cmppe
+       else
+          cmppe = -1
+       end if
     endif
 
     if (present(pethreads)) then
-       pethreads = seq_comms(ID)%pethreads
+       if (ID > 0) then
+          pethreads = seq_comms(ID)%pethreads
+       else
+          pethreads = 1
+       end if
     endif
 
     if(present(name)) then
-       name = seq_comms(ID)%name
+       if (ID > 0) then
+          name = seq_comms(ID)%name
+       else
+          name = ''
+       end if
     end if
-
-
 
   end subroutine seq_comm_setptrs
 !---------------------------------------------------------
@@ -1515,7 +1491,9 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_iamin) '
 
-    if (seq_comms(ID)%iam >= 0) then
+    if ((ID < 1) .or. (ID > ncomps)) then
+      seq_comm_iamin = .false.
+    else if (seq_comms(ID)%iam >= 0) then
        seq_comm_iamin = .true.
     else
        seq_comm_iamin = .false.
@@ -1529,7 +1507,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_iamroot) '
 
-    seq_comm_iamroot = seq_comms(ID)%iamroot
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_iamroot = .false.
+    else
+       seq_comm_iamroot = seq_comms(ID)%iamroot
+    end if
 
   end function seq_comm_iamroot
 !---------------------------------------------------------
@@ -1539,7 +1521,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_mpicom) '
 
-    seq_comm_mpicom = seq_comms(ID)%mpicom
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_mpicom = MPI_COMM_NULL
+    else
+       seq_comm_mpicom = seq_comms(ID)%mpicom
+    end if
 
   end function seq_comm_mpicom
 !---------------------------------------------------------
@@ -1549,7 +1535,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_iam) '
 
-    seq_comm_iam = seq_comms(ID)%iam
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_iam = -1
+    else
+       seq_comm_iam = seq_comms(ID)%iam
+    end if
 
   end function seq_comm_iam
 !---------------------------------------------------------
@@ -1559,7 +1549,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_gloiam) '
 
-    seq_comm_gloiam = seq_comms(ID)%gloiam
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_gloiam = -1
+    else
+       seq_comm_gloiam = seq_comms(ID)%gloiam
+    end if
 
   end function seq_comm_gloiam
 !---------------------------------------------------------
@@ -1569,7 +1563,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_gloroot) '
 
-    seq_comm_gloroot = seq_comms(ID)%gloroot
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_gloroot = -1
+    else
+       seq_comm_gloroot = seq_comms(ID)%gloroot
+    end if
 
   end function seq_comm_gloroot
 !---------------------------------------------------------
@@ -1579,7 +1577,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_cplpe) '
 
-    seq_comm_cplpe = seq_comms(ID)%cplpe
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_cplpe = -1
+    else
+       seq_comm_cplpe = seq_comms(ID)%cplpe
+    end if
 
   end function seq_comm_cplpe
 !---------------------------------------------------------
@@ -1589,7 +1591,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_cmppe) '
 
-    seq_comm_cmppe = seq_comms(ID)%cmppe
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_cmppe = -1
+    else
+       seq_comm_cmppe = seq_comms(ID)%cmppe
+    end if
 
   end function seq_comm_cmppe
 !---------------------------------------------------------
@@ -1599,7 +1605,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_name) '
 
-    seq_comm_name = trim(seq_comms(ID)%name)
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_name = ''
+    else
+       seq_comm_name = trim(seq_comms(ID)%name)
+    end if
 
   end function seq_comm_name
 !---------------------------------------------------------
@@ -1609,7 +1619,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_suffix) '
 
-    seq_comm_suffix = trim(seq_comms(ID)%suffix)
+    if ((ID < 1) .or. (ID > ncomps)) then
+       seq_comm_suffix = ''
+    else
+       seq_comm_suffix = trim(seq_comms(ID)%suffix)
+    end if
 
   end function seq_comm_suffix
 !---------------------------------------------------------
@@ -1620,39 +1634,14 @@ contains
     integer,pointer :: petlist(:)
     character(*),parameter :: subName =   '(seq_comm_petlist) '
 
-    petlist => seq_comms(ID)%petlist
+    if ((ID < 1) .or. (ID > ncomps)) then
+       nullify(petlist)
+    else
+       petlist => seq_comms(ID)%petlist
+    end if
 
   end subroutine seq_comm_petlist
 !---------------------------------------------------------
-#ifdef USE_ESMF_LIB
-  subroutine seq_comm_getcompstates(ID,comp,imp_state,exp_state)
-
-    implicit none
-    integer,                       intent(in)  :: ID
-    type(ESMF_GridComp), optional, intent(out) :: comp
-    type(ESMF_State),    optional, intent(out) :: imp_state, exp_state
-    character(*),parameter :: subName =   '(seq_comm_getcompstates) '
-
-    if(present(comp))      comp      = seq_comms(ID)%esmf_comp
-    if(present(imp_state)) imp_state = seq_comms(ID)%imp_state
-    if(present(imp_state)) exp_state = seq_comms(ID)%exp_state
-
-  end subroutine seq_comm_getcompstates
-!---------------------------------------------------------
-  subroutine seq_comm_setcompstates(ID,comp,imp_state,exp_state)
-
-    implicit none
-    integer,                       intent(in) :: ID
-    type(ESMF_GridComp), optional, intent(in) :: comp
-    type(ESMF_State)   , optional, intent(in) :: imp_state, exp_state
-    character(*),parameter :: subName =   '(seq_comm_setcompstates) '
-
-    if(present(comp))      seq_comms(ID)%esmf_comp = comp
-    if(present(imp_state)) seq_comms(ID)%imp_state = imp_state
-    if(present(imp_state)) seq_comms(ID)%exp_state = exp_state
-
-  end subroutine seq_comm_setcompstates
-#endif
 !---------------------------------------------------------
   integer function seq_comm_inst(ID)
 
@@ -1660,7 +1649,11 @@ contains
     integer,intent(in) :: ID
     character(*),parameter :: subName =   '(seq_comm_inst) '
 
-    seq_comm_inst = seq_comms(ID)%inst
+    if ((ID < 1) .or. (ID > ncomps)) then
+      seq_comm_inst = 0
+    else
+      seq_comm_inst = seq_comms(ID)%inst
+    end if
 
   end function seq_comm_inst
 !---------------------------------------------------------

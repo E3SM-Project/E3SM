@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_Transfer - Routines for the MxN transfer of Attribute Vectors
@@ -26,7 +26,7 @@
   use m_AttrVect, only : nIAttr,nRAttr
   use m_AttrVect, only : Permute, Unpermute
   use m_AttrVect, only : AttrVect_init => init
-  use m_AttrVect, only : AttrVect_copy => copy 
+  use m_AttrVect, only : AttrVect_copy => copy
   use m_AttrVect, only : AttrVect_clean => clean
   use m_AttrVect, only : lsize
   use m_Router,   only : Router
@@ -83,8 +83,8 @@
 ! !IROUTINE: isend_ - Distributed non-blocking send of an Attribute Vector
 !
 ! !DESCRIPTION:
-! Send the the data in the {\tt AttrVect} {\tt aV} to the 
-! component specified in the {\tt Router} {\tt Rout}.  An error will 
+! Send the the data in the {\tt AttrVect} {\tt aV} to the
+! component specified in the {\tt Router} {\tt Rout}.  An error will
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
@@ -118,9 +118,9 @@
 ! 07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 ! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - First working code
 ! 18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to determine type in mpi_send
-! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to check "direction" of Router.  
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to check "direction" of Router.
 !           remove references to ThisMCTWorld%mylrank
-! 03Aug01 - E. Ong <eong@mcs.anl.gov> - Explicitly specify the starting address in mpi_send.  
+! 03Aug01 - E. Ong <eong@mcs.anl.gov> - Explicitly specify the starting address in mpi_send.
 ! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
 ! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order
 ! 26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
@@ -206,7 +206,7 @@
 
   ! Load data going to each processor
   do proc = 1,Rout%nprocs
-    
+
      j=1
      k=1
 
@@ -240,7 +240,7 @@
 	call MPI_ISEND(Rout%ip1(proc)%pi(1), &
 	     Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
 	     mytag,ThisMCTWorld%MCT_comm,Rout%ireqs(proc),ier)
-	   
+
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
 
      endif
@@ -249,7 +249,7 @@
      if(numr .ge. 1) then
 
        ! set tag
-       mytag = DefaultTag + 1 
+       mytag = DefaultTag + 1
        if(present(Tag)) mytag=Tag +1
 
 
@@ -340,8 +340,8 @@ end subroutine waitsend_
 ! !IROUTINE: send_ - Distributed blocking send of an Attribute Vector
 !
 ! !DESCRIPTION:
-! Send the the data in the {\tt AttrVect} {\tt aV} to the 
-! component specified in the {\tt Router} {\tt Rout}.  An error will 
+! Send the the data in the {\tt AttrVect} {\tt aV} to the
+! component specified in the {\tt Router} {\tt Rout}.  An error will
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
@@ -368,7 +368,7 @@ end subroutine waitsend_
 ! !INPUT PARAMETERS:
 !
 
-      Type(AttrVect),       intent(in)    :: aV	
+      Type(AttrVect),       intent(in)    :: aV
       Type(Router),         intent(inout) :: Rout
       integer,optional,     intent(in)    :: Tag
 
@@ -390,12 +390,12 @@ end subroutine send_
 ! !IROUTINE: irecv_ - Distributed receive of an Attribute Vector
 !
 ! !DESCRIPTION:
-! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the 
-! component specified in the {\tt Router} {\tt Rout}.  An error will 
+! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the
+! component specified in the {\tt Router} {\tt Rout}.  An error will
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Requires a corresponding {\tt send\_} or {\tt isend\_} to be called 
+! Requires a corresponding {\tt send\_} or {\tt isend\_} to be called
 ! on the other component.
 !
 ! The optional argument {\tt Tag} can be used to set the tag value used in
@@ -683,7 +683,7 @@ end subroutine irecv_
 	   enddo
 	  enddo
         endif
-	
+
      endif
 
   enddo
@@ -762,12 +762,12 @@ end subroutine waitrecv_
 ! !IROUTINE: recv_ - Distributed receive of an Attribute Vector
 !
 ! !DESCRIPTION:
-! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the 
-! component specified in the {\tt Router} {\tt Rout}.  An error will 
+! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the
+! component specified in the {\tt Router} {\tt Rout}.  An error will
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Requires a corresponding {\tt send\_} or {\tt isend\_}to be called 
+! Requires a corresponding {\tt send\_} or {\tt isend\_}to be called
 ! on the other component.
 !
 ! The optional argument {\tt Tag} can be used to set the tag value used in

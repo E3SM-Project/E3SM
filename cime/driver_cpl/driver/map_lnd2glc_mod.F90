@@ -22,7 +22,7 @@ module map_lnd2glc_mod
   use vertical_gradient_calculator_base, only : vertical_gradient_calculator_base_type
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
-  
+
   implicit none
   save
   private
@@ -40,7 +40,7 @@ module map_lnd2glc_mod
   private :: get_glc_elevation_classes ! get the elevation class of each point on the glc grid
   private :: map_bare_land             ! remap the field of interest for the bare land "elevation class"
   private :: map_one_elevation_class   ! remap the field of interest for one ice elevation class
-  
+
 contains
 
   !-----------------------------------------------------------------------
@@ -52,7 +52,7 @@ contains
     !
     ! Mapping is done with a multiplication by landfrac on the source grid, with
     ! normalization.
-    ! 
+    !
     ! Sets the given field within l2x_g, leaving the rest of l2x_g untouched.
     !
     ! Assumes that l2x_l contains fields like:
@@ -83,7 +83,7 @@ contains
     type(mct_aVect)  , intent(in)    :: landfrac_l ! lfrac field on the land grid
     type(mct_aVect)  , intent(in)    :: g2x_g      ! glc -> cpl fields on the glc grid
     character(len=*) , intent(in)    :: fieldname  ! name of the field to map
-    class(vertical_gradient_calculator_base_type), intent(in) :: gradient_calculator
+    class(vertical_gradient_calculator_base_type), intent(inout) :: gradient_calculator
     type(seq_map)    , intent(inout) :: mapper
     type(mct_aVect)  , intent(inout) :: l2x_g      ! lnd -> cpl fields on the glc grid
     !
@@ -101,7 +101,7 @@ contains
     ! data for one elevation class on the GLC grid
     ! needs to be a pointer to satisfy the MCT interface
     real(r8), pointer :: data_g_oneEC(:)
-    
+
     ! final data on the GLC grid
     ! needs to be a pointer to satisfy the MCT interface
     real(r8), pointer :: data_g(:)
@@ -146,13 +146,13 @@ contains
 
     allocate(glc_elevclass(lsize_g))
     call get_glc_elevation_classes(glc_ice_covered, glc_topo, glc_elevclass)
-    
+
     ! ------------------------------------------------------------------------
     ! Map elevation class 0 (bare land)
     ! ------------------------------------------------------------------------
 
     call map_bare_land(l2x_l, landfrac_l, fieldname_trimmed, mapper, data_g_oneEC)
-    
+
     ! Start by setting the output data equal to the bare land value everywhere; this will
     ! later get overwritten in places where we have ice
     !
@@ -162,11 +162,12 @@ contains
     ! notes that this could lead to a loss of conservation). Figure out how to handle
     ! this case.
     data_g(:) = data_g_oneEC(:)
-    
+
     ! ------------------------------------------------------------------------
     ! Map ice elevation classes
     ! ------------------------------------------------------------------------
 
+    call gradient_calculator%calc_gradients()
     do elevclass = 1, glc_get_num_elevation_classes()
        call map_one_elevation_class(l2x_l, landfrac_l, fieldname_trimmed, elevclass, &
             gradient_calculator, glc_topo, mapper, data_g_oneEC)
@@ -181,7 +182,7 @@ contains
     ! ------------------------------------------------------------------------
 
     call mct_aVect_importRattr(l2x_g, fieldname_trimmed, data_g)
-    
+
     ! ------------------------------------------------------------------------
     ! Clean up
     ! ------------------------------------------------------------------------
@@ -191,7 +192,7 @@ contains
     deallocate(glc_ice_covered)
     deallocate(glc_topo)
     deallocate(glc_elevclass)
-    
+
   end subroutine map_lnd2glc
 
   !-----------------------------------------------------------------------
@@ -218,7 +219,7 @@ contains
 
     ! Tolerance for checking whether ice_covered is 0 or 1
     real(r8), parameter :: ice_covered_tol = 1.e-13
-    
+
     character(len=*), parameter :: subname = 'get_glc_elevation_classes'
     !-----------------------------------------------------------------------
 
@@ -256,7 +257,7 @@ contains
           call shr_sys_abort(subname//': ERROR: glc_ice_covered must be 0 or 1')
        end if
     end do
-       
+
   end subroutine get_glc_elevation_classes
 
   !-----------------------------------------------------------------------
@@ -275,19 +276,19 @@ contains
     type(mct_aVect)  , intent(in)    :: landfrac_l ! lfrac field on the land grid
     character(len=*) , intent(in)    :: fieldname  ! name of the field to map (should have NO trailing blanks)
     type(seq_map)    , intent(inout) :: mapper
-    real(r8), pointer, intent(out)   :: data_g_bare_land(:)
+    real(r8), pointer, intent(inout) :: data_g_bare_land(:)
     !
     ! !LOCAL VARIABLES:
     character(len=:), allocatable :: elevclass_as_string
     character(len=:), allocatable :: fieldname_bare_land
     integer :: lsize_g  ! number of points for attribute vectors on the glc grid
     type(mct_aVect) :: l2x_g_bare_land  ! temporary attribute vector holding the remapped field for bare land
-    
+
     character(len=*), parameter :: subname = 'map_bare_land'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT(associated(data_g_bare_land), errMsg(__FILE__, __LINE__))
-    
+
     lsize_g = size(data_g_bare_land)
     elevclass_as_string = glc_elevclass_as_string(0)
     fieldname_bare_land = fieldname // elevclass_as_string
@@ -301,7 +302,7 @@ contains
     call mct_aVect_exportRattr(l2x_g_bare_land, fieldname_bare_land, data_g_bare_land)
 
     call mct_aVect_clean(l2x_g_bare_land)
-    
+
   end subroutine map_bare_land
 
 
@@ -321,7 +322,7 @@ contains
     !   data_l + (vertical_gradient_l) * (topo_g - topo_l)
     !
     ! (where _l denotes quantities on the land grid, _g on the glc grid)
-    ! 
+    !
     ! However, in order to do the remapping with existing routines, we do this by
     ! performing two separate remappings:
     !
@@ -332,7 +333,7 @@ contains
     !   (2) Remap vertical_gradient_l; put result in vertical_gradient_g
     !
     ! Then data_g = partial_remap_g + topo_g * vertical_gradient_g
-    ! 
+    !
     ! !USES:
     !
     ! !ARGUMENTS:
@@ -355,7 +356,7 @@ contains
 
     ! Base name for the topo fields in l2x_l. Actual fields will have an elevation class suffix.
     character(len=*), parameter :: toponame = 'Sl_topo'
-    
+
     character(len=:), allocatable :: elevclass_as_string
     character(len=:), allocatable :: fieldname_ec
     character(len=:), allocatable :: toponame_ec
@@ -373,17 +374,17 @@ contains
     ! Temporary fields on the glc grid:
     real(r8), pointer :: vertical_gradient_g(:)
     real(r8), pointer :: partial_remap_g(:)
-    
+
     character(len=*), parameter :: subname = 'map_one_elevation_class'
     !-----------------------------------------------------------------------
 
     lsize_g = size(data_g_thisEC)
     SHR_ASSERT((size(topo_g) == lsize_g), errMsg(__FILE__, __LINE__))
-    
+
     ! ------------------------------------------------------------------------
     ! Create temporary attribute vectors
     ! ------------------------------------------------------------------------
-    
+
     lsize_l = mct_aVect_lsize(l2x_l)
     call mct_aVect_init(l2x_l_temp, rList = attr_tags, lsize = lsize_l)
     call mct_aVect_init(l2x_g_temp, rList = attr_tags, lsize = lsize_g)
@@ -403,7 +404,7 @@ contains
 
     call mct_aVect_exportRattr(l2x_l, fieldname_ec, data_l)
     call mct_aVect_exportRattr(l2x_l, toponame_ec, topo_l)
-    call gradient_calculator%calc_vertical_gradient(elevclass, vertical_gradient_l)
+    call gradient_calculator%get_gradients_one_class(elevclass, vertical_gradient_l)
     partial_remap_l = data_l - (vertical_gradient_l * topo_l)
 
     call mct_aVect_importRattr(l2x_l_temp, partial_remap_tag, partial_remap_l)
@@ -424,16 +425,16 @@ contains
 
     allocate(partial_remap_g(lsize_g))
     allocate(vertical_gradient_g(lsize_g))
-    
+
     call mct_aVect_exportRattr(l2x_g_temp, partial_remap_tag, partial_remap_g)
     call mct_aVect_exportRattr(l2x_g_temp, vertical_gradient_tag, vertical_gradient_g)
 
     data_g_thisEC = partial_remap_g + (topo_g * vertical_gradient_g)
-    
+
     ! ------------------------------------------------------------------------
     ! Clean up
     ! ------------------------------------------------------------------------
-    
+
     call mct_aVect_clean(l2x_g_temp)
     call mct_aVect_clean(l2x_l_temp)
     deallocate(data_l)
@@ -442,7 +443,7 @@ contains
     deallocate(partial_remap_l)
     deallocate(vertical_gradient_g)
     deallocate(partial_remap_g)
-    
+
   end subroutine map_one_elevation_class
 
 

@@ -143,22 +143,28 @@ IF (${ENABLE_NANOTIMERS})
     ADD_DEFINITIONS(-DBIT64)
   ENDIF ()
 ENDIF ()
+ADD_SUBDIRECTORY(utils/cime/share/timing)
 
-# Use ccsm_utils FindNETCDF path
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cime/externals/CMake" ${CMAKE_MODULE_PATH})
+
+# Use CIME's FindNETCDF path
+# CMAKE_CURRENT_SOURCE_DIR == homme
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/externals/CMake" ${CMAKE_MODULE_PATH})
 FIND_PACKAGE(NETCDF)
+
+# pio needs cime/externals/genf90/genf90.pl
+SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/externals/genf90)
+
 # For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
 IF (HDF5_DIR)
   SET(ENV{HDF5_ROOT} ${HDF5_DIR})
 ENDIF ()
-ADD_SUBDIRECTORY(utils/pio)
+ADD_SUBDIRECTORY(utils/cime/externals/pio1)
 
 # CPRNC locations
-SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cprnc)
-SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cprnc/cprnc)
-ADD_SUBDIRECTORY(utils/cprnc)
+SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
+SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
 
-ADD_SUBDIRECTORY(utils/timing)
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})

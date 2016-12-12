@@ -7,9 +7,9 @@ cd $CASEROOT
 
 touch cice_perf.out
 
-./xmlchange -file env_run.xml   -id CONTINUE_RUN      -val FALSE
-./xmlchange -file env_run.xml   -id REST_OPTION       -val none
-./xmlchange -file env_build.xml -id CICE_AUTO_DECOMP  -val false
+./xmlchange --file env_run.xml   --id CONTINUE_RUN      --val FALSE
+./xmlchange --file env_run.xml   --id REST_OPTION       --val none
+./xmlchange --file env_build.xml --id CICE_AUTO_DECOMP  --val false
 
 cat >! user_nl_cice.mhT <<EOF
 maskhalo_bound = .true.
@@ -43,27 +43,27 @@ while ($cnt < $cntmax && $found == 1)
 
   if (-e env_build.xml.${acnt}) then
     cp -f env_build.xml.${acnt} env_build.xml
-    cp -f env_build.xml LockedFiles/env_build.xml.locked
-    cp -f $EXEROOT/cesm.exe.${acnt} $EXEROOT/cesm.exe
+    cp -f env_build.xml LockedFiles/env_build.xml
+    cp -f $EXEROOT/${CIME_MODEL}.exe.${acnt} $EXEROOT/${CIME_MODEL}.exe
 
     foreach maskhalo (T F)
       cd $CASEROOT
       cp -f user_nl_cice.mh${maskhalo} user_nl_cice
 
-      ./$CASE.run
+      ./case.run
       if ($status != 0) then
-	  echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+	  echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
 	  exit -1
       endif
 
-      set ICE_GRID		= `./xmlquery ICE_GRID			-value`
-      set CICE_BLCKX		= `./xmlquery CICE_BLCKX		-value`
-      set CICE_BLCKY		= `./xmlquery CICE_BLCKY		-value`
-      set CICE_MXBLCKS	        = `./xmlquery CICE_MXBLCKS		-value`
-      set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		-value `  
-      set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	-value `  
-      set NTASKS_ICE		= `./xmlquery NTASKS_ICE		-value`
-      set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		-value`
+      set ICE_GRID		= `./xmlquery ICE_GRID			--value`
+      set CICE_BLCKX		= `./xmlquery CICE_BLCKX		--value`
+      set CICE_BLCKY		= `./xmlquery CICE_BLCKY		--value`
+      set CICE_MXBLCKS	        = `./xmlquery CICE_MXBLCKS		--value`
+      set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		--value `
+      set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	--value `
+      set NTASKS_ICE		= `./xmlquery NTASKS_ICE		--value`
+      set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		--value`
 
       set LID = `ls -1t $RUNDIR/cpl.log* | head -1 | sed 's/.*cpl.log.//' | sed 's/.gz//' `
       @ ice_pes = ${NTASKS_ICE} * ${NTHRDS_ICE}
@@ -87,10 +87,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

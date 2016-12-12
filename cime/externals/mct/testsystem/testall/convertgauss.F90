@@ -8,7 +8,7 @@
 !     CVS:$Id: convertgauss.F90,v 1.3 2002-11-14 17:11:07 eong Exp $
 !     CVS $Name:  $
 !
-!     Copyright (c) 1997, 1998 the Regents of the University of 
+!     Copyright (c) 1997, 1998 the Regents of the University of
 !       California.
 !
 !     Unless otherwise indicated, this software has been authored
@@ -52,7 +52,7 @@
 !
 !-----------------------------------------------------------------------
 
-      type(GeneralGrid),       intent(out) :: GGrid 
+      type(GeneralGrid),       intent(out) :: GGrid
       integer,                 intent(in) :: nx
       integer,                 intent(in) :: ny
 
@@ -75,7 +75,7 @@
                    grid_imask
 
       real, dimension(:), allocatable :: &
-	           grid_area      ,  & ! area weights        
+	           grid_area      ,  & ! area weights
                    grid_center_lat,  & ! lat/lon coordinates for
                    grid_center_lon     ! each grid center in degrees
 
@@ -89,8 +89,8 @@
 !     defined constants
 !
 !-----------------------------------------------------------------------
-      
-      real, parameter ::            & 
+
+      real, parameter ::            &
             zero   = 0.0,           &
             one    = 1.0,           &
             two    = 2.0,           &
@@ -143,11 +143,11 @@
                grid_corner_lat(grid_corners,grid_size), &
 	       grid_corner_lon(grid_corners,grid_size), stat=ier)
 
-      if(ier/=0) call die(myname_,"allocate(grid_imask... ", ier) 
+      if(ier/=0) call die(myname_,"allocate(grid_imask... ", ier)
 
       grid_dims(1) = nx
       grid_dims(2) = ny
-      
+
       dlon = 360./nx
 
       do i=1,nx
@@ -181,7 +181,7 @@
 
 !-----------------------------------------------------------------------
 !
-!     compute latitudes at cell centers and corners.  set up alat 
+!     compute latitudes at cell centers and corners.  set up alat
 !     array for search routine.
 !
 !-----------------------------------------------------------------------
@@ -244,7 +244,7 @@
 !				     &grid_corner_lon_1:&
 !				     &grid_corner_lon_2:&
 !				     &grid_corner_lon_3:&
-!				     &grid_corner_lon_4", &	 
+!				     &grid_corner_lon_4", &
 !	                  IndexChars="grid_imask", &
 !                          lsize=grid_size)
 
@@ -276,7 +276,7 @@
 				     &grid_corner_lon_1:&
 				     &grid_corner_lon_2:&
 				     &grid_corner_lon_3:&
-				     &grid_corner_lon_4", &	 
+				     &grid_corner_lon_4", &
 				     IndexChars="grid_imask", &
 				     nDims=2, nPoints=grid_size, &
 				     PointData=PointData)
@@ -290,8 +290,8 @@
 
 !      center_lat = MCT_GGrid_indexRA(GGrid,'grid_center_lat')
 !      center_lon = MCT_GGrid_indexRA(GGrid,'grid_center_lon')
-      corner_lat = MCT_GGrid_indexRA(GGrid,'grid_corner_lat_1') 
-      corner_lon = MCT_GGrid_indexRA(GGrid,'grid_corner_lon_1') 
+      corner_lat = MCT_GGrid_indexRA(GGrid,'grid_corner_lat_1')
+      corner_lon = MCT_GGrid_indexRA(GGrid,'grid_corner_lon_1')
       area       = MCT_GGrid_indexRA(GGrid,'grid_area')
       imask      = MCT_GGrid_indexIA(GGrid,'grid_imask')
 
@@ -310,14 +310,14 @@
 	 GGrid%data%rattr(corner_lon+p-1,1:grid_size) = &
 	   grid_corner_lon(p,1:grid_size)
       enddo
-      
+
       deallocate(grid_imask, grid_area,            &
 	         grid_center_lat, grid_center_lon, &
 		 grid_corner_lat, grid_corner_lon, &
 		 stat=ier)
 
-      if(ier/=0) call die(myname_,"deallocate(grid_imask... ", ier) 
-      
+      if(ier/=0) call die(myname_,"deallocate(grid_imask... ", ier)
+
 
 !-----------------------------------------------------------------------
 
@@ -329,11 +329,11 @@
 
 !-----------------------------------------------------------------------
 !
-!     This subroutine finds the l roots (in theta) and gaussian weights 
+!     This subroutine finds the l roots (in theta) and gaussian weights
 !     associated with the legendre polynomial of degree l > 1.
 !
 !-----------------------------------------------------------------------
- 
+
       use m_die
 
       implicit none
@@ -360,7 +360,7 @@
 !
 !-----------------------------------------------------------------------
 
-      real, parameter ::            & 
+      real, parameter ::            &
 	    zero   = 0.0,           &
 	    one    = 1.0,           &
 	    two    = 2.0,           &
@@ -385,7 +385,7 @@
 
       real :: del,co,p1,p2,p3,t1,t2,slope,s,c,pp1,pp2,p00
 
-!-----MUST adjust tolerance for newton convergence-----!    
+!-----MUST adjust tolerance for newton convergence-----!
 
       ! Modify tolerance level to the precision of the real numbers:
       ! Increase for lower precision, decrease for higher precision.

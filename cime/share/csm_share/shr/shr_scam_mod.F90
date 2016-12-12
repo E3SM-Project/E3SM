@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: 
-! SVN $URL: 
+! SVN $Id:
+! SVN $URL:
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -8,10 +8,10 @@
 !
 ! !DESCRIPTION:
 !    Routines needed by drv or several component models for running in single column mode
-! 
+!
 ! !REVISION HISTORY:
 !    2010 Nov 05 - E. Kluzek ---- add PIO and file interfaces for getCloseLatLon
-!    2007 Sep 14 - B. Kauffman  - svn checkin 
+!    2007 Sep 14 - B. Kauffman  - svn checkin
 !    2007 Aug 29 - J. Truesdale - first version
 !
 ! !INTERFACE: ------------------------------------------------------------------
@@ -60,7 +60,7 @@ module shr_scam_mod
 
 ! !PRIVATE DATA MEMBERS:
 
-   save	
+   save
 
 !===============================================================================
 CONTAINS
@@ -282,7 +282,7 @@ end subroutine shr_scam_getCloseLatLonNC
 ! !IROUTINE: shr_scam_getCloseLatLonPIO
 !
 ! !DESCRIPTION:
-!    routine to search in netcdf file and return lat and lon point/index 
+!    routine to search in netcdf file and return lat and lon point/index
 !    closest to target point using PIO.
 !
 ! !REVISION HISTORY:
@@ -578,8 +578,8 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
 ! !INPUT/OUTPUT PARAMETERS:
 
    real(R8),                     intent(in)  :: scmlon,scmlat ! single column lat lon
-   integer(IN),                  intent(in)  :: ocn_compid   ! id for ocean model  
-   integer(IN),                  intent(in)  :: ocn_mpicom   ! mpi communicator for ocean  
+   integer(IN),                  intent(in)  :: ocn_compid   ! id for ocean model
+   integer(IN),                  intent(in)  :: ocn_mpicom   ! mpi communicator for ocean
    logical,            optional, intent(inout) :: lnd_present  ! land point
    logical,            optional, intent(inout) :: sno_present  ! land doing sno
    logical,            optional, intent(inout) :: ice_present  ! ice point
@@ -616,9 +616,9 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
 
    !----- formats -----
    character(*),parameter :: subname = "(shr_scam_checkSurface) "
-   character(*),parameter :: F00   = "('(shr_scam_checkSurface) ',8a)" 
+   character(*),parameter :: F00   = "('(shr_scam_checkSurface) ',8a)"
    character(len=CL)      :: decomp = '1d' ! restart pointer file
-   character(len=CL)      :: restfilm = 'unset' 
+   character(len=CL)      :: restfilm = 'unset'
    character(len=CL)      :: restfils = 'unset'
    character(len=CL)      :: ocn_in = 'unset'
    integer(IN)   :: nfrac
@@ -657,7 +657,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
       if (s_loglev > 0) write(s_logunit,F00) 'opened netCDF data file: ',trim(focndomain)
 
       !--- Extract the fraction for current column ---
-   
+
       call shr_scam_getCloseLatLon(ncid_ocn,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
       rcode = nf90_inq_varid(ncid_ocn, 'frac', fracid)
       if (rcode /= nf90_noerr) then
@@ -687,8 +687,8 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
       close( unitn )
       call shr_file_freeUnit(unitn)
       call shr_strdata_readnml(SCAMSDAT,ocn_in)
-      call shr_dmodel_readgrid(SCAMSDAT%grid,SCAMSDAT%gsmap,SCAMSDAT%nxg,SCAMSDAT%nyg, &
-           SCAMSDAT%domainfile, ocn_compid, ocn_mpicom, '1d', readfrac=.true., &
+      call shr_dmodel_readgrid(SCAMSDAT%grid,SCAMSDAT%gsmap,SCAMSDAT%nxg,SCAMSDAT%nyg,SCAMSDAT%nzg, &
+           SCAMSDAT%domainfile, ocn_compid, ocn_mpicom, '2d1d', readfrac=.true., &
            scmmode=.true.,scmlon=scmlon,scmlat=scmlat)
       nfrac = mct_aVect_indexRA(SCAMSDAT%grid%data,'frac')
 
@@ -739,7 +739,7 @@ logical function is_latlon( var_name, latitude, varnotdim )
     character(len=*), intent(in) :: var_name  ! Input variable name
     logical,          intent(in) :: latitude  ! Flag, true if you want a latitude variable
                                               ! if false check for longitude
-    logical,          intent(in) :: varnotdim ! Flag, true if this is a variable 
+    logical,          intent(in) :: varnotdim ! Flag, true if this is a variable
                                               ! and NOT a dimension
 !EOP
 
@@ -887,7 +887,7 @@ subroutine get_close( targetlon, targetlat, nlon, lons, nlat, lats, closelonidx,
 !EOP
 
    !----- local variables -----
-   real   (R8),allocatable  :: poslons(:) 
+   real   (R8),allocatable  :: poslons(:)
    real   (R8)              :: postargetlon
    character(*),parameter :: subname = "(shr_scam_getclose) "
 !-------------------------------------------------------------------------------

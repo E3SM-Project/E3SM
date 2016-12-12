@@ -51,7 +51,7 @@ FC_FUNC( mpi_group_range_incl, MPI_GROUP_RANGE_INCL )
 {
   *ierror= MPI_Group_range_incl(*group, *n, ranges, newgroup);
 }
-  
+
 
 int MPI_Group_range_incl(MPI_Group group, int n, int ranges[][3],
 			 MPI_Group *newgroup)
@@ -100,7 +100,7 @@ int MPI_Group_union(MPI_Group group1, MPI_Group group2, MPI_Group *newgroup)
       fprintf(stderr,"MPI_Group_union: null group passed in\n");
       abort();
     }
-  
+
   if (group1==MPI_GROUP_ONE || group2==MPI_GROUP_ONE)
     *newgroup=MPI_GROUP_ONE;
   else
@@ -131,7 +131,7 @@ int MPI_Group_intersection(MPI_Group group1, MPI_Group group2,
       fprintf(stderr,"MPI_Group_intersection: null group passed in\n");
       abort();
     }
-  
+
   if (group1==MPI_GROUP_ONE && group2==MPI_GROUP_ONE)
     *newgroup=MPI_GROUP_ONE;
   else
@@ -163,7 +163,7 @@ int MPI_Group_difference(MPI_Group group1, MPI_Group group2,
       fprintf(stderr,"MPI_Group_intersection: null group passed in\n");
       abort();
     }
-  
+
   if (group1==MPI_GROUP_EMPTY || group2==MPI_GROUP_ONE)
     *newgroup=MPI_GROUP_EMPTY;
   else
@@ -222,7 +222,7 @@ int MPI_Group_translate_ranks(MPI_Group group1, int n, int *ranks1,
     {
       fprintf(stderr,"MPI_Group_translate_ranks: empty input group\n");
       abort();
-    }    
+    }
 
   for (i=0; i<n; i++)
     {
@@ -238,7 +238,7 @@ int MPI_Group_translate_ranks(MPI_Group group1, int n, int *ranks1,
       else
 	ranks2[i]=MPI_UNDEFINED;
     }
-      
+
 
   return(MPI_SUCCESS);
 

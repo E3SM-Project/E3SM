@@ -9,10 +9,10 @@
 	var search_help_text = false;
 	var num_matches = 0;
 	var is_boolean_and = true;
-                
+
 	search_help_text = (document.getElementById('search_help_text').checked);
 	is_boolean_and = (document.getElementById('logical_operator_and').checked);
-                
+
 	if (filter_text.indexOf(' ') == -1) {
 	    search_type = 'regexp';
 	    var re = new RegExp(filter_text, 'i')
@@ -21,12 +21,12 @@
 	    search_type = 'string';
 	    var string_parts = filter_text.split(' ');
 	}
-                
+
 	allTRs = document.getElementsByTagName('tr');
-                
+
 	for (var i = 0; i < allTRs.length; i++) {
 	    curTR = allTRs[i];
-                    
+
 	    if (curTR.id != '') {
 
 		if (search_type == 'regexp') {
@@ -65,7 +65,7 @@
 
 		    if (search_help_text) {
 			var helpText = document.getElementById(curTR.id.substring(0,curTR.id.length - 3) + '_help').innerHTML;
-                                
+
 			if (is_boolean_and) {
 			    var is_help_match = true;
 
@@ -108,11 +108,11 @@
 		}
 	    }
 	}
-                
+
 	var filter_matches = document.getElementById('filter_matches');
 	var filter_matches_num = document.getElementById('filter_matches_num');
 	var filter_matches_query = document.getElementById('filter_matches_query');
-                
+
 	if (filter_text != '') {
 	    filter_matches.style.visibility = 'visible';
 	    filter_matches_num.innerHTML = num_matches;
@@ -121,13 +121,13 @@
 	else {
 	    filter_matches.style.visibility = 'hidden';
 	}
-                
+
     } // end function applyFilter()
-            
+
     function clearFilter() {
 
 	allTRs = document.getElementsByTagName('tr');
-                
+
 	for (var i = 0; i < allTRs.length; i++) {
 	    curTR = allTRs[i];
 	    if (curTR.id != '') {
@@ -136,19 +136,19 @@
 
 	    }
 	}
-                
+
 	var filter_matches = document.getElementById('filter_matches');
 	filter_matches.style.visibility = 'hidden';
-                
+
 	document.getElementById('filter_text').value = '';
     }
-            
+
     function expandAllHelp() {
 
 	// expand help text for all visible elements
-	
+
 	allTRs = document.getElementsByTagName('tr');
-	
+
 	for (var i = 0; i < allTRs.length; i++) {
 	    curTR = allTRs[i];
 	    if (curTR.id != '' && curTR.style.display != 'none') {
@@ -161,9 +161,9 @@
     function collapseAllHelp() {
 
 	// collapse help text for all visible elements
-	
+
 	allTRs = document.getElementsByTagName('tr');
-	
+
 	for (var i = 0; i < allTRs.length; i++) {
 	    curTR = allTRs[i];
 	    if (curTR.id != '' && curTR.style.display != 'none') {
@@ -178,30 +178,30 @@
 	// check for the existence of the help "tr" object for this standard_name
 
         var helpDiv = document.getElementById(standard_name + '_help');
-                
+
 	if (helpDiv) {
 
 	    if (helpDiv.style.display != 'none') {
 
 		helpDiv.style.display = 'none';
-                        
+
 		curArrow = document.getElementById(standard_name + '_arrow');
 		curArrow.src = "./images/arrow_right.gif";
 	    }
 	    else {
 		helpDiv.style.display = '';
-                        
+
 		curArrow = document.getElementById(standard_name + '_arrow');
 		curArrow.src = "./images/arrow_down.gif";
 	    }
 	}
     }
-            
-            
+
+
     function showHelp(standard_name) {
 
 	var helpDiv = document.getElementById(standard_name + '_help');
-                
+
 	if (helpDiv) {
 
 	    helpDiv.style.display = '';
@@ -209,15 +209,15 @@
 	    curArrow.src = "./images/arrow_down.gif";
 	}
     }
-            
+
     function hideHelp(standard_name) {
 
 	var helpDiv = document.getElementById(standard_name + '_help');
-                
+
 	if (helpDiv) {
 	    helpDiv.style.display = 'none';
 	    curArrow = document.getElementById(standard_name + '_arrow');
 	    curArrow.src = "./images/arrow_right.gif";
 	}
     }
-            
+

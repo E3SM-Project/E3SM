@@ -4,24 +4,24 @@
 ]>
 
 <style-specification id="html" use="html-stylesheet">
-<style-specification-body> 
+<style-specification-body>
 
 ;;Default extension for filenames
 (define %html-ext% ".html")
 ;;What font would you like for the body?
-(define %body-font-family% 
+(define %body-font-family%
  "Arial")
 
 (element emphasis
 (if (equal? (normalize "bold") (attribute-string (normalize "role")))
-    ($bold-seq$)                                                     
+    ($bold-seq$)
     ($italic-seq$)))
 
 (element tgroup
   (let* ((wrapper   (parent (current-node)))
 	  (frameattr (attribute-string (normalize "frame") wrapper))
 	   (pgwide    (attribute-string (normalize "pgwide") wrapper))
-	    (footnotes (select-elements (descendants (current-node)) 
+	    (footnotes (select-elements (descendants (current-node))
 					     (normalize "footnote")))
 	     (border (if (equal? frameattr (normalize "none"))
 			      '(("BORDER" "0"))
@@ -50,7 +50,7 @@
 
 
 ;;Should verbatim items be 'shaded' with a table?
-(define %shade-verbatim% 
+(define %shade-verbatim%
  #t)
 
 ;;Define shade-verbatim attributes
