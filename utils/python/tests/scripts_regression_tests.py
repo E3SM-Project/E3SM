@@ -206,6 +206,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             contents = fd.read()
             self.assertTrue("a different cpl test option" in contents, msg="User_mods contents of user_nl_cpl missing")
             self.assertTrue("a cpl namelist option" in contents, msg="User_mods contents of user_nl_cpl missing")
+        self._do_teardown.append(testdir)
 
     def test_c_create_clone_keepexe(self):
         testdir = os.path.join(self._testroot, 'test_create_clone_keepexe')
@@ -217,7 +218,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s --keepexe" %
                               (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
 
-        self._do_teardown.append(prevtestdir)
         self._do_teardown.append(testdir)
 
     def test_d_create_clone_new_user(self):
@@ -237,7 +237,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s" %
                               (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
 
-        self._do_teardown.append(prevtestdir)
         self._do_teardown.append(testdir)
         self._do_teardown.append(self._testroot)
 
