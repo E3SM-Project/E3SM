@@ -45,7 +45,6 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     datm_co2_tseries = case.get_value("DATM_CO2_TSERIES")
     atm_grid = case.get_value("ATM_GRID")
     grid = case.get_value("GRID")
-    print "DEBUG: grid is ",grid
     clm_usrdat_name = case.get_value("CLM_USRDAT_NAME")
 
     #----------------------------------------------------
