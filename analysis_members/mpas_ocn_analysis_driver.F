@@ -608,10 +608,8 @@ contains
                                              forceWriteNow=.true., ierr=err_tmp)
                end if
                if (.not. config_AM_compute_on_startup) then
-#ifdef MPAS_DEBUG
                   write(stderrUnit, *) ' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
                     // poolItr % memberName(1:nameLength) // '.'
-#endif
                end if
             end if
          end if
@@ -889,12 +887,10 @@ contains
                call mpas_timer_start(timerName)
 
                if ( associated(config_AM_backwardOffset) ) then
-#ifdef MPAS_DEBUG
                   if ( associated(config_AM_forwardOffset) ) then
                      write(stderrUnit, *) 'WARNING: Both backward and forward offsets are set for AM ' // poolItr % memberName(1:nameLength)
                      write(stderrUnit, *) '         will only use backward offset. Forward offset will be ignored.'
                   end if
-#endif
                   call mpas_set_timeinterval(offsetInt, timeString=config_AM_backwardOffset, ierr=err_tmp)
                   outputTime = nowTime - offsetInt
                   call mpas_get_time(outputTime, dateTimeString=outputTimeString, ierr=err_tmp)
