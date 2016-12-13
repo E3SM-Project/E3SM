@@ -9,7 +9,6 @@ module column_model_mod
   use hybrid_mod,      only : hybrid_t
   use kinds,           only : real_kind, int_kind
   use time_mod,        only : TimeLevel_t
-  use physics_mod,     only : Specific_Humidity, Saturation_Specific_Humidity, getsurfpress, Temp2PotTemp
   use dimensions_mod,  only : nlev, nlevp, np, qsize, nelemd
   use control_mod,     only : integration, columnpackage, test_case
   use held_suarez_mod, only : hs_forcing
