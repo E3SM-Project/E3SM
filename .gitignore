@@ -30,9 +30,10 @@ restart_timestamp
 *.info
 *.info.part.*
 
-# Error and Output log files
+# Error, Output, and Abort log files
 *.out
 *.err
+*.abort
 
 # Text files (For statistical output from ocean model)
 *.txt
