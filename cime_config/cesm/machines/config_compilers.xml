@@ -985,13 +985,13 @@ using a fortran linker.
 
 <compiler MACH="yellowstone" COMPILER="intel">
   <CFLAGS>
-    <append MPILIB="mpich2">  -xHost </append>
+    <append MPILIB="mpich2">  -xAVX </append>
   </CFLAGS>
   <CPPDEFS>
     <append MPILIB="mpich2"> -DINTEL_MKL -DHAVE_SSE2 </append>
   </CPPDEFS>
   <FFLAGS>
-    <append MPILIB="mpich2">  -xHost </append>
+    <append MPILIB="mpich2">  -xAVX </append>
   </FFLAGS>
   <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
   <PAPI_INC MPILIB="mpich2"> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>

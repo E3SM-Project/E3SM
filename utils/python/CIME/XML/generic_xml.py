@@ -71,7 +71,7 @@ class GenericXML(object):
 
         logger.debug("write: " + outfile)
 
-        xmlout = self.get_raw_record()
+        xmlstr = self.get_raw_record()
 
         # xmllint provides a better format option for the output file
         xmllint = find_executable("xmllint")
