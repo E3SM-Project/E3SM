@@ -1,4 +1,4 @@
-# macro for building PREQx primitive equations executable
+# macro for building thetah primitive equations executable
 
 macro(thetah_setup)
 
@@ -119,6 +119,9 @@ IF (NOT THETAH_USE_PIO)
 ENDIF ()
 IF (NOT THETAH_USE_ENERGY)
   SET (THETAH_USE_ENERGY FALSE) 
+ENDIF ()
+IF (NOT THETAH_NC)
+  SET (THETAH_NC 0)
 ENDIF ()
 IF (NOT QSIZE_D)
   SET (QSIZE_D 4)
