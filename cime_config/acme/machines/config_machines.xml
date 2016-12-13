@@ -915,7 +915,7 @@
          <COMPILERS>gnu,intel,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/group/acme/$USER/acme_scratch</CESMSCRATCHROOT>
-	 <SAVE_TIMING_DIR>/lcrc/project/$PROJECT</SAVE_TIMING_DIR>
+	 <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
 	 <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
 	 <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
