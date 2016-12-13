@@ -64,7 +64,7 @@
 
     <model_grid alias="1x1_numaIA" compset="DATM.+CLM">
       <grid name="atm">1x1_numaIA</grid>
-      <grid name="lnd">1x1</grid>
+      <grid name="lnd">1x1_numaIA</grid>
     </model_grid>
 
     <model_grid alias="1x1_brazil" compset="DATM.+CLM">
