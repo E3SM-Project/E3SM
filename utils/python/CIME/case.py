@@ -152,10 +152,10 @@ class Case(object):
         self._env_entryid_files.append(EnvBuild(self._caseroot))
         self._env_entryid_files.append(EnvMachPes(self._caseroot))
         self._env_entryid_files.append(EnvCase(self._caseroot))
-        self._env_entryid_files.append(EnvBatch(self._caseroot))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
             self._env_entryid_files.append(EnvTest(self._caseroot))
         self._env_generic_files = []
+        self._env_generic_files.append(EnvBatch(self._caseroot))
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
         self._env_generic_files.append(EnvArchive(self._caseroot))
         self._files = self._env_entryid_files + self._env_generic_files
@@ -285,16 +285,18 @@ class Case(object):
                     elif field == "desc":
                         result += env_file._get_description(root)
                     elif field == "varid":
-                        result += root.get("id")+","
+                        if result:
+                            result += ","
+                        result += root.get("id")
                     elif field == "group":
                         result += env_file._get_group(root)
-        if result is None:
-            for env_file in self._env_generic_files:
-                roots = env_file.get_nodes(variable)
-                for root in roots:
-                    if root is not None:
-                        if field == "raw":
-                            result += env_file.get_raw_record(root)
+#        if result is None:
+#            for env_file in self._env_generic_files:
+#                roots = env_file.get_nodes(variable)
+#                for root in roots:
+#                    if root is not None:
+#                        if field == "raw":
+#                            result += env_file.get_raw_record(root)
 
 
         return result

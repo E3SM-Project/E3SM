@@ -47,7 +47,7 @@ def parse_command_line(args):
                         help="Case directory to build")
 
     parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
-                        help="List all attributes and their values")
+                        help="List all variables and their values")
 
     parser.add_argument("-no-resolve", "--no-resolve", action="store_true",
                         help="Do not resolve variable values")
@@ -82,6 +82,7 @@ def parse_command_line(args):
     else:
         variables = args.variables
 
+
     return variables, args.file, args.caseroot, args.listall, args.fileonly, \
         args.value, args.no_resolve, args.raw, args.description, args.group
 
@@ -92,19 +93,21 @@ def xmlquery(case, variables=[], listall=False, fileonly=False, value=False,
 
     """
     results = {}
-    if listall:
-        variables = case.get_record_field(None, "varid").split(",")
 
     for var in variables:
-        results[var] = {}
+        group = case.get_record_field(var, "group")
+        if not group in results:
+            results[group] = {}
+        if not var in results[group]:
+            results[group][var] = {}
+        expect(group, "No group found for var %s"% var)
+
         if raw:
-            results[var]['raw'] = case.get_record_field(var, "raw")
+            results[group][var]['raw'] = case.get_record_field(var, "raw")
         elif description:
-            results[var]['desc'] = case.get_record_field(var, "desc")
-        elif group:
-            results[var]['group'] = case.get_record_field(var, "group")
+            results[group][var]['desc'] = case.get_record_field(var, "desc")
         else:
-            results[var]['value'] = case.get_value(var, resolved=resolved)
+            results[group][var]['value'] = case.get_value(var, resolved=resolved)
 
 
     return results
@@ -120,19 +123,23 @@ def _main_func():
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
+        if listall:
+            variables = case.get_record_field(None, "varid").split(",")
+        expect(variables, "No variables found")
         results = xmlquery(case, variables, listall, fileonly, value, resolved=not no_resolve, raw=raw, description=description, group=group)
-
-    for var in iter(variables):
-        if raw:
-            print results[var]['raw']
-        elif value:
-            sys.stdout.write("%s"%results[var]['value'])
-        elif description:
-            print "%s: %s"%(var, results[var]['desc'])
-        elif group:
-            print "%s: %s"%(var, results[var]['group'])
-        else:
-            print "%s: %s"%(var, results[var]['value'])
+    for group in iter(results):
+        if len(variables) > 1:
+            print "Results in group %s"%group
+        for var in variables:
+            if var in results[group]:
+                if raw:
+                    print results[group][var]['raw']
+                elif value:
+                    sys.stdout.write("\t%s"%results[group][var]['value'])
+                elif description:
+                    print "\t%s: %s"%(var, results[group][var]['desc'])
+                else:
+                    print "\t%s: %s"%(var, results[group][var]['value'])
 
 
 if (__name__ == "__main__"):
