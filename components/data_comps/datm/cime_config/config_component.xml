@@ -41,7 +41,7 @@
 
   <entry id="DATM_PRESAERO">
     <type>char</type>
-    <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,pt1_pt1,cplhist</valid_values>
+    <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,cplhist</valid_values>
     <default_value>none</default_value>
     <values>
       <value compset="^1850_">clim_1850</value>

@@ -45,6 +45,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     datm_co2_tseries = case.get_value("DATM_CO2_TSERIES")
     atm_grid = case.get_value("ATM_GRID")
     grid = case.get_value("GRID")
+    print "DEBUG: grid is ",grid
     clm_usrdat_name = case.get_value("CLM_USRDAT_NAME")
 
     #----------------------------------------------------
@@ -83,10 +84,6 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     config['datm_mode'] = datm_mode
     config['datm_co2_tseries'] = datm_co2_tseries
     config['datm_presaero'] = datm_presaero
-    if datm_presaero == 'none':
-        config['presaero_flag'] = "none"
-    else:
-        config['presaero_flag'] = "active"
 
     #----------------------------------------------------
     # Construct the namelist generator.
@@ -102,9 +99,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     # may return a string or a list.  See issue #877 in ESMCI/cime
     #
     #pylint: disable=no-member
-    if datm_presaero == "pt1_pt1":
-        streams.append("presaero.%s.%s" % (datm_presaero, atm_grid))
-    elif datm_presaero != "none":
+    if datm_presaero != "none":
         streams.append("presaero.%s" % datm_presaero)
 
     if datm_topo != "none":
@@ -130,14 +125,6 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
         # Ignore null values.
         if stream is None or stream in ("NULL", ""):
             continue
-
-        if "presaero" in stream:
-            if datm_presaero == "none":
-                # Ignore aerosol streams when they are disabled.
-                continue
-            config = {'ispresaerostream': 'TRUE'}
-        else:
-            config = {'ispresaerostream': 'FALSE'}
 
         inst_stream = stream + inst_string
         logger.debug("DATM stream is %s", inst_stream)
