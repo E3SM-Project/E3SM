@@ -226,7 +226,7 @@ class NamelistGenerator(object):
            exists. This behavior is suppressed within single-quoted strings
            (similar to parameter expansion in shell scripts).
         """
-        default = self._definition.get_value_match(name, attributes=config, exact_match=True)
+        default = self._definition.get_value_match(name, attributes=config, exact_match=False)
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None

@@ -35,6 +35,7 @@
       <grid name="rof"    compset="RTM"	  >r05</grid>
       <grid name="rof"    compset="MOSART">r05</grid>
       <grid name="rof"    compset="DROF"  >rx1</grid>
+      <grid name="rof"    compset="DROF%CPLHIST">r05</grid>
       <grid name="glc"	  compset="SGLC"  >null</grid>
       <grid name="glc"	  compset="CISM1" >gland5UM</grid>
       <grid name="glc"	  compset="CISM2" >gland4</grid>
