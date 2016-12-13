@@ -1,8 +1,8 @@
 # macro for building PREQx primitive equations executable
 
-macro(preqx_setup)
+macro(thetah_setup)
 
-SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx)
+SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/thetah)
 SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
@@ -15,7 +15,7 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 
-SET(PREQX_SRCS_F90
+SET(THETAH_SRCS_F90
   ${TARGET_F90}
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
@@ -80,7 +80,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
   ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90
-  ${SRC_SHARE_DIR}/prim_advance_mod.F90 
   ${SRC_SHARE_DIR}/metis_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
@@ -96,40 +95,37 @@ SET(PREQX_SRCS_F90
   ${PHYSICS_DIR}/column_types_mod.F90 
 )
 
-SET(PREQX_SRCS_C
+SET(THETHAH_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
 )
 
 # If the user specified a file for custom compiler options use those
-IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
-  setCustomCompilerFlags(PREQX_CUSTOM_FLAGS_FILE PREQX_SRCS_F90)
+IF (DEFINED THETAH_CUSTOM_FLAGS_FILE)
+  setCustomCompilerFlags(THETAH_CUSTOM_FLAGS_FILE THETAH_SRCS_F90)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} )
+SET(EXEC_SOURCES ${THETAH_SRCS} ${THETAH_SRCS_C} ${THETAH_SRCS_F90} )
 
 # Set up defaults
-IF (NOT PREQX_NP)
-  SET (PREQX_NP 4) 
+IF (NOT THETAH_NP)
+  SET (THETAH_NP 4) 
 ENDIF ()
-IF (NOT PREQX_PLEV)
-  SET (PREQX_PLEV 20) 
+IF (NOT THETAH_PLEV)
+  SET (THETAH_PLEV 20) 
 ENDIF ()
-IF (NOT PREQX_USE_PIO)
-  SET (PREQX_USE_PIO FALSE) 
+IF (NOT THETAH_USE_PIO)
+  SET (THETAH_USE_PIO FALSE) 
 ENDIF ()
-IF (NOT PREQX_USE_ENERGY)
-  SET (PREQX_USE_ENERGY FALSE) 
-ENDIF ()
-IF (NOT PREQX_NC)
-  SET (PREQX_NC 4)
+IF (NOT THETAH_USE_ENERGY)
+  SET (THETAH_USE_ENERGY FALSE) 
 ENDIF ()
 IF (NOT QSIZE_D)
   SET (QSIZE_D 4)
 ENDIF ()
 # for some of matt's old scripts which use preqx_qsize_d
-IF (PREQX_QSIZE_D)      
-  SET (QSIZE_D ${PREQX_QSIZE_D})
+IF (THETAH_QSIZE_D)      
+  SET (QSIZE_D ${THETAH_QSIZE_D})
 ENDIF ()
 
 SET(USE_OPENACC FALSE)
@@ -137,12 +133,12 @@ IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
-endmacro(preqx_setup)
+endmacro(thetah_setup)
 
-preqx_setup()
+thetah_setup()
 ############################################################################
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(preqx preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
+createTestExec(thetah thetah ${THETAH_NP} ${THETAH_NC} ${THETAH_PLEV} ${THETAH_USE_PIO}  ${THETAH_USE_ENERGY} ${QSIZE_D})
 
 

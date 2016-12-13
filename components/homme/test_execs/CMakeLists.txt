@@ -164,7 +164,7 @@ ENDIF()
 IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroC)
   ADD_SUBDIRECTORY(baroCam)
-  
+  ADD_SUBDIRECRORY(baroC_thetah)  
   ADD_SUBDIRECTORY(preqx-nlev20-interp)
   ADD_SUBDIRECTORY(preqx-nlev20-native)
   ADD_SUBDIRECTORY(preqx-nlev30-interp)
