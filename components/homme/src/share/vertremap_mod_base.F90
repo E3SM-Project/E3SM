@@ -29,10 +29,9 @@ module vertremap_mod_base
   !**************************************************************************************
 
   use kinds, only                  : real_kind,int_kind
-  use dimensions_mod, only         : np,nlev,qsize,nlevp,npsq,ntrac,nc
+  use dimensions_mod, only         : np,nlev,qsize,nlevp,npsq
   use hybvcoord_mod, only          : hvcoord_t
   use element_mod, only            : element_t
-  use fvm_control_volume_mod, only : fvm_struct
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp, parallel_t
   use control_mod, only : vert_remap_q_alg

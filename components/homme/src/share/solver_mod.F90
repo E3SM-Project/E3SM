@@ -986,6 +986,7 @@ tol=1.e-12
     enddo
     res = l2_snorm(elem,LHS,sol,hybrid,np,nets,nete) 
     if (hybrid%masterthread) print *,'normalized l2 error= ',res
+    if (res > 100*tol) call abortmp('ERROR: CG solver test failed')
     res = linf_snorm(LHS,sol,hybrid,np,nets,nete) 
     if (hybrid%masterthread) print *,'normalized linf error= ',res
 
@@ -1105,6 +1106,7 @@ tol=1.e-12
     enddo
     res = l2_snorm(elem,LHS,sol,hybrid,np,nets,nete) 
     if (hybrid%masterthread) print *,'normalized l2 error= ',res
+    if (res > 100*tol) call abortmp('ERROR: DG solver test failed')
     res = linf_snorm(LHS,sol,hybrid,np,nets,nete) 
     if (hybrid%masterthread) print *,'normalized linf error= ',res
 

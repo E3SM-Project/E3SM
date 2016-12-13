@@ -437,7 +437,7 @@ contains
                 v1     = fptr%base(ie)%state%v(i,j,1,k,n0)
                 v2     = fptr%base(ie)%state%v(i,j,2,k,n0)
                 E = 0.5D0*( v1*v1 + v2*v2 )
-                Ephi(i,j)=E+fptr%base(ie)%derived%phi(i,j,k)+fptr%base(ie)%derived%pecnd(i,j,k)
+                Ephi(i,j)=E+fptr%base(ie)%derived%phi(i,j,k)
              end do
           end do
           ! ================================================
@@ -1149,7 +1149,7 @@ contains
     !          fv(:,:,:,np) = fv(:,:,:,np) +  nu*laplacian**order ( v )
     !          ft(:,:,:,np) = ft(:,:,:,np) +  nu_s*laplacian**order ( T )
     !
-    use dimensions_mod, only : np, np, nlev, nc, ntrac, max_corner_elem
+    use dimensions_mod, only : np, np, nlev, nc, max_corner_elem
     use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
     use hybrid_mod, only : hybrid_t
     use hybvcoord_mod, only : hvcoord_t
@@ -1277,15 +1277,6 @@ contains
                       vtens(i,j,2,k,ie)=vtens_tmp
                    enddo
                 enddo
-                if (0<ntrac) then
-                   elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - &
-                        eta_ave_w*nu_p*dpflux(:,:,:,k,ie)/hypervis_subcycle
-                   if (nu_top>0 .and. k<=3) then
-                      laplace_fluxes=subcell_Laplace_fluxes(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),np,nc)
-                      elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                           eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
-                   endif
-                endif
              enddo
 
 
@@ -1307,39 +1298,8 @@ contains
              kptr=nlev
              call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
              kptr=3*nlev
-             if (0<ntrac) then
-                do k=1,nlev
-                   temp(:,:,k) = dptens(:,:,k,ie) / elem(ie)%spheremp
-                enddo
-                corners = 0.0d0
-                corners(1:np,1:np,:) = dptens(:,:,:,ie)
-             endif
              call edgeVunpack(edge3, dptens(:,:,:,ie), nlev, kptr, ie)
 
-
-
-             if (0<ntrac) then
-                kptr=3*nlev
-                desc = elem(ie)%desc
-
-                call edgeDGVunpack(edge3, corners, nlev, kptr, ie)
-                corners = corners/dt
-
-                do k=1,nlev
-                   temp(:,:,k) =  elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,nt) - temp(:,:,k)
-                   temp(:,:,k) =  temp(:,:,k)/dt
-
-                   call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
-
-                   cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)
-                   cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:)
-                   cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:)
-                   cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:)
-
-                   elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                        eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)/hypervis_subcycle
-                end do
-             endif
 
 
 

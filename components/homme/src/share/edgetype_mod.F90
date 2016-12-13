@@ -58,13 +58,6 @@ module edgetype_mod
   end type LongEdgeBuffer_t
 
 
-  type, public :: GhostBufferTR_t
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive => null()
-     integer :: nlyr ! Number of layers
-     integer :: nbuf ! size of the horizontal dimension of the buffers.
-  end type GhostBufferTR_t
-
   type, public :: GhostBuffer3D_t
      real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()
      real (kind=real_kind), dimension(:,:,:,:), pointer :: receive => null()
