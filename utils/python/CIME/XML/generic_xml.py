@@ -282,3 +282,5 @@ class GenericXML(object):
             ET.dump(root)
             expect(False, "Could not write file %s, xml formatting error '%s'" % (self.filename, e))
         return xmlstr
+
+
