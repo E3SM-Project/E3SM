@@ -211,7 +211,7 @@ subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
     elseif (trim(wfilename) /= trim(filename)) then
        ! filename is open, better match open filename
        if(iam==0) write(logunit,*) subname,' different file currently open ',trim(filename)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'different file currently open '//trim(filename))
     else
        ! filename is already open, just return
     endif
@@ -265,7 +265,7 @@ subroutine seq_io_close(filename,file_ind)
     else
        ! different filename is open, abort
        if(iam==0) write(logunit,*) subname,' different file currently open, aborting ',trim(filename)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'different file currently open, aborting '//trim(filename))
     endif
 
     wfilename = ''
@@ -348,7 +348,7 @@ character(len=8) function seq_io_sec2hms (seconds)
 
    if (seconds < 0 .or. seconds > 86400) then
       write(logunit,*)'seq_io_sec2hms: bad input seconds:', seconds
-      call shr_sys_abort()
+      call shr_sys_abort('seq_io_sec2hms: bad input seconds')
    end if
 
    hours   = seconds / 3600
@@ -357,12 +357,12 @@ character(len=8) function seq_io_sec2hms (seconds)
 
    if (minutes < 0 .or. minutes > 60) then
       write(logunit,*)'seq_io_sec2hms: bad minutes = ',minutes
-      call shr_sys_abort()
+      call shr_sys_abort('seq_io_sec2hms: bad minutes')
    end if
 
    if (secs < 0 .or. secs > 60) then
       write(logunit,*)'seq_io_sec2hms: bad secs = ',secs
-      call shr_sys_abort()
+      call shr_sys_abort('seq_io_sec2hms: bad secs')
    end if
 
    write(seq_io_sec2hms,80) hours, minutes, secs
@@ -474,7 +474,7 @@ end function seq_io_sec2hms
     nf = mct_aVect_nRattr(AV)
     if (nf < 1) then
        write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'nf error')
     endif
     frame = -1
     if (present(nt)) then
@@ -488,7 +488,7 @@ end function seq_io_sec2hms
     endif
     if (lnx*lny /= ng) then
        if(iam==0) write(logunit,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny,trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'ERROR: grid2d size not consistent ')
     endif
 
     if (lwhead) then
@@ -667,7 +667,7 @@ end function seq_io_sec2hms
     nf = mct_aVect_nRattr(AVS(1))
     if (nf < 1) then
        write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'nf error')
     endif
     frame = -1
     if (present(nt)) then
@@ -682,7 +682,7 @@ end function seq_io_sec2hms
     endif
     if (lnx*lny /= ng) then
        if(iam==0) write(logunit,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny,trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//' ERROR: grid2d size not consistent ')
     endif
 
     if (lwhead) then
@@ -901,7 +901,7 @@ end function seq_io_sec2hms
     nf = mct_aVect_nRattr(avcomp1)
     if (nf < 1) then
        write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'nf error')
     endif
 
     if (present(nx)) then
@@ -915,7 +915,7 @@ end function seq_io_sec2hms
           write(logunit,*) subname,' ERROR: grid2d size not consistent ',&
                ng,lnx,lny,trim(dname)
        end if
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'ERROR: grid2d size not consistent ')
     endif
 
     if (lwhead) then
@@ -1591,7 +1591,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
     else
        if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
     endif
 
     do k = 1,nf
@@ -1619,7 +1619,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
              if (ng /= mct_gsmap_gsize(gsmap)) then
                 if (iam==0) write(logunit,*) subname,' ERROR: dimensions do not match',&
                      lnx,lny,mct_gsmap_gsize(gsmap)
-                call shr_sys_abort()
+                call shr_sys_abort(subname//'ERROR: dimensions do not match')
              end if
              call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
              deallocate(dof)
@@ -1721,7 +1721,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
     else
        if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
     endif
 
     allocate(data(ni*ns))
@@ -1750,7 +1750,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
              if (lnx*lny /= ng) then
                 write(logunit,*) subname,' ERROR: dimensions do not match',&
                      lnx,lny,mct_gsmap_gsize(gsmap)
-                call shr_sys_abort()
+                call shr_sys_abort(subname//'ERROR: dimensions do not match')
              end if
              if (ndims>=3) then
                 rcode = pio_inq_dimlen(pioid, dimid(3), lni)
@@ -1759,7 +1759,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
              end if
              if (ni /= lni) then
                 write(logunit,*) subname,' ERROR: ni dimensions do not match',ni,lni
-                call shr_sys_abort()
+                call shr_sys_abort(subname//'ERROR: ni dimensions do not match')
              end if
              if (ni > 1) then
                 allocate(dofn(ns*ni))
@@ -1894,7 +1894,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
     else
        if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
     endif
 
     allocate(data(ni*ns))
@@ -1923,7 +1923,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
              if (lnx*lny /= ng) then
                 write(logunit,*) subname,' ERROR: dimensions do not match',&
                      lnx,lny,mct_gsmap_gsize(gsmap)
-                call shr_sys_abort()
+                call shr_sys_abort(subname//'ERROR: dimensions do not match')
              end if
              if (ndims>=3) then
                 rcode = pio_inq_dimlen(pioid, dimid(3), lni)
@@ -1932,7 +1932,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
              end if
              if (ni /= lni) then
                 write(logunit,*) subname,' ERROR: ni dimensions do not match',ni,lni
-                call shr_sys_abort()
+                call shr_sys_abort(subname//'ERROR: ni dimensions do not match')
              end if
              if (ni > 1) then
                 allocate(dofn(ns*ni))
@@ -2076,7 +2076,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
     else
        if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
     endif
 
     if (trim(lversion) == trim(version)) then
@@ -2179,7 +2179,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
     else
        if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
     endif
 
     if (trim(lversion) == trim(version)) then
@@ -2246,7 +2246,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
     else
        if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort()
+       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
     endif
 
     if (trim(lversion) == trim(version)) then

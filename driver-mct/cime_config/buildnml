@@ -92,14 +92,16 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     if basedt < 0:
         expect(False, "basedt invalid overflow for NCPL_BASE_PERIOD %s " %ncpl_base_period)
 
-    comps = ["atm", "lnd", "ice", "ocn", "glc", "rof", "wav"]
+    comps = case.get_values("COMP_CLASSES")
     for comp in comps:
         ncpl = case.get_value(comp.upper() + '_NCPL')
-        cpl_dt = basedt / int(ncpl)
-        totaldt = cpl_dt * int(ncpl)
-        if totaldt != basedt:
-            expect(False, " %s ncpl doesn't divide base dt evenly" %comp)
-        nmlgen.set_value(comp + '_cpl_dt', value=cpl_dt)
+        if ncpl is not None:
+            cpl_dt = basedt / int(ncpl)
+            totaldt = cpl_dt * int(ncpl)
+            if totaldt != basedt:
+                expect(False, " %s ncpl doesn't divide base dt evenly" %comp)
+            nmlgen.set_value(comp.lower() + '_cpl_dt', value=cpl_dt)
+#        elif comp.lower() is not 'cpl':
 
     #--------------------------------
     # Overwrite: set start_ymd
@@ -136,6 +138,23 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
             tprofn = 1
         nmlgen.set_value('tprof_option', value=tprofoption)
         nmlgen.set_value('tprof_n'     , value=tprofn)
+
+    # Set up the pause_component_list if pause is active
+    pauseo = case.get_value('PAUSE_OPTION')
+    if pauseo != 'never' and pauseo != 'none':
+        pcl = nmlgen.get_default('pause_component_list')
+        nmlgen.add_default('pause_component_list', pcl)
+        # Check to make sure pause_component_list is valid
+        pcl = nmlgen.get_value('pause_component_list')
+        if pcl != 'none' and pcl != 'all':
+            pause_comps = pcl.split(':')
+            comp_classes = case.get_values("COMP_CLASSES")
+            for comp in pause_comps:
+                expect(comp == 'drv' or comp.upper() in comp_classes,
+                       "Invalid PAUSE_COMPONENT_LIST, %s is not a valid component type"%comp)
+            # End for
+        # End if
+    # End if pause is active
 
     #--------------------------------
     # (1) Write output namelist file drv_in and  input dataset list.

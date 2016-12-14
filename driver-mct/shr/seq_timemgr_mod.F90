@@ -58,12 +58,9 @@ module seq_timemgr_mod
 
    ! --- For usability, built on interfaces above ---
    public :: seq_timemgr_restartAlarmIsOn    ! Is a restart alarm ringing
-   public :: seq_timemgr_restartAlarmSetOff  ! Turn off restart alarm
-   public :: seq_timemgr_runAlarmIsOn        ! Is a run alarm ringing
-   public :: seq_timemgr_runAlarmSetOff      ! Turn off run alarm
-   public :: seq_timemgr_stopAlarmIsOn       ! Is a stop alarm ringing
-   public :: seq_timemgr_historyAlarmIsOn    ! Is a history alarm ringing
-   public :: seq_timemgr_historyAlarmSetOff  ! Turn off history alarm
+
+   ! --- Data that belongs to the driver (but is here to avoid loops)
+   character(SHR_KIND_CS),public :: seq_timemgr_pause_component_list  ! Pause - resume components
 
  ! ! PUBLIC PARAMETERS:
 
@@ -110,6 +107,7 @@ module seq_timemgr_mod
 !      seq_timemgr_alarm_ocnnext
 !      seq_timemgr_alarm_tprof
 !      seq_timemgr_alarm_histavg
+!      seq_timemgr_alarm_pause
 !      seq_timemgr_alarm_barrier
 
 !EOP
@@ -185,7 +183,8 @@ module seq_timemgr_mod
       seq_timemgr_nalarm_rofrun  =14, &
       seq_timemgr_nalarm_wavrun  =15, &
       seq_timemgr_nalarm_esprun  =16, &
-      seq_timemgr_nalarm_barrier =17, &
+      seq_timemgr_nalarm_pause   =17, &
+      seq_timemgr_nalarm_barrier =18, &
       max_alarms = seq_timemgr_nalarm_barrier
    character(len=*),public,parameter :: &
       seq_timemgr_alarm_restart = 'seq_timemgr_alarm_restart ', &
@@ -204,6 +203,7 @@ module seq_timemgr_mod
       seq_timemgr_alarm_rofrun  = 'seq_timemgr_alarm_rofrun  ', &
       seq_timemgr_alarm_wavrun  = 'seq_timemgr_alarm_wavrun  ', &
       seq_timemgr_alarm_esprun  = 'seq_timemgr_alarm_esprun  ', &
+      seq_timemgr_alarm_pause   = 'seq_timemgr_alarm_pause   ', &
       seq_timemgr_alarm_barrier = 'seq_timemgr_alarm_barrier '
 
    type EClock_pointer     ! needed for array of pointers
@@ -252,40 +252,40 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-   type(seq_timemgr_type), intent(INOUT) :: SyncClock  ! sync clock
-   character(len=*),       intent(IN)    :: nmlfile    ! namelist file
-   integer,                intent(IN)    :: mpicom     ! MPI communicator
-   logical,                intent(IN)    :: restart    ! restart logical
-   character(len=*),       intent(IN)    :: restart_file
-   type(ESMF_clock),target,intent(IN)    :: EClock_drv ! drv clock
-   type(ESMF_clock),target,intent(IN)    :: EClock_atm ! atm clock
-   type(ESMF_clock),target,intent(IN)    :: EClock_lnd ! lnd clock
-   type(ESMF_clock),target,intent(IN)    :: EClock_ocn ! ocn clock
-   type(ESMF_clock),target,intent(IN)    :: EClock_ice ! ice clock
-   type(ESMF_clock),target,intent(IN)    :: EClock_glc ! glc clock
-   type(ESMF_clock),target,intent(IN)    :: EClock_rof ! rof clock
-   type(ESMF_clock),target,intent(IN)    :: EClock_wav ! wav clock
-   type(ESMF_clock),target,intent(IN)    :: EClock_esp ! esp clock
-   type(file_desc_t) :: pioid
+   type(seq_timemgr_type),  intent(INOUT) :: SyncClock    ! sync clock
+   character(len=*),        intent(IN)    :: nmlfile      ! namelist file
+   integer,                 intent(IN)    :: mpicom       ! MPI communicator
+   logical,                 intent(IN)    :: restart      ! restart logical
+   character(len=*),        intent(IN)    :: restart_file
+   type(ESMF_clock),target, intent(IN)    :: EClock_drv   ! drv clock
+   type(ESMF_clock),target, intent(IN)    :: EClock_atm   ! atm clock
+   type(ESMF_clock),target, intent(IN)    :: EClock_lnd   ! lnd clock
+   type(ESMF_clock),target, intent(IN)    :: EClock_ocn   ! ocn clock
+   type(ESMF_clock),target, intent(IN)    :: EClock_ice   ! ice clock
+   type(ESMF_clock),target, intent(IN)    :: EClock_glc   ! glc clock
+   type(ESMF_clock),target, intent(IN)    :: EClock_rof   ! rof clock
+   type(ESMF_clock),target, intent(IN)    :: EClock_wav   ! wav clock
+   type(ESMF_clock),target, intent(IN)    :: EClock_esp   ! esp clock
+   type(file_desc_t)                      :: pioid
 !EOP
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_clockInit) '
-    type(ESMF_Time) :: StartTime              ! Start time 
-    type(ESMF_Time) :: RefTime                ! Reference time
-    type(ESMF_Time) :: CurrTime               ! Current time
-    type(ESMF_Time) :: OffsetTime             ! local computed time
-    type(ESMF_Time) :: StopTime1              ! Stop time 
-    type(ESMF_Time) :: StopTime2              ! Stop time 
-    type(ESMF_TimeInterval) :: TimeStep       ! Clock time-step
-    type(ESMF_TimeInterval) :: AlarmInterval  ! Alarm interval
-    type(ESMF_CalKind_Flag) :: esmf_caltype   ! local esmf calendar
-    integer :: rc                             ! Return code
-    integer :: n                              ! index
-    integer :: dtime(max_clocks)              ! time-step to use
-    integer :: offset(max_clocks)             ! run offset
-    integer :: unitn                          ! i/o unit number
-    integer :: iam                            ! pe rank
+    type(ESMF_Time)             :: StartTime          ! Start time
+    type(ESMF_Time)             :: RefTime            ! Reference time
+    type(ESMF_Time)             :: CurrTime           ! Current time
+    type(ESMF_Time)             :: OffsetTime         ! local computed time
+    type(ESMF_Time)             :: StopTime1          ! Stop time
+    type(ESMF_Time)             :: StopTime2          ! Stop time
+    type(ESMF_TimeInterval)     :: TimeStep           ! Clock time-step
+    type(ESMF_TimeInterval)     :: AlarmInterval      ! Alarm interval
+    type(ESMF_CalKind_Flag)     :: esmf_caltype       ! local esmf calendar
+    integer                     :: rc                 ! Return code
+    integer                     :: n                  ! index
+    integer                     :: dtime(max_clocks)  ! time-step to use
+    integer                     :: offset(max_clocks) ! run offset
+    integer                     :: unitn              ! i/o unit number
+    integer                     :: iam                ! pe rank
 
     character(SHR_KIND_CS)  :: calendar              ! Calendar type
     character(SHR_KIND_CS)  :: stop_option           ! Stop option units
@@ -295,6 +295,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     character(SHR_KIND_CS)  :: restart_option        ! Restart option units
     integer(SHR_KIND_IN)    :: restart_n             ! Number until restart interval
     integer(SHR_KIND_IN)    :: restart_ymd           ! Restart date (YYYYMMDD)
+    character(SHR_KIND_CS)  :: pause_option          ! Pause option units
+    integer(SHR_KIND_IN)    :: pause_n               ! Number between pause intervals
+    character(SHR_KIND_CS)  :: pause_component_list  ! Pause - resume components
     character(SHR_KIND_CS)  :: history_option        ! History option units
     integer(SHR_KIND_IN)    :: history_n             ! Number until history interval
     integer(SHR_KIND_IN)    :: history_ymd           ! History date (YYYYMMDD)
@@ -338,17 +341,18 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     character(len=*), parameter ::  F0L = "(2A,L3)"
 
     namelist /seq_timemgr_inparm/  calendar, curr_ymd, curr_tod,  &
-         stop_option, stop_n, stop_ymd, stop_tod,        &
-         restart_option, restart_n, restart_ymd,         &
-         history_option, history_n, history_ymd,         &
-         histavg_option, histavg_n, histavg_ymd,         &
-         barrier_option, barrier_n, barrier_ymd,         &
-         tprof_option, tprof_n, tprof_ymd,               &
-         start_ymd, start_tod, ref_ymd, ref_tod,         &
-         atm_cpl_dt, ocn_cpl_dt, ice_cpl_dt, lnd_cpl_dt, &
-         atm_cpl_offset, lnd_cpl_offset, ocn_cpl_offset, &
-         ice_cpl_offset, glc_cpl_dt, glc_cpl_offset,     &
-         wav_cpl_dt, wav_cpl_offset, esp_cpl_dt, esp_cpl_offset,     &
+         stop_option, stop_n, stop_ymd, stop_tod,                &
+         restart_option, restart_n, restart_ymd,                 &
+         pause_option,   pause_n,   pause_component_list,        &
+         history_option, history_n, history_ymd,                 &
+         histavg_option, histavg_n, histavg_ymd,                 &
+         barrier_option, barrier_n, barrier_ymd,                 &
+         tprof_option, tprof_n, tprof_ymd,                       &
+         start_ymd, start_tod, ref_ymd, ref_tod,                 &
+         atm_cpl_dt, ocn_cpl_dt, ice_cpl_dt, lnd_cpl_dt,         &
+         atm_cpl_offset, lnd_cpl_offset, ocn_cpl_offset,         &
+         ice_cpl_offset, glc_cpl_dt, glc_cpl_offset,             &
+         wav_cpl_dt, wav_cpl_offset, esp_cpl_dt, esp_cpl_offset, &
          rof_cpl_dt, rof_cpl_offset, end_restart
 !-------------------------------------------------------------------------------
 ! Notes:
@@ -383,6 +387,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        restart_option   = seq_timemgr_optYearly
        restart_n        = -1
        restart_ymd      = -1
+       pause_option     = seq_timemgr_optNever
+       pause_n          = -1
+       pause_component_list = ' '
        history_option   = seq_timemgr_optNever
        history_n        = -1
        history_ymd      = -1
@@ -522,6 +529,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0I) trim(subname),' restart_n      = ',restart_n
        write(logunit,F0I) trim(subname),' restart_ymd    = ',restart_ymd
        write(logunit,F0L) trim(subname),' end_restart    = ',end_restart
+       write(logunit,F0A) trim(subname),' pause_option   = ',trim(pause_option)
+       write(logunit,F0I) trim(subname),' pause_n        = ',pause_n
+       write(logunit,F0A) trim(subname),' pause_component_list = ',trim(pause_component_list)
        write(logunit,F0A) trim(subname),' history_option = ',trim(history_option)
        write(logunit,F0I) trim(subname),' history_n      = ',history_n
        write(logunit,F0I) trim(subname),' history_ymd    = ',history_ymd
@@ -566,7 +576,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
             ice_cpl_dt /= atm_cpl_dt .or. &
             ocn_cpl_dt <= 0 .or. glc_cpl_dt <= 0 .or. rof_cpl_dt <=0 .or. &
             wav_cpl_dt <=0 .or. esp_cpl_dt <=0) then
-          write(logunit,*) trim(subname),' ERROR: aliogrw _cpl_dt = ', &
+          write(logunit,*) trim(subname),' ERROR: aliogrwe _cpl_dt = ', &
              atm_cpl_dt, lnd_cpl_dt, ice_cpl_dt, ocn_cpl_dt, glc_cpl_dt, &
              rof_cpl_dt, wav_cpl_dt, esp_cpl_dt
           call shr_sys_abort( subname//': ERROR coupling intervals invalid' )
@@ -581,10 +591,10 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
             abs(wav_cpl_offset) > wav_cpl_dt .or. &
             abs(esp_cpl_offset) > esp_cpl_dt .or. &
             abs(ocn_cpl_offset) > ocn_cpl_dt) then
-          write(logunit,*) trim(subname),' ERROR: aliogrw _cpl_offset = ', &
+          write(logunit,*) trim(subname),' ERROR: aliogrwe _cpl_offset = ', &
              atm_cpl_offset, lnd_cpl_offset, ice_cpl_offset, ocn_cpl_offset, &
              glc_cpl_offset, rof_cpl_offset, wav_cpl_offset, esp_cpl_offset
-          call shr_sys_abort( subname//': ERROR coupling intervals invalid' )
+          call shr_sys_abort( subname//': ERROR coupling offsets invalid' )
        end if
 
        ! --- Start time date ---------------------------------------------------
@@ -598,49 +608,52 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     !---------------------------------------------------------------------------
     ! Broadcast namelist data
     !---------------------------------------------------------------------------
-    call shr_mpi_bcast( calendar,       mpicom )
-    call shr_mpi_bcast( stop_n,         mpicom )
-    call shr_mpi_bcast( stop_option,    mpicom )
-    call shr_mpi_bcast( stop_ymd,       mpicom )
-    call shr_mpi_bcast( stop_tod,       mpicom )
-    call shr_mpi_bcast( restart_n,      mpicom )
-    call shr_mpi_bcast( restart_option, mpicom )
-    call shr_mpi_bcast( restart_ymd,    mpicom )
-    call shr_mpi_bcast( history_n,      mpicom )
-    call shr_mpi_bcast( history_option, mpicom )
-    call shr_mpi_bcast( history_ymd,    mpicom )
-    call shr_mpi_bcast( histavg_n,      mpicom )
-    call shr_mpi_bcast( histavg_option, mpicom )
-    call shr_mpi_bcast( histavg_ymd,    mpicom )
-    call shr_mpi_bcast( tprof_n,        mpicom )
-    call shr_mpi_bcast( barrier_n,      mpicom )
-    call shr_mpi_bcast( barrier_option, mpicom )
-    call shr_mpi_bcast( barrier_ymd,    mpicom )
-    call shr_mpi_bcast( tprof_option,   mpicom )
-    call shr_mpi_bcast( tprof_ymd,      mpicom )
-    call shr_mpi_bcast( start_ymd,      mpicom )
-    call shr_mpi_bcast( start_tod,      mpicom )
-    call shr_mpi_bcast( ref_ymd,        mpicom )
-    call shr_mpi_bcast( ref_tod,        mpicom )
-    call shr_mpi_bcast( curr_ymd,       mpicom )
-    call shr_mpi_bcast( curr_tod,       mpicom )
-    call shr_mpi_bcast( atm_cpl_dt,     mpicom )
-    call shr_mpi_bcast( lnd_cpl_dt,     mpicom )
-    call shr_mpi_bcast( ice_cpl_dt,     mpicom )
-    call shr_mpi_bcast( ocn_cpl_dt,     mpicom )
-    call shr_mpi_bcast( glc_cpl_dt,     mpicom )
-    call shr_mpi_bcast( rof_cpl_dt,     mpicom )
-    call shr_mpi_bcast( wav_cpl_dt,     mpicom )
-    call shr_mpi_bcast( esp_cpl_dt,     mpicom )
-    call shr_mpi_bcast( atm_cpl_offset, mpicom )
-    call shr_mpi_bcast( lnd_cpl_offset, mpicom )
-    call shr_mpi_bcast( ice_cpl_offset, mpicom )
-    call shr_mpi_bcast( ocn_cpl_offset, mpicom )
-    call shr_mpi_bcast( glc_cpl_offset, mpicom )
-    call shr_mpi_bcast( rof_cpl_offset, mpicom )
-    call shr_mpi_bcast( wav_cpl_offset, mpicom )
-    call shr_mpi_bcast( esp_cpl_offset, mpicom )
-    call shr_mpi_bcast( end_restart,    mpicom )
+    call shr_mpi_bcast( calendar,             mpicom )
+    call shr_mpi_bcast( stop_n,               mpicom )
+    call shr_mpi_bcast( stop_option,          mpicom )
+    call shr_mpi_bcast( stop_ymd,             mpicom )
+    call shr_mpi_bcast( stop_tod,             mpicom )
+    call shr_mpi_bcast( restart_n,            mpicom )
+    call shr_mpi_bcast( restart_option,       mpicom )
+    call shr_mpi_bcast( restart_ymd,          mpicom )
+    call shr_mpi_bcast( pause_n,              mpicom )
+    call shr_mpi_bcast( pause_option,         mpicom )
+    call shr_mpi_bcast( pause_component_list, mpicom )
+    call shr_mpi_bcast( history_n,            mpicom )
+    call shr_mpi_bcast( history_option,       mpicom )
+    call shr_mpi_bcast( history_ymd,          mpicom )
+    call shr_mpi_bcast( histavg_n,            mpicom )
+    call shr_mpi_bcast( histavg_option,       mpicom )
+    call shr_mpi_bcast( histavg_ymd,          mpicom )
+    call shr_mpi_bcast( tprof_n,              mpicom )
+    call shr_mpi_bcast( barrier_n,            mpicom )
+    call shr_mpi_bcast( barrier_option,       mpicom )
+    call shr_mpi_bcast( barrier_ymd,          mpicom )
+    call shr_mpi_bcast( tprof_option,         mpicom )
+    call shr_mpi_bcast( tprof_ymd,            mpicom )
+    call shr_mpi_bcast( start_ymd,            mpicom )
+    call shr_mpi_bcast( start_tod,            mpicom )
+    call shr_mpi_bcast( ref_ymd,              mpicom )
+    call shr_mpi_bcast( ref_tod,              mpicom )
+    call shr_mpi_bcast( curr_ymd,             mpicom )
+    call shr_mpi_bcast( curr_tod,             mpicom )
+    call shr_mpi_bcast( atm_cpl_dt,           mpicom )
+    call shr_mpi_bcast( lnd_cpl_dt,           mpicom )
+    call shr_mpi_bcast( ice_cpl_dt,           mpicom )
+    call shr_mpi_bcast( ocn_cpl_dt,           mpicom )
+    call shr_mpi_bcast( glc_cpl_dt,           mpicom )
+    call shr_mpi_bcast( rof_cpl_dt,           mpicom )
+    call shr_mpi_bcast( wav_cpl_dt,           mpicom )
+    call shr_mpi_bcast( esp_cpl_dt,           mpicom )
+    call shr_mpi_bcast( atm_cpl_offset,       mpicom )
+    call shr_mpi_bcast( lnd_cpl_offset,       mpicom )
+    call shr_mpi_bcast( ice_cpl_offset,       mpicom )
+    call shr_mpi_bcast( ocn_cpl_offset,       mpicom )
+    call shr_mpi_bcast( glc_cpl_offset,       mpicom )
+    call shr_mpi_bcast( rof_cpl_offset,       mpicom )
+    call shr_mpi_bcast( wav_cpl_offset,       mpicom )
+    call shr_mpi_bcast( esp_cpl_offset,       mpicom )
+    call shr_mpi_bcast( end_restart,          mpicom )
 
     ! --- derive a couple things ---
     if     (trim(histavg_option) == trim(seq_timemgr_optNever) .or. &
@@ -666,8 +679,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
 
 
     ! --- Initialize generic stuff --- 
-    seq_timemgr_calendar    = shr_cal_calendarName(calendar)
-    seq_timemgr_end_restart = end_restart
+    seq_timemgr_calendar             = shr_cal_calendarName(calendar)
+    seq_timemgr_end_restart          = end_restart
+    seq_timemgr_pause_component_list = pause_component_list
 
     ! --- Create the new calendar if not already set ------
     if ( trim(seq_timemgr_calendar) == trim(seq_timemgr_noleap)) then
@@ -791,6 +805,14 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        else
           call ESMF_ClockSet(SyncClock%ECP(n)%EClock, StopTime=StopTime1)
        endif
+
+       ! Set the pause option if pause/resume is active
+       call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock,                    &
+            EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_pause),           &
+            option  = pause_option,                                           &
+            opt_n   = pause_n,                                                &
+            RefTime = StartTime,                                              &
+            alarmname = trim(seq_timemgr_alarm_pause))
 
     enddo
 
@@ -1220,7 +1242,7 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
 !EOP
 
     !----- local -----
-    character(len=*), parameter :: subname = '(seq_timemgr_alarmInit) '
+    character(len=*), parameter :: subname = '(seq_timemgr_alarmInit): '
     integer :: rc                             ! Return code
     integer :: lymd                           ! local ymd
     integer :: ltod                           ! local tod
@@ -1294,93 +1316,93 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
        !--- tcx seems we need an alarm interval or the alarm create fails, 
        !--- problem in esmf_wrf_timemgr?
        call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
-       if (.not. present(opt_ymd)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_ymd')
+       if (.not. present(opt_ymd)) call shr_sys_abort(subname//trim(option)//' requires opt_ymd')
        if (lymd < 0 .or. ltod < 0) then
-          call shr_sys_abort(subname//':'//trim(option)//'opt_ymd, opt_tod invalid')
+          call shr_sys_abort(subname//trim(option)//'opt_ymd, opt_tod invalid')
        endif
        call seq_timemgr_ETimeInit(NextAlarm, lymd, ltod, "optDate")
        update_nextalarm  = .false.
 
     case (seq_timemgr_optIfdays0)
        call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
-       if (.not. present(opt_ymd)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_ymd')
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not. present(opt_ymd)) call shr_sys_abort(subname//trim(option)//' requires opt_ymd')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=opt_n, s=0, calendar=seq_timemgr_cal, rc=rc )
 
     case (seq_timemgr_optNSteps)
        call ESMF_ClockGet(EClock, TimeStep=AlarmInterval, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNStep)
        call ESMF_ClockGet(EClock, TimeStep=AlarmInterval, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNSeconds)
        call ESMF_TimeIntervalSet(AlarmInterval, s=1, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNSecond)
        call ESMF_TimeIntervalSet(AlarmInterval, s=1, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNMinutes)
        call ESMF_TimeIntervalSet(AlarmInterval, s=60, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNMinute)
        call ESMF_TimeIntervalSet(AlarmInterval, s=60, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNHours)
        call ESMF_TimeIntervalSet(AlarmInterval, s=3600, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNHour)
        call ESMF_TimeIntervalSet(AlarmInterval, s=3600, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 
     case (seq_timemgr_optNDays)
        call ESMF_TimeIntervalSet(AlarmInterval, d=1, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 !       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=cdd, s=0, calendar=seq_timemgr_cal, rc=rc )
 
     case (seq_timemgr_optNDay)
        call ESMF_TimeIntervalSet(AlarmInterval, d=1, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 !       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=cdd, s=0, calendar=seq_timemgr_cal, rc=rc )
 
     case (seq_timemgr_optNMonths)
        call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 !       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
 
     case (seq_timemgr_optNMonth)
        call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 !       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
 
@@ -1390,15 +1412,15 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
 
     case (seq_timemgr_optNYears)
        call ESMF_TimeIntervalSet(AlarmInterval, yy=1, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 !       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=1, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
 
     case (seq_timemgr_optNYear)
        call ESMF_TimeIntervalSet(AlarmInterval, yy=1, rc=rc)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//':'//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//':'//trim(option)//' invalid opt_n')
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
        AlarmInterval = AlarmInterval * opt_n
 !       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=1, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
 
@@ -1407,10 +1429,10 @@ subroutine seq_timemgr_alarmInit( EClock, EAlarm, option, opt_n, opt_ymd, opt_to
        call ESMF_TimeSet( NextAlarm, yy=cyy, mm=1, dd=1, s=0, calendar=seq_timemgr_cal, rc=rc )
 
     case (seq_timemgr_optEnd)
-       call shr_sys_abort(subname//': deprecated option '//trim(option))
+       call shr_sys_abort(subname//'deprecated option '//trim(option))
 
     case default
-       call shr_sys_abort(subname//': unknown option '//trim(option))
+       call shr_sys_abort(subname//'unknown option '//trim(option))
 
     end select
 
@@ -1679,99 +1701,6 @@ end subroutine seq_timemgr_AlarmSetOff
 
 !===============================================================================
 !===============================================================================
-! !IROUTINE: seq_timemgr_restartAlarmSetOff -- turn alarm off
-!   
-! !DESCRIPTION:
-!   
-!     turn alarm off
-!      
-! !INTERFACE: ------------------------------------------------------------------
-
-subroutine seq_timemgr_restartAlarmSetOff( EClock)
-
-    implicit none
-
-! !INPUT/OUTPUT PARAMETERS:
-
-    type(ESMF_Clock) , intent(INOUT) :: EClock      ! clock/alarm
-
-!EOP
-
-    !----- local -----
-    character(len=*), parameter :: subname = '(seq_timemgr_restartAlarmSetOff) '
-
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
-
-    call seq_timemgr_AlarmSetOff(EClock, seq_timemgr_alarm_restart)
-
-end subroutine seq_timemgr_restartAlarmSetOff
-
-!===============================================================================
-!===============================================================================
-! !IROUTINE: seq_timemgr_runAlarmSetOff -- turn alarm off
-!   
-! !DESCRIPTION:
-!   
-!     turn alarm off
-!      
-! !INTERFACE: ------------------------------------------------------------------
-
-subroutine seq_timemgr_runAlarmSetOff( EClock)
-
-    implicit none
-
-! !INPUT/OUTPUT PARAMETERS:
-
-    type(ESMF_Clock) , intent(INOUT) :: EClock      ! clock/alarm
-
-!EOP
-
-    !----- local -----
-    character(len=*), parameter :: subname = '(seq_timemgr_runAlarmSetOff) '
-
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
-
-    call seq_timemgr_AlarmSetOff(EClock, seq_timemgr_alarm_run)
-
-end subroutine seq_timemgr_runAlarmSetOff
-
-!===============================================================================
-!===============================================================================
-! !IROUTINE: seq_timemgr_historyAlarmSetOff -- turn alarm off
-!   
-! !DESCRIPTION:
-!   
-!     turn alarm off
-!      
-! !INTERFACE: ------------------------------------------------------------------
-
-subroutine seq_timemgr_historyAlarmSetOff( EClock)
-
-    implicit none
-
-! !INPUT/OUTPUT PARAMETERS:
-
-    type(ESMF_Clock) , intent(INOUT) :: EClock      ! clock/alarm
-
-!EOP
-
-    !----- local -----
-    character(len=*), parameter :: subname = '(seq_timemgr_historyAlarmSetOff) '
-
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
-
-    call seq_timemgr_AlarmSetOff(EClock, seq_timemgr_alarm_history)
-
-end subroutine seq_timemgr_historyAlarmSetOff
-
-!===============================================================================
-!===============================================================================
 ! !IROUTINE: seq_timemgr_alarmIsOn -- check if an alarm is ringing
 !   
 ! !DESCRIPTION:
@@ -1886,102 +1815,6 @@ logical function seq_timemgr_restartAlarmIsOn( EClock)
        seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_restart)
 
 end function seq_timemgr_restartAlarmIsOn
-
-!===============================================================================
-!===============================================================================
-! !IROUTINE: seq_timemgr_stopAlarmIsOn -- check if an alarm is ringing
-!   
-! !DESCRIPTION:
-!   
-!     check if an alarm is ringing
-!      
-! !INTERFACE: ------------------------------------------------------------------
-
-logical function seq_timemgr_stopAlarmIsOn( EClock)
-
-    implicit none
-
-! !INPUT/OUTPUT PARAMETERS:
-
-    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
-
-!EOP
-
-    !----- local -----
-    character(len=*), parameter :: subname = '(seq_timemgr_stopAlarmIsOn) '
-
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
-
-    seq_timemgr_stopAlarmIsOn =  &
-       seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_stop)
-
-end function seq_timemgr_stopAlarmIsOn
-
-!===============================================================================
-!===============================================================================
-! !IROUTINE: seq_timemgr_runAlarmIsOn -- check if an alarm is ringing
-!   
-! !DESCRIPTION:
-!   
-!     check if an alarm is ringing
-!      
-! !INTERFACE: ------------------------------------------------------------------
-
-logical function seq_timemgr_runAlarmIsOn( EClock)
-
-    implicit none
-
-! !INPUT/OUTPUT PARAMETERS:
-
-    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
-
-!EOP
-
-    !----- local -----
-    character(len=*), parameter :: subname = '(seq_timemgr_runAlarmIsOn) '
-
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
-
-    seq_timemgr_runAlarmIsOn =  &
-       seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_run)
-
-end function seq_timemgr_runAlarmIsOn
-!===============================================================================
-!===============================================================================
-! !IROUTINE: seq_timemgr_historyAlarmIsOn -- check if an alarm is ringing
-!   
-! !DESCRIPTION:
-!   
-!     check if an alarm is ringing
-!      
-! !INTERFACE: ------------------------------------------------------------------
-
-logical function seq_timemgr_historyAlarmIsOn( EClock)
-
-    implicit none
-
-! !INPUT/OUTPUT PARAMETERS:
-
-    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
-
-!EOP
-
-    !----- local -----
-    integer :: rc
-    character(len=*), parameter :: subname = '(seq_timemgr_historyAlarmIsOn) '
-
-!-------------------------------------------------------------------------------
-! Notes:
-!-------------------------------------------------------------------------------
-
-    seq_timemgr_historyAlarmIsOn =  &
-       seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_history)
-
-end function seq_timemgr_historyAlarmIsOn
 
 !===============================================================================
 !===============================================================================
