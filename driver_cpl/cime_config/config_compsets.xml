@@ -19,8 +19,8 @@
     OCN  = [DOCN, ,AQUAP, SOCN]
     ROF  = [RTM, SROF]
     GLC  = [CISM1, CISM2, SGLC]
-    WAV  = [SWAV]
-    ESP  = [SESP]
+    WAV  = [SWAV WW3]
+    ESP  = [SESP DESP]
     BGC  = optional BGC scenario
 
     The OPTIONAL %phys attributes specify submodes of the given system
@@ -43,13 +43,23 @@
   </compset>
 
   <compset>
-    <alias>AWAV</alias>
-    <lname>2000_DATM%WW3_SLND_DICE%COPY_DOCN%COPY_SROF_SGLC_WW3</lname>
+    <alias>ADESP</alias>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP</lname>
+  </compset>
+
+  <compset>
+    <alias>ADESP_TEST</alias>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_DESP%TEST</lname>
   </compset>
 
   <compset grid="r%rx1">
     <alias>AIAF</alias>
     <lname>2000_DATM%IAF_SLND_DICE%IAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>AWAV</alias>
+    <lname>2000_DATM%WW3_SLND_DICE%COPY_DOCN%COPY_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset>

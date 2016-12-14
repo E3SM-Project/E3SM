@@ -146,13 +146,13 @@ OR
 
         parser.add_argument("testargs", nargs="*",
                             help="Tests or test suites to run."
-                            " Testnames expect in form CASE.GRID.COMPSET[.MACHINE_COMPILER]")
+                            " Testname form is TEST.GRID.COMPSET[.MACHINE_COMPILER]")
 
     else:
 
         parser.add_argument("testargs", nargs="+",
                             help="Tests or test suites to run."
-                            " Testnames expect in form CASE.GRID.COMPSET[.MACHINE_COMPILER]")
+                            " Testname form is TEST.GRID.COMPSET[.MACHINE_COMPILER]")
 
         parser.add_argument("-b", "--baseline-name",
                             help="If comparing or generating baselines,"

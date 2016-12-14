@@ -98,6 +98,8 @@ module cesm_comp_mod
    use seq_timemgr_mod, only: seq_timemgr_alarm_wavrun
    use seq_timemgr_mod, only: seq_timemgr_alarm_esprun
    use seq_timemgr_mod, only: seq_timemgr_alarm_barrier
+   use seq_timemgr_mod, only: seq_timemgr_alarm_pause
+   use seq_timemgr_mod, only: pause_component_list=>seq_timemgr_pause_component_list
 
    ! "infodata" gathers various control flags into one datatype
    use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
@@ -231,14 +233,14 @@ module cesm_comp_mod
 
    type (seq_timemgr_type), SAVE :: seq_SyncClock ! array of all clocks & alarm
    type (ESMF_Clock), target :: EClock_d      ! driver clock
-   type (ESMF_Clock), target :: EClock_a
-   type (ESMF_Clock), target :: EClock_l
-   type (ESMF_Clock), target :: EClock_o
-   type (ESMF_Clock), target :: EClock_i
-   type (ESMF_Clock), target :: EClock_g
-   type (ESMF_Clock), target :: EClock_r
-   type (ESMF_Clock), target :: EClock_w
-   type (ESMF_Clock), target :: EClock_e
+   type (ESMF_Clock), target :: EClock_a      ! atmosphere clock
+   type (ESMF_Clock), target :: EClock_l      ! land clock
+   type (ESMF_Clock), target :: EClock_o      ! ocean clock
+   type (ESMF_Clock), target :: EClock_i      ! ice clock
+   type (ESMF_Clock), target :: EClock_g      ! glc clock
+   type (ESMF_Clock), target :: EClock_r      ! rof clock
+   type (ESMF_Clock), target :: EClock_w      ! wav clock
+   type (ESMF_Clock), target :: EClock_e      ! esp clock
 
    logical  :: restart_alarm          ! restart alarm
    logical  :: history_alarm          ! history alarm
@@ -255,6 +257,7 @@ module cesm_comp_mod
    logical  :: esprun_alarm           ! esp run alarm
    logical  :: tprof_alarm            ! timing profile alarm
    logical  :: barrier_alarm          ! barrier alarm
+   logical  :: pause_alarm            ! pause alarm
    logical  :: t1hr_alarm             ! alarm every hour
    logical  :: t2hr_alarm             ! alarm every two hours
    logical  :: t3hr_alarm             ! alarm every three hours
@@ -1198,10 +1201,14 @@ subroutine cesm_init()
    call t_startf('comp_init_cc_wav')
    call t_adj_detailf(+2)
    call component_init_cc(Eclock_w, wav, wav_init, infodata, NLFilename)
-   call component_init_cc(Eclock_e, esp, esp_init, infodata, NLFilename)
-
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cc_wav')
+
+   call t_startf('comp_init_cc_esp')
+   call t_adj_detailf(+2)
+   call component_init_cc(Eclock_e, esp, esp_init, infodata, NLFilename)
+   call t_adj_detailf(-2)
+   call t_stopf('comp_init_cc_esp')
 
    call t_startf('comp_init_cx_all')
    call t_adj_detailf(+2)
@@ -1212,7 +1219,6 @@ subroutine cesm_init()
    call component_init_cx(ice, infodata)
    call component_init_cx(glc, infodata)
    call component_init_cx(wav, infodata)
-   call component_init_cx(esp, infodata)
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cx_all')
 
@@ -2050,13 +2056,16 @@ end subroutine cesm_init
  !===============================================================================
 
  subroutine cesm_run()
-   use seq_comm_mct, only : atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
+   use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
          ocn_layout, wav_layout, esp_layout
+   use shr_string_mod, only: shr_string_listGetIndexF
 
-   implicit none
    ! gptl timer lookup variables
    integer, parameter :: hashcnt=7
-   integer :: hashint(hashcnt)
+   integer            :: hashint(hashcnt)
+   ! Driver pause/resume
+   logical            :: drv_pause  ! Driver writes pause restart file
+   character(len=CL)  :: drv_resume ! Driver resets state from restart file
 
 101 format( A, 2i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, 2i8, A, 8L3 )
@@ -2131,7 +2140,52 @@ end subroutine cesm_init
       histavg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_histavg)
       tprof_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_tprof)
       barrier_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_barrier)
+      pause_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_pause)
 
+      ! Determine wich components need to write pause (restart) files
+      if (pause_alarm) then
+        if (trim(pause_component_list) == 'all') then
+          drv_pause = .true.
+          call seq_infodata_putData(infodata, atm_pause=.true.,               &
+               lnd_pause=.true., ocn_pause=.true., ice_pause=.true.,          &
+               glc_pause=.true., rof_pause=.true., wav_pause=.true.,          &
+               cpl_pause=.true.)
+        else if (trim(pause_component_list) /= 'none') then
+          if (shr_string_listGetIndexF(pause_component_list, 'atm') > 0) then
+            call seq_infodata_putData(infodata, atm_pause=.true.)
+          end if
+          if (shr_string_listGetIndexF(pause_component_list, 'lnd') > 0) then
+            call seq_infodata_putData(infodata, lnd_pause=.true.)
+          end if
+          if (shr_string_listGetIndexF(pause_component_list, 'ocn') > 0) then
+            call seq_infodata_putData(infodata, ocn_pause=.true.)
+          end if
+          if (shr_string_listGetIndexF(pause_component_list, 'ice') > 0) then
+            call seq_infodata_putData(infodata, ice_pause=.true.)
+          end if
+          if (shr_string_listGetIndexF(pause_component_list, 'glc') > 0) then
+            call seq_infodata_putData(infodata, glc_pause=.true.)
+          end if
+          if (shr_string_listGetIndexF(pause_component_list, 'rof') > 0) then
+            call seq_infodata_putData(infodata, rof_pause=.true.)
+          end if
+          if (shr_string_listGetIndexF(pause_component_list, 'wav') > 0) then
+            call seq_infodata_putData(infodata, wav_pause=.true.)
+          end if
+          if ( (shr_string_listGetIndexF(pause_component_list, 'cpl') > 0) .or.&
+               (shr_string_listGetIndexF(pause_component_list, 'drv') > 0)) then
+            drv_pause = .true.
+            call seq_infodata_putData(infodata, cpl_pause=.true.)
+          end if
+        end if
+      else
+        drv_pause = .false.
+        call seq_infodata_putData(infodata, atm_pause=.false.,                &
+             lnd_pause=.false., ocn_pause=.false., ice_pause=.false.,         &
+             glc_pause=.false., rof_pause=.false., wav_pause=.false.,         &
+             cpl_pause=.false.)
+      end if ! pause alarm
+      
       ! this probably belongs in seq_timemgr somewhere using proper clocks
       t1hr_alarm = .false.
       t2hr_alarm = .false.
@@ -3323,16 +3377,6 @@ end subroutine cesm_init
       endif
 
       !----------------------------------------------------------
-      !| RUN ESP MODEL
-      !----------------------------------------------------------
-      if (esp_present .and. esprun_alarm) then
-         call component_run(Eclock_e, esp, esp_run, infodata, &
-              comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
-              timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
-              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
-      endif
-
-      !----------------------------------------------------------
       !| WAV RECV-POST
       !----------------------------------------------------------
 
@@ -3519,7 +3563,7 @@ end subroutine cesm_init
       !| Write driver restart file
       !----------------------------------------------------------
 
-      if ( restart_alarm .and. iamin_CPLID) then
+      if ( (restart_alarm .or. drv_pause) .and. iamin_CPLID) then
          call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')
          call t_drvstartf ('CPL:RESTART',cplrun=.true.,barrier=mpicom_CPLID)
          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -3677,6 +3721,33 @@ end subroutine cesm_init
          call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
 
       endif
+
+      !----------------------------------------------------------
+      !| RUN ESP MODEL
+      !----------------------------------------------------------
+      if (esp_present .and. esprun_alarm) then
+         call component_run(Eclock_e, esp, esp_run, infodata, &
+              comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
+              timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
+              run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
+      endif
+
+      !----------------------------------------------------------
+      !| RESUME (read restart) if signaled
+      !----------------------------------------------------------
+      call seq_infodata_GetData(infodata, cpl_resume=drv_resume)
+      if (len_trim(drv_resume) > 0) then
+        if (iamroot_CPLID) then
+          write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume)
+          call shr_sys_flush(logunit)
+        end if
+        if (iamin_CPLID) then
+          call seq_rest_read(drv_resume, infodata,                            &
+               atm, lnd, ice, ocn, rof, glc, wav, esp,                        &
+               fractions_ax, fractions_lx, fractions_ix, fractions_ox,        &
+               fractions_rx, fractions_gx, fractions_wx)
+        end if
+      end if
 
       !----------------------------------------------------------
       !| Timing and memory diagnostics

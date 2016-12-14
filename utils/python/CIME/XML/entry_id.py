@@ -262,7 +262,7 @@ class EntryID(GenericXML):
         # otherwise, we have to leave as string.
         if val is None:
             return val
-        if "$" in val:
+        elif "$" in val:
             return val
         else:
             type_str = self._get_type_info(node)

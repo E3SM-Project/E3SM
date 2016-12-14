@@ -361,6 +361,42 @@
     </desc>
   </entry>
 
+  <entry id="PAUSE_OPTION">
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear</valid_values>
+    <default_value>never</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Sets the pause frequency along with PAUSE_N (must be nyear(s) for _GLC compsets for restarts to resume properly).
+    </desc>
+  </entry>
+
+  <entry id="PAUSE_N">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Provides a numerical count for $PAUSE_OPTION.
+    </desc>
+  </entry>
+
+  <entry id="PAUSE_COMPONENT_LIST">
+    <type>char</type>
+    <default_value>none</default_value>
+    <values>
+      <value compset="_DESP">cpl</value>
+    </values>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      A colon-separated list of components to receive pause and resume signals
+      A value of 'all' means all components will pause and resume
+      A value of 'none' means that no components will pause or resume
+    </desc>
+  </entry>
+
   <entry id="BARRIER_N">
     <type>char</type>
     <default_value>1</default_value>
@@ -2385,7 +2421,7 @@
   </entry>
 
   <!-- ===================================================================== -->
-  <!-- history / restart frequencies -->
+  <!-- history frequencies -->
   <!-- ===================================================================== -->
 
   <entry id="HIST_OPTION">
