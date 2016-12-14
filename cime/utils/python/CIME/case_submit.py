@@ -13,7 +13,7 @@ from CIME.check_lockedfiles        import check_lockedfiles
 
 logger = logging.getLogger(__name__)
 
-def submit(case, job=None, resubmit=False, no_batch=False):
+def submit(case, job=None, resubmit=False, no_batch=False, batchargs=None):
     caseroot = case.get_value("CASEROOT")
     if job is None:
         if case.get_value("TEST"):
@@ -67,7 +67,7 @@ def submit(case, job=None, resubmit=False, no_batch=False):
     case.flush()
 
     logger.warn("submit_jobs %s"%job)
-    case.submit_jobs(no_batch=no_batch, job=job)
+    case.submit_jobs(no_batch=no_batch, job=job, batchargs=batchargs)
 
 def check_case(case, caseroot):
     check_lockedfiles(caseroot)

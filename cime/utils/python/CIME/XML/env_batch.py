@@ -349,7 +349,7 @@ class EnvBatch(EnvBase):
 
         return submitargs
 
-    def submit_jobs(self, case, no_batch=False, job=None):
+    def submit_jobs(self, case, no_batch=False, job=None, batchargs=None):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
@@ -394,11 +394,11 @@ class EnvBatch(EnvBase):
                 jobid = None
 
             logger.warn("job is %s"%job)
-            depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch)
+            depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch, batchargs=batchargs)
             if self.batchtype == "cobalt":
                 break
 
-    def submit_single_job(self, case, job, depid=None, no_batch=False):
+    def submit_single_job(self, case, job, depid=None, no_batch=False, batchargs=None):
         logger.warn("Submit job %s"%job)
         caseroot = case.get_value("CASEROOT")
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
@@ -431,6 +431,9 @@ class EnvBatch(EnvBase):
             dep_string = self.get_value("depend_string", subgroup=None)
             dep_string = dep_string.replace("jobid",depid.strip()) # pylint: disable=maybe-no-member
             submitargs += " " + dep_string
+
+        if batchargs is not None:
+            submitargs += " " + batchargs
 
         batchsubmit = self.get_value("batch_submit", subgroup=None)
         expect(batchsubmit is not None,
