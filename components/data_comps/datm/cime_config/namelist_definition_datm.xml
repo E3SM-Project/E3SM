@@ -145,18 +145,20 @@
 
     WW3
 
-    **** NOTE: in the value matches below, regular expressions are used **** 
-         If two matches are equivalent, the FIRST one will be used
+      **********IMPORTANT NOTE: *************
+      In the value matches below, regular expressions are used **** 
+      If two matches are equivalent, the FIRST one will be used, so need to make sure
+      that matches are not equivalent if possible
 
 	 As an example, say datm_mode=CLMCRUNCEP_V5, 
 
-         the following will results in the CORRECT set of streams for this datm_mode
-            <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
-            <value datm_mode="CLMCRUNCEP">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
-
          the following order would result in an INCORRECT setting of streams for this datm_mode
-             <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
              <value datm_mode="CLMCRUNCEP">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
+             <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
+
+         the following will results in the CORRECT set of streams for this datm_mode
+             <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
+             <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
   -->
 
   <!-- ========================================================================================  -->
@@ -169,11 +171,11 @@
     <group>streams_file</group>
     <desc>List of streams used for the given datm_mode</desc>
     <values>
+      <value datm_mode="CLM_QIAN$">CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</value>
       <value datm_mode="CLM_QIAN_WISO">CLM_QIAN_WISO.Solar,CLM_QIAN_WISO.Precip,CLM_QIAN_WISO.TPQW</value>
-      <value datm_mode="CLM_QIAN">CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</value>
       <value datm_mode="CLM1PT">CLM1PT.$ATM_GRID</value>
+      <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
-      <value datm_mode="CLMCRUNCEP">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMGSWP3">CLMGSWP3.Solar,CLMGSWP3.Precip,CLMGSWP3.TPQW</value>
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
@@ -192,15 +194,15 @@
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
+      <value stream="CLM1PT$">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
-      <value stream="CLM1PT">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
       <value stream="CPLHIST3HrWx">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CPLHISTForcingForOcnIce">$DATM_CPLHIST_DIR</value>
       <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
-      <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CLMGSWP3.">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</value>
-      <value stream="CORE2_NYF.">$DIN_LOC_ROOT/atm/datm7/NYF</value>
+      <value stream="CLMCRUNCEP$">$DIN_LOC_ROOT/share/domains/domain.clm</value>
+      <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</value>
+      <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">$DIN_LOC_ROOT/share/domains</value>
       <value stream="CORE2_IAF.NCEP.PSLV.SOFS">$DIN_LOC_ROOT/share/domains</value>
@@ -224,11 +226,11 @@
       <value stream="CORE2_IAF.NCEP.V_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="WW3">$DIN_LOC_ROOT/wav/ww3</value>
       <value stream="NLDAS">$DIN_LOC_ROOT/share/domains/domain.clm </value>
-      <value stream="co2tseries.">$DIN_LOC_ROOT/atm/datm7/CO2 </value>
+      <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2 </value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
-      <value stream="Anomaly.">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
+      <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_DIR</value>
       <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
@@ -249,10 +251,10 @@
       <value stream="CLM1PT.1x1_vancouverCAN">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </value>
       <value stream="CLM1PT.1x1_urbanc_alpha">domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc </value>
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_FILE</value>
-      <value stream="CPLHIST3HrWx.">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</value>
+      <value stream="CPLHIST3HrWx">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</value>
       <value stream="CPLHISTForcingForOcnIce">null</value>
-      <value stream="CLM_QIAN_WISO.">domain.T62.050609.nc</value>
-      <value stream="CLM_QIAN.">domain.T62.050609.nc</value>
+      <value stream="CLM_QIAN$">domain.T62.050609.nc</value>
+      <value stream="CLM_QIAN_WISO">domain.T62.050609.nc</value>
       <value stream="CLMCRUNCEP_V5">domain.cruncep.V5.c2013.0.5d.nc</value>
       <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMGSWP3">domain.GSWP3.c2014.0.5d.nc</value>
@@ -340,7 +342,7 @@
         area    area
         mask    mask
       </value>
-      <value stream="CORE2_NYF.">
+      <value stream="CORE2_NYF">
         time    time
         lon      lon
         lat      lat
@@ -361,7 +363,7 @@
         area   area
         mask   mask
       </value>
-      <value stream="co2tseries.">
+      <value stream="co2tseries">
         time    time
         lonc    lon
         latc    lat
@@ -1535,10 +1537,7 @@
       <value stream="WW3">2000</value>
       <value stream="NLDAS">1980</value>
       <value stream="co2tseries.20tr">1850</value>
-      <value stream="co2tseries.rcp2.6">2005</value>
-      <value stream="co2tseries.rcp4.5">2005</value>
-      <value stream="co2tseries.rcp6.0">2005</value>
-      <value stream="co2tseries.rcp8.5">2005</value>
+      <value stream="co2tseries.rcp">2005</value>
       <value stream="BC.QIAN.Precip">1979</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">1979</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">1979</value>
