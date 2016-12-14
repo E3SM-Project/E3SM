@@ -53,6 +53,14 @@ module atm_core_interface
 
 #include "inc/core_variables.inc"
 
+write(0,*) ''
+#ifdef SINGLE_PRECISION
+write(0,'(a)') 'Using default single-precision reals'
+#else
+write(0,'(a)') 'Using default double-precision reals'
+#endif
+write(0,*) ''
+
    end subroutine atm_setup_core
 
 
