@@ -152,10 +152,10 @@ class Case(object):
         self._env_entryid_files.append(EnvBuild(self._caseroot))
         self._env_entryid_files.append(EnvMachPes(self._caseroot))
         self._env_entryid_files.append(EnvCase(self._caseroot))
+        self._env_entryid_files.append(EnvBatch(self._caseroot))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
             self._env_entryid_files.append(EnvTest(self._caseroot))
         self._env_generic_files = []
-        self._env_generic_files.append(EnvBatch(self._caseroot))
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
         self._env_generic_files.append(EnvArchive(self._caseroot))
         self._files = self._env_entryid_files + self._env_generic_files
@@ -262,13 +262,13 @@ class Case(object):
         return result
 
 
-    def get_record_field(self, variable, field):
+    def get_record_fields(self, variable, field):
 
         """
 
         """
         # Empty result
-        result = ""
+        result = []
 
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
@@ -281,15 +281,14 @@ class Case(object):
             for root in roots:
                 if root is not None:
                     if field == "raw":
-                        result += env_file.get_raw_record(root)
+                        result.append(env_file.get_raw_record(root))
                     elif field == "desc":
-                        result += env_file._get_description(root)
+                        result.append(env_file._get_description(root))
                     elif field == "varid":
-                        if result:
-                            result += ","
-                        result += root.get("id")
+                        result.append(root.get("id"))
                     elif field == "group":
-                        result += env_file._get_group(root)
+                        result.extend(env_file._get_groups(root))
+
 #        if result is None:
 #            for env_file in self._env_generic_files:
 #                roots = env_file.get_nodes(variable)
@@ -299,7 +298,7 @@ class Case(object):
 #                            result += env_file.get_raw_record(root)
 
 
-        return result
+        return list(set(result))
 
     def get_type_info(self, item):
         result = None
@@ -685,6 +684,7 @@ class Case(object):
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
         batch = Batch(batch_system=batch_system_type, machine=machine_name)
         bjobs = batch.get_batch_jobs()
+
         env_batch = self.get_env("batch")
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)

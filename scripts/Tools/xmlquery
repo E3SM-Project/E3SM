@@ -83,10 +83,10 @@ def parse_command_line(args):
         variables = args.variables
 
 
-    return variables, args.file, args.caseroot, args.listall, args.fileonly, \
+    return variables, args.subgroup, args.file, args.caseroot, args.listall, args.fileonly, \
         args.value, args.no_resolve, args.raw, args.description, args.group
 
-def xmlquery(case, variables=[], listall=False, fileonly=False, value=False,
+def xmlquery(case, variables=[], subgroup=None, listall=False, fileonly=False, value=False,
              resolved=True, raw=False, description=False, group=False):
     """
     Return list of attributes and their values , print formatted
@@ -95,19 +95,23 @@ def xmlquery(case, variables=[], listall=False, fileonly=False, value=False,
     results = {}
 
     for var in variables:
-        group = case.get_record_field(var, "group")
-        if not group in results:
-            results[group] = {}
-        if not var in results[group]:
-            results[group][var] = {}
-        expect(group, "No group found for var %s"% var)
-
-        if raw:
-            results[group][var]['raw'] = case.get_record_field(var, "raw")
-        elif description:
-            results[group][var]['desc'] = case.get_record_field(var, "desc")
+        if subgroup is not None:
+            groups = [subgroup]
         else:
-            results[group][var]['value'] = case.get_value(var, resolved=resolved)
+            groups = case.get_record_fields(var, "group")
+        for group in groups:
+            if not group in results:
+                results[group] = {}
+            if not var in results[group]:
+                results[group][var] = {}
+            expect(group, "No group found for var %s"% var)
+
+            if raw:
+                results[group][var]['raw'] = case.get_record_field(var, "raw")
+            elif description:
+                results[group][var]['desc'] = case.get_record_field(var, "desc")
+            else:
+                results[group][var]['value'] = case.get_value(var, resolved=resolved, subgroup=group)
 
 
     return results
@@ -118,7 +122,7 @@ def _main_func():
         sys.exit(1 if test_results.failed > 0 else 0)
 
     # Initialize command line parser and get command line options
-    variables, infile, caseroot, listall, fileonly,  \
+    variables, subgroup, infile, caseroot, listall, fileonly,  \
         value, no_resolve, raw, description, group = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
@@ -126,9 +130,9 @@ def _main_func():
         if listall:
             variables = case.get_record_field(None, "varid").split(",")
         expect(variables, "No variables found")
-        results = xmlquery(case, variables, listall, fileonly, value, resolved=not no_resolve, raw=raw, description=description, group=group)
+        results = xmlquery(case, variables, subgroup, listall, fileonly, value, resolved=not no_resolve, raw=raw, description=description, group=group)
     for group in iter(results):
-        if len(variables) > 1:
+        if len(variables) > 1 or len(results.keys()) > 1:
             print "Results in group %s"%group
         for var in variables:
             if var in results[group]:

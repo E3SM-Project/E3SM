@@ -130,18 +130,18 @@ class EntryID(GenericXML):
 
     # Get group , expect node with tag "group"
     # entry id nodes are children of group nodes
-    def _get_group (self, node):
+    def _get_groups(self, node):
         groups = self.get_nodes("group")
-        result = None
+        result = []
         nodes = []
         vid = node.get("id")
         for group in groups:
             nodes = self.get_nodes("entry", attributes={"id":vid}, root=group)
             if nodes:
-                expect(result is None, "Error too many group matchs for vid=%s"%vid)
-                result = group.get("id")
+                result.append(group.get("id"))
 
         return result
+
 
     def get_valid_values(self, vid):
         node = self.get_optional_node("entry", {"id":vid})
