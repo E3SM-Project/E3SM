@@ -1,0 +1,28 @@
+package:
+    name: acme_diags
+    version: {{ environ['VERSION'] }}
+
+source:
+    git_url: git://github.com/zshaheen/acme-diags
+
+build:
+    number: 0
+    script: python setup.py install
+    script_env:
+     - VERSION
+     - CONDA_BLD_PATH
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - cdp
+    - vcs
+    - cdms2
+    - eztemplate
+
+about:
+    home:  https://github.com/zshaheen/acme-diags
+    summary: This is a new version of ACME Diagnostics.
