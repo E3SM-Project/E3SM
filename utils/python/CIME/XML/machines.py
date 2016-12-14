@@ -43,7 +43,7 @@ class Machines(GenericXML):
         if machine is None:
             machine = self.probe_machine_name()
 
-        expect(machine is not None, "Could not initialize machine object from %s or %s"%(infile, local_infile))
+        expect(machine is not None, "Could not initialize machine object from %s or %s" % (infile, local_infile))
         self.set_machine(machine)
 
     def get_machines_dir(self):
