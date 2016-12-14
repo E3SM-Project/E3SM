@@ -145,9 +145,17 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     nmlgen.create_shr_strdata_nml()
 
     # set variables that are not per-stream
-    if atm_domain_file != "UNSET":
-        full_domain_path = os.path.join(atm_domain_path, atm_domain_file)
-        nmlgen.add_default("domainfile", value=full_domain_path)
+    if datm_mode == 'CPLHISTForcingForOcnIce':
+        nmlgen.add_default("domainfile", 'null')
+        if atm_domain_file != "UNSET":
+            if case.get_value('ATM_DOMAIN_FILE') != 'UNSET':
+                case.set_value('ATM_DOMAIN_FILE', 'UNSET')
+                case.flush()
+    else:
+        if atm_domain_file != "UNSET":
+            full_domain_path = os.path.join(atm_domain_path, atm_domain_file)
+            nmlgen.add_default("domainfile", value=full_domain_path)
+
     nmlgen.add_default("vectors")
 
     #----------------------------------------------------
