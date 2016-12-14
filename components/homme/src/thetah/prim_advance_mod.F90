@@ -21,6 +21,7 @@ module prim_advance_mod
   use time_mod,       only: timelevel_t
 !THETA OG I am still not sure, do tests use different p0?
   use physical_constants, only: p0
+!THETA
 !  use test_mod,       only: set_prescribed_wind
 
   implicit none

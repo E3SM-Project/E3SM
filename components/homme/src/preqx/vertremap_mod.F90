@@ -29,7 +29,9 @@ contains
   use element_mod,    only: element_t
   use control_mod,    only: rsplit
   use hybrid_mod,     only: hybrid_t
-
+  use parallel_mod, only           : abortmp
+  use dimensions_mod, only         : np,nlev,qsize
+  use perf_mod, only               : t_startf, t_stopf
 
   type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout) :: elem(:)

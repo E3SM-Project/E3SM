@@ -3,13 +3,6 @@
 #endif
 
 module vertremap_mod
-!  use kinds, only                  : real_kind,int_kind
-!  use dimensions_mod, only         : np,nlev,qsize,nlevp,npsq
-!  use hybvcoord_mod, only          : hvcoord_t
-!  use element_mod, only            : element_t
-!  use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
-!  use parallel_mod, only           : abortmp, parallel_t
-!  use control_mod, only            : vert_remap_q_alg
 
   use vertremap_mod_base, only: remap1
   implicit none
