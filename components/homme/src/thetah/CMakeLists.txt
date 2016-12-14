@@ -15,13 +15,17 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 
+#THETA
+#  removed   
+#  ${SRC_DIR}/test_src/asp_tests.F90
+#  ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
+#  ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
+#  ${SRC_DIR}/test_src/dcmip2012_test4.F90
+#  ${SRC_DIR}/test_src/dcmip2012_test5.F90
+#  ${SRC_DIR}/test_mod.F90
+
 SET(THETAH_SRCS_F90
   ${TARGET_F90}
-  ${SRC_DIR}/test_src/asp_tests.F90
-  ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
-  ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
-  ${SRC_DIR}/test_src/dcmip2012_test4.F90
-  ${SRC_DIR}/test_src/dcmip2012_test5.F90
   ${SRC_DIR}/checksum_mod.F90 
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/common_movie_mod.F90
@@ -36,7 +40,6 @@ SET(THETAH_SRCS_F90
   ${SRC_DIR}/repro_sum_mod.F90
   ${SRC_DIR}/restart_io_mod.F90
   ${SRC_DIR}/surfaces_mod.F90
-  ${SRC_DIR}/test_mod.F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
   ${SRC_SHARE_DIR}/derivative_mod_base.F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90

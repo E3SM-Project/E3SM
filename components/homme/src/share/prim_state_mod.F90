@@ -203,7 +203,8 @@ contains
        fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:,pnm1))
        fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
-       tmax_local(ie)    = MAXVAL(elem(ie)%state%T(:,:,:,n0))
+!THETA
+!       tmax_local(ie)    = MAXVAL(elem(ie)%state%T(:,:,:,n0))
 
        if (rsplit>0) &
             dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
@@ -220,7 +221,8 @@ contains
        Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:,pnm1))
        Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
-       tmin_local(ie)    = MINVAL(elem(ie)%state%T(:,:,:,n0))
+!THETA
+!       tmin_local(ie)    = MINVAL(elem(ie)%state%T(:,:,:,n0))
 
        if (rsplit>0) &
             dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
@@ -238,7 +240,8 @@ contains
        Fusum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,1,:,pnm1))
        Fvsum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
-       tsum_local(ie)    = SUM(elem(ie)%state%t(:,:,:,n0))
+!THETA
+!       tsum_local(ie)    = SUM(elem(ie)%state%t(:,:,:,n0))
        if (rsplit>0) then
           dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
        else
@@ -750,8 +753,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                 cp_star1=cp
                 cp_star2=cp
              endif
-             sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
-             suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
+!THETA 2 lines
+!             sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
+!             suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
           enddo
           enddo
        enddo
@@ -799,9 +803,11 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
              do i=1,np
                 if (wet) then
                    Qt = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
-                   T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,t2),Qt)
+!THETA
+!                   T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,t2),Qt)
                 else
-                   T_v(i,j,k) = elem(ie)%state%T(i,j,k,t2)
+!THETA
+!                   T_v(i,j,k) = elem(ie)%state%T(i,j,k,t2)
                 endif
              end do
           end do

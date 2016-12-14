@@ -77,9 +77,10 @@ contains
        end do
     end do
 
-    elemin%derived%FT(:,:,:,nm1) = elemin%derived%FT(:,:,:,nm1) + &
-         hs_T_forcing(hvcoord,psfrc(1,1),               &
-         elemin%state%T(1,1,1,nfrc),elemin%spherep,np, nlev)
+!THETA
+!    elemin%derived%FT(:,:,:,nm1) = elemin%derived%FT(:,:,:,nm1) + &
+!         hs_T_forcing(hvcoord,psfrc(1,1),               &
+!         elemin%state%T(1,1,1,nfrc),elemin%spherep,np, nlev)
     
     elemin%derived%FM(:,:,:,:,nm1)= elemin%derived%FM(:,:,:,:,nm1) + &
          hs_v_forcing(hvcoord,psfrc(1,1),& 
@@ -109,7 +110,8 @@ contains
                 pmid = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*(elemin%state%ps_v(i,j,nfrc))
                 r0=elemin%state%Q(i,j,k,q)
                 r1=r0
-                call Prim_Condense(r1,elemin%state%T(i,j,k,nfrc),pmid)
+!THETA
+!                call Prim_Condense(r1,elemin%state%T(i,j,k,nfrc),pmid)
                 elemin%derived%FQ(i,j,k,q,nm1) = elemin%derived%FQ(i,j,k,q,nm1) + &
                      (r1-r0)/(dtf_q)
              enddo
@@ -324,9 +326,10 @@ contains
        enddo
 #endif
 
-       elem(ie)%state%T(:,:,:,n0) =Tinit
-       elem(ie)%state%T(:,:,:,nm1)=elem(ie)%state%T(:,:,:,n0)
-       elem(ie)%state%T(:,:,:,np1)=elem(ie)%state%T(:,:,:,n0)
+!THETA 3 lines
+!       elem(ie)%state%T(:,:,:,n0) =Tinit
+!       elem(ie)%state%T(:,:,:,nm1)=elem(ie)%state%T(:,:,:,n0)
+!       elem(ie)%state%T(:,:,:,np1)=elem(ie)%state%T(:,:,:,n0)
 
        elem(ie)%state%v(:,:,:,:,n0) =0.0D0
        elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
@@ -336,7 +339,8 @@ contains
        q=1
        elem(ie)%state%Q(:,:,:,q) =0  ! moist HS tracer IC=0
        do q=2,qsize
-          elem(ie)%state%Q(:,:,:,q) =elem(ie)%state%T(:,:,:,n0)/400
+!THETA
+!          elem(ie)%state%Q(:,:,:,q) =elem(ie)%state%T(:,:,:,n0)/400
        enddo
        endif
     end do

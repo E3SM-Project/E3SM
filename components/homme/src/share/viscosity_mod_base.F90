@@ -132,7 +132,8 @@ logical var_coef1
          do j=1,np
             do i=1,np
 #ifdef _PRIM
-               T(i,j,k)=elem(ie)%state%T(i,j,k,nt) 
+!THETA, 1 line
+!               T(i,j,k)=elem(ie)%state%T(i,j,k,nt) 
 #else
                ! filter surface height, not thickness
                T(i,j,k)=elem(ie)%state%p(i,j,k,nt) + elem(ie)%state%ps(i,j)
@@ -261,7 +262,8 @@ logical var_coef1
 !$omp parallel do default(shared), private(k,tmp)
 #endif
       do k=1,nlev
-         tmp=elem(ie)%state%T(:,:,k,nt) 
+!THETA
+!         tmp=elem(ie)%state%T(:,:,k,nt) 
          ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
          tmp=elem(ie)%state%dp3d(:,:,k,nt) 
          dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
