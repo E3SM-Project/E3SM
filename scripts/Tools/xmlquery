@@ -38,7 +38,7 @@ def parse_command_line(args):
                         help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> )")
 
     parser.add_argument("-file" , "--file",
-                        help="env*.xml file")
+                        help="depreciated option, do not use")
 
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
@@ -83,10 +83,10 @@ def parse_command_line(args):
         variables = args.variables
 
 
-    return variables, args.subgroup, args.file, args.caseroot, args.listall, args.fileonly, \
+    return variables, args.subgroup, args.caseroot, args.listall, args.fileonly, \
         args.value, args.no_resolve, args.raw, args.description, args.group
 
-def xmlquery(case, variables=[], subgroup=None, listall=False, fileonly=False, value=False,
+def xmlquery(case, variables, subgroup=None, fileonly=False,
              resolved=True, raw=False, description=False, group=False):
     """
     Return list of attributes and their values , print formatted
@@ -99,6 +99,8 @@ def xmlquery(case, variables=[], subgroup=None, listall=False, fileonly=False, v
             groups = [subgroup]
         else:
             groups = case.get_record_fields(var, "group")
+
+
         for group in groups:
             if not group in results:
                 results[group] = {}
@@ -107,9 +109,11 @@ def xmlquery(case, variables=[], subgroup=None, listall=False, fileonly=False, v
             expect(group, "No group found for var %s"% var)
 
             if raw:
-                results[group][var]['raw'] = case.get_record_field(var, "raw")
+                results[group][var]['raw'] = case.get_record_fields(var, "raw")
             elif description:
-                results[group][var]['desc'] = case.get_record_field(var, "desc")
+                results[group][var]['desc'] = case.get_record_fields(var, "desc")
+            elif fileonly:
+                results[group][var]['file'] = case.get_record_fields(var, "file")
             else:
                 results[group][var]['value'] = case.get_value(var, resolved=resolved, subgroup=group)
 
@@ -122,26 +126,28 @@ def _main_func():
         sys.exit(1 if test_results.failed > 0 else 0)
 
     # Initialize command line parser and get command line options
-    variables, subgroup, infile, caseroot, listall, fileonly,  \
+    variables, subgroup, caseroot, listall,  fileonly, \
         value, no_resolve, raw, description, group = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
         if listall:
-            variables = case.get_record_field(None, "varid").split(",")
+            variables = case.get_record_fields(None, "varid")
         expect(variables, "No variables found")
-        results = xmlquery(case, variables, subgroup, listall, fileonly, value, resolved=not no_resolve, raw=raw, description=description, group=group)
+        results = xmlquery(case, variables, subgroup, fileonly, resolved=not no_resolve, raw=raw, description=description, group=group)
     for group in iter(results):
         if len(variables) > 1 or len(results.keys()) > 1:
-            print "Results in group %s"%group
+            print "\nResults in group %s"%group
         for var in variables:
             if var in results[group]:
                 if raw:
                     print results[group][var]['raw']
                 elif value:
-                    sys.stdout.write("\t%s"%results[group][var]['value'])
+                    sys.stdout.write("%s"%results[group][var]['value'])
                 elif description:
                     print "\t%s: %s"%(var, results[group][var]['desc'])
+                elif fileonly:
+                    print "\t%s: %s"%(var, results[group][var]['file'])
                 else:
                     print "\t%s: %s"%(var, results[group][var]['value'])
 

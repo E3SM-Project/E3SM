@@ -55,7 +55,7 @@ class EnvBatch(EnvBase):
                 self._set_value(node, value, vid=item, ignore_type=ignore_type)
                 val = value
         else:
-            nodes = self.get_nodes("group", {"id":subgroup})
+            nodes = self.get_nodes("job", {"name":subgroup})
             for node in nodes:
                 vnode = self.get_optional_node("entry", {"id":item}, root=node)
                 if vnode is not None:
@@ -67,6 +67,7 @@ class EnvBatch(EnvBase):
         """
         Must default subgroup to something in order to provide single return value
         """
+
         value = None
         if subgroup is None:
             node = self.get_optional_node(item, attribute)
@@ -77,11 +78,12 @@ class EnvBatch(EnvBase):
             else:
                 value = EnvBase.get_value(self,item,attribute,resolved)
         else:
-            job_node = self.get_optional_node("group", {"id":subgroup})
+            job_node = self.get_optional_node("job", {"name":subgroup})
             if job_node is not None:
                 node = self.get_optional_node("entry", {"id":item}, root=job_node)
                 if node is not None:
                     value = node.get("value")
+
                     if resolved:
                         value = self.get_resolved_value(value)
 
@@ -106,8 +108,8 @@ class EnvBatch(EnvBase):
 
     def get_jobs(self):
         jobs = []
-        for node in self.get_nodes("group"):
-            name = node.get("id")
+        for node in self.get_nodes("job"):
+            name = node.get("name")
             jobs.append(name)
         return jobs
 
@@ -120,14 +122,13 @@ class EnvBatch(EnvBase):
 
         expect(len(cjobs)==0," Looks like job groups have already been created")
 
-#        childnodes = deepcopy(group)
         for child in reversed(group):
             childnodes.append(deepcopy(child))
             group.remove(child)
 
         for name,jdict in bjobs:
-            newjob = deepcopy(group)
-            newjob.set("id",name)
+            newjob = ET.Element("job")
+            newjob.set("name",name)
             for field in jdict.keys():
                 val = jdict[field]
                 node = ET.SubElement(newjob, "entry", {"id":field,"value":val})
@@ -135,8 +136,20 @@ class EnvBatch(EnvBase):
                 tnode.text = "char"
             for child in childnodes:
                 newjob.append(deepcopy(child))
-            self.root.append(newjob)
+            group.append(newjob)
 
+    def cleanupnode(self, node):
+        if node.get("id") == "batch_system":
+            fnode = node.find(".//file")
+            node.remove(fnode)
+            gnode = node.find(".//group")
+            node.remove(gnode)
+            vnode = node.find(".//values")
+            if vnode is not None:
+                node.remove(vnode)
+        else:
+            node = EnvBase.cleanupnode(self, node)
+        return node
 
     def set_batch_system(self, batchobj, batch_system_type=None):
         if batch_system_type is not None:
@@ -153,8 +166,8 @@ class EnvBatch(EnvBase):
         self.num_tasks = total_tasks
         self.tasks_per_numa = tasks_per_node / 2
         self.thread_count = thread_count
-
         task_count = self.get_value("task_count", subgroup=job)
+
         if task_count == "default":
             self.total_tasks = total_tasks
             self.num_nodes = num_nodes
@@ -425,5 +438,17 @@ class EnvBatch(EnvBase):
     def get_all_queues(self):
         return self.get_nodes("queue")
 
+    def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
+        if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "PROJECT_REQUIRED",
+                        "JOB_QUEUE"):
+            nodes = EnvBase.get_nodes(self, "entry", attributes={"id":nodename},
+                                        root=root, xpath=xpath)
+        else:
+            nodes =  EnvBase.get_nodes(self, nodename, attributes, root, xpath)
+        return nodes
 
-
+    def get_groups(self, root):
+        groups = EnvBase.get_groups(self, root)
+        if len(groups) == 1 and groups[0] == "job_submission":
+            groups = self.get_jobs()
+        return groups

@@ -125,12 +125,12 @@ class EntryID(GenericXML):
         return self._get_node_element_info(node, "default_value")
 
     # Get description , expect child with tag "description" for parent node
-    def _get_description (self, node):
+    def get_description (self, node):
         return self._get_node_element_info(node, "desc")
 
     # Get group , expect node with tag "group"
     # entry id nodes are children of group nodes
-    def _get_groups(self, node):
+    def get_groups(self, node):
         groups = self.get_nodes("group")
         result = []
         nodes = []

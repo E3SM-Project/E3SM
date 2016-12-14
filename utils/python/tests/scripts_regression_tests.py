@@ -1199,6 +1199,8 @@ class C_TestXMLQuery(unittest.TestCase):
         machine = 'melvin'
         cmd = "%s/create_newcase --case %s --compset X --res f19_g16 --mach %s " % (SCRIPT_DIR, testdir, machine)
         run_cmd_assert_result(self, cmd, from_dir=SCRIPT_DIR)
+        cmd = "./xmlchange JOB_QUEUE=testval --subgroup case.run"
+        run_cmd_assert_result(self, cmd, from_dir=testdir)
 
         self._do_teardown.append(testdir)
 
@@ -1228,8 +1230,8 @@ class C_TestXMLQuery(unittest.TestCase):
         options = [
             '' ,
             '--listall' ,
-            '--listall --valonly' ,
-            "-caseroot " + testdir +" -valonly -subgroup case.run -value JOB_QUEUE" ,
+            '--listall --value' ,
+            "-caseroot " + testdir +"  -subgroup case.run -value JOB_QUEUE" ,
         ]
 
         for opt in options :
@@ -1244,8 +1246,8 @@ class C_TestXMLQuery(unittest.TestCase):
         testdir  = self._testdirs[0]
 
         options = [
-            '-caseroot ' + testdir + ' -valonly -value JOB_QUEUE'  ,
-            '-caseroot ' + testdir + ' -valonly -subgroup case.run -value JOB_QUEUE' ,
+            '-caseroot ' + testdir + ' -value JOB_QUEUE'  ,
+            '-caseroot ' + testdir + ' -subgroup case.run -value JOB_QUEUE' ,
          ]
 
         # Get value and group information
@@ -1257,8 +1259,7 @@ class C_TestXMLQuery(unittest.TestCase):
         cmd      = xmlquery + " " + options[1]
         group_out = run_cmd_no_fail(cmd, from_dir=testdir)
 
-        searchObj = re.search( r'(.*)(case.run:JOB_QUEUE)\t*(.*)', base_out)
-
+        searchObj = re.search( r'testval', base_out)
         # Test group option
         self.assertTrue(len(base_out) , msg="no output for " + cmd)
         self.assertEqual(searchObj.group() , group_out)

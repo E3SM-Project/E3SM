@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy   import deepcopy
-import glob, os, shutil, traceback, math, string
+import glob, os, shutil, math, string
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, get_cime_root, append_status
@@ -152,10 +152,10 @@ class Case(object):
         self._env_entryid_files.append(EnvBuild(self._caseroot))
         self._env_entryid_files.append(EnvMachPes(self._caseroot))
         self._env_entryid_files.append(EnvCase(self._caseroot))
-        self._env_entryid_files.append(EnvBatch(self._caseroot))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
             self._env_entryid_files.append(EnvTest(self._caseroot))
         self._env_generic_files = []
+        self._env_generic_files.append(EnvBatch(self._caseroot))
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
         self._env_generic_files.append(EnvArchive(self._caseroot))
         self._files = self._env_entryid_files + self._env_generic_files
@@ -283,20 +283,25 @@ class Case(object):
                     if field == "raw":
                         result.append(env_file.get_raw_record(root))
                     elif field == "desc":
-                        result.append(env_file._get_description(root))
+                        result.append(env_file.get_description(root))
                     elif field == "varid":
                         result.append(root.get("id"))
                     elif field == "group":
-                        result.extend(env_file._get_groups(root))
+                        result.extend(env_file.get_groups(root))
+                    elif field == "file":
+                        result.append(env_file.filename)
 
-#        if result is None:
-#            for env_file in self._env_generic_files:
-#                roots = env_file.get_nodes(variable)
-#                for root in roots:
-#                    if root is not None:
-#                        if field == "raw":
-#                            result += env_file.get_raw_record(root)
-
+        if not result:
+            for env_file in self._env_generic_files:
+                roots = env_file.get_nodes(variable)
+                for root in roots:
+                    if root is not None:
+                        if field == "raw":
+                            result.append(env_file.get_raw_record(root))
+                        elif field == "group":
+                            result.extend(env_file.get_groups(root))
+                        elif field == "file":
+                            result.append(env_file.filename)
 
         return list(set(result))
 
@@ -346,12 +351,15 @@ class Case(object):
         if item == "CASEROOT":
             self._caseroot = value
         result = None
-        for env_file in self._env_entryid_files:
+        files = self._env_entryid_files
+        files.append(self.get_env('batch'))
+        for env_file in files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file %s %s",env_file.filename, item)
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
+
 
     def set_valid_values(self, item, valid_values):
         """
@@ -468,11 +476,13 @@ class Case(object):
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist)
-
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
+        # Add the group and elements for env_batch
+        env_batch = self.get_env("batch")
+        env_batch.add_elements_by_group(drv_comp, attributes=attlist)
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
@@ -681,11 +691,13 @@ class Case(object):
         #--------------------------------------------
         # batch system
         #--------------------------------------------
+        env_batch = self.get_env("batch")
+
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
         batch = Batch(batch_system=batch_system_type, machine=machine_name)
         bjobs = batch.get_batch_jobs()
 
-        env_batch = self.get_env("batch")
+
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
         env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue)
