@@ -42,6 +42,21 @@
      Currently the following streams are supported
          lnd.cplhist
          sno.cplhist
+
+    **** NOTE: in the value matches below, regular expressions are used **** 
+         If two matches are equivalent, the FIRST one will be used
+
+	 As an example, say dlnd_mode=GLC_CPLHIST
+
+         the following will results in the CORRECT set of streams for this dlnd_mode
+             <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
+             <value dlnd_mode="CPLHIST">COPYALL</value>
+ 
+         the following order would result in an INCORRECT setting of streams for this datm_mode
+             <value dlnd_mode="CPLHIST">COPYALL</value>
+             <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
+  -->
+
   -->
 
   <!-- ========================================================================================  -->
@@ -55,7 +70,7 @@
     <desc>List of streams used for the given datm_mode.</desc>
     <values>
       <value dlnd_mode="NULL">NULL</value>
-      <value dlnd_mode="CPLHIST">lnd.cplhist</value>
+      <value dlnd_mode="^CPLHIST$">lnd.cplhist</value>
       <value dlnd_mode="GLC_CPLHIST">sno.cplhist</value>
     </values>
   </entry>
@@ -199,8 +214,8 @@
     </desc>
     <values>
       <value dlnd_mode="NULL">NULL</value>
-      <value dlnd_mode="CPLHIST">COPYALL</value>
       <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
+      <value dlnd_mode="CPLHIST">COPYALL</value>
     </values>
   </entry>
 
