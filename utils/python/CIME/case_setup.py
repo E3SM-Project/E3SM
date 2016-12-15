@@ -12,7 +12,7 @@ from CIME.BuildTools.configure import configure
 from CIME.utils             import append_status, get_cime_root
 from CIME.test_status       import *
 
-import shutil, time, glob
+import shutil
 
 logger = logging.getLogger(__name__)
 
