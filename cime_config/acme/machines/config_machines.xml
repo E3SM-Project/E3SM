@@ -788,7 +788,7 @@
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
       <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command>
       <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command>
-      <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command>
+      <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.12/base</command>
       <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command>
     </modules>
   </module_system>
@@ -856,7 +856,7 @@
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
       <command name="load" mpilib="!mpi-serial">sems-hdf5/1.8.12/parallel</command>
       <command name="load" mpilib="!mpi-serial">sems-netcdf/4.3.2/parallel</command>
-      <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.11/base</command>
+      <command name="load" mpilib="mpi-serial">sems-hdf5/1.8.12/base</command>
       <command name="load" mpilib="mpi-serial">sems-netcdf/4.3.2/base</command>
     </modules>
   </module_system>
