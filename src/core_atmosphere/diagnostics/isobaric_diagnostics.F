@@ -352,7 +352,7 @@ module isobaric_diagnostics
         real (kind=RKIND), dimension(:), pointer :: vorticity_850hPa
         real (kind=RKIND), dimension(:), pointer :: vorticity_925hPa
        
-        real (kind=RKIND)            :: tempC, logrelhum
+        real (kind=RKIND) :: evp
        
        !--------------------
        
@@ -558,10 +558,12 @@ module isobaric_diagnostics
             do iCell = 1,nCells
             do k = 1,nVertLevels
                 temperature(k,iCell) = (theta_m(k,iCell)/(1._RKIND+rvord*scalars(index_qv,k,iCell)))*exner(k,iCell) 
-                tempC = temperature(k,iCell) - 273.15
-                logrelhum = log(max(1.e-08,min(100.,relhum(k,iCell)))*0.01)
-                dewpoint(k,iCell) = 243.04*(logrelhum+(17.625*tempC/(243.04+tempC))) & 
-                                    /(17.625-logrelhum-((17.625*tempC)/(243.04+tempC))) 
+
+                ! Vapor pressure (NB: pressure here is already in hPa)
+                evp = pressure(k,iCell) * scalars(index_qv,k,iCell) / (scalars(index_qv,k,iCell) + 0.622_RKIND)
+
+                ! Dewpoint temperature following Bolton (1980)
+                dewpoint(k,iCell) = (243.5_RKIND * log(evp/6.112_RKIND)) / (17.67_RKIND - log(evp/6.112_RKIND))
             enddo
             enddo
         end if
