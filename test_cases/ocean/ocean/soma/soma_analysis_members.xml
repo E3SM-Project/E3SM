@@ -17,7 +17,7 @@
 		<option name="config_AM_mixedLayerDepths_enable">.true.</option>
 		<option name="config_AM_timeFilters_enable">.false.</option>
 		<option name="config_AM_timeFilters_initialize_filters">.false.</option>
-		<option name="config_AM_lagrPartTrack_enable">.true.</option>
+		<option name="config_AM_lagrPartTrack_enable">.false.</option>
 		<option name="config_AM_lagrPartTrack_reset_criteria">'global_time'</option>
 		<option name="config_AM_lagrPartTrack_reset_global_timestamp">'0029_23:59:59'</option>
 		<option name="config_AM_lagrPartTrack_region_stream">'none'</option>
