@@ -36,7 +36,7 @@ diff_pr_reg=mod_pr_reg-obs_pr_reg
 
 #Plot
 x=vcs.init()
-x.scriptrun('plot_set_5.json')
+#x.scriptrun('plot_set_5.json')
 x.plot(diff_pr_reg)
 
 png_filename='test.png'
