@@ -1,6 +1,123 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 12-15-2016
+Tag: cime5.2.0-alpha.11
+Answer Changes: None
+Tests: scripts_regression_tests + various cesm system tests
+Dependencies:
+
+Brief Summary: fix debug flag attribute, clone issues, buildnml direct in python
+	prevent a div by 0 in xmlchange, fix bless_test_results, move config_build to
+	config_compilers, fix starchive issue, remove doc directory, redo buildnml in python
+	datm updates, clm bld fix
+
+User interface changes:
+
+Modified files: git diff --name-status
+	M       cime_config/acme/config_files.xml
+M       cime_config/acme/machines/Makefile
+D       cime_config/acme/machines/config_build.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/buildlib.gptl
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/config_pes.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/config_grids.xml
+M       cime_config/cesm/machines/Makefile
+M       cime_config/cesm/machines/config_batch.xml
+D       cime_config/cesm/machines/config_build.xml
+M       cime_config/cesm/machines/config_compilers.xml
+M       cime_config/cesm/machines/config_machines.xml
+D       cime_config/xml_schemas/config_build.xsd
+A       cime_config/xml_schemas/config_compilers_v2.xsd
+M       components/data_comps/datm/cime_config/buildnml
+M       components/data_comps/datm/cime_config/config_component.xml
+M       components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       components/data_comps/dice/cime_config/buildnml
+M       components/data_comps/dice/cime_config/namelist_definition_dice.xml
+M       components/data_comps/dlnd/cime_config/buildnml
+M       components/data_comps/dlnd/cime_config/namelist_definition_dlnd.xml
+M       components/data_comps/docn/cime_config/buildnml
+M       components/data_comps/drof/cime_config/buildnml
+M       components/data_comps/drof/cime_config/config_component.xml
+M       components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M       components/data_comps/dwav/cime_config/buildnml
+M       components/xcpl_comps/xatm/cime_config/buildnml
+M       components/xcpl_comps/xglc/cime_config/buildnml
+M       components/xcpl_comps/xice/cime_config/buildnml
+M       components/xcpl_comps/xlnd/cime_config/buildnml
+M       components/xcpl_comps/xocn/cime_config/buildnml
+M       components/xcpl_comps/xrof/cime_config/buildnml
+M       components/xcpl_comps/xwav/cime_config/buildnml
+D       doc/
+M       driver_cpl/cime_config/buildnml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/cime_config/namelist_definition_drv.xml
+M       driver_cpl/driver/cesm_comp_mod.F90
+M       driver_cpl/driver/seq_hist_mod.F90
+M       driver_cpl/driver/seq_io_mod.F90
+M       driver_cpl/shr/seq_flds_mod.F90
+M       driver_cpl/shr/seq_infodata_mod.F90
+M       externals/pio1/pio/pionfput_mod.F90.in
+M       scripts/Tools/code_checker
+M       scripts/Tools/compare_test_results
+M       scripts/Tools/preview_namelists
+M       scripts/query_testlists
+M       share/csm_share/shr/shr_file_mod.F90
+M       share/csm_share/shr/shr_strdata_mod.F90
+M       share/timing/ChangeLog
+M       share/timing/Makefile
+M       share/timing/perf_mod.F90
+M       tools/configure
+M       tools/mapping/gen_mapping_files/runoff_to_ocn/src/map_mod.F90
+M       tools/utils/find_circular_dependency.py
+A       utils/python/CIME/BuildTools/__init__.py
+A       utils/python/CIME/BuildTools/cmakemacroswriter.py
+A       utils/python/CIME/BuildTools/configure.py
+A       utils/python/CIME/BuildTools/macroconditiontree.py
+A       utils/python/CIME/BuildTools/macrowriterbase.py
+A       utils/python/CIME/BuildTools/makemacroswriter.py
+A       utils/python/CIME/BuildTools/possiblevalues.py
+A       utils/python/CIME/BuildTools/valuesetting.py
+D       utils/python/CIME/XML/build.py
+A       utils/python/CIME/XML/compilerblock.py
+M       utils/python/CIME/XML/compilers.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/XML/generic_xml.py
+M       utils/python/CIME/XML/grids.py
+M       utils/python/CIME/XML/machines.py
+M       utils/python/CIME/bless_test_results.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/buildnml.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_cmpgen_namelists.py
+M       utils/python/CIME/case_run.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/case_st_archive.py
+M       utils/python/CIME/case_submit.py
+M       utils/python/CIME/compare_namelists.py
+M       utils/python/CIME/compare_test_results.py
+M       utils/python/CIME/get_timing.py
+D       utils/python/CIME/macros_writers.py
+M       utils/python/CIME/namelist.py
+M       utils/python/CIME/nmlgen.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/provenance.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/user_mod_support.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+M       utils/python/update_acme_tests.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 11-28-2016
 Tag: cime5.2.0-alpha.10
 Answer Changes: Namelist compare changes expected
