@@ -1883,12 +1883,22 @@
   <!-- definitions pelayout -->
   <!-- ===================================================================== -->
 
-  <entry id="NTASKS_ATM">
+  <entry id="NTASKS">
     <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_atm</group>
+    <values>
+      <value component="ATM"> 0</value>
+      <value component="CPL"> 0</value>
+      <value component="OCN"> 0</value>
+      <value component="WAV"> 0</value>
+      <value component="GLC"> 0</value>
+      <value component="ICE"> 0</value>
+      <value component="ROF"> 0</value>
+      <value component="LND"> 0</value>
+      <value component="ESP"> 0</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>number of atmosphere tasks</desc>
+    <desc>number of tasks for each component</desc>
   </entry>
 
   <entry id="NTHRDS_ATM">
@@ -1924,14 +1934,6 @@
     <desc>Layout of atmosphere instances</desc>
   </entry>
 
-  <entry id="NTASKS_LND">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of land mpi tasks</desc>
-  </entry>
-
   <entry id="NTHRDS_LND">
     <type>integer</type>
     <default_value>0</default_value>
@@ -1963,14 +1965,6 @@
     <group>mach_pes_lnd</group>
     <file>env_mach_pes.xml</file>
     <desc>Layout of land instances</desc>
-  </entry>
-
-  <entry id="NTASKS_ICE">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ice mpi tasks</desc>
   </entry>
 
   <entry id="NTHRDS_ICE">
@@ -2006,14 +2000,6 @@
     <desc>Layout of sea ice instances</desc>
   </entry>
 
-  <entry id="NTASKS_OCN">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ocean mpi tasks</desc>
-  </entry>
-
   <entry id="NTHRDS_OCN">
     <type>integer</type>
     <default_value>0</default_value>
@@ -2047,14 +2033,6 @@
     <desc>Layout of ocean instances</desc>
   </entry>
 
-  <entry id="NTASKS_CPL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_cpl</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of coupler mpi tasks</desc>
-  </entry>
-
   <entry id="NTHRDS_CPL">
     <type>integer</type>
     <default_value>0</default_value>
@@ -2069,17 +2047,6 @@
     <group>mach_pes_cpl</group>
     <file>env_mach_pes.xml</file>
     <desc>root cpl mpi task</desc>
-  </entry>
-
-  <entry id="NTASKS_GLC">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <values>
-      <value compset="_CISM1">1</value>
-    </values>
-    <group>mach_pes_glc</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of glc mpi tasks</desc>
   </entry>
 
   <entry id="NTHRDS_GLC">
@@ -2118,14 +2085,6 @@
     <desc>Layout of glacier instances</desc>
   </entry>
 
-  <entry id="NTASKS_ROF">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of river runoff tasks</desc>
-  </entry>
-
   <entry id="NTHRDS_ROF">
     <type>integer</type>
     <default_value>0</default_value>
@@ -2158,13 +2117,6 @@
     <desc>Layout of river runoff instances</desc>
   </entry>
 
-  <entry id="NTASKS_WAV">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of wav mpi tasks</desc>
-  </entry>
 
   <entry id="NTHRDS_WAV">
     <type>integer</type>
@@ -2197,14 +2149,6 @@
     <group>mach_pes_wav</group>
     <file>env_mach_pes.xml</file>
     <desc>Layout of wave instances</desc>
-  </entry>
-
-  <entry id="NTASKS_ESP">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of external processing tool mpi tasks</desc>
   </entry>
 
   <entry id="NTHRDS_ESP">
