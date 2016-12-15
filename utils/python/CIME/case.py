@@ -655,18 +655,18 @@ class Case(object):
         # we can get rid of this code when all of the perl is removed
         for key, value in other.items():
             self.set_value(key, value)
-        pes_per_node = self.get_value("PES_PER_NODE")
         for key, value in pes_ntasks.items():
             totaltasks[key[-3:]] = int(value)
-            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
+            mach_pes_obj.set_value(key,int(value))
         for key, value in pes_rootpe.items():
             totaltasks[key[-3:]] += int(value)
-            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
+            mach_pes_obj.set_value(key,int(value))
         for key, value in pes_nthrds.items():
             totaltasks[key[-3:]] *= int(value)
-            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
+            mach_pes_obj.set_value(key,int(value))
 
         maxval = 1
+        pes_per_node = self.get_value("PES_PER_NODE")
         if mpilib != "mpi-serial":
             for key, val in totaltasks.items():
                 if val < 0:

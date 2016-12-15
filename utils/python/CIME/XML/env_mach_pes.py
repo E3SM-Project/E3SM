@@ -1,8 +1,9 @@
 """
-Interface to the env_mach_pes.xml file.  This class inherits from EnvBase
+Interface to the env_mach_pes.xml file.  This class inherits from EntryID
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
+from CIME.utils import convert_to_type, convert_to_string
 import math
 
 logger = logging.getLogger(__name__)
@@ -14,9 +15,33 @@ class EnvMachPes(EnvBase):
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
         EnvBase.__init__(self, case_root, infile)
+        self._component_value_list = ["NTASKS"]
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
-        value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
+        basepart = None
+        value = None
+        parts = vid.split("_")
+        if vid in self._component_value_list and attribute is None:
+            logger.debug("Not enough info to get value for %s"%vid)
+            return value
+
+        elif len(parts) == 2:
+            basepart = parts[0]
+            comp = parts[1]
+            if basepart in self._component_value_list:
+                vid = basepart
+                if attribute is None:
+                    attribute = {"component" : comp}
+                else:
+                    attribute["component"] = comp
+                node = self.get_optional_node("entry", {"id":vid})
+                if node is not None:
+                    type_str = self._get_type_info(node)
+                    value = convert_to_type(self.get_element_text("value", attribute, root=node), type_str, vid)
+
+        if value is None:
+            value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
+
         if "NTASKS" in vid or "ROOTPE" in vid and pes_per_node is None:
             pes_per_node = self.get_value("PES_PER_NODE")
 
@@ -26,31 +51,35 @@ class EnvMachPes(EnvBase):
                 value = -1*value*pes_per_node
         return value
 
-    def set_value(self, vid, value, subgroup=None, ignore_type=False, pes_per_node=None): # pylint: disable=arguments-differ
+    def set_value(self, vid, value, subgroup=None, ignore_type=False):
         """
         Set the value of an entry-id field to value
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
         val = None
+        basepart = None
+        comp = None
+        parts = vid.split("_")
+        if len(parts) == 2:
+            basepart = parts[0]
+            comp = parts[1]
+            if basepart in self._component_value_list:
+                vid = basepart
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
-            val = self._set_value(node, value, vid, subgroup, ignore_type, pes_per_node=pes_per_node)
+            val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
         return val
 
-
-
-    def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, pes_per_node=None): # pylint: disable=arguments-differ
+    def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, component=None): # pylint: disable=arguments-differ
         if vid is None:
             vid = node.get("id")
 
-        if "NTASKS" in vid or "ROOTPE" in vid and pes_per_node is None:
-            pes_per_node = self.get_value("PES_PER_NODE")
-
-        if "NTASKS" in vid and value < 0:
-            value = -1*value*pes_per_node
-        if "ROOTPE" in vid and value < 0:
-            value = -1*value*pes_per_node
+        if vid in self._component_value_list:
+            attribute = {"component":component}
+            type_str = self._get_type_info(node)
+            val = self.set_element_text("value", convert_to_string(value, type_str, vid), attribute, root=node)
+            return val
         val = EnvBase._set_value(self, node, value, vid, subgroup, ignore_type)
         return val
 
@@ -106,3 +135,32 @@ class EnvMachPes(EnvBase):
         tasks_per_node = self.get_tasks_per_node(total_tasks, max_thread_count)
         num_nodes = int(math.ceil(float(total_tasks) / tasks_per_node))
         return num_nodes
+
+    def cleanupnode(self, node):
+        """
+        Remove the <group>, <file>, <values> and <value> childnodes from node
+        """
+        fnode = node.find(".//file")
+        node.remove(fnode)
+        gnode = node.find(".//group")
+        node.remove(gnode)
+        dnode = node.find(".//default_value")
+        if dnode is not None:
+            node.remove(dnode)
+        if node.get("id") not in self._component_value_list:
+            vnode = node.find(".//values")
+            if vnode is not None:
+                node.remove(vnode)
+        return node
+
+
+    def get_nodes_by_id(self, varid):
+        basepart = None
+        parts = varid.split("_")
+        if len(parts) == 2:
+            basepart = parts[0]
+            if basepart in self._component_value_list:
+                varid = basepart
+        return EnvBase.get_nodes_by_id(self, varid)
+
+

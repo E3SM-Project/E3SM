@@ -338,8 +338,8 @@ class EntryID(GenericXML):
             # expression match to a dictionary value in attributes matching a
             # value attribute in node
             value = srcobj.get_default_value(src_node, attributes)
-
-            self._set_value(node,value)
+            if value is not None:
+                self._set_value(node,value)
             logger.debug ("Adding to group " + gname)
 
         return nodelist
@@ -353,7 +353,8 @@ class EntryID(GenericXML):
         gnode = node.find(".//group")
         node.remove(gnode)
         dnode = node.find(".//default_value")
-        node.remove(dnode)
+        if dnode is not None:
+            node.remove(dnode)
         vnode = node.find(".//values")
         if vnode is not None:
             node.remove(vnode)

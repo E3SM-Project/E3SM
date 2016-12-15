@@ -51,6 +51,9 @@ class Component(EntryID):
             return
         # use the default_value if present
         val_node = self.get_optional_node("default_value", root=node)
+        if val_node is None:
+            logger.debug("No default_value for %s"%node.get("id"))
+            return val_node
         value = val_node.text
         if value is not None and len(value) > 0 and value != "UNSET":
             match_values.append(value)

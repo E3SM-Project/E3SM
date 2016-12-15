@@ -95,6 +95,19 @@ def parse_command_line(args):
         args.value, args.no_resolve, args.raw, args.description, args.group, args.full, \
         args.type, args.valid_values
 
+
+def get_value_as_string(case, var):
+    thistype = case.get_record_fields(var, "type")
+    value = None
+    if thistype:
+        value = convert_to_string(
+            case.get_value(var, resolved=resolved, subgroup=group),
+            thistype[0])
+    else:
+        value = case.get_value(var, resolved=resolved, subgroup=group)
+    return value
+
+
 def xmlquery(case, variables, subgroup=None, fileonly=False,
              resolved=True, raw=False, description=False, group=False,
              full=False, dtype=False, valid_values=False):
@@ -103,7 +116,7 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
 
     """
     results = {}
-
+    comp_classes = case.get_values("COMP_CLASSES")
     for var in variables:
         if subgroup is not None:
             groups = [subgroup]
@@ -117,14 +130,17 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
             if not var in results[group]:
                 results[group][var] = {}
             expect(group, "No group found for var %s"% var)
-            thistype = case.get_record_fields(var, "type")
-            if thistype:
-                results[group][var]['value'] = convert_to_string(
-                    case.get_value(var, resolved=resolved, subgroup=group),
-                    thistype[0])
-            else:
-                results[group][var]['value'] = \
-                    case.get_value(var, resolved=resolved, subgroup=group)
+            value = get_value_as_string(case, var)
+            if value is None:
+                value = []
+                for comp in comp_classes:
+                    if comp == "DRV":
+                        comp = "CPL"
+
+                    value.append(comp + ":" + "%s"%get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group))
+
+            results[group][var]['value'] = value
+
             if raw:
                 results[group][var]['raw'] = case.get_record_fields(var, "raw")
             if description or full:
@@ -135,8 +151,6 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
                 results[group][var]['type'] = case.get_record_fields(var, "type")
             if valid_values or full:
                 results[group][var]['valid_values'] = case.get_record_fields(var, "valid_values")
-
-
 
     return results
 
