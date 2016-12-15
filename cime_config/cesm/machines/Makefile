@@ -632,12 +632,17 @@ ifeq ($(CLMVER),$(null))
   LNDOBJDIR = $(EXEROOT)/lnd/obj
   LNDLIBDIR=$(LIBROOT)
   LNDLIB := liblnd.a
+  INCLDIR += -I$(LNDOBJDIR)
 else
   LNDOBJDIR = $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
   LNDLIBDIR = $(EXEROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
   LNDLIB := libclm.a
+  INCLDIR += -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  ifeq ($(MODEL),clm)
+    INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  endif
 endif
-INCLDIR += -I$(LNDOBJDIR)
+
 
 ifeq ($(ULIBDEP),$(null))
    ifneq ($(LIBROOT),$(null))
@@ -707,8 +712,14 @@ endif
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-$(COMPLIB): $(OBJS)
+ifdef INCLUDE_DIR
+  $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
+	$(CP) *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
+else
+  $(COMPLIB): $(OBJS)
+	$(AR) -r $(COMPLIB) $(OBJS)
+endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
@@ -720,6 +731,7 @@ $(COMPLIB): $(OBJS)
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  $<
 .F90.o:
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(CONTIGUOUS_FLAG) $<
+
 .cpp.o:
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 
