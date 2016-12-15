@@ -863,7 +863,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         self.simple_test(False, "%s -t %s" % (comparg, test_id))
 
         # compare_test_results should detect the fail
-        cpr_cmd = "%s/compare_test_results -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        cpr_cmd = "%s/compare_test_results --test-root %s -b %s -t %s 2>&1" \
+            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
@@ -873,7 +874,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                             msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
 
         # Bless
-        run_cmd_no_fail("%s/bless_test_results --hist-only --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
+        run_cmd_no_fail("%s/bless_test_results --test-root %s --hist-only --force -b %s -t %s"\
+                            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id))
 
         # Hist compare should now pass again
         self.simple_test(True, "%s -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
@@ -902,7 +904,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir)
 
         # compare_test_results should pass
-        cpr_cmd = "%s/compare_test_results -n -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        cpr_cmd = "%s/compare_test_results --test-root %s -n -b %s -t %s 2>&1" \
+            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
         output = run_cmd_assert_result(self, cpr_cmd)
 
         # use regex
@@ -945,7 +948,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=100)
 
         # compare_test_results should fail
-        cpr_cmd = "%s/compare_test_results -n -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        cpr_cmd = "%s/compare_test_results --test-root %s -n -b %s -t %s 2>&1" \
+            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
@@ -955,7 +959,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                             msg="Cmd '%s' failed to display passed test in output:\n%s" % (cpr_cmd, output))
 
         # Bless
-        run_cmd_no_fail("%s/bless_test_results -n --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
+        run_cmd_no_fail("%s/bless_test_results --test-root %s -n --force -b %s -t %s" \
+                            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id))
 
         # Basic namelist compare should now pass again
         self.simple_test(True, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
