@@ -253,7 +253,7 @@
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
     </queues>
     <walltimes>
-      <walltime default="true">5:00:00</walltime>
+      <walltime default="true">2:00:00</walltime>
       <walltime ccsm_estcost="0">1:50:00</walltime>
       <walltime ccsm_estcost="1">5:00:00</walltime>
     </walltimes>
@@ -267,7 +267,7 @@
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
     </queues>
     <walltimes>
-      <walltime default="true">0:50:00</walltime>
+      <walltime default="true">4:00:00</walltime>
       <walltime ccsm_estcost="0">1:50:00</walltime>
       <walltime ccsm_estcost="1">6:00:00</walltime>
     </walltimes>
