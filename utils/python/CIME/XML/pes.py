@@ -16,7 +16,7 @@ class Pes(GenericXML):
         logger.debug("DEBUG: infile is %s"%infile)
         GenericXML.__init__(self, infile)
 
-    def find_pes_layout(self, grid, compset, machine, pesize_opts='M'):
+    def find_pes_layout(self, grid, compset, machine, pesize_opts='M', mpilib=None):
         pe_select = None
         grid_match = None
         mach_match = None
@@ -88,4 +88,8 @@ class Pes(GenericXML):
         logger.info("Pes setting: compset_match is %s " %compset_choice)
         logger.info("Pes setting: pesize match  is %s " %pesize_choice)
         logger.info("Pes other settings: %s"%other_settings)
+        if mpilib == "mpi-serial":
+           for i in iter(pes_ntasks):
+               pes_ntasks[i] = 1
+               pes_rootpe[i] = 1
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings

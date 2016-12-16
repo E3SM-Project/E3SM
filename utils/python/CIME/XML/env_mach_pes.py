@@ -17,27 +17,39 @@ class EnvMachPes(EnvBase):
         EnvBase.__init__(self, case_root, infile)
         self._component_value_list = ["NTASKS"]
 
-    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
-        basepart = None
-        value = None
+    def check_if_comp_var(self, vid, attribute=None):
+        '''
+        Returns the varid and component for
+        '''
+        comp = None
+        if vid in self._component_value_list:
+            if attribute is not None:
+                if "component" in attribute:
+                    comp = attribute["component"]
+            return vid, comp
         parts = vid.split("_")
-        if vid in self._component_value_list and attribute is None:
+        if len(parts) == 2 and parts[0] in self._component_value_list:
+            return parts[0], parts[1]
+        return vid, comp
+
+
+
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
+        value = None
+        vid, comp = self.check_if_comp_var(vid, attribute)
+
+        if vid in self._component_value_list and comp is None:
             logger.debug("Not enough info to get value for %s"%vid)
             return value
-
-        elif len(parts) == 2:
-            basepart = parts[0]
-            comp = parts[1]
-            if basepart in self._component_value_list:
-                vid = basepart
-                if attribute is None:
-                    attribute = {"component" : comp}
-                else:
-                    attribute["component"] = comp
-                node = self.get_optional_node("entry", {"id":vid})
-                if node is not None:
-                    type_str = self._get_type_info(node)
-                    value = convert_to_type(self.get_element_text("value", attribute, root=node), type_str, vid)
+        elif comp is not None:
+            if attribute is None:
+                attribute = {"component" : comp}
+            else:
+                attribute["component"] = comp
+            node = self.get_optional_node("entry", {"id":vid})
+            if node is not None:
+                type_str = self._get_type_info(node)
+                value = convert_to_type(self.get_element_text("value", attribute, root=node), type_str, vid)
 
         if value is None:
             value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
@@ -57,15 +69,8 @@ class EnvMachPes(EnvBase):
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
+        vid, comp = self.check_if_comp_var(vid, None)
         val = None
-        basepart = None
-        comp = None
-        parts = vid.split("_")
-        if len(parts) == 2:
-            basepart = parts[0]
-            comp = parts[1]
-            if basepart in self._component_value_list:
-                vid = basepart
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
             val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
@@ -155,12 +160,7 @@ class EnvMachPes(EnvBase):
 
 
     def get_nodes_by_id(self, varid):
-        basepart = None
-        parts = varid.split("_")
-        if len(parts) == 2:
-            basepart = parts[0]
-            if basepart in self._component_value_list:
-                varid = basepart
+        varid, _ = self.check_if_comp_var(varid, attribute)
         return EnvBase.get_nodes_by_id(self, varid)
 
 

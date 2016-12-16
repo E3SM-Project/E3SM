@@ -618,7 +618,7 @@ class Case(object):
         self.schedule_rewrite(env_mach_specific_obj)
 
         #--------------------------------------------
-        # pe payout
+        # pe layout
         #--------------------------------------------
         match1 = re.match('([0-9]+)x([0-9]+)', "" if pecount is None else pecount)
         match2 = re.match('([0-9]+)', "" if pecount is None else pecount)
@@ -647,7 +647,7 @@ class Case(object):
             pesobj = Pes(self._pesfile)
 
             pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
-                                                                    machine_name, pesize_opts=pecount)
+                                                                    machine_name, pesize_opts=pecount, mpilib=mpilib)
 
         mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
