@@ -561,6 +561,7 @@ module isobaric_diagnostics
 
                 ! Vapor pressure (NB: pressure here is already in hPa)
                 evp = pressure(k,iCell) * scalars(index_qv,k,iCell) / (scalars(index_qv,k,iCell) + 0.622_RKIND)
+                evp = max(evp, 1.0e-8_RKIND)
 
                 ! Dewpoint temperature following Bolton (1980)
                 dewpoint(k,iCell) = (243.5_RKIND * log(evp/6.112_RKIND)) / (17.67_RKIND - log(evp/6.112_RKIND))
