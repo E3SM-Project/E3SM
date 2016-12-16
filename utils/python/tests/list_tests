@@ -17,6 +17,8 @@ def list_tests_from():
                 for btest in atest._tests:
                     btestname = btest.__str__().split()
                     test_classes.append(btestname[1][1:-1])
+	    # add this explicitly, not captured by the above
+	    test_classes.append("scripts_regression_tests.B_CheckCode")
             for ctest in sorted(list(set(test_classes))):
                 print ctest
 
