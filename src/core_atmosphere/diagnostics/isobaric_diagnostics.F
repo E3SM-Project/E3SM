@@ -564,6 +564,7 @@ module isobaric_diagnostics
 
                 ! Dewpoint temperature following Bolton (1980)
                 dewpoint(k,iCell) = (243.5_RKIND * log(evp/6.112_RKIND)) / (17.67_RKIND - log(evp/6.112_RKIND))
+                dewpoint(k,iCell) = dewpoint(k,iCell) + 273.15
             enddo
             enddo
         end if

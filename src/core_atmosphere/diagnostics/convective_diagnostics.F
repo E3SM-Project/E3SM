@@ -367,6 +367,7 @@ module convective_diagnostics
 
                 ! Dewpoint temperature following Bolton (1980)
                 dewpoint(k,iCell) = (243.5_RKIND * log(evp/6.112_RKIND)) / (17.67_RKIND - log(evp/6.112_RKIND))
+                dewpoint(k,iCell) = dewpoint(k,iCell) + 273.15
             enddo
             enddo
 
@@ -452,7 +453,7 @@ module convective_diagnostics
                 do iCell=1, nCellsSolve
                     p_in(1:nVertLevels) = (pressure_p(1:nVertLevels,iCell) + pressure_base(1:nVertLevels,iCell)) / 100.0_RKIND
                     t_in(1:nVertLevels) = temperature(1:nVertLevels,iCell) - 273.15
-                    td_in(1:nVertLevels) = dewpoint(1:nVertLevels,iCell)
+                    td_in(1:nVertLevels) = dewpoint(1:nVertLevels,iCell) - 273.15
 
                  !   do k=1,nVertLevels
                  !     relhum(k,iCell) = max(1.e-08,min(1.,relhum(k,iCell)))

@@ -52,22 +52,22 @@
         <var name="relhum_925hPa" type="real" dimensions="nCells Time" units="percent"
              description="Relative humidity vertically interpolated to 925 hPa"/>
 
-        <var name="dewpoint_200hPa" type="real" dimensions="nCells Time" units="deg C"
+        <var name="dewpoint_200hPa" type="real" dimensions="nCells Time" units="K"
              description="Dewpoint temperature vertically interpolated to 200 hPa"/>
 
-        <var name="dewpoint_250hPa" type="real" dimensions="nCells Time" units="deg C"
+        <var name="dewpoint_250hPa" type="real" dimensions="nCells Time" units="K"
              description="Dewpoint temperature vertically interpolated to 250 hPa"/>
 
-        <var name="dewpoint_500hPa" type="real" dimensions="nCells Time" units="deg C"
+        <var name="dewpoint_500hPa" type="real" dimensions="nCells Time" units="K"
              description="Dewpoint temperature vertically interpolated to 500 hPa"/>
 
-        <var name="dewpoint_700hPa" type="real" dimensions="nCells Time" units="deg C"
+        <var name="dewpoint_700hPa" type="real" dimensions="nCells Time" units="K"
              description="Dewpoint temperature vertically interpolated to 700 hPa"/>
 
-        <var name="dewpoint_850hPa" type="real" dimensions="nCells Time" units="deg C"
+        <var name="dewpoint_850hPa" type="real" dimensions="nCells Time" units="K"
              description="Dewpoint temperature vertically interpolated to 850 hPa"/>
 
-        <var name="dewpoint_925hPa" type="real" dimensions="nCells Time" units="deg C"
+        <var name="dewpoint_925hPa" type="real" dimensions="nCells Time" units="K"
              description="Dewpoint temperature vertically interpolated to 925 hPa"/>
 
         <var name="height_200hPa" type="real" dimensions="nCells Time" units="m"
