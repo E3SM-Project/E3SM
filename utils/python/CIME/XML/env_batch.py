@@ -67,6 +67,7 @@ class EnvBatch(EnvBase):
         """
         Must default subgroup to something in order to provide single return value
         """
+
         value = None
         if subgroup is None:
             node = self.get_optional_node(item, attribute)
@@ -82,6 +83,7 @@ class EnvBatch(EnvBase):
                 node = self.get_optional_node("entry", {"id":item}, root=job_node)
                 if node is not None:
                     value = node.get("value")
+
                     if resolved:
                         value = self.get_resolved_value(value)
 
@@ -91,71 +93,6 @@ class EnvBatch(EnvBase):
                         type_str = self._get_type_info(node)
                         value = convert_to_type(value, type_str, item)
         return value
-
-    def get_full_records(self, item, attribute=None, resolved=True, subgroup=None):
-        """Returns the value as a string of the first xml element with item as attribute value.
-        <elememt_name attribute='attribute_value>value</element_name>"""
-
-        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
-
-        nodes   = [] # List of identified xml elements
-        results = [] # List of identified parameters
-
-
-        # Find all nodes with attribute name and attribute value item
-        # xpath .//*[name='item']
-        # for job in self.get_nodes("job") :
-
-        groups = self.get_nodes("group")
-
-        for group in groups :
-
-            roots = []
-            jobs  = []
-            jobs  = self.get_nodes("job" , root=group)
-
-            if (len(jobs)) :
-                roots = jobs
-            else :
-                roots = [group]
-
-            for root in roots :
-
-                if item :
-                    nodes = self.get_nodes("entry",{"id" : item} , root=root )
-                else :
-                    # Return all nodes
-                    nodes = self.get_nodes("entry" , root=root)
-
-                # seach in all entry nodes
-                for node in nodes:
-
-
-                    # Build return structure
-                    attr          = node.get('id')
-                    group_name     = None
-
-                    # determine group
-                    if (root.tag == "job") :
-                        group_name = root.get('name')
-                    else:
-                        group_name = root.get('id')
-
-                    val             = node.get('value')
-                    attribute_type  = self._get_type_info(node)
-                    desc            = self._get_description(node)
-                    default         = super(EnvBatch , self)._get_default(node)
-                    filename        = self.filename
-
-                    tmp = { 'group' : group_name , 'attribute' : attr , 'value' : val , 'type' : attribute_type , 'description' : desc , 'default' : default , 'file' : filename}
-                    logger.debug("(get_full_records) Found node with value for %s = %s" , item , tmp )
-
-                    # add single result to list
-                    results.append(tmp)
-
-        logger.debug("(get_full_records) Return value:  %s" , results )
-
-        return results
 
     def get_type_info(self, vid):
         nodes = self.get_nodes("entry",{"id":vid})
@@ -229,8 +166,8 @@ class EnvBatch(EnvBase):
         self.num_tasks = total_tasks
         self.tasks_per_numa = tasks_per_node / 2
         self.thread_count = thread_count
-
         task_count = self.get_value("task_count", subgroup=job)
+
         if task_count == "default":
             self.total_tasks = total_tasks
             self.num_nodes = num_nodes
@@ -336,7 +273,7 @@ class EnvBatch(EnvBase):
                         rval = eval(val)
                     except:
                         rval = val
-                    # need a correction for tasks per node 
+                    # need a correction for tasks per node
                     if flag == "-n" and rval<= 0:
                         rval = 1
 
@@ -500,3 +437,18 @@ class EnvBatch(EnvBase):
 
     def get_all_queues(self):
         return self.get_nodes("queue")
+
+    def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
+        if nodename in ("JOB_WALLCLOCK_TIME", "PROJECT", "PROJECT_REQUIRED",
+                        "JOB_QUEUE"):
+            nodes = EnvBase.get_nodes(self, "entry", attributes={"id":nodename},
+                                        root=root, xpath=xpath)
+        else:
+            nodes =  EnvBase.get_nodes(self, nodename, attributes, root, xpath)
+        return nodes
+
+    def get_groups(self, root):
+        groups = EnvBase.get_groups(self, root)
+        if len(groups) == 1 and groups[0] == "job_submission":
+            groups = self.get_jobs()
+        return groups

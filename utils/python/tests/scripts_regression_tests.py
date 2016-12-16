@@ -27,6 +27,7 @@ MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
+TEST_ROOT = None
 
 os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
@@ -174,8 +175,7 @@ class J_TestCreateNewcase(unittest.TestCase):
     def setUpClass(cls):
         cls._testdirs = []
         cls._do_teardown = []
-        cls._testroot = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
-                                      'TestCreateNewcase.%s'% CIME.utils.get_timestamp())
+        cls._testroot = os.path.join(TEST_ROOT, 'TestCreateNewcase')
 
     def test_a_createnewcase(self):
         cls = self.__class__
@@ -266,11 +266,11 @@ class M_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def setUp(self):
     ###########################################################################
-        self._testroot = MACHINE.get_value("CIME_OUTPUT_ROOT")
-        self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass.%s'% CIME.utils.get_timestamp())
-        self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail.%s'% CIME.utils.get_timestamp())
-        self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished.%s'% CIME.utils.get_timestamp())
-        self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2.%s'% CIME.utils.get_timestamp())
+        self._testroot = os.path.join(TEST_ROOT,"TestWaitForTests")
+        self._testdir_all_pass    = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
+        self._testdir_with_fail   = os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
+        self._testdir_unfinished  = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
+        self._testdir_unfinished2 = os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished2')
         testdirs = [self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished, self._testdir_unfinished2]
         for testdir in testdirs:
             if os.path.exists(testdir):
@@ -474,7 +474,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._machine           = MACHINE.get_machine_name()
         self._baseline_area     = MACHINE.get_value("BASELINE_ROOT")
-        self._testroot          = MACHINE.get_value("CIME_OUTPUT_ROOT")
+        self._testroot          = TEST_ROOT
         self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
@@ -531,7 +531,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
                                                        "^TESTRUNFAILEXC_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
-        ct = TestScheduler(tests)
+        ct = TestScheduler(tests, test_root=TEST_ROOT, output_root=TEST_ROOT)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -601,7 +601,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,output_root=TEST_ROOT)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL_" in item][0]
         build_fail_exc_test = [item for item in tests if "TESTBUILDFAILEXC" in item][0]
@@ -667,7 +667,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         tests = update_acme_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, no_run=True,test_root=TEST_ROOT,output_root=TEST_ROOT)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL" in item][0]
         pass_test           = [item for item in tests if "TESTRUNPASS" in item][0]
@@ -693,7 +693,8 @@ class O_TestTestScheduler(TestCreateTestCommon):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PEND_STATUS)
 
         os.environ["TESTBUILDFAIL_PASS"] = "True"
-        ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True)
+        ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True,
+                            test_root=TEST_ROOT,output_root=TEST_ROOT)
 
         log_lvl = logging.getLogger().getEffectiveLevel()
         logging.disable(logging.CRITICAL)
@@ -823,10 +824,12 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             extra_args += " --no-batch"
 
         if " -n " in extra_args:
-            run_cmd_assert_result(self, "%s/create_test %s" % (SCRIPT_DIR, extra_args),
+            run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s %s"
+                                  % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, extra_args),
                                   expected_stat=(0 if expect_works else CIME.utils.TESTS_FAILED_ERR_CODE))
         else:
-            run_cmd_assert_result(self, "%s/create_test %s" % (SCRIPT_DIR, extra_args),
+            run_cmd_assert_result(self, "%s/create_test --test-root %s --output-root %s %s"
+                                  % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, extra_args),
                                   expected_stat=(0 if expect_works or self._hasbatch else CIME.utils.TESTS_FAILED_ERR_CODE))
 
             if self._hasbatch:
@@ -860,7 +863,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         self.simple_test(False, "%s -t %s" % (comparg, test_id))
 
         # compare_test_results should detect the fail
-        cpr_cmd = "%s/compare_test_results -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        cpr_cmd = "%s/compare_test_results --test-root %s -b %s -t %s 2>&1" \
+            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
@@ -870,7 +874,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                             msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
 
         # Bless
-        run_cmd_no_fail("%s/bless_test_results --hist-only --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
+        run_cmd_no_fail("%s/bless_test_results --test-root %s --hist-only --force -b %s -t %s"\
+                            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id))
 
         # Hist compare should now pass again
         self.simple_test(True, "%s -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
@@ -899,7 +904,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir)
 
         # compare_test_results should pass
-        cpr_cmd = "%s/compare_test_results -n -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        cpr_cmd = "%s/compare_test_results --test-root %s -n -b %s -t %s 2>&1" \
+            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
         output = run_cmd_assert_result(self, cpr_cmd)
 
         # use regex
@@ -942,7 +948,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         run_cmd_assert_result(self, "./case.cmpgen_namelists", from_dir=casedir, expected_stat=100)
 
         # compare_test_results should fail
-        cpr_cmd = "%s/compare_test_results -n -b %s -t %s 2>&1" % (TOOLS_DIR, self._baseline_name, test_id)
+        cpr_cmd = "%s/compare_test_results --test-root %s -n -b %s -t %s 2>&1" \
+            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
@@ -952,7 +959,8 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                             msg="Cmd '%s' failed to display passed test in output:\n%s" % (cpr_cmd, output))
 
         # Bless
-        run_cmd_no_fail("%s/bless_test_results -n --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
+        run_cmd_no_fail("%s/bless_test_results --test-root %s -n --force -b %s -t %s" \
+                            % (TOOLS_DIR, TEST_ROOT, self._baseline_name, test_id))
 
         # Basic namelist compare should now pass again
         self.simple_test(True, "%s -n -t %s-%s" % (comparg, self._baseline_name, CIME.utils.get_timestamp()))
@@ -1039,7 +1047,8 @@ class Z_FullSystemTest(TestCreateTestCommon):
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
-        create_test_cmd =  "%s/create_test cime_developer --walltime 0:15:00 -t %s" % (SCRIPT_DIR, self._baseline_name)
+        create_test_cmd =  "%s/create_test cime_developer --test-root %s --output-root %s --walltime 0:15:00 -t %s" \
+            % (SCRIPT_DIR, TEST_ROOT, TEST_ROOT, self._baseline_name)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
 
@@ -1066,7 +1075,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test cime_test_only -t %s --no-build" % (SCRIPT_DIR, self._baseline_name))
+        run_cmd_assert_result(self, "%s/create_test cime_test_only -t %s --no-build --test-root %s --output-root %s"
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1088,7 +1098,7 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             build_complete = run_cmd_no_fail("./xmlquery BUILD_COMPLETE -value",
                                              from_dir=casedir)
-            self.assertEqual(build_complete, "TRUE",
+            self.assertEqual(build_complete, "True",
                             msg="Build complete had wrong value '%s'" %
                             build_complete)
 
@@ -1098,7 +1108,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_cime_case_mpi_serial(self):
     ###########################################################################
-        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build" % (SCRIPT_DIR, self._baseline_name))
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s"
+                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot))
 
         casedir = os.path.join(self._testroot,
                                "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
@@ -1129,7 +1140,8 @@ class X_TestSingleSubmit(TestCreateTestCommon):
 
         # Keep small enough for now that we don't have to worry about load balancing
         run_cmd_assert_result(self,
-                              "unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit" % (SCRIPT_DIR, self._baseline_name))
+                              "unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit --test-root %s --output-root %s "
+                              % (SCRIPT_DIR, self._baseline_name, TEST_ROOT, TEST_ROOT))
         run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
                               from_dir=self._testroot)
 
@@ -1141,7 +1153,8 @@ class L_TestSaveTimings(TestCreateTestCommon):
     def simple_test(self, manual_timing=False):
     ###########################################################################
         timing_flag = "" if manual_timing else "--save-timing"
-        create_test_cmd =  "%s/create_test SMS_Ln9_P1.f19_g16_rx1.A %s --walltime 0:15:00 -t %s" % (SCRIPT_DIR, timing_flag, self._baseline_name)
+        create_test_cmd =  "%s/create_test SMS_Ln9_P1.f19_g16_rx1.A %s --walltime 0:15:00 -t %s --test-root %s --output-root %s " \
+            % (SCRIPT_DIR, timing_flag, self._baseline_name, TEST_ROOT, TEST_ROOT)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
 
@@ -1185,11 +1198,11 @@ class C_TestXMLQuery(unittest.TestCase):
 
     def setUp(self):
         # Create case directory
-        self._testroot = MACHINE.get_value("CIME_OUTPUT_ROOT")  # "/tmp/"
+        self._testroot = TEST_ROOT # "/tmp/"
         self._testdirs = []
         self._do_teardown = []
 
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts.%s'% CIME.utils.get_timestamp())
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts')
 
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
@@ -1199,6 +1212,8 @@ class C_TestXMLQuery(unittest.TestCase):
         machine = 'melvin'
         cmd = "%s/create_newcase --case %s --compset X --res f19_g16 --mach %s " % (SCRIPT_DIR, testdir, machine)
         run_cmd_assert_result(self, cmd, from_dir=SCRIPT_DIR)
+        cmd = "./xmlchange JOB_QUEUE=testval --subgroup case.run"
+        run_cmd_assert_result(self, cmd, from_dir=testdir)
 
         self._do_teardown.append(testdir)
 
@@ -1228,8 +1243,8 @@ class C_TestXMLQuery(unittest.TestCase):
         options = [
             '' ,
             '--listall' ,
-            '--listall --valonly' ,
-            "-caseroot " + testdir +" -valonly -subgroup case.run -value JOB_QUEUE" ,
+            '--listall --value' ,
+            "-caseroot " + testdir +"  -subgroup case.run -value JOB_QUEUE" ,
         ]
 
         for opt in options :
@@ -1244,8 +1259,8 @@ class C_TestXMLQuery(unittest.TestCase):
         testdir  = self._testdirs[0]
 
         options = [
-            '-caseroot ' + testdir + ' -valonly -value JOB_QUEUE'  ,
-            '-caseroot ' + testdir + ' -valonly -subgroup case.run -value JOB_QUEUE' ,
+            '-caseroot ' + testdir + ' -value JOB_QUEUE'  ,
+            '-caseroot ' + testdir + ' -subgroup case.run -value JOB_QUEUE' ,
          ]
 
         # Get value and group information
@@ -1257,8 +1272,7 @@ class C_TestXMLQuery(unittest.TestCase):
         cmd      = xmlquery + " " + options[1]
         group_out = run_cmd_no_fail(cmd, from_dir=testdir)
 
-        searchObj = re.search( r'(.*)(case.run:JOB_QUEUE)\t*(.*)', base_out)
-
+        searchObj = re.search( r'testval', base_out)
         # Test group option
         self.assertTrue(len(base_out) , msg="no output for " + cmd)
         self.assertEqual(searchObj.group() , group_out)
@@ -1937,6 +1951,16 @@ def _main_func():
         sys.argv.remove("--no-cmake")
         global NO_CMAKE
         NO_CMAKE = True
+
+    if "--test-root" in sys.argv:
+        global TEST_ROOT
+        trindex = sys.argv.index("--test-root")
+        TEST_ROOT = sys.argv[trindex +1]
+        del sys.argv[trindex+1]
+        del sys.argv[trindex]
+    else:
+        TEST_ROOT = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
+                                 "scripts_regression_test.%s"% CIME.utils.get_timestamp())
 
     args = lambda: None # just something to set attrs on
     for log_param in ["debug", "silent", "verbose"]:

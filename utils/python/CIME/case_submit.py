@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 def submit(case, job=None, resubmit=False, no_batch=False):
     caseroot = case.get_value("CASEROOT")
+
     if job is None:
         if case.get_value("TEST"):
             job = "case.test"

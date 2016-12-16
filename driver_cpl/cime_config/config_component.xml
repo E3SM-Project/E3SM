@@ -1999,7 +1999,7 @@
 
   <entry id="NINST_ICE_LAYOUT">
     <type>char</type>
-    <valid_values>equential,concurrent</valid_values>
+    <valid_values>sequential,concurrent</valid_values>
     <default_value>concurrent</default_value>
     <group>mach_pes_ice</group>
     <file>env_mach_pes.xml</file>
@@ -3089,7 +3089,7 @@
       <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
       <value compset="_DATM.*_DOCN%US20">24</value>
-      <value compset="_DATM%S1850.+POP\d">48</value> 
+      <value compset="_DATM%S1850.+POP\d">48</value>
       <value compset="_MPAS">1</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne60np4">96</value>
@@ -3178,7 +3178,7 @@
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
       <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
-      <value compset="_DATM%S1850.+POP\d">8</value> 
+      <value compset="_DATM%S1850.+POP\d">8</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
     </values>

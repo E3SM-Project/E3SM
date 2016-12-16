@@ -51,42 +51,6 @@ class EnvMachSpecific(EnvBase):
                 for node in nodes:
                     self.add_child(node)
 
-    def get_full_records(self, item, attribute=None, resolved=True, subgroup=None):
-        """Returns the value as a string of the first xml element with item as attribute value.
-        <element_name attribute='attribute_value>value</element_name>"""
-
-        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
-
-        nodes   = [] # List of identified xml elements
-        results = [] # List of identified parameters
-
-        # Find all nodes with attribute name and attribute value item
-        # xpath .//*[name='item']
-        if item :
-            nodes = self.get_nodes("*",{"name" : item})
-        else :
-            # Return all nodes
-            logger.debug("(get_full_records) Retrieving all parameter")
-            nodes = self.get_nodes("env")
-
-        # Return value for first occurence of node with attribute value = item
-        for node in nodes:
-
-            group   = super(EnvMachSpecific, self)._get_group(node)
-            val     = node.text
-            attr    = node.attrib['name']
-            t       = self._get_type_info(node)
-            desc    = self._get_description(node)
-            default = self._get_default(node)
-            filename    = self.filename
-
-            #t   =  super(EnvBase , self).get_type( node )
-            v = { 'group' : group , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : filename}
-            logger.debug("(get_full_records) Found node with value for %s = %s" , item , v )
-            results.append(v)
-
-        return results
-
     def _get_modules_for_case(self, compiler, debug, mpilib):
         module_nodes = self.get_nodes("modules")
         modules_to_load = None
