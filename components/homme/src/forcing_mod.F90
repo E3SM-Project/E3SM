@@ -73,10 +73,9 @@ contains
                 elemin%state%v(i,j,2,k,np1_d) = &
                      an*elemin%state%v(i,j,2,k,n0_d) + anm1*elemin%state%v(i,j,2,k,nm1_d) + &
                      bn*dt*elemin%derived%FM(i,j,2,k,n0_p) + bnm1*dt*elemin%derived%FM(i,j,2,k,nm1_p)
-!THETA
-!                elemin%state%T(i,j,k,np1_d) = &
-!                     an*elemin%state%T(i,j,k,n0_d) + anm1*elemin%state%T(i,j,k,nm1_d) + &
-!                     bn*dt*elemin%derived%FT(i,j,k,n0_p) + bnm1*dt*elemin%derived%FT(i,j,k,nm1_p)                 
+                elemin%state%T(i,j,k,np1_d) = &
+                     an*elemin%state%T(i,j,k,n0_d) + anm1*elemin%state%T(i,j,k,nm1_d) + &
+                     bn*dt*elemin%derived%FT(i,j,k,n0_p) + bnm1*dt*elemin%derived%FT(i,j,k,nm1_p)                 
              enddo
           enddo
        enddo
@@ -96,8 +95,7 @@ contains
              do i=1,np
                 elemin%state%v(i,j,1,k,np1_d) = elemin%state%v(i,j,1,k,np1_d) + dt2*elemin%derived%FM(i,j,1,k,nm1_p)
                 elemin%state%v(i,j,2,k,np1_d) = elemin%state%v(i,j,2,k,np1_d) + dt2*elemin%derived%FM(i,j,2,k,nm1_p)
-!THETA
-!                elemin%state%T(i,j,k,np1_d)   = elemin%state%T(i,j,k,np1_d)   + dt2*elemin%derived%FT(i,j,k,nm1_p)
+                elemin%state%T(i,j,k,np1_d)   = elemin%state%T(i,j,k,np1_d)   + dt2*elemin%derived%FT(i,j,k,nm1_p)
              enddo
           enddo
        enddo

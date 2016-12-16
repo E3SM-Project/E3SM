@@ -746,9 +746,8 @@ contains
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
-!THETA
-!                   call interpolate_scalar(interpdata(ie), elem(ie)%state%T(:,:,:,n0), &
-!                        np, nlev, datall(st:en,:))
+                   call interpolate_scalar(interpdata(ie), elem(ie)%state%T(:,:,:,n0), &
+                        np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='T')
@@ -798,9 +797,8 @@ contains
                          do i=1,np
                             pfull = hvcoord%hyam(k)*hvcoord%ps0  &
                                  + hvcoord%hybm(k)*elem(ie)%state%ps_v(i,j,n0)
-!THETA
-!                            var3d(i,j,k,1)=elem(ie)%state%T(i,j,k,n0)* &
-!                                 (pfull*pr0)**(-kappa)
+                            var3d(i,j,k,1)=elem(ie)%state%T(i,j,k,n0)* &
+                                 (pfull*pr0)**(-kappa)
                          end do
                       end do
                    end do
@@ -948,9 +946,8 @@ contains
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
-!THETA
-!                   call interpolate_scalar(interpdata(ie), elem(ie)%accum%DIFFT, &
-!                        np, nlev, datall(st:en,:))
+                   call interpolate_scalar(interpdata(ie), elem(ie)%accum%DIFFT, &
+                        np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='DIFFT')

@@ -23,8 +23,7 @@ module prim_driver_mod
   use column_types_mod, only : ColumnModel_t
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
-!THETA
-!  use test_mod,         only: set_test_initial_conditions, apply_test_forcing
+  use test_mod,         only: set_test_initial_conditions, apply_test_forcing
 #endif
 
   implicit none
@@ -679,8 +678,7 @@ contains
           ! copy prognostic variables: tl%n0 into tl%nm1
           do ie=nets,nete
              elem(ie)%state%v(:,:,:,:,tl%nm1) = elem(ie)%state%v(:,:,:,:,tl%n0)
-!THETA
-!             elem(ie)%state%T(:,:,:,tl%nm1)   = elem(ie)%state%T(:,:,:,tl%n0)
+             elem(ie)%state%T(:,:,:,tl%nm1)   = elem(ie)%state%T(:,:,:,tl%n0)
              elem(ie)%state%ps_v(:,:,tl%nm1)  = elem(ie)%state%ps_v(:,:,tl%n0)
           enddo
        endif ! runtype==2
@@ -689,8 +687,7 @@ contains
 
       ! runtype=0: initial run
       if (hybrid%masterthread) write(iulog,*) ' runtype: initial run'
-!THETA
-!      call set_test_initial_conditions(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
+      call set_test_initial_conditions(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
       if (hybrid%masterthread) write(iulog,*) '...done'
 
       ! scale PS to achieve prescribed dry mass
@@ -698,8 +695,7 @@ contains
 
       do ie=nets,nete
         ! set perlim in ctl_nl namelist for temperature field initial perturbation
-!THETA
-!        elem(ie)%state%T=elem(ie)%state%T * (1.0_real_kind + pertlim)
+        elem(ie)%state%T=elem(ie)%state%T * (1.0_real_kind + pertlim)
       enddo
 
     endif !runtype
@@ -903,8 +899,7 @@ contains
     endif
 #else
     ! Apply HOMME test case forcing
-!THETA
-!    call apply_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+    call apply_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
 #endif
 

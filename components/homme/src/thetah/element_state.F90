@@ -144,7 +144,7 @@ module element_state
 
     ! the KE conversion term and diffusion term
     real (kind=real_kind) :: DIFF(np,np,2,nlev)                       ! net hypervis term
-    real (kind=real_kind) :: DIFFTHETA(np,np,nlev)                        ! net hypervis term
+    real (kind=real_kind) :: DIFFT(np,np,nlev)                        ! net hypervis term
     real (kind=real_kind) :: CONV(np,np,2,nlev)                       ! dpdn u dot CONV = T1 + T2
 #endif
 

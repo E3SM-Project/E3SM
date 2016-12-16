@@ -19,9 +19,7 @@ module prim_advance_mod
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp, parallel_t, iam
   use time_mod,       only: timelevel_t
-!THETA OG I am still not sure, do tests use different p0?
-  use physical_constants, only: p0
-!  use test_mod,       only: set_prescribed_wind
+  use test_mod,       only: set_prescribed_wind
 
   implicit none
   private
@@ -155,7 +153,7 @@ contains
 #ifndef CAM
     ! if "prescribed wind" set dynamics explicitly and skip time-integration
     if (prescribed_wind ==1 ) then
-!       call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
+       call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
        call t_stopf('prim_advance_exp')
        return
     endif
@@ -417,7 +415,7 @@ contains
      enddo
 
   enddo
-  call applyCAMforcing_dynamics(elem,hvcoord,np1,dt_q,nets,nete)
+  call applyCAMforcing_dynamics(elem,hycoord,np1,dt_1,nets,nete)
 
   end subroutine applyCAMforcing
 
@@ -437,11 +435,9 @@ contains
   real (kind=real_kind) :: v1,dp
 
   do ie=nets,nete
-!THETA
-!     compute T from theta
-!     Tnew = T  + dt_q*elem(ie)%derived%FT(:,:,:,1)
-!THETA
-!     elem(ie)%state%theta(:,:,:,np1) = compute theta from Tnew
+     compute T from theta
+     Tnew = T  + dt_q*elem(ie)%derived%FT(:,:,:,1)
+     elem(ie)%state%theta(:,:,:,:,np1) = compute theta from Tnew
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:,1)
   enddo
   end subroutine applyCAMforcing_dynamics
@@ -702,8 +698,7 @@ contains
                          vtens(i,j,:,k,ie)
 
 
-                    !THETA
-                    !FIX THIS  somethign like:   heating*(p/p0)^-kappa / cp
+                    FIX THIS  somethign like:   heating*(p/p0)^-kappa / cp
 
                     v1=elem(ie)%state%v(i,j,1,k,nt)
                     v2=elem(ie)%state%v(i,j,2,k,nt)
@@ -810,8 +805,6 @@ contains
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_exner
-  real (kind=real_kind), dimension(np,np)        :: exner
-  real (kind=real_kind), dimension(np,np,nlev)   :: temperature
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
   real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: rdp        ! inverse of delta pressure
@@ -853,7 +846,7 @@ contains
 !$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
-        temperature(:,:,k)= elem(ie)%state%theta(:,:,k,n0)*(p(:,:,k)/p0)**kappa
+        temperature(:,:,k)= elem(ie)%state%theta(:,:,k)*(p(:,:,k)/p0)**kappa
 
         exner(:,:) = (p(:,:,k)/p0)**kappa
         grad_exner(:,:,:,k) = gradient_sphere(exner,deriv,elem(ie)%Dinv)        
@@ -1035,8 +1028,8 @@ contains
 
         do j=1,np
            do i=1,np
-              glnps1 = cp*elem(ie)%state%theta(i,j,k,n0)*grad_exner(i,j,1,k)
-              glnps2 = cp*elem(ie)%state%theta(i,j,k,n0)*grad_exner(i,j,2,k)
+              glnps1 = cp*theta*grad_exner(i,j,1,k)
+              glnps2 = cp*theta*grad_exner(i,j,1,k)
 
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
@@ -1125,8 +1118,7 @@ contains
                  elem(ie)%accum%KEhorz1(i,j) = elem(ie)%accum%KEhorz1(i,j) + Ephi(i,j)*divdp(i,j,k)
 
                  ! Cp T div( u dp/dn)   ! dry horizontal advection component
-!THETA
-!                 elem(ie)%accum%IEhorz1(i,j) = elem(ie)%accum%IEhorz1(i,j) + Cp*elem(ie)%state%T(i,j,k,n0)*divdp(i,j,k)
+                 elem(ie)%accum%IEhorz1(i,j) = elem(ie)%accum%IEhorz1(i,j) + Cp*elem(ie)%state%T(i,j,k,n0)*divdp(i,j,k)
 
 
               enddo
@@ -1149,8 +1141,7 @@ contains
                  ! e = eta_dot_dpdn()
                  de =  eta_dot_dpdn(i,j,k+1)-eta_dot_dpdn(i,j,k)
                  ! Cp T de/dn, integral dn:
-!THETA
-!                 elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j) + Cp*elem(ie)%state%T(i,j,k,n0)*de
+                 elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j) + Cp*elem(ie)%state%T(i,j,k,n0)*de
                  ! E de/dn
                  elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j) + E*de
                  ! Cp theta_vadv dp/dn
@@ -1198,8 +1189,7 @@ contains
               enddo
            enddo
 
-!THETA
-!           vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%Dinv)
+           vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%Dinv)
            do j=1,np
               do i=1,np
                  v1     = elem(ie)%state%v(i,j,1,k,n0)
