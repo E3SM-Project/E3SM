@@ -288,8 +288,14 @@ class Case(object):
                         result.append(root.get("id"))
                     elif field == "group":
                         result.extend(env_file.get_groups(root))
+                    elif field == "valid_values":
+                        vv = env_file.get_valid_values(variable)
+                        if vv:
+                            result.extend(vv)
                     elif field == "file":
                         result.append(env_file.filename)
+                    elif field == "type":
+                        result.append(env_file.get_type_info(variable))
 
         if not result:
             for env_file in self._env_generic_files:
