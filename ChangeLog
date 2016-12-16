@@ -1,6 +1,29 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 12-16-2016
+Tag: cime5.2.0-alpha.12
+Answer Changes: None
+Tests: scripts_regression_tests, aux_clm40, aux_clm50
+Dependencies:
+
+Brief Summary: Fix for cori-haswell, critical namelist bug fix for datm
+
+User interface changes: 
+	M       cime_config/cesm/machines/config_compilers.xml
+	M       cime_config/cesm/machines/config_machines.xml
+	M       components/data_comps/datm/cime_config/namelist_definition_datm.xml
+	M       utils/python/CIME/check_input_data.py
+	M       utils/python/tests/scripts_regression_tests.py
+	
+
+Modified files: git diff --name-status
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 12-15-2016
 Tag: cime5.2.0-alpha.11
 Answer Changes: None

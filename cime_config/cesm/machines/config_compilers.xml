@@ -540,12 +540,14 @@ using a fortran linker.
     <append> -xCORE-AVX2 </append>
   </FFLAGS>
   <SLIBS>
-    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -mkl -lpthread -lm </append>
+    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
   </SLIBS>
     <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC </append>
   </CPPDEFS>
-
+  <LDFLAGS>
+    <append>-mkl -lmemkind -ljemalloc -zmuldefs</append>
+  </LDFLAGS>
 </compiler>
 
 

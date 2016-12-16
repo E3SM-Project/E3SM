@@ -354,6 +354,7 @@
 	<command name="switch">intel intel/16.0.3.210</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
+	<command name="load">memkind</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
 	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
