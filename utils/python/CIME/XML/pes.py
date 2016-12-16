@@ -89,7 +89,7 @@ class Pes(GenericXML):
         logger.info("Pes setting: pesize match  is %s " %pesize_choice)
         logger.info("Pes other settings: %s"%other_settings)
         if mpilib == "mpi-serial":
-           for i in iter(pes_ntasks):
-               pes_ntasks[i] = 1
-               pes_rootpe[i] = 1
+            for i in iter(pes_ntasks):
+                pes_ntasks[i] = 1
+                pes_rootpe[i] = 1
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings

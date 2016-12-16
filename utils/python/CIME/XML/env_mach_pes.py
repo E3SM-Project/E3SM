@@ -160,7 +160,7 @@ class EnvMachPes(EnvBase):
 
 
     def get_nodes_by_id(self, varid):
-        varid, _ = self.check_if_comp_var(varid, attribute)
+        varid, _ = self.check_if_comp_var(varid, None)
         return EnvBase.get_nodes_by_id(self, varid)
 
 
