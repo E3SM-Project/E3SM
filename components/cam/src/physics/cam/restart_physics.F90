@@ -529,14 +529,15 @@ module restart_physics
      physgrid = cam_grid_id('physgrid')
 
      call cam_grid_dimensions(physgrid, gdims(1:2))
-     call cam_grid_get_decomp(physgrid, dims(1:2), gdims(1:2), pio_double, &
-          iodesc)
+
      if (gdims(2) == 1) then
        nhdims = 1
      else
        nhdims = 2
      end if
      
+     call cam_grid_get_decomp(physgrid, dims(1:2), gdims(1:nhdims), pio_double, &
+          iodesc)
      if ( .not. adiabatic .and. .not. ideal_phys )then
 
         ! data for chemistry
