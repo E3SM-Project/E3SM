@@ -1,0 +1,277 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!-- =========================================  -->
+<!--- seq_timemgr_inparm                        -->
+<!-- =========================================  -->
+
+<restart_option>$REST_OPTION</restart_option>
+<restart_n>$REST_N</restart_n>
+<restart_ymd>$REST_DATE</restart_ymd>
+
+<stop_option>$STOP_OPTION</stop_option>
+<stop_n>$STOP_N</stop_n>
+<stop_ymd>$STOP_DATE</stop_ymd>
+
+<history_init>.false.</history_init>
+<history_option>$HIST_OPTION</history_option>
+<history_n>$HIST_N</history_n>
+<history_ymd>$HIST_DATE</history_ymd>
+
+<histavg_init>.false.</histavg_init>
+<histavg_option>$AVGHIST_OPTION</histavg_option>
+<histavg_n>$AVGHIST_N</histavg_n>
+<histavg_ymd>$AVGHIST_DATE</histavg_ymd>
+<max_cplstep_time>0.0</max_cplstep_time>
+
+<barrier_option>$BARRIER_OPTION</barrier_option>
+<barrier_n>$BARRIER_N</barrier_n>
+<barrier_ymd>$BARRIER_DATE</barrier_ymd>
+
+<!-- =========================================  -->
+<!--- seq_infodata_inparm                       -->
+<!-- =========================================  -->
+
+<do_histinit>.false.</do_histinit>
+<end_restart>.false.</end_restart>
+
+<mct_usealltoall>.false.</mct_usealltoall>
+<mct_usevector>.false.</mct_usevector>
+
+<mct_usealltoall>.false.</mct_usealltoall>
+<mct_usevector>.false.</mct_usevector>
+
+<histaux_a2x    >.false.</histaux_a2x    >
+<histaux_a2x3hr >.false.</histaux_a2x3hr >
+<histaux_a2x3hrp>.false.</histaux_a2x3hrp>
+<histaux_a2x24hr>.false.</histaux_a2x24hr>
+<histaux_l2x    >.false.</histaux_l2x    >
+<histaux_r2x    >.false.</histaux_r2x    >
+<histaux_l2x1yr >.false.</histaux_l2x1yr >
+<histavg_atm    >.true.</histavg_atm    >
+<histavg_lnd    >.true.</histavg_lnd    >
+<histavg_ocn    >.true.</histavg_ocn    >
+<histavg_ice    >.true.</histavg_ice    >
+<histavg_rof    >.true.</histavg_rof    >
+<histavg_glc    >.true.</histavg_glc    >
+<histavg_wav    >.true.</histavg_wav    >
+<histavg_xao    >.true.</histavg_xao    >
+
+<budget_inst >0</budget_inst>
+<budget_daily>0</budget_daily>
+<budget_month>1</budget_month>
+<budget_ann  >1</budget_ann>
+<budget_ltann>1</budget_ltann>
+<budget_ltend>0</budget_ltend>
+
+<tprof_option>never</tprof_option>
+<tprof_n>-999</tprof_n>
+<tprof_ymd>-999</tprof_ymd>
+
+<orb_mode>fixed_year</orb_mode>
+<orb_iyear>1990</orb_iyear>
+<orb_iyear_align>1990</orb_iyear_align>
+
+<wv_sat_scheme>GoffGratch</wv_sat_scheme>
+<wv_sat_transition_start>20.0D0</wv_sat_transition_start>
+<wv_sat_use_tables>.false.</wv_sat_use_tables>
+<wv_sat_table_spacing>1.0D0</wv_sat_table_spacing>
+
+<tfreeze_option>minus1p8</tfreeze_option>
+
+<timing_dir>./timing</timing_dir>
+
+<tchkpt_dir>./timing/checkpoints</tchkpt_dir>
+
+<shr_map_dopole>.true.</shr_map_dopole>
+
+<aoflux_grid>ocn</aoflux_grid>
+
+<cpl_decomp>0</cpl_decomp>
+
+<cpl_cdf64>.true.</cpl_cdf64>
+
+<vect_map>$VECT_MAP</vect_map>
+<eps_frac>$EPS_FRAC</eps_frac>
+<eps_amask>$EPS_AMASK</eps_amask>
+<eps_agrid>$EPS_AGRID</eps_agrid>
+<eps_aarea>$EPS_AAREA</eps_aarea>
+<eps_omask>$EPS_OMASK</eps_omask>
+<eps_ogrid>$EPS_OGRID</eps_ogrid>
+<eps_oarea>$EPS_OAREA</eps_oarea>
+
+<info_debug>$INFO_DBUG</info_debug>
+<cpl_decomp>$CPL_DECOMP</cpl_decomp>
+<wall_time_limit>-1.0</wall_time_limit>
+<force_stop_at>month</force_stop_at>
+<flux_diurnal>.false.</flux_diurnal>
+<gust_fac>0.0D0</gust_fac>
+
+<run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers>
+<run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers>
+
+<drv_threading DRV_THREADING="TRUE">.true.</drv_threading>
+<drv_threading DRV_THREADING="FALSE">.false.</drv_threading>
+
+<do_budgets BUDGETS="TRUE" >.true.</do_budgets>
+<do_budgets BUDGETS="FALSE">.false.</do_budgets>
+
+<bfbflag BFBFLAG="TRUE">.true.</bfbflag>
+<bfbflag BFBFLAG="FALSE">.false.</bfbflag>
+
+<brnch_retain_casename BRNCH_RETAIN_CASENAME="TRUE">.true.</brnch_retain_casename>
+<brnch_retain_casename BRNCH_RETAIN_CASENAME="FALSE">.false.</brnch_retain_casename>
+
+<!-- =========================================  -->
+<!--- prof_inparm                               -->
+<!-- =========================================  -->
+
+<profile_detail_limit>0</profile_detail_limit>
+<profile_barrier     >.false.</profile_barrier>
+<profile_single_file >.false.</profile_single_file>
+<profile_global_stats>.true.</profile_global_stats>
+
+<profile_papi_enable PROFILE_PAPI_ENABLE="TRUE">.true.</profile_papi_enable>
+<profile_papi_enable PROFILE_PAPI_ENABLE="FALSE">.false.</profile_papi_enable>
+
+<profile_timer>4</profile_timer> <!-- mpiwtime -->
+<profile_timer MACH="yellowstone">2</profile_timer> <!-- nanotime -->
+<profile_timer MPILIB="mpi-serial">1</profile_timer> <!-- gettimeofday -->
+<profile_timer MPILIB="mpi-serial" OS="AIX">3</profile_timer> <!-- read_real_time -->
+
+<profile_depth_limit TIMER_LEVEL="neg">20</profile_depth_limit>
+<profile_depth_limit TIMER_LEVEL="pos">$TIMER_LEVEL</profile_depth_limit>
+
+<profile_disable TIMER_LEVEL="neg">.true.</profile_disable>
+<profile_disable TIMER_LEVEL="pos">.false.</profile_disable>
+
+<profile_detail_limit TIMER_DETAIL="neg">0</profile_detail_limit>
+<profile_detail_limit TIMER_DETAIL="pos">$TIMER_DETAIL</profile_detail_limit>
+
+<profile_ovhd_measurement>.false.</profile_ovhd_measurement>
+<profile_add_detail>.false.</profile_add_detail>
+<profile_outpe_num>1</profile_outpe_num>
+<profile_papi_enable>.false.</profile_papi_enable>
+
+<!-- =========================================  -->
+<!--- prof_inparm                               -->
+<!-- =========================================  -->
+
+<papi_ctr1_str>PAPI_FP_OPS</papi_ctr1_str>
+<papi_ctr2_str>PAPI_NO_CTR</papi_ctr2_str>
+<papi_ctr3_str>PAPI_NO_CTR</papi_ctr3_str>
+<papi_ctr4_str>PAPI_NO_CTR</papi_ctr4_str>
+
+<!-- =========================================  -->
+<!--- pio_default_inparm                        -->
+<!-- =========================================  -->
+
+<pio_stride           >$PIO_STRIDE</pio_stride>
+<pio_root             >$PIO_ROOT</pio_root>
+<pio_numiotasks       >$PIO_NUMTASKS</pio_numiotasks>
+<pio_typename         >$PIO_TYPENAME</pio_typename>
+<pio_debug_level      >$PIO_DEBUG_LEVEL</pio_debug_level>
+<pio_blocksize        >$PIO_BLOCKSIZE</pio_blocksize>
+<pio_rearranger>$PIO_REARRANGER</pio_rearranger>
+<pio_buffer_size_limit>$PIO_BUFFER_SIZE_LIMIT</pio_buffer_size_limit>
+<pio_async_interface PIO_ASYNC_INTERFACE="TRUE">.true.</pio_async_interface>
+<pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>
+<pio_rearr_comm_type  >$PIO_REARR_COMM_TYPE</pio_rearr_comm_type>
+<pio_rearr_comm_fcd   >$PIO_REARR_COMM_FCD</pio_rearr_comm_fcd>
+<pio_rearr_comm_max_pend_req_comp2io>$PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO</pio_rearr_comm_max_pend_req_comp2io>
+<pio_rearr_comm_enable_hs_comp2io PIO_REARR_COMM_ENABLE_HS_COMP2IO="TRUE">.true.</pio_rearr_comm_enable_hs_comp2io>
+<pio_rearr_comm_enable_hs_comp2io PIO_REARR_COMM_ENABLE_HS_COMP2IO="FALSE">.false.</pio_rearr_comm_enable_hs_comp2io>
+<pio_rearr_comm_enable_isend_comp2io PIO_REARR_COMM_ENABLE_ISEND_COMP2IO="TRUE">.true.</pio_rearr_comm_enable_isend_comp2io>
+<pio_rearr_comm_enable_isend_comp2io PIO_REARR_COMM_ENABLE_ISEND_COMP2IO="FALSE">.false.</pio_rearr_comm_enable_isend_comp2io>
+<pio_rearr_comm_max_pend_req_io2comp>$PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP</pio_rearr_comm_max_pend_req_io2comp>
+<pio_rearr_comm_enable_hs_io2comp PIO_REARR_COMM_ENABLE_HS_IO2COMP="TRUE">.true.</pio_rearr_comm_enable_hs_io2comp>
+<pio_rearr_comm_enable_hs_io2comp PIO_REARR_COMM_ENABLE_HS_IO2COMP="FALSE">.false.</pio_rearr_comm_enable_hs_io2comp>
+<pio_rearr_comm_enable_isend_io2comp PIO_REARR_COMM_ENABLE_ISEND_IO2COMP="TRUE">.true.</pio_rearr_comm_enable_isend_io2comp>
+<pio_rearr_comm_enable_isend_io2comp PIO_REARR_COMM_ENABLE_ISEND_IO2COMP="FALSE">.false.</pio_rearr_comm_enable_isend_io2comp>
+
+<!-- =========================================  -->
+<!--- seq_maps.rc                               -->
+<!-- =========================================  -->
+
+<atm2ocn_fmapname>$ATM2OCN_FMAPNAME</atm2ocn_fmapname>
+<atm2ocn_smapname>$ATM2OCN_SMAPNAME</atm2ocn_smapname>
+<atm2ocn_vmapname>$ATM2OCN_VMAPNAME</atm2ocn_vmapname>
+<ocn2atm_fmapname>$OCN2ATM_FMAPNAME</ocn2atm_fmapname>
+<ocn2atm_smapname>$OCN2ATM_SMAPNAME</ocn2atm_smapname>
+<atm2lnd_fmapname>$ATM2LND_FMAPNAME</atm2lnd_fmapname>
+<atm2lnd_smapname>$ATM2LND_SMAPNAME</atm2lnd_smapname>
+<lnd2atm_fmapname>$LND2ATM_FMAPNAME</lnd2atm_fmapname>
+<lnd2atm_smapname>$LND2ATM_SMAPNAME</lnd2atm_smapname>
+<lnd2rof_fmapname>$LND2ROF_FMAPNAME</lnd2rof_fmapname>
+<rof2lnd_fmapname>$ROF2LND_FMAPNAME</rof2lnd_fmapname>
+<rof2ocn_rmapname>$ROF2OCN_RMAPNAME</rof2ocn_rmapname>
+<rof2ocn_fmapname>$ROF2OCN_FMAPNAME</rof2ocn_fmapname>
+<glc2ocn_rmapname>$GLC2OCN_RMAPNAME</glc2ocn_rmapname>
+<glc2ice_rmapname>$GLC2ICE_RMAPNAME</glc2ice_rmapname>
+<lnd2glc_fmapname>$LND2GLC_FMAPNAME</lnd2glc_fmapname>
+<lnd2glc_smapname>$LND2GLC_SMAPNAME</lnd2glc_smapname>
+<glc2lnd_fmapname>$GLC2LND_FMAPNAME</glc2lnd_fmapname>
+<glc2lnd_smapname>$GLC2LND_SMAPNAME</glc2lnd_smapname>
+<atm2wav_smapname>$ATM2WAV_SMAPNAME</atm2wav_smapname>
+<ocn2wav_smapname>$OCN2WAV_SMAPNAME</ocn2wav_smapname>
+<ice2wav_smapname>$ICE2WAV_SMAPNAME</ice2wav_smapname>
+<wav2ocn_smapname>$WAV2OCN_SMAPNAME</wav2ocn_smapname>
+
+<atm2ocn_fmaptype>X</atm2ocn_fmaptype>
+<atm2ocn_smaptype>X</atm2ocn_smaptype>
+<atm2ocn_vmaptype>X</atm2ocn_vmaptype>
+<ocn2atm_fmaptype>Y</ocn2atm_fmaptype>
+<ocn2atm_smaptype>Y</ocn2atm_smaptype>
+<atm2lnd_fmaptype>X</atm2lnd_fmaptype>
+<atm2lnd_smaptype>X</atm2lnd_smaptype>
+<lnd2atm_fmaptype>Y</lnd2atm_fmaptype>
+<lnd2atm_smaptype>Y</lnd2atm_smaptype>
+<lnd2rof_fmaptype>X</lnd2rof_fmaptype>
+<rof2lnd_fmaptype>Y</rof2lnd_fmaptype>
+<rof2ocn_fmaptype>Y</rof2ocn_fmaptype>
+<rof2ocn_rmaptype>Y</rof2ocn_rmaptype>
+<glc2ocn_rmaptype>Y</glc2ocn_rmaptype>
+<glc2ice_rmaptype>Y</glc2ice_rmaptype>
+<lnd2glc_fmaptype>X</lnd2glc_fmaptype>
+<lnd2glc_smaptype>X</lnd2glc_smaptype>
+<glc2lnd_fmaptype>Y</glc2lnd_fmaptype>
+<glc2lnd_smaptype>Y</glc2lnd_smaptype>
+<atm2wav_smaptype>Y</atm2wav_smaptype>
+<ocn2wav_smaptype>Y</ocn2wav_smaptype>
+<ice2wav_smaptype>Y</ice2wav_smaptype>
+<wav2ocn_smaptype>X</wav2ocn_smaptype>
+
+<atm2ocn_fmaptype BFBFLAG="TRUE">X</atm2ocn_fmaptype>
+<atm2ocn_smaptype BFBFLAG="TRUE">X</atm2ocn_smaptype>
+<atm2ocn_vmaptype BFBFLAG="TRUE">X</atm2ocn_vmaptype>
+<ocn2atm_fmaptype BFBFLAG="TRUE">X</ocn2atm_fmaptype>
+<ocn2atm_smaptype BFBFLAG="TRUE">X</ocn2atm_smaptype>
+<atm2lnd_fmaptype BFBFLAG="TRUE">X</atm2lnd_fmaptype>
+<atm2lnd_smaptype BFBFLAG="TRUE">X</atm2lnd_smaptype>
+<lnd2atm_fmaptype BFBFLAG="TRUE">X</lnd2atm_fmaptype>
+<lnd2atm_smaptype BFBFLAG="TRUE">X</lnd2atm_smaptype>
+<lnd2rof_fmaptype BFBFLAG="TRUE">X</lnd2rof_fmaptype>
+<rof2lnd_fmaptype BFBFLAG="TRUE">X</rof2lnd_fmaptype>
+<rof2ocn_fmaptype BFBFLAG="TRUE">X</rof2ocn_fmaptype>
+<rof2ocn_rmaptype BFBFLAG="TRUE">X</rof2ocn_rmaptype>
+<glc2ocn_rmaptype BFBFLAG="TRUE">X</glc2ocn_rmaptype>
+<glc2ice_rmaptype BFBFLAG="TRUE">X</glc2ice_rmaptype>
+<lnd2glc_fmaptype BFBFLAG="TRUE">X</lnd2glc_fmaptype>
+<lnd2glc_smaptype BFBFLAG="TRUE">X</lnd2glc_smaptype>
+<glc2lnd_fmaptype BFBFLAG="TRUE">X</glc2lnd_fmaptype>
+<glc2lnd_smaptype BFBFLAG="TRUE">X</glc2lnd_smaptype>
+<atm2wav_smaptype BFBFLAG="TRUE">X</atm2wav_smaptype>
+<ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
+<ice2wav_smaptype BFBFLAG="TRUE">X</ice2wav_smaptype>
+<ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
+
+
+<!-- =========================================  -->
+<!--- drv_flds_in fields                        -->
+<!-- =========================================  -->
+<drv_flds_in_files>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</drv_flds_in_files>
+
+</namelist_defaults>
