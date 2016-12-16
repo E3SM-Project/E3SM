@@ -2333,7 +2333,7 @@
   </grid>
   <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null">
     <mach name="melvin">
-      <pes compset="CAM5.+CLM.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV"  pesize="L">
+      <pes compset="CAM5.+CLM.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV"  pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>32</ntasks_atm>
