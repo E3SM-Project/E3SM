@@ -250,6 +250,8 @@ class EntryID(GenericXML):
         val = self._get_value(node, attribute=attribute, resolved=resolved, subgroup=subgroup)
         # Return value as right type if we were able to fully resolve
         # otherwise, we have to leave as string.
+        if val is None:
+            return val
         if "$" in val:
             return val
         else:

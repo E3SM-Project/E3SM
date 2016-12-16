@@ -95,6 +95,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def xmlchange(caseroot, listofsettings=None, xmlid=None, xmlval=None, subgroup=None,
               append=None, noecho=False, force=False , dryrun=False):
     with Case(caseroot, read_only=False) as case:
+        env_mach_pes = case.get_env("mach_pes")
+        env_mach_pes.set_components(case.get_values("COMP_CLASSES"))
         if len(listofsettings):
             logger.debug("List of attributes to change: %s" , listofsettings)
 
@@ -126,6 +128,7 @@ def xmlchange(caseroot, listofsettings=None, xmlid=None, xmlval=None, subgroup=N
             if not force:
                 xmlval = convert_to_type(xmlval, type_str, xmlid)
             newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+
             expect(newval is not None,"No variable \"%s\" found"%xmlid)
 
     if not noecho:

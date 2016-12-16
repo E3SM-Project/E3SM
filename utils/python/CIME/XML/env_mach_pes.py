@@ -15,7 +15,14 @@ class EnvMachPes(EnvBase):
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
         EnvBase.__init__(self, case_root, infile)
-        self._component_value_list = ["NTASKS"]
+        self._component_value_list = ["NTASKS", "NTHRDS", "NINST", "ROOTPE", "PSTRID"]
+        self._components = []
+
+    def set_components(self, components):
+        if 'DRV' in components:
+            index = components.index("DRV")
+            components[index] = "CPL"
+        self._components = components
 
     def check_if_comp_var(self, vid, attribute=None):
         '''
@@ -26,19 +33,20 @@ class EnvMachPes(EnvBase):
             if attribute is not None:
                 if "component" in attribute:
                     comp = attribute["component"]
-            return vid, comp
+            return vid, comp, True
         parts = vid.split("_")
         if len(parts) == 2 and parts[0] in self._component_value_list:
-            return parts[0], parts[1]
-        return vid, comp
+            iscompvar = True
+            return parts[0], parts[1], True
+        return vid, None, False
 
 
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
         value = None
-        vid, comp = self.check_if_comp_var(vid, attribute)
+        vid, comp, iscompvar = self.check_if_comp_var(vid, attribute)
 
-        if vid in self._component_value_list and comp is None:
+        if iscompvar and comp is None:
             logger.debug("Not enough info to get value for %s"%vid)
             return value
         elif comp is not None:
@@ -69,11 +77,16 @@ class EnvMachPes(EnvBase):
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
-        vid, comp = self.check_if_comp_var(vid, None)
+        vid, comp, iscompvar = self.check_if_comp_var(vid, None)
         val = None
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
-            val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
+            if iscompvar and comp is None:
+                for comp in self._components:
+                    val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
+            else:
+                val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
+
         return val
 
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, component=None): # pylint: disable=arguments-differ
@@ -83,6 +96,9 @@ class EnvMachPes(EnvBase):
         if vid in self._component_value_list:
             attribute = {"component":component}
             type_str = self._get_type_info(node)
+            # special case - no NINST defined for coupler component
+            if vid == "NINST" and component == "CPL":
+                return None
             val = self.set_element_text("value", convert_to_string(value, type_str, vid), attribute, root=node)
             return val
         val = EnvBase._set_value(self, node, value, vid, subgroup, ignore_type)
@@ -160,7 +176,7 @@ class EnvMachPes(EnvBase):
 
 
     def get_nodes_by_id(self, varid):
-        varid, _ = self.check_if_comp_var(varid, None)
+        varid, _, _ = self.check_if_comp_var(varid, None)
         return EnvBase.get_nodes_by_id(self, varid)
 
 
