@@ -43,7 +43,7 @@
         <var name="temperature_surface"    type="real"     dimensions="nCells Time" units="K"
              description="Temperature at midpoint of lowest model layer"/>
 
-        <var name="dewpoint_surface"       type="real"     dimensions="nCells Time" units="Degrees C"
+        <var name="dewpoint_surface"       type="real"     dimensions="nCells Time" units="K"
              description="Dewpoint temperature at midpoint of lowest model layer"/>
 
         <var name="updraft_helicity_max"   type="real"     dimensions="nCells Time" units="m^2 s^{-2}"

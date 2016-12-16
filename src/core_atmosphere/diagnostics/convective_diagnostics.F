@@ -273,7 +273,7 @@ module convective_diagnostics
 
         real (kind=RKIND), dimension(:,:), allocatable :: temperature, dewpoint
 
-        real (kind=RKIND) :: tempC, logrelhum
+        real (kind=RKIND) :: evp
 
         logical :: need_cape, need_cin, need_lcl, need_lfc, need_srh_01km, need_srh_03km, need_uzonal_sfc, need_uzonal_1km, &
                    need_uzonal_6km, need_umerid_sfc, need_umerid_1km, need_umerid_6km, need_tsfc, need_tdsfc
@@ -360,10 +360,15 @@ module convective_diagnostics
             do iCell = 1,nCells
             do k = 1,nVertLevels
                 temperature(k,iCell) = (theta_m(k,iCell)/(1._RKIND+rvord*scalars(index_qv,k,iCell)))*exner(k,iCell)
-                tempC = temperature(k,iCell) - 273.15
-                logrelhum = log(max(1.e-08,min(100.,relhum(k,iCell)))*0.01)
-                dewpoint(k,iCell) = 243.04*(logrelhum+(17.625*tempC/(243.04+tempC))) &
-                                    /(17.625-logrelhum-((17.625*tempC)/(243.04+tempC)))
+
+                ! Vapor pressure
+                evp = 0.01_RKIND * (pressure_base(k,iCell) + pressure_p(k,iCell)) &
+                                 * scalars(index_qv,k,iCell) / (scalars(index_qv,k,iCell) + 0.622_RKIND)
+                evp = max(evp, 1.0e-8_RKIND)
+
+                ! Dewpoint temperature following Bolton (1980)
+                dewpoint(k,iCell) = (243.5_RKIND * log(evp/6.112_RKIND)) / (17.67_RKIND - log(evp/6.112_RKIND))
+                dewpoint(k,iCell) = dewpoint(k,iCell) + 273.15
             enddo
             enddo
 
@@ -449,7 +454,7 @@ module convective_diagnostics
                 do iCell=1, nCellsSolve
                     p_in(1:nVertLevels) = (pressure_p(1:nVertLevels,iCell) + pressure_base(1:nVertLevels,iCell)) / 100.0_RKIND
                     t_in(1:nVertLevels) = temperature(1:nVertLevels,iCell) - 273.15
-                    td_in(1:nVertLevels) = dewpoint(1:nVertLevels,iCell)
+                    td_in(1:nVertLevels) = dewpoint(1:nVertLevels,iCell) - 273.15
 
                  !   do k=1,nVertLevels
                  !     relhum(k,iCell) = max(1.e-08,min(1.,relhum(k,iCell)))
