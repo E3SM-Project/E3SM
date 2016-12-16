@@ -185,24 +185,24 @@ class EntryID(GenericXML):
         return new_valid_values
 
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False):
-        """
+       """
         Set the value of an entry-id field to value
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
-        expect(subgroup is None, "Subgroup not supported")
-        valid_values = self._get_valid_values(node)
-        if ignore_type:
-            expect(type(value) is str, "Value must be type string if ignore_type is true")
-            str_value = value
-        else:
-            type_str = self._get_type_info(node)
-            str_value = convert_to_string(value, type_str, vid)
-        if valid_values is not None and not str_value.startswith('$'):
-            expect(str_value in valid_values, "Did not find %s in valid values:%s"%(value, valid_values))
-        node.set("value", str_value)
+       expect(subgroup is None, "Subgroup not supported")
+       valid_values = self._get_valid_values(node)
+       if ignore_type:
+           expect(type(value) is str, "Value must be type string if ignore_type is true")
+           str_value = value
+       else:
+           type_str = self._get_type_info(node)
+           str_value = convert_to_string(value, type_str, vid)
+       if valid_values is not None and not str_value.startswith('$'):
+           expect(str_value in valid_values, "Did not find %s in valid values:%s"%(value, valid_values))
+       node.set("value", str_value)
 
-        return value
+       return value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
         """
@@ -358,7 +358,9 @@ class EntryID(GenericXML):
         if dnode is not None:
             node.remove(dnode)
         vnode = node.find(".//values")
-        if vnode is not None:
+        vid = node.get("id")
+        _, _, iscompvar = self.check_if_comp_var(vid)
+        if vnode is not None and not iscompvar:
             node.remove(vnode)
         return node
 

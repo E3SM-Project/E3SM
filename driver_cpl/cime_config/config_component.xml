@@ -2206,10 +2206,21 @@
   <entry id="PIO_TYPENAME">
     <type>char</type>
     <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <default_value>pnetcdf</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
+    <values>
+      <value>pnetcdf</value>
+      <value component="ATM">default</value>
+      <value component="CPL">default</value>
+      <value component="OCN">default</value>
+      <value component="WAV">default</value>
+      <value component="GLC">default</value>
+      <value component="ICE">default</value>
+      <value component="ROF">default</value>
+      <value component="LND">default</value>
+      <value component="ESP">default</value>
+    </values>
   </entry>
 
   <entry id="PIO_DEBUG_LEVEL">
@@ -2268,15 +2279,6 @@
     <desc>pio number of io tasks</desc>
   </entry>
 
-  <entry id="OCN_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
   <entry id="LND_PIO_STRIDE">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2307,15 +2309,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="LND_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
   </entry>
 
   <entry id="ROF_PIO_STRIDE">
@@ -2350,15 +2343,6 @@
     <desc>pio number of io tasks</desc>
   </entry>
 
-  <entry id="ROF_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
   <entry id="ICE_PIO_STRIDE">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2389,15 +2373,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ICE_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
   </entry>
 
   <entry id="ATM_PIO_STRIDE">
@@ -2432,15 +2407,6 @@
     <desc>pio number of io tasks, -99 value means inherit whatever the driver uses</desc>
   </entry>
 
-  <entry id="ATM_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
   <entry id="CPL_PIO_STRIDE">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2471,15 +2437,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="CPL_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
   </entry>
 
   <entry id="GLC_PIO_STRIDE">
@@ -2514,15 +2471,6 @@
     <desc>pio number of io tasks</desc>
   </entry>
 
-  <entry id="GLC_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
   <entry id="WAV_PIO_STRIDE">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2553,15 +2501,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="WAV_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
   </entry>
 
   <!-- ===================================================================== -->
