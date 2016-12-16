@@ -157,7 +157,7 @@
              <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
 
          the following will results in the CORRECT set of streams for this datm_mode
-             <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
+             <value datm_mode="CLMCRUNCEP.\">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
              <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
   -->
 
@@ -194,13 +194,13 @@
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
-      <value stream="CLM1PT$">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
+      <value stream="CLM1PT.1x1">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
       <value stream="CPLHIST3HrWx">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CPLHISTForcingForOcnIce">$DATM_CPLHIST_DIR</value>
       <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
+      <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
-      <value stream="CLMCRUNCEP$">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</value>
       <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
@@ -253,7 +253,7 @@
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_FILE</value>
       <value stream="CPLHIST3HrWx">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</value>
       <value stream="CPLHISTForcingForOcnIce">null</value>
-      <value stream="CLM_QIAN$">domain.T62.050609.nc</value>
+      <value stream="CLM_QIAN\.">domain.T62.050609.nc</value>
       <value stream="CLM_QIAN_WISO">domain.T62.050609.nc</value>
       <value stream="CLMCRUNCEP_V5">domain.cruncep.V5.c2013.0.5d.nc</value>
       <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
@@ -1654,7 +1654,7 @@
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_END</value>
       <value stream="presaero.clim">1</value>
       <value stream="presaero.trans_1850-2000">2006</value>
-      <value stream="presaero.rcp2">2104</value>
+      <value stream="presaero.rcp">2104</value>
       <value stream="topo.observed">1</value>
     </values>
   </entry>
