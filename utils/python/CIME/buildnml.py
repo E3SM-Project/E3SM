@@ -107,7 +107,7 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
     lines_output.append("&comp_inparm \n")
     if infile_text:
         lines_output.append(infile_text)
-        logger.info("file_infile %s " %infile_text)
+        logger.debug("file_infile %s " %infile_text)
 
     for line in lines_input:
         match1 = re.search(r"^[\&\/\!]", line)
