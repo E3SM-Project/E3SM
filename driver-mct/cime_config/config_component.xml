@@ -2045,38 +2045,6 @@
     <desc>TRUE implies perform asynchronous i/o</desc>
   </entry>
 
-  <entry id="PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>mpi task stride between io tasks</desc>
-  </entry>
-
-  <entry id="PIO_ROOT">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>2</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
   <entry id="PIO_REARR_COMM_TYPE">
     <type>char</type>
     <valid_values>p2p,coll,default</valid_values>
@@ -2158,7 +2126,6 @@
     <file>env_run.xml</file>
     <desc>pio io type</desc>
     <values>
-      <value>pnetcdf</value>
       <value component="ATM">default</value>
       <value component="CPL">default</value>
       <value component="OCN">default</value>
@@ -2170,6 +2137,25 @@
       <value component="ESP">default</value>
     </values>
   </entry>
+
+  <entry id="PIO_STRIDE">
+    <type>integer</type>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>stride in compute comm of io tasks for each component</desc>
+    <values>
+      <value component="ATM"></value>
+      <value component="CPL"></value>
+      <value component="OCN"></value>
+      <value component="WAV"></value>
+      <value component="GLC"></value>
+      <value component="ICE"></value>
+      <value component="ROF"></value>
+      <value component="LND"></value>
+      <value component="ESP"></value>
+    </values>
+  </entry>
+
 
   <entry id="PIO_DEBUG_LEVEL">
     <type>integer</type>
@@ -2195,13 +2181,6 @@
     <desc>pio buffer size limit for pnetcdf output</desc>
   </entry>
 
-  <entry id="OCN_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
 
   <entry id="OCN_PIO_REARRANGER">
     <type>integer</type>
@@ -2225,14 +2204,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="LND_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
   </entry>
 
   <entry id="LND_PIO_REARRANGER">
@@ -2259,14 +2230,6 @@
     <desc>pio number of io tasks</desc>
   </entry>
 
-  <entry id="ROF_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
   <entry id="ROF_PIO_REARRANGER">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2289,14 +2252,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ICE_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
   </entry>
 
   <entry id="ICE_PIO_REARRANGER">
@@ -2323,14 +2278,6 @@
     <desc>pio number of io tasks</desc>
   </entry>
 
-  <entry id="ATM_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
   <entry id="ATM_PIO_REARRANGER">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2353,14 +2300,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks, -99 value means inherit whatever the driver uses</desc>
-  </entry>
-
-  <entry id="CPL_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
   </entry>
 
   <entry id="CPL_PIO_REARRANGER">
@@ -2387,14 +2326,6 @@
     <desc>pio number of io tasks</desc>
   </entry>
 
-  <entry id="GLC_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
   <entry id="GLC_PIO_REARRANGER">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2417,14 +2348,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="WAV_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
   </entry>
 
   <entry id="WAV_PIO_REARRANGER">
