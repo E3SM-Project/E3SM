@@ -102,6 +102,10 @@ class Case(object):
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
 
+    def set_comp_classes(self, comp_classes):
+        for env_file in self._env_entryid_files:
+            env_file.set_components(comp_classes)
+
     def initialize_derived_attributes(self):
         """
         These are derived variables which can be used in the config_* files
@@ -109,6 +113,8 @@ class Case(object):
         """
         env_mach_pes = self.get_env("mach_pes")
         comp_classes = self.get_values("COMP_CLASSES")
+        self.set_comp_classes(comp_classes)
+
         total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
@@ -321,7 +327,7 @@ class Case(object):
         logging.debug("Not able to retreive type for item '%s'" % item)
 
     def get_resolved_value(self, item, recurse=0):
-        num_unresolved = item.count("$")
+        num_unresolved = item.count("$") if item else 0
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
@@ -495,7 +501,7 @@ class Case(object):
         self._component_classes =drv_comp.get_valid_model_components()
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
-
+        self.set_comp_classes(self._component_classes)
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]

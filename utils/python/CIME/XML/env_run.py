@@ -17,11 +17,5 @@ class EnvRun(EnvBase):
         self._components = []
         self._component_value_list = ["PIO_TYPENAME"]
 
-    def comp_var_split(self, vid):
-        parts = vid.split("_", 1)
-        if len(parts) == 2 and parts[1] in self._component_value_list:
-            return parts[1], parts[0], True
-        return vid, None, False
-
 
 

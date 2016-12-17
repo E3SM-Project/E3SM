@@ -340,7 +340,7 @@ class EntryID(GenericXML):
             # expression match to a dictionary value in attributes matching a
             # value attribute in node
             value = srcobj.get_default_value(src_node, attributes)
-            if value is not None:
+            if value is not None and len(value):
                 self._set_value(node,value)
             logger.debug ("Adding to group " + gname)
 

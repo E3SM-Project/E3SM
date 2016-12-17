@@ -15,24 +15,19 @@ class EnvMachPes(EnvBase):
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
         EnvBase.__init__(self, case_root, infile)
-        self._component_value_list = ["NTASKS", "NTHRDS", "NINST", "ROOTPE", "PSTRID"]
+        self._component_value_list = ["NTASKS", "NTHRDS", "NINST",
+                                      "ROOTPE", "PSTRID", "NINST_LAYOUT"]
         self._components = []
-
-    def comp_var_split(self, vid):
-        parts = vid.split("_")
-        if len(parts) == 2 and parts[0] in self._component_value_list:
-            return parts[0], parts[1], True
-        return vid, None, False
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
 
-        if "NTASKS" in vid or "ROOTPE" in vid and pes_per_node is None:
-            pes_per_node = self.get_value("PES_PER_NODE")
-            if "NTASKS" in vid and value < 0:
+        if "NTASKS" in vid or "ROOTPE" in vid:
+            if pes_per_node is None:
+                pes_per_node = self.get_value("PES_PER_NODE")
+            if value is not None and value < 0:
                 value = -1*value*pes_per_node
-            if "ROOTPE" in vid and value < 0:
-                value = -1*value*pes_per_node
+
         return value
 
     def get_max_thread_count(self, comp_classes):
