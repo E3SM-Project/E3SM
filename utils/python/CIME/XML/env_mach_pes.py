@@ -88,26 +88,6 @@ class EnvMachPes(EnvBase):
         num_nodes = int(math.ceil(float(total_tasks) / tasks_per_node))
         return num_nodes
 
-    def cleanupnode(self, node):
-        """
-        Remove the <group>, <file>, <values> and <value> childnodes from node
-        """
-        fnode = node.find(".//file")
-        node.remove(fnode)
-        gnode = node.find(".//group")
-        node.remove(gnode)
-        dnode = node.find(".//default_value")
-        if dnode is not None:
-            node.remove(dnode)
-        if node.get("id") not in self._component_value_list:
-            vnode = node.find(".//values")
-            if vnode is not None:
-                node.remove(vnode)
-        return node
 
-
-    def get_nodes_by_id(self, varid):
-        varid, _, _ = self.check_if_comp_var(varid, None)
-        return EnvBase.get_nodes_by_id(self, varid)
 
 
