@@ -91,7 +91,7 @@ module parameters_tunable
     C8b     = 0.000000_core_rknd,    & ! Coef. #2 in C8 Skewness Equation    [-]
     C10     = 3.300000_core_rknd,    & ! Currently Not Used in the Model     [-]
 #if defined(CLUBB_CAM) && !defined(CLUBBND_CAM)
-    C11     = 0.70000_core_rknd,     & ! Low Skewness in C11 Skw. Function   [-]
+    C11     = 0.80000_core_rknd,     & ! Low Skewness in C11 Skw. Function   [-]
     C11b    = 0.350000_core_rknd,    & ! High Skewness in C11 Skw. Function  [-]
 #else
     C11     = 0.80000_core_rknd,     & ! Low Skewness in C11 Skw. Function   [-]
@@ -112,7 +112,7 @@ module parameters_tunable
     C6rt_Lscale0  = 14.0_core_rknd,      & ! Damp C6rt as a fnct. of Lscale  [-]
     C6thl_Lscale0 = 14.0_core_rknd,      & ! Damp C6thl as a fnct. of Lscale [-]
     C7_Lscale0    = 0.8500000_core_rknd, & ! Damp C7 as a fnct. of Lscale    [-]
-    wpxp_L_thresh = huge(1.0_core_rknd)    ! Lscale threshold: damp C6 & C7  [m]
+    wpxp_L_thresh = 60.0_core_rknd         ! Lscale threshold: damp C6 & C7  [m]
 !$omp threadprivate(C6rt_Lscale0, C6thl_Lscale0, C7_Lscale0, wpxp_L_thresh)
 
   ! Note: DD 1987 is Duynkerke & Driedonks (1987).
@@ -126,7 +126,7 @@ module parameters_tunable
     c_K_hm      = 0.750000_core_rknd, & ! Coef. of Eddy Diffusion: hmm   [m^2/s]
     c_K_hmb     = 0.10000_core_rknd,  & ! Coef. of Non-Local Factor, Eddy Diffusion: hmm   [m^2/s]
     K_hm_min_coef = 0.10000_core_rknd,& ! Min. of Non-Local Factor, Eddy Diffusion: hmm   [m^2/s]
-    gamma_coef  = 0.320000_core_rknd, & ! Low Skw.: gamma coef. Skw. Fnct.   [-]
+    gamma_coef  = 0.290000_core_rknd, & ! Low Skw.: gamma coef. Skw. Fnct.   [-]
     gamma_coefb = 0.320000_core_rknd, & ! High Skw.: gamma coef. Skw. Fnct.  [-]
     gamma_coefc = 5.000000_core_rknd, & ! Deg. Slope: gamma coef. Skw. Fnct. [-]
 #ifdef CLUBBND_CAM
@@ -135,7 +135,7 @@ module parameters_tunable
     mu          = 1.000E-3_core_rknd, & ! Fract entrain rate per unit alt  [1/m]
 #endif
 #ifdef CLUBBND_CAM
-    mult_coef   = 1.500000_core_rknd, &
+    mult_coef   = 1.000000_core_rknd, &
 #else
     mult_coef   = 1.000000_core_rknd, & ! Coef. applied to log(avg dz/thresh)[-]
 #endif    
@@ -188,7 +188,7 @@ module parameters_tunable
 !$omp threadprivate(beta)
 
   real( kind = core_rknd ), private :: &
-    lmin_coef = 0.100000_core_rknd    ! Coefficient of lmin    [-]
+    lmin_coef = 0.500000_core_rknd   ! Coefficient of lmin    [-]
 
 !$omp threadprivate(lmin_coef)
 
@@ -207,14 +207,14 @@ module parameters_tunable
     Skw_denom_coef = 0.0_core_rknd
 #endif
 #else
-    Skw_denom_coef = 4.0_core_rknd
+    Skw_denom_coef = 0.0_core_rknd
 #endif
 
 !$omp threadprivate( Skw_denom_coef )
 
   ! Coefficient of Kh_zm
   real( kind = core_rknd ), public :: &
-    c_K10 = 0.6_core_rknd
+    c_K10 = 0.5_core_rknd
 
 !$omp threadprivate( c_K10 )
 
