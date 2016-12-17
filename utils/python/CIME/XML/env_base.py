@@ -73,7 +73,11 @@ class EnvBase(EntryID):
             node = self.get_optional_node("entry", {"id":vid})
             if node is not None:
                 type_str = self._get_type_info(node)
-                value = convert_to_type(self.get_element_text("value", attribute, root=node), type_str, vid)
+                val = self.get_element_text("value", attribute, root=node)
+                if val.startswith("$"):
+                    value = val
+                else:
+                    value = convert_to_type(val,type_str, vid)
                 return value
         return EntryID.get_value(self, vid, attribute=attribute, resolved=resolved, subgroup=subgroup)
 

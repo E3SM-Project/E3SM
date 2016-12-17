@@ -15,7 +15,7 @@ class EnvRun(EnvBase):
         """
         EnvBase.__init__(self, case_root, infile)
         self._components = []
-        self._component_value_list = ["PIO_TYPENAME"]
+        self._component_value_list = ["PIO_TYPENAME", "PIO_STRIDE"]
 
 
 
