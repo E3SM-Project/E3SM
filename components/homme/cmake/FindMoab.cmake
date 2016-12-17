@@ -1,0 +1,26 @@
+
+SET(MOAB_FOUND OFF)
+IF (MOAB_DIR)
+  INCLUDE(${MOAB_DIR}/lib/MOABConfig.cmake)
+ELSE()
+
+  IF (DEFINED ENV{MOAB_DIR})
+    SET (MOAB_DIR $ENV{MOAB_DIR} CACHE FILEPATH "")
+    INCLUDE(${MOAB_DIR}/lib/MOABConfig.cmake)
+  ENDIF()
+
+ENDIF()
+IF (MOAB_INCLUDE_DIRS AND MOAB_LIBRARIES)
+  SET(MOAB_FOUND ON)
+  SET(HAVE_MOAB TRUE)
+  MESSAGE(STATUS "Found MOAB:")
+  MESSAGE(STATUS " MOAB Libraries: ${MOAB_LIBRARIES}")
+  MESSAGE(STATUS " MOAB Includes:  ${MOAB_INCLUDE_DIRS}")
+ELSE()
+  MESSAGE(STATUS "Bulding without MOAB:")
+ENDIF()
+
+IF(MOAB_FIND_REQUIRED AND NOT MOAB_FOUND)
+  MESSAGE(FATAL_ERROR "Did not find required library MOAB.\n"
+          "Please set location of MOAB with env var MOAB_DIR or with -DMOAB_DIR at cmake command")
+ENDIF()

@@ -130,6 +130,12 @@ IF (DEFINED EXTRAE_DIR)
   SET(HAVE_EXTRAE TRUE)
 ENDIF ()
 
+IF (MOAB_DIR OR DEFINED ENV{MOAB_DIR})
+  MESSAGE(STATUS "Building with MOAB")
+  FIND_PACKAGE(Moab REQUIRED)
+ENDIF ()
+
+
 ###########################################
 # Definitions for timing library
 ###########################################

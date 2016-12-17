@@ -33,5 +33,8 @@
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
+/* MOAB library */
+#cmakedefine01 HAVE_MOAB
+
 /* Enable persistent MPI comm */
 #cmakedefine MPI_PERSISTENT
