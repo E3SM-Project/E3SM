@@ -62,8 +62,8 @@ def create_namelists(case):
     # Note - DRV must be last in the loop below so that in generating its namelist, 
     # it can use xml vars potentially set by other component's buildnml scripts
     models = case.get_values("COMP_CLASSES")
-    models_reverse = models[::-1]
-    for model in models_reverse:
+    models += [models.pop(0)]
+    for model in models:
         model_str = model.lower()
         config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
         config_dir = os.path.dirname(config_file)
