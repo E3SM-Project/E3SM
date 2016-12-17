@@ -1954,6 +1954,24 @@
     <desc>Number of instances for each component</desc>
   </entry>
 
+  <entry id="NINST_LAYOUT">
+    <type>char</type>
+    <valid_values>sequential,concurrent</valid_values>
+    <values>
+      <value component="ATM">concurrent</value>
+      <value component="OCN">concurrent</value>
+      <value component="WAV">concurrent</value>
+      <value component="GLC">concurrent</value>
+      <value component="ICE">concurrent</value>
+      <value component="ROF">concurrent</value>
+      <value component="LND">concurrent</value>
+      <value component="ESP">concurrent</value>
+    </values>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Layout of component instances for each component</desc>
+  </entry>
+
   <entry id="PSTRID">
     <type>integer</type>
     <values>
@@ -1972,76 +1990,6 @@
     <desc>Number of instances for each component</desc>
   </entry>
 
-  <entry id="NINST_ATM_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of atmosphere instances</desc>
-  </entry>
-
-  <entry id="NINST_LND_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of land instances</desc>
-  </entry>
-
-  <entry id="NINST_ICE_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of sea ice instances</desc>
-  </entry>
-
-  <entry id="NINST_OCN_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of ocean instances</desc>
-  </entry>
-
-  <entry id="NINST_GLC_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_glc</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of glacier instances</desc>
-  </entry>
-
-  <entry id="NINST_ROF_LAYOUT">
-    <type>char</type>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of river runoff instances</desc>
-  </entry>
-
-  <entry id="NINST_WAV_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of wave instances</desc>
-  </entry>
-
-  <entry id="NINST_ESP_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of external processing tool instances</desc>
-  </entry>
 
   <entry id="TOTALPES">
     <type>integer</type>
