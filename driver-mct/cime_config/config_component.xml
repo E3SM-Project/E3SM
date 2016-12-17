@@ -2119,43 +2119,6 @@
     <desc>pio rearranger communiation options (io2comp) : TRUE implies enable isend</desc>
   </entry>
 
-  <entry id="PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-    <values>
-      <value component="ATM">default</value>
-      <value component="CPL">default</value>
-      <value component="OCN">default</value>
-      <value component="WAV">default</value>
-      <value component="GLC">default</value>
-      <value component="ICE">default</value>
-      <value component="ROF">default</value>
-      <value component="LND">default</value>
-      <value component="ESP">default</value>
-    </values>
-  </entry>
-
-  <entry id="PIO_STRIDE">
-    <type>integer</type>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>stride in compute comm of io tasks for each component</desc>
-    <values>
-      <value component="ATM"></value>
-      <value component="CPL"></value>
-      <value component="OCN"></value>
-      <value component="WAV"></value>
-      <value component="GLC"></value>
-      <value component="ICE"></value>
-      <value component="ROF"></value>
-      <value component="LND"></value>
-      <value component="ESP"></value>
-    </values>
-  </entry>
-
 
   <entry id="PIO_DEBUG_LEVEL">
     <type>integer</type>
@@ -2181,197 +2144,103 @@
     <desc>pio buffer size limit for pnetcdf output</desc>
   </entry>
 
+  <entry id="PIO_TYPENAME">
+    <type>char</type>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio io type</desc>
+    <values>
+      <value component="ATM">default</value>
+      <value component="CPL">default</value>
+      <value component="OCN">default</value>
+      <value component="WAV">default</value>
+      <value component="GLC">default</value>
+      <value component="ICE">default</value>
+      <value component="ROF">default</value>
+      <value component="LND">default</value>
+      <value component="ESP">default</value>
+    </values>
+  </entry>
 
-  <entry id="OCN_PIO_REARRANGER">
+  <entry id="PIO_STRIDE">
     <type>integer</type>
-    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>
+     stride in compute comm of io tasks for each component, if this value is -99 it will
+     be computed based on PIO_NUMTASKS and number of compute tasks
+    </desc>
+    <values>
+      <value component="ATM"></value>
+      <value component="CPL"></value>
+      <value component="OCN"></value>
+      <value component="WAV"></value>
+      <value component="GLC"></value>
+      <value component="ICE"></value>
+      <value component="ROF"></value>
+      <value component="LND"></value>
+      <value component="ESP"></value>
+    </values>
+  </entry>
+
+  <entry id="PIO_REARRANGER">
+    <type>integer</type>
+    <valid_values>1,2</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
+    <values>
+      <value>$PIO_VERSION</value>
+      <value component="ATM"></value>
+      <value component="CPL"></value>
+      <value component="OCN"></value>
+      <value component="WAV"></value>
+      <value component="GLC"></value>
+      <value component="ICE"></value>
+      <value component="ROF"></value>
+      <value component="LND"></value>
+      <value component="ESP"></value>
+    </values>
   </entry>
 
-  <entry id="OCN_PIO_ROOT">
+  <entry id="PIO_ROOT">
     <type>integer</type>
-    <default_value>0</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio root processor</desc>
+    <desc>pio root processor relative to component root</desc>
+    <values>
+      <value component="ATM">1</value>
+      <value component="CPL">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
+    </values>
   </entry>
 
-  <entry id="OCN_PIO_NUMTASKS">
+  <entry id="PIO_NUMTASKS">
     <type>integer</type>
-    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="LND_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="LND_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="LND_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ROF_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ROF_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ROF_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ICE_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ICE_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ICE_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ATM_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ATM_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ATM_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks, -99 value means inherit whatever the driver uses</desc>
-  </entry>
-
-  <entry id="CPL_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="CPL_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="CPL_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="GLC_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="GLC_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="GLC_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="WAV_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="WAV_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="WAV_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
+    <desc>
+      pio number of io tasks, if this value is -99 it will be computed based on PIO_STRIDE and
+      number of tasks
+    </desc>
+    <values>
+      <value component="ATM">-99</value>
+      <value component="CPL">-99</value>
+      <value component="OCN">-99</value>
+      <value component="WAV">-99</value>
+      <value component="GLC">-99</value>
+      <value component="ICE">-99</value>
+      <value component="ROF">-99</value>
+      <value component="LND">-99</value>
+      <value component="ESP">-99</value>
+    </values>
   </entry>
 
   <!-- ===================================================================== -->
