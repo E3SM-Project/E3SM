@@ -31,12 +31,17 @@ class EnvBase(EntryID):
             if 'DRV' in components:
                 index = components.index("DRV")
                 components[index] = "CPL"
+            # pylint: disable=attribute-defined-outside-init
             self._components = components
 
     def check_if_comp_var(self, vid, attribute=None):
-        if not hasattr(self, "_component_value_list"):
+        if not hasattr(self, "_component_value_list") or\
+                (self.get_nodes("entry", {"id" : vid}) and \
+                     not vid in self._component_value_list):
             return vid, None, False
+
         comp = None
+        # pylint: disable=no-member
         if vid in self._component_value_list:
             if attribute is not None:
                 if "component" in attribute:
@@ -74,10 +79,11 @@ class EnvBase(EntryID):
             if node is not None:
                 type_str = self._get_type_info(node)
                 val = self.get_element_text("value", attribute, root=node)
-                if val.startswith("$"):
-                    value = val
-                else:
-                    value = convert_to_type(val,type_str, vid)
+                if val is not None:
+                    if val.startswith("$"):
+                        value = val
+                    else:
+                        value = convert_to_type(val,type_str, vid)
                 return value
         return EntryID.get_value(self, vid, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
@@ -97,7 +103,7 @@ class EnvBase(EntryID):
             else:
                 val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
         return val
-
+    # pylint: disable=arguments-differ
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, component=None):
         if vid is None:
             vid = node.get("id")
@@ -106,9 +112,6 @@ class EnvBase(EntryID):
         if iscompvar:
             attribute = {"component":component}
             type_str = self._get_type_info(node)
-            # special case - no NINST defined for coupler component
-            if vid == "NINST" and component == "CPL":
-                return None
             val = self.set_element_text("value", convert_to_string(value, type_str, vid), attribute, root=node)
             return val
         val = EntryID._set_value(self, node, value, vid, subgroup, ignore_type)
@@ -117,3 +120,21 @@ class EnvBase(EntryID):
     def get_nodes_by_id(self, varid):
         varid, _, _ = self.check_if_comp_var(varid, None)
         return EntryID.get_nodes_by_id(self, varid)
+
+    def cleanupnode(self, node):
+        """
+        Remove the <group>, <file>, <values> and <value> childnodes from node
+        """
+        fnode = node.find(".//file")
+        node.remove(fnode)
+        gnode = node.find(".//group")
+        node.remove(gnode)
+        dnode = node.find(".//default_value")
+        if dnode is not None:
+            node.remove(dnode)
+        vnode = node.find(".//values")
+        vid = node.get("id")
+        _, _, iscompvar = self.check_if_comp_var(vid)
+        if vnode is not None and not iscompvar:
+            node.remove(vnode)
+        return node

@@ -70,22 +70,23 @@ class EntryID(GenericXML):
         for vnode in nodes:
             # For each node in the list start a score.
             score = 0
-            for attribute in vnode.keys():
-                # For each attribute, add to the score.
-                score += 1
-                # If some attribute is specified that we don't know about,
-                # or the values don't match, it's not a match we want.
-                if exact_match:
-                    if attribute not in attributes or \
-                            attributes[attribute] != vnode.get(attribute):
-                        score = -1
-                        break
-                else:
-                    if attribute not in attributes or \
-                            not re.search(vnode.get(attribute),
-                                          attributes[attribute]):
-                        score = -1
-                        break
+            if attributes:
+                for attribute in vnode.keys():
+                    # For each attribute, add to the score.
+                    score += 1
+                    # If some attribute is specified that we don't know about,
+                    # or the values don't match, it's not a match we want.
+                    if exact_match:
+                        if attribute not in attributes or \
+                                attributes[attribute] != vnode.get(attribute):
+                            score = -1
+                            break
+                    else:
+                        if attribute not in attributes or \
+                                not re.search(vnode.get(attribute),
+                                              attributes[attribute]):
+                                score = -1
+                                break
 
             # Add valid matches to the list.
             if score >= 0:
@@ -185,24 +186,24 @@ class EntryID(GenericXML):
         return new_valid_values
 
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False):
-       """
+        """
         Set the value of an entry-id field to value
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
-       expect(subgroup is None, "Subgroup not supported")
-       valid_values = self._get_valid_values(node)
-       if ignore_type:
-           expect(type(value) is str, "Value must be type string if ignore_type is true")
-           str_value = value
-       else:
-           type_str = self._get_type_info(node)
-           str_value = convert_to_string(value, type_str, vid)
-       if valid_values is not None and not str_value.startswith('$'):
-           expect(str_value in valid_values, "Did not find %s in valid values:%s"%(value, valid_values))
-       node.set("value", str_value)
+        expect(subgroup is None, "Subgroup not supported")
+        valid_values = self._get_valid_values(node)
+        if ignore_type:
+            expect(type(value) is str, "Value must be type string if ignore_type is true")
+            str_value = value
+        else:
+            type_str = self._get_type_info(node)
+            str_value = convert_to_string(value, type_str, vid)
+        if valid_values is not None and not str_value.startswith('$'):
+            expect(str_value in valid_values, "Did not find %s in valid values:%s"%(value, valid_values))
+        node.set("value", str_value)
 
-       return value
+        return value
 
     def set_value(self, vid, value, subgroup=None, ignore_type=False):
         """
@@ -348,21 +349,9 @@ class EntryID(GenericXML):
 
     def cleanupnode(self, node):
         """
-        Remove the <group>, <file>, <values> and <value> childnodes from node
+        in env_base.py, not expected to get here
         """
-        fnode = node.find(".//file")
-        node.remove(fnode)
-        gnode = node.find(".//group")
-        node.remove(gnode)
-        dnode = node.find(".//default_value")
-        if dnode is not None:
-            node.remove(dnode)
-        vnode = node.find(".//values")
-        vid = node.get("id")
-        _, _, iscompvar = self.check_if_comp_var(vid)
-        if vnode is not None and not iscompvar:
-            node.remove(vnode)
-        return node
+        expect(False, " Not expected to be here %s"%node.get("id"))
 
     def compare_xml(self, other):
         xmldiffs = {}

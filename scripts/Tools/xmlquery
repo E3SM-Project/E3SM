@@ -96,7 +96,7 @@ def parse_command_line(args):
         args.type, args.valid_values
 
 
-def get_value_as_string(case, var):
+def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
     thistype = case.get_record_fields(var, "type")
     value = None
     if thistype:
@@ -123,21 +123,23 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
         else:
             groups = case.get_record_fields(var, "group")
 
-
+        expect(groups, " No results found for variable %s"%var)
         for group in groups:
             if not group in results:
                 results[group] = {}
             if not var in results[group]:
                 results[group][var] = {}
             expect(group, "No group found for var %s"% var)
-            value = get_value_as_string(case, var)
+            value = get_value_as_string(case, var, resolved=resolved, subgroup=group)
             if value is None:
                 value = []
                 for comp in comp_classes:
                     if comp == "DRV":
                         comp = "CPL"
-
-                    value.append(comp + ":" + "%s"%get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group))
+                    nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group))
+                    if nextval is not None:
+                        value.append(comp + ":" + "%s"%nextval)
+            expect(value is not None, " No results found for variable %s"%var)
 
             results[group][var]['value'] = value
 
