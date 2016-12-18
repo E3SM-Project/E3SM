@@ -121,6 +121,10 @@ contains
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
 
+#if HAVE_MOAB
+    use moabmesh_mod, only : create_moab_mesh
+#endif
+
     implicit none
 
     type (element_t),   pointer     :: elem(:)
@@ -476,6 +480,10 @@ contains
     endif
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
+
+#if HAVE_MOAB
+    call create_moab_mesh(par, elem, nets, nete)
+#endif
 
     deallocate(GridEdge)
     do j =1,nelem

@@ -93,6 +93,11 @@ macro(createTestExec execName execType macroNP macroNC
     TARGET_LINK_LIBRARIES(${execName} ${Extrae_LIBRARY})
   ENDIF ()
 
+  IF (HAVE_MOAB)
+    TARGET_LINK_LIBRARIES(${execName} ${MOAB_LIBRARIES} -lstdc++ )
+  ENDIF ()
+
+
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
 endmacro(createTestExec)

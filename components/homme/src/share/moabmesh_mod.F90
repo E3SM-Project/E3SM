@@ -14,7 +14,7 @@ module moabmesh_mod
   use element_mod, only : element_t, timelevels
 !  use fvm_control_volume_mod, only: fvm_struct
 !  use fvm_mod, only: cellghostbuf, edgeveloc
-  use hybrid_mod, only : hybrid_t
+!  use hybrid_mod, only : hybrid_t
   use parallel_mod, only : parallel_t
   use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t, spherical_to_cart
 
@@ -39,13 +39,13 @@ contains
   return
   end subroutine
 
-  subroutine create_moab_mesh(hybrid, elem, nets, nete)
+  subroutine create_moab_mesh(par, elem, nets, nete)
 
     use ISO_C_BINDING
 
     type (element_t), intent(inout) :: elem(:)
 
-    type (hybrid_t)      , intent(in) :: hybrid
+    type (parallel_t)      , intent(in) :: par
 
     integer, intent(in)                     :: nets  ! starting thread element number (private)
     integer, intent(in)                     :: nete
@@ -94,7 +94,7 @@ contains
 
       appname = 'HM_COARSE'
 
-      ierr = iMOAB_RegisterFortranApplication(appname, hybrid%par, pid)
+      ierr = iMOAB_RegisterFortranApplication(appname, par%comm, pid)
       call errorout(ierr, 'fail to register homme spectral mesh')
 
      ! deallocate

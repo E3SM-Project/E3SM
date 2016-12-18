@@ -16,6 +16,10 @@ FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 
+if (HAVE_MOAB)
+   SET (EXEC_INCLUDE_DIRS  ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR}  ${MOAB_INCLUDE_DIRS} )
+endif()
+
 SET(SWEQX_SRCS
   ${TARGET_F90}
   ${SRC_BASE}/checksum_mod.F90
@@ -55,6 +59,7 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/ll_mod.F90
   ${SRC_SHARE}/mass_matrix_mod.F90
   ${SRC_SHARE}/mesh_mod.F90
+  ${SRC_SHARE}/moabmesh_mod.F90
   ${SRC_SHARE}/metagraph_mod.F90
   ${SRC_SHARE}/metis_mod.F90
   ${SRC_SHARE}/namelist_mod.F90

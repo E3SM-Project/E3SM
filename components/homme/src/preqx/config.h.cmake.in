@@ -54,6 +54,9 @@
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
+/* MOAB library */
+#cmakedefine01 HAVE_MOAB
+
 /* Enable persistent MPI comm */
 #cmakedefine MPI_PERSISTENT
 

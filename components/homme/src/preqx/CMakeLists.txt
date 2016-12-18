@@ -12,6 +12,10 @@ SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 
+if (HAVE_MOAB)
+   SET (EXEC_INCLUDE_DIRS  ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR}  ${MOAB_INCLUDE_DIRS} )
+endif()
+
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 
@@ -94,6 +98,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/metis_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
+  ${SRC_SHARE_DIR}/moabmesh_mod.F90
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
