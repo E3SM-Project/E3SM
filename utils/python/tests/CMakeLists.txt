@@ -11,6 +11,6 @@ separate_arguments(TEST_LIST UNIX_COMMAND ${STR_TESTS})
 foreach(ATEST ${TEST_LIST})
     # this assignment prevents quotes being added to testname in add_test
     set(fulltest "${ATEST}")
-    add_test(NAME ${ATEST} COMMAND ./scripts_regression_tests.py ${fulltest}
+    add_test(NAME ${ATEST} COMMAND ./scripts_regression_tests.py -v ${fulltest}
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endforeach(ATEST)

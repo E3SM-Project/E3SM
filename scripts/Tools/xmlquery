@@ -117,10 +117,14 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
             if not var in results[group]:
                 results[group][var] = {}
             expect(group, "No group found for var %s"% var)
-
-            results[group][var]['value'] = convert_to_string(
-                case.get_value(var, resolved=resolved, subgroup=group),
-                case.get_record_fields(var, "type")[0])
+            thistype = case.get_record_fields(var, "type")
+            if thistype:
+                results[group][var]['value'] = convert_to_string(
+                    case.get_value(var, resolved=resolved, subgroup=group),
+                    thistype[0])
+            else:
+                results[group][var]['value'] = \
+                    case.get_value(var, resolved=resolved, subgroup=group)
             if raw:
                 results[group][var]['raw'] = case.get_record_fields(var, "raw")
             if description or full:
