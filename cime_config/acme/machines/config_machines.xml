@@ -1564,7 +1564,7 @@
       </environment_variables>
 
       <!-- Set if compiler and mpilib  -->
-      <environment_variables compiler="pgi_acc">
+      <environment_variables compiler="pgiacc">
         <!-- NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility -->
         <env name="CRAY_CPU_TARGET">istanbul</env>
         <env name="CRAY_CUDA_MPS">1</env>
