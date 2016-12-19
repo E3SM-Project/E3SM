@@ -912,7 +912,7 @@
 
   <entry id="TIMER_DETAIL">
     <type>integer</type>
-    <default_value>0</default_value>
+    <default_value>2</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>timer detail FIXME - add documentation</desc>
