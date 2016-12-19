@@ -59,7 +59,6 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/ll_mod.F90
   ${SRC_SHARE}/mass_matrix_mod.F90
   ${SRC_SHARE}/mesh_mod.F90
-  ${SRC_SHARE}/moabmesh_mod.F90
   ${SRC_SHARE}/metagraph_mod.F90
   ${SRC_SHARE}/metis_mod.F90
   ${SRC_SHARE}/namelist_mod.F90
@@ -86,6 +85,10 @@ SET(SWEQX_SRCS
   ${SRC_UTILS}/shr_const_mod.F90
   ${SRC_UTILS}/shr_spfn_mod.F90
 )
+
+if (HAVE_MOAB)
+  SET(SWEQX_SRCS ${SWEQX_SRCS} ${SRC_SHARE}/moabmesh_mod.F90)
+endif()
 
 SET(EXEC_SOURCES ${SWEQX_SRCS} )
 

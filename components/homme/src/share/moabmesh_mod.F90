@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+
 module moabmesh_mod    
 !  use, intrinsic :: ISO_C_BINDING
 
@@ -24,6 +25,7 @@ module moabmesh_mod
 
 #include "moab/MOABConfig.h"
 !#include "moab/iMOAB.h"
+
 
 !  public :: moabmesh
 
@@ -60,6 +62,7 @@ contains
     type(cartesian3D_t) :: tmppt ! used to convert to cartesian from spherical
     integer nelemd
     character*10 appname
+! do we really need this?
     integer , external :: iMOAB_InitializeFortran, iMOAB_RegisterFortranApplication
 
 
@@ -104,3 +107,5 @@ contains
   
 
 end module moabmesh_mod
+
+
