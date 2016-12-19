@@ -4,13 +4,14 @@
 
 module test_mod
 
-use control_mod,    only: test_case, sub_case
+use control_mod,    only: test_case, sub_case, rsplit
+use dimensions_mod, only: np, nlev, nlevp
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t
 use element_state,  only: elem_state_t, nt=>timelevels
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
-use kinds,          only: rl => real_kind, iulog
+use kinds,          only: real_kind, rl => real_kind, iulog
 use parallel_mod,   only: abortmp
 use time_mod,       only: timelevel_t, time_at
 
