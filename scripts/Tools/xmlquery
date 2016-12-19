@@ -22,7 +22,6 @@ from standard_script_setup import *
 from CIME.case import Case
 from CIME.utils import expect
 import textwrap
-from textwrap import dedent
 import sys
 
 logger = logging.getLogger("xmlquery")
