@@ -1020,6 +1020,8 @@ using a fortran linker.
   <SLIBS>
     <append> -llapack -lblas </append>
   </SLIBS>
+  <SCC MPILIB="mpi-serial">pgcc</SCC>
+  <SFC MPILIB="mpi-serial">pgfortran</SFC>
 </compiler>
 
 </config_compilers>
