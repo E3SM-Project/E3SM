@@ -21,6 +21,13 @@ obs_pr_reg=obs_pr#.regrid(grid_normal,regridTool='esmf',regridMethod='conserve')
 
 diff_pr_reg=mod_pr_reg-obs_pr_reg
 
+'''
+x = vcs.init()
+isofill = x.createisofill()
+x.plot(diff_pr_reg, isofill)
+x.png('temp.png')
+quit()
+'''
 
 # Plotting stuff
 three_row_multi_template = EzTemplate.Multi(rows=3, columns=1)
@@ -28,16 +35,17 @@ three_row_multi_template = EzTemplate.Multi(rows=3, columns=1)
 parent_canvas = vcs.init(bg=True, geometry=(1212,1628))  # canvas which hold 3 children canveses
 #parent_canvas.setcolormap('bl_to_darkred')  # NCAR colors
 parent_canvas.portrait()
-
-#parent_canvas.scriptrun('plot_set_5.json')
-three_row_template = three_row_multi_template.get(legend='none')
-parent_canvas.plot(mod_pr_reg, three_row_template)
+isofill = parent_canvas.createisofill()
+#isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 
 three_row_template = three_row_multi_template.get(legend='none')
-parent_canvas.plot(obs_pr_reg, three_row_template)
+parent_canvas.plot(mod_pr_reg, three_row_template, isofill)
 
 three_row_template = three_row_multi_template.get(legend='none')
-parent_canvas.plot(diff_pr_reg, three_row_template)
+parent_canvas.plot(obs_pr_reg, three_row_template, isofill)
+
+three_row_template = three_row_multi_template.get(legend='none')
+parent_canvas.plot(diff_pr_reg, three_row_template, isofill)
 
 png_filename='diff.png'
 parent_canvas.png(png_filename)
