@@ -244,6 +244,9 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)
     os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)
 
+    if get_model() == "acme" and mach == "titan" and compiler == "pgiacc":
+        case.set_value("CAM_TARGET", "preqx_acc")
+
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
     # experiment there may be many builds of the same case.
