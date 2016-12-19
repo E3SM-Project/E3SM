@@ -481,10 +481,6 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
-#if HAVE_MOAB
-    call create_moab_mesh(par, elem, nets, nete)
-#endif
-
     deallocate(GridEdge)
     do j =1,nelem
        call deallocate_gridvertex_nbrs(GridVertex(j))
@@ -516,6 +512,11 @@ contains
     ith=0
     nets=1
     nete=nelemd
+
+#if HAVE_MOAB
+    call create_moab_mesh(par, elem, nets, nete)
+#endif
+
     ! set the actual number of threads which will be used in the horizontal
     nThreadsHoriz = n_domains
 #ifndef CAM
