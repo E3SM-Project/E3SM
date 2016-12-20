@@ -128,7 +128,7 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
             expect(group, "No group found for var %s"% var)
             value = get_value_as_string(case, var, resolved=resolved, subgroup=subgroup)
             if value is None:
-                vid, comp, iscompvar = case.check_if_comp_var(var)
+                var, comp, iscompvar = case.check_if_comp_var(var)
                 if iscompvar:
                     value = []
                     for comp in comp_classes:

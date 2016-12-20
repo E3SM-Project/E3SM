@@ -333,10 +333,7 @@ class Case(object):
             if result is not None:
                 return result
         env_batch = self.get_env("batch")
-        result = env_batch.get_type_info(item)
-
-        return result
-        logging.debug("Not able to retreive type for item '%s'" % item)
+        return env_batch.get_type_info(item)
 
     def get_resolved_value(self, item, recurse=0):
         num_unresolved = item.count("$") if item else 0

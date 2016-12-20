@@ -2959,6 +2959,7 @@
    <file>env_batch.xml</file>
    <desc>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
+
  <entry id="JOB_WALLCLOCK_TIME">
    <type>char</type>
    <valid_values></valid_values>
