@@ -122,7 +122,7 @@ write(0,*) ''
       integer :: ierr
 
       logical, pointer :: iauActive
-      integer, pointer :: config_iau_option
+      character(len=StrKIND), pointer :: config_iau_option
 
       ierr = 0
 
@@ -132,7 +132,7 @@ write(0,*) ''
       nullify(iauActive)
       call mpas_pool_get_package(packages, 'iauActive', iauActive)
 
-      if (config_iau_option > 0) then
+      if (trim(config_iau_option) /= 'off') then
          iauActive = .true.
       else
          iauActive = .false.
