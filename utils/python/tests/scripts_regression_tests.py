@@ -1098,7 +1098,7 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             build_complete = run_cmd_no_fail("./xmlquery BUILD_COMPLETE -value",
                                              from_dir=casedir)
-            self.assertEqual(build_complete, "True",
+            self.assertEqual(build_complete, "TRUE",
                             msg="Build complete had wrong value '%s'" %
                             build_complete)
 

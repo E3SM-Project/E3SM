@@ -290,7 +290,7 @@ using a fortran linker.
     <append MODEL="cism"> -mismatch_all </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base> <var>FFLAGS</var> </base>
+    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect <env>CIMEROOT</env>/cime_config/cesm/machines/nag_mpi_argument.txt</base>
     <append DEBUG="FALSE"> -ieee=full     </append>
     <!-- Hack! If DEBUG="TRUE", put runtime checks in FFLAGS, but not into     -->
     <!-- FFLAGS_NOOPT, allowing strict checks to be removed from files by      -->
@@ -1020,6 +1020,8 @@ using a fortran linker.
   <SLIBS>
     <append> -llapack -lblas </append>
   </SLIBS>
+  <SCC MPILIB="mpi-serial">pgcc</SCC>
+  <SFC MPILIB="mpi-serial">pgfortran</SFC>
 </compiler>
 
 </config_compilers>

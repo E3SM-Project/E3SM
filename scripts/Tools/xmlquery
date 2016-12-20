@@ -20,7 +20,7 @@ If this tool is missing any feature that you need, please go to github and creat
 from standard_script_setup import *
 
 from CIME.case import Case
-from CIME.utils import expect
+from CIME.utils import expect, convert_to_string
 import textwrap
 import sys
 
@@ -117,8 +117,14 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
             if not var in results[group]:
                 results[group][var] = {}
             expect(group, "No group found for var %s"% var)
-
-            results[group][var]['value'] = case.get_value(var, resolved=resolved, subgroup=group)
+            thistype = case.get_record_fields(var, "type")
+            if thistype:
+                results[group][var]['value'] = convert_to_string(
+                    case.get_value(var, resolved=resolved, subgroup=group),
+                    thistype[0])
+            else:
+                results[group][var]['value'] = \
+                    case.get_value(var, resolved=resolved, subgroup=group)
             if raw:
                 results[group][var]['raw'] = case.get_record_fields(var, "raw")
             if description or full:
