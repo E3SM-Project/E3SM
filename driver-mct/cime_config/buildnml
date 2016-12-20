@@ -46,6 +46,7 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
     config['timer_level'] = 'pos' if case.get_value('TIMER_LEVEL') >= 1 else 'neg'
     config['bfbflag'] = 'on' if case.get_value('BFBFLAG') else 'off'
     config['continue_run'] = '.true.' if case.get_value('CONTINUE_RUN') else '.false.'
+
     if case.get_value('RUN_TYPE') == 'startup':
         config['run_type'] = 'startup'
     elif case.get_value('RUN_TYPE') == 'hybrid':
