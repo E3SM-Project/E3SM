@@ -21,13 +21,15 @@ module element_state
     ! vertically-lagrangian code advects dp3d instead of ps_v
     ! tracers Q, Qdp always use 2 level time scheme
 
-    real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)            ! velocity                           1
-    real (kind=real_kind) :: theta(np,np,nlev,timelevels)              ! temperature                        2
-    real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)              ! delta p on levels                  8
-    real (kind=real_kind) :: ps_v(np,np,timelevels)                   ! surface pressure                   4
-    real (kind=real_kind) :: phis(np,np)                              ! surface geopotential (prescribed)  5
-    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               6
-    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)               ! Tracer mass                        7
+    real (kind=real_kind) :: v   (np,np,2,nlev,timelevels)            ! horizontal velocity 
+    real (kind=real_kind) :: w   (np,np,nlev,timelevels)              ! vertical velocity                  
+    real (kind=real_kind) :: theta(np,np,nlev,timelevels)             ! potential temperature                       
+    real (kind=real_kind) :: phi(np,np,nlev,timelevels)               ! geopotential 
+    real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)              ! delta p on levels                  
+    real (kind=real_kind) :: ps_v(np,np,timelevels)                   ! surface pressure                   
+    real (kind=real_kind) :: phis(np,np)                              ! surface geopotential (prescribed)  
+    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               
+    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)               ! Tracer mass                        
 
   end type elem_state_t
 
