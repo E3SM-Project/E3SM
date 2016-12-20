@@ -103,7 +103,6 @@ class _TimingParser:
 
     def getTiming(self):
         components=self.case.get_values("COMP_CLASSES")
-        components[components.index("DRV")]="CPL"
         for s in components:
             self.models[s] = _GetTimingInfo(s)
         atm = self.models['ATM']

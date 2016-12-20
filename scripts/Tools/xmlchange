@@ -106,7 +106,6 @@ def xmlchange(caseroot, listofsettings=None, xmlid=None, xmlval=None, subgroup=N
                 pair = setting.split("=",1)
                 expect(len(pair) == 2 , "Expecting a key value pair in the form of key=value. Got %s" % (pair) )
                 (xmlid, xmlval) = pair
-
                 type_str = case.get_type_info(xmlid)
                 if(append is True):
                     value = case.get_value(xmlid, resolved=False,

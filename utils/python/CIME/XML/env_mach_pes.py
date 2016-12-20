@@ -33,8 +33,6 @@ class EnvMachPes(EnvBase):
         ''' Find the maximum number of openmp threads for any component in the case '''
         max_threads = 1
         for comp in comp_classes:
-            if comp == "DRV":
-                comp = "CPL"
             threads = self.get_value("NTHRDS_%s"%comp)
             expect(threads is not None, "Error no thread count found for component class %s"%comp)
             if threads > max_threads:
@@ -63,8 +61,6 @@ class EnvMachPes(EnvBase):
     def get_total_tasks(self, comp_classes):
         total_tasks = 0
         for comp in comp_classes:
-            if comp == "DRV":
-                comp = "CPL"
             ntasks = self.get_value("NTASKS_%s"%comp)
             rootpe = self.get_value("ROOTPE_%s"%comp)
             pstrid = self.get_value("PSTRID_%s"%comp)

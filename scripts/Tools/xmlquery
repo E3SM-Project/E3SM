@@ -97,10 +97,10 @@ def parse_command_line(args):
 
 
 def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
-    thistype = case.get_record_fields(var, "type")
+    thistype = case.get_type_info(var)
     value = case.get_value(var, attribute=attribute, resolved=resolved, subgroup=subgroup)
     if value is not None and thistype:
-        value = convert_to_string(value, thistype[0], var)
+        value = convert_to_string(value, thistype, var)
     return value
 
 
@@ -126,15 +126,18 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
             if not var in results[group]:
                 results[group][var] = {}
             expect(group, "No group found for var %s"% var)
-            value = get_value_as_string(case, var, resolved=resolved)
+            value = get_value_as_string(case, var, resolved=resolved, subgroup=subgroup)
             if value is None:
-                value = []
-                for comp in comp_classes:
-                    if comp == "DRV":
-                        comp = "CPL"
-                    nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
-                    if nextval is not None:
-                        value.append(comp + ":" + "%s"%nextval)
+                vid, comp, iscompvar = case.check_if_comp_var(var)
+                if iscompvar:
+                    value = []
+                    for comp in comp_classes:
+                        nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                        if nextval is not None:
+                            value.append(comp + ":" + "%s"%nextval)
+                else:
+                    value = get_value_as_string(case, var, resolved=resolved, subgroup=group)
+
             expect(value is not None, " No results found for variable %s"%var)
 
             results[group][var]['value'] = value
@@ -146,7 +149,7 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
             if fileonly or full:
                 results[group][var]['file'] = case.get_record_fields(var, "file")
             if dtype or full:
-                results[group][var]['type'] = case.get_record_fields(var, "type")
+                results[group][var]['type'] = case.get_type_info(var)
             if valid_values or full:
                 results[group][var]['valid_values'] = case.get_record_fields(var, "valid_values")
 

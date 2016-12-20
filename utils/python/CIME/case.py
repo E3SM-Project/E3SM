@@ -102,9 +102,19 @@ class Case(object):
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
 
-    def set_comp_classes(self, comp_classes):
+    def _set_comp_classes(self, comp_classes):
         for env_file in self._env_entryid_files:
             env_file.set_components(comp_classes)
+
+    def check_if_comp_var(self, vid):
+        vid = vid
+        comp = None
+        iscompvar = False
+        for env_file in self._env_entryid_files:
+            vid, comp, iscompvar = env_file.check_if_comp_var(vid)
+            if iscompvar:
+                return vid, comp, iscompvar
+        return vid, comp, iscompvar
 
     def initialize_derived_attributes(self):
         """
@@ -113,7 +123,6 @@ class Case(object):
         """
         env_mach_pes = self.get_env("mach_pes")
         comp_classes = self.get_values("COMP_CLASSES")
-        self.set_comp_classes(comp_classes)
 
         total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
@@ -225,6 +234,8 @@ class Case(object):
                             new_results.append(result)
                 else:
                     new_results = results
+                if item == "COMP_CLASSES":
+                    self._set_comp_classes(new_results)
                 return new_results
 
         for env_file in self._env_generic_files:
@@ -300,8 +311,6 @@ class Case(object):
                             result.extend(vv)
                     elif field == "file":
                         result.append(env_file.filename)
-                    elif field == "type":
-                        result.append(env_file.get_type_info(variable))
 
         if not result:
             for env_file in self._env_generic_files:
@@ -323,7 +332,10 @@ class Case(object):
             result = env_file.get_type_info(item)
             if result is not None:
                 return result
+        env_batch = self.get_env("batch")
+        result = env_batch.get_type_info(item)
 
+        return result
         logging.debug("Not able to retreive type for item '%s'" % item)
 
     def get_resolved_value(self, item, recurse=0):
@@ -488,7 +500,7 @@ class Case(object):
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist)
-        drv_config_file = files.get_value("CONFIG_DRV_FILE")
+        drv_config_file = files.get_value("CONFIG_CPL_FILE")
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
@@ -501,7 +513,8 @@ class Case(object):
         self._component_classes =drv_comp.get_valid_model_components()
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
-        self.set_comp_classes(self._component_classes)
+        self._set_comp_classes(self._component_classes)
+
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
@@ -528,7 +541,7 @@ class Case(object):
         """
 
         files = Files()
-        drv_comp = Component(files.get_value("CONFIG_DRV_FILE"))
+        drv_comp = Component(files.get_value("CONFIG_CPL_FILE"))
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
@@ -641,8 +654,6 @@ class Case(object):
         other = {}
         if match1 or match2:
             for component_class in self._component_classes:
-                if component_class == "DRV":
-                    component_class = "CPL"
                 string_ = "NTASKS_" + component_class
                 pes_ntasks[string_] = opti_tasks
                 string_ = "NTHRDS_" + component_class
@@ -683,7 +694,7 @@ class Case(object):
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
         for compclass in self._component_classes:
-            if compclass == "DRV":
+            if compclass == "CPL":
                 continue
             key = "NINST_%s"%compclass
             mach_pes_obj.set_value(key, ninst)
@@ -886,7 +897,7 @@ class Case(object):
                       (self.get_value("PES_SPEC_FILE")),
                       caseroot=self._caseroot, sfile="README.case")
         for component_class in self._component_classes:
-            if component_class == "DRV":
+            if component_class == "CPL":
                 continue
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),

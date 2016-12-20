@@ -28,20 +28,17 @@ class EnvBase(EntryID):
 
     def set_components(self, components):
         if hasattr(self, '_components'):
-            if 'DRV' in components:
-                index = components.index("DRV")
-                components[index] = "CPL"
             # pylint: disable=attribute-defined-outside-init
             self._components = components
 
     def check_if_comp_var(self, vid, attribute=None):
+        # pylint: disable=no-member
         if not hasattr(self, "_component_value_list") or\
                 (self.get_nodes("entry", {"id" : vid}) and \
                      not vid in self._component_value_list):
             return vid, None, False
 
         comp = None
-        # pylint: disable=no-member
         if vid in self._component_value_list:
             if attribute is not None:
                 if "component" in attribute:
@@ -67,10 +64,14 @@ class EnvBase(EntryID):
         """
         value = None
         vid, comp, iscompvar = self.check_if_comp_var(vid, attribute)
+        logger.debug( "vid %s comp %s iscompvar %s"%(vid, comp, iscompvar))
         if iscompvar:
             if comp is None:
-                logger.debug("Not enough info to get value for %s"%vid)
-                return value
+                if subgroup is not None:
+                    comp = subgroup
+                else:
+                    logger.debug("Not enough info to get value for %s"%vid)
+                    return value
             if attribute is None:
                 attribute = {"component" : comp}
             else:

@@ -40,18 +40,16 @@ class SEQ(SystemTestsCommon):
 
         comp_classes = self._case.get_values("COMP_CLASSES")
         for comp in comp_classes:
-            if comp != "DRV":
-                any_changes |= self._case.get_value("ROOTPE_%s" % comp) != 0
+            any_changes |= self._case.get_value("ROOTPE_%s" % comp) != 0
         if any_changes:
             for comp in comp_classes:
-                if comp != "DRV":
-                    self._case.set_value("ROOTPE_%s"%comp, 0)
+                self._case.set_value("ROOTPE_%s"%comp, 0)
         else:
             rootpe = 2
             for comp in comp_classes:
                 # here we set the cpl to have the first 2 tasks
                 # and each component to have a different ROOTPE
-                if comp == "DRV":
+                if comp == "CPL":
                     self._case.set_value("NTASKS_CPL", 2)
                 else:
                     ntasks = self._case.get_value("NTASKS_%s"%comp)

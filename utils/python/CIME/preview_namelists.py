@@ -23,7 +23,7 @@ def create_dirs(case):
     dirs_to_make = []
     models = case.get_values("COMP_CLASSES")
     for model in models:
-        dirname = "cpl" if model == "DRV" else model.lower()
+        dirname = model.lower()
         dirs_to_make.append(os.path.join(exeroot, dirname, "obj"))
 
     dirs_to_make.extend([exeroot, libroot, incroot, rundir, docdir])
@@ -43,7 +43,7 @@ def create_dirs(case):
 
 def create_namelists(case):
     """
-    Create component namelists 
+    Create component namelists
     """
     case.flush()
 
@@ -58,8 +58,8 @@ def create_namelists(case):
 
     logger.info("Creating component namelists")
 
-    # Create namelists - must have DRV last in the list below
-    # Note - DRV must be last in the loop below so that in generating its namelist, 
+    # Create namelists - must have cpl last in the list below
+    # Note - cpl must be last in the loop below so that in generating its namelist,
     # it can use xml vars potentially set by other component's buildnml scripts
     models = case.get_values("COMP_CLASSES")
     models += [models.pop(0)]
@@ -67,7 +67,7 @@ def create_namelists(case):
         model_str = model.lower()
         config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
         config_dir = os.path.dirname(config_file)
-        if model_str == "drv":
+        if model_str == "cpl":
             compname = "drv"
         else:
             compname = case.get_value("COMP_%s" % model_str.upper())

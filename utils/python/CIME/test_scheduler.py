@@ -362,7 +362,7 @@ class TestScheduler(object):
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
         files = Files()
-        drv_config_file = files.get_value("CONFIG_DRV_FILE")
+        drv_config_file = files.get_value("CONFIG_CPL_FILE")
         drv_comp = Component(drv_config_file)
         envtest.add_elements_by_group(files, {}, "env_test.xml")
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")

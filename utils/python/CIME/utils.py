@@ -852,8 +852,6 @@ def get_build_threaded(case):
         return True
     comp_classes = case.get_values("COMP_CLASSES")
     for comp_class in comp_classes:
-        if comp_class == "DRV":
-            comp_class = "CPL"
         if case.get_value("NTHRDS_%s"%comp_class) > 1:
             return True
     return False

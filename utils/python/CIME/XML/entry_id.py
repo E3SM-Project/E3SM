@@ -82,11 +82,10 @@ class EntryID(GenericXML):
                             score = -1
                             break
                     else:
-                        if attribute not in attributes or \
-                                not re.search(vnode.get(attribute),
-                                              attributes[attribute]):
-                                score = -1
-                                break
+                        if attribute not in attributes or not \
+                                re.search(vnode.get(attribute),attributes[attribute]):
+                            score = -1
+                            break
 
             # Add valid matches to the list.
             if score >= 0:
@@ -111,6 +110,8 @@ class EntryID(GenericXML):
         return self.get_element_text(element_name, root=node)
 
     def _get_type_info(self, node):
+        if node is None:
+            return None
         val = self._get_node_element_info(node, "type")
         if val is None:
             return "char"
@@ -120,6 +121,11 @@ class EntryID(GenericXML):
         vid, _, _ = self.check_if_comp_var(vid, None)
         node = self.get_optional_node("entry", {"id":vid})
         return self._get_type_info(node)
+
+    # pylint: disable=unused-argument
+    def check_if_comp_var(self, vid, comp=None):
+        # handled in classes
+        return vid, None, False
 
 
     def _get_default(self, node):
