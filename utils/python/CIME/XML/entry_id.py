@@ -117,10 +117,10 @@ class EntryID(GenericXML):
         return val
 
     def get_type_info(self, vid):
-        val = self.get_node_element_info(vid, "type")
-        if val is None:
-            return "char"
-        return val
+        vid, _, _ = self.check_if_comp_var(vid, None)
+        node = self.get_optional_node("entry", {"id":vid})
+        return self._get_type_info(node)
+
 
     def _get_default(self, node):
         return self._get_node_element_info(node, "default_value")
