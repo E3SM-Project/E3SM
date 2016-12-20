@@ -89,11 +89,6 @@ def run_model(case):
     cmd = case.get_resolved_value(cmd)
     logger.info("run command is %s " %cmd)
 
-    with open("runtime_environment.txt", 'w') as fd:
-        fd.write("run command is: %s"%cmd)
-    run_cmd_no_fail("echo -e '\n' >> runtime_environment.txt && \
-                         env >> runtime_environment.txt")
-
     rundir = case.get_value("RUNDIR")
     run_cmd_no_fail(cmd, from_dir=rundir)
     logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
