@@ -6,18 +6,17 @@
 module moabmesh_mod    
 !  use, intrinsic :: ISO_C_BINDING
 
-  use kinds, only : real_kind, int_kind, longdouble_kind, iulog
+  use kinds, only : real_kind, iulog
 !  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
 !       ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
 
-  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, ntrac, np, ntrac_d,ns, nhr, nhc
+  use dimensions_mod, only: nelem, ne, np
 !  use time_mod, only : timelevel_t
-  use element_mod, only : element_t, timelevels
+  use element_mod, only : element_t
 !  use fvm_control_volume_mod, only: fvm_struct
 !  use fvm_mod, only: cellghostbuf, edgeveloc
 !  use hybrid_mod, only : hybrid_t
   use parallel_mod, only : parallel_t
-  use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t, spherical_to_cart
 
 !  use control_mod, only: tracer_transport_type, TRACERTRANSPORT_MOAB , TRACERTRANSPORT_MOAB_LINEAR
 
@@ -25,12 +24,11 @@ module moabmesh_mod
 ! used to sort the dofs
     type groupsort_t
         integer :: order    ! original order of unsorted data
-        integer :: value       ! values to be sorted by (dof in this case)
+        integer :: value       ! values to be sorted by (dof global in this case)
     end type groupsort_t
 
 #include "moab/MOABConfig.h"
 !#include "moab/iMOAB.h"
-
 
 !  public :: moabmesh
 
@@ -109,20 +107,18 @@ end subroutine MBQSort
     integer, intent(in)                     :: nets  ! starting thread element number (private)
     integer, intent(in)                     :: nete
 
-    integer ierr, i, j, ie, pid, iv
-    integer filenum
+    integer ierr, i, j, ie, pid, iv, block_ID, num_layers, dimgh, bridge
 
     real(kind=real_kind), allocatable, target :: moab_vert_coords(:)
     INTEGER (C_INT) ,allocatable , target :: moab_corner_quads(:)
-    integer moab_dim_cquads, ix, stride, idx ! used for indexing in loops
-    integer moab_dims_cell
-    type(cartesian3D_t) :: tmppt ! used to convert to cartesian from spherical
+    integer moab_dim_cquads, ix, idx ! used for indexing in loops; idx will have the number of local vertices
+
     integer nelemd
     character*12 appname
 ! do we really need this?
     integer , external :: iMOAB_InitializeFortran, iMOAB_RegisterFortranApplication, &
         iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_CreateElements, &
-        iMOAB_ResolveSharedEntities
+        iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities
 
     type(groupsort_t), target, allocatable :: vertdof(:)
     !  this will be moab vertex handle locally
@@ -130,7 +126,7 @@ end subroutine MBQSort
     ! nve number of verts per element (4 for coarse quad)
     integer  currentval, dimcoord, dimen, num_el, mbtype, nve
 
-    character*100 outfile, wopts
+    character*100 outfile, wopts, localmeshfile, lnum
 
  !  hybrid%par
 
@@ -138,7 +134,7 @@ end subroutine MBQSort
  !    moab_dims_fvc = (nc+1)*(nc+1)*(nete-nets+1)*3
      moab_dim_cquads = (nete-nets+1)*4
 
-    write (iulog, *) " on processor " , par%rank ," elements: " ,  nets, nete
+!    write (iulog, *) " on processor " , par%rank ," elements: " ,  nets, nete
 !     allocate(moab_fvm_coords(moab_dims_fvc))
      allocate(moab_corner_quads(moab_dim_cquads))
      do ie=nets,nete
@@ -188,7 +184,7 @@ end subroutine MBQSort
         moabconn(vertdof(ix)%order) = idx
 !        write (iulog, *) vertdof(ix)%order, vertdof(ix)%value, moabvh(ix)
      enddo
-     write (iulog, *) " there are ", idx, " local vertices "
+!     write (iulog, *) " there are ", idx, " local vertices "
      allocate(moab_vert_coords(3*idx) )
      allocate(vdone(idx))
      vdone = 0;
@@ -231,20 +227,46 @@ end subroutine MBQSort
       num_el = nete-nets+1
       mbtype = 3 !  quadrilateral
       nve = 4;
+      block_ID = 100 ! this will be for coarse mesh
 
-      ierr = iMOAB_CreateElements( pid, num_el, mbtype, nve, moabconn );
+      ierr = iMOAB_CreateElements( pid, num_el, mbtype, nve, moabconn, block_ID );
       call errorout(ierr, 'fail to create elements')
       ! idx: num vertices; vdone will store now the markers used in global resolve
       ! for this particular problem, markers are the global dofs at corner nodes
       ierr = iMOAB_ResolveSharedEntities( pid, idx, vdone );
       call errorout(ierr, 'fail to resolve shared entities')
 
-      outfile = 'fnew.h5m'//CHAR(0)
-      wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+! write in serial, on each task, before ghosting
+      if (par%rank .lt. 10) then
+        write(lnum,"(I0.2)")par%rank
+        localmeshfile = 'owned_'//trim(lnum)// '.h5m' // CHAR(0)
+        wopts = CHAR(0)
+        ierr = iMOAB_WriteMesh(pid, localmeshfile, wopts)
+        call errorout(ierr, 'fail to write local mesh file')
+      endif
 
-!     write out the mesh file to disk
+!     write out the mesh file to disk, in parallel
+      outfile = 'whole.h5m'//CHAR(0)
+      wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
       ierr = iMOAB_WriteMesh(pid, outfile, wopts)
       call errorout(ierr, 'fail to write the mesh file')
+
+      ! (iMOAB_AppID pid, int * ghost_dim, int *num_ghost_layers, int * bridge_dim )
+      dimgh = 2 ! will ghost quads, topological dim 2
+      bridge = 0 ! use vertex as bridge
+      num_layers = 1 ! so far, one layer only
+      ierr = iMOAB_DetermineGhostEntities( pid, dimgh, num_layers, bridge)
+      call errorout(ierr, 'fail to determine ghosts')
+
+      ! write in serial, on each task
+      if (par%rank .lt. 10) then
+        write(lnum,"(I0.2)")par%rank
+        localmeshfile = 'localmesh_'//trim(lnum)// '.h5m' // CHAR(0)
+        wopts = CHAR(0)
+        ierr = iMOAB_WriteMesh(pid, localmeshfile, wopts)
+        call errorout(ierr, 'fail to write local mesh file')
+      endif
+      wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
 
      ! deallocate
      deallocate(moab_corner_quads)
