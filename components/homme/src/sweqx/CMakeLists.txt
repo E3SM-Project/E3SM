@@ -37,15 +37,6 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/domain_mod.F90
   ${SRC_SHARE}/edge_mod_base.F90
   ${SRC_SHARE}/element_mod.F90
-  ${SRC_SHARE}/fvm_bsp_mod.F90
-  ${SRC_SHARE}/fvm_transformation_mod.F90
-  ${SRC_SHARE}/fvm_analytic_mod.F90
-  ${SRC_SHARE}/fvm_control_volume_mod.F90
-  ${SRC_SHARE}/fvm_filter_mod.F90
-  ${SRC_SHARE}/fvm_line_integrals_mod.F90
-  ${SRC_SHARE}/fvm_line_integrals_flux_mod.F90
-  ${SRC_SHARE}/fvm_mod.F90
-  ${SRC_SHARE}/fvm_reconstruction_mod.F90
   ${SRC_SHARE}/global_norms_mod.F90
   ${SRC_SHARE}/gridgraph_mod.F90
   ${SRC_SHARE}/hybrid_mod.F90

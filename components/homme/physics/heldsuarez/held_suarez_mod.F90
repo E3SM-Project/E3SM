@@ -73,7 +73,7 @@ contains
         
     do j=1,np
        do i=1,np
-          psfrc(i,j) = EXP(elemin%state%lnps(i,j,nfrc))
+          psfrc(i,j) = (elemin%state%ps_v(i,j,nfrc))
        end do
     end do
 
@@ -106,7 +106,7 @@ contains
        do j=1,np
           do i=1,np
              do k=1,nlev
-                pmid = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*EXP(elemin%state%lnps(i,j,nfrc))
+                pmid = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*(elemin%state%ps_v(i,j,nfrc))
                 r0=elemin%state%Q(i,j,k,q)
                 r1=r0
                 call Prim_Condense(r1,elemin%state%T(i,j,k,nfrc),pmid)
@@ -302,9 +302,6 @@ contains
     np1= 3
 
     do ie=nets,nete
-       elem(ie)%state%lnps(:,:,n0) =LOG(hvcoord%ps0)
-       elem(ie)%state%lnps(:,:,nm1)=LOG(hvcoord%ps0)
-       elem(ie)%state%lnps(:,:,np1)=LOG(hvcoord%ps0)
 
        elem(ie)%state%ps_v(:,:,n0) =hvcoord%ps0
        elem(ie)%state%ps_v(:,:,nm1)=hvcoord%ps0

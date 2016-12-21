@@ -14,18 +14,15 @@ program prim_main
                               omp_set_num_threads, omp_get_nested, &
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init
-  use dimensions_mod,   only: nelemd, qsize, ntrac
+  use dimensions_mod,   only: nelemd, qsize
   use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
   use domain_mod,       only: domain1d_t, decompose
   use element_mod,      only: element_t
-  use fvm_mod,          only: fvm_init3
   use common_io_mod,    only: output_dir
   use common_movie_mod, only: nextoutputstep
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
-  use fvm_control_volume_mod, only: fvm_struct
-  use fvm_control_volume_mod, only: n0_fvm
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
@@ -37,7 +34,6 @@ program prim_main
   implicit none
 
   type (element_t),  pointer  :: elem(:)
-  type (fvm_struct), pointer  :: fvm(:)
   type (hybrid_t)             :: hybrid         ! parallel structure for shared memory/distributed memory
   type (parallel_t)           :: par            ! parallel structure for distributed memory programming
   type (domain1d_t), pointer  :: dom_mt(:)
@@ -68,7 +64,7 @@ program prim_main
 	Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
   call t_startf('prim_init1')
-  call prim_init1(elem,  fvm, par,dom_mt,tl)
+  call prim_init1(elem,  par,dom_mt,tl)
   call t_stopf('prim_init1')
 
   ! =====================================
@@ -147,18 +143,11 @@ program prim_main
   nete=dom_mt(ithr)%end
 
   call t_startf('prim_init2')
-  call prim_init2(elem, fvm,  hybrid,nets,nete,tl, hvcoord)
+  call prim_init2(elem, hybrid,nets,nete,tl, hvcoord)
   call t_stopf('prim_init2')
 #if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
-  ! setup fake threading so we can call routines that require 'hybrid'
-  ithr=omp_get_thread_num()
-  hybrid = hybrid_create(par,ithr,1)
-  nets=1
-  nete=nelemd 
-
-
 
   
   ! Here we get sure the directory specified
@@ -201,9 +190,9 @@ program prim_main
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
 #ifdef PIO_INTERP
-     call interp_movie_output(elem, tl, par, 0d0, fvm=fvm, hvcoord=hvcoord)
+     call interp_movie_output(elem, tl, par, 0d0, hvcoord=hvcoord)
 #else
-     call prim_movie_output(elem, tl, hvcoord, par, fvm)
+     call prim_movie_output(elem, tl, hvcoord, par)
 #endif
   endif
 
@@ -221,28 +210,19 @@ program prim_main
      nete=dom_mt(ithr)%end
      
      nstep = nextoutputstep(tl)
-!JMD     call vprof_start()
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
-        call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord,1)
+        call prim_run_subcycle(elem, hybrid,nets,nete, tstep, tl, hvcoord,1)
         call t_stopf('prim_run')
      end do
-!JMD     call vprof_stop()
 #if (defined HORIZ_OPENMP)
      !$OMP END PARALLEL
 #endif
-     ! setup fake threading so we can call routines that require 'hybrid'
-     ithr=omp_get_thread_num()
-     hybrid = hybrid_create(par,ithr,1)
-     nets=1
-     nete=nelemd 
-
 
 #ifdef PIO_INTERP
-     if (ntrac>0) call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
-     call interp_movie_output(elem, tl, par, 0d0,fvm=fvm, hvcoord=hvcoord)
+     call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
-     call prim_movie_output(elem, tl, hvcoord, par, fvm)
+     call prim_movie_output(elem, tl, hvcoord, par)
 #endif
 
      ! ============================================================
@@ -266,10 +246,6 @@ program prim_main
 
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
-!   write(numproc_char,*) par%nprocs
-!   write(numtrac_char,*) ntrac
-!   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
-!   call t_prf('time/HommeFVMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
   call t_prf('HommeTime', par%comm)
   if(par%masterproc) print *,"calling t_finalizef"
   call t_finalizef()

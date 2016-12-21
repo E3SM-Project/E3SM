@@ -36,8 +36,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_DIR}/sweqx/state_mod.F90
                ${SRC_DIR}/sweqx/sweq_mod.F90
                ${SRC_DIR}/sweqx/types_mod.F90
-               ${SRC_SHARE_DIR}/fvm_bsp_mod.F90
-               ${SRC_SHARE_DIR}/fvm_transformation_mod.F90
                ${SRC_SHARE_DIR}/bndry_mod.F90
                ${SRC_SHARE_DIR}/cg_mod.F90
                ${SRC_SHARE_DIR}/control_mod.F90
@@ -49,13 +47,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/domain_mod.F90
                ${SRC_SHARE_DIR}/edge_mod.F90
                ${SRC_SHARE_DIR}/element_mod.F90
-               ${SRC_SHARE_DIR}/fvm_analytic_mod.F90
-               ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
-               ${SRC_SHARE_DIR}/fvm_filter_mod.F90
-               ${SRC_SHARE_DIR}/fvm_line_integrals_mod.F90
-               ${SRC_SHARE_DIR}/fvm_line_integrals_flux_mod.F90
-               ${SRC_SHARE_DIR}/fvm_mod.F90
-               ${SRC_SHARE_DIR}/fvm_reconstruction_mod.F90
                ${SRC_SHARE_DIR}/global_norms_mod.F90
                ${SRC_SHARE_DIR}/gridgraph_mod.F90
                ${SRC_SHARE_DIR}/hybrid_mod.F90

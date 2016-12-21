@@ -7,7 +7,6 @@ module test_mod
 use control_mod,    only: test_case, sub_case
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t, elem_state_t, derived_state_t, nt=>timelevels
-use fvm_control_volume_mod, only: fvm_struct
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
 use kinds,          only: rl => real_kind, iulog
@@ -26,7 +25,7 @@ implicit none
 contains
 
 !_______________________________________________________________________
-subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, nete, fvm)
+subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, nete)
 
   ! set initial conditions for HOMME stand-alone tests cases
 
@@ -37,11 +36,10 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   type(timelevel_t),  intent(in)            :: tl                       ! time level sctructure
   integer,            intent(in)            :: nets,nete                ! start, end element index
-  type(fvm_struct),   intent(inout)         :: fvm(:)                   ! finite volume structure
 
   select case(test_case)
 
-    case('asp_baroclinic');     call asp_baroclinic   (elem,hybrid,hvcoord,nets,nete,fvm)
+    case('asp_baroclinic');     call asp_baroclinic   (elem,hybrid,hvcoord,nets,nete)
     case('asp_gravity_wave');   call asp_gravity_wave (elem,hybrid,hvcoord,nets,nete,sub_case)
     case('asp_mountain');       call asp_mountain     (elem,hybrid,hvcoord,nets,nete)
     case('asp_rossby');         call asp_rossby       (elem,hybrid,hvcoord,nets,nete)
@@ -88,9 +86,7 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
     s%v   (:,:,:,:,np1) = s%v   (:,:,:,:,n0)
     s%T   (:,:,:,  np1) = s%T   (:,:,:,  n0)
     s%dp3d(:,:,:,  np1) = s%dp3d(:,:,:,  n0)
-    s%lnps(:,:,    np1) = s%lnps(:,:,    n0)
     s%ps_v(:,:,    np1) = s%ps_v(:,:,    n0)
-    elem(ie)%derived%div = 0
   enddo
 
   ! set prescribed quantities
@@ -103,14 +99,13 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
 end subroutine
 
 !_______________________________________________________________________
-subroutine apply_test_forcing(elem,fvm,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
+subroutine apply_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
 
   ! apply forcing terms produced by HOMME stand-alone tests
 
   use dcmip_tests, only:  dcmip2012_test2_x_forcing
   implicit none
   type(element_t),  intent(inout) :: elem(:)                            ! element array
-  type(fvm_struct), intent(inout) :: fvm(:)                             ! finite volume structure
   type(hybrid_t),   intent(in)    :: hybrid                             ! hybrid parallel structure
   type(hvcoord_t),  intent(in)    :: hvcoord
   real(kind=rl),    intent(in)    :: dt

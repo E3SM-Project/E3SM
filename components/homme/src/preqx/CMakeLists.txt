@@ -68,16 +68,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/spacecurve_mod.F90
   ${SRC_SHARE_DIR}/cube_mod.F90
   ${SRC_SHARE_DIR}/interpolate_mod.F90
-  ${SRC_SHARE_DIR}/fvm_bsp_mod.F90
-  ${SRC_SHARE_DIR}/fvm_transformation_mod.F90
   ${SRC_SHARE_DIR}/dof_mod.F90
-  ${SRC_SHARE_DIR}/fvm_mod.F90
-  ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
-  ${SRC_SHARE_DIR}/fvm_line_integrals_mod.F90 
-  ${SRC_SHARE_DIR}/fvm_line_integrals_flux_mod.F90 
-  ${SRC_SHARE_DIR}/fvm_analytic_mod.F90 
-  ${SRC_SHARE_DIR}/fvm_filter_mod.F90 
-  ${SRC_SHARE_DIR}/fvm_reconstruction_mod.F90
   ${SRC_SHARE_DIR}/time_mod.F90 
   ${SRC_SHARE_DIR}/physics_mod.F90 
   ${SRC_SHARE_DIR}/hybvcoord_mod.F90

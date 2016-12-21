@@ -8,9 +8,9 @@
 !
 module prim_advance_mod
 
-  use control_mod,    only: qsplit,rsplit
+  use control_mod,    only: qsplit,rsplit, use_moisture
   use derivative_mod, only: derivative_t
-  use dimensions_mod, only: np, nlev, nlevp, nvar, nc, nelemd
+  use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
   use hybrid_mod,     only: hybrid_t
@@ -26,10 +26,6 @@ module prim_advance_mod
   public :: prim_advance_exp, prim_advance_init, &
        applyCAMforcing_dynamics, applyCAMforcing, smooth_phis
 
-#ifdef TRILINOS
-  public :: distribute_flux_at_corners
-#endif
-  
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
   type (EdgeBuffer_t) :: edge3p1
@@ -74,7 +70,6 @@ contains
   subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
 
     use test_mod,  only: set_test_prescribed_wind
-    use asp_tests, only: asp_advection_vertical
 
     type (element_t),      intent(inout), target  :: elem(:)
     type (derivative_t),   intent(in)             :: deriv
@@ -130,7 +125,7 @@ contains
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
-    use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture, integration
+    use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration
     use edge_mod,       only: edgevpack, edgevunpack, initEdgeBuffer
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t
@@ -139,12 +134,6 @@ contains
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
-#endif
-
-#ifdef CAM
-    use control_mod,    only: prescribed_vertwind
-#else
-    use asp_tests,      only: asp_advection_vertical
 #endif
 
     implicit none
@@ -160,10 +149,6 @@ contains
     logical,               intent(in)            :: compute_diagnostics
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
-    real (kind=real_kind) ::  tempdp3d(np,np)
-    real (kind=real_kind) ::  tempmass(nc,nc)
-    real (kind=real_kind) ::  tempflux(nc,nc,4)
-    !real (kind=real_kind) ::  dn
 
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
     integer :: n,i,j,lx,lenx
@@ -207,11 +192,7 @@ contains
     nstep = tl%nstep
 
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
-
-    qn0 = -1    ! -1 = disabled (assume dry dynamics)
-    if ( moisture /= "dry") then
-       call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
-    endif
+    call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
 
     ! get time integration method for this timestep
 
@@ -610,17 +591,12 @@ contains
 
 
 
-  subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
+  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt_q,nets,nete)
 
-  use dimensions_mod, only: np, nc, nlev, qsize, ntrac
-  use control_mod,    only: moisture, tracer_grid_type
-  use control_mod,    only: TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
   use physical_constants, only: Cp
-  use fvm_control_volume_mod, only : fvm_struct, n0_fvm
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
-  type(fvm_struct),       intent(inout) :: fvm(:)
   real (kind=real_kind),  intent(in)    :: dt_q
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete,np1_qdp
@@ -629,9 +605,6 @@ contains
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
   real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
-  logical :: wet
-
-  wet = (moisture /= "dry")
 
   do ie=nets,nete
      ! apply forcing to Qdp
@@ -639,11 +612,6 @@ contains
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
-     !
-     ! even when running fvm tracers we need to updates forcing on ps and qv on GLL grid
-     !
-     ! for fvm tracer qsize is usually 1 (qv)
-     !
      do q=1,qsize
         do k=1,nlev
            do j=1,np
@@ -668,30 +636,8 @@ contains
            enddo
         enddo
      enddo
-     ! Repeat for the fvm tracers
-     do q = 1, ntrac
-        do k = 1, nlev
-           do j = 1, nc
-              do i = 1, nc
-                 v1 = fvm(ie)%fc(i,j,k,q)
-                 if (fvm(ie)%c(i,j,k,q,n0_fvm) + v1 < 0 .and. v1<0) then
-                    if (fvm(ie)%c(i,j,k,q,n0_fvm) < 0 ) then
-                       v1 = 0  ! C already negative, dont make it more so
-                    else
-                       v1 = -fvm(ie)%c(i,j,k,q,n0_fvm)
-                    end if
-                 end if
-                 fvm(ie)%c(i,j,k,q,np1_qdp) = fvm(ie)%c(i,j,k,q,n0_fvm) + v1
-                 !                    if (q == 1) then
-                 !!XXgoldyXX: Should update the pressure forcing here??!!??
-                 !                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-                 !                  end if
-              end do
-           end do
-        end do
-     end do
 
-     if (wet .and. qsize>0) then
+     if (use_moisture) then
         ! to conserve dry mass in the precese of Q1 forcing:
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
              dt_q*elem(ie)%derived%FQps(:,:,1)
@@ -754,7 +700,6 @@ contains
 
   subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt_q,nets,nete)
 
-  use dimensions_mod, only: np, nlev, qsize
   use element_mod,    only: element_t
   use hybvcoord_mod,  only: hvcoord_t
 
@@ -766,7 +711,6 @@ contains
 
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
-  logical :: wet
 
   do ie=nets,nete
      elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt_q*elem(ie)%derived%FT(:,:,:,1)
@@ -786,18 +730,15 @@ contains
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use dimensions_mod, only : np, np, nlev, nc, ntrac, max_corner_elem
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-  use derivative_mod, only : subcell_Laplace_fluxes, subcell_dss_fluxes
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
   use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk_dp3d
   use physical_constants, only: Cp
-  use derivative_mod, only : subcell_Laplace_fluxes
   implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
@@ -819,7 +760,6 @@ contains
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: dptens
   real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)          :: corners
   real (kind=real_kind), dimension(2,2,2)                       :: cflux
-  real (kind=real_kind), dimension(nc,nc,4,nlev,nets:nete)      :: dpflux
   real (kind=real_kind), dimension(np,np,nlev) :: p
   type (EdgeDescriptor_t)                                       :: desc
 
@@ -833,9 +773,7 @@ contains
   real (kind=real_kind), dimension(np,np) :: lap_t,lap_dp
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating
-
-  real (kind=real_kind)                     :: temp      (np,np,nlev)
-  real (kind=real_kind)                     :: laplace_fluxes(nc,nc,4)
+  real (kind=real_kind) :: temp(np,np,nlev)
 
 
 
@@ -925,7 +863,7 @@ contains
 !
   if (hypervis_order == 2) then
      do ic=1,hypervis_subcycle
-        call biharmonic_wk_dp3d(elem,dptens,dpflux,ttens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+        call biharmonic_wk_dp3d(elem,dptens,ttens,vtens,deriv,edge3,hybrid,nt,nets,nete)
 
         do ie=nets,nete
 
@@ -937,8 +875,7 @@ contains
                    eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
            endif
 #if (defined COLUMN_OPENMP)
-!XXX parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp,laplace_fluxes)
-!$omp parallel do private(k,lap_t,lap_dp,lap_v,nu_scale_top,laplace_fluxes)
+!$omp parallel do private(k,lap_t,lap_dp,lap_v,nu_scale_top)
 #endif
            do k=1,nlev
               ! advace in time.
@@ -980,16 +917,6 @@ contains
                  dptens(:,:,k,ie) = 0
               endif
               
-              if (0<ntrac) then 
-                elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - &
-                                              eta_ave_w*nu_p*dpflux(:,:,:,k,ie)/hypervis_subcycle
-                if (nu_top>0 .and. k<=3) then
-                  laplace_fluxes=subcell_Laplace_fluxes(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),np,nc)
-                  elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                                           eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
-                endif
-              endif
-
               ! NOTE: we will DSS all tendicies, EXCEPT for dp3d, where we DSS the new state
               elem(ie)%state%dp3d(:,:,k,nt) = elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%spheremp(:,:)&
                    + dt*dptens(:,:,k,ie)
@@ -1016,39 +943,7 @@ contains
            kptr=nlev
            call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
            kptr=3*nlev
-           if (0<ntrac) then
-             do k=1,nlev
-               temp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt) / elem(ie)%spheremp  ! STATE before DSS 
-             enddo
-             corners = 0.0d0
-             corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,nt) ! fill in interior data of STATE*mass
-           endif
            call edgeVunpack(edge3, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, ie)
-
-
-
-           if (0<ntrac) then
-             kptr=3*nlev
-             desc = elem(ie)%desc
-             
-             call edgeDGVunpack(edge3, corners, nlev, kptr, ie) 
-             corners = corners/dt
-             
-             do k=1,nlev
-               temp(:,:,k) =  elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,nt) - temp(:,:,k)
-               temp(:,:,k) =  temp(:,:,k)/dt
-
-               call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
- 
-               cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
-               cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
-               cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
-               cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
-
-               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                 eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)/hypervis_subcycle
-             end do
-           endif
 
 
 
@@ -1144,7 +1039,6 @@ contains
   !
   ! ===================================
   use kinds, only : real_kind
-  use dimensions_mod, only : np, nc, nlev, ntrac, max_corner_elem
   use element_mod, only : element_t,PrintElem
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
@@ -1157,9 +1051,6 @@ contains
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
   use physics_mod, only : virtual_specific_heat, virtual_temperature
   use prim_si_mod, only : preq_vertadv, preq_omega_ps, preq_hydrostatic
-#if ( defined CAM )
-  use control_mod, only: se_met_nudge_u, se_met_nudge_p, se_met_nudge_t, se_met_tevolve
-#endif
 
   use time_mod, only : tevolve
 
@@ -1204,8 +1095,6 @@ contains
   real (kind=real_kind) ::  vtens2(np,np,nlev)
   real (kind=real_kind) ::  ttens(np,np,nlev)
   real (kind=real_kind) ::  stashdp3d (np,np,nlev)
-  real (kind=real_kind) ::  tempdp3d  (np,np)
-  real (kind=real_kind) ::  tempflux  (nc,nc,4)
   type (EdgeDescriptor_t)                                       :: desc
 
 
@@ -1249,19 +1138,6 @@ contains
            end do
         end do
 
-#if ( defined CAM )
-        ! ============================
-        ! compute grad(P-P_met)
-        ! ============================
-        if (se_met_nudge_p.gt.0.D0) then
-           grad_p_m_pmet(:,:,:,k) = &
-                grad_p(:,:,:,k) - &
-                hvcoord%hybm(k)* &
-                gradient_sphere( elem(ie)%derived%ps_met(:,:)+tevolve*elem(ie)%derived%dpsdt_met(:,:), &
-                                 deriv,elem(ie)%Dinv)
-        endif
-#endif
-
         ! ================================
         ! Accumulate mean Vel_rho flux in vn0
         ! ================================
@@ -1280,7 +1156,7 @@ contains
 
      ! compute T_v for timelevel n0
      !if ( moisture /= "dry") then
-     if (qn0 == -1 ) then
+     if (.not. use_moisture ) then
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
@@ -1302,9 +1178,6 @@ contains
               do i=1,np
                  ! Qt = elem(ie)%state%Q(i,j,k,1)
                  Qt = elem(ie)%state%Qdp(i,j,k,1,qn0)/dp(i,j,k)
-!!XXgoldyXX
-!Qt=0._real_kind
-!!XXgoldyXX
                  T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,n0),Qt)
                  if (use_cpstar==1) then
                     kappa_star(i,j,k) =  Rgas/Virtual_Specific_Heat(Qt)
@@ -1409,7 +1282,7 @@ contains
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
               E = 0.5D0*( v1*v1 + v2*v2 )
-              Ephi(i,j)=E+phi(i,j,k)+elem(ie)%derived%pecnd(i,j,k)
+              Ephi(i,j)=E+phi(i,j,k)
            end do
         end do
         ! ================================================
@@ -1430,9 +1303,6 @@ contains
 
         do j=1,np
            do i=1,np
-!              gpterm = hvcoord%hybm(k)*T_v(i,j,k)/p(i,j,k)
-!              glnps1 = Rgas*gpterm*grad_ps(i,j,1)
-!              glnps2 = Rgas*gpterm*grad_ps(i,j,2)
               gpterm = T_v(i,j,k)/p(i,j,k)
               glnps1 = Rgas*gpterm*grad_p(i,j,1,k)
               glnps2 = Rgas*gpterm*grad_p(i,j,2,k)
@@ -1623,7 +1493,7 @@ contains
      ! apply mass matrix
      ! =========================================================
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,tempflux)
+!$omp parallel do private(k)
 #endif
      do k=1,nlev
         elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
@@ -1633,12 +1503,6 @@ contains
              elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
              dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
         
-        if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-           v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
-           v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
-           tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
-           elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
-        end if
      enddo
 
 
@@ -1676,40 +1540,9 @@ contains
      kptr=kptr+nlev
      call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
 
-     if (0<ntrac.and.eta_ave_w.ne.0.) then
-        do k=1,nlev
-           stashdp3d(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)/elem(ie)%spheremp(:,:)
-        end do
-        corners = 0.0d0
-        corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,np1)
-     endif
-     
      kptr=kptr+2*nlev
      call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
      
-     if  (0<ntrac.and.eta_ave_w.ne.0.) then
-        desc = elem(ie)%desc
-        call edgeDGVunpack(edge3p1, corners, nlev, kptr, ie)
-        corners = corners/dt2
-        
-        do k=1,nlev
-           tempdp3d = elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
-           tempdp3d = tempdp3d - stashdp3d(:,:,k)
-           tempdp3d = tempdp3d/dt2
-           
-           call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
-           
-           cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
-           cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
-           cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
-           cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
-           
-           tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc, elem(ie)%metdet, cflux)
-           elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + tempflux
-        end do
-     end if
-
-
      ! ====================================================
      ! Scale tendencies by inverse mass matrix
      ! ====================================================
@@ -1740,74 +1573,7 @@ contains
   end subroutine compute_and_apply_rhs
 
 
-  subroutine distribute_flux_at_corners(cflux, corners, getmapP)
-    use kinds,          only : int_kind, real_kind
-    use dimensions_mod, only : np, max_corner_elem
-    use control_mod,    only : swest
-    implicit none
-
-    real   (kind=real_kind), intent(out)  :: cflux(2,2,2)
-    real   (kind=real_kind), intent(in)   :: corners(0:np+1,0:np+1)
-    integer(kind=int_kind),  intent(in)   :: getmapP(:)
-
-    cflux = 0.0d0
-    if (getmapP(swest+0*max_corner_elem) /= -1) then
-      cflux(1,1,1) =                (corners(0,1) - corners(1,1))     
-      cflux(1,1,1) = cflux(1,1,1) + (corners(0,0) - corners(1,1)) / 2.0d0
-      cflux(1,1,1) = cflux(1,1,1) + (corners(0,1) - corners(1,0)) / 2.0d0
- 
-      cflux(1,1,2) =                (corners(1,0) - corners(1,1))     
-      cflux(1,1,2) = cflux(1,1,2) + (corners(0,0) - corners(1,1)) / 2.0d0
-      cflux(1,1,2) = cflux(1,1,2) + (corners(1,0) - corners(0,1)) / 2.0d0
-    else
-      cflux(1,1,1) =                (corners(0,1) - corners(1,1))     
-      cflux(1,1,2) =                (corners(1,0) - corners(1,1))     
-    endif
- 
-    if (getmapP(swest+1*max_corner_elem) /= -1) then
-      cflux(2,1,1) =                (corners(np+1,1) - corners(np,1))     
-      cflux(2,1,1) = cflux(2,1,1) + (corners(np+1,0) - corners(np,1)) / 2.0d0
-      cflux(2,1,1) = cflux(2,1,1) + (corners(np+1,1) - corners(np,0)) / 2.0d0
- 
-      cflux(2,1,2) =                (corners(np  ,0) - corners(np,  1))     
-      cflux(2,1,2) = cflux(2,1,2) + (corners(np+1,0) - corners(np,  1)) / 2.0d0
-      cflux(2,1,2) = cflux(2,1,2) + (corners(np  ,0) - corners(np+1,1)) / 2.0d0
-    else
-      cflux(2,1,1) =                (corners(np+1,1) - corners(np,1))     
-      cflux(2,1,2) =                (corners(np  ,0) - corners(np,1))     
-    endif
- 
-    if (getmapP(swest+2*max_corner_elem) /= -1) then
-      cflux(1,2,1) =                (corners(0,np  ) - corners(1,np  ))     
-      cflux(1,2,1) = cflux(1,2,1) + (corners(0,np+1) - corners(1,np  )) / 2.0d0
-      cflux(1,2,1) = cflux(1,2,1) + (corners(0,np  ) - corners(1,np+1)) / 2.0d0
- 
-      cflux(1,2,2) =                (corners(1,np+1) - corners(1,np  ))     
-      cflux(1,2,2) = cflux(1,2,2) + (corners(0,np+1) - corners(1,np  )) / 2.0d0
-      cflux(1,2,2) = cflux(1,2,2) + (corners(1,np+1) - corners(0,np  )) / 2.0d0
-    else
-      cflux(1,2,1) =                (corners(0,np  ) - corners(1,np  ))     
-      cflux(1,2,2) =                (corners(1,np+1) - corners(1,np  ))     
-    endif
- 
-    if (getmapP(swest+3*max_corner_elem) /= -1) then
-      cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
-      cflux(2,2,1) = cflux(2,2,1) + (corners(np+1,np+1) - corners(np,np  )) / 2.0d0
-      cflux(2,2,1) = cflux(2,2,1) + (corners(np+1,np  ) - corners(np,np+1)) / 2.0d0
- 
-      cflux(2,2,2) =                (corners(np  ,np+1) - corners(np,np  ))     
-      cflux(2,2,2) = cflux(2,2,2) + (corners(np+1,np+1) - corners(np,np  )) / 2.0d0
-      cflux(2,2,2) = cflux(2,2,2) + (corners(np  ,np+1) - corners(np+1,np)) / 2.0d0
-    else
-      cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
-      cflux(2,2,2) =                (corners(np  ,np+1) - corners(np,np  ))     
-    endif
-  end subroutine
-
-
-
   subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
-  use dimensions_mod, only : np, np, nlev
   use control_mod, only : smooth_phis_nudt, hypervis_scaling
   use hybrid_mod, only : hybrid_t
   use edge_mod, only : edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
