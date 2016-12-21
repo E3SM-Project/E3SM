@@ -423,14 +423,21 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
     for shared_item in [shared_lib, shared_inc]:
         if (not os.path.exists(shared_item)):
             os.makedirs(shared_item)
-
-    libs = ["mct", "gptl", "pio", "csm_share"]
+    mpilib = case.get_value("MPILIB")
+#    if mpilib == "mpi-serial":
+#        libs = ["mct", "gptl", "pio", "csm_share"]
+#    else:
+    libs = ["gptl", "mct", "pio", "csm_share"]
+    if mpilib == "mpi-serial":
+        libs.insert(0, mpilib)
     logs = []
     sharedlibroot = case.get_value("SHAREDLIBROOT")
     for lib in libs:
         if lib == "csm_share":
             # csm_share adds its own dir name
             full_lib_path = os.path.join(sharedlibroot, sharedpath)
+        elif lib == "mpi-serial":
+            full_lib_path = os.path.join(sharedlibroot, sharedpath, "mct", lib)
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
         # pio build creates its own directory

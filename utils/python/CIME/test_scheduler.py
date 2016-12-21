@@ -457,9 +457,6 @@ class TestScheduler(object):
                     os.path.join(lockedfiles, "env_run.orig.xml"))
 
         with Case(test_dir, read_only=False) as case:
-            case.set_value("SHAREDLIBROOT",
-                           os.path.join(self._test_root,
-                                        "sharedlibroot.%s"%self._test_id))
             envtest.set_initial_values(case)
             if self._save_timing:
                 case.set_value("SAVE_TIMING", True)

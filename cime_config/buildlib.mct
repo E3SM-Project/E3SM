@@ -36,27 +36,13 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
   if ( (-M $MCT_DIR/mpeu/Makefile ) >= (-M mpeu/Makefile ) ) then
     cp $MCT_DIR/mpeu/Makefile mpeu
   endif
-  if (! -d mpi-serial ) then
-    mkdir mpi-serial
-  endif
-  if ( "$MPILIB" == "mpi-serial" ) then
-    if ( (-M $MCT_DIR/mpi-serial/Makefile ) >= (-M mpi-serial/Makefile ) ) then
-      cp $MCT_DIR/mpi-serial/Makefile mpi-serial/
-    endif
-    cp -p $MCT_DIR/mpi-serial/*.h mpi-serial/
-  endif
   set runconf = 0
   set runclean = 0
 
-# run configure with correct arguments if necessary
-  #if ($runconf == 1) then
-    echo "Running configure..."
-    echo "for OS=$OS MACH=$MACH"
-    $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mct
-    #if($? != 0) then
-    #  rm mct_conf*
-    #endif
-  #endif
+  echo "Running configure..."
+  echo "for OS=$OS MACH=$MACH"
+  $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mct
+
 
   if ($runclean == 1) then
     $GMAKE clean
@@ -69,11 +55,6 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
 
   cp -p mct/lib*.a $LIBDIR/lib
   cp -p mpeu/lib*.a $LIBDIR/lib
-  if ( "$MPILIB" == "mpi-serial" ) then
-    cp -p mpi-serial/lib*.a $LIBDIR/lib
-    cp -p mpi-serial/*.h $LIBDIR/include
-    cp -p mpi-serial/*.mod $LIBDIR/include
-  endif
   cp -p mct/*.mod $LIBDIR/include/
   cp -p mpeu/*.mod $LIBDIR/include/
 
