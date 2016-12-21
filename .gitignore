@@ -18,17 +18,22 @@ src/operators/*.f90
 
 # Executables
 *_model
+build_tables
 
 # NetCDF Files
 *.nc
+
+# Restart timestamp file
+restart_timestamp
 
 # Graph files and partition files
 *.info
 *.info.part.*
 
-# Error and Output log files
+# Error, Output, and Abort log files
 *.out
 *.err
+*.abort
 
 # Text files (For statistical output from ocean model)
 *.txt
