@@ -250,7 +250,7 @@
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+      <queue jobmin="1" jobmax="512" default="true">ec</queue>
     </queues>
     <walltimes>
       <walltime default="true">2:00:00</walltime>
@@ -264,7 +264,7 @@
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+      <queue jobmin="1" jobmax="512" default="true">ec</queue>
     </queues>
     <walltimes>
       <walltime default="true">4:00:00</walltime>
