@@ -21,31 +21,41 @@ obs_pr_reg=obs_pr#.regrid(grid_normal,regridTool='esmf',regridMethod='conserve')
 
 diff_pr_reg=mod_pr_reg-obs_pr_reg
 
-'''
-x = vcs.init()
+# Graphing stuff
+
+# How to create, store and load a vcs script
+#
+# Create a vcs object with a name
+#template = x.createtemplate('plot_set_5_0')
+#
+# Modify the vcs object if needed
+#template.data.x1 = 0.12300000000000001
+#template.data.x2 = 0.86
+#template.data.y1 = 0.7016666666666667
+#template.data.y2 = 0.95
+#
+#template.legend.x1 = 0.88
+#template.legend.x2 = 0.9193066666666667
+#template.legend.y1 = 0.7265
+#template.legend.y2 = 0.9251666666666666
+#
+# Store the vcs object as a .json file
+#x.scriptobject(template, 'plot_set_5_new')
+#
+# Later you can load the template object like:
+#x.scriptrun('plot_set_5_new.json')
+#new_template = x.gettemplate('plot_set_5_0')
+
+x = vcs.init(bg=True, geometry=(1212,1628))
+x.portrait()
 isofill = x.createisofill()
-x.plot(diff_pr_reg, isofill)
-x.png('temp.png')
-quit()
-'''
 
-# Plotting stuff
-three_row_multi_template = EzTemplate.Multi(rows=3, columns=1)
+x.scriptrun('plot_set_5.json')
+template_0 = x.gettemplate('plotset5_0_x_0')
+template_1 = x.gettemplate('plotset5_0_x_1')
+template_2 = x.gettemplate('plotset5_0_x_2')
+x.plot(mod_pr_reg, template_0, isofill)
+x.plot(obs_pr_reg, template_1, isofill)
+x.plot(diff_pr_reg, template_2, isofill)
 
-parent_canvas = vcs.init(bg=True, geometry=(1212,1628))  # canvas which hold 3 children canveses
-#parent_canvas.setcolormap('bl_to_darkred')  # NCAR colors
-parent_canvas.portrait()
-isofill = parent_canvas.createisofill()
-#isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
-
-three_row_template = three_row_multi_template.get(legend='none')
-parent_canvas.plot(mod_pr_reg, three_row_template, isofill)
-
-three_row_template = three_row_multi_template.get(legend='none')
-parent_canvas.plot(obs_pr_reg, three_row_template, isofill)
-
-three_row_template = three_row_multi_template.get(legend='none')
-parent_canvas.plot(diff_pr_reg, three_row_template, isofill)
-
-png_filename='diff.png'
-parent_canvas.png(png_filename)
+x.png('out.png')
