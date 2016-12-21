@@ -123,7 +123,7 @@
     if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'sf_monin_obukhov'
     if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'noah'
 
- else if (trim(config_physics_suite) == 'convection_scale_aware') then
+ else if (trim(config_physics_suite) == 'convection_permitting') then
 
     if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'mp_thompson'
     if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_grell_freitas'
