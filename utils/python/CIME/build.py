@@ -184,8 +184,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     complist = []
     for comp_class in comp_classes:
-        if comp_class == "DRV":
-            comp_class = "CPL"
+        if comp_class == "CPL":
             ninst = 1
             config_dir = None
         else:
@@ -194,6 +193,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
         comp = case.get_value("COMP_%s"%comp_class)
         thrds =  case.get_value("NTHRDS_%s"%comp_class)
+        expect(ninst is not None,"Failed to get ninst for comp_class %s"%comp_class)
         complist.append((comp_class.lower(), comp, thrds, ninst, config_dir ))
         os.environ["COMP_%s"%comp_class] = comp
 

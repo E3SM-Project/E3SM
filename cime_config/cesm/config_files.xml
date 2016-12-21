@@ -194,7 +194,7 @@
   <!-- File names for all component specific configuration variables -->
   <!-- =============================================================== -->
 
-  <entry id="CONFIG_DRV_FILE">
+  <entry id="CONFIG_CPL_FILE">
     <type>char</type>
     <default_value>$CIMEROOT/driver_cpl/cime_config/config_component.xml</default_value>
     <group>case_last</group>

@@ -76,7 +76,7 @@ def query_component(name):
     # Determine the valid component classes (e.g. atm) for the driver/cpl
     # These are then stored in comps_array
     files = Files()
-    infile = files.get_value("CONFIG_DRV_FILE")
+    infile = files.get_value("CONFIG_CPL_FILE")
     config_drv = Component(infile)
     components = config_drv.get_valid_model_components()
 

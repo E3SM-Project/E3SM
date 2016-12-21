@@ -53,7 +53,12 @@ def _build_usernl_files(case, model, comp):
     Create user_nl_xxx files, expects cwd is caseroot
     """
     model = model.upper()
-    model_file = case.get_value("CONFIG_%s_FILE" % model)
+    if model == "DRV":
+        model_file = case.get_value("CONFIG_CPL_FILE")
+    else:
+        model_file = case.get_value("CONFIG_%s_FILE" % model)
+    expect(model_file is not None,
+           "Could not locate CONFIG_%s_FILE in config_files.xml"%model)
     model_dir = os.path.dirname(model_file)
 
     expect(os.path.isdir(model_dir),
@@ -153,7 +158,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
         for comp in models:
-            if comp == "DRV":
+            if comp == "CPL":
                 continue
             ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)

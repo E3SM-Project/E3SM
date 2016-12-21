@@ -246,7 +246,44 @@ class J_TestCreateNewcase(unittest.TestCase):
                               (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
 
         cls._do_teardown.append(testdir)
+
+    def test_e_xmlquery(self):
+        # Set script and script path
+        xmlquery = "./xmlquery"
+        cls = self.__class__
+        casedir  =  cls._testdirs[0]
+
+        # Check for environment
+        self.assertTrue(os.path.isdir(SCRIPT_DIR))
+        self.assertTrue(os.path.isdir(TOOLS_DIR))
+        self.assertTrue(os.path.isfile(os.path.join(casedir,xmlquery)))
+
+        # Test command line options
+        with Case(casedir, read_only=True) as case:
+            STOP_N = case.get_value("STOP_N")
+            COMP_CLASSES = case.get_values("COMP_CLASSES")
+            BUILD_COMPLETE = case.get_value("BUILD_COMPLETE")
+            cmd = xmlquery + " STOP_N --value"
+            output = run_cmd_no_fail(cmd, from_dir=casedir)
+            self.assertTrue(output == str(STOP_N), msg="%s != %s"%(output, STOP_N))
+            cmd = xmlquery + " BUILD_COMPLETE --value"
+            output = run_cmd_no_fail(cmd, from_dir=casedir)
+            self.assertTrue(output == "TRUE", msg="%s != %s"%(output, BUILD_COMPLETE))
+            for comp in COMP_CLASSES:
+                caseresult = case.get_value("NTASKS_%s"%comp)
+                cmd = xmlquery + " NTASKS_%s --value"%comp
+                output = run_cmd_no_fail(cmd, from_dir=casedir)
+                self.assertTrue(output == str(caseresult), msg="%s != %s"%(output, caseresult))
+                cmd = xmlquery + " NTASKS --subgroup %s --value"%comp
+                output = run_cmd_no_fail(cmd, from_dir=casedir)
+                self.assertTrue(output == str(caseresult), msg="%s != %s"%(output, caseresult))
+            JOB_QUEUE = case.get_value("JOB_QUEUE", subgroup="case.run")
+            cmd = xmlquery + " JOB_QUEUE --subgroup case.run --value"
+            output = run_cmd_no_fail(cmd, from_dir=casedir)
+            self.assertTrue(output == JOB_QUEUE, msg="%s != %s"%(output, JOB_QUEUE))
+
         cls._do_teardown.append(cls._testroot)
+
 
     @classmethod
     def tearDownClass(cls):
@@ -1118,7 +1155,7 @@ class K_TestCimeCase(TestCreateTestCommon):
         with Case(casedir, read_only=True) as case:
 
             # Serial cases should not be using pnetcdf
-            self.assertEqual(case.get_value("PIO_TYPENAME"), "netcdf")
+            self.assertEqual(case.get_value("CPL_PIO_TYPENAME"), "netcdf")
 
             # Serial cases should be using 1 task
             self.assertEqual(case.get_value("TOTALPES"), 1)
@@ -1190,92 +1227,6 @@ class L_TestSaveTimings(TestCreateTestCommon):
     def test_save_timings_manual(self):
     ###########################################################################
         self.simple_test(manual_timing=True)
-
-###############################################################################
-class C_TestXMLQuery(unittest.TestCase):
-# Testing command line scripts
-###############################################################################
-
-    def setUp(self):
-        # Create case directory
-        self._testroot = TEST_ROOT # "/tmp/"
-        self._testdirs = []
-        self._do_teardown = []
-
-        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts')
-
-        if os.path.exists(testdir):
-            shutil.rmtree(testdir)
-
-        self._testdirs.append(testdir)
-
-        machine = 'melvin'
-        cmd = "%s/create_newcase --case %s --compset X --res f19_g16 --mach %s " % (SCRIPT_DIR, testdir, machine)
-        run_cmd_assert_result(self, cmd, from_dir=SCRIPT_DIR)
-        cmd = "./xmlchange JOB_QUEUE=testval --subgroup case.run"
-        run_cmd_assert_result(self, cmd, from_dir=testdir)
-
-        self._do_teardown.append(testdir)
-
-    def tearDown(self):
-        do_teardown = len(self._do_teardown) > 0 and sys.exc_info() == (None, None, None)
-
-        for tfile in self._testdirs:
-            if tfile not in self._do_teardown:
-                print "Detected failed test or user request no teardown"
-                print "Leaving case directory : %s"%tfile
-            elif do_teardown:
-                shutil.rmtree(tfile)
-
-    def test_xmlquery(self):
-        # Set script and script path
-        xmlquery = "./xmlquery"
-        testdir  = self._testdirs[0]
-
-
-        # Check for environment
-        self.assertTrue(os.path.isdir(SCRIPT_DIR))
-        self.assertTrue(os.path.isdir(TOOLS_DIR))
-        self.assertTrue(os.path.isfile(testdir + "/" + xmlquery) )
-
-        # Test command line options
-
-        options = [
-            '' ,
-            '--listall' ,
-            '--listall --value' ,
-            "-caseroot " + testdir +"  -subgroup case.run -value JOB_QUEUE" ,
-        ]
-
-        for opt in options :
-
-            cmd = xmlquery + ' ' + opt # .join(opt)
-            output = run_cmd_no_fail(cmd, from_dir=testdir)
-            self.assertTrue(len(output) , msg="no output for: " + cmd )
-
-    def test_subgroup(self):
-        # Set script and script path
-        xmlquery = "./xmlquery"
-        testdir  = self._testdirs[0]
-
-        options = [
-            '-caseroot ' + testdir + ' -value JOB_QUEUE'  ,
-            '-caseroot ' + testdir + ' -subgroup case.run -value JOB_QUEUE' ,
-         ]
-
-        # Get value and group information
-        base_out = ''
-        cmd     = xmlquery + " " + options[0]
-        base_out = run_cmd_no_fail(cmd, from_dir=testdir)
-
-        group_out = ''
-        cmd      = xmlquery + " " + options[1]
-        group_out = run_cmd_no_fail(cmd, from_dir=testdir)
-
-        searchObj = re.search( r'testval', base_out)
-        # Test group option
-        self.assertTrue(len(base_out) , msg="no output for " + cmd)
-        self.assertEqual(searchObj.group() , group_out)
 
 ###############################################################################
 class B_CheckCode(unittest.TestCase):
