@@ -1665,7 +1665,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: w_tend, u_tend
       real (kind=RKIND), dimension(:,:), pointer :: rho_pp, rho_p_save, rho_p
       real (kind=RKIND), dimension(:,:), pointer :: ru_p, ru, ru_save
-      real (kind=RKIND), dimension(:,:), pointer :: rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old
+      real (kind=RKIND), dimension(:,:), pointer :: rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old
       real (kind=RKIND), dimension(:,:), pointer :: rw_p, rw_save, rw
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
@@ -1703,7 +1703,7 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
       call mpas_pool_get_array(diag, 'rtheta_p_save', rtheta_p_save)
       call mpas_pool_get_array(diag, 'rtheta_p', rtheta_p)
-      call mpas_pool_get_array(diag, 'zz_rtheta_pp_old', zz_rtheta_pp_old)
+      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
 
       call mpas_pool_get_array(diag, 'rw_p', rw_p)
       call mpas_pool_get_array(diag, 'rw_save', rw_save)
@@ -1712,7 +1712,7 @@ module atm_time_integration
       call atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, &
                                    nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
                                    zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
-                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
+                                   rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -1723,7 +1723,7 @@ module atm_time_integration
    subroutine atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, &
                                    nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
                                    zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
-                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
+                                   rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -1763,7 +1763,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_p_save
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_p
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz_rtheta_pp_old
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp_old
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_p
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_save
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw
@@ -1830,7 +1830,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels+1) :: dpzx
 
       real (kind=RKIND), dimension(:,:), pointer :: rho_zz, theta_m, ru_p, rw_p, rtheta_pp,  &
-                                                    zz_rtheta_pp_old, zz, exner, cqu, ruAvg, &
+                                                    rtheta_pp_old, zz, exner, cqu, ruAvg, &
                                                     wwAvg, rho_pp, cofwt, coftz, zxu,        &
                                                     a_tri, alpha_tri, gamma_tri, dss,        &
                                                     tend_ru, tend_rho, tend_rt, tend_rw,     &
@@ -1868,7 +1868,7 @@ module atm_time_integration
 !      call mpas_pool_get_array(state, 'w', w, 1)
 
       call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
-      call mpas_pool_get_array(diag, 'zz_rtheta_pp_old', zz_rtheta_pp_old)
+      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
       call mpas_pool_get_array(diag, 'ru_p', ru_p)
       call mpas_pool_get_array(diag, 'rw_p', rw_p)
       call mpas_pool_get_array(diag, 'exner', exner)
@@ -1926,7 +1926,7 @@ module atm_time_integration
 
       call atm_advance_acoustic_step_work(nCells, nEdges, nCellsSolve, cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
-                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
+                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
@@ -1938,7 +1938,7 @@ module atm_time_integration
 
    subroutine atm_advance_acoustic_step_work(nCells, nEdges, nCellsSolve, cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
-                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
+                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
@@ -1963,7 +1963,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_p
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
 
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz_rtheta_pp_old
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp_old
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: divergence_3d
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: exner
@@ -2031,8 +2031,8 @@ module atm_time_integration
            ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
            do k = 1,nVertLevels
               rtheta_pp_tmp = rtheta_pp(k,iCell)
-              rtheta_pp(k,iCell) = (rtheta_pp(k,iCell) + smdiv_p_forward * (rtheta_pp(k,iCell)-zz_rtheta_pp_old(k,iCell)))*zz(k,iCell)
-              zz_rtheta_pp_old(k,iCell) = rtheta_pp_tmp
+              rtheta_pp(k,iCell) = (rtheta_pp(k,iCell) + smdiv_p_forward * (rtheta_pp(k,iCell)-rtheta_pp_old(k,iCell)))*zz(k,iCell)
+              rtheta_pp_old(k,iCell) = rtheta_pp_tmp
            end do
         end do
         
@@ -2058,7 +2058,7 @@ module atm_time_integration
 
 !DIR$ IVDEP
               do k=1,nVertLevels
-!!                 pgrad = ((zz_rtheta_pp(k,cell2)-zz_rtheta_pp_old(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
+!!                 pgrad = ((zz_rtheta_pp(k,cell2)-rtheta_pp_old(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = ((rtheta_pp(k,cell2)-rtheta_pp(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = cqu(k,iEdge)*0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
                  pgrad = pgrad + 0.5*zxu(k,iEdge)*gravity*(rho_pp(k,cell1)+rho_pp(k,cell2))
@@ -2105,11 +2105,11 @@ module atm_time_integration
 
       if (small_step == 1) then  ! initialize here on first small timestep.
          do iCell=cellStart,cellEnd
-            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+            rtheta_pp_old(1:nVertLevels,iCell) = 0.0
          end do
       end if
 
-!!!OMP BARRIER -- not needed, since zz_rtheta_pp_old not used below when small_step == 1
+!!!OMP BARRIER -- not needed, since rtheta_pp_old not used below when small_step == 1
 
       do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
 
@@ -2121,13 +2121,13 @@ module atm_time_integration
             rho_pp(1:nVertLevels,iCell) = 0.0            
             rtheta_pp(1:nVertLevels,iCell) = 0.0            
 !MGD moved to loop above over all cells
-!            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+!            rtheta_pp_old(1:nVertLevels,iCell) = 0.0
             rw_p(:,iCell) = 0.0
             divergence_3d(1:nVertLevels,iCell) = 0.
          else  ! reset rtheta_pp to input value;
                !  rtheta_pp_old stores input value for use in div damping on next acoustic step.
                !  Save rho_pp to compute d_rho_pp/dt to get divergence for next acoustic filter application.
-            rtheta_pp(1:nVertLevels,iCell) = zz_rtheta_pp_old(1:nVertLevels,iCell)  
+            rtheta_pp(1:nVertLevels,iCell) = rtheta_pp_old(1:nVertLevels,iCell)  
             divergence_3d(1:nVertLevels,iCell) = rho_pp(1:nVertLevels,iCell)
          end if
             
