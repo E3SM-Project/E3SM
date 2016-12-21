@@ -77,13 +77,15 @@ module mpas_atm_iau
  end function atm_iau_coef
       
 !==================================================================================================
- subroutine atm_add_tend_anal_incr (structs, wgt_iau)
+ subroutine atm_add_tend_anal_incr (configs, structs, itimestep, dt)
 !==================================================================================================
       
       implicit none
 
+      type (mpas_pool_type), intent(in) :: configs
       type (mpas_pool_type), intent(inout) :: structs
-      real (kind=RKIND),     intent(in) :: wgt_iau
+      integer,           intent(in)  :: itimestep
+      real (kind=RKIND), intent(in)  :: dt
 
       type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: tend_iau
@@ -100,6 +102,17 @@ module mpas_atm_iau
                                                     tend_u, tend_rho, tend_theta, tend_th, tend_w
       real(kind=RKIND),dimension(:,:,:), pointer :: scalars, tend_scalars, scalars_amb
       real(kind=RKIND),dimension(:,:), pointer:: u_amb, theta_amb, rho_amb
+
+      real (kind=RKIND) :: wgt_iau
+
+      !
+      ! Compute weight for IAU forcing in this timestep, and return if weight
+      ! is essentially zero.
+      !
+      wgt_iau = atm_iau_coef(configs, itimestep, dt)
+      if (wgt_iau <= 1.0e-12_RKIND) then
+         return
+      end if
 
       call mpas_pool_get_subpool(structs, 'tend', tend)
       call mpas_pool_get_subpool(structs, 'tend_iau', tend_iau)

@@ -170,7 +170,7 @@ module atm_time_integration
 
       integer, pointer :: num_scalars, index_qv, nCells, nCellsSolve, nEdges, nEdgesSolve, nVertices, nVerticesSolve, nVertLevels
 
-      real(kind=RKIND) :: weight_iau
+      character(len=StrKIND), pointer :: config_IAU_option
 
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
@@ -178,7 +178,6 @@ module atm_time_integration
       type (mpas_pool_type), pointer :: mesh
       type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: tend_physics
-      type (mpas_pool_type), pointer :: tend_iau
 
       type (field2DReal), pointer :: theta_m_field
       type (field3DReal), pointer :: scalars_field
@@ -216,13 +215,11 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_microp_scheme', config_microp_scheme)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_convection_scheme', config_convection_scheme)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_IAU_option', config_IAU_option)
 
       !  config variables for dynamics-transport splitting, WCS 18 November 2014
       call mpas_pool_get_config(domain % blocklist % configs, 'config_split_dynamics_transport', config_split_dynamics_transport)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dynamics_split_steps', config_dynamics_split)
-
-      ! Retrieve weight/coefficient for IAU (Incremental Analysis Update) - HA (June-16-2016)
-      weight_iau = atm_iau_coef (domain % blocklist % configs, itimestep, dt)
 
       !
       ! Retrieve field structures
@@ -422,14 +419,13 @@ module atm_time_integration
       call mpas_timer_stop('physics_addtend')
 #endif
 
-      if (weight_iau >= 1.e-12) then      ! HA (June-16-2016)
-         if (debug) write(0,*) ' add incremental analysis forcing to tendencies '
+      !
+      ! IAU - Incremental Analysis Update
+      !
+      if (trim(config_IAU_option) /= 'off') then
          block => domain % blocklist
-
          do while (associated(block))
-
-            call atm_add_tend_anal_incr ( block % structs, weight_iau )
-
+            call atm_add_tend_anal_incr(block % configs, block % structs, itimestep, dt)
             block => block % next
         end do
       end if
