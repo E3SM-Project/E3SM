@@ -83,14 +83,14 @@
       <option name="wallclock"> 00:20 </option>
     </options>
   </test>
-  <test name="ERS" grid="f09_g16" compset="BRCP45C4L40CNRBDRD" testmods="allactive/defaultio">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prebeta"/>
-    </machines>
-    <options>
-      <option name="wallclock"> 01:00 </option>
-    </options>
-  </test>
+  <!-- <test name="ERS" grid="f09_g16" compset="BRCP45C4L40CNRBDRD" testmods="allactive/defaultio"> -->
+  <!--   <machines> -->
+  <!--     <machine name="yellowstone" compiler="intel" category="prebeta"/> -->
+  <!--   </machines> -->
+  <!--   <options> -->
+  <!--     <option name="wallclock"> 01:00 </option> -->
+  <!--   </options> -->
+  <!-- </test> -->
   <test name="ERS" grid="f09_g16" compset="BRCP85C5L45BGCR" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prebeta"/>
@@ -167,14 +167,14 @@
       <option name="wallclock"> 00:20 </option>
     </options>
   </test>
-  <test name="ERS_Ld7" grid="f19_g16" compset="B1850C4RCO2L40CNRWs" testmods="allactive/defaultio">
-    <machines>
-      <machine name="bluewaters" compiler="pgi" category="prebeta"/>
-    </machines>
-    <options>
-      <option name="wallclock"> 00:20 </option>
-    </options>
-  </test>
+  <!-- <test name="ERS_Ld7" grid="f19_g16" compset="B1850C4RCO2L40CNRWs" testmods="allactive/defaultio"> -->
+  <!--   <machines> -->
+  <!--     <machine name="bluewaters" compiler="pgi" category="prebeta"/> -->
+  <!--   </machines> -->
+  <!--   <options> -->
+  <!--     <option name="wallclock"> 00:20 </option> -->
+  <!--   </options> -->
+  <!-- </test> -->
   <test name="ERS_Ld7" grid="f09_g16" compset="BHISTC5L45BGCR" testmods="allactive/defaultio">
     <machines>
       <machine name="bluewaters" compiler="pgi" category="prebeta"/>
@@ -191,16 +191,16 @@
       <option name="wallclock"> 00:20 </option>
     </options>
   </test>
-  <test name="ERS_N3_Ld7" grid="f19_g16" compset="BHISTC5L40CNR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="edison" compiler="intel" category="prebeta"/>
-      <machine name="yellowstone" compiler="gnu" category="prealpha"/>
-      <machine name="yellowstone" compiler="gnu" category="prebeta"/>
-    </machines>
-    <options>
-      <option name="wallclock"> 00:20 </option>
-    </options>
-  </test>
+  <!-- <test name="ERS_N3_Ld7" grid="f19_g16" compset="BHISTC5L40CNR" testmods="allactive/defaultio"> -->
+  <!--   <machines> -->
+  <!--     <machine name="edison" compiler="intel" category="prebeta"/> -->
+  <!--     <machine name="yellowstone" compiler="gnu" category="prealpha"/> -->
+  <!--     <machine name="yellowstone" compiler="gnu" category="prebeta"/> -->
+  <!--   </machines> -->
+  <!--   <options> -->
+  <!--     <option name="wallclock"> 00:20 </option> -->
+  <!--   </options> -->
+  <!-- </test> -->
   <test name="ERS_N3_Ld7" grid="f19_g16" compset="BHISTC5L45BGCR" testmods="allactive/defaultio">
     <machines>
       <machine name="hobart" compiler="intel" category="prebeta"/>
@@ -209,14 +209,14 @@
       <option name="wallclock"> 00:20 </option>
     </options>
   </test>
-  <test name="ERS_Ld7" grid="f09_g16" compset="BRCP26C4L40CNR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="janus" compiler="intel" category="prebeta"/>
-    </machines>
-    <options>
-      <option name="wallclock"> 00:20 </option>
-    </options>
-  </test>
+  <!-- <test name="ERS_Ld7" grid="f09_g16" compset="BRCP26C4L40CNR" testmods="allactive/defaultio"> -->
+  <!--   <machines> -->
+  <!--     <machine name="janus" compiler="intel" category="prebeta"/> -->
+  <!--   </machines> -->
+  <!--   <options> -->
+  <!--     <option name="wallclock"> 00:20 </option> -->
+  <!--   </options> -->
+  <!-- </test> -->
   <test name="ERS_Ld7" grid="f09_g16" compset="BRCP85C5L45BGCR" testmods="allactive/defaultio">
     <machines>
       <machine name="edison" compiler="intel" category="prebeta"/>
@@ -267,14 +267,14 @@
       <option name="wallclock"> 00:20 </option>
     </options>
   </test>
-  <test name="PET" grid="f19_g16" compset="B1850C5L40SPRWs" testmods="allactive/defaultio">
-    <machines>
-      <machine name="bluewaters" compiler="pgi" category="prebeta"/>
-    </machines>
-    <options>
-      <option name="wallclock"> 00:20 </option>
-    </options>
-  </test>
+  <!-- <test name="PET" grid="f19_g16" compset="B1850C5L40SPRWs" testmods="allactive/defaultio"> -->
+  <!--   <machines> -->
+  <!--     <machine name="bluewaters" compiler="pgi" category="prebeta"/> -->
+  <!--   </machines> -->
+  <!--   <options> -->
+  <!--     <option name="wallclock"> 00:20 </option> -->
+  <!--   </options> -->
+  <!-- </test> -->
   <test name="PFS" grid="f09_g16" compset="B1850" testmods="allactive/default">
     <machines>
       <machine name="bluewaters" compiler="pgi" category="prebeta"/>
@@ -345,14 +345,14 @@
       <option name="wallclock"> 00:20 </option>
     </options>
   </test>
-  <test name="SMS_Ld5" grid="f09_g16" compset="BRCP85C4L40CNRBPRP" testmods="allactive/defaultio">
-    <machines>
-      <machine name="edison" compiler="intel" category="prebeta"/>
-    </machines>
-    <options>
-      <option name="wallclock"> 00:20 </option>
-    </options>
-  </test>
+  <!-- <test name="SMS_Ld5" grid="f09_g16" compset="BRCP85C4L40CNRBPRP" testmods="allactive/defaultio"> -->
+  <!--   <machines> -->
+  <!--     <machine name="edison" compiler="intel" category="prebeta"/> -->
+  <!--   </machines> -->
+  <!--   <options> -->
+  <!--     <option name="wallclock"> 00:20 </option> -->
+  <!--   </options> -->
+  <!-- </test> -->
   <test name="SMS_Ld5" grid="f09_g16_gl4" compset="J1850G" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="gnu" category="prebeta"/>
