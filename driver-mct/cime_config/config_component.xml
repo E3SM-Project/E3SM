@@ -11,7 +11,7 @@
 
   <entry id="COMP_CLASSES">
     <type>char</type>
-    <default_value>DRV,ATM,LND,ICE,OCN,ROF,GLC,WAV,ESP</default_value>
+    <default_value>CPL,ATM,LND,ICE,OCN,ROF,GLC,WAV,ESP</default_value>
     <file>env_case.xml</file>
     <group>case_comp</group>
     <desc>List of component classes supported by this driver</desc>
@@ -1883,439 +1883,113 @@
   <!-- definitions pelayout -->
   <!-- ===================================================================== -->
 
-  <entry id="NTASKS_ATM">
+  <entry id="NTASKS">
     <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of atmosphere tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_ATM">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of atmosphere threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_ATM">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root atm mpi task</desc>
-  </entry>
-
-  <entry id="NINST_ATM">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of atmosphere instances</desc>
-  </entry>
-
-  <entry id="NINST_ATM_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of atmosphere instances</desc>
-  </entry>
-
-  <entry id="NTASKS_LND">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of land mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_LND">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of land mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_LND">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root lnd mpi task</desc>
-  </entry>
-
-  <entry id="NINST_LND">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of land instances</desc>
-  </entry>
-
-  <entry id="NINST_LND_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of land instances</desc>
-  </entry>
-
-  <entry id="NTASKS_ICE">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ice mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_ICE">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ice mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_ICE">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root ice mpi task</desc>
-  </entry>
-
-  <entry id="NINST_ICE">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of sea ice instances</desc>
-  </entry>
-
-  <entry id="NINST_ICE_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of sea ice instances</desc>
-  </entry>
-
-  <entry id="NTASKS_OCN">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ocean mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_OCN">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ocean mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_OCN">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root ocn mpi task</desc>
-  </entry>
-
-  <entry id="NINST_OCN">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of ocean instances</desc>
-  </entry>
-
-  <entry id="NINST_OCN_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of ocean instances</desc>
-  </entry>
-
-  <entry id="NTASKS_CPL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_cpl</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of coupler mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_CPL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_cpl</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of coupler mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_CPL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_cpl</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root cpl mpi task</desc>
-  </entry>
-
-  <entry id="NTASKS_GLC">
-    <type>integer</type>
-    <default_value>0</default_value>
     <values>
-      <value compset="_CISM1">1</value>
+      <value component="ATM"> 0</value>
+      <value component="CPL"> 0</value>
+      <value component="OCN"> 0</value>
+      <value component="WAV"> 0</value>
+      <value component="GLC"> 0</value>
+      <value component="ICE"> 0</value>
+      <value component="ROF"> 0</value>
+      <value component="LND"> 0</value>
+      <value component="ESP"> 0</value>
     </values>
-    <group>mach_pes_glc</group>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>number of glc mpi tasks</desc>
+    <desc>number of tasks for each component</desc>
   </entry>
 
-  <entry id="NTHRDS_GLC">
+  <entry id="NTHRDS">
     <type>integer</type>
-    <default_value>0</default_value>
     <values>
-      <value compset="_CISM1">1</value>
+      <value component="ATM">1</value>
+      <value component="CPL">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
     </values>
-    <group>mach_pes_glc</group>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>number of glc mpi threads</desc>
+    <desc>number of threads for each task in each component</desc>
   </entry>
 
-  <entry id="ROOTPE_GLC">
+  <entry id="ROOTPE">
     <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_glc</group>
+    <values>
+      <value component="ATM">0</value>
+      <value component="CPL">0</value>
+      <value component="OCN">0</value>
+      <value component="WAV">0</value>
+      <value component="GLC">0</value>
+      <value component="ICE">0</value>
+      <value component="ROF">0</value>
+      <value component="LND">0</value>
+      <value component="ESP">0</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>root glc mpi task</desc>
+    <desc>ROOTPE (mpi task in MPI_COMM_WORLD) for each component</desc>
   </entry>
 
-  <entry id="NINST_GLC">
+  <entry id="NINST">
     <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_glc</group>
+    <values>
+      <value component="ATM">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of glacier instances</desc>
+    <desc>Number of instances for each component</desc>
   </entry>
 
-  <entry id="NINST_GLC_LAYOUT">
+  <entry id="NINST_LAYOUT">
     <type>char</type>
     <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_glc</group>
+    <values>
+      <value component="ATM">concurrent</value>
+      <value component="OCN">concurrent</value>
+      <value component="WAV">concurrent</value>
+      <value component="GLC">concurrent</value>
+      <value component="ICE">concurrent</value>
+      <value component="ROF">concurrent</value>
+      <value component="LND">concurrent</value>
+      <value component="ESP">concurrent</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Layout of glacier instances</desc>
+    <desc>Layout of component instances for each component</desc>
   </entry>
 
-  <entry id="NTASKS_ROF">
+  <entry id="PSTRID">
     <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_rof</group>
+    <values>
+      <value component="ATM">1</value>
+      <value component="CPL">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>number of river runoff tasks</desc>
+    <desc>Number of instances for each component</desc>
   </entry>
 
-  <entry id="NTHRDS_ROF">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of river runoff threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_ROF">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root rof mpi task</desc>
-  </entry>
-
-  <entry id="NINST_ROF">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of river runoff instances</desc>
-  </entry>
-
-  <entry id="NINST_ROF_LAYOUT">
-    <type>char</type>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of river runoff instances</desc>
-  </entry>
-
-  <entry id="NTASKS_WAV">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of wav mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_WAV">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of wav mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_WAV">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root wav mpi task</desc>
-  </entry>
-
-  <entry id="NINST_WAV">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of wave instances</desc>
-  </entry>
-
-  <entry id="NINST_WAV_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of wave instances</desc>
-  </entry>
-
-  <entry id="NTASKS_ESP">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of external processing tool mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_ESP">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of external processing tool mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_ESP">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root ocn mpi task</desc>
-  </entry>
-
-  <entry id="NINST_ESP">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of external processing tool instances</desc>
-  </entry>
-
-  <entry id="NINST_ESP_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of external processing tool instances</desc>
-  </entry>
-
-  <entry id="PSTRID_ATM">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for atm comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_LND">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for lnd comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_ICE">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for ice comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_OCN">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for ocn comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_CPL">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for cpl comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_GLC">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for glc comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_ROF">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for rof comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_WAV">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for wav comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_ESP">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for esp comp - currently should always be set to 1</desc>
-  </entry>
 
   <entry id="TOTALPES">
     <type>integer</type>
@@ -2369,38 +2043,6 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>TRUE implies perform asynchronous i/o</desc>
-  </entry>
-
-  <entry id="PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>mpi task stride between io tasks</desc>
-  </entry>
-
-  <entry id="PIO_ROOT">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>2</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="PIO_REARR_COMM_TYPE">
@@ -2477,14 +2119,6 @@
     <desc>pio rearranger communiation options (io2comp) : TRUE implies enable isend</desc>
   </entry>
 
-  <entry id="PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <default_value>pnetcdf</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
 
   <entry id="PIO_DEBUG_LEVEL">
     <type>integer</type>
@@ -2510,332 +2144,103 @@
     <desc>pio buffer size limit for pnetcdf output</desc>
   </entry>
 
-  <entry id="OCN_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="OCN_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="OCN_PIO_ROOT">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="OCN_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="OCN_PIO_TYPENAME">
+  <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
+    <values>
+      <value component="ATM">default</value>
+      <value component="CPL">default</value>
+      <value component="OCN">default</value>
+      <value component="WAV">default</value>
+      <value component="GLC">default</value>
+      <value component="ICE">default</value>
+      <value component="ROF">default</value>
+      <value component="LND">default</value>
+      <value component="ESP">default</value>
+    </values>
   </entry>
 
-  <entry id="LND_PIO_STRIDE">
+  <entry id="PIO_STRIDE">
     <type>integer</type>
-    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio stride</desc>
+    <desc>
+     stride in compute comm of io tasks for each component, if this value is -99 it will
+     be computed based on PIO_NUMTASKS and number of compute tasks
+    </desc>
+    <values>
+      <value component="ATM"></value>
+      <value component="CPL"></value>
+      <value component="OCN"></value>
+      <value component="WAV"></value>
+      <value component="GLC"></value>
+      <value component="ICE"></value>
+      <value component="ROF"></value>
+      <value component="LND"></value>
+      <value component="ESP"></value>
+    </values>
   </entry>
 
-  <entry id="LND_PIO_REARRANGER">
+  <entry id="PIO_REARRANGER">
     <type>integer</type>
-    <default_value>-99</default_value>
+    <valid_values>1,2</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
+    <values>
+      <value>$PIO_VERSION</value>
+      <value component="ATM"></value>
+      <value component="CPL"></value>
+      <value component="OCN"></value>
+      <value component="WAV"></value>
+      <value component="GLC"></value>
+      <value component="ICE"></value>
+      <value component="ROF"></value>
+      <value component="LND"></value>
+      <value component="ESP"></value>
+    </values>
   </entry>
 
-  <entry id="LND_PIO_ROOT">
+  <entry id="PIO_ROOT">
     <type>integer</type>
-    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio root processor</desc>
+    <desc>pio root processor relative to component root</desc>
+    <values>
+      <value component="ATM">1</value>
+      <value component="CPL">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
+    </values>
   </entry>
 
-  <entry id="LND_PIO_NUMTASKS">
+  <entry id="PIO_NUMTASKS">
     <type>integer</type>
-    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="LND_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="ROF_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="ROF_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ROF_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ROF_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ROF_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="ICE_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="ICE_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ICE_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ICE_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ICE_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="ATM_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="ATM_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ATM_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ATM_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks, -99 value means inherit whatever the driver uses</desc>
-  </entry>
-
-  <entry id="ATM_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="CPL_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="CPL_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="CPL_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="CPL_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="CPL_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="GLC_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="GLC_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="GLC_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="GLC_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="GLC_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="WAV_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="WAV_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="WAV_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="WAV_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="WAV_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
+    <desc>
+      pio number of io tasks, if this value is -99 it will be computed based on PIO_STRIDE and
+      number of tasks
+    </desc>
+    <values>
+      <value component="ATM">-99</value>
+      <value component="CPL">-99</value>
+      <value component="OCN">-99</value>
+      <value component="WAV">-99</value>
+      <value component="GLC">-99</value>
+      <value component="ICE">-99</value>
+      <value component="ROF">-99</value>
+      <value component="LND">-99</value>
+      <value component="ESP">-99</value>
+    </values>
   </entry>
 
   <!-- ===================================================================== -->
@@ -3554,6 +2959,7 @@
    <file>env_batch.xml</file>
    <desc>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
+
  <entry id="JOB_WALLCLOCK_TIME">
    <type>char</type>
    <valid_values></valid_values>
