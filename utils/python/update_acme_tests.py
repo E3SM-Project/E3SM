@@ -1,33 +1,32 @@
-import os, tempfile, logging
 import CIME.utils
-from CIME.utils import expect, run_cmd_no_fail
+from CIME.utils import expect, convert_to_seconds
 from CIME.XML.machines import Machines
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.
-# suite_name -> (inherits_from, [test [, mods[, machines]]])
+# suite_name -> (inherits_from, timelimit, [test [, mods[, machines]]])
 #   To elaborate, if no mods are needed, a string representing the testname is all that is needed.
 #   If testmods are needed, a 2-ple must be provided  (test, mods)
 #   If you want to restrict the test mods to certain machines, than a 3-ple is needed (test, mods, [machines])
 _TEST_SUITES = {
-    "cime_tiny" : (None,
+    "cime_tiny" : (None, "0:10:00",
                    ("ERS.f19_g16_rx1.A",
                     "NCK.f19_g16_rx1.A")
                    ),
 
-    "cime_test_only_pass" : (None,
+    "cime_test_only_pass" : (None, "0:10:00",
                    ("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.ne30_g16_rx1.A",
                     "TESTRUNPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
-    "cime_test_only_slow_pass" : (None,
+    "cime_test_only_slow_pass" : (None, "0:10:00",
                    ("TESTRUNSLOWPASS_Mmpi-serial.f19_g16_rx1.A",
                     "TESTRUNSLOWPASS_Mmpi-serial.ne30_g16_rx1.A",
                     "TESTRUNSLOWPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
-    "cime_test_only" : (None,
+    "cime_test_only" : (None, "0:10:00",
                    ("TESTBUILDFAIL.f19_g16_rx1.A",
                     "TESTBUILDFAILEXC.f19_g16_rx1.A",
                     "TESTRUNFAIL_Mmpi-serial.f19_g16_rx1.A",
@@ -37,7 +36,7 @@ _TEST_SUITES = {
                     "TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X")
                    ),
 
-    "cime_developer" : (None,
+    "cime_developer" : (None, "0:10:00",
                             ("NCK_Ld3.f45_g37_rx1.A",
                              "ERI.f45_g37.X",
                              "SEQ_Ln9.f19_g16_rx1.A",
@@ -51,12 +50,12 @@ _TEST_SUITES = {
     # ACME tests below
     #
 
-    "acme_runoff_developer" : (None,
+    "acme_runoff_developer" : (None, "0:45:00",
                              ("ERS.f19_f19.IM1850CLM45CN",
                               "ERS.f19_f19.IMCLM45")
                              ),
 
-    "acme_land_developer" : ("acme_runoff_developer",
+    "acme_land_developer" : ("acme_runoff_developer", "0:45:00",
                              ("ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
                               "SMS.hcru_hcru.I1850CRUCLM45CN",
@@ -65,7 +64,7 @@ _TEST_SUITES = {
                               "ERS.f09_g16.IMCLM45BC")
                              ),
 
-    "acme_atm_developer" : (None,
+    "acme_atm_developer" : (None, None,
                             ("ERS.ne16_ne16.FC5MAM4",
                              "ERS.ne16_ne16.FC5PLMOD",
                              "ERS.ne16_ne16.FC5CLBMG2",
@@ -82,7 +81,7 @@ _TEST_SUITES = {
                              "SMS_D.f19_g16.FC5ATMMODCOSP")
                             ),
 
-    "acme_developer" : ("acme_land_developer",
+    "acme_developer" : ("acme_land_developer", "0:45:00",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.f45_g37_rx1.DTEST",
                          "ERS.ne30_g16_rx1.A",
@@ -115,7 +114,7 @@ _TEST_SUITES = {
                          "SMS_D_Ld1.ne16_ne16.FC5ATMMOD")
                         ),
 
-    "acme_integration" : ("acme_developer",
+    "acme_integration" : ("acme_developer", "03:00:00",
                           ("ERS.ne11_oQU240.A_WCYCL1850",
                            "ERS.f19_f19.FAMIPC5",
                            "ERS.ne16_ne16.FC5PM",
@@ -165,7 +164,7 @@ def get_test_suite(suite, machine=None, compiler=None):
     expect(machobj.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
            (compiler,machine))
 
-    inherits_from, tests_raw = _TEST_SUITES[suite]
+    inherits_from, _, tests_raw = _TEST_SUITES[suite]
     tests = []
     for item in tests_raw:
         test_mod = None
@@ -189,11 +188,13 @@ def get_test_suite(suite, machine=None, compiler=None):
         tests.append(CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler, testmod=test_mod))
 
     if (inherits_from is not None):
-        inherited_tests = get_test_suite(inherits_from, machine, compiler)
+        inherits_from = [inherits_from] if isinstance(inherits_from, str) else inherits_from
+        for inherits in inherits_from:
+            inherited_tests = get_test_suite(inherits, machine, compiler)
 
-        expect(len(set(tests) & set(inherited_tests)) == 0,
-               "Tests %s defined in multiple suites" % ", ".join(set(tests) & set(inherited_tests)))
-        tests.extend(inherited_tests)
+            expect(len(set(tests) & set(inherited_tests)) == 0,
+                   "Tests %s defined in multiple suites" % ", ".join(set(tests) & set(inherited_tests)))
+            tests.extend(inherited_tests)
 
     return tests
 
@@ -255,98 +256,46 @@ def get_full_test_names(testargs, machine, compiler):
     return list(sorted(tests_to_run))
 
 ###############################################################################
-def find_all_supported_platforms():
+def get_recommended_test_time(test_full_name):
 ###############################################################################
     """
-    Returns a set of all ACME supported platforms as defined in the
-    XML configuration file config_machines.xml in the ACME source
-    tree. A platform is defined by a triple (machine name, compiler,
-    mpi library).
+    >>> get_recommended_test_time("ERS.f19_g16_rx1.A.melvin_gnu")
+    '0:10:00'
+
+    >>> get_recommended_test_time("ERP_Ln9.ne30_ne30.FC5.melvin_gun.cam-outfrq9s")
+    '0:45:00'
+
+    >>> get_recommended_test_time("PET_Ln9.ne30_ne30.FC5.skybridge_intel.cam-outfrq9s")
+    '03:00:00'
+
+    >>> get_recommended_test_time("PET_Ln20.ne30_ne30.FC5.skybridge_intel.cam-outfrq9s")
+    >>>
     """
-    # TODO - Fix
-    pass
-    # machines = CIME.utils.get_machines()
-    # machobj = Machines(machine=machines)
-    # platform_set = set()
+    _, _, _, _, machine, compiler, _ = CIME.utils.parse_test_name(test_full_name)
+    expect(machine is not None, "%s is not a full test name" % test_full_name)
 
-    # for machine in machines:
-    #     machobj.set_machine(machine)
-    #     compilers, mpilibs = machobj.get_value("COMPILERS"), machobj.get_value("MPILIBS")
-    #     for compiler in compilers:
-    #         for mpilib in mpilibs:
-    #             platform_set.add((machine, compiler, mpilib))
+    best_time = None
+    suites = get_test_suites()
+    for suite in suites:
+        _, rec_time, tests_raw = _TEST_SUITES[suite]
+        for item in tests_raw:
+            test_mod = None
+            if (isinstance(item, str)):
+                test_name = item
+            else:
+                test_name = item[0]
+                if (len(item) == 2):
+                    test_mod = item[1]
+                else:
+                    test_mod_machines = [item[2]] if isinstance(item[2], str) else item[2]
+                    if (machine in test_mod_machines):
+                        test_mod = item[1]
 
-    # return list(platform_set)
+            full_test = CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler, testmod=test_mod)
 
-###############################################################################
-def find_all_platforms(xml_file):
-###############################################################################
-    f = open(xml_file, "r")
-    lines = f.readlines()
-    f.close()
-    platform_set = set()
+            if full_test == test_full_name and rec_time is not None:
+                if best_time is None or \
+                        convert_to_seconds(rec_time) < convert_to_seconds(best_time):
+                    best_time = rec_time
 
-    for line in lines:
-        if "<machine" in line:
-            i1 = line.index("compiler") + len('compiler="')
-            i2 = line.index('"', i1)
-            compiler = line[i1:i2]
-            j1 = line.index(">") + 1
-            j2 = line.index("<", j1)
-            machine = line[j1:j2]
-            platform_set.add((machine, compiler))
-
-    return list(platform_set)
-
-###############################################################################
-def generate_acme_test_entries(category, platforms):
-###############################################################################
-    test_file = tempfile.NamedTemporaryFile(mode="w", delete = False)
-
-    for machine, compiler in platforms:
-        tests = get_test_suite(category, machine, compiler)
-        test_file.write("\n".join(tests))
-
-    name = test_file.name
-    test_file.close()
-    return name
-
-###############################################################################
-def update_acme_tests(xml_file, categories, platform=None):
-###############################################################################
-    # Retrieve all supported ACME platforms, killing the third entry (MPI lib)
-    # for the moment.
-    supported_platforms = [p[:2] for p in find_all_supported_platforms()]
-
-    # Fish all of the existing machine/compiler combos out of the XML file.
-    if (platform is not None):
-        platforms = [tuple(platform.split(","))]
-    else:
-        platforms = find_all_platforms(xml_file)
-        # Prune the non-supported platforms from our list.
-        for p in platforms:
-            if p not in supported_platforms:
-                logging.info("pruning unsupported platform %s"%repr(p))
-        platforms = [p for p in platforms if p in supported_platforms]
-
-    manage_xml_entries = os.path.join(CIME.utils.get_cime_root(), "scripts", "manage_testlists")
-
-    expect(os.path.isfile(manage_xml_entries),
-           "Couldn't find manage_testlists, expected it to be here: '%s'" % manage_xml_entries)
-
-    for category in categories:
-        # Remove any existing acme test category from the file.
-        if (platform is None):
-            run_cmd_no_fail("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
-        else:
-            run_cmd_no_fail("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
-                            % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
-
-        # Generate a list of test entries corresponding to our suite at the top
-        # of the file.
-        new_test_file = generate_acme_test_entries(category, platforms)
-        run_cmd_no_fail("%s -model acme -component allactive -addlist -file %s -category %s" %
-                        (manage_xml_entries, new_test_file, category))
-        os.unlink(new_test_file)
-
-    print "SUCCESS"
+    return best_time

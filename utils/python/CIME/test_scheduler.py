@@ -12,6 +12,7 @@ import shutil, traceback, stat, glob, threading, time
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
+from update_acme_tests import get_recommended_test_time
 from CIME.utils import append_status
 from CIME.test_status import *
 from CIME.XML.machines import Machines
@@ -345,10 +346,13 @@ class TestScheduler(object):
         if self._queue is not None:
             create_newcase_cmd += " --queue=%s" % self._queue
 
+        recommended_time = get_recommended_test_time(test)
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
         elif test in self._test_data and "wallclock" in self._test_data[test]:
             create_newcase_cmd += " --walltime %s" % self._test_data[test]['wallclock']
+        elif recommended_time is not None:
+            create_newcase_cmd += " --walltime %s" % recommended_time
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
