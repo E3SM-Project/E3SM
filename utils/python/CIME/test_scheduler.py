@@ -312,7 +312,6 @@ class TestScheduler(object):
         if self._output_root is not None:
             create_newcase_cmd += " --output-root %s " % self._output_root
 
-
         if test_mods is not None:
             files = Files()
             (component,modspath) = test_mods.split('/',1)
@@ -457,8 +456,10 @@ class TestScheduler(object):
                     os.path.join(lockedfiles, "env_run.orig.xml"))
 
         with Case(test_dir, read_only=False) as case:
+            if self._output_root is None:
+                self._output_root = case.get_value("CIME_OUTPUT_ROOT")
             case.set_value("SHAREDLIBROOT",
-                           os.path.join(self._test_root,
+                           os.path.join(self._output_root,
                                         "sharedlibroot.%s"%self._test_id))
             envtest.set_initial_values(case)
             if self._save_timing:
