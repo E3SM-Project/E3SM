@@ -424,9 +424,6 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
         if (not os.path.exists(shared_item)):
             os.makedirs(shared_item)
     mpilib = case.get_value("MPILIB")
-#    if mpilib == "mpi-serial":
-#        libs = ["mct", "gptl", "pio", "csm_share"]
-#    else:
     libs = ["gptl", "mct", "pio", "csm_share"]
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
