@@ -1576,7 +1576,7 @@
                 <var name="rtheta_p_save" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3}"
                      description="predicted value rtheta_p, saved before acoustic steps"/>
 
-                <var name="zz_rtheta_pp_old" type="real" dimensions="nVertLevels nCells Time" units="TBD"
+                <var name="rtheta_pp_old" type="real" dimensions="nVertLevels nCells Time" units="TBD"
                      description="TBD"/>
 
                 <var name="rho_p" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
