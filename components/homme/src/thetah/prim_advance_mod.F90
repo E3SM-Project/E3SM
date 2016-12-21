@@ -799,6 +799,7 @@ contains
   real (kind=real_kind), dimension(np,np,nlev+1)   :: eta_dot_dpdn  ! half level vertical velocity on p-grid
   real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
   real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
+  real (kind=real_kind), dimension(np,np,2)    :: vtemp2    ! secondary generic gradient storage
   real (kind=real_kind), dimension(np,np,2,nlev):: vdp       !                            
   real (kind=real_kind), dimension(np,np,2     ):: v         !                            
   real (kind=real_kind), dimension(np,np)      :: vgrad_theta    ! v.grad(T)
@@ -1103,19 +1104,23 @@ contains
               do i=1,np
                  v1     = elem(ie)%state%v(i,j,1,k,n0)
                  v2     = elem(ie)%state%v(i,j,2,k,n0)
+                 w      = elem(ie)%state%w(i,j,k,n0)
                  Ephi(i,j)=0.5D0*( v1*v1 + v2*v2 )
               enddo
            enddo
            vtemp = gradient_sphere(Ephi,deriv,elem(ie)%Dinv)
+           vtemp2 = gradient_sphere(w,deriv,elem(ie)%Dinv)
            do j=1,np
               do i=1,np
-                 ! dp/dn u dot grad(E)
-                 v1     = elem(ie)%state%v(i,j,1,k,n0)
-                 v2     = elem(ie)%state%v(i,j,2,k,n0)
-                 elem(ie)%accum%KEhorz2(i,j) = elem(ie)%accum%KEhorz2(i,j) + &
-                      (v1*vtemp(i,j,1)  + v2*vtemp(i,j,2))*dp(i,j,k)
-                 ! E div( u dp/dn )
-                 elem(ie)%accum%KEhorz1(i,j) = elem(ie)%accum%KEhorz1(i,j) + Ephi(i,j)*divdp(i,j,k)
+	          v1     = elem(ie)%state%v(i,j,1,k,n0)
+                  v2     = elem(ie)%state%v(i,j,2,k,n0)
+                   w     = elem(ie)%state%w(i,j,k,n0)
+               !  KEhorz1=-0.5*u^2 grad^T ( u dp/ds )-0.5*(dp/ds) grad(u^2)^T 
+                  elem(ie)%accum%KEhorz1(i,j)= (v1*vtemp(i,j,1)+v2*vtemp(i,j,2))*dp(i,j,k)+Ephi(i,j)*divdp(i,j,k)
+	       !  KEvert1= -0.5*w^2 grad^T( u dp/ds)-(dp/ds) u w grad(w)
+                  KEvert1=0.5*w*w * divdp(i,j,k)+dp(i,j,k)*w*(v1*vtemp2(i,j,1)+v2*vtemp2(i,j,2))          
+               ! KEvert1 is not guaranteed  vanish in the hydrostatic discretization, we hope that it is small
+
 
                  ! Cp T div( u dp/dn)   ! dry horizontal advection component
                  elem(ie)%accum%IEhorz1(i,j) = elem(ie)%accum%IEhorz1(i,j) + Cp*elem(ie)%state%T(i,j,k,n0)*divdp(i,j,k)
