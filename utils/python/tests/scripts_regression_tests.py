@@ -277,7 +277,7 @@ class J_TestCreateNewcase(unittest.TestCase):
                 cmd = xmlquery + " NTASKS --subgroup %s --value"%comp
                 output = run_cmd_no_fail(cmd, from_dir=casedir)
                 self.assertTrue(output == str(caseresult), msg="%s != %s"%(output, caseresult))
-            if self._hasbatch:
+            if MACHINE.has_batch_system():
                 JOB_QUEUE = case.get_value("JOB_QUEUE", subgroup="case.run")
                 cmd = xmlquery + " JOB_QUEUE --subgroup case.run --value"
                 output = run_cmd_no_fail(cmd, from_dir=casedir)
