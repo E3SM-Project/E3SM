@@ -69,7 +69,7 @@ def pre_run_check(case):
                   sfile="CaseStatus")
 
     logger.info("-------------------------------------------------------------------------")
-    logger.info(" - To prestage required restarts, untar a restart.tar file into %s" %(rundir))
+    logger.info(" - Prestage required restarts into %s" %(rundir))
     logger.info(" - Case input data directory (DIN_LOC_ROOT) is %s " %(din_loc_root))
     logger.info(" - Checking for required input datasets in DIN_LOC_ROOT")
     logger.info("-------------------------------------------------------------------------")
