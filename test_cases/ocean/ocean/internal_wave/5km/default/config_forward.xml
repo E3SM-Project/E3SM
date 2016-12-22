@@ -7,11 +7,11 @@
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
-		<template file="baroclinic_channel_10km_template.xml" path_base="script_resolution_dir"/>
+		<template file="internal_wave_5km_template.xml" path_base="script_resolution_dir"/>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
-		<template file="baroclinic_channel_10km_template.xml" path_base="script_resolution_dir"/>
+		<template file="internal_wave_5km_template.xml" path_base="script_resolution_dir"/>
 	</streams>
 
 	<run_script name="run.py">

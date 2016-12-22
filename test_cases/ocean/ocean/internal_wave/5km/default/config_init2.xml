@@ -7,7 +7,7 @@
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="init">
-		<option name="config_init_configuration">'baroclinic_channel'</option>
+		<option name="config_init_configuration">'internal_wave'</option>
 		<option name="config_vert_levels">-1</option>
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
