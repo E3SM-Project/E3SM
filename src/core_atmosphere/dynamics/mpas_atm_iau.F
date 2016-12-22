@@ -77,7 +77,7 @@ module mpas_atm_iau
  end function atm_iau_coef
       
 !==================================================================================================
- subroutine atm_add_tend_anal_incr (configs, structs, itimestep, dt)
+ subroutine atm_add_tend_anal_incr (configs, structs, itimestep, dt, tend_ru, tend_rtheta, tend_rho)
 !==================================================================================================
       
       implicit none
@@ -86,6 +86,9 @@ module mpas_atm_iau
       type (mpas_pool_type), intent(inout) :: structs
       integer,           intent(in)  :: itimestep
       real (kind=RKIND), intent(in)  :: dt
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tend_ru
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tend_rtheta
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tend_rho
 
       type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: tend_iau
@@ -99,7 +102,8 @@ module mpas_atm_iau
       integer, pointer:: moist_start, moist_end
       
       real (kind=RKIND), dimension(:,:), pointer :: rho_edge, rho_zz, theta_m, theta, u, zz, &
-                                                    tend_u, tend_rho, tend_theta, tend_th, tend_w
+                                                    tend_th, tend_w
+!                                                    tend_u, tend_rho, tend_theta, tend_th, tend_w
       real(kind=RKIND),dimension(:,:,:), pointer :: scalars, tend_scalars, scalars_amb
       real(kind=RKIND),dimension(:,:), pointer:: u_amb, theta_amb, rho_amb
 
@@ -140,9 +144,9 @@ module mpas_atm_iau
       ! Joe did not recommend to add w tendecies in IAU.
       !call mpas_pool_get_array(tend, 'w', tend_w)       
 
-      call mpas_pool_get_array(tend, 'u', tend_u)
-      call mpas_pool_get_array(tend, 'rho_zz',  tend_rho)
-      call mpas_pool_get_array(tend, 'theta_m', tend_theta)
+!      call mpas_pool_get_array(tend, 'u', tend_u)
+!      call mpas_pool_get_array(tend, 'rho_zz',  tend_rho)
+!      call mpas_pool_get_array(tend, 'theta_m', tend_theta)
       call mpas_pool_get_array(tend, 'scalars_tend', tend_scalars)
 
       call mpas_pool_get_array(tend_iau, 'theta',     theta_amb)
@@ -162,7 +166,7 @@ module mpas_atm_iau
 !     add coupled tendencies for u on edges
       do i = 1, nEdgesSolve
          do k = 1, nVertLevels
-            tend_u(k,i) = tend_u(k,i) + wgt_iau * rho_edge(k,i) * u_amb(k,i)
+            tend_ru(k,i) = tend_ru(k,i) + wgt_iau * rho_edge(k,i) * u_amb(k,i)
          enddo
       enddo
 
@@ -201,7 +205,7 @@ module mpas_atm_iau
          do k = 1, nVertLevels
             tend_th(k,i) = (1. + rvord * scalars(index_qv,k,i))   * tend_th(k,i) &
                                + rvord * theta(k,i) * tend_scalars(index_qv,k,i)
-            tend_theta(k,i) = tend_theta(k,i) + tend_th(k,i)
+            tend_rtheta(k,i) = tend_rtheta(k,i) + tend_th(k,i)
          enddo
       enddo
       

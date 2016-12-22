@@ -30,7 +30,7 @@ module atm_time_integration
    integer :: timerid, secs, u_secs
 
    ! Used to store physics tendencies for dynamics variables
-   real (kind=RKIND), allocatable, dimension(:,:) :: tend_ru_physics, tend_rtheta_physics
+   real (kind=RKIND), allocatable, dimension(:,:) :: tend_ru_physics, tend_rtheta_physics, tend_rho_physics
    
    ! Used in compute_dyn_tend
    real (kind=RKIND), allocatable, dimension(:,:) :: qtot 
@@ -246,6 +246,8 @@ module atm_time_integration
       qtot(:,nCells+1) = 0.0_RKIND
       allocate(tend_rtheta_physics(nVertLevels,nCells+1))
       tend_rtheta_physics(:,nCells+1) = 0.0_RKIND
+      allocate(tend_rho_physics(nVertLevels,nCells+1))
+      tend_rho_physics(:,nCells+1) = 0.0_RKIND
       allocate(tend_ru_physics(nVertLevels,nEdges+1))
       tend_ru_physics(:,nEdges+1) = 0.0_RKIND
 
@@ -413,7 +415,8 @@ module atm_time_integration
                               rk_step, &
                      dynamics_substep, &
                       tend_ru_physics, &
-                  tend_rtheta_physics )
+                  tend_rtheta_physics, &
+                     tend_rho_physics )
          block => block % next
       end do
       call mpas_timer_stop('physics_addtend')
@@ -425,7 +428,8 @@ module atm_time_integration
       if (trim(config_IAU_option) /= 'off') then
          block => domain % blocklist
          do while (associated(block))
-            call atm_add_tend_anal_incr(block % configs, block % structs, itimestep, dt)
+            call atm_add_tend_anal_incr(block % configs, block % structs, itimestep, dt, &
+                                        tend_ru_physics, tend_rtheta_physics, tend_rho_physics)
             block => block % next
         end do
       end if
@@ -1048,6 +1052,7 @@ module atm_time_integration
 
       deallocate(qtot)  !  we are finished with these now
       deallocate(tend_rtheta_physics)
+      deallocate(tend_rho_physics)
       deallocate(tend_ru_physics)
 
       !
@@ -4354,7 +4359,7 @@ module atm_time_integration
 
 !DIR$ IVDEP
           do k = 1,nVertLevels
-            tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
+            tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell)) + tend_rho_physics(k,iCell)
             dpdz(k,iCell) = -gravity*(rb(k,iCell)*(qtot(k,iCell)) + rr_save(k,iCell)*(1.+qtot(k,iCell)))
           end do
         end do
