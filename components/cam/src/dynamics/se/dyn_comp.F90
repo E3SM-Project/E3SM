@@ -2,7 +2,7 @@ Module dyn_comp
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use domain_mod, only : domain1d_t
-  use element_mod, only : element_t, elem_state_t
+  use element_mod, only : element_t
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t
   use hybrid_mod, only : hybrid_t
@@ -19,7 +19,7 @@ Module dyn_comp
 
 
   ! PUBLIC MEMBER FUNCTIONS:
-  public dyn_init1, dyn_init2, dyn_run, dyn_final
+  public dyn_init1, dyn_init2, dyn_run
 
   ! PUBLIC DATA MEMBERS:
   public dyn_import_t, dyn_export_t
@@ -407,16 +407,6 @@ CONTAINS
     !EOC
   end subroutine dyn_run
   !-----------------------------------------------------------------------
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine dyn_final(DYN_STATE, RESTART_FILE)
-
-    type (elem_state_t), target     :: DYN_STATE
-    character(LEN=*)   , intent(IN) :: RESTART_FILE
-
-
-
-  end subroutine dyn_final
 
 
 

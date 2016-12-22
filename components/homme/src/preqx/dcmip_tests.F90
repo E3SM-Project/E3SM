@@ -10,7 +10,8 @@ use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_had
                                 test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave
 use derivative_mod,       only: derivative_t, gradient_sphere
 use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
-use element_mod,          only: element_t, elem_state_t, derived_state_t, nt=>timelevels
+use element_mod,          only: element_t
+use element_state,        only: nt=>timelevels
 use hybrid_mod,           only: hybrid_t
 use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog

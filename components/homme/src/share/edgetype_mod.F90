@@ -10,13 +10,6 @@ module edgetype_mod
    
   integer, public :: initedgebuffer_callid = 0
 
-  type, public :: rotation_t
-     integer  :: nbr                                        ! nbr direction: north south east west
-     integer  :: reverse                                    ! 0 = do not reverse order
-     ! 1 = reverse order
-     real (kind=real_kind), dimension(:,:,:), pointer :: R => null()  !  rotation matrix
-  end type rotation_t
-
   type, public :: EdgeDescriptor_t
      integer(kind=int_kind)  :: padding
      integer(kind=int_kind), pointer  :: putmapP(:) => null()
@@ -30,8 +23,6 @@ module edgetype_mod
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
      integer                          :: actual_neigh_edges
      logical(kind=log_kind), pointer  :: reverse(:) => null()
-     type (rotation_t), dimension(:), pointer :: rot => null() !  Identifies list of edges
-     !  that must be rotated, and how
   end type EdgeDescriptor_t
 
   type, public :: EdgeBuffer_t

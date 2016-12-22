@@ -6,7 +6,8 @@ module test_mod
 
 use control_mod,    only: test_case, sub_case
 use derivative_mod, only: derivative_t, gradient_sphere
-use element_mod,    only: element_t, elem_state_t, derived_state_t, nt=>timelevels
+use element_mod,    only: element_t
+use element_state,  only: elem_state_t, nt=>timelevels
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
 use kinds,          only: rl => real_kind, iulog

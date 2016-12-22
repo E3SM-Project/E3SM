@@ -15,7 +15,6 @@ module physics_mod
   ! =======================
   use dimensions_mod, only : np, nlev
   ! =======================
-  use element_mod, only: timelevels
   implicit none
   
   private
