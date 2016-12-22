@@ -277,10 +277,11 @@ class J_TestCreateNewcase(unittest.TestCase):
                 cmd = xmlquery + " NTASKS --subgroup %s --value"%comp
                 output = run_cmd_no_fail(cmd, from_dir=casedir)
                 self.assertTrue(output == str(caseresult), msg="%s != %s"%(output, caseresult))
-            JOB_QUEUE = case.get_value("JOB_QUEUE", subgroup="case.run")
-            cmd = xmlquery + " JOB_QUEUE --subgroup case.run --value"
-            output = run_cmd_no_fail(cmd, from_dir=casedir)
-            self.assertTrue(output == JOB_QUEUE, msg="%s != %s"%(output, JOB_QUEUE))
+            if self._hasbatch:
+                JOB_QUEUE = case.get_value("JOB_QUEUE", subgroup="case.run")
+                cmd = xmlquery + " JOB_QUEUE --subgroup case.run --value"
+                output = run_cmd_no_fail(cmd, from_dir=casedir)
+                self.assertTrue(output == JOB_QUEUE, msg="%s != %s"%(output, JOB_QUEUE))
 
         cls._do_teardown.append(cls._testroot)
 
