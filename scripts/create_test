@@ -465,7 +465,7 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
         for test in impl._tests:
             test_dir = impl._get_test_dir(test)
             procs_needed = impl._get_procs_needed(test, RUN_PHASE)
-            time_needed = convert_to_seconds(run_cmd_no_fail("./xmlquery JOB_WALLCLOCK_TIME -value", from_dir=test_dir))
+            time_needed = convert_to_seconds(run_cmd_no_fail("./xmlquery JOB_WALLCLOCK_TIME -value -subgroup case.test", from_dir=test_dir))
             job_cost_map[test] = (procs_needed, time_needed)
             if procs_needed > largest_case:
                 largest_case = procs_needed
