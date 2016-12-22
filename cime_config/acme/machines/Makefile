@@ -193,6 +193,16 @@ ifdef NETCDF_PATH
     LIB_NETCDF:=$(NETCDF_PATH)/lib
   endif
 endif
+
+ifdef NETCDFF_PATH
+  ifndef INC_NETCDFF
+    INC_NETCDFF:=$(NETCDFF_PATH)/include
+  endif
+  ifndef LIB_NETCDFF
+    LIB_NETCDFF:=$(NETCDFF_PATH)/lib
+  endif
+endif
+
 ifeq ($(MPILIB),mpi-serial)
   undefine PNETCDF_PATH
 else
@@ -329,6 +339,9 @@ INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERF
 
 ifdef INC_NETCDF
   INCLDIR += -I$(INC_NETCDF)
+endif
+ifdef INC_NETCDFF
+  INCLDIR += -I$(INC_NETCDFF)
 endif
 ifdef MOD_NETCDF
   INCLDIR += -I$(MOD_NETCDF)
@@ -566,6 +579,11 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
               -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
+
+# Allow for separate installations of the NetCDF C and Fortran libraries
+ifdef NETCDFF_PATH
+	CMAKE_OPTS += -D NETCDF_Fortran_DIR:PATH="$(NETCDFF_PATH)"
+endif
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)"
