@@ -804,6 +804,9 @@ contains
   real (kind=real_kind), dimension(np,np,2     ):: v         !                            
   real (kind=real_kind), dimension(np,np)      :: vgrad_theta    ! v.grad(T)
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
+  real (kind=real_kind), dimension(np,np)      :: Eexner     ! energy diagnostic Exner pressure
+  real (kind=real_kind), dimension(np,np,2)      :: thetau  !  theta*u in the diagnostics
+  real (kind=real_kind), dimension(np,np)        :: divtemp ! temp divergence in the  in the diagnostics
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_exner
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
@@ -1075,9 +1078,9 @@ contains
         elem(ie)%accum%KEhorz1=0
         elem(ie)%accum%KEhorz2=0
         elem(ie)%accum%IEhorz1=0
-        elem(ie)%accum%IEhorz2=0
         elem(ie)%accum%IEhorz1_wet=0
         elem(ie)%accum%IEhorz2_wet=0
+ 	elem(ie)%accum%PEhorz1=0 
         elem(ie)%accum%KEvert1=0
         elem(ie)%accum%KEvert2=0
         elem(ie)%accum%IEvert1=0
@@ -1090,6 +1093,14 @@ contains
         elem(ie)%accum%S1=0
         elem(ie)%accum%S1_wet=0
         elem(ie)%accum%S2=0
+        ! The way this is set up desire that 
+        !  KEhorz1 = 0 , KEvert1 =small(hopefully), KEhorz2+IEhorz1 = 0
+        ! PEhorz1=0
+        ! Essentially, we are checking that discrete integration by parts 
+        ! holds for the sames terms as in the continuum equations
+        !
+        ! TODO:  ptop and phitop terms?
+        !        
 
         do j=1,np
            do i=1,np
@@ -1106,6 +1117,9 @@ contains
                  v2     = elem(ie)%state%v(i,j,2,k,n0)
                  w      = elem(ie)%state%w(i,j,k,n0)
                  Ephi(i,j)=0.5D0*( v1*v1 + v2*v2 )
+		 Eexner(i,j)=(p(i,j,k)/p0)**kappa                 
+                 thetau(i,j,1)=theta(i,j,k)*v1
+                 thetau(i,j,2)=theta(i,j,k)*v2
               enddo
            enddo
            vtemp = gradient_sphere(Ephi,deriv,elem(ie)%Dinv)
@@ -1114,105 +1128,34 @@ contains
               do i=1,np
 	          v1     = elem(ie)%state%v(i,j,1,k,n0)
                   v2     = elem(ie)%state%v(i,j,2,k,n0)
-                   w     = elem(ie)%state%w(i,j,k,n0)
+                  w     = elem(ie)%state%w(i,j,k,n0)
                !  KEhorz1=-0.5*u^2 grad^T ( u dp/ds )-0.5*(dp/ds) grad(u^2)^T 
                   elem(ie)%accum%KEhorz1(i,j)= (v1*vtemp(i,j,1)+v2*vtemp(i,j,2))*dp(i,j,k)+Ephi(i,j)*divdp(i,j,k)
 	       !  KEvert1= -0.5*w^2 grad^T( u dp/ds)-(dp/ds) u w grad(w)
                   KEvert1=0.5*w*w * divdp(i,j,k)+dp(i,j,k)*w*(v1*vtemp2(i,j,1)+v2*vtemp2(i,j,2))          
-               ! KEvert1 is not guaranteed  vanish in the hydrostatic discretization, we hope that it is small
-
-
-                 ! Cp T div( u dp/dn)   ! dry horizontal advection component
-                 elem(ie)%accum%IEhorz1(i,j) = elem(ie)%accum%IEhorz1(i,j) + Cp*elem(ie)%state%T(i,j,k,n0)*divdp(i,j,k)
-
-
+               ! KEvert1 is not guaranteed vanish in the hydrostatic discretization, we hope that it is small
               enddo
            enddo
 
 
            ! vtemp = grad_phi(:,:,k)
            vtemp = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
+           vtemp2=gradient_sphere(Eexner(:,:),deriv,elem(ie)%Dinv)
+           divtemp = divergence_sphere(thetau(:,:),deriv,elem(ie)%Dinv)
            do j=1,np
               do i=1,np
                  v1     = elem(ie)%state%v(i,j,1,k,n0)
                  v2     = elem(ie)%state%v(i,j,2,k,n0)
+                 Th     = elem(ie)%state%theta(i,j,k,n0)
                  E = 0.5D0*( v1*v1 + v2*v2 )
-                 ! NOTE:  Cp_star = Cp + (Cpv-Cp)*q
-                 ! advection terms can thus be broken into two components: dry and wet
-                 ! dry components cancel exactly
-                 ! wet components should cancel exactly
-                 !
-                 ! some diagnostics
-                 ! e = eta_dot_dpdn()
-                 de =  eta_dot_dpdn(i,j,k+1)-eta_dot_dpdn(i,j,k)
-                 ! Cp T de/dn, integral dn:
-                 elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j) + Cp*elem(ie)%state%T(i,j,k,n0)*de
-                 ! E de/dn
-                 elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j) + E*de
-                 ! Cp theta_vadv dp/dn
-                 elem(ie)%accum%IEvert2(i,j)=elem(ie)%accum%IEvert2(i,j) + Cp*theta_vadv(i,j,k)*dp(i,j,k)
-                 ! dp/dn V dot V_vadv
-                 elem(ie)%accum%KEvert2(i,j)=elem(ie)%accum%KEvert2(i,j) + (v1*v_vadv(i,j,1,k) + v2*v_vadv(i,j,2,k)) *dp(i,j,k)
-
-                 ! IEvert1_wet():  (Cpv-Cp) T Qdp_vadv  (Q equation)
-                 ! IEvert2_wet():  (Cpv-Cp) Qdp theta_vadv   T equation
-                 if (use_cpstar==1) then
-                 elem(ie)%accum%IEvert2_wet(i,j)=elem(ie)%accum%IEvert2_wet(i,j) +&
-                      (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1)*theta_vadv(i,j,k)*dp(i,j,k)
-                 endif
-
-                 gpterm = T_v(i,j,k)/p(i,j,k)
-                 elem(ie)%accum%T1(i,j) = elem(ie)%accum%T1(i,j) - &
-                      Rgas*gpterm*(grad_p(i,j,1,k)*v1 + grad_p(i,j,2,k)*v2)*dp(i,j,k)
-
-                 elem(ie)%accum%T2(i,j) = elem(ie)%accum%T2(i,j) - &
-                      (vtemp(i,j,1)*v1 + vtemp(i,j,2)*v2)*dp(i,j,k)
-
-                 ! S1 = < Cp_star dp/dn , RT omega_p/cp_star >
-                 elem(ie)%accum%S1(i,j) = elem(ie)%accum%S1(i,j) + &
-                      Rgas*T_v(i,j,k)*omega_p(i,j,k)*dp(i,j,k)
-
-                 ! cp_star = cp + cp2
-                 if (use_cpstar==1) then
-                 cp2 = (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1)
-                 cp_ratio = cp2/(cp+cp2)
-                 elem(ie)%accum%S1_wet(i,j) = elem(ie)%accum%S1_wet(i,j) + &
-                      cp_ratio*(Rgas*T_v(i,j,k)*omega_p(i,j,k)*dp(i,j,k))
-                 endif
-
-                 elem(ie)%accum%CONV(i,j,:,k)=-Rgas*gpterm*grad_p(i,j,:,k)-vtemp(i,j,:)
+               ! KEhorz2 = theta*grad(p^kappa)^T u + (dp/ds)*grad(phi)^T u
+                 KEhorz2=Th*(vtemp2(i,j,1)*v1+vtemp2(i,j,1)*v2)+dp(i,j,k)*(vtemp(i,j,1)*v1+vtemp(i,j,2)*v2) 
+               ! Form second term of IEhorz1=-p^kappa grad^T(theta*u)-(dp/ds) u^T grad(phi)
+                 IEhorz1=Eexner(i,j)*divtemp-dp(i,j,k)*(vtemp(i,j,1)*v1+vtemp(i,j,2)*v2)
+               ! Form PEhorz1 = phi*grad^T ((dp/ds)*u) + (dp/ds)*u^T grad(phi), should equal zero
+		 PEhorz1=phi(i,j,k)*divdp(i,j,k)+dp(i,j,k)*(vtemp(i,j,1)*v1+vtemp(i,j,2)*v2)	
               enddo
-           enddo
-
-           vtemp(:,:,:) = gradient_sphere(elem(ie)%state%phis(:,:),deriv,elem(ie)%Dinv)
-           do j=1,np
-              do i=1,np
-                 v1     = elem(ie)%state%v(i,j,1,k,n0)
-                 v2     = elem(ie)%state%v(i,j,2,k,n0)
-                 elem(ie)%accum%T2_s(i,j) = elem(ie)%accum%T2_s(i,j) - &
-                      (vtemp(i,j,1)*v1 + vtemp(i,j,2)*v2)*dp(i,j,k)
-              enddo
-           enddo
-
-           vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%Dinv)
-           do j=1,np
-              do i=1,np
-                 v1     = elem(ie)%state%v(i,j,1,k,n0)
-                 v2     = elem(ie)%state%v(i,j,2,k,n0)
-
-                 ! Cp dp/dn u dot gradT
-                 elem(ie)%accum%IEhorz2(i,j) = elem(ie)%accum%IEhorz2(i,j) + &
-                      Cp*(v1*vtemp(i,j,1) + v2*vtemp(i,j,2))*dp(i,j,k)
-
-                 if (use_cpstar==1) then
-                 elem(ie)%accum%IEhorz2_wet(i,j) = elem(ie)%accum%IEhorz2_wet(i,j) + &
-                      (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1)*&
-                      (v1*vtemp(i,j,1) + v2*vtemp(i,j,2))*dp(i,j,k)
-                 endif
-
-              enddo
-           enddo
-
+           enddo        
         enddo
      endif
 #endif
