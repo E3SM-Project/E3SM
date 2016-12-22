@@ -30,7 +30,7 @@ module atm_time_integration
    integer :: timerid, secs, u_secs
 
    ! Used to store physics tendencies for dynamics variables
-   real (kind=RKIND), allocatable, dimension(:,:) :: tend_ru_physics, tend_rtheta_physics
+   real (kind=RKIND), allocatable, dimension(:,:) :: tend_ru_physics, tend_rtheta_physics, tend_rho_physics
    
    ! Used in compute_dyn_tend
    real (kind=RKIND), allocatable, dimension(:,:) :: qtot 
@@ -170,9 +170,7 @@ module atm_time_integration
 
       integer, pointer :: num_scalars, index_qv, nCells, nCellsSolve, nEdges, nEdgesSolve, nVertices, nVerticesSolve, nVertLevels
 
-      integer, pointer :: config_IAU_option
-      real(kind=RKIND) :: weight_iau
-      real(kind=RKIND),      pointer :: time_window_sec
+      character(len=StrKIND), pointer :: config_IAU_option
 
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
@@ -180,7 +178,6 @@ module atm_time_integration
       type (mpas_pool_type), pointer :: mesh
       type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: tend_physics
-      type (mpas_pool_type), pointer :: tend_iau
 
       type (field2DReal), pointer :: theta_m_field
       type (field3DReal), pointer :: scalars_field
@@ -218,13 +215,11 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_microp_scheme', config_microp_scheme)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_convection_scheme', config_convection_scheme)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_IAU_option', config_IAU_option)
 
       !  config variables for dynamics-transport splitting, WCS 18 November 2014
       call mpas_pool_get_config(domain % blocklist % configs, 'config_split_dynamics_transport', config_split_dynamics_transport)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dynamics_split_steps', config_dynamics_split)
-
-      ! Retrieve weight/coefficient for IAU (Incremental Analysis Update) - HA (June-16-2016)
-      weight_iau = atm_iau_coef (domain % blocklist % configs, itimestep, dt)
 
       !
       ! Retrieve field structures
@@ -251,6 +246,8 @@ module atm_time_integration
       qtot(:,nCells+1) = 0.0_RKIND
       allocate(tend_rtheta_physics(nVertLevels,nCells+1))
       tend_rtheta_physics(:,nCells+1) = 0.0_RKIND
+      allocate(tend_rho_physics(nVertLevels,nCells+1))
+      tend_rho_physics(:,nCells+1) = 0.0_RKIND
       allocate(tend_ru_physics(nVertLevels,nEdges+1))
       tend_ru_physics(:,nEdges+1) = 0.0_RKIND
 
@@ -418,11 +415,24 @@ module atm_time_integration
                               rk_step, &
                      dynamics_substep, &
                       tend_ru_physics, &
-                  tend_rtheta_physics )
+                  tend_rtheta_physics, &
+                     tend_rho_physics )
          block => block % next
       end do
       call mpas_timer_stop('physics_addtend')
 #endif
+
+      !
+      ! IAU - Incremental Analysis Update
+      !
+      if (trim(config_IAU_option) /= 'off') then
+         block => domain % blocklist
+         do while (associated(block))
+            call atm_add_tend_anal_incr(block % configs, block % structs, itimestep, dt, &
+                                        tend_ru_physics, tend_rtheta_physics, tend_rho_physics)
+            block => block % next
+        end do
+      end if
 
 
       DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
@@ -608,17 +618,6 @@ module atm_time_integration
 !            call mpas_timer_stop('physics_addtend')
 #endif
 
-            if (weight_iau >= 1.e-12) then      ! HA (June-16-2016)
-               if (debug) write(0,*) ' add incremental analysis forcing to tendencies '
-               block => domain % blocklist
- 
-               do while (associated(block))
-
-                  call atm_add_tend_anal_incr ( block % structs, weight_iau, dt )
-
-                  block => block % next
-              end do
-            end if
 
             !***********************************
             !  need tendencies at all edges of owned cells -
@@ -1053,6 +1052,7 @@ module atm_time_integration
 
       deallocate(qtot)  !  we are finished with these now
       deallocate(tend_rtheta_physics)
+      deallocate(tend_rho_physics)
       deallocate(tend_ru_physics)
 
       !
@@ -4359,7 +4359,7 @@ module atm_time_integration
 
 !DIR$ IVDEP
           do k = 1,nVertLevels
-            tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
+            tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell)) + tend_rho_physics(k,iCell)
             dpdz(k,iCell) = -gravity*(rb(k,iCell)*(qtot(k,iCell)) + rr_save(k,iCell)*(1.+qtot(k,iCell)))
           end do
         end do

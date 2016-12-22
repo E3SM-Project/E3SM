@@ -121,7 +121,7 @@ module atm_core
       end if
 
       !
-      ! Read a new data stream for Incremental Analysis Update (IAU), if config_IAU_option > 0    : HA (June-15-2016)
+      ! Read a new data stream for Incremental Analysis Update (IAU), if config_IAU_option /= 'off'    : HA (June-15-2016)
       ! FIXME: should I check xtime for the IAU fields? Maybe not.
       ! Note: Because the 'iau' stream has the 'iau' package attached to it, the MPAS_stream_mgr_read( )
       !       call here will actually try to read the stream only if IAU is being used in the run.

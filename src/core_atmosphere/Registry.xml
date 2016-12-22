@@ -331,10 +331,10 @@
         </nml_record>
 
         <nml_record name="IAU" in_defaults="true">
-                <nml_option name="config_IAU_option" type="integer" default_value="0"
+                <nml_option name="config_IAU_option" type="character" default_value="off"
                      units="-"
                      description="Incremental Analysis Update scheme"
-                     possible_values="0 or 1; 0 turns off IAU, 1 uses equal weighting of increments across the IAU window"/>
+                     possible_values="`off' or `on'; `off' turns off IAU, `on' uses equal weighting of increments across the IAU window"/>
                 <nml_option name="config_IAU_window_length_s" type="real" default_value="21600."
                      units="s"
                      description="Length of window over which analysis increments are applied"
