@@ -916,6 +916,7 @@
       <executable>mpiexec_mpt</executable>
       <arguments>
 	<arg name="labelstdout">-p "%g:"</arg>
+	<arg name="threadplacement"> omplace </arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -955,7 +956,6 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
-      <env name="PNETCDF">/picnic/u/home/jedwards/</env>
     </environment_variables>
   </machine>
 

@@ -168,7 +168,7 @@ def _main_func():
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
         if listall:
-            variables = case.get_record_fields(None, "varid")
+            variables = sorted(case.get_record_fields(None, "varid"))
         expect(variables, "No variables found")
         results = xmlquery(case, variables, subgroup, fileonly, resolved=not no_resolve,
                            raw=raw, description=description, group=group, full=full,
@@ -179,7 +179,7 @@ def _main_func():
         wrapper.subsequent_indent = "\t\t\t"
         wrapper.fix_sentence_endings = True
 
-    for group in iter(results):
+    for group in sorted(iter(results)):
         if len(variables) > 1 or len(results.keys()) > 1 or full:
             print "\nResults in group %s"%group
         for var in variables:

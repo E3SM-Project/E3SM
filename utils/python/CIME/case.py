@@ -221,7 +221,6 @@ class Case(object):
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
             results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
-
             if len(results) > 0:
                 new_results = []
                 vtype = env_file.get_type_info(item)
