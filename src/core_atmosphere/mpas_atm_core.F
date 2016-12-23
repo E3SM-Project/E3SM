@@ -880,6 +880,7 @@ module atm_core
       use mpas_timekeeping
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_cleanup
       use mpas_atm_threading, only : mpas_atm_threading_finalize
+      use mpas_io_units, only : stderrUnit
    
 #ifdef DO_PHYSICS
       use mpas_atmphys_finalize
@@ -911,6 +912,11 @@ module atm_core
       ! Finalize threading
       !
       call mpas_atm_threading_finalize(domain % blocklist)
+
+      write(stderrUnit,'(a)') ''
+      write(stderrUnit,'(a)') '********************************************************'
+      write(stderrUnit,'(a)') '   Finished running the atmosphere core'
+      write(stderrUnit,'(a)') '********************************************************'
    
    end function atm_core_finalize
 
