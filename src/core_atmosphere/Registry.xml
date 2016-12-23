@@ -1810,17 +1810,17 @@
                 <nml_option name="config_physics_suite" type="character" default_value="mesoscale_reference" in_defaults="true"
                      units="-"
                      description="Choice of physics suite"
-                     possible_values="`mesoscale_reference',`convection_scale_aware',`none'"/>
+                     possible_values="`mesoscale_reference',`convection_permitting',`none'"/>
 
                 <nml_option name="config_microp_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for cloud microphysics schemes"
-                     possible_values="`suite',`wsm6',`off'"/>
+                     possible_values="`suite',`mp_wsm6',`mp_thompson',`mp_kessler',`off'"/>
 
                 <nml_option name="config_convection_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for convection schemes"
-                     possible_values="`suite',`kain_fritsch',`tiedtke',`off'"/>
+                     possible_values="`suite',`cu_kain_fritsch',`cu_tiedtke',`cu_ntiedtke',`cu_grell_freitas',`off'"/>
 
                 <nml_option name="config_lsm_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
@@ -1830,12 +1830,12 @@
                 <nml_option name="config_pbl_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for planetary boundary layer schemes"
-                     possible_values="`suite',`ysu',`off'"/>
+                     possible_values="`suite',`bl_ysu',`bl_mynn',`off'"/>
 
                 <nml_option name="config_gwdo_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration of gravity wave drag over orography"
-                     possible_values="`suite',`ysu_gwdo',`off'"/>
+                     possible_values="`suite',`bl_ysu_gwdo',`off'"/>
 
                 <nml_option name="config_radt_cld_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
@@ -1855,7 +1855,7 @@
                 <nml_option name="config_sfclayer_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for surface layer-scheme"
-                     possible_values="`suite',`monin_obukhov',`off'"/>
+                     possible_values="`suite',`sf_monin_obukhov',`sf_mynn',`off'"/>
 
                 <nml_option name="config_gfconv_closure_deep" type="integer" default_value="0" in_defaults="false"
                      units="-"
