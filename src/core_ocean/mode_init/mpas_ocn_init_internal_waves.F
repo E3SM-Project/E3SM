@@ -275,9 +275,13 @@ contains
                  end if
               end if
 
-              ! Set layerThickness
-              layerThickness(:, iCell) = refBottomDepth(:)
-              restingThickness(:, iCell) = layerThickness(:, iCell)
+              ! Set layerThickness and restingThickness
+              do k = 1, nVertLevels
+                 layerThickness(k, iCell) = config_internal_waves_bottom_depth * ( interfaceLocations(k+1) &
+                      - interfaceLocations(k) )
+                 restingThickness(k, iCell) = config_internal_waves_bottom_depth * ( interfaceLocations(k+1) &
+                      - interfaceLocations(k) )
+              end do 
 
            else if ( trim(config_internal_waves_layer_type) == 'isopycnal' ) then
 
