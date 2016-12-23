@@ -27,6 +27,7 @@ def _check_pelayouts_require_rebuild(case, models):
         # Look to see if $comp_PE_CHANGE_REQUIRES_REBUILD is defined
         # for any component
         env_mach_pes_locked = EnvMachPes(infile=locked_pes)
+        env_mach_pes_locked.set_components(case.get_values("COMP_CLASSES"))
         for comp in models:
             if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % comp):
                 # Changing these values in env_mach_pes.xml will force
@@ -40,7 +41,7 @@ def _check_pelayouts_require_rebuild(case, models):
                 new_inst    = case.get_value("NINST_%s" % comp)
 
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
-                    logger.warn("%s pe change requires clean build" % comp)
+                    logger.warn("%s pe change requires clean build %s %s" % (comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
                     run_cmd_no_fail("./case.build --clean %s" % cleanflag)
 
