@@ -1,5 +1,28 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 12-23-2016
+Tag: cime5.2.0-alpha.13.bhist
+Answer Changes: None
+Tests: prealpha pgi tests on hobart, BHIST restart on yellowstone
+
+Dependencies:
+
+Brief Summary: Fix pnetcdf module on hobart for pgi.  Update BHIST compset
+names
+
+User interface changes: 
+
+Modified files: git diff --name-status
+
+        M       cime_config/cesm/allactive/config_compsets.xml
+        M       cime_config/cesm/allactive/testlist_allactive.xml
+        M       cime_config/cesm/machines/config_machines.xml
+
+======================================================================
+
+======================================================================
+
 Originator: Jim Edwards
 Date: 12-20-2016
 Tag: cime5.2.0-alpha.13

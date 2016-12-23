@@ -119,9 +119,14 @@
   </compset>
 
   <compset>
-    <alias>BHISTC5L40CNRWs</alias>
-    <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
+    <alias>BHIST</alias>
+    <lname>HIST_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD</lname>
   </compset>
+
+<!--  <compset> -->
+<!--    <alias>BHISTC5L40CNRWs</alias> -->
+<!--    <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+<!--  </compset> -->
 
   <compset>
     <alias>BiHISTC5CN</alias>
@@ -132,30 +137,30 @@
     <lname>HIST_CAM5_CLM50%CN-WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</lname>
   </compset>
 
-  <compset>
-    <alias>BHISTC5L40CNR</alias>
-    <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_WW3</lname>
-  </compset>
+<!--  <compset> -->
+<!--    <alias>BHISTC5L40CNR</alias> -->
+<!--    <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_WW3</lname> -->
+<!--  </compset> -->
 
-  <compset>
-    <alias>BHISTC5L45BGCRWs</alias>
-    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
+<!--  <compset> -->
+<!--    <alias>BHISTC5L45BGCRWs</alias> -->
+<!--    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+<!--  </compset> -->
 
-  <compset>
-    <alias>BHISTC5L45BGCR</alias>
-    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_WW3</lname>
-  </compset>
+<!--  <compset> -->
+<!--    <alias>BHISTC5L45BGCR</alias> -->
+<!--    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_WW3</lname> -->
+<!--  </compset> -->
 
-  <compset>
-    <alias>BHISTC5L45BGCWs</alias>
-    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
-  </compset>
+<!--  <compset> -->
+<!--    <alias>BHISTC5L45BGCWs</alias> -->
+<!--    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname> -->
+<!--  </compset> -->
 
-  <compset>
-    <alias>BHISTC5L45BGC</alias>
-    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_WW3</lname>
-  </compset>
+<!--  <compset> -->
+<!--    <alias>BHISTC5L45BGC</alias> -->
+<!--    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_WW3</lname> -->
+<!--  </compset> -->
 
   <compset>
     <alias>BRCP26C4L40CNR</alias>
@@ -198,10 +203,10 @@
     <lname>1850_CAM50_CLM45%BGC_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BPRP</lname>
   </compset>
 
-  <compset>
-    <alias>BHISTC4L40CNRBDRD</alias>
-    <lname>HIST_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname>
-  </compset>
+<!--  <compset> -->
+<!--    <alias>BHISTC4L40CNRBDRD</alias> -->
+<!--    <lname>HIST_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname> -->
+<!--  </compset> -->
 
 
   <!-- BG compsets -->
