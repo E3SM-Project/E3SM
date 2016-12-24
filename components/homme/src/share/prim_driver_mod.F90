@@ -2,16 +2,15 @@
 #include "config.h"
 #endif
 
-!#define _DBG_ print *,"file: ",__FILE__," line: ",__LINE__," ithr: ",hybrid%ithr
-#define _DBG_
 module prim_driver_mod
 
   use cg_mod,           only: cg_t
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
-  use element_mod,      only: element_t, timelevels,  allocate_element_desc
+  use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
+  use element_state,    only: timelevels
   use hybrid_mod,       only: hybrid_t
-  use kinds,            only: real_kind, iulog, longdouble_kind
+  use kinds,            only: real_kind, iulog
   use perf_mod,         only: t_startf, t_stopf
   use prim_si_ref_mod,  only: ref_state_t
   use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
@@ -47,7 +46,7 @@ contains
   subroutine prim_init1(elem, par, dom_mt, Tl)
 
     ! --------------------------------
-    use thread_mod, only : nthreads, omp_get_thread_num, vert_num_threads
+    use thread_mod, only : nthreads, omp_get_thread_num
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
          partmethod, use_semi_lagrange_transport
@@ -59,8 +58,6 @@ contains
     use mesh_mod, only : MeshUseMeshFile
     ! --------------------------------
     use time_mod, only : nmax, time_at, timelevel_init, timelevel_t
-    ! --------------------------------
-    use element_mod, only : setup_element_pointers
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
@@ -830,7 +827,7 @@ contains
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: applycamforcing, applycamforcing_dynamics
     use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
-    use prim_advection_mod, only: vertical_remap
+    use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
 
@@ -976,7 +973,6 @@ contains
        !$omp parallel do default(shared), private(k,q,dp_np1)
 #endif
        do k=1,nlev    !  Loop inversion (AAM)
-          !dir$ simd
           dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
           !dir$ simd

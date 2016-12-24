@@ -700,7 +700,6 @@ contains
 
   subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt_q,nets,nete)
 
-  use element_mod,    only: element_t
   use hybvcoord_mod,  only: hvcoord_t
 
   implicit none
@@ -732,7 +731,6 @@ contains
   !
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
   use hybvcoord_mod, only : hvcoord_t
-  use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
   use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
@@ -1039,7 +1037,6 @@ contains
   !
   ! ===================================
   use kinds, only : real_kind
-  use element_mod, only : element_t,PrintElem
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
@@ -1579,7 +1576,6 @@ contains
   use edge_mod, only : edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
   use edgetype_mod, only : EdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
-  use element_mod, only : element_t
   use derivative_mod, only : derivative_t , laplace_sphere_wk
   use time_mod, only : TimeLevel_t
   implicit none

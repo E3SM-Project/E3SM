@@ -27,7 +27,8 @@ module restart_io_mod
    !------------------
    use time_mod, only : timelevel_t, nendstep, nmax
    !------------------
-   use element_mod, only: elem_state_t, element_t
+   use element_mod, only: element_t
+   use element_state, only: elem_state_t
    !------------------
    use control_mod, only : restartdir, restartfile, columnpackage
    !------------------

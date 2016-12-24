@@ -970,7 +970,8 @@ module asp_tests
 !  This module contains the initial condititions for the baroclinic
 !  instability probelms in Jablonowski and Williamson, QJR (2006) 132 
 !
-use element_mod,    only: element_t, timelevels
+use element_mod,    only: element_t
+use element_state,  only: timelevels
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
 use kinds,          only: real_kind, iulog

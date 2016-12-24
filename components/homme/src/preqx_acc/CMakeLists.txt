@@ -14,7 +14,11 @@ SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                             ${UTILS_TIMING_DIR} )
 
+SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx_acc)
+FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
+
 SET(PREQX_SRCS_F90
+  ${TARGET_F90}
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
@@ -28,14 +32,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/vertremap_mod_base.F90
   ${SRC_SHARE_DIR}/viscosity_mod_base.F90
   ${SRC_DIR}/preqx/dcmip_tests.F90
-  ${SRC_DIR}/preqx_acc/bndry_mod.F90
-  ${SRC_DIR}/preqx_acc/derivative_mod.F90
-  ${SRC_DIR}/preqx_acc/edge_mod.F90
-  ${SRC_DIR}/preqx_acc/openacc_utils_mod.F90
-  ${SRC_DIR}/preqx_acc/prim_advection_mod.F90 
-  ${SRC_DIR}/preqx_acc/solver_init_mod.F90
-  ${SRC_DIR}/preqx_acc/vertremap_mod.F90
-  ${SRC_DIR}/preqx_acc/viscosity_mod.F90
   ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/control_mod.F90
@@ -91,7 +87,6 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/forcing_mod.F90 
   ${SRC_SHARE_DIR}/metis_mod.F90 
   ${SRC_SHARE_DIR}/prim_driver_mod.F90 
-  ${SRC_DIR}/vertical_mod.F90 
   ${SRC_DIR}/prim_movie_mod.F90 
   ${SRC_DIR}/surfaces_mod.F90 
   ${SRC_DIR}/interpolate_driver_mod.F90 
@@ -114,7 +109,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${PREQX_ACC_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90})
+SET(EXEC_SOURCES ${PREQX_SRCS_C} ${PREQX_SRCS_F90})
 
 # Set up defaults
 IF (NOT PREQX_NP)
