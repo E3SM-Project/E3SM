@@ -78,7 +78,6 @@ SET(THETAH_SRCS_F90
   ${SRC_SHARE_DIR}/namelist_mod.F90
   ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
-  ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90
   ${SRC_SHARE_DIR}/metis_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90

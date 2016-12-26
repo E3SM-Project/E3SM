@@ -21,6 +21,7 @@ SET(PREQX_SRCS_F90
   ${TARGET_F90}
   ${SRC_DIR}/preqx/element_ops.F90
   ${SRC_DIR}/preqx/viscosity_preqx_base.F90
+  ${SRC_DIR}/preqx/prim_state_mod.F90
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
@@ -82,7 +83,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
   ${SRC_DIR}/checksum_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
-  ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_DIR}/prim_restart_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90 
   ${SRC_SHARE_DIR}/prim_advance_mod.F90 

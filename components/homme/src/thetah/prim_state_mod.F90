@@ -96,7 +96,7 @@ contains
          fvmin_local(nets:nete),fvmax_local(nets:nete),fvsum_local(nets:nete), &
          ftmin_local(nets:nete),ftmax_local(nets:nete),ftsum_local(nets:nete), &
          fqmin_local(nets:nete),fqmax_local(nets:nete),fqsum_local(nets:nete), &
-         omegamin_local(nets:nete),omegamax_local(nets:nete),omegasum_local(nets:nete),&
+         wmin_local(nets:nete),wmax_local(nets:nete),wsum_local(nets:nete),&
          dpmin_local(nets:nete), dpmax_local(nets:nete), dpsum_local(nets:nete)
 
 
@@ -113,7 +113,7 @@ contains
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
     real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
-    real (kind=real_kind) :: omegamax_p, omegamin_p, omegasum_p
+    real (kind=real_kind) :: wmax_p, wmin_p, wsum_p
 
 
     real(kind=real_kind) :: vsum_t(1), relvort
@@ -199,11 +199,12 @@ contains
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
+       wmax_local(ie)    = MAXVAL(elem(ie)%state%w(:,:,:,n0))
 
        fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:,pnm1))
        fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
-       tmax_local(ie)    = MAXVAL(elem(ie)%state%T(:,:,:,n0))
+       tmax_local(ie)    = MAXVAL(elem(ie)%state%theta(:,:,:,n0))
 
        if (rsplit>0) &
             dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
@@ -211,23 +212,22 @@ contains
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
        ftmax_local(ie)    = MAXVAL(elem(ie)%derived%FT(:,:,:,pnm1))
        fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
-       omegamax_local(ie)    = MAXVAL(elem(ie)%derived%Omega_p(:,:,:))
        !======================================================
 
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
+       Wmin_local(ie)    = MINVAL(elem(ie)%state%w(:,:,:,n0))
 
        Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:,pnm1))
        Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
-       tmin_local(ie)    = MINVAL(elem(ie)%state%T(:,:,:,n0))
+       tmin_local(ie)    = MINVAL(elem(ie)%state%theta(:,:,:,n0))
 
        if (rsplit>0) &
             dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
 
        Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:,pnm1))
        Fqmin_local(ie) = MINVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
-       Omegamin_local(ie) = MINVAL(elem(ie)%derived%Omega_p(:,:,:))
 
 
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
@@ -235,10 +235,11 @@ contains
 
        usum_local(ie)    = SUM(elem(ie)%state%v(:,:,1,:,n0))
        vsum_local(ie)    = SUM(elem(ie)%state%v(:,:,2,:,n0))
-       Fusum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,1,:,pnm1))
-       Fvsum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,2,:,pnm1))
+       Wsum_local(ie)    = SUM(elem(ie)%state%w(:,:,:,n0))
+       Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:,pnm1))
+       Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
-       tsum_local(ie)    = SUM(elem(ie)%state%t(:,:,:,n0))
+       tsum_local(ie)    = SUM(elem(ie)%state%theta(:,:,:,n0))
        if (rsplit>0) then
           dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
        else
@@ -249,7 +250,6 @@ contains
 
        Ftsum_local(ie)    = SUM(elem(ie)%derived%FT(:,:,:,pnm1))
        FQsum_local(ie) = SUM(elem(ie)%derived%FQ(:,:,:,1,pnm1))
-       Omegasum_local(ie) = SUM(elem(ie)%derived%Omega_p(:,:,:))
 
        pssum_local(ie) = SUM(tmp(:,:,ie))
        !======================================================
@@ -262,7 +262,7 @@ contains
        global_shared_buf(ie,6) = FVsum_local(ie)
        global_shared_buf(ie,7) = FTsum_local(ie)
        global_shared_buf(ie,8) = FQsum_local(ie)
-       global_shared_buf(ie,9) = Omegasum_local(ie)
+       global_shared_buf(ie,9) = Wsum_local(ie)
        global_shared_buf(ie,10) = dpsum_local(ie)
     end do
 
@@ -296,8 +296,8 @@ contains
     FQmin_p = ParallelMin(FQmin_local,hybrid)
     FQmax_p = ParallelMax(FQmax_local,hybrid)
 
-    Omegamin_p = ParallelMin(Omegamin_local,hybrid)
-    Omegamax_p = ParallelMax(Omegamax_local,hybrid)
+    Wmin_p = ParallelMin(Wmin_local,hybrid)
+    Wmax_p = ParallelMax(Wmax_local,hybrid)
 
     call wrap_repro_sum(nvars=10, comm=hybrid%par%comm)
     usum_p = global_shared_sum(1)
@@ -308,8 +308,9 @@ contains
     FVsum_p = global_shared_sum(6)
     FTsum_p = global_shared_sum(7)
     FQsum_p = global_shared_sum(8)
-    Omegasum_p = global_shared_sum(9)
+    Wsum_p = global_shared_sum(9)
     dpsum_p = global_shared_sum(10)
+
 
     scale=1/g                                  ! assume code is using Pa
     if (hvcoord%ps0 <  2000 ) scale=100*scale  ! code is using mb
@@ -337,8 +338,8 @@ contains
     if(hybrid%masterthread) then
        write(iulog,100) "u     = ",umin_p,umax_p,usum_p
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
-       write(iulog,100) "omega = ",omegamin_p,omegamax_p,omegasum_p
-       write(iulog,100) "t     = ",tmin_p,tmax_p,tsum_p
+       write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
+       write(iulog,100) "theta = ",tmin_p,tmax_p,tsum_p
        if (rsplit>0) &
        write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 
@@ -601,18 +602,12 @@ contains
              enddo
           endif
 
-          ! LF code diagnostics
-          if (tstep_type==0) then  ! leapfrog
-             write(iulog,'(a)') 'Robert filter, Physics (except adjustments):'
-             write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(4)-KEner(3))/dt,(KEner(3)-KEner(2))/dt
-             write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(4)-IEner(3))/dt,(IEner(3)-IEner(2))/dt
-             write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(4)-PEner(3))/dt,(PEner(3)-PEner(2))/dt
-          else
-             write(iulog,'(a)') 'Energy Fixer, Physics (except adjustments):'
-             write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(3)-KEner(2))/dt,(KEner(1)-KEner(4))/dt
-             write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(3)-IEner(2))/dt,(IEner(1)-IEner(4))/dt
-             write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(3)-PEner(2))/dt,(PEner(1)-PEner(4))/dt
-          endif
+          write(iulog,'(a)') 'Physics tendencies applied by dycore:'
+          write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
+          write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
+          write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt
+          q=1
+          write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
        endif
 
        ! Print change in energy and tracer mass from the start of the simulation
@@ -622,7 +617,7 @@ contains
        if (ftype>=0) TOTE0=-1  
 #endif       
        if (TOTE0>0) then
-          write(iulog,100) "(E-E0)/E0    ",(TOTE(4)-TOTE0)/TOTE0
+          write(iulog,100) "(E-E0)/E0    ",(TOTE(2)-TOTE0)/TOTE0
           if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
              do q=1,qsize
                 if(Qmass0(q)>0.0D0) then
@@ -641,7 +636,7 @@ contains
     ! after the first real timestep, not the half-timesteps used
     ! to bootstrap leapfrog: 
     if (tl%nstep >= tl%nstep0 .and. TOTE0==0 ) then  
-       TOTE0=TOTE(4)
+       TOTE0=TOTE(2)
        do q=1,qsize
           Qmass0(q)=Qmass(q,1)
        enddo
@@ -655,14 +650,21 @@ contains
 
 subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 
-!  called at the end of a timestep, before timelevel update.  Solution known at
-!  dynamics:     nm1,  n0,  np1.  
+!  called at the end of a timestep, before timelevel update.  
+!  Solution is known at two timelevels.  We originally tried to
+!  compute the energy at the midpoint between these levels, but now
+!  we compute the energy at:
 !
-!                                                           LF code            RK code
-!  This routine is called 4 times:  n=1:    t1=nm1, t2=n0   start              after forcing, before timestep
-!                                   n=2:    t1=n0, t2=np1   after timestep     after timestep, including remap
-!                                   n=3:    t1=n0, t2=np1   after forcing      after fixer 
-!                                   n=4:    t1=n0, t2=np1   after Robert       before forcing
+!  t_before_advance==.true.     tl%n0    begining of timestep
+!  t_before_advance==.false.    tl%np1   completed timestep, before tl update  
+!
+!  This routine is called 4 times:  for historical reasons they are out
+!  of sequence.  
+!
+!    n=1:    after CAM forcing, before timestep
+!    n=2:    after timestep, including remap, before tl update
+!    n=3:    after CAM forcing, before timestep
+!    n=4:    (not used)
 !
 ! LF case we use staggered formulas:
 !  compute the energies at time half way between timelevels t1 and t2,
@@ -684,56 +686,49 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, cpwater_vapor
-    use physics_mod, only : Virtual_Specific_Heat, Virtual_Temperature
+    use physics_mod, only : Virtual_Specific_Heat
     use prim_si_mod, only : preq_hydrostatic
 
-    integer :: t1,t2,n,nets,nete
+    integer :: t1,n,nets,nete
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance
 
-    integer :: ie,k,i,j,nm_f
-    real (kind=real_kind), dimension(np,np,nlev)  :: dpt1,dpt2   ! delta pressure
+    integer :: ie,k,i,j
+    real (kind=real_kind), dimension(np,np,nlev)  :: dpt1  ! delta pressure
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
-    real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi
-    real (kind=real_kind) :: cp_star1,cp_star2,qval_t1,qval_t2
-    real (kind=real_kind) :: Qt
-    logical :: wet
+    real (kind=real_kind), dimension(np,np,nlev)  :: temperature
+    real (kind=real_kind) :: cp_star1,qval_t1,qval_t2
 
 
-    integer:: t2_qdp, t1_qdp   ! the time pointers for Qdp are not the same
+    integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
 
-    nm_f = 1
     if (t_before_advance) then
-       t1=tl%nm1
-       t2=tl%n0
-       call TimeLevel_Qdp( tl, qsplit, t2_qdp, t1_qdp) !get n0 level into t2_qdp 
-    else
        t1=tl%n0
-       t2=tl%np1
-       call TimeLevel_Qdp(tl, qsplit, t1_qdp, t2_qdp) !get np1 into t2_qdp
+       call TimeLevel_Qdp( tl, qsplit, t1_qdp) !get n0 level into t2_qdp 
+    else
+       t1=tl%np1
+       call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp
     endif
 
     !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
     !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
     !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
     do ie=nets,nete
-
+       call get_field(elem(ie),'temperature',temperature,hvcoord,t1,t1_qdp)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
        do k=1,nlev
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
-          dpt2(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
        enddo
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,cp_star1,cp_star2,qval_t1,qval_t2)
+!$omp parallel do private(k,i,j,cp_star1,qval_t1)
 #endif
        do k=1,nlev
           sumlk(:,:,k)=0
@@ -743,15 +738,12 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
              if(use_cpstar == 1)  then
                 ! Cp_star = cp + (Cpwater_vapor - cp)*qval
                 qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
-                qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
                 cp_star1= Virtual_Specific_Heat(qval_t1)
-                cp_star2= Virtual_Specific_Heat(qval_t2)
              else
                 cp_star1=cp
-                cp_star2=cp
              endif
-             sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
-             suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
+             sumlk(i,j,k) = sumlk(i,j,k) + Cp_star1*temperature(i,j,k) *dpt1(i,j,k)
+             suml2k(i,j,k) = suml2k(i,j,k) + (cp_star1-cp)*temperature(i,j,k) *dpt1(i,j,k)
           enddo
           enddo
        enddo
@@ -770,9 +762,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !$omp parallel do private(k,E)
 #endif
        do k=1,nlev
-          E = (elem(ie)%state%v(:,:,1,k,t2)**2 +  &
-                  elem(ie)%state%v(:,:,2,k,t2)**2 ) / 2 
-          sumlk(:,:,k) = E*dpt2(:,:,k)
+          E = (elem(ie)%state%v(:,:,1,k,t1)**2 +  &
+                  elem(ie)%state%v(:,:,2,k,t1)**2 ) / 2 
+          sumlk(:,:,k) = E*dpt1(:,:,k)
        enddo
        suml=0
        do k=1,nlev
@@ -785,27 +777,11 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !   PE   dp/dn PHIs
        suml=0
        do k=1,nlev
-          suml = suml + elem(ie)%state%phis(:,:)*dpt2(:,:,k)
+          suml = suml + elem(ie)%state%phis(:,:)*dpt1(:,:,k)
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
 
 
-
-!      compute alternate PE term which matches what is used in CAM physics
-       wet =(moisture /= "dry")
-       do k=1,nlev
-          p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t2)
-          do j=1,np
-             do i=1,np
-                if (wet) then
-                   Qt = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
-                   T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,t2),Qt)
-                else
-                   T_v(i,j,k) = elem(ie)%state%T(i,j,k,t2)
-                endif
-             end do
-          end do
-       end do
 
     enddo
     
@@ -836,66 +812,49 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
 
-    integer :: t1,t2,n,nets,nete
+    integer :: t1,n,nets,nete
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     
-    integer :: ie,k,q,nm_f
+    integer :: ie,k,q
     real (kind=real_kind), dimension(np,np)  :: ps         ! pressure
     real (kind=real_kind), dimension(np,np)  :: dp         ! delta pressure
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance
-    integer:: t2_qdp, tmp   ! the time pointer for Qdp are not the same
+    integer:: t1_qdp, tmp   ! the time pointer for Qdp are not the same
 
-    nm_f = 1
     if (t_before_advance) then
-       t1=tl%nm1     
-       t2=tl%n0
-       call TimeLevel_Qdp( tl, qsplit, t2_qdp) !get n0 level into t2_qdp 
-    else
        t1=tl%n0
-       t2=tl%np1
-       call TimeLevel_Qdp(tl, qsplit, tmp, t2_qdp) !get np1 into t2_qdp (don't need tmp)
+       call TimeLevel_Qdp( tl, qsplit, t1_qdp) !get n0 level into t2_qdp 
+    else
+       t1=tl%np1
+       call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp (don't need tmp)
     endif
 
 
-    !
-    !  RK2 forward scheme.  compute everything at t2
-    !  (used by CAM)
-    !   Q has only one time dimension
-    if (tstep_type>0) then
-
-       do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-          !$omp parallel do private(q,k,suml)
-#endif
-          do q=1,qsize
-             suml=0
-             do k=1,nlev
-                suml = suml + elem(ie)%state%Qdp(:,:,k,q,t2_qdp)*elem(ie)%state%Q(:,:,k,q)
-             enddo
-             elem(ie)%accum%Qvar(:,:,q,n)=suml(:,:)
+    do ie=nets,nete
+       do q=1,qsize
+          suml=0
+          do k=1,nlev
+             suml = suml + elem(ie)%state%Qdp(:,:,k,q,t1_qdp)*elem(ie)%state%Q(:,:,k,q)
           enddo
+          elem(ie)%accum%Qvar(:,:,q,n)=suml(:,:)
        enddo
-       
-       do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-          !$omp parallel do private(q,k,suml)
-#endif
-          do q=1,qsize
-             suml=0
-             do k=1,nlev
-                suml = suml + elem(ie)%state%Qdp(:,:,k,q,t2_qdp)
-             enddo
-             elem(ie)%accum%Q1mass(:,:,q)=suml(:,:)
-             elem(ie)%accum%Qmass(:,:,q,n)=suml(:,:)
+    enddo
+    
+    do ie=nets,nete
+       do q=1,qsize
+          suml=0
+          do k=1,nlev
+             suml = suml + elem(ie)%state%Qdp(:,:,k,q,t1_qdp)
           enddo
+          elem(ie)%accum%Q1mass(:,:,q)=suml(:,:)
+          elem(ie)%accum%Qmass(:,:,q,n)=suml(:,:)
        enddo
-    endif
-
-
+    enddo
+ 
 
 end subroutine prim_diag_scalars
 end module prim_state_mod

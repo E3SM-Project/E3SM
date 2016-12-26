@@ -848,7 +848,7 @@ contains
     real(kind=real_kind) :: dp_np1(np,np)
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
-    logical :: compute_diagnostics, compute_energy
+    logical :: compute_diagnostics
 
     ! compute timesteps for tracer transport and vertical remap
 
@@ -861,20 +861,23 @@ contains
     endif
 
     ! activate diagnostics periodically for display to stdout
-    compute_energy = .false.
     compute_diagnostics   = .false.
     if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
        compute_diagnostics= .true.
-       compute_energy     = .true.
     endif
     if(disable_diagnostics) compute_diagnostics= .false.
 
     ! compute scalar diagnostics if currently active
     if (compute_diagnostics) then
       call t_startf("prim_diag_scalars")
-      call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
+      call prim_diag_scalars(elem,hvcoord,tl,3,.true.,nets,nete)
       call t_stopf("prim_diag_scalars")
+
+      call t_startf("prim_energy_halftimes")
+      call prim_energy_halftimes(elem,hvcoord,tl,3,.true.,nets,nete)
+      call t_stopf("prim_energy_halftimes")
     endif
+
 
 #ifdef CAM
 
@@ -903,15 +906,12 @@ contains
 
 #endif
 
+    if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
-    if (compute_energy) then
       call t_startf("prim_energy_halftimes")
       call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
       call t_stopf("prim_energy_halftimes")
-    endif
-
     ! qmass and variance, using Q(n0),Qdp(n0)
-    if (compute_diagnostics) then
       call t_startf("prim_diag_scalars")
       call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
       call t_stopf("prim_diag_scalars")
@@ -992,22 +992,12 @@ contains
       call t_startf("prim_diag_scalars")
       call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
       call t_stopf("prim_diag_scalars")
-    endif
-    if (compute_energy) then
+
       call t_startf("prim_energy_halftimes")
       call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
       call t_stopf("prim_energy_halftimes")
     endif
 
-    if (compute_diagnostics) then
-      call t_startf("prim_diag_scalars")
-      call prim_diag_scalars(elem,hvcoord,tl,3,.false.,nets,nete)
-      call t_stopf("prim_diag_scalars")
-
-      call t_startf("prim_energy_halftimes")
-      call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete)
-      call t_stopf("prim_energy_halftimes")
-    endif
 
     ! =================================
     ! update dynamics time level pointers
