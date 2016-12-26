@@ -29,6 +29,7 @@ module baroclinic_inst_mod
     use quadrature_mod, only : quadrature_t, gauss
     ! ====================
     use element_mod, only : element_t
+    use element_ops, only : set_thermostate, get_field
     ! ====================
     use global_norms_mod, only : global_integral
     ! ====================
@@ -83,6 +84,7 @@ subroutine jw_baroclinic(elem,hybrid,hvcoord,nets,nete)
    real (kind=real_kind) :: r_d,omg,grv,erad
 
    real(kind=real_kind), allocatable :: var3d(:,:,:,:)
+   real(kind=real_kind) :: temperature(np,np,nlev)
 
    if (hybrid%masterthread) write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
 
@@ -162,7 +164,7 @@ do ie=nets,nete
              trm3 =  2.0D0 * u0* (cos(etv(k)))**1.5D0
              trm4 = (1.60D0 *cslat**3 *(snlat**2 + 2.0D0/3.0D0) - DD_PI *0.25D0)* erad*omg
 
-             elem(ie)%state%T(i,j,k,:) = tbar(k) + trm1 *(trm2 * trm3 + trm4 )
+             temperature(i,j,k) = tbar(k) + trm1 *(trm2 * trm3 + trm4 )
  
           end do
        end do
@@ -185,6 +187,8 @@ do ie=nets,nete
           elem(ie)%state%ps_v(i,j,:) = p0
        end do
     end do
+
+    call set_thermostate(elem(ie),temperature,hvcoord)
 enddo
 
 
@@ -194,9 +198,10 @@ enddo
 if (qsize>=1) then
    do idex=1,qsize
    do ie=nets,nete
+      call get_field(elem(ie),'temperature',temperature,hvcoord,1,1)
       !do tl=1,3
       do tl=1,1
-         elem(ie)%state%Q(:,:,:,idex) = elem(ie)%state%T(:,:,:,tl)/400
+         elem(ie)%state%Q(:,:,:,idex) = temperature(:,:,:)/400
       enddo
    enddo
    enddo
@@ -295,7 +300,8 @@ endif
     real (kind=real_kind), dimension(nlat)   :: mu, mufac, tp, ef
     real (kind=real_kind), dimension(nlat-1) :: dmu
     real (kind=real_kind), dimension(nlat) :: ufull, dtdphi
-    real (kind=real_kind),allocatable     :: t1(:,:,:)
+    real (kind=real_kind)                  :: t1(np,np,nets:nete,nlev)
+    real (kind=real_kind)                  :: temperature(np,np,nlev)
     real (kind=real_kind), dimension(nfl) :: tfull, avg
     real (kind=real_kind) :: dlat
     real (kind=real_kind) :: z, fac
@@ -313,7 +319,6 @@ endif
     integer :: n0 
     integer :: np1
 
-    integer :: nptsp,nptsv
 
     nm1= 1
     n0 = 2
@@ -366,18 +371,14 @@ endif
        tfull(k) = tfull(k) + sat0
     end do
 
-    nptsp = SIZE(elem(nets)%state%T(:,:,1,n0),1)
-    nptsv = SIZE(elem(nets)%state%v(:,:,:,1,n0),1)
-    allocate(t1(nptsp,nptsp,nets:nete))
-
     do ie=nets,nete
        elem(ie)%state%ps_v(:,:,:) = p0
     end do
 
     gs = gauss(nlat)
 
+    t1 = 0.D0
     do k=1,nlev
-       t1(:,:,nets:nete) = 0.D0
        do ie=nets,nete
 
           z  = zfull(k)
@@ -386,8 +387,8 @@ endif
           fp = (-3.D0/10.D0) * (tz**2) * (sz**2) * sin(DD_PI*z/z1) + &
                (DD_PI/60.D0) * (1.D0 - tz**3) * cos(DD_PI*z/z1)
 
-          do j=1,nptsp
-             do i=1,nptsp
+          do j=1,np
+             do i=1,np
 
                 lonp = elem(ie)%spherep(i,j)%lon
                 latp = elem(ie)%spherep(i,j)%lat
@@ -422,56 +423,42 @@ endif
                    tmp = tmp + wts(l)*dtdphi(l)
                 end do
 
-                t1(i,j,ie) = tmp
-                elem(ie)%state%T(i,j,k,n0) = t1(i,j,ie) 
+                t1(i,j,ie,k) = tmp
 
              end do
           end do
 
        end do
 
-       avg(k) = real(global_integral(elem, t1(:,:,nets:nete),hybrid,nptsp,nets,nete))
+       avg(k) = real(global_integral(elem, t1(:,:,nets:nete,k),hybrid,np,nets,nete))
 
     end do
-    if(test_case.eq."aquaplanet") then
-       do k=1,nlev
-          do ie=nets,nete
-             elem(ie)%state%T(:,:,k,nm1)=elem(ie)%state%T(:,:,k,n0)
-             elem(ie)%state%T(:,:,k,np1)=0.0D0
-          end do
-       end do
-    else
-       do k=1,nlev
-          do ie=nets,nete
-             do j=1,nptsp
-                do i=1,nptsp
-
-                   lonp = elem(ie)%spherep(i,j)%lon
-                   latp = elem(ie)%spherep(i,j)%lat
-
-                   elem(ie)%state%T(i,j,k,n0) = elem(ie)%state%T(i,j,k,n0) + tfull(k) - avg(k)
-
-                   elem(ie)%state%T(i,j,k,n0)=elem(ie)%state%T(i,j,k,n0) + &
-                        1.D0/cosh(3.D0*(lonp-DD_PI*0.5D0))**2 * &
-                        1.D0/cosh(6.D0*(latp-DD_PI*0.25D0))**2
-
-                end do
+    do k=1,nlev
+       do ie=nets,nete
+          do j=1,np
+             do i=1,np
+                
+                lonp = elem(ie)%spherep(i,j)%lon
+                latp = elem(ie)%spherep(i,j)%lat
+                
+                t1(i,j,ie,k) = t1(i,j,ie,k) + tfull(k) - avg(k)
+                
+                t1(i,j,ie,k)=t1(i,j,ie,k) + &
+                     1.D0/cosh(3.D0*(lonp-DD_PI*0.5D0))**2 * &
+                     1.D0/cosh(6.D0*(latp-DD_PI*0.25D0))**2
+                
              end do
-
-             elem(ie)%state%T(:,:,k,nm1)=elem(ie)%state%T(:,:,k,n0)
-             elem(ie)%state%T(:,:,k,np1)=elem(ie)%state%T(:,:,k,n0)
-
           end do
        end do
-    endif
+    end do
 
     do ie=nets,nete
        do k=1,nlev
 
           z = zfull(k)
 
-          do j=1,nptsv
-             do i=1,nptsv
+          do j=1,np
+             do i=1,np
 
                 lonp = elem(ie)%spherep(i,j)%lon
                 latp = elem(ie)%spherep(i,j)%lat
@@ -517,8 +504,9 @@ endif
        !       elem(ie)%state%ps_v(:,:,np1)=0.0D0
        elem(ie)%state%phis(:,:) = 0.0D0
        elem(ie)%derived%fm = 0.0D0
+       temperature(:,:,:)=t1(:,:,ie,:)
+       call set_thermostate(elem(ie),temperature,hvcoord)
     end do
-    deallocate(t1)
 
   end subroutine binst_init_state
 
