@@ -885,7 +885,7 @@ contains
     !   ftype= 0: apply all forcing here
     !   ftype=-1: do not apply forcing
 
-    call TimeLevel_Qdp(tl, qsplit, n0_qdp)
+    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
 
     if (ftype==0) then
       call t_startf("ApplyCAMForcing")
@@ -928,7 +928,7 @@ contains
 
 
 #if (USE_OPENACC)
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
+!    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
     call copy_qdp_h2d( elem , n0_qdp )
     call t_stopf("copy_qdp_h2d")
@@ -946,9 +946,10 @@ contains
        call t_stopf("prim_step_rX")
     enddo
     ! defer final timelevel update until after remap and diagnostics
+    !compute timelevels for tracers (no longer the same as dynamics)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
 
 #if (USE_OPENACC)
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call t_startf("copy_qdp_h2d")
     call copy_qdp_d2h( elem , np1_qdp )
     call t_stopf("copy_qdp_h2d")
@@ -959,8 +960,6 @@ contains
     !  always for tracers
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !compute timelevels for tracers (no longer the same as dynamics)
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1066,7 +1065,7 @@ contains
     integer,              intent(in)    :: rstep    ! vertical remap subcycling step
 
     real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n, n_Q
+    integer :: ie, t, q,k,i,j,n
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
@@ -1095,9 +1094,6 @@ contains
     ! Dynamical Step
     ! ===============
     call t_startf("prim_step_dyn")
-    n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
-                 ! FV tracers still carry 3 timelevels
-                 ! SE tracers only carry 2 timelevels
     call prim_advance_exp(elem, deriv1, hvcoord,   &
          hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
@@ -1164,7 +1160,6 @@ contains
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
-    use viscosity_mod, only : biharmonic_wk
     use prim_advance_mod, only : smooth_phis
     implicit none
 

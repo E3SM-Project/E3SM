@@ -29,7 +29,7 @@ module interp_movie_mod
 
   use control_mod, only : test_case, runtype, &
        restartfreq, &
-       integration, columnpackage, kmass, nu
+       integration, columnpackage, kmass, nu, qsplit
   use common_io_mod, only:  &
        output_start_time,   & 	
        output_end_time,     &
@@ -401,9 +401,10 @@ contains
 
     use kinds, only : int_kind, real_kind
     use element_mod, only : element_t
-    use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax
+    use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax, Timelevel_Qdp
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
+    use element_ops, only : get_field
     use hybvcoord_mod, only :  hvcoord_t 
 #endif
     use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
@@ -414,7 +415,6 @@ contains
     use viscosity_mod, only : compute_zeta_C0, make_c0, compute_zeta_c0_contra,&
                               compute_div_c0,compute_div_c0_contra
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-    use control_mod, only : qsplit
     use time_mod   , only : TimeLevel_Qdp
     ! ---------------------    
     type (element_t),target    :: elem(:)
@@ -434,12 +434,12 @@ contains
     real(kind=real_kind),parameter :: dayspersec=1d0/(3600.*24.)
     real(kind=real_kind), allocatable :: datall(:,:), var3d(:,:,:,:)
     real(kind=real_kind), allocatable :: varvtmp(:,:,:,:), ulatlon(:,:,:,:,:)
-    
+    real(kind=real_kind)  :: temp3d(np,np,nlev)    
     integer :: st, en
 
     integer :: ierr
 
-    integer :: ncnt,n0,n0q,itype,qindex,cindex
+    integer :: ncnt,n0,n0_Q,itype,qindex,cindex
     character(len=2) :: vname
 
     real (kind=real_kind) :: vco(np,np,2),ke(np,np,nlev)
@@ -449,6 +449,7 @@ contains
 
     call t_startf('interp_movie_output')
     n0 = tl%n0
+    call TimeLevel_Qdp( tl, qsplit, n0_Q)
 
 !    if (0==pio_iotask_rank(piofs)) write(*,'(a,i4,a,i1)') &
 !         "lat/lon interp movie output: ios=",ios," interpolation type=",&
@@ -746,7 +747,8 @@ contains
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), elem(ie)%state%T(:,:,:,n0), &
+                   call get_field(elem(ie),'temperature',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie),temp3d, &
                         np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
@@ -788,22 +790,12 @@ contains
 
              if(nf_selectedvar('Th', output_varnames)) then
                 if (par%masterproc) print *,'writing Th...'
-                pr0=1./(p0)
                 st=1
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 do ie=1,nelemd
-                   do k=1,nlev
-                      do j=1,np
-                         do i=1,np
-                            pfull = hvcoord%hyam(k)*hvcoord%ps0  &
-                                 + hvcoord%hybm(k)*elem(ie)%state%ps_v(i,j,n0)
-                            var3d(i,j,k,1)=elem(ie)%state%T(i,j,k,n0)* &
-                                 (pfull*pr0)**(-kappa)
-                         end do
-                      end do
-                   end do
+                   call get_field(elem(ie),'pottemp',temp3d,hvcoord,n0,n0_Q)
                    en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), var3d(:,:,:,1), &
+                   call interpolate_scalar(interpdata(ie), temp3d, &
                         np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 end do

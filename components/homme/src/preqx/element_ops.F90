@@ -3,22 +3,30 @@
 #endif
 
 !
-!  getter functions that must be provided by each model
+!  getter & setter functions that must be provided by each model
 !  
 !  IMPORTANT NOTE:  For vertically lagrangian models, these
 !  routines should ONLY be used outside the timestepping loop
 !  on reference levels.  To compute these fields on floating levels
 !  the model should do that directly (or we need to modify the interface)
 !
-!  Currently each model needs to provide:
-!     temperature
-!     potential temperature
-!     phi
+!  get_field() 
+!     returns temperature, potential temperature, phi, etc..
+!
+! These should be unified to a single interface:
+!  set_thermostate()    
+!     initial condition interface used by DCMIP 2008 tests
 !     
+!  set_state()
+!     initial condition interface used by DCMIP 2012 tests
+!     
+!  
+!
 module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use element_mod,    only: element_t
+  use element_state,  only: timelevels
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -27,10 +35,7 @@ module element_ops
   use physical_constants, only : kappa, p0
 
   implicit none
-  private
 
-  public get_field
-  public set_thermostate
 contains
 
 
@@ -113,14 +118,38 @@ contains
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  
+  integer :: tl
 
-  elem%state%T(:,:,:,1)=temperature(:,:,:)
-  elem%state%T(:,:,:,2)=temperature(:,:,:)
-  elem%state%T(:,:,:,3)=temperature(:,:,:)
-
+  do tl=1,timelevels
+     elem%state%T(:,:,:,tl)=temperature(:,:,:)
+  enddo
 
   end subroutine set_thermostate
+
+
+subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
+
+  ! set state variables at node(i,j,k) at layer midpoints
+
+  real(real_kind),  intent(in)    :: u,v,T,ps,phis,p,dp,zm,g
+  integer,          intent(in)    :: i,j,k,n0,n1
+  type(element_t),  intent(inout) :: elem
+
+
+  ! set prognostic state variables at level midpoints
+  elem%state%v   (i,j,1,k,n0:n1) = u
+  elem%state%v   (i,j,2,k,n0:n1) = v
+  elem%state%T   (i,j,k,n0:n1)   = T
+  elem%state%dp3d(i,j,k,n0:n1)   = dp
+  elem%state%ps_v(i,j,n0:n1)     = ps
+  elem%state%phis(i,j)           = phis
+
+  ! set some diagnostic variables
+  elem%derived%dp(i,j,k)         = dp
+  elem%derived%phi(i,j,k)        = g*zm
+
+end subroutine
+
 
 
 end module

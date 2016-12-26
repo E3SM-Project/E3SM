@@ -71,29 +71,8 @@ module restart_io_mod
    integer, parameter :: RESTART_HDR_CNT = 12 
 
 
-   ! MT 2010:  note: when using COLLECTIVE IO, the code we have now, 
-   ! the offset between elements in 
-   ! RestartBuffer must match the offset used in the restart file.
-   ! This means for non-Emanual physics restarts, puffer cannot be 
-   ! included in the RestartBuffer_t struct below.  
-   !
-   ! I tried to include the pelem() data in the restart file for all
-   ! cases, including non-Emanual physics like Held-Suarez run, 
-   ! but the code was crashing when creating the first MPI type, maybe because
-   ! pelem() has not been initialized. 
-   !
-   ! best solution would be to modify the code to allow a larger offset
-   ! between elements in RestartBuffer than in the file
-   ! for now, disable restart when running Emanual physics.  
-   ! 
-   ! Emanual restart can be re-enabled by turning of COLLECTIVE IO 
-   ! and adding the puffer struct back in below (change PRIMXXX back to PRIM)
-   !
    type, public :: RestartBuffer_t
       type (elem_state_t)        :: buffer
-#ifdef _PRIMXXX
-      type (physics_state_t)     :: puffer
-#endif
    end type
 
 

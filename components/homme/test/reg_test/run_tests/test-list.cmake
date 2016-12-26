@@ -6,7 +6,6 @@ SET(HOMME_TESTS
   swtc6.cmake
   swimtc5.cmake
   baro2b.cmake
-  baro2b-thetah.cmake
   baro2c.cmake
   baro2d.cmake
   baroCamMoist.cmake

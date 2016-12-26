@@ -19,11 +19,14 @@ FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 
 SET(PREQX_SRCS_F90
   ${TARGET_F90}
+  ${SRC_DIR}/preqx/element_ops.F90
+  ${SRC_DIR}/preqx/viscosity_preqx_base.F90
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
   ${SRC_DIR}/test_src/dcmip2012_test4.F90
   ${SRC_DIR}/test_src/dcmip2012_test5.F90
+  ${SRC_DIR}/test_src/dcmip_tests.F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
   ${SRC_SHARE_DIR}/derivative_mod_base.F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90
@@ -31,7 +34,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/solver_init_mod_base.F90
   ${SRC_SHARE_DIR}/vertremap_mod_base.F90
   ${SRC_SHARE_DIR}/viscosity_mod_base.F90
-  ${SRC_DIR}/preqx/dcmip_tests.F90
   ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/control_mod.F90

@@ -12,13 +12,13 @@ module prim_movie_mod
 #else
   use parallel_mod, only : syncmp, iam, mpireal_t, parallel_t
 #endif
-  use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax
+  use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax, Timelevel_Qdp
   use element_mod, only : element_t
 
   use cube_mod, only : cube_assemble
   use control_mod, only : test_case, runtype, &
        restartfreq, &
-       integration, columnpackage, hypervis_power
+       integration, columnpackage, hypervis_power, qsplit
   use common_io_mod, only : &
        output_start_time,   &
        output_end_time,     &
@@ -389,6 +389,7 @@ contains
     use piolib_mod, only : Pio_SetDebugLevel !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
+    use element_ops, only : get_field
 
     type (element_t)    :: elem(:)
 
@@ -405,12 +406,15 @@ contains
     real (kind=real_kind) :: var2d(nxyp), var3d(nxyp,nlev), ke(np,np,nlev)
     real (kind=real_kind) :: temp3d(np,np,nlev,nelemd)
 
-    integer :: st, en, kmax, qindex
+    integer :: st, en, kmax, qindex, n0, n0_Q
     character(len=2) :: vname
 
     integer(kind=nfsizekind) :: start(3), count(3), start2d(2),count2d(2)
     integer :: ncnt
     call t_startf('prim_movie_output:pio')
+
+    n0=tl%n0
+    call TimeLevel_Qdp( tl, qsplit, n0_Q)
 
     do ios=1,max_output_streams
        if((output_frequency(ios) .gt. 0)) then
@@ -432,7 +436,7 @@ contains
                 if (par%masterproc) print *,'writing ps...'
                 st=1
                 do ie=1,nelemd
-                   vartmp(:,:,1) = (elem(ie)%state%ps_v(:,:,tl%n0))
+                   vartmp(:,:,1) = (elem(ie)%state%ps_v(:,:,n0))
                    en=st+elem(ie)%idxp%NumUniquePts-1
                    call UniquePoints(elem(ie)%idxP,vartmp(:,:,1),var2d(st:en))
                    st=en+1
@@ -481,7 +485,7 @@ contains
              if(nf_selectedvar('zeta', output_varnames)) then
                 if (par%masterproc) print *,'writing zeta...'
                 ! velocities are on sphere for primitive equations
-                call compute_zeta_C0(temp3d,elem,par,tl%n0)
+                call compute_zeta_C0(temp3d,elem,par,n0)
 
                 st=1
                 do ie=1,nelemd
@@ -498,7 +502,8 @@ contains
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call UniquePoints(elem(ie)%idxP,nlev,elem(ie)%state%T(:,:,:,tl%n0),var3d(st:en,:))
+                   call get_field(elem(ie),'temperature',vartmp,hvcoord,n0,n0_Q)
+                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3d,start, count, name='T')
@@ -509,16 +514,7 @@ contains
                 pr0=1./(p0)
                 st=1
                 do ie=1,nelemd
-                   do k=1,nlev
-                      do j=1,np
-                         do i=1,np
-                            pfull = hvcoord%hyam(k)*hvcoord%ps0  &
-                                 + hvcoord%hybm(k)*(elem(ie)%state%ps_v(i,j,tl%n0))
-                            varTMP(i,j,k)=elem(ie)%state%T(i,j,k,tl%n0)* &
-                                 (pfull*pr0)**(-kappa)
-                         end do
-                      end do
-                   end do
+                   call get_field(elem(ie),'pottemp',vartmp,hvcoord,n0,n0_Q)
                    en=st+elem(ie)%idxp%NumUniquePts-1
                    call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
                    st=en+1
@@ -530,7 +526,7 @@ contains
                 st=1
                 do ie=1,nelemd
                    do k=1,nlev
-                      vartmp(:,:,k) = elem(ie)%state%v(:,:,1,k,tl%n0)
+                      vartmp(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)
                    end do
                    en=st+elem(ie)%idxp%NumUniquePts-1
                    call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
@@ -544,7 +540,7 @@ contains
                 st=1
                 do ie=1,nelemd
                    do k=1,nlev
-                      vartmp(:,:,k) = elem(ie)%state%v(:,:,2,k,tl%n0)
+                      vartmp(:,:,k) = elem(ie)%state%v(:,:,2,k,n0)
                    end do
                    en=st+elem(ie)%idxp%NumUniquePts-1
                    call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
@@ -557,8 +553,8 @@ contains
                 st=1
                 do ie=1,nelemd
                    do k=1,nlev 
-                      ke(:,:,k) = (elem(ie)%state%v(:,:,1,k,tl%n0)**2 + &
-                      elem(ie)%state%v(:,:,2,k,tl%n0)**2 )/2
+                      ke(:,:,k) = (elem(ie)%state%v(:,:,1,k,n0)**2 + &
+                      elem(ie)%state%v(:,:,2,k,n0)**2 )/2
                    enddo
                    en=st+elem(ie)%idxp%NumUniquePts-1
                    call UniquePoints(elem(ie)%idxp,nlev,ke, var3d(st:en,:))

@@ -9,22 +9,13 @@
 !  on reference levels.  To compute these fields on floating levels
 !  the model should do that directly (or we need to modify the interface)
 !
-!  setter functions:
-!     set_thermostate()  
-!  used for initial conditions.  Most of our initial condition code
-!  will compute a temperature, so we require a routine that will convert
-!  temperature to the internal thermodynamics state variable
-!
-!  getter functions:
-!  Currently each model needs to provide:
-!     temperature
-!     potential temperature
-!     phi
+!  see src/preqx/element_ops.F90 for documentation
 !     
 module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use element_mod,    only: element_t
+  use element_state,  only: timelevels
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -199,10 +190,45 @@ contains
      enddo
   endif
 
-  elem%state%theta(:,:,:,2)=elem%state%theta(:,:,:,1)
-  elem%state%theta(:,:,:,3)=elem%state%theta(:,:,:,1)
+  do k=2,timelevels
+     elem%state%theta(:,:,:,k)=elem%state%theta(:,:,:,1)
+  enddo
 
   end subroutine set_thermostate
+
+
+subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
+
+  ! set state variables at node(i,j,k) at layer midpoints
+
+  real(real_kind),  intent(in)    :: u,v,T,ps,phis,p,dp,zm,g
+  integer,          intent(in)    :: i,j,k,n0,n1
+  type(element_t),  intent(inout) :: elem
+
+  ! set prognostic state variables at level midpoints
+  elem%state%v   (i,j,1,k,n0:n1) = u
+  elem%state%v   (i,j,2,k,n0:n1) = v
+!  elem%state%T   (i,j,k,n0:n1)   = T
+  elem%state%dp3d(i,j,k,n0:n1)   = dp
+  elem%state%ps_v(i,j,n0:n1)     = ps
+  elem%state%phis(i,j)           = phis
+
+
+  if (use_moisture==1) then
+     call abortmp('ERROR: thetah set_state cant handle moisture')
+  else
+     elem%state%theta(i,j,k,1)=T/((p/p0)**kappa)
+  endif
+
+
+
+  ! set some diagnostic variables
+  elem%derived%dp(i,j,k)         = dp
+  elem%derived%phi(i,j,k)        = g*zm
+
+  
+
+end subroutine
   
 end module
 

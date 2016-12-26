@@ -22,6 +22,7 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
   ${SRC_DIR}/test_src/dcmip2012_test4.F90
   ${SRC_DIR}/test_src/dcmip2012_test5.F90
+  ${SRC_DIR}/test_src/dcmip_tests.F90
   ${SRC_DIR}/checksum_mod.F90 
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/common_movie_mod.F90

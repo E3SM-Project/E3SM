@@ -61,9 +61,6 @@ OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
-# Cristoph's "standalone" executables
-OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
-
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM}) 
   SET (HOMME_USE_CXX TRUE)
@@ -182,10 +179,6 @@ ENDIF()
 
 IF(${BUILD_HOMME_PREQX_ACC})
   ADD_SUBDIRECTORY(src/preqx_acc)
-ENDIF()
-
-IF(${BUILD_HOMME_FVM})
-  ADD_SUBDIRECTORY(src/fvm)
 ENDIF()
 
 IF(${BUILD_HOMME_SWIM})
