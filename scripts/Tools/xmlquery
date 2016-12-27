@@ -29,7 +29,7 @@ logger = logging.getLogger("xmlquery")
 ###############################################################################
 def parse_command_line(args):
 ###############################################################################
-    parser = argparse.ArgumentParser(   description="Querry the xml files for attributes and return their values." ,
+    parser = argparse.ArgumentParser(   description="Query the xml files for attributes and return their values." ,
                                         formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(__doc__) )
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -108,7 +108,7 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
              resolved=True, raw=False, description=False, group=False,
              full=False, dtype=False, valid_values=False):
     """
-    Return list of attributes and their values , print formatted
+    Return list of attributes and their values, print formatted
 
     """
     results = {}

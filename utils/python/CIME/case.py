@@ -811,7 +811,8 @@ class Case(object):
                     os.path.join(toolsdir, "check_case"),
                     os.path.join(toolsdir, "archive_metadata.sh"),
                     os.path.join(toolsdir, "xmlchange"),
-                    os.path.join(toolsdir, "xmlquery"))
+                    os.path.join(toolsdir, "xmlquery"),
+                    os.path.join(toolsdir, "pelayout"))
         try:
             for exefile in exefiles:
                 destfile = os.path.join(self._caseroot,os.path.basename(exefile))
