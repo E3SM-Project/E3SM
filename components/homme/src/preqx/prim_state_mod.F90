@@ -679,7 +679,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, cpwater_vapor
-    use physics_mod, only : Virtual_Specific_Heat, Virtual_Temperature
+    use physics_mod, only : Virtual_Specific_Heat
     use prim_si_mod, only : preq_hydrostatic
 
     integer :: t1,n,nets,nete

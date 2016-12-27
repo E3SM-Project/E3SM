@@ -26,11 +26,8 @@ module physics_mod
   public :: Vapor_Pressure
   public :: Mixing_Ratio
   public :: Prim_Condense
-  public :: getsurfpress
-  public :: Temp2PotTemp
   public :: Virtual_Temperature
   public :: Virtual_Specific_Heat
-  public :: kappastar  
 
  interface Virtual_Temperature
     module procedure Virtual_Temperature1d
@@ -84,23 +81,6 @@ contains
        end do
     end do
   end function Virtual_Temperature3d
-
-  function kappastar(Q) result(ks)
-    real(kind=real_kind), intent(in) :: Q(np,np,nlev)
-    real(kind=real_kind) :: ks(np,np,nlev)
-    integer i,j,k
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
-    do k=1,nlev
-       do j=1,np
-          do i=1,np
-             ks(i,j,k) =  Rgas/Virtual_Specific_Heat(Q(i,j,k))
-          end do
-       end do
-    end do
-  end function kappastar
 
 
   function Virtual_Specific_Heat(rin) result(Cp_star)
@@ -248,50 +228,5 @@ contains
 
   end subroutine Prim_Condense
 
-  function Temp2PotTemp(pr3d,t3d) result(pt3d)
-    real (kind=real_kind),intent(in) :: pr3d(np,np,nlev),t3d(np,np,nlev)
-    real (kind=real_kind)            :: pt3d(np,np,nlev)
-    integer:: i,j,k    
-    real (kind=real_kind):: pp
 
-    !
-    ! dry
-    !    
-    do k=1,nlev
-       do j=1,np
-          do i=1,np
-             pp = (pr3d(i,j,k) + pr3d(i,j,k+1))*0.5D0
-             pt3d(i,j,k)=  t3d(i,j,k)*(p0/pp)**kappa
-          enddo
-       enddo
-    enddo
-  end function Temp2PotTemp
-
-  function Exner_function(pr3d) result(exner)
-    real (kind=real_kind),intent(in) :: pr3d(np,np,nlev)
-    real (kind=real_kind)            :: exner(np,np,nlev)
-    integer:: i,j,k    
-    real (kind=real_kind):: pp
-    !
-    ! dry
-    !    
-    do k=1,nlev
-       do j=1,np
-          do i=1,np
-             pp = (pr3d(i,j,k) + pr3d(i,j,k+1))*0.5D0
-             exner(i,j,k)=  (pp/p0)**kappa
-          enddo
-       enddo
-    enddo
-  end function Exner_function
-
-  function getsurfpress(lnps) result (press)
-    real (kind=real_kind) :: press(np,np)
-    real (kind=real_kind) :: lnps(np,np)
-
-    press(:,:) = 0.0
-    
-  end function getsurfpress
-  
-     
   end module physics_mod
