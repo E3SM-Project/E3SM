@@ -30,7 +30,7 @@ module restart_io_mod
    use element_mod, only: element_t
    use element_state, only: elem_state_t
    !------------------
-   use control_mod, only : restartdir, restartfile, columnpackage
+   use control_mod, only : restartdir, restartfile
    !------------------
    use schedtype_mod, only : Schedule
    !------------------

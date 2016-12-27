@@ -5,7 +5,7 @@
 module test_mod
 
 use control_mod,    only: test_case, sub_case, rsplit
-use dimensions_mod, only: np, nlev, nlevp
+use dimensions_mod, only: np, nlev, nlevp, qsize
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t
 use element_state,  only: elem_state_t, nt=>timelevels
@@ -109,6 +109,7 @@ subroutine apply_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
   ! apply forcing terms produced by HOMME stand-alone tests
 
   use dcmip_tests, only:  dcmip2012_test2_x_forcing
+  use held_suarez_mod, only: hs_forcing
   implicit none
   type(element_t),  intent(inout) :: elem(:)                            ! element array
   type(hybrid_t),   intent(in)    :: hybrid                             ! hybrid parallel structure
@@ -116,24 +117,32 @@ subroutine apply_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
   real(kind=rl),    intent(in)    :: dt
   integer,          intent(in)    :: n,nets,nete,n_tracer
 
-  integer :: ie
+  integer :: ie,q
 
   do ie=nets,nete
     elem(ie)%derived%FT = 0
     elem(ie)%derived%FM = 0
+    elem(ie)%derived%FQ = 0
   enddo
 
   ! get forcing from test case
   select case(test_case)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
+    case('held_suarez0');       
+       do ie=nets,nete
+          call hs_forcing(elem(ie),hvcoord,n,n_tracer,dt)
+       enddo
   endselect
 
   do ie=nets,nete
 
     ! apply dynamics forcing
-    elem(ie)%state%T(:,:,:,  n) = elem(ie)%state%T(:,:,:,  n) + dt * elem(ie)%derived%FT(:,:,:,  n)
-    elem(ie)%state%v(:,:,:,:,n) = elem(ie)%state%v(:,:,:,:,n) + dt * elem(ie)%derived%FM(:,:,:,:,n)
+    elem(ie)%state%T(:,:,:,  n) = elem(ie)%state%T(:,:,:,  n) + dt * elem(ie)%derived%FT(:,:,:)
+    elem(ie)%state%v(:,:,:,:,n) = elem(ie)%state%v(:,:,:,:,n) + dt * elem(ie)%derived%FM(:,:,:,:)
+    do q=1,qsize
+       elem(ie)%state%Qdp(:,:,:,q,n) = elem(ie)%state%Qdp(:,:,:,q,n) + dt * elem(ie)%derived%FQ(:,:,:,q)
+    enddo
 
     ! apply tracer forcing (todo)
   enddo
@@ -141,11 +150,8 @@ subroutine apply_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
 end subroutine
 
 
-! temp comments: if this routine is moved again, consider using #ifndef CAM to wrap.
   !_____________________________________________________________________
   subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
-
-!    use test_mod,  only: set_test_prescribed_wind
 
     type (element_t),      intent(inout), target  :: elem(:)
     type (derivative_t),   intent(in)             :: deriv

@@ -13,7 +13,7 @@ tmax=38000
 
 ; NETCDF files to process
 fnames =  systemfunc( \
-  "ls hszonal0.nc;" \
+  "ls hszonal*.nc;" \
 )
 fuv_all   = addfiles(fnames,"r")       ; Open netCDF files.	
 print("files = "+fnames)
@@ -114,14 +114,14 @@ wks = gsn_open_wks("pdf","hszonal")
    c=gsn_csm_contour(wks,field,res)     ; Draw a contour plot.  ;
 
 
-   field=fuv->RH
-   print("RH min/max = "+min(field)+" "+max(field))
-   field@long_name = "Relative Humidity"
-   field@units = ""
-   res@cnMinLevelValF       = -.1
-   res@cnMaxLevelValF       = 1.1  
-   res@cnLevelSpacingF      = .10
-   c=gsn_csm_contour(wks,field,res)     ; Draw a contour plot.  ;
+;   field=fuv->RH
+;   print("RH min/max = "+min(field)+" "+max(field))
+;   field@long_name = "Relative Humidity"
+;   field@units = ""
+;   res@cnMinLevelValF       = -.1
+;   res@cnMaxLevelValF       = 1.1  
+;   res@cnLevelSpacingF      = .10
+;   c=gsn_csm_contour(wks,field,res)     ; Draw a contour plot.  ;
 
 
 

@@ -60,7 +60,6 @@ module namelist_mod
     smooth_phis_nudt,     &
     initial_total_mass,   & ! set > 0 to set the initial_total_mass
     u_perturb,     &        ! J&W baroclinic test perturbation size
-    columnpackage, &
     moisture,      &
     vform,         &
     vfile_mid,     &
@@ -255,7 +254,6 @@ module namelist_mod
       restartdir,      &             ! name of the restart directory for OUTPUT
       runtype,         &
       tstep,           &             ! tracer time step
-      columnpackage,   &
       moisture
     ! control parameters for dcmip stand-alone tests
     namelist /ctl_nl/     &
@@ -353,7 +351,6 @@ module namelist_mod
     tasknum       =-1
     integration   = "explicit"
     moisture      = "dry"
-    columnpackage = "none"
     nu_top=0
     initial_total_mass=0
     mesh_file='none'
@@ -661,7 +658,6 @@ module namelist_mod
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-    call MPI_bcast(columnpackage,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
 
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)

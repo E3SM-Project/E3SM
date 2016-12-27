@@ -18,7 +18,7 @@ module prim_movie_mod
   use cube_mod, only : cube_assemble
   use control_mod, only : test_case, runtype, &
        restartfreq, &
-       integration, columnpackage, hypervis_power, qsplit
+       integration, hypervis_power, qsplit
   use common_io_mod, only : &
        output_start_time,   &
        output_end_time,     &

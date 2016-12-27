@@ -38,8 +38,8 @@ kcut_fm       = 2
 /
 &vert_nl
 vform         = "ccm"
-vfile_mid     = "/home/mataylo/homme/test/vcoord/sabm-20.fbin.littleendian"
-vfile_int     = "/home/mataylo/homme/test/vcoord/sabi-20.fbin.littleendian"
+vfile_mid     = "/home/mataylo/homme/test/vcoord/sabm-20.ascii"
+vfile_int     = "/home/mataylo/homme/test/vcoord/sabi-20.ascii"
 /
 &analysis_nl
 output_timeunits=1,

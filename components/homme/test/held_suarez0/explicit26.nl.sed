@@ -8,14 +8,14 @@ ndays         = 400
 statefreq     = SFREQ
 tstep_type    = 1
 qsize         = 1
-ftype         = 0 
+rsplit        = 0
 restartfreq   =  30
 restartfile   = "restart/R0001"
 restartdir    = "./restart/"
 !restartdir    = "bglockless:./restart/"
 runtype       = RUNTYPE
 tstep         = TSTEP
-smooth        = .05
+smooth        = 0
 integration   = "explicit"
 nu            = NU1
 nu_s          = NU2
@@ -41,17 +41,18 @@ kcut_fm       = 2
 /
 &vert_nl
 vform         = "ccm"
-vfile_mid     = "../vcoord/camm-26.fbin.littleendian"
-vfile_int     = "../vcoord/cami-26.fbin.littleendian"
+vfile_mid     = "../vcoord/camm-26.ascii"
+vfile_int     = "../vcoord/cami-26.ascii"
 /
 &analysis_nl
 output_timeunits=1,1
-output_frequency=0,0
-output_start_time=575,575
+output_frequency=1,1
+output_start_time=600,600
 output_end_time=30000,30000
-output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
+output_varnames1='u','v','T','zeta','ps'
+!output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
 !output_varnames2='DIFFT','DIFFU','DIFFV','CONVU','CONVV','FU','FV'
-io_stride = 8
+io_stride = 32
 /
 
 &prof_inparm

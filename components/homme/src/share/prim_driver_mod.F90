@@ -35,9 +35,6 @@ module prim_driver_mod
   type (cg_t), allocatable  :: cg(:)              ! conjugate gradient struct (nthreads)
   type (quadrature_t)   :: gp                     ! element GLL points
 
-#ifndef CAM
-  type (ColumnModel_t), allocatable :: cm(:) ! (nthreads)
-#endif
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
   type (derivative_t)  :: deriv1
 
@@ -460,9 +457,6 @@ contains
     nete=nelemd
     ! set the actual number of threads which will be used in the horizontal
     nThreadsHoriz = n_domains
-#ifndef CAM
-    allocate(cm(0:n_domains-1))
-#endif
     allocate(cg(0:n_domains-1))
     call prim_advance_init(par,elem,integration)
 #ifdef TRILINOS
@@ -485,7 +479,7 @@ contains
 
     use control_mod,          only: runtype, integration, test_case, &
                                     debug_level, vfile_int, vform, vfile_mid, &
-                                    topology,columnpackage, rsplit, qsplit, rk_stage_user,&
+                                    topology,rsplit, qsplit, rk_stage_user,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, moisture, use_moisture
     use global_norms_mod,     only: test_global_integral, print_cfl
@@ -499,7 +493,6 @@ contains
     use thread_mod,           only: nthreads
 
 #ifndef CAM
-    use column_model_mod,     only: InitColumnModel
     use control_mod,          only: pertlim                     
 #endif
 
@@ -655,8 +648,6 @@ contains
     ! =================================
     ! HOMME stand alone initialization
     ! =================================
-
-    call InitColumnModel(elem, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
 
     if(runtype >= 1) then
 
@@ -830,7 +821,6 @@ contains
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
-
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
@@ -903,7 +893,6 @@ contains
 #else
     ! Apply HOMME test case forcing
     call apply_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-
 #endif
 
     if (compute_diagnostics) then
@@ -961,6 +950,7 @@ contains
     !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
+
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:

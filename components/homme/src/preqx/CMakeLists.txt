@@ -6,7 +6,6 @@ SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx)
 SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
-SET(PHYSICS_DIR       ${HOMME_SOURCE_DIR}/physics)
 SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
@@ -23,10 +22,10 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/test_src/dcmip2012_test4.F90
   ${SRC_DIR}/test_src/dcmip2012_test5.F90
   ${SRC_DIR}/test_src/dcmip_tests.F90
+  ${SRC_DIR}/test_src/held_suarez_mod.F90 
   ${SRC_DIR}/checksum_mod.F90 
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/common_movie_mod.F90
-  ${SRC_DIR}/forcing_mod.F90
   ${SRC_DIR}/interpolate_driver_mod.F90
   ${SRC_DIR}/interp_movie_mod.F90
   ${SRC_DIR}/netcdf_io_mod.F90
@@ -91,9 +90,6 @@ SET(PREQX_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
   ${UTILS_SHARE_DIR}/shr_const_mod.F90 
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
-  ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
-  ${PHYSICS_DIR}/column_model_mod.F90 
-  ${PHYSICS_DIR}/column_types_mod.F90 
 )
 
 SET(PREQX_SRCS_C

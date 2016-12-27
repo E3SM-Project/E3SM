@@ -3,12 +3,12 @@
 #endif
 
 module held_suarez_mod
-#ifdef _PRIM
 
-  use control_mod,            only: tstep_type
+
   use coordinate_systems_mod, only: spherical_polar_t
   use dimensions_mod,         only: nlev,np,qsize
   use element_mod,            only: element_t
+  use element_ops,            only: get_field, set_thermostate
   use hybrid_mod,             only: hybrid_t
   use hybvcoord_mod,          only: hvcoord_t
   use kinds,                  only: real_kind, iulog
@@ -34,56 +34,35 @@ private
 
 contains
 
-  subroutine hs_forcing(elemin,hvcoord,tl,dt)
+  subroutine hs_forcing(elemin,hvcoord,nm1,nm1_Q,dt)
 
     type (element_t)                 :: elemin
     type (hvcoord_t)                 :: hvcoord
-    type (TimeLevel_t)               :: tl
+    integer                          :: nm1,nm1_Q  ! timelevel to use
     real (kind=real_kind)                   :: dt
 
     ! local
     real (kind=real_kind)                   :: pmid,r0,r1,dtf_q,dp,rdp,FQ
     real (kind=real_kind), dimension(np,np) :: psfrc 
-    integer                                 :: nm1,nfrc,n0
+    real (kind=real_kind)                   :: temperature(np,np,nlev)
     integer                                 :: i,j,k,q
 
-    nm1   = tl%nm1  ! always store Forcing tendencies in tl%nm1
-
-    ! PROCESS SPLIT:
-    !  U(t+1) - U(t-1) = 2dt ( RHS(t)  +  F(U(t-1)) ) 
-    !
-    ! TIME SPLIT:
-    !  U(*) - U(t-1) = 2dt RHS(t)      advection step to t+1
-    !  U(t+1) = U(*) + 2dt F(U(t+1))   forcing step
-    !
-    ! time split can be written as: 
-    !  U(t+1) - U(t-1) = 2dt ( RHS(t)  +  F(U(*)) ) 
-    !
-
-    nfrc  = nm1    ! PROCESS SPLIT
-    dtf_q = 2*dt   ! Q forcing interval
-
-
-    ! RK2 advection  switch to TIME SPLIT and since Q is advected
-    ! with RK2, use dt instead of 2dt
-    if (tstep_type == 1) then  
-       nfrc=tl%np1     ! TIME SPLIT 
-       dtf_q = dt
-    endif
+    dtf_q = dt
+    call get_field(elemin,'temperature',temperature,hvcoord,nm1,nm1_Q)
         
     do j=1,np
        do i=1,np
-          psfrc(i,j) = (elemin%state%ps_v(i,j,nfrc))
+          psfrc(i,j) = (elemin%state%ps_v(i,j,nm1))
        end do
     end do
 
-    elemin%derived%FT(:,:,:,nm1) = elemin%derived%FT(:,:,:,nm1) + &
+    elemin%derived%FT(:,:,:) = elemin%derived%FT(:,:,:) + &
          hs_T_forcing(hvcoord,psfrc(1,1),               &
-         elemin%state%T(1,1,1,nfrc),elemin%spherep,np, nlev)
+         temperature,elemin%spherep,np, nlev)
     
-    elemin%derived%FM(:,:,:,:,nm1)= elemin%derived%FM(:,:,:,:,nm1) + &
+    elemin%derived%FM(:,:,:,:)= elemin%derived%FM(:,:,:,:) + &
          hs_v_forcing(hvcoord,psfrc(1,1),& 
-         elemin%state%v(1,1,1,1,nfrc),np,nlev)
+         elemin%state%v(1,1,1,1,nm1),np,nlev)
 
     if (qsize>=1) then
        ! HS with tracer  (Galewsky type forcing, with flux of  2.3e-5 kg/m^2/s
@@ -99,18 +78,18 @@ contains
        do j=1,np
           do i=1,np
              FQ = rdp * g * 2.3E-5 * COS(elemin%spherep(i,j)%lat)**2
-             elemin%derived%FQ(i,j,nlev,q,nm1) =elemin%derived%FQ(i,j,nlev,q,nm1)+FQ
+             elemin%derived%FQ(i,j,nlev,q) =elemin%derived%FQ(i,j,nlev,q)+FQ
           enddo
        enddo
 
        do j=1,np
           do i=1,np
              do k=1,nlev
-                pmid = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*(elemin%state%ps_v(i,j,nfrc))
+                pmid = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*(elemin%state%ps_v(i,j,nm1))
                 r0=elemin%state%Q(i,j,k,q)
                 r1=r0
-                call Prim_Condense(r1,elemin%state%T(i,j,k,nfrc),pmid)
-                elemin%derived%FQ(i,j,k,q,nm1) = elemin%derived%FQ(i,j,k,q,nm1) + &
+                call Prim_Condense(r1,temperature(i,j,k),pmid)
+                elemin%derived%FQ(i,j,k,q) = elemin%derived%FQ(i,j,k,q) + &
                      (r1-r0)/(dtf_q)
              enddo
           enddo
@@ -135,35 +114,19 @@ contains
     integer i,j,k
     real (kind=real_kind) :: k_v
     real (kind=real_kind) :: rps(npts,npts)
-#ifdef _USE_VECTOR
-    real (kind=real_kind) :: p,etam,rec_one_minus_sigma_b
-#else
     real (kind=real_kind) :: p,etam
-#endif
     do j=1,npts
-#ifdef _USE_VECTOR
-       call vrec(rps(1,j), ps(1,j), npts)
-#else
        do i=1,npts
          rps(i,j)     = 1.0D0/ps(i,j)
        end do
-#endif
     end do
-
-#ifdef _USE_VECTOR
-    rec_one_minus_sigma_b = 1.0D0/(1.0_real_kind - sigma_b)
-#endif
 
     do k=1,nlevels
        do j=1,npts
           do i=1,npts
              p    = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps(i,j)
              etam      = hvcoord%hyam(k) + hvcoord%hybm(k)
-#ifdef _USE_VECTOR
-             k_v = k_f*MAX(0.0_real_kind,(etam - sigma_b )*rec_one_minus_sigma_b)
-#else
              k_v = k_f*MAX(0.0_real_kind,(etam - sigma_b )/(1.0_real_kind - sigma_b))
-#endif
              hs_v_frc(i,j,1,k) = -k_v*v(i,j,1,k)
              hs_v_frc(i,j,2,k) = -k_v*v(i,j,2,k)
           end do
@@ -198,58 +161,23 @@ contains
 
     real (kind=real_kind) :: rec_one_minus_sigma_b
 
-#ifdef _USE_VECTOR
-    real (kind=real_kind) :: xarray(npts), yarray(npts)
-#endif
-
     integer i,j,k
 
     logps0    = LOG(hvcoord%ps0 )
 
     do j=1,npts
-#ifdef _USE_VECTOR
-       call vrec(rps(1,j), ps(1,j), npts)
-       do i=1,npts
-         snlat        = SIN(sphere(i,j)%lat)
-         snlatsq(i,j) = snlat*snlat
-         cslatsq(i,j) = 1.0D0 - snlatsq(i,j)
-       end do
-#else
        do i=1,npts
          snlat        = SIN(sphere(i,j)%lat)
          snlatsq(i,j) = snlat*snlat
          cslatsq(i,j) = 1.0D0 - snlatsq(i,j)
          rps(i,j)     = 1.0D0/ps(i,j)
        end do
-#endif
     end do
 
     rec_one_minus_sigma_b = 1.0D0/(1.0D0 - sigma_b)
 
     do k=1,nlevels
        do j=1,npts
-
-#ifdef _USE_VECTOR
-          do i=1,npts
-             xarray(i) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps(i,j)
-          end do
-          call vlog(xarray, xarray, npts)
-          do i=1,npts
-             yarray(i) = kappa*(xarray(i) - logps0)
-          end do
-          call vexp(yarray, yarray, npts)
-
-          do i=1,npts
-             logprat   = xarray(i) - logps0
-             pratk     = yarray(i)
-             etam      = hvcoord%hyam(k) + hvcoord%hybm(k)
-
-             k_t(i,j)= k_a + (k_s-k_a)*cslatsq(i,j)*cslatsq(i,j)* &
-                       MAX(0.0D0,(etam - sigma_b)*rec_one_minus_sigma_b)
-             Teq     = MAX(200.0D0,(315.0D0 - dT_y*snlatsq(i,j) - dtheta_z*logprat*cslatsq(i,j))*pratk)
-             hs_T_frc(i,j,k)= -k_t(i,j)*(T(i,j,k)-Teq)
-          end do
-#else
           do i=1,npts
              p         = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps(i,j)
              logprat   = LOG(p)-logps0
@@ -272,7 +200,6 @@ contains
 #endif
              hs_T_frc(i,j,k)= -k_t(i,j)*(T(i,j,k)-Teq)
           end do
-#endif /* _USE_VECTOR */
        end do
     end do
       
@@ -294,6 +221,7 @@ contains
     integer :: n0 
     integer :: np1
     real (kind=real_kind) :: lat_mtn,lon_mtn,r_mtn,h_mtn,rsq,lat,lon
+    real (kind=real_kind) :: temperature(np,np,nlev)
 
     if (hybrid%masterthread) write(iulog,*) 'initializing Held-Suarez primitive equations test'
 
@@ -323,10 +251,8 @@ contains
           enddo
        enddo
 #endif
-
-       elem(ie)%state%T(:,:,:,n0) =Tinit
-       elem(ie)%state%T(:,:,:,nm1)=elem(ie)%state%T(:,:,:,n0)
-       elem(ie)%state%T(:,:,:,np1)=elem(ie)%state%T(:,:,:,n0)
+       temperature(:,:,:)=Tinit
+       call set_thermostate(elem(ie),temperature,hvcoord)
 
        elem(ie)%state%v(:,:,:,:,n0) =0.0D0
        elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
@@ -336,7 +262,7 @@ contains
        q=1
        elem(ie)%state%Q(:,:,:,q) =0  ! moist HS tracer IC=0
        do q=2,qsize
-          elem(ie)%state%Q(:,:,:,q) =elem(ie)%state%T(:,:,:,n0)/400
+          elem(ie)%state%Q(:,:,:,q) =temperature(:,:,:)/400
        enddo
        endif
     end do
@@ -344,6 +270,5 @@ contains
   end subroutine hs0_init_state
 
 
-#endif
 end module held_suarez_mod
 

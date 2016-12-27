@@ -16,8 +16,6 @@ module prim_restart_mod
         StateDesc_t, createstatedescriptor, AddStateField, constructelementfile, &
         collective_io_read, collective_io_write, printstatedescriptor
    !------------------
-   use control_mod, only : columnpackage
-   !------------------
    implicit none
 
 private 
