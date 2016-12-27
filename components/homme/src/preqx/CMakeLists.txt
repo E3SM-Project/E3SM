@@ -73,13 +73,10 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/hybvcoord_mod.F90
   ${SRC_SHARE_DIR}/domain_mod.F90 
   ${SRC_SHARE_DIR}/cg_mod.F90
-  ${SRC_SHARE_DIR}/linear_algebra_mod.F90 
   ${SRC_SHARE_DIR}/solver_mod.F90 
   ${SRC_SHARE_DIR}/namelist_mod.F90
   ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
-  ${SRC_SHARE_DIR}/prim_si_ref_mod.F90
-  ${SRC_SHARE_DIR}/prim_advance_mod.F90 
   ${SRC_SHARE_DIR}/metis_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 

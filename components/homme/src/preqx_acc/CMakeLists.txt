@@ -22,6 +22,7 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/preqx/viscosity_preqx_base.F90
   ${SRC_DIR}/preqx/prim_state_mod.F90
   ${SRC_DIR}/preqx/vertremap_mod.F90
+  ${SRC_DIR}/preqx/prim_advance_mod.F90 
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
@@ -29,6 +30,20 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/test_src/dcmip2012_test5.F90
   ${SRC_DIR}/test_src/dcmip_tests.F90
   ${SRC_DIR}/test_src/held_suarez_mod.F90 
+  ${SRC_DIR}/restart_io_mod.F90 
+  ${SRC_DIR}/common_io_mod.F90
+  ${SRC_DIR}/pio_io_mod.F90 
+  ${SRC_DIR}/repro_sum_mod.F90 
+  ${SRC_DIR}/interp_movie_mod.F90 
+  ${SRC_DIR}/common_movie_mod.F90 
+  ${SRC_DIR}/checksum_mod.F90 
+  ${SRC_DIR}/prim_restart_mod.F90 
+  ${SRC_DIR}/prim_movie_mod.F90 
+  ${SRC_DIR}/surfaces_mod.F90 
+  ${SRC_DIR}/interpolate_driver_mod.F90 
+  ${SRC_DIR}/netcdf_io_mod.F90 
+  ${SRC_DIR}/prim_main.F90 
+  ${SRC_DIR}/test_mod.F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
   ${SRC_SHARE_DIR}/derivative_mod_base.F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90
@@ -60,13 +75,18 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/cube_mod.F90
   ${SRC_SHARE_DIR}/interpolate_mod.F90
   ${SRC_SHARE_DIR}/dof_mod.F90
-  ${SRC_DIR}/common_io_mod.F90
-  ${SRC_DIR}/pio_io_mod.F90 
-  ${SRC_DIR}/repro_sum_mod.F90 
   ${SRC_SHARE_DIR}/time_mod.F90 
   ${SRC_SHARE_DIR}/physics_mod.F90 
   ${SRC_SHARE_DIR}/hybvcoord_mod.F90 
-  ${SRC_DIR}/interp_movie_mod.F90 
+  ${SRC_SHARE_DIR}/domain_mod.F90 
+  ${SRC_SHARE_DIR}/cg_mod.F90 
+  ${SRC_SHARE_DIR}/solver_mod.F90 
+  ${SRC_SHARE_DIR}/namelist_mod.F90 
+  ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
+  ${SRC_SHARE_DIR}/prim_si_mod.F90 
+  ${SRC_SHARE_DIR}/metis_mod.F90 
+  ${SRC_SHARE_DIR}/prim_driver_mod.F90 
+  ${SRC_SHARE_DIR}/mesh_mod.F90 
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90 
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
@@ -74,28 +94,6 @@ SET(PREQX_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
   ${UTILS_SHARE_DIR}/shr_const_mod.F90 
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90 
-  ${SRC_SHARE_DIR}/domain_mod.F90 
-  ${SRC_DIR}/restart_io_mod.F90 
-  ${SRC_SHARE_DIR}/cg_mod.F90 
-  ${SRC_SHARE_DIR}/linear_algebra_mod.F90 
-  ${SRC_SHARE_DIR}/solver_mod.F90 
-  ${SRC_DIR}/common_movie_mod.F90 
-  ${SRC_SHARE_DIR}/namelist_mod.F90 
-  ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
-  ${SRC_DIR}/checksum_mod.F90 
-  ${SRC_SHARE_DIR}/prim_si_mod.F90 
-  ${SRC_DIR}/prim_restart_mod.F90 
-  ${SRC_SHARE_DIR}/prim_si_ref_mod.F90 
-  ${SRC_SHARE_DIR}/prim_advance_mod.F90 
-  ${SRC_SHARE_DIR}/metis_mod.F90 
-  ${SRC_SHARE_DIR}/prim_driver_mod.F90 
-  ${SRC_DIR}/prim_movie_mod.F90 
-  ${SRC_DIR}/surfaces_mod.F90 
-  ${SRC_DIR}/interpolate_driver_mod.F90 
-  ${SRC_DIR}/netcdf_io_mod.F90 
-  ${SRC_SHARE_DIR}/mesh_mod.F90 
-  ${SRC_DIR}/prim_main.F90 
-  ${SRC_DIR}/test_mod.F90
   )
 
 SET(PREQX_SRCS_C

@@ -75,7 +75,6 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
   ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_DIR}/prim_restart_mod.F90 
-  ${SRC_SHARE_DIR}/prim_si_ref_mod.F90 
   ${SRC_SHARE_DIR}/prim_advance_mod.F90 
   ${SRC_SHARE_DIR}/prim_advection_mod.F90
   ${SRC_SHARE_DIR}/prim_implicit_mod.F90

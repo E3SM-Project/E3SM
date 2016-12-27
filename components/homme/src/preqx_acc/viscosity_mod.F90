@@ -5,7 +5,7 @@
 
 module viscosity_mod
   use viscosity_mod_base, only: compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0, make_c0_vector
-  use viscosity_mod_base, only: biharmonic_wk_scalar,neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish
+  use viscosity_mod_base, only: biharmonic_wk_scalar,neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, smooth_phis
   use viscosity_preqx_base, only: biharmonic_wk_dp3d
 
   use thread_mod, only : omp_get_num_threads
@@ -25,6 +25,7 @@ module viscosity_mod
   public :: biharmonic_wk_scalar, neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, biharmonic_wk_dp3d
   public :: biharmonic_wk_scalar_openacc
   public :: neighbor_minmax_openacc
+  public :: smooth_phis
 
 
 

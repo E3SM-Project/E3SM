@@ -239,7 +239,6 @@ contains
 
 !    use physical_constants, only : rrearth, dd_pi, rearth, omega
 !    use bndry_mod, only : bndry_exchangeV
-!    use linear_algebra_mod, only : matvec
 !    use parallel_mod, only : haltmp
 !    use hybrid_mod, only : hybrid_t
     use derived_type_mod, only :derived_type
@@ -313,7 +312,6 @@ contains
     use control_mod, only : maxits, tol, precon_method
     use physical_constants, only : rrearth, dd_pi, rearth, omega
     use bndry_mod, only : bndry_exchangeV
-    use linear_algebra_mod, only : matvec
     use parallel_mod, only : haltmp
     use hybrid_mod, only : hybrid_t
     use global_norms_mod, only : linf_snorm, l2_snorm
@@ -808,7 +806,6 @@ tol=1.e-12
     use control_mod, only : maxits, tol, precon_method
     use physical_constants, only : rrearth, dd_pi, rearth, omega
     use bndry_mod, only : bndry_exchangeV
-    use linear_algebra_mod, only : matvec
     use parallel_mod, only : haltmp
     use hybrid_mod, only : hybrid_t
     use global_norms_mod, only : linf_snorm, l2_snorm

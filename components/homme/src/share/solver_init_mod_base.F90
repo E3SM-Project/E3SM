@@ -3,7 +3,12 @@
 #endif
 
 module solver_init_mod_base
-  implicit none
+!
+! 
+!  Each model provides a solver_init_mod.F90 which can replace these functions
+!  with model specific initialization, if needed.
+!
+!  implicit none
   private
 
   public :: solver_init2

@@ -12,7 +12,6 @@ module prim_driver_mod
   use hybrid_mod,       only: hybrid_t
   use kinds,            only: real_kind, iulog
   use perf_mod,         only: t_startf, t_stopf
-  use prim_si_ref_mod,  only: ref_state_t
   use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
@@ -486,7 +485,7 @@ contains
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
-    use prim_si_ref_mod,      only: prim_si_refstate_init, prim_set_mass
+    use prim_si_mod,          only: prim_set_mass
     use prim_advection_mod,   only: prim_advec_init2
     use solver_init_mod,      only: solver_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
@@ -1134,7 +1133,7 @@ contains
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
-    use prim_advance_mod, only : smooth_phis
+    use viscosity_mod, only : smooth_phis
     implicit none
 
     integer , intent(in) :: nets,nete
