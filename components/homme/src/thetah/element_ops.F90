@@ -25,10 +25,6 @@ module element_ops
   use control_mod, only:    use_moisture, use_cpstar
 
   implicit none
-  private
-  public get_field
-  public set_thermostate
-
 
 contains
 
@@ -135,6 +131,21 @@ contains
   endif
 
   end subroutine get_temperature
+
+
+  subroutine copy_state(elem,nout,nin)
+  implicit none
+  
+  type (element_t), intent(inout)   :: elem
+  integer :: nin,nout
+
+  elem%state%v(:,:,:,:,nout)=elem%state%v(:,:,:,:,nin)
+  elem%state%w(:,:,:,nout)   =elem%state%w(:,:,:,nin)
+  elem%state%theta(:,:,:,nout)   =elem%state%theta(:,:,:,nin)
+  elem%state%phi(:,:,:,nout)   =elem%state%phi(:,:,:,nin)
+  elem%state%dp3d(:,:,:,nout)=elem%state%dp3d(:,:,:,nin)
+  elem%state%ps_v(:,:,nout)  =elem%state%ps_v(:,:,nin)
+  end subroutine copy_state
 
 
 

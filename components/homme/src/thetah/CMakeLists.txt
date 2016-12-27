@@ -16,6 +16,7 @@ FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 
 SET(THETAH_SRCS_F90
   ${TARGET_F90}
+  ${SRC_DIR}/test_src/dcmip_tests.F90
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90

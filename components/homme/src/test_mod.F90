@@ -8,7 +8,8 @@ use control_mod,    only: test_case, sub_case, rsplit
 use dimensions_mod, only: np, nlev, nlevp, qsize
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t
-use element_state,  only: elem_state_t, nt=>timelevels
+use element_state,  only: timelevels
+use element_ops,    only: copy_state
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
 use kinds,          only: real_kind, rl => real_kind, iulog
@@ -50,9 +51,9 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('asp_rossby');         call asp_rossby       (elem,hybrid,hvcoord,nets,nete)
     case('asp_tracer');         call asp_tracer       (elem,hybrid,hvcoord,nets,nete)
     case('baroclinic');         call binst_init_state (elem,hybrid, nets, nete, hvcoord)
-    case('dcmip2012_test1_1');  call dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,0.0d0,1,nt)
-    case('dcmip2012_test1_2');  call dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,0.0d0,1,nt)
-    case('dcmip2012_test1_3');  call dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,0.0d0,1,nt,deriv)
+    case('dcmip2012_test1_1');  call dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,0.0d0,1,timelevels)
+    case('dcmip2012_test1_2');  call dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,0.0d0,1,timelevels)
+    case('dcmip2012_test1_3');  call dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,0.0d0,1,timelevels,deriv)
     case('dcmip2012_test2_0');  call dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,0)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,1)
@@ -79,22 +80,17 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
 
   integer :: n0,np1, ie
   real(rl):: time
-  type(elem_state_t), pointer :: s
 
   time = tl%nstep*dt
   n0   = tl%n0
   np1  = tl%np1
 
+  ! default is that prescribed state is constant, so copy n0 -> np1:
   do ie=nets,nete
-    ! duplicate state from last timestep
-    s => elem(ie)%state
-    s%v   (:,:,:,:,np1) = s%v   (:,:,:,:,n0)
-    s%T   (:,:,:,  np1) = s%T   (:,:,:,  n0)
-    s%dp3d(:,:,:,  np1) = s%dp3d(:,:,:,  n0)
-    s%ps_v(:,:,    np1) = s%ps_v(:,:,    n0)
+    call copy_state(elem(ie),np1,n0)
   enddo
 
-  ! set prescribed quantities
+  ! set prescribed quantities at timelevel np1 
   select case(test_case)
     case('dcmip2012_test1_1'); call dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,time,np1,np1)
     case('dcmip2012_test1_2'); call dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,np1,np1)
@@ -104,7 +100,7 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
 end subroutine
 
 !_______________________________________________________________________
-subroutine apply_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
+subroutine compute_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
 
   ! apply forcing terms produced by HOMME stand-alone tests
 
@@ -135,17 +131,7 @@ subroutine apply_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
        enddo
   endselect
 
-  do ie=nets,nete
 
-    ! apply dynamics forcing
-    elem(ie)%state%T(:,:,:,  n) = elem(ie)%state%T(:,:,:,  n) + dt * elem(ie)%derived%FT(:,:,:)
-    elem(ie)%state%v(:,:,:,:,n) = elem(ie)%state%v(:,:,:,:,n) + dt * elem(ie)%derived%FM(:,:,:,:)
-    do q=1,qsize
-       elem(ie)%state%Qdp(:,:,:,q,n) = elem(ie)%state%Qdp(:,:,:,q,n) + dt * elem(ie)%derived%FQ(:,:,:,q)
-    enddo
-
-    ! apply tracer forcing (todo)
-  enddo
 
 end subroutine
 

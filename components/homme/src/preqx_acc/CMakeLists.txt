@@ -21,6 +21,7 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/preqx/element_ops.F90
   ${SRC_DIR}/preqx/viscosity_preqx_base.F90
   ${SRC_DIR}/preqx/prim_state_mod.F90
+  ${SRC_DIR}/preqx/vertremap_mod.F90
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90

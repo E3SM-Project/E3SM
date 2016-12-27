@@ -112,6 +112,20 @@ contains
 
 
 
+  subroutine copy_state(elem,nout,nin)
+  implicit none
+  
+  type (element_t), intent(inout)   :: elem
+  integer :: nin,nout
+
+  elem%state%v(:,:,:,:,nout)=elem%state%v(:,:,:,:,nin)
+  elem%state%T(:,:,:,nout)   =elem%state%T(:,:,:,nin)
+  elem%state%dp3d(:,:,:,nout)=elem%state%dp3d(:,:,:,nin)
+  elem%state%ps_v(:,:,nout)  =elem%state%ps_v(:,:,nin)
+  end subroutine copy_state
+
+
+
   subroutine set_thermostate(elem,temperature,hvcoord)
   implicit none
   

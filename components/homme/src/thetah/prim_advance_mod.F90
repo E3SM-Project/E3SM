@@ -415,7 +415,7 @@ contains
      enddo
 
   enddo
-  call applyCAMforcing_dynamics(elem,hycoord,np1,dt_1,nets,nete)
+  call applyCAMforcing_dynamics(elem,hycoord,np1,dt_q,nets,nete)
 
   end subroutine applyCAMforcing
 

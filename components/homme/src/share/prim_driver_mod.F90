@@ -23,7 +23,7 @@ module prim_driver_mod
   use column_types_mod, only : ColumnModel_t
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : RestFile,readrestart
-  use test_mod,         only: set_test_initial_conditions, apply_test_forcing
+  use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
   implicit none
@@ -869,7 +869,11 @@ contains
     endif
 
 
-#ifdef CAM
+    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
+#ifndef CAM
+    ! Apply HOMME test case forcing
+    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+#endif
 
     ! Apply CAM Physics forcing
 
@@ -877,9 +881,6 @@ contains
     !   ftype= 1: forcing was applied time-split in CAM coupling layer
     !   ftype= 0: apply all forcing here
     !   ftype=-1: do not apply forcing
-
-    call TimeLevel_Qdp(tl, qsplit, n0_qdp, np1_qdp)
-
     if (ftype==0) then
       call t_startf("ApplyCAMForcing")
       call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
@@ -890,10 +891,6 @@ contains
       call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing_dynamics")
     endif
-#else
-    ! Apply HOMME test case forcing
-    call apply_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
-#endif
 
     if (compute_diagnostics) then
     ! E(1) Energy after CAM forcing
