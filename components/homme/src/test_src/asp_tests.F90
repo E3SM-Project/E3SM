@@ -971,6 +971,7 @@ module asp_tests
 !  instability probelms in Jablonowski and Williamson, QJR (2006) 132 
 !
 use element_mod,    only: element_t
+use element_state,   only: timelevels
 use element_ops,    only: get_field, set_thermostate
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
@@ -1062,7 +1063,9 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
           elem(ie)%state%ps_v(i,j,:) = p0
        enddo
        enddo
-       call set_thermostate(elem(ie),temp,hvcoord)
+       do idex=1,timelevels
+          call set_thermostate(elem(ie),temp,hvcoord,idex,1)
+       enddo
     enddo
 
 
@@ -1278,7 +1281,9 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
           enddo
        enddo
        enddo
-       call set_thermostate(elem(ie),temperature, hvcoord)
+       do idex=1,timelevels
+          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
+       enddo
     enddo
 
     ! now compute PHI, needed to init tracers:	
@@ -1392,7 +1397,9 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
           enddo
        enddo
        enddo
-       call set_thermostate(elem(ie),temperature,hvcoord)
+       do idex=1,timelevels
+          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
+       enddo
     enddo
 
 
@@ -1439,7 +1446,9 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
           enddo
        enddo
        enddo
-       call set_thermostate(elem(ie),temperature,hvcoord)
+       do idex=1,timelevels
+          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
+       enddo
     enddo
 
 
@@ -1493,7 +1502,9 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
 
        enddo
        enddo
-       call set_thermostate(elem(ie),temperature,hvcoord)
+       do idex=1,timelevels
+          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
+       enddo
     enddo
 
 

@@ -13,6 +13,7 @@ module prim_advance_mod
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
+  use element_ops,    only: get_temperature,set_thermostate
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -345,13 +346,13 @@ contains
 
 
 
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt_q,nets,nete)
+  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   use physical_constants, only: Cp
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt_q
+  real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
@@ -362,7 +363,7 @@ contains
 
   do ie=nets,nete
      ! apply forcing to Qdp
-     elem(ie)%derived%FQps(:,:,1)=0
+     elem(ie)%derived%FQps(:,:)=0
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
@@ -370,7 +371,7 @@ contains
         do k=1,nlev
            do j=1,np
               do i=1,np
-                 v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
+                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
                  !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
                  if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
                     !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
@@ -384,7 +385,7 @@ contains
                  !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
                  elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
                  if (q==1) then
-                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
                  endif
               enddo
            enddo
@@ -394,7 +395,7 @@ contains
      if (use_moisture) then
         ! to conserve dry mass in the precese of Q1 forcing:
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
-             dt_q*elem(ie)%derived%FQps(:,:,1)
+             dt*elem(ie)%derived%FQps(:,:)
      endif
 
 
@@ -415,30 +416,30 @@ contains
      enddo
 
   enddo
-  call applyCAMforcing_dynamics(elem,hycoord,np1,dt_q,nets,nete)
+  call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   end subroutine applyCAMforcing
 
 
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt_q,nets,nete)
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   use hybvcoord_mod,  only: hvcoord_t
 
   implicit none
   type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt_q
+  real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
+  integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
   integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
+  real (kind=real_kind) :: temperature(np,np,nlev)
 
   do ie=nets,nete
-     compute T from theta
-     Tnew = T  + dt_q*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%theta(:,:,:,:,np1) = compute theta from Tnew
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+     call get_temperature(elem(ie),temperature,hvcoord,np1,np1_qdp)
+     temperature(:,:,:) = temperature(:,:,:)  + dt*elem(ie)%derived%FT(:,:,:)
+     call set_thermostate(elem(ie),temperature,hvcoord,np1,np1_qdp)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
   enddo
   end subroutine applyCAMforcing_dynamics
 
@@ -481,10 +482,7 @@ contains
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ttens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: dptens
-  real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)          :: corners
-  real (kind=real_kind), dimension(2,2,2)                       :: cflux
   real (kind=real_kind), dimension(np,np,nlev) :: p
-  type (EdgeDescriptor_t)                                       :: desc
 
 
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -697,12 +695,10 @@ contains
                     elem(ie)%state%v(i,j,:,k,nt)=elem(ie)%state%v(i,j,:,k,nt) + &
                          vtens(i,j,:,k,ie)
 
-
-                    FIX THIS  somethign like:   heating*(p/p0)^-kappa / cp
-
                     v1=elem(ie)%state%v(i,j,1,k,nt)
                     v2=elem(ie)%state%v(i,j,2,k,nt)
-                    heating = (vtens(i,j,1,k,ie)*v1  + vtens(i,j,2,k,ie)*v2 )
+!                    heating = (vtens(i,j,1,k,ie)*v1  + vtens(i,j,2,k,ie)*v2 )
+                    heating = 0
                     elem(ie)%state%theta(i,j,k,nt)=elem(ie)%state%theta(i,j,k,nt) &
                          +ttens(i,j,k,ie)-heating/cp
 
@@ -772,7 +768,7 @@ contains
   use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
   use hybvcoord_mod, only : hvcoord_t
 
-  use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
+  use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0
   use physics_mod, only : virtual_specific_heat, virtual_temperature
   use prim_si_mod, only : preq_vertadv, preq_omega_ps, preq_hydrostatic
 
@@ -808,6 +804,7 @@ contains
   real (kind=real_kind), dimension(np,np,2)      :: thetau  !  theta*u in the diagnostics
   real (kind=real_kind), dimension(np,np)        :: divtemp ! temp divergence in the  in the diagnostics
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
+  real (kind=real_kind), dimension(np,np,nlev)   :: exner
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_exner
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
   real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
@@ -816,17 +813,15 @@ contains
   real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_p    ! v.grad(p)
   real (kind=real_kind), dimension(np,np,nlev+1) :: ph               ! half level pressures on p-grid
   real (kind=real_kind), dimension(np,np,2,nlev) :: v_vadv   ! velocity vertical advection
-  real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)          :: corners
-  real (kind=real_kind), dimension(2,2,2)                         :: cflux
+  real (kind=real_kind), dimension(np,np,nlev)   :: temperature
+  real (kind=real_kind), dimension(np,np,nlev)   :: Qt
   real (kind=real_kind) ::  kappa_star(np,np,nlev)
   real (kind=real_kind) ::  vtens1(np,np,nlev)
   real (kind=real_kind) ::  vtens2(np,np,nlev)
   real (kind=real_kind) ::  ttens(np,np,nlev)
-  real (kind=real_kind) ::  stashdp3d (np,np,nlev)
-  type (EdgeDescriptor_t)                                       :: desc
 
 
-  real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
+  real (kind=real_kind) ::  cp2,cp_ratio,E,de,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
   integer :: i,j,k,kptr,ie
   real (kind=real_kind) ::  u_m_umet, v_m_vmet, t_m_tmet 
@@ -845,15 +840,34 @@ contains
         p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
      enddo
 
+     if (use_moisture==1) then
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
+        do k=1,nlev
+           Qt(:,:,k) = elem(ie)%state%Qdp(:,:,k,1,qn0)/dp(:,:,k)
+           if (use_cpstar==1) then
+              kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
+                   (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
+           else
+              kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
+           endif
+           T_v(:,:,k) = temperature(:,:,k)*(Rgas + (Rwater_vapor-Rgas)*Qt(:,:,k))/Rgas
+        enddo
+     else
+        kappa_star(:,:,k)=kappa
+        T_v(:,:,k) = temperature(:,:,k)
+     endif
+
+
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
-        temperature(:,:,k)= elem(ie)%state%theta(:,:,k)*(p(:,:,k)/p0)**kappa
-
-        exner(:,:) = (p(:,:,k)/p0)**kappa
+        exner(:,:,k) = (p(:,:,k)/p0)**kappa_star(:,:,k)
         grad_exner(:,:,:,k) = gradient_sphere(exner,deriv,elem(ie)%Dinv)        
+        temperature(:,:,k)= elem(ie)%state%theta(:,:,k,n0)*exner(:,:,k)
 
         grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
         rdp(:,:,k) = 1.0D0/dp(:,:,k)
@@ -887,36 +901,8 @@ contains
 
      enddo
 
-     ! compute T_v for timelevel n0
-     !if ( moisture /= "dry") then
-     if (.not. use_moisture ) then
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
-        do k=1,nlev
-           T_v(:,:,k) = temperature(:,:,k)
-           kappa_star(:,:,k) = kappa
-        end do
-     else
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,Qt)
-#endif
 
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 ! Qt = elem(ie)%state%Q(i,j,k,1)
-                 Qt = elem(ie)%state%Qdp(i,j,k,1,qn0)/dp(i,j,k)
-                 T_v(i,j,k) = Virtual_Temperature(temperature(i,j,k),Qt)
-                 if (use_cpstar==1) then
-                    kappa_star(i,j,k) =  Rgas/Virtual_Specific_Heat(Qt)
-                 else
-                    kappa_star(i,j,k) = kappa
-                 endif
-              end do
-           end do
-        end do
-     end if
+
 
 
      ! ====================================================
@@ -1032,8 +1018,8 @@ contains
 
         do j=1,np
            do i=1,np
-              glnps1 = cp*theta*grad_exner(i,j,1,k)
-              glnps2 = cp*theta*grad_exner(i,j,1,k)
+              glnps1 = cp*elem(ie)%state%theta(i,j,k,n0)*grad_exner(i,j,1,k)
+              glnps2 = cp*elem(ie)%state%theta(i,j,k,n0)*grad_exner(i,j,1,k)
 
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)

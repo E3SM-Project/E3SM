@@ -87,7 +87,7 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
 
   ! default is that prescribed state is constant, so copy n0 -> np1:
   do ie=nets,nete
-    call copy_state(elem(ie),np1,n0)
+    call copy_state(elem(ie),n0,np1)
   enddo
 
   ! set prescribed quantities at timelevel np1 

@@ -8,7 +8,7 @@ module prim_driver_mod
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
   use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
-  use element_state,    only: timelevels
+  use element_ops,      only: copy_state
   use hybrid_mod,       only: hybrid_t
   use kinds,            only: real_kind, iulog
   use perf_mod,         only: t_startf, t_stopf
@@ -666,11 +666,8 @@ contains
        if (runtype /= 1) call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
 
        if (runtype==2) then
-          ! copy prognostic variables: tl%n0 into tl%nm1
           do ie=nets,nete
-             elem(ie)%state%v(:,:,:,:,tl%nm1) = elem(ie)%state%v(:,:,:,:,tl%n0)
-             elem(ie)%state%T(:,:,:,tl%nm1)   = elem(ie)%state%T(:,:,:,tl%n0)
-             elem(ie)%state%ps_v(:,:,tl%nm1)  = elem(ie)%state%ps_v(:,:,tl%n0)
+             call copy_state(elem(ie),tl%n0,tl%nm1)
           enddo
        endif ! runtype==2
 
@@ -684,10 +681,10 @@ contains
       ! scale PS to achieve prescribed dry mass
       call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
 
-      do ie=nets,nete
-        ! set perlim in ctl_nl namelist for temperature field initial perturbation
-        elem(ie)%state%T=elem(ie)%state%T * (1.0_real_kind + pertlim)
-      enddo
+!      do ie=nets,nete
+!        ! set perlim in ctl_nl namelist for temperature field initial perturbation
+!        elem(ie)%state%T=elem(ie)%state%T * (1.0_real_kind + pertlim)
+!      enddo
 
     endif !runtype
 
@@ -888,7 +885,7 @@ contains
 
     elseif (ftype==2) then
       call t_startf("ApplyCAMForcing_dynamics")
-      call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
+      call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
       call t_stopf("ApplyCAMForcing_dynamics")
     endif
 

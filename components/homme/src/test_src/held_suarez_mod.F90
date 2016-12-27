@@ -8,6 +8,7 @@ module held_suarez_mod
   use coordinate_systems_mod, only: spherical_polar_t
   use dimensions_mod,         only: nlev,np,qsize
   use element_mod,            only: element_t
+  use element_state,          only: timelevels
   use element_ops,            only: get_field, set_thermostate
   use hybrid_mod,             only: hybrid_t
   use hybvcoord_mod,          only: hvcoord_t
@@ -216,7 +217,7 @@ contains
 
     ! Local variables
     
-    integer ie,i,j,k,q
+    integer ie,i,j,k,q,tl
     integer :: nm1 
     integer :: n0 
     integer :: np1
@@ -251,8 +252,6 @@ contains
           enddo
        enddo
 #endif
-       temperature(:,:,:)=Tinit
-       call set_thermostate(elem(ie),temperature,hvcoord)
 
        elem(ie)%state%v(:,:,:,:,n0) =0.0D0
        elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
@@ -265,6 +264,11 @@ contains
           elem(ie)%state%Q(:,:,:,q) =temperature(:,:,:)/400
        enddo
        endif
+
+       temperature(:,:,:)=Tinit
+       do tl=1,timelevels
+          call set_thermostate(elem(ie),temperature,hvcoord,n0,1)
+       enddo
     end do
 
   end subroutine hs0_init_state

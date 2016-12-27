@@ -133,7 +133,7 @@ contains
   end subroutine get_temperature
 
 
-  subroutine copy_state(elem,nout,nin)
+  subroutine copy_state(elem,nin,nout)
   implicit none
   
   type (element_t), intent(inout)   :: elem
@@ -149,7 +149,7 @@ contains
 
 
 
-  subroutine set_thermostate(elem,temperature,hvcoord)
+  subroutine set_thermostate(elem,temperature,hvcoord,n0,ntQ)
   implicit none
   
   type (element_t), intent(inout)   :: elem
@@ -161,19 +161,15 @@ contains
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: Qt(np,np,nlev)
-  integer :: k,nt,ntQ
+  integer :: k,n0,ntQ
 
-  nt=1
-  ntQ=1
-  
-  
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
   do k=1,nlev
-     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
+     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,n0)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,n0)
   enddo
 
   if (use_moisture==1) then
@@ -189,7 +185,7 @@ contains
         else
            kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
         endif
-        elem%state%theta(:,:,k,1) = temperature(:,:,k)/((p(:,:,k)/p0)**kappa_star(:,:,k))
+        elem%state%theta(:,:,k,n0) = temperature(:,:,k)/((p(:,:,k)/p0)**kappa_star(:,:,k))
      enddo
   else
 #if (defined COLUMN_OPENMP)
@@ -197,13 +193,9 @@ contains
 #endif
      do k=1,nlev
         !temperature(:,:,k)= elem%state%theta(:,:,k,nt)*(p(:,:,k)/p0)**kappa
-        elem%state%theta(:,:,k,1)=temperature(:,:,k)/((p(:,:,k)/p0)**kappa)
+        elem%state%theta(:,:,k,n0)=temperature(:,:,k)/((p(:,:,k)/p0)**kappa)
      enddo
   endif
-
-  do k=2,timelevels
-     elem%state%theta(:,:,:,k)=elem%state%theta(:,:,:,1)
-  enddo
 
   end subroutine set_thermostate
 
@@ -219,16 +211,15 @@ subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
   ! set prognostic state variables at level midpoints
   elem%state%v   (i,j,1,k,n0:n1) = u
   elem%state%v   (i,j,2,k,n0:n1) = v
-!  elem%state%T   (i,j,k,n0:n1)   = T
   elem%state%dp3d(i,j,k,n0:n1)   = dp
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phis(i,j)           = phis
 
 
   if (use_moisture==1) then
-     call abortmp('ERROR: thetah set_state cant handle moisture')
+     call abortmp('ERROR: thetah set_state not yet coded for moisture')
   else
-     elem%state%theta(i,j,k,1)=T/((p/p0)**kappa)
+     elem%state%theta(i,j,k,n0:n1)=T/((p/p0)**kappa)
   endif
 
 

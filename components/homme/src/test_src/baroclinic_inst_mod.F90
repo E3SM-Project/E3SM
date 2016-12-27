@@ -29,6 +29,7 @@ module baroclinic_inst_mod
     use quadrature_mod, only : quadrature_t, gauss
     ! ====================
     use element_mod, only : element_t
+    use element_state, only : timelevels
     use element_ops, only : set_thermostate, get_field
     ! ====================
     use global_norms_mod, only : global_integral
@@ -188,7 +189,9 @@ do ie=nets,nete
        end do
     end do
 
-    call set_thermostate(elem(ie),temperature,hvcoord)
+    do tl=1,timelevels
+       call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
+    enddo
 enddo
 
 
@@ -314,15 +317,7 @@ endif
     real (kind=real_kind) :: latp,lonp
     real (kind=real_kind) :: tmp
 
-    integer :: ie,i,j,k,l,ip,jp
-    integer :: nm1 
-    integer :: n0 
-    integer :: np1
-
-
-    nm1= 1
-    n0 = 2
-    np1= 3
+    integer :: ie,i,j,k,l,ip,jp,tl
 
     if (hybrid%masterthread) write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
 
@@ -472,25 +467,14 @@ endif
 
                 v2 = 0.0D0
 
-#if 0
-                if (( integration == "explicit" ).or.( integration == "full_imp" )) then
-                   ! explicit covariant
-                   elem(ie)%state%v(i,j,1,k,n0)= v1*elem(ie)%D(i,j,1,1) + v2*elem(ie)%D(i,j,2,1)
-                   elem(ie)%state%v(i,j,2,k,n0)= v1*elem(ie)%D(i,j,1,2) + v2*elem(ie)%D(i,j,2,2)
-                else
-                   ! semi-implicit contravariant
-                   elem(ie)%state%v(i,j,1,k,n0)= v1*elem(ie)%Dinv(i,j,1,1) + v2*elem(ie)%Dinv(i,j,1,2)
-                   elem(ie)%state%v(i,j,2,k,n0)= v1*elem(ie)%Dinv(i,j,2,1) + v2*elem(ie)%Dinv(i,j,2,2)
-                endif
-#else
-                elem(ie)%state%v(i,j,1,k,n0)= v1
-                elem(ie)%state%v(i,j,2,k,n0)= v2
-#endif
+                elem(ie)%state%v(i,j,1,k,1)= v1
+                elem(ie)%state%v(i,j,2,k,1)= v2
              end do
           end do
 
-          elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
-          elem(ie)%state%v(:,:,:,k,np1)=elem(ie)%state%v(:,:,:,k,n0)
+          do tl=2,timelevels
+             elem(ie)%state%v(:,:,:,k,tl)=elem(ie)%state%v(:,:,:,k,1)
+          enddo
 
        end do
     end do
@@ -505,7 +489,10 @@ endif
        elem(ie)%state%phis(:,:) = 0.0D0
        elem(ie)%derived%fm = 0.0D0
        temperature(:,:,:)=t1(:,:,ie,:)
-       call set_thermostate(elem(ie),temperature,hvcoord)
+       do tl=1,timelevels
+          call set_thermostate(elem(ie),temperature,hvcoord,tl,1)
+       enddo
+
     end do
 
   end subroutine binst_init_state

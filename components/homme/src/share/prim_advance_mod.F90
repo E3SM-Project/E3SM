@@ -591,13 +591,13 @@ contains
 
 
 
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt_q,nets,nete)
+  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
 
   use physical_constants, only: Cp
 
   implicit none
   type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt_q
+  real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
@@ -616,7 +616,7 @@ contains
         do k=1,nlev
            do j=1,np
               do i=1,np
-                 v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q)
+                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
                  !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
                  if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
                     !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
@@ -630,7 +630,7 @@ contains
                  !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
                  elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
                  if (q==1) then
-                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt_q
+                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
                  endif
               enddo
            enddo
@@ -640,7 +640,7 @@ contains
      if (use_moisture) then
         ! to conserve dry mass in the precese of Q1 forcing:
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
-             dt_q*elem(ie)%derived%FQps(:,:)
+             dt*elem(ie)%derived%FQps(:,:)
      endif
 
 #if 0
@@ -657,7 +657,7 @@ contains
              + cp*elem(ie)%state%T(:,:,k,np1)  &
              + elem(ie)%state%phis(:,:) )
 
-        dp0m1(:,:) = -dt_q*( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%FQps(:,:)
+        dp0m1(:,:) = -dt*( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%FQps(:,:)
 
         E0(:,:) = E0(:,:) + dp0m1(:,:)*ED(:,:)
      enddo
@@ -690,30 +690,30 @@ contains
         enddo
      enddo
 
-     elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,np1)   + dt_q*elem(ie)%derived%FT(:,:,:)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:)
+     elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,np1)   + dt*elem(ie)%derived%FT(:,:,:)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
 
   enddo
   end subroutine applyCAMforcing
 
 
 
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt_q,nets,nete)
+  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,np1_q,dt,nets,nete)
 
   use hybvcoord_mod,  only: hvcoord_t
 
   implicit none
   type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt_q
+  real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
+  integer,                intent(in)    :: np1,nets,nete,np1_q
 
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
 
   do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt_q*elem(ie)%derived%FT(:,:,:)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:)
+     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt*elem(ie)%derived%FT(:,:,:)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
   enddo
   end subroutine applyCAMforcing_dynamics
 
@@ -1091,7 +1091,6 @@ contains
   real (kind=real_kind) ::  vtens1(np,np,nlev)
   real (kind=real_kind) ::  vtens2(np,np,nlev)
   real (kind=real_kind) ::  ttens(np,np,nlev)
-  real (kind=real_kind) ::  stashdp3d (np,np,nlev)
   type (EdgeDescriptor_t)                                       :: desc
 
 

@@ -112,7 +112,7 @@ contains
 
 
 
-  subroutine copy_state(elem,nout,nin)
+  subroutine copy_state(elem,nin,nout)
   implicit none
   
   type (element_t), intent(inout)   :: elem
@@ -126,17 +126,15 @@ contains
 
 
 
-  subroutine set_thermostate(elem,temperature,hvcoord)
+  subroutine set_thermostate(elem,temperature,hvcoord,n0,n0_q)
   implicit none
   
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  integer :: tl
+  integer :: n0,n0_q
 
-  do tl=1,timelevels
-     elem%state%T(:,:,:,tl)=temperature(:,:,:)
-  enddo
+  elem%state%T(:,:,:,n0)=temperature(:,:,:)
 
   end subroutine set_thermostate
 
