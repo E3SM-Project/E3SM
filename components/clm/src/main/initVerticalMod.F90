@@ -603,7 +603,7 @@ contains
 	   j = j + 1
           enddo
 	  nlevbed = max(nlevbed, 5)
-	  nlevbed = min(nlevbed, 10)
+	  nlevbed = min(nlevbed, nlevgrnd)
           col%nlev2bed(c) = nlevbed
          end if
         end do
