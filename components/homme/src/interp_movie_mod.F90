@@ -930,6 +930,7 @@ contains
                 end if
                 deallocate(var3d)
              end if
+#if 0
              if(nf_selectedvar('DIFFT', output_varnames)) then
                 allocate(datall(ncnt,nlev))
                 st=1
@@ -942,6 +943,7 @@ contains
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='DIFFT')
                 deallocate(datall)
              end if
+#endif
 #endif
 
              ! note: HOMME now compiles both interp_movie_mod.F90 and native grid output modules 

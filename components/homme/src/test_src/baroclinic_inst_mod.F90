@@ -132,7 +132,6 @@ do ie=nets,nete
           aa = SIN(latc)*snlat + COS(latc)*cslat*COS(lon - lonc) 
           rc =  10.0D0  * ACOS(aa)
           v1 = u0 * (cos(etv(k)))**1.5D0 * (sin(2.0D0 * lat))**2  +  u_perturb*exp(-rc*rc) 
-
           elem(ie)%state%v(i,j,1,k,:)=v1
           elem(ie)%state%v(i,j,2,k,:)=0
  

@@ -98,6 +98,7 @@ contains
          ftmin_local(nets:nete),ftmax_local(nets:nete),ftsum_local(nets:nete), &
          fqmin_local(nets:nete),fqmax_local(nets:nete),fqsum_local(nets:nete), &
          wmin_local(nets:nete),wmax_local(nets:nete),wsum_local(nets:nete),&
+         phimin_local(nets:nete),phimax_local(nets:nete),phisum_local(nets:nete),&
          dpmin_local(nets:nete), dpmax_local(nets:nete), dpsum_local(nets:nete)
 
 
@@ -115,6 +116,7 @@ contains
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
     real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
     real (kind=real_kind) :: wmax_p, wmin_p, wsum_p
+    real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
 
 
     real(kind=real_kind) :: vsum_t(1), relvort
@@ -195,6 +197,7 @@ contains
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
        wmax_local(ie)    = MAXVAL(elem(ie)%state%w(:,:,:,n0))
+       phimax_local(ie)  = MAXVAL(elem(ie)%state%phi(:,:,:,n0))
 
        fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:))
        fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:))
@@ -212,6 +215,7 @@ contains
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
        Wmin_local(ie)    = MINVAL(elem(ie)%state%w(:,:,:,n0))
+       phimin_local(ie)  = MINVAL(elem(ie)%state%phi(:,:,:,n0))
 
        Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:))
        Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:))
@@ -231,6 +235,7 @@ contains
        usum_local(ie)    = SUM(elem(ie)%state%v(:,:,1,:,n0))
        vsum_local(ie)    = SUM(elem(ie)%state%v(:,:,2,:,n0))
        Wsum_local(ie)    = SUM(elem(ie)%state%w(:,:,:,n0))
+       phisum_local(ie)  = SUM(elem(ie)%state%phi(:,:,:,n0))
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
 
@@ -258,7 +263,8 @@ contains
        global_shared_buf(ie,7) = FTsum_local(ie)
        global_shared_buf(ie,8) = FQsum_local(ie)
        global_shared_buf(ie,9) = Wsum_local(ie)
-       global_shared_buf(ie,10) = dpsum_local(ie)
+       global_shared_buf(ie,10)= dpsum_local(ie)
+       global_shared_buf(ie,11)= phisum_local(ie)
     end do
 
     !JMD This is a Thread Safe Reduction 
@@ -294,7 +300,10 @@ contains
     Wmin_p = ParallelMin(Wmin_local,hybrid)
     Wmax_p = ParallelMax(Wmax_local,hybrid)
 
-    call wrap_repro_sum(nvars=10, comm=hybrid%par%comm)
+    phimin_p = ParallelMin(phimin_local,hybrid)
+    phimax_p = ParallelMax(phimax_local,hybrid)
+
+    call wrap_repro_sum(nvars=11, comm=hybrid%par%comm)
     usum_p = global_shared_sum(1)
     vsum_p = global_shared_sum(2)
     tsum_p = global_shared_sum(3)
@@ -305,6 +314,7 @@ contains
     FQsum_p = global_shared_sum(8)
     Wsum_p = global_shared_sum(9)
     dpsum_p = global_shared_sum(10)
+    phisum_p = global_shared_sum(11)
 
 
     scale=1/g                                  ! assume code is using Pa
@@ -335,14 +345,13 @@ contains
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
        write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
        write(iulog,100) "theta = ",tmin_p,tmax_p,tsum_p
+       write(iulog,100) "phi(nh)=",phimin_p,phimax_p,phisum_p
        if (rsplit>0) &
        write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 
-       if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
-          do q=1,qsize
-             write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
-          enddo
-       endif
+       do q=1,qsize
+          write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
+       enddo
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,' mb     '
 

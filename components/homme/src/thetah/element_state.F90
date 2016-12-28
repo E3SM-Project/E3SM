@@ -108,6 +108,8 @@ module element_state
     real (kind=real_kind) :: KEhorz2(np,np)                           ! after calling time_advance, these will be at time t-1
     real (kind=real_kind) :: IEhorz1(np,np)
     real (kind=real_kind) :: IEhorz2(np,np)
+    real (kind=real_kind) :: PEhorz1(np,np)
+    real (kind=real_kind) :: PEhorz2(np,np)
     real (kind=real_kind) :: IEhorz1_wet(np,np)
     real (kind=real_kind) :: IEhorz2_wet(np,np)
 
@@ -120,7 +122,7 @@ module element_state
 
     ! the KE conversion term and diffusion term
     real (kind=real_kind) :: DIFF(np,np,2,nlev)                       ! net hypervis term
-    real (kind=real_kind) :: DIFFT(np,np,nlev)                        ! net hypervis term
+    real (kind=real_kind) :: DIFFTHETA(np,np,nlev)                    ! net hypervis term
     real (kind=real_kind) :: CONV(np,np,2,nlev)                       ! dpdn u dot CONV = T1 + T2
 #endif
 

@@ -4,7 +4,6 @@
 
 module prim_driver_mod
 
-  use cg_mod,           only: cg_t
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
   use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
@@ -15,7 +14,6 @@ module prim_driver_mod
   use quadrature_mod,   only: quadrature_t, test_gauss, test_gausslobatto, gausslobatto
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
-  use solver_mod,       only: blkjac_t
   use thread_mod,       only: nThreadsHoriz, omp_get_num_threads
 
 #ifndef CAM
@@ -30,9 +28,7 @@ module prim_driver_mod
   public :: prim_init1, prim_init2 , prim_run_subcycle, prim_finalize
   public :: smooth_topo_datasets
 
-  type (cg_t), allocatable  :: cg(:)              ! conjugate gradient struct (nthreads)
   type (quadrature_t)   :: gp                     ! element GLL points
-
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
   type (derivative_t)  :: deriv1
 
@@ -455,7 +451,6 @@ contains
     nete=nelemd
     ! set the actual number of threads which will be used in the horizontal
     nThreadsHoriz = n_domains
-    allocate(cg(0:n_domains-1))
     call prim_advance_init(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
@@ -688,17 +683,13 @@ contains
 
 #endif
 !$OMP MASTER
-    tl%nstep0=2                   ! compute diagnostics starting with step 2 if LEAPFROG
-    tl%nstep0=1                   ! compute diagnostics starting with step 1 if RK
-    if (runtype==1) then
-       tl%nstep0=tl%nstep+1       ! compute diagnostics after 1st step, leapfrog or RK
-    endif
     if (runtype==2) then
        ! branch run
        ! reset time counters to zero since timestep may have changed
        nEndStep = nEndStep-tl%nstep ! used by standalone HOMME.  restart code set this to nmax + tl%nstep
        tl%nstep=0
     endif
+    tl%nstep0=tl%nstep+1       ! compute diagnostics after 1st step
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -834,7 +825,6 @@ contains
     integer :: ie,i,j,k,n,q,t
     integer :: n0_qdp,np1_qdp,r,nstep_end
     logical :: compute_diagnostics
-
     ! compute timesteps for tracer transport and vertical remap
 
     dt_q      = dt*qsplit
@@ -845,9 +835,9 @@ contains
        nstep_end = tl%nstep + qsplit*rsplit  ! nstep at end of this routine
     endif
 
-    ! activate diagnostics periodically for display to stdout
+    ! activate diagnostics periodically for display to stdout and on first 2 timesteps
     compute_diagnostics   = .false.
-    if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
+    if (MODULO(nstep_end,statefreq)==0 .or. (tl%nstep <= tl%nstep0+(nstep_end-tl%nstep) )) then
        compute_diagnostics= .true.
     endif
     if(disable_diagnostics) compute_diagnostics= .false.

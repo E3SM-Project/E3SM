@@ -229,6 +229,59 @@ contains
 end subroutine preq_hydrostatic
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+!
+!  same as above, but takes a single argument
+!  same as above, with integrand = R*T_v*dp/p
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+  subroutine preq_hydrostatic_v2(phi,phis,integrand)
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, nlev
+    use physical_constants, only : rgas
+!    use hybvcoord_mod, only : hvcoord_t
+    implicit none
+
+
+    !------------------------------Arguments---------------------------------------------------------------
+    real(kind=real_kind), intent(out) :: phi(np,np,nlev)     
+    real(kind=real_kind), intent(in) :: phis(np,np)
+    real(kind=real_kind), intent(in) :: integrand(np,np,nlev)
+    !------------------------------------------------------------------------------------------------------
+
+    !---------------------------Local workspace-----------------------------
+    integer i,j,k                         ! longitude, level indices
+    real(kind=real_kind) Hkk,Hkl          ! diagonal term of energy conversion matrix
+    real(kind=real_kind), dimension(np,np,nlev) :: phii       ! Geopotential at interfaces
+    !-----------------------------------------------------------------------
+
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,j,i)
+#endif
+    do j=1,np   !   Loop inversion (AAM)
+
+       do i=1,np
+          phii(i,j,nlev)  = integrand(i,j,nlev)
+          phi(i,j,nlev) = phis(i,j) + integrand(i,j,nlev)/2
+       end do
+       
+       do k=nlev-1,2,-1
+          do i=1,np
+             phii(i,j,k) = phii(i,j,k+1) + integrand(i,j,k)
+             phi(i,j,k) = phis(i,j) + phii(i,j,k+1) + integrand(i,j,k)/2
+          end do
+       end do
+       
+       do i=1,np
+          phi(i,j,1) = phis(i,j) + phii(i,j,2) + integrand(i,j,1)/2
+       end do
+       
+    end do
+    
+    
+end subroutine preq_hydrostatic_v2
+
+
 
 !
 !  The hydrostatic routine from CAM physics.
