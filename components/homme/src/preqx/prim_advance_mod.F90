@@ -26,12 +26,7 @@ module prim_advance_mod
   public :: prim_advance_exp, prim_advance_init, &
        applyCAMforcing_dynamics, applyCAMforcing
 
-  type (EdgeBuffer_t) :: edge1
-  type (EdgeBuffer_t) :: edge2
   type (EdgeBuffer_t) :: edge3p1
-
-  real (kind=real_kind) :: initialized_for_dt   = 0
-
   real (kind=real_kind), allocatable :: ur_weights(:)
 
 contains

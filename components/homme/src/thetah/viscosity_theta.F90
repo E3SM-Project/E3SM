@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-module viscosity_theta_base
+module viscosity_theta
 !
 !  This module should be renamed "global_deriv_mod.F90"
 ! 
@@ -29,13 +29,13 @@ private
 save
 
 
-public :: biharmonic_wk_dp3d
+public :: biharmonic_wk_theta
 
 
 contains
 
 
-subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+subroutine biharmonic_wk_theta(elem,stens,vtens,deriv,edgebuf,hybrid,nt,nets,nete)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute weak biharmonic operator
@@ -47,8 +47,8 @@ type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
 integer              , intent(in)  :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
-type (EdgeBuffer_t)  , intent(inout) :: edge3
+real (kind=real_kind), dimension(np,np,nlev,3,nets:nete) :: stens  ! dp3d, theta, w
+type (EdgeBuffer_t)  , intent(inout) :: edgebuf  ! initialized for 5 vars
 type (derivative_t)  , intent(in) :: deriv
 
 ! local
@@ -91,45 +91,47 @@ logical var_coef1
 !$omp parallel do default(shared), private(k,tmp)
 #endif
       do k=1,nlev
-         tmp=elem(ie)%state%theta(:,:,k,nt) 
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
-         tmp=elem(ie)%state%dp3d(:,:,k,nt) 
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
+         stens(:,:,k,1,ie)=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),&
+              deriv,elem(ie),var_coef=var_coef1)
+         stens(:,:,k,2,ie)=laplace_sphere_wk(elem(ie)%state%theta(:,:,k,nt),&
+              deriv,elem(ie),var_coef=var_coef1)
+         stens(:,:,k,3,ie)=laplace_sphere_wk(elem(ie)%state%w(:,:,k,nt),&
+              deriv,elem(ie),var_coef=var_coef1)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
               var_coef=var_coef1,nu_ratio=nu_ratio1)
       enddo
       kptr=0
-      call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
-      kptr=nlev
-      call edgeVpack(edge3, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
+      call edgeVpack(edgebuf, stens(1,1,1,1,ie),3*nlev,kptr,ie)
       kptr=3*nlev
-      call edgeVpack(edge3, dptens(1,1,1,ie),nlev,kptr,ie)
-
+      call edgeVpack(edgebuf, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
    enddo
    
    call t_startf('biwkdp3d_bexchV')
-   call bndry_exchangeV(hybrid,edge3)
+   call bndry_exchangeV(hybrid,edgebuf)
    call t_stopf('biwkdp3d_bexchV')
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
       
       kptr=0
-      call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
-      kptr=nlev
-      call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
+      call edgeVunpack(edgebuf, stens(1,1,1,1,ie), 3*nlev, kptr, ie)
       kptr=3*nlev
-      call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, ie)
+      call edgeVunpack(edgebuf, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
       
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,v,tmp,tmp2)
+!$omp parallel do private(k,v,tmp)
 #endif
       do k=1,nlev
-         tmp(:,:)=rspheremv(:,:)*ptens(:,:,k,ie)
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
-         tmp2(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp2,deriv,elem(ie),var_coef=.true.)
+         tmp(:,:)=rspheremv(:,:)*stens(:,:,k,1,ie)
+         stens(:,:,k,1,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+
+         tmp(:,:)=rspheremv(:,:)*stens(:,:,k,2,ie)
+         stens(:,:,k,2,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+
+         tmp(:,:)=rspheremv(:,:)*stens(:,:,k,3,ie)
+         stens(:,:,k,3,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),&
