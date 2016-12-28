@@ -457,9 +457,9 @@ module namelist_mod
          vfile_mid  = trim(adjustl(vfile_mid))
          vfile_int  = trim(adjustl(vfile_int))
 
-         write(iulog,*) '  vform =',vform
-         write(iulog,*) '  vfile_mid=',vfile_mid
-         write(iulog,*) '  vfile_int=',vfile_int
+         write(iulog,*) '  vform =',trim(vform)
+         write(iulog,*) '  vfile_mid=',trim(vfile_mid)
+         write(iulog,*) '  vfile_int=',trim(vfile_int)
          write(iulog,*) '  vanalytic=',vanalytic
          if(vanalytic==1) then
          write(iulog,*) '  vtop=',vtop

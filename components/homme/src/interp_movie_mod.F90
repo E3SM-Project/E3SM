@@ -834,7 +834,8 @@ contains
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), elem(ie)%derived%phi, &
+                   call get_field(elem(ie),'phi',temp3d,hvcoord,n0,n0_Q)
+                   call interpolate_scalar(interpdata(ie), temp3d, &
                         np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo

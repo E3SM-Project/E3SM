@@ -53,6 +53,8 @@ contains
      call get_temperature(elem,field,hvcoord,nt,ntQ)
   case ('pottemp')
      call get_pottemp(elem,field,hvcoord,nt,ntQ)
+  case ('phi')
+     field = elem%derived%phi(:,:,:)
   case default
      print *,'name = ',trim(name)
      call abortmp('ERROR: get_field name not supported in this model')

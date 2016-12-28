@@ -13,7 +13,7 @@ module prim_advance_mod
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
-  use element_ops,    only: get_temperature,set_thermostate
+  use element_ops,    only: get_temperature,set_thermostate, get_exnerpressure
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -703,7 +703,7 @@ contains
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta
 
   real (kind=real_kind), dimension(np,np,nlev)   :: omega_p
-  real (kind=real_kind), dimension(np,np,nlev)   :: T_v
+  !real (kind=real_kind), dimension(np,np,nlev)   :: T_v
   real (kind=real_kind), dimension(np,np,nlev)   :: divdp
   real (kind=real_kind), dimension(np,np,nlev+1)   :: eta_dot_dpdn  ! half level vertical velocity on p-grid
   real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
@@ -749,42 +749,23 @@ contains
      theta  => elem(ie)%state%theta(:,:,:,n0)
 
 
+     
+     ! dexner - use the dry formula for hydrostatic testing. thise code will go away
+     ! in the nonhydrostatic model
+     pi(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+     do k=1,nlev
+        pi(:,:,k+1)=pi(:,:,k) + dp3d(:,:,k)
+        dexner(:,:,k) = (pi(:,:,k+1)/p0)**kappa - (pi(:,:,k)/p0)**kappa
+     enddo
+
+
 ! dont thread this because of k-1 dependence:
      p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + dp3d(:,:,1)/2
      do k=2,nlev
         p(:,:,k)=p(:,:,k-1) + dp3d(:,:,k-1)/2 + dp3d(:,:,k)/2
      enddo
+     call get_exnerpressure(exner,p,dp3d,elem(ie)%state%Qdp(:,:,:,1,qn0))
 
-     pi(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 
-     do k=1,nlev
-        pi(:,:,k+1)=pi(:,:,k) + dp3d(:,:,k)
-     enddo
-
-! compute exner pressure and temperature
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-     do k=1,nlev
-        if (use_moisture==1) then
-           Qt(:,:,k) = elem(ie)%state%Qdp(:,:,k,1,qn0)/dp3d(:,:,k)
-           if (use_cpstar==1) then
-              kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
-                   (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
-           else
-              kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
-           endif
-           exner(:,:,k) = (p(:,:,k)/p0)**kappa_star(:,:,k)
-           T_v(:,:,k) = theta(:,:,k)*exner(:,:,k)*(Rgas + (Rwater_vapor-Rgas)*Qt(:,:,k))/Rgas
-
-           dexner(:,:,k) = (pi(:,:,k+1)/p0)**kappa_star(:,:,k) - (pi(:,:,k)/p0)**kappa_star(:,:,k)
-        else
-           exner(:,:,k) = (p(:,:,k)/p0)**kappa
-           dexner(:,:,k) = (pi(:,:,k+1)/p0)**kappa - (pi(:,:,k)/p0)**kappa
-           kappa_star(:,:,k)=kappa
-           T_v(:,:,k) = theta(:,:,k)*exner(:,:,k)
-        endif
-     enddo
-     
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,vtemp)

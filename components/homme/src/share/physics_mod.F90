@@ -29,11 +29,6 @@ module physics_mod
   public :: Virtual_Temperature
   public :: Virtual_Specific_Heat
 
- interface Virtual_Temperature
-    module procedure Virtual_Temperature1d
-    module procedure Virtual_Temperature3d
- end interface
-
 
 contains
   
@@ -51,7 +46,7 @@ contains
   ! For reference see Emanuel 1994 
   !================================
   
-  function Virtual_Temperature1d(Tin,rin) result(Tv)
+  function Virtual_Temperature(Tin,rin) result(Tv)
     
     real (kind=real_kind),intent(in) :: Tin
     real (kind=real_kind),intent(in) :: rin
@@ -62,25 +57,8 @@ contains
     Tv = Tin*(1_real_kind + (Rwater_vapor/Rgas - 1.0_real_kind)*rin)
 
 
-  end function Virtual_Temperature1d
+  end function Virtual_Temperature
 
-  function Virtual_Temperature3d(T,Q) result(T_v)
-    real (kind=real_kind),intent(in) :: T(np,np,nlev)
-    real (kind=real_kind),intent(in) :: Q(np,np,nlev)
-    real (kind=real_kind) :: T_v(np,np,nlev)
-    integer :: i, j, k
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
-    do k=1,nlev
-       do j=1,np
-          do i=1,np
-             T_v(i,j,k) = Virtual_Temperature1d(T(i,j,k), Q(i,j,k))
-          end do
-       end do
-    end do
-  end function Virtual_Temperature3d
 
 
   function Virtual_Specific_Heat(rin) result(Cp_star)

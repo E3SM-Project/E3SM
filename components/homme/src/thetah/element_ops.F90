@@ -11,6 +11,9 @@
 !
 !  see src/preqx/element_ops.F90 for documentation
 !     
+!  helper fuctions in here not required to be provided by all models:
+!     get_exnerpressure
+!
 module element_ops
 
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
@@ -23,7 +26,7 @@ module element_ops
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa
   use control_mod, only:    use_moisture, use_cpstar
-
+  use prim_si_mod, only: preq_hydrostatic_v2
   implicit none
 
 contains
@@ -42,6 +45,9 @@ contains
      call get_temperature(elem,field,hvcoord,nt,ntQ)
   case ('pottemp')
      call get_pottemp(elem,field,hvcoord,nt,ntQ)
+  case ('phi')
+     !field = elem%state%phi(:,:,:,nt)
+     field = elem%derived%phi(:,:,:)
   case default
      print *,'name = ',trim(name)
      call abortmp('ERROR: get_field name not supported in this model')
@@ -73,6 +79,40 @@ contains
   
 
 
+  subroutine get_exnerpressure(exner,p,dp,Qdp)
+  implicit none
+  
+  real (kind=real_kind), intent(out)  :: exner(np,np,nlev)
+  real (kind=real_kind), intent(in) :: p(np,np,nlev)
+  real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+  real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)
+  !   local
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind) :: Qt(np,np,nlev)
+  integer :: k
+  
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
+  do k=1,nlev
+     if (use_moisture==1) then
+        Qt(:,:,k) = Qdp(:,:,k)/dp(:,:,k)
+        
+        if (use_cpstar==1) then
+           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
+                (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
+        else
+           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
+        endif
+        exner(:,:,k)= (p(:,:,k)/p0)**kappa_star(:,:,k)
+     else
+        exner(:,:,k)= (p(:,:,k)/p0)**kappa
+     endif
+    enddo
+  end subroutine 
+
+
+
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
   implicit none
   
@@ -85,16 +125,9 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: Qt(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
   integer :: k
   
-  !   pressure on floating levels 
-  !    dp  => elem%state%dp3d(:,:,:,n0)
-  !    p(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0 + dp(:,:,1)/2
-  !    do k=2,nlev
-  !       p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
-  !    enddo
   
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
@@ -105,32 +138,19 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-  if (use_moisture==1) then
+  call get_exnerpressure(exner,p,dp,elem%state%Qdp(:,:,:,1,ntQ))
+
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
-     do k=1,nlev
-        Qt(:,:,k) = elem%state%Qdp(:,:,k,1,ntQ)/dp(:,:,k)
-        
-        if (use_cpstar==1) then
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
-                (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
-        else
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
-        endif
-        
-        temperature(:,:,k)= elem%state%theta(:,:,k,nt)*(p(:,:,k)/p0)**kappa_star(:,:,k)
-     enddo
-  else
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-     do k=1,nlev
-        temperature(:,:,k)= elem%state%theta(:,:,k,nt)*(p(:,:,k)/p0)**kappa
-     enddo
-  endif
+  do k=1,nlev
+     temperature(:,:,k)= elem%state%theta(:,:,k,nt)*exner(:,:,k)
+  enddo
 
   end subroutine get_temperature
+
+
+
 
 
   subroutine copy_state(elem,nin,nout)
@@ -149,7 +169,7 @@ contains
 
 
 
-  subroutine set_thermostate(elem,temperature,hvcoord,n0,ntQ)
+  subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
   implicit none
   
   type (element_t), intent(inout)   :: elem
@@ -159,45 +179,45 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: Qt(np,np,nlev)
-  integer :: k,n0,ntQ
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: dexner(np,np,nlev)
+  real (kind=real_kind) :: integrand(np,np,nlev)
+  real (kind=real_kind) :: pi(np,np,nlev+1)
+  integer :: k,nt,ntQ
 
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
   do k=1,nlev
-     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,n0)
+     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,n0)
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-  if (use_moisture==1) then
+  call get_exnerpressure(exner,p,dp,elem%state%Qdp(:,:,:,1,ntQ))
+
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
-     do k=1,nlev
-        Qt(:,:,k) = elem%state%Qdp(:,:,k,1,ntQ)/dp(:,:,k)
-        
-        if (use_cpstar==1) then
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
-                (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
-        else
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
-        endif
-        elem%state%theta(:,:,k,n0) = temperature(:,:,k)/((p(:,:,k)/p0)**kappa_star(:,:,k))
-     enddo
-  else
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-     do k=1,nlev
-        !temperature(:,:,k)= elem%state%theta(:,:,k,nt)*(p(:,:,k)/p0)**kappa
-        elem%state%theta(:,:,k,n0)=temperature(:,:,k)/((p(:,:,k)/p0)**kappa)
-     enddo
-  endif
+  do k=1,nlev
+     elem%state%theta(:,:,k,nt)=temperature(:,:,k)/exner(:,:,k)
+     integrand(:,:,k) = Cp*(temperature(:,:,k)/exner(:,:,k))*dexner(:,:,k)
+  enddo
+
+
+! use dry formula for exner to initialize model:
+  pi(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+  do k=1,nlev
+     pi(:,:,k+1)=pi(:,:,k) + dp(:,:,k)
+     dexner(:,:,k) = (pi(:,:,k+1)/p0)**kappa - (pi(:,:,k)/p0)**kappa
+  enddo
+  integrand(:,:,:) = Cp*elem%state%theta(:,:,:,nt)*dexner(:,:,:)
+  call preq_hydrostatic_v2(elem%state%phi(:,:,:,nt),elem%state%phis,integrand)
+
 
   end subroutine set_thermostate
+
+
 
 
 subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
