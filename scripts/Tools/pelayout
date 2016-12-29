@@ -102,6 +102,7 @@ def format_pelayout(comp, ntasks, nthreads, rootpe, format):
     layout_str = re.sub(r"%([-+0-9]*)H", r"{H:\1}", layout_str)
     layout_str = re.sub(r"%([-+0-9]*)R", r"{R:\1}", layout_str)
     layout_str = layout_str.format(**subs)
+    return layout_str
 # End def format_pelayout
 
 ###############################################################################
