@@ -93,6 +93,77 @@ contains
 
 
 
+  subroutine preq_vertadv_v(v,T,nfields,eta_dot_dp_deta, rpdel,v_vadv,T_vadv)
+    use kinds,              only : real_kind
+    use dimensions_mod,     only : nlev, np, nlevp
+    implicit none
+
+    integer, intent(in) :: nfields
+    real (kind=real_kind), intent(in) :: v(np,np,2,nlev)
+    real (kind=real_kind), intent(in) :: T(np,np,nlev,nfields)
+    real (kind=real_kind), intent(in) :: eta_dot_dp_deta(np,np,nlevp)
+    real (kind=real_kind), intent(in) :: rpdel(np,np,nlev)
+    real (kind=real_kind), intent(out) :: v_vadv(np,np,2,nlev)
+    real (kind=real_kind), intent(out) :: T_vadv(np,np,nlev,nfields)
+
+    ! ========================
+    ! Local Variables
+    ! ========================
+
+    integer :: k,nf
+    real (kind=real_kind) :: facp(np,np), facm(np,np)
+
+    ! ===========================================================
+    ! Compute vertical advection of T and v from eq. (3.b.1)
+    !
+    ! k = 1 case:
+    ! ===========================================================
+    k=1
+    facp            = (0.5_real_kind*rpdel(:,:,k))*eta_dot_dp_deta(:,:,k+1)
+    v_vadv(:,:,1,k)   = facp(:,:)*(v(:,:,1,k+1)- v(:,:,1,k))
+    v_vadv(:,:,2,k)   = facp(:,:)*(v(:,:,2,k+1)- v(:,:,2,k))
+    do nf=1,nfields
+       T_vadv(:,:,k,nf)   = facp(:,:)*(T(:,:,k+1,nf)- T(:,:,k,nf))
+    enddo
+    
+    ! ===========================================================
+    ! vertical advection
+    !
+    ! 1 < k < nlev case:
+    ! ===========================================================
+#if (defined COLUMN_OPENMP)
+    !$omp parallel do private(k,nf,facp,facm)
+#endif
+    do k=2,nlev-1
+       facp(:,:)   = (0.5_real_kind*rpdel(:,:,k))*eta_dot_dp_deta(:,:,k+1)
+       facm(:,:)   = (0.5_real_kind*rpdel(:,:,k))*eta_dot_dp_deta(:,:,k)
+       v_vadv(:,:,1,k)=facp*(v(:,:,1,k+1)- v(:,:,1,k)) + facm*(v(:,:,1,k)- v(:,:,1,k-1))
+       v_vadv(:,:,2,k)=facp*(v(:,:,2,k+1)- v(:,:,2,k)) + facm*(v(:,:,2,k)- v(:,:,2,k-1))
+       do nf=1,nfields
+          T_vadv(:,:,k,nf)   = facp*(T(:,:,k+1,nf)- T(:,:,k,nf)) + &
+               facm*(T(:,:,k,nf)- T(:,:,k-1,nf))
+       enddo
+    end do
+    
+    ! ===========================================================
+    ! vertical advection
+    !
+    ! k = nlev case:
+    ! ===========================================================
+    k=nlev
+    facm            = (0.5_real_kind*rpdel(:,:,k))*eta_dot_dp_deta(:,:,k)
+    v_vadv(:,:,1,k)   = facm*(v(:,:,1,k)- v(:,:,1,k-1))
+    v_vadv(:,:,2,k)   = facm*(v(:,:,2,k)- v(:,:,2,k-1))
+    do nf=1,nfields
+       T_vadv(:,:,k,nf)   = facm*(T(:,:,k,nf)- T(:,:,k-1,nf))
+    end do
+    end subroutine preq_vertadv_v
+
+
+
+
+
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 !

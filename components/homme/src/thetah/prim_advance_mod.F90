@@ -682,7 +682,7 @@ contains
 
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
   use physics_mod, only : virtual_specific_heat, virtual_temperature
-  use prim_si_mod, only : preq_vertadv, preq_omega_ps, preq_hydrostatic, preq_hydrostatic_v2
+  use prim_si_mod, only : preq_vertadv, preq_vertadv_v, preq_omega_ps, preq_hydrostatic, preq_hydrostatic_v2
 
   use time_mod, only : tevolve
 
@@ -711,7 +711,6 @@ contains
   real (kind=real_kind), dimension(np,np,2)    :: vtemp2    ! secondary generic gradient storage
   real (kind=real_kind), dimension(np,np,2,nlev):: vdp       !                            
   real (kind=real_kind), dimension(np,np,2     ):: v         !                            
-  real (kind=real_kind), dimension(np,np)      :: vgrad_theta    ! v.grad(T)
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
   real (kind=real_kind), dimension(np,np)      :: Eexner     ! energy diagnostic Exner pressure
   real (kind=real_kind), dimension(np,np,2)      :: thetau  !  theta*u in the diagnostics
@@ -721,23 +720,19 @@ contains
   real (kind=real_kind), dimension(np,np,nlev)   :: dexner
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_exner
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
+  real (kind=real_kind), dimension(np,np,nlev+1) :: pi         ! pressure at interfaces
   real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: rdp        ! inverse of delta pressure
-  real (kind=real_kind), dimension(np,np,nlev)   :: theta_vadv     ! temperature vertical advection
   real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_p    ! v.grad(p)
-  real (kind=real_kind), dimension(np,np,nlev+1) :: pi         ! pressure at interfaces
   real (kind=real_kind), dimension(np,np,2,nlev) :: v_vadv   ! velocity vertical advection
-  real (kind=real_kind), dimension(np,np,nlev)   :: Qt
-  real (kind=real_kind) ::  kappa_star(np,np,nlev)
+  real (kind=real_kind), dimension(np,np,nlev,3) :: s_vadv     ! vertical advection u
+  real (kind=real_kind), dimension(np,np,nlev,3) :: s_state    ! vertical advection w,theta,phi
   real (kind=real_kind) ::  vtens1(np,np,nlev)
   real (kind=real_kind) ::  vtens2(np,np,nlev)
-  real (kind=real_kind) ::  ttens(np,np,nlev)
-  real (kind=real_kind) ::  phitens(np,np,nlev)
-  real (kind=real_kind) ::  wtens(np,np,nlev)
+  real (kind=real_kind) ::  stens(np,np,nlev,3)  ! tendencies w,theta,phi
 
 
-  real (kind=real_kind) ::  cp2,cp_ratio,E,de,v1,v2,w
-  real (kind=real_kind) ::  glnps1,glnps2,gpterm
+  real (kind=real_kind) ::  v1,v2,glnps1,glnps2,gpterm
   integer :: i,j,k,kptr,ie
 
 
@@ -750,13 +745,6 @@ contains
 
 
      
-     ! dexner - use the dry formula for hydrostatic testing. thise code will go away
-     ! in the nonhydrostatic model
-     pi(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
-     do k=1,nlev
-        pi(:,:,k+1)=pi(:,:,k) + dp3d(:,:,k)
-        dexner(:,:,k) = (pi(:,:,k+1)/p0)**kappa - (pi(:,:,k)/p0)**kappa
-     enddo
 
 
 ! dont thread this because of k-1 dependence:
@@ -805,11 +793,19 @@ contains
 
      enddo
 
+
+     ! dexner - use the dry formula for hydrostatic testing. thise code will go away
+     ! in the nonhydrostatic model
+     pi(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+     do k=1,nlev
+        pi(:,:,k+1)=pi(:,:,k) + dp3d(:,:,k)
+        dexner(:,:,k) = (pi(:,:,k+1)/p0)**kappa - (pi(:,:,k)/p0)**kappa
+     enddo
      ! Compute Hydrostatic equation, modeld after CCM-3
-     ! use omega_p as a temporary variable
-     omega_p(:,:,:) = Cp*theta(:,:,:)*dexner(:,:,:)
-!     omega_p(:,:,:) = Rgas*T_v(:,:,:)*dp3d(:,:,:)/p(:,:,:)
-     call preq_hydrostatic_v2(phi,elem(ie)%state%phis,omega_p)
+     ! overwrite dexner with integrand:
+     dexner(:,:,:) = Cp*theta(:,:,:)*dexner(:,:,:)
+!    omega_p(:,:,:) = Rgas*T_v(:,:,:)*dp3d(:,:,:)/p(:,:,:)
+     call preq_hydrostatic_v2(phi,elem(ie)%state%phis,dexner)
 
      ! Compute omega_p according to CCM-3
      call preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
@@ -830,7 +826,7 @@ contains
      if (rsplit>0) then
         ! VERTICALLY LAGRANGIAN:   no vertical motion
         eta_dot_dpdn=0
-        theta_vadv=0
+        s_vadv=0
         v_vadv=0
      else
         do k=1,nlev
@@ -859,8 +855,13 @@ contains
         ! ===========================================================
         ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
         ! ==============================================
-        call preq_vertadv(theta(:,:,:),elem(ie)%state%v(:,:,:,:,n0), &
-             eta_dot_dpdn,rdp,theta_vadv,v_vadv)
+!        call preq_vertadv(theta(:,:,:),elem(ie)%state%v(:,:,:,:,n0), &
+!             eta_dot_dpdn,rdp,theta_vadv,v_vadv)
+        s_state(:,:,:,1)=elem(ie)%state%w(:,:,:,n0)
+        s_state(:,:,:,2)=elem(ie)%state%theta(:,:,:,n0)
+        s_state(:,:,:,3)=elem(ie)%state%phi(:,:,:,n0)
+
+        call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,rdp,v_vadv,s_vadv)
      endif
 
 
@@ -887,31 +888,38 @@ contains
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,w,E,Ephi,vtemp,vgrad_theta,gpterm,glnps1,glnps2)
+!$omp parallel do private(k,i,j,v1,v2,Ephi,vtemp,gpterm,glnps1,glnps2)
 #endif
      vertloop: do k=1,nlev
-        do j=1,np
-           do i=1,np
-              v1     = elem(ie)%state%v(i,j,1,k,n0)
-              v2     = elem(ie)%state%v(i,j,2,k,n0)
-              E = 0.5D0*( v1*v1 + v2*v2 )
-              Ephi(i,j)=E+phi(i,j,k)
-           end do
-        end do
+
         ! ================================================
-        ! compute gradp term (ps/p)*(dp/dps)*T
+        ! w,theta,phi tendencies:
         ! ================================================
+        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
+        stens(:,:,k,1) = -s_vadv(:,:,k,1) &
+             -elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
+             -elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2)
+
         vtemp(:,:,:)   = gradient_sphere(theta(:,:,k),deriv,elem(ie)%Dinv)
-        do j=1,np
-           do i=1,np
-              v1     = elem(ie)%state%v(i,j,1,k,n0)
-              v2     = elem(ie)%state%v(i,j,2,k,n0)
-              vgrad_theta(i,j) =  v1*vtemp(i,j,1) + v2*vtemp(i,j,2)
-           end do
-        end do
+        stens(:,:,k,2) = -s_vadv(:,:,k,2) &
+             -elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
+             -elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2)
+
+        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%phi(:,:,k,n0),deriv,elem(ie)%Dinv)
+        stens(:,:,k,3) = -s_vadv(:,:,k,3) &
+             -elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
+             -elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) &
+             + g*elem(ie)%state%w(:,:,k,n0)                              
 
 
         ! vtemp = grad ( E + PHI )
+        do j=1,np
+           do i=1,np
+              v1     = elem(ie)%state%v(i,j,1,k,n0)
+              v2     = elem(ie)%state%v(i,j,2,k,n0)
+              Ephi(i,j)=0.5D0*( v1*v1 + v2*v2 ) + phi(i,j,k)
+           end do
+        end do
         vtemp = gradient_sphere(Ephi(:,:),deriv,elem(ie)%Dinv)
 
         do j=1,np
@@ -934,9 +942,6 @@ contains
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
                    - vtemp(i,j,2) - glnps2
 
-              ttens(i,j,k)  = - theta_vadv(i,j,k) - vgrad_theta(i,j)
-              phitens(i,j,k)=g*elem(ie)%state%w(i,j,k,n0)
-              wtens(i,j,k)  =0
            end do
         end do
 
@@ -1051,24 +1056,16 @@ contains
         elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
         elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,2,k,nm1) + dt2*vtens2(:,:,k) )
 
-        elem(ie)%state%theta(:,:,k,np1) = elem(ie)%spheremp(:,:)*(elem(ie)%state%theta(:,:,k,nm1) + dt2*ttens(:,:,k))
-        elem(ie)%state%w(:,:,k,np1)     = elem(ie)%spheremp(:,:)*(elem(ie)%state%w(:,:,k,nm1)     + dt2*wtens(:,:,k))
-        elem(ie)%state%phi(:,:,k,np1)   = elem(ie)%spheremp(:,:)*(elem(ie)%state%phi(:,:,k,nm1)   + dt2*phitens(:,:,k))
+        elem(ie)%state%w(:,:,k,np1)     = elem(ie)%spheremp(:,:)*(elem(ie)%state%w(:,:,k,nm1)     + dt2*stens(:,:,k,1))
+        elem(ie)%state%theta(:,:,k,np1) = elem(ie)%spheremp(:,:)*(elem(ie)%state%theta(:,:,k,nm1) + dt2*stens(:,:,k,2))
+        elem(ie)%state%phi(:,:,k,np1)   = elem(ie)%spheremp(:,:)*(elem(ie)%state%phi(:,:,k,nm1)   + dt2*stens(:,:,k,3))
 
         elem(ie)%state%dp3d(:,:,k,np1) = &
              elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
              dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
         
      enddo
-!     print *,'v',elem(ie)%state%v(1,1,1,1,np1)
-!     print *,'v',elem(ie)%state%v(1,1,2,1,np1)
-!     print *,'th',elem(ie)%state%theta(1,1,1,np1)
 
-     ! =========================================================
-     !
-     ! Pack ps(np1), T, and v tendencies into comm buffer
-     !
-     ! =========================================================
      kptr=0
      call edgeVpack(edge6, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
      kptr=kptr+nlev
@@ -1086,9 +1083,6 @@ contains
   call t_stopf('caar_bexchV')
 
   do ie=nets,nete
-     ! ===========================================================
-     ! Unpack the edges for vgrad_theta and v tendencies...
-     ! ===========================================================
      kptr=0
      call edgeVunpack(edge6, elem(ie)%state%dp3d(:,:,:,np1), nlev, kptr, ie)
      kptr=kptr+nlev
@@ -1104,7 +1098,6 @@ contains
      ! ====================================================
      ! Scale tendencies by inverse mass matrix
      ! ====================================================
-
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
