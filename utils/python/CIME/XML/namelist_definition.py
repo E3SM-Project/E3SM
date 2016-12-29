@@ -47,7 +47,17 @@ class NamelistDefinition(EntryID):
             schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
             self.validate_xml_file(infile, schema)
 
-    def get_entries(self):
+    def get_entries(self, skip_groups=[]):
+        """Return all variables in the namelist definition file
+        that do not have attributes of skip_default_entry or per_stream_entry
+        """
+        nodes = self.get_entry_nodes(skip_groups)
+        entries = []
+        for node in nodes:
+            entries.append(node.get("id"))
+        return entries
+
+    def get_entry_nodes(self, skip_groups=[]):
         """Return all variables in the namelist definition file
         that do not have attributes of skip_default_entry or per_stream_entry
         """
@@ -56,8 +66,15 @@ class NamelistDefinition(EntryID):
         for node in nodes:
             skip_default_entry = node.get("skip_default_entry")
             per_stream_entry = node.get("per_stream_entry")
-            if not skip_default_entry and not per_stream_entry:
-                entries.append(node.get("id"))
+            if skip_groups:
+                group_value = self.get_element_text("group", root=node)
+                if not group_value in skip_groups:
+                    if not skip_default_entry and not per_stream_entry:
+                        entries.append(node)
+            else:
+                if not skip_default_entry and not per_stream_entry:
+                    entries.append(node)
+
         return entries
 
     def get_per_stream_entries(self):
@@ -76,16 +93,17 @@ class NamelistDefinition(EntryID):
         raise TypeError, \
             "NamelistDefinition does not support `set_value`."
 
-    def get_valid_values(self, name):
+    def get_valid_values(self, name, node=None):
         # The "valid_values" attribute is not required, and an empty string has
         # the same effect as not specifying it.
         # Returns a list from a comma seperated string in xml
         valid_values = ''
-        elem = self.get_optional_node("entry", attributes={'id': name})
+        if node is None:
+            node = self.get_optional_node("entry", attributes={'id': name})
         if self.get_version() == "1.0":
-            valid_values = elem.get('valid_values')
+            valid_values = node.get('valid_values')
         elif self.get_version() == "2.0":
-            valid_values = self._get_node_element_info(elem, "valid_values")
+            valid_values = self._get_node_element_info(node, "valid_values")
         if valid_values == '':
             valid_values = None
         if valid_values is not None:
@@ -204,7 +222,7 @@ class NamelistDefinition(EntryID):
             canonical_value = [int(scalar) for scalar in canonical_value]
         return canonical_value
 
-    def is_valid_value(self, name, value):
+    def is_valid_value(self, name, value, node=None):
         """Determine whether a value is valid for the named variable.
 
         The `value` argument must be a list of strings formatted as they would
@@ -213,8 +231,9 @@ class NamelistDefinition(EntryID):
         """
         name = name.lower()
         # Separate into a type, optional length, and optional size.
-        type_, max_len, size = self.split_type_string(name, self.get_type_info(name))
+        type_, max_len, size = self.split_type_string(name, self.get_type_info(name,node=node))
         invalid = []
+
         # Check value against type.
         for scalar in value:
             if not is_valid_fortran_namelist_literal(type_, scalar):
@@ -222,7 +241,6 @@ class NamelistDefinition(EntryID):
         if len(invalid) > 0:
             logger.warn("Invalid values %s"%invalid)
             return False
-
 
         # Now that we know that the strings as input are valid Fortran, do some
         # canonicalization for further checks.
@@ -235,7 +253,7 @@ class NamelistDefinition(EntryID):
                     return False
 
         # Check valid value constraints (if applicable).
-        valid_values = self.get_valid_values(name)
+        valid_values = self.get_valid_values(name, node=node)
         if valid_values is not None:
             expect(type_ in ('integer', 'character'),
                    "Found valid_values attribute for variable %s with "
@@ -268,10 +286,14 @@ class NamelistDefinition(EntryID):
     def _user_modifiable_in_variable_definition(self, name):
         # Is name user modifiable?
         node = self.get_optional_node("entry", attributes={'id': name})
-        user_modifiable = node.get('modify_via_xml')
-        if user_modifiable is not None:
+        user_modifiable_only_by_xml = node.get('modify_via_xml')
+        if user_modifiable_only_by_xml is not None:
             expect(False,
-                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable))
+                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_modifiable_only_by_xml))
+        user_cannot_modify = node.get('cannot_modify_by_user_nl')
+        if user_cannot_modify is not None:
+            expect(False,
+                   "Cannot change %s in user_nl_xxx file, %s" %(name, user_cannot_modify))
 
     def validate(self, namelist, filename=None):
         """Validate a namelist object against this definition.
@@ -305,6 +327,7 @@ class NamelistDefinition(EntryID):
 
                 # and has a valid value.
                 value = namelist.get_variable_value(group_name, variable_name)
+                print "DEBUG: check4 %s %s" %(variable_name, value)
                 expect(self.is_valid_value(variable_name, value),
                        (variable_template + " has invalid value %r.") %
                        (str(variable_name), [str(scalar) for scalar in value]))
@@ -336,31 +359,34 @@ class NamelistDefinition(EntryID):
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
 
-    def get_input_pathname(self, name):
-        elem = self.get_optional_node("entry", attributes={'id': name})
-
+    def get_input_pathname(self, name, node=None):
+        if node is None:
+            node = self.get_optional_node("entry", attributes={'id': name})
+            
         if self.get_version() == "1.0":
-            input_pathname = elem.get('input_pathname')
+            input_pathname = node.get('input_pathname')
         elif self.get_version() == "2.0":
-            input_pathname = self._get_node_element_info(elem, "input_pathname")
+            input_pathname = self._get_node_element_info(node, "input_pathname")
         return(input_pathname)
 
-    def get_type_info(self, name):
-        elem = self.get_optional_node("entry", attributes={'id': name})
+    def get_type_info(self, name, node=None):
+        if node is None:
+            node = self.get_optional_node("entry", attributes={'id': name})
 
         if self.get_version() == "1.0":
-            type_info = elem.get('type')
+            type_info = node.get('type')
         elif self.get_version() == "2.0":
-            type_info = self._get_type_info(elem)
+            type_info = self._get_type_info(node)
         return(type_info)
 
-    def get_group_name(self, name):
-        elem = self.get_optional_node("entry", attributes={'id': name})
+    def get_group_name(self, name, node=None):
+        if node is None:
+            node = self.get_optional_node("entry", attributes={'id': name})
 
         if self.get_version() == "1.0":
-            group = elem.get('group')
+            group = node.get('group')
         elif self.get_version() == "2.0":
-            group = self._get_node_element_info(elem, "group")
+            group = self._get_node_element_info(node, "group")
         return(group)
 
     def get_default_value(self, item, attribute=None):

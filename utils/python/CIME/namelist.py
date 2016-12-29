@@ -635,6 +635,10 @@ def compress_literal_list(literals):
     >>> compress_literal_list([u'f*', u'f*'])
     [u'2*f*']
     """
+    # For now are not returning a compressed list
+    # To return a compressed list - uncomment the following return call
+    return literals
+
     compressed = []
     if len(literals) == 0:
         return compressed
@@ -988,7 +992,7 @@ class Namelist(object):
         specifies the file format. Formats other than 'nml' may not support all
         possible output values.
         """
-        expect(format_ in ('nml', 'rc'),
+        expect(format_ in ('nml', 'rc', 'nmlcontents'),
                "Namelist.write: unexpected output format %r" % str(format_))
         if isinstance(out_file, str) or isinstance(out_file, unicode):
             logger.debug("Writing namelist to: %s", out_file)
@@ -1003,20 +1007,27 @@ class Namelist(object):
         """Unwrapped version of `write` assuming that a file object is input."""
         if groups is None:
             groups = self._groups.keys()
-        if format_ == 'nml':
+        if format_ == 'nml' or format_ == 'nmlcontents':
             equals = ' ='
         elif format_ == 'rc':
             equals = ':'
+
         if (sorted_groups):
             group_names = sorted(group.lower() for group in groups)
         else:
             group_names = groups
+
         for group_name in group_names:
             if format_ == 'nml':
                 out_file.write("&%s\n" % group_name)
             group = self._groups[group_name]
             for name in sorted(group.keys()):
                 values = group[name]
+                # @ is used in a namelist to put the same namelist variable in multiple groups
+                # in the write phase, all characters in the namelist variable name after 
+                # the @ and including the @ should be removed
+                if "@" in name:
+                    name = re.sub('@.+$', "", name)
                 # To prettify things for long lists of values, build strings
                 # line-by-line.
                 if values[0] == "True" or values[0] == "False":
@@ -1035,6 +1046,8 @@ class Namelist(object):
                     out_file.write(line)
             if format_ == 'nml':
                 out_file.write("/\n")
+            if format_ == 'nmlcontents':
+                out_file.write("\n")
 
 
 class _NamelistEOF(Exception):
