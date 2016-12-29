@@ -48,6 +48,7 @@ def parse_command_line(args):
 
     # Set command line options
     parser.add_argument("-format" , "--format",
+                        default="%4C: %6T/%6H; %6R",
                         help="Format the PE layout items for each component (see below)")
 
     parser.add_argument("-set-nasks" ,  "--set-ntasks", default=None,
@@ -57,6 +58,13 @@ def parse_command_line(args):
                         "-set-nthreads", "--set-nthreads", default=None,
                         help="Number of threads to set for all components")
 
+    parser.add_argument("-header" ,  "--header",
+                        default="Comp  NTASKS  NTHRDS  ROOTPE",
+                        help="Custom header for PE layout display")
+
+    parser.add_argument("-no-header", "--no-header", default=False , action="store_true" ,
+                        help="Do not print any PE layout header")
+
     parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
                         help="Case directory to reference")
 
@@ -64,7 +72,11 @@ def parse_command_line(args):
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.format, args.set_ntasks, args.set_nthrds, args.caseroot
+    if (args.no_header):
+      args.header = None
+    # End if
+
+    return args.format, args.set_ntasks, args.set_nthrds, args.header, args.caseroot
 # End def parse_command_line
 
 
@@ -84,21 +96,16 @@ def format_pelayout(comp, ntasks, nthreads, rootpe, format):
     Format the PE layout information for each component, using a default format,
     or using the format input, if it exists.
     """
-    if (format is None):
-        layout_str = "%4s: %6d/%6d; %6d"%(comp, ntasks, nthreads, rootpe)
-    else:
-        subs = { 'C': comp, 'T': ntasks, 'H': nthreads, 'R': rootpe }
-        layout_str = re.sub(r"%([0-9]*)C", r"{C:\1}", format)
-        layout_str = re.sub(r"%([-+0-9]*)T", r"{T:\1}", layout_str)
-        layout_str = re.sub(r"%([-+0-9]*)H", r"{H:\1}", layout_str)
-        layout_str = re.sub(r"%([-+0-9]*)R", r"{R:\1}", layout_str)
-        layout_str = layout_str.format(**subs)
-    # End if
-    return layout_str
+    subs = { 'C': comp, 'T': ntasks, 'H': nthreads, 'R': rootpe }
+    layout_str = re.sub(r"%([0-9]*)C", r"{C:\1}", format)
+    layout_str = re.sub(r"%([-+0-9]*)T", r"{T:\1}", layout_str)
+    layout_str = re.sub(r"%([-+0-9]*)H", r"{H:\1}", layout_str)
+    layout_str = re.sub(r"%([-+0-9]*)R", r"{R:\1}", layout_str)
+    layout_str = layout_str.format(**subs)
 # End def format_pelayout
 
 ###############################################################################
-def print_pelayout(case, ntasks, nthreads, rootpes, format=None, header=None):
+def print_pelayout(case, ntasks, nthreads, rootpes, format, header):
 ###############################################################################
     """
     Print the PE layout information for each component, using the format,
@@ -108,8 +115,6 @@ def print_pelayout(case, ntasks, nthreads, rootpes, format=None, header=None):
 
     if (header is not None):
       print header
-    elif ((header is None) and (format is None)):
-      print "Comp  NTASKS  NTHRDS  ROOTPE"
     # End if
     for comp in comp_classes:
         print format_pelayout(comp, ntasks[comp], nthreads[comp], rootpes[comp], format)
@@ -195,7 +200,7 @@ def _main_func():
         sys.exit(1 if test_results.failed > 0 else 0)
 
     # Initialize command line parser and get command line options
-    format, set_ntasks, set_nthrds, caseroot = parse_command_line(sys.argv)
+    format, set_ntasks, set_nthrds, header, caseroot = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
@@ -206,7 +211,7 @@ def _main_func():
             modify_ntasks(case, int(set_ntasks))
         # End if
         ntasks, nthreads, rootpes = gather_pelayout(case)
-        print_pelayout(case, ntasks, nthreads, rootpes, format=format)
+        print_pelayout(case, ntasks, nthreads, rootpes, format, header)
     # End with
 
 # End def _main_func
