@@ -181,8 +181,8 @@ def modify_ntasks(case, new_tot_tasks):
 
         # We got this far? Go ahead and change PE layout
         for comp in comp_classes:
-            case.set_value("NTASKS", new_tasks[comp], comp)
-            case.set_value("ROOTPE", new_roots[comp], comp)
+            case.set_value("NTASKS_"+comp, new_tasks[comp], comp)
+            case.set_value("ROOTPE_"+comp, new_roots[comp], comp)
         # End for
     # End if (#tasks changed)
 # End def modify_ntasks
