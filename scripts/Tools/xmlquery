@@ -44,7 +44,7 @@ def parse_command_line(args):
                         help="apply to this subgroup only")
 
     parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
-                        help="Case directory to build")
+                        help="Case directory to reference")
 
     parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
                         help="List all variables and their values")
