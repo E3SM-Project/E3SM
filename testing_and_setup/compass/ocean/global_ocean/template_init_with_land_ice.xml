@@ -28,5 +28,7 @@
 		<option name="config_global_ocean_land_ice_topo_ice_frac_varname">'ice_mask'</option>
 		<option name="config_global_ocean_land_ice_topo_grounded_frac_varname">'grounded_mask'</option>
 		<option name="config_global_ocean_land_ice_topo_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_use_constant_land_ice_cavity_temperature">.true.</option>
+		<option name="config_global_ocean_constant_land_ice_cavity_temperature">-1.8</option>
 	</namelist>
 </template>
