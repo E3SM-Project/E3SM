@@ -97,8 +97,8 @@ contains
 !  routine ocn_init_setup_global_ocean
 !
 !> \brief   Setup for global ocean test case
-!> \author  Mark Petersen, Doug Jacobsen
-!> \date    08/23/2016
+!> \author  Mark Petersen, Doug Jacobsen, Xylar Asay-Davis
+!> \date    12/29/2016
 !> \details
 !>  This routine sets up the initial conditions for the global ocean test case.
 !
@@ -180,6 +180,7 @@ contains
             config_global_ocean_cull_inland_seas)
       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depress_by_land_ice', &
             config_global_ocean_depress_by_land_ice)
+
 
       !***********************************************************************
       !
@@ -500,6 +501,9 @@ contains
       call ocn_init_global_ocean_destroy_windstress_fields()
 
       if (config_global_ocean_depress_by_land_ice) then
+         call mpas_log_write('Modifying temperature and surface restoring under land ice.')
+         call ocn_init_setup_global_ocean_modify_temp_under_land_ice(domain, iErr)
+
          call mpas_log_write( 'Recalculating ocean layer topography due to land ice depression')
          ! compute or update the land-ice pressure (or possibly SSH), also computing density along the way
          ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
@@ -1252,6 +1256,91 @@ contains
        end do
 
     end subroutine ocn_init_setup_global_ocean_interpolate_land_ice_topography!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_setup_global_ocean_modify_temp_under_land_ice
+!
+!> \brief   Modify temperature and restoring under land ice
+!> \author  Xylar Asay-Davis
+!> \date    12/29/2016
+!> \details
+!>  This routine will set the temperature under land ice to a constant value if the
+!>  appropriate flag (config_global_ocean_use_constant_land_ice_cavity_temperature) is
+!>  set.  The routine also turns off surface restoring under land ice by modifying
+!>  the piston velocities.
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_init_setup_global_ocean_modify_temp_under_land_ice(domain, iErr)!{{{
+       type (domain_type), intent(inout) :: domain
+       integer, intent(out) :: iErr
+
+       logical, pointer :: config_global_ocean_use_constant_land_ice_cavity_temperature
+       real (kind=RKIND), pointer :: config_global_ocean_constant_land_ice_cavity_temperature
+
+       type (block_type), pointer :: block_ptr
+
+       type (mpas_pool_type), pointer :: meshPool, forcingPool, tracersPool, &
+                                         statePool, tracersSurfaceRestoringFieldsPool
+
+       integer, pointer :: nCells, tracerIndex
+       integer, dimension(:), pointer :: maxLevelCell, landIceMask
+       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+       real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity
+
+       integer :: iCell
+
+       iErr = 0
+
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_use_constant_land_ice_cavity_temperature', &
+             config_global_ocean_use_constant_land_ice_cavity_temperature)
+
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_constant_land_ice_cavity_temperature', &
+             config_global_ocean_constant_land_ice_cavity_temperature)
+
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+          call mpas_pool_get_dimension(tracersPool, 'index_temperature', tracerIndex)
+
+          call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
+          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
+                                   activeTracersPistonVelocity, 1)
+
+          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+
+          if (config_global_ocean_use_constant_land_ice_cavity_temperature &
+                .and. associated(activeTracers) .and. associated(landIceMask)) then
+             do iCell = 1, nCells
+                if((maxLevelCell(iCell) < 1) .or. (landIceMask(iCell) == 0)) cycle ! nothing to modify
+
+                activeTracers(tracerIndex, 1:maxLevelCell(iCell), iCell) = &
+                   config_global_ocean_constant_land_ice_cavity_temperature
+
+             end do
+          end if
+
+          if ( associated(activeTracersPistonVelocity) .and. associated(landIceMask) ) then
+             do iCell = 1, nCells
+                if(landIceMask(iCell) == 1) then
+                   activeTracersPistonVelocity(:, iCell) = 0.0_RKIND
+                end if
+             end do
+          end if
+
+          block_ptr => block_ptr % next
+       end do
+
+    end subroutine ocn_init_setup_global_ocean_modify_temp_under_land_ice!}}}
 
 !***********************************************************************
 !
