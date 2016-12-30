@@ -110,7 +110,7 @@ class NamelistDefinition(EntryID):
             valid_values = valid_values.split(',')
         return valid_values
 
-    def get_value_match(self, item, attributes=None, exact_match=True):
+    def get_value_match(self, item, attributes=None, exact_match=True, entry_node=None):
         """Return the default value for the variable named `item`.
 
         The return value is a list of strings corresponding to the
@@ -124,7 +124,8 @@ class NamelistDefinition(EntryID):
         if attributes is not None:
             all_attributes.update(attributes)
 
-        value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match)
+        value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match,
+                                                                entry_node=entry_node)
 
         if value is None:
             value = ''

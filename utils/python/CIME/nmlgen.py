@@ -200,6 +200,7 @@ class NamelistGenerator(object):
             var_group = self._definition._get_node_element_info(node, "group")
         else:
             var_group = self._definition.get_node_element_info(name, "group")
+        var_group = self._definition.get_node_element_info(name, "group")
         literals = self._to_namelist_literals(name, value, node=node)
         self._namelist.set_variable_value(var_group, name, literals)
 
@@ -232,17 +233,7 @@ class NamelistGenerator(object):
            exists. This behavior is suppressed within single-quoted strings
            (similar to parameter expansion in shell scripts).
         """
-        if node is not None:
-            # this uses the entry_id.py _get_value_match function
-            default = self._definition._get_value_match(node, attributes=config, exact_match=False)
-            if default is None: 
-                default = ''
-            else:
-                default =  self._definition._split_defaults_text(default)
-        else:
-            # this uses the namelist_definition.py get_value_match function
-            default = self._definition.get_value_match(name, attributes=config, exact_match=False)
-
+        default = self._definition.get_value_match(name, attributes=config, exact_match=False, entry_node=node)
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None

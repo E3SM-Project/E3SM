@@ -43,7 +43,7 @@ class EntryID(GenericXML):
 
         return val
 
-    def get_value_match(self, vid, attributes=None, exact_match=False):
+    def get_value_match(self, vid, attributes=None, exact_match=False, entry_node=None):
         # Handle this case:
         # <entry id ...>
         #  <values>
@@ -53,10 +53,13 @@ class EntryID(GenericXML):
         #  </values>
         # </entry>
 
-        node = self.get_optional_node("entry", {"id":vid})
-        value = None
-        if node is not None:
-            value = self._get_value_match(node, attributes, exact_match)
+        if entry_node is not None:
+            value = self._get_value_match(entry_node, attributes, exact_match)
+        else:
+            node = self.get_optional_node("entry", {"id":vid})
+            value = None
+            if node is not None:
+                value = self._get_value_match(node, attributes, exact_match)
         logger.debug("(get_value_match) vid %s value %s"%(vid, value))
         return value
 
