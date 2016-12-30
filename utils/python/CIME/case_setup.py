@@ -26,8 +26,7 @@ def _check_pelayouts_require_rebuild(case, models):
     if os.path.exists(locked_pes):
         # Look to see if $comp_PE_CHANGE_REQUIRES_REBUILD is defined
         # for any component
-        env_mach_pes_locked = EnvMachPes(infile=locked_pes)
-        env_mach_pes_locked.set_components(case.get_values("COMP_CLASSES"))
+        env_mach_pes_locked = EnvMachPes(infile=locked_pes, components=case.get_values("COMP_CLASSES"))
         for comp in models:
             if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % comp):
                 # Changing these values in env_mach_pes.xml will force

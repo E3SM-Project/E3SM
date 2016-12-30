@@ -25,7 +25,6 @@ class EnvBase(EntryID):
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
             self.root.append(headernode)
 
-
     def set_components(self, components):
         if hasattr(self, '_components'):
             # pylint: disable=attribute-defined-outside-init
@@ -99,6 +98,7 @@ class EnvBase(EntryID):
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
             if iscompvar and comp is None:
+                # pylint: disable=no-member
                 for comp in self._components:
                     val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
             else:

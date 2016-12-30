@@ -7,7 +7,7 @@ jobs.
 """
 import socket
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect
+from CIME.utils                     import expect, append_status
 from CIME.preview_namelists         import create_namelists
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.check_input_data          import check_all_input_data
@@ -62,7 +62,9 @@ def submit(case, job=None, resubmit=False, no_batch=False):
     case.flush()
 
     logger.warn("submit_jobs %s"%job)
-    case.submit_jobs(no_batch=no_batch, job=job)
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job)
+    msg = "Submitted jobs %s"%job_ids
+    append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
 def check_case(case, caseroot):
     check_lockedfiles(caseroot)

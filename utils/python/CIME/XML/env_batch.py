@@ -21,11 +21,11 @@ class EnvBatch(EnvBase):
         """
         initialize an object interface to file env_batch.xml in the case directory
         """
-        EnvBase.__init__(self, case_root, infile)
         self.prereq_jobid = None
         self.batchtype = None
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
+        EnvBase.__init__(self, case_root, infile)
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
@@ -338,6 +338,7 @@ class EnvBatch(EnvBase):
             depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch)
             if self.batchtype == "cobalt":
                 break
+        return sorted(list(depid.values()))
 
     def submit_single_job(self, case, job, depid=None, no_batch=False):
         logger.warn("Submit job %s"%job)

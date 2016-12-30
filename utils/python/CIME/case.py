@@ -82,7 +82,6 @@ class Case(object):
         # table and then remove the entry.
         self.lookups = {}
         self.set_lookup_value('CIMEROOT',os.path.abspath(get_cime_root()))
-
         self._compsetname = None
         self._gridname = None
         self._compsetsfile = None
@@ -102,9 +101,6 @@ class Case(object):
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
 
-    def _set_comp_classes(self, comp_classes):
-        for env_file in self._env_entryid_files:
-            env_file.set_components(comp_classes)
 
     def check_if_comp_var(self, vid):
         vid = vid
@@ -123,7 +119,6 @@ class Case(object):
         """
         env_mach_pes = self.get_env("mach_pes")
         comp_classes = self.get_values("COMP_CLASSES")
-
         total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
@@ -163,12 +158,13 @@ class Case(object):
             expect(False,"Object(s) %s seem to have newer data than the corresponding case file"%files)
 
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvRun(self._caseroot))
-        self._env_entryid_files.append(EnvBuild(self._caseroot))
-        self._env_entryid_files.append(EnvMachPes(self._caseroot))
-        self._env_entryid_files.append(EnvCase(self._caseroot))
+        self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
+        components = self._env_entryid_files[0].get_values("COMP_CLASSES")
+        self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(self._caseroot))
+            self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
         self._env_generic_files = []
         self._env_generic_files.append(EnvBatch(self._caseroot))
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
@@ -233,8 +229,6 @@ class Case(object):
                             new_results.append(result)
                 else:
                     new_results = results
-                if item == "COMP_CLASSES":
-                    self._set_comp_classes(new_results)
                 return new_results
 
         for env_file in self._env_generic_files:
@@ -485,6 +479,10 @@ class Case(object):
                 else:
                     yield key, val
 
+    def _set_comp_classes(self, comp_classes):
+        self._component_classes = comp_classes
+        for env_file in self._env_entryid_files:
+            env_file.set_components(comp_classes)
 
     def _get_component_config_data(self):
         # attributes used for multi valued defaults ($attlist is a hash reference)
@@ -506,10 +504,16 @@ class Case(object):
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        self._component_classes =drv_comp.get_valid_model_components()
+        self._set_comp_classes(drv_comp.get_valid_model_components())
+
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
-        self._set_comp_classes(self._component_classes)
+
+        # put anything in the lookups table into env objects
+        for key,value in self.lookups.items():
+            result = self.set_value(key,value)
+            if result is not None:
+                del self.lookups[key]
 
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
@@ -519,12 +523,12 @@ class Case(object):
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
-            expect(comp_config_file is not None,"No config file for component %s"%comp_name)
+            expect(comp_config_file is not None and os.path.isfile(comp_config_file),"Config file %s for component %s not found."%(comp_config_file, comp_name))
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
-
+        # final cleanup of lookups table
         for key,value in self.lookups.items():
             result = self.set_value(key,value)
             if result is not None:
@@ -1003,7 +1007,7 @@ class Case(object):
 
     def submit_jobs(self, no_batch=False, job=None):
         env_batch = self.get_env('batch')
-        env_batch.submit_jobs(self, no_batch=no_batch, job=job)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')

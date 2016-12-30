@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 
 class EnvMachPes(EnvBase):
 
-    def __init__(self, case_root=None, infile="env_mach_pes.xml"):
+    def __init__(self, case_root=None, infile="env_mach_pes.xml", components=None):
         """
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
-        EnvBase.__init__(self, case_root, infile)
+        self._components = components
         self._component_value_list = ["NTASKS", "NTHRDS", "NINST",
                                       "ROOTPE", "PSTRID", "NINST_LAYOUT"]
-        self._components = []
+        EnvBase.__init__(self, case_root, infile)
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None, pes_per_node=None): # pylint: disable=arguments-differ
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
