@@ -635,37 +635,43 @@ def compress_literal_list(literals):
     >>> compress_literal_list([u'f*', u'f*'])
     [u'2*f*']
     """
-    # For now are not returning a compressed list
-    # To return a compressed list - uncomment the following return call
-    return literals
-
     compressed = []
     if len(literals) == 0:
         return compressed
-    # Start with the first literal.
-    old_literal = literals[0]
-    num_reps = 1
-    for literal in literals[1:]:
-        if literal == old_literal:
-            # For each new literal, if it matches the old one, it increases the
-            # number of repetitions by one.
-            num_reps += 1
-        else:
-            # Otherwise, write out the previous literal and start tracking the
-            # new one.
-            rep_str = str(num_reps) + '*' if num_reps > 1 else ''
-            if isinstance(old_literal, basestring):
-                compressed.append(rep_str + old_literal)
+    # for right now do not compress
+    do_compression = False
+    if do_compression:
+        # Start with the first literal.
+        old_literal = literals[0]
+        num_reps = 1
+        for literal in literals[1:]:
+            if literal == old_literal:
+                # For each new literal, if it matches the old one, it increases the
+                # number of repetitions by one.
+                num_reps += 1
             else:
-                compressed.append(rep_str + str(old_literal))
-            old_literal = literal
-            num_reps = 1
-    rep_str = str(num_reps) + '*' if num_reps > 1 else ''
-    if isinstance(old_literal, basestring):
-        compressed.append(rep_str + old_literal)
+                # Otherwise, write out the previous literal and start tracking the
+                # new one.
+                rep_str = str(num_reps) + '*' if num_reps > 1 else ''
+                if isinstance(old_literal, basestring):
+                    compressed.append(rep_str + old_literal)
+                else:
+                    compressed.append(rep_str + str(old_literal))
+                old_literal = literal
+                num_reps = 1
+        rep_str = str(num_reps) + '*' if num_reps > 1 else ''
+        if isinstance(old_literal, basestring):
+            compressed.append(rep_str + old_literal)
+        else:
+            compressed.append(rep_str + str(old_literal))
+        return compressed
     else:
-        compressed.append(rep_str + str(old_literal))
-    return compressed
+        for literal in literals:
+            if isinstance(literal, basestring):
+                compressed.append(literal)
+            else:
+                compressed.append(str(literal))
+        return compressed
 
 def merge_literal_lists(default, overwrite):
     """Merge two lists of literal value strings.
@@ -1011,23 +1017,23 @@ class Namelist(object):
             equals = ' ='
         elif format_ == 'rc':
             equals = ':'
-
         if (sorted_groups):
             group_names = sorted(group.lower() for group in groups)
         else:
             group_names = groups
-
         for group_name in group_names:
             if format_ == 'nml':
                 out_file.write("&%s\n" % group_name)
             group = self._groups[group_name]
             for name in sorted(group.keys()):
                 values = group[name]
+
                 # @ is used in a namelist to put the same namelist variable in multiple groups
                 # in the write phase, all characters in the namelist variable name after 
                 # the @ and including the @ should be removed
                 if "@" in name:
                     name = re.sub('@.+$', "", name)
+
                 # To prettify things for long lists of values, build strings
                 # line-by-line.
                 if values[0] == "True" or values[0] == "False":

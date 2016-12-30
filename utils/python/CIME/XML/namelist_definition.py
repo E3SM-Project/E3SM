@@ -320,14 +320,11 @@ class NamelistDefinition(EntryID):
                 # and has the right group name...
                 var_group = self.get_group_name(variable_name)
                 expect(var_group == group_name,
-                       (variable_template + " is in a group named %r, but "
-                        "should be in %r.") %
-                       (str(variable_name), str(group_name),
-                        str(var_group)))
+                       (variable_template + " is in a group named %r, but should be in %r.") %
+                       (str(variable_name), str(group_name), str(var_group)))
 
                 # and has a valid value.
                 value = namelist.get_variable_value(group_name, variable_name)
-                print "DEBUG: check4 %s %s" %(variable_name, value)
                 expect(self.is_valid_value(variable_name, value),
                        (variable_template + " has invalid value %r.") %
                        (str(variable_name), [str(scalar) for scalar in value]))
