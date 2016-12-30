@@ -631,9 +631,9 @@ def compress_literal_list(literals):
     >>> compress_literal_list(['true'])
     ['true']
     >>> compress_literal_list(['1', '2', 'f*', '3', '3', '3', '5'])
-    ['1', '2', 'f*', '3*3', '5']
+    ['1', '2', 'f*', '3', '3', '3', '5']
     >>> compress_literal_list([u'f*', u'f*'])
-    [u'2*f*']
+    [u'f*', u'f*']
     """
     compressed = []
     if len(literals) == 0:
@@ -696,7 +696,7 @@ def merge_literal_lists(default, overwrite):
     >>> merge_literal_lists(['true'], [])
     ['true']
     >>> merge_literal_lists(['3*false', '3*true'], ['true', '4*', 'false'])
-    ['true', '2*false', '2*true', 'false']
+    ['true', 'false', 'false', 'true', 'true', 'false']
     """
     merged = []
     default = expand_literal_list(default)
@@ -963,7 +963,7 @@ class Namelist(object):
         >>> x.get_value('bar')
         [u'2']
         >>> x.get_value('bazz')
-        [u'3*1']
+        [u'1', u'1', u'1']
         >>> x.get_value('brat')
         [u'3']
         >>> x.get_value('baker')
