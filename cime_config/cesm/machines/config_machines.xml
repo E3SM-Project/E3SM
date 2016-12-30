@@ -810,7 +810,7 @@
 	<command name="load">compiler/pgi/15.1</command>
       </modules>
       <modules  compiler="pgi" mpilib="mvapich2">
-	  <command name="load">  tool/parallel-netcdf/1.7.0/pgi/mvapich2  </command>
+	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
       </modules>
       <modules compiler="nag">
 	<command name="load">compiler/nag/6.1</command>

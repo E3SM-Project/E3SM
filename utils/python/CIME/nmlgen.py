@@ -106,9 +106,12 @@ class NamelistGenerator(object):
     def __exit__(self, *_):
         return False
 
-    def get_definition_entries(self):
+    def get_definition_nodes(self, skip_groups=None):
+        return self._definition.get_entry_nodes(skip_groups=skip_groups)
+
+    def get_definition_entries(self, skip_groups=None):
         """Return array of names of all definition entries"""
-        return self._definition.get_entries()
+        return self._definition.get_entries(skip_groups=skip_groups)
 
     @staticmethod
     def quote_string(string):
@@ -121,9 +124,9 @@ class NamelistGenerator(object):
             string = string_to_character_literal(string)
         return string
 
-    def _to_python_value(self, name, literals):
+    def _to_python_value(self, name, literals, node=None):
         """Transform a literal list as needed for `get_value`."""
-        var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name))
+        var_type, _, var_size, = self._definition.split_type_string(name, self._definition.get_type_info(name, node=node))
         if len(literals) > 0:
             value = expand_literal_list(literals)
         else:
@@ -139,13 +142,13 @@ class NamelistGenerator(object):
         else:
             return value
 
-    def _to_namelist_literals(self, name, value):
+    def _to_namelist_literals(self, name, value, node=None):
         """Transform a literal list as needed for `set_value`.
 
         This is the inverse of `_to_python_value`, except that many of the
         changes have potentially already been performed.
         """
-        var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name))
+        var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name, node=node))
         if var_size == 1 and not isinstance(value, list):
             value = [value]
         for i, scalar in enumerate(value):
@@ -156,7 +159,7 @@ class NamelistGenerator(object):
                 value[i] = self.quote_string(scalar)
         return compress_literal_list(value)
 
-    def get_value(self, name):
+    def get_value(self, name, node=None):
         """Get the current value of a given namelist variable.
 
         Note that the return value of this function is always a string or a list
@@ -174,9 +177,9 @@ class NamelistGenerator(object):
         All other literals are returned as the raw string values that will be
         written to the namelist.
         """
-        return self._to_python_value(name, self._namelist.get_value(name))
+        return self._to_python_value(name, self._namelist.get_value(name), node=node)
 
-    def set_value(self, name, value):
+    def set_value(self, name, value, node=None):
         """Set the current value of a given namelist variable.
 
         Usually, you should use `add_default` instead of this function.
@@ -193,11 +196,16 @@ class NamelistGenerator(object):
         a user-specified setting. Even if `value` is (or contains) a null value,
         the old setting for the variable will be thrown out completely.
         """
+        if node is not None:
+            # pylint: disable=protected-access
+            var_group = self._definition._get_node_element_info(node, "group")
+        else:
+            var_group = self._definition.get_node_element_info(name, "group")
         var_group = self._definition.get_node_element_info(name, "group")
-        literals = self._to_namelist_literals(name, value)
+        literals = self._to_namelist_literals(name, value, node=node)
         self._namelist.set_variable_value(var_group, name, literals)
 
-    def get_default(self, name, config=None, allow_none=False):
+    def get_default(self, name, config=None, allow_none=False, node=None):
         """Get the value of a variable from the namelist definition file.
 
         The `config` argument is passed through to the underlying
@@ -226,13 +234,16 @@ class NamelistGenerator(object):
            exists. This behavior is suppressed within single-quoted strings
            (similar to parameter expansion in shell scripts).
         """
-        default = self._definition.get_value_match(name, attributes=config, exact_match=False)
+        default = self._definition.get_value_match(name, attributes=config, exact_match=False, entry_node=node)
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None
         default = expand_literal_list(default)
 
-        var_type,_,_ = self._definition.split_type_string(name, self._definition.get_type_info(name))
+        if node is not None:
+            var_type,_,_ = self._definition.split_type_string(name, self._definition.get_type_info(name, node=node))
+        else:
+            var_type,_,_ = self._definition.split_type_string(name, self._definition.get_type_info(name))
 
         for i, scalar in enumerate(default):
             # Skip single-quoted strings.
@@ -257,7 +268,7 @@ class NamelistGenerator(object):
                 if scalar != '':
                     default[i] = self.quote_string(scalar)
 
-        default = self._to_python_value(name, default)
+        default = self._to_python_value(name, default, node=node)
         return default
 
     def get_streams(self):
@@ -484,7 +495,7 @@ class NamelistGenerator(object):
             fullpath = os.path.join(self._din_loc_root, file_path)
             return fullpath
 
-    def add_default(self, name, value=None):
+    def add_default(self, name, value=None, node=None):
         """Add a value for the specified variable to the namelist.
 
         If the specified variable is already defined in the object, the existing
@@ -496,7 +507,13 @@ class NamelistGenerator(object):
         If no value for the variable is found via any of the above, this method
         will raise an exception.
         """
-        group = self._definition.get_node_element_info(name, "group")
+        if node is None:
+            nodes = self._definition.get_nodes_by_id(name)
+            expect(len(nodes) == 1, "incorrect number of matchs %s"%len(nodes))
+            node = nodes[0]
+
+        # pylint: disable=protected-access
+        group = self._definition._get_node_element_info(node, "group")
 
         # Use this to see if we need to raise an error when nothing is found.
         have_value = False
@@ -505,20 +522,22 @@ class NamelistGenerator(object):
         current_literals = self._namelist.get_variable_value(group, name)
         if current_literals != [""]:
             have_value = True
+            # Do not proceed further since this has been obtained the -infile contents
+            return 
 
         # Check for input argument.
         if value is not None:
             have_value = True
-            literals = self._to_namelist_literals(name, value) #FIXME - this is where an array is compressed into a 3*value
+            # if compression were to occur, this is where it does
+            literals = self._to_namelist_literals(name, value) 
             current_literals = merge_literal_lists(literals, current_literals)
 
         # Check for default value.
-        default = self.get_default(name, allow_none=True)
+        default = self.get_default(name, allow_none=True, node=node)
         if default is not None:
             have_value = True
             default_literals = self._to_namelist_literals(name, default)
-            current_literals = merge_literal_lists(default_literals,
-                                                   current_literals)
+            current_literals = merge_literal_lists(default_literals, current_literals)
         expect(have_value, "No default value found for %s." % name)
 
         # Go through file names and prepend input data root directory for
@@ -536,8 +555,8 @@ class NamelistGenerator(object):
                 if file_path == 'null':
                     continue
                 file_path = self.set_abs_file_path(file_path)
-                expect(os.path.exists(file_path),
-                       "File not found: %s = %s" % (name, literal))
+                if not os.path.exists(file_path):
+                    logger.warn ("File not found: %s = %s, will attempt to download in check_input_data phase" % (name, literal))
                 current_literals[i] = string_to_character_literal(file_path)
             current_literals = compress_literal_list(current_literals)
 
@@ -610,6 +629,10 @@ class NamelistGenerator(object):
             # append to input_data_list file
             with open(data_list_path, "a") as input_data_list:
                 self._write_input_files(input_data_list)
+
+    def add_nmlcontents(self, filename, group, append=True, format_="nmlcontents", sorted_groups=True):
+        """ Write only contents of nml group """
+        self._namelist.write(filename, groups=[group], append=append, format_=format_, sorted_groups=sorted_groups)
 
     def write_seq_maps(self, filename):
         """ Write out seq_maps.rc"""

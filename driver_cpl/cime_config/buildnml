@@ -58,13 +58,14 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
     # Create nmlgen object - using config dictionary
     #--------------------------------
     nmlgen = NamelistGenerator(case, infiles, definition_file, config)
-    entries = nmlgen.get_definition_entries()
 
     #--------------------------------
     # Add default values for all entries in namelist_definition_drv.xml
     #--------------------------------
+    skip_groups = []
+    entries = nmlgen.get_definition_nodes(skip_groups=skip_groups)
     for entry in entries:
-        nmlgen.add_default(entry)
+        nmlgen.add_default(entry.get("id"), node=entry)
 
     #--------------------------------
     # Overwrite: set brnch_retain_casename
