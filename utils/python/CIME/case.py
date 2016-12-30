@@ -174,8 +174,6 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
         self._env_generic_files.append(EnvArchive(self._caseroot))
         self._files = self._env_entryid_files + self._env_generic_files
-        # this gives the env objects access to the comp_classes
-        self.get_values("COMP_CLASSES")
 
     def get_case_root(self):
         """Returns the root directory for this case."""
