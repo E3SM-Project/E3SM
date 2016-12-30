@@ -161,9 +161,10 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Create `datm_nml` namelist group.
     #----------------------------------------------------
-    entries = nmlgen.get_definition_entries()
+    skip_groups = []
+    entries = nmlgen.get_definition_nodes(skip_groups=skip_groups)
     for entry in entries:
-        nmlgen.add_default(entry)
+        nmlgen.add_default(entry.get("id"), node=entry)
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
