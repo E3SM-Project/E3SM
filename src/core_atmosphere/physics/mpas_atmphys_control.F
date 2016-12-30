@@ -69,6 +69,9 @@
 ! * modified checking the config_gwdo_scheme option to allow bl_ysu_gwdo to be run when the MYNN pbl and surface
 !   layer scheme options are chosen.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-12-22.
+! * modified logic in subroutine physics_tables_init so that the Thompson microphysics tables are read in each
+!   MPI task.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-12-30.
 
 
  contains
@@ -382,6 +385,8 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
+ l_mp_tables = .true.
+
  if(dminfo % my_proc_id == IO_NODE) then
 
     call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
@@ -391,7 +396,6 @@
     l_qr_acr_qs = .false.
     l_qi_aut_qs = .false.
     l_freezeH2O = .false.
-    l_mp_tables = .false.
 
     inquire(file='MP_THOMPSON_QRacrQG_DATA.DBL'  ,exist=l_qr_acr_qg)
     inquire(file='MP_THOMPSON_QRacrQS_DATA.DBL'  ,exist=l_qr_acr_qs)
@@ -409,8 +413,6 @@
        write(mpas_err_message,'(A)') &
           '--- tables to run the Thompson cloud microphysics scheme do not exist: run build_tables first.'
        call physics_error_fatal(mpas_err_message)
-    else
-       l_mp_tables = .true.
     endif
 !   write(0,*) 'l_mp_tables = ',l_mp_tables
 
