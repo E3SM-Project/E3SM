@@ -26,7 +26,7 @@ class EnvBase(EntryID):
             self.root.append(headernode)
 
     def set_components(self, components):
-        if hasattr(self, "_components"):
+        if hasattr(self, '_components'):
             # pylint: disable=attribute-defined-outside-init
             self._components = components
 
