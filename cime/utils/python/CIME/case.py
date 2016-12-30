@@ -688,6 +688,7 @@ class Case(object):
     def _create_caseroot_tools(self):
         machines_dir = os.path.abspath(self.get_value("MACHDIR"))
         toolsdir = os.path.join(self.get_value("CIMEROOT"),"scripts","Tools")
+        casetools = os.path.join(self._caseroot, "Tools")
         # setup executable files in caseroot/
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
@@ -721,7 +722,7 @@ class Case(object):
             toolfiles.append( os.path.join(toolsdir,"mdiag_reduce.pl") )
 
         for toolfile in toolfiles:
-            destfile = os.path.join(self._caseroot,"Tools",os.path.basename(toolfile))
+            destfile = os.path.join(casetools, os.path.basename(toolfile))
             expect(os.path.isfile(toolfile)," File %s does not exist"%toolfile)
             try:
                 os.symlink(toolfile, destfile)
@@ -763,6 +764,12 @@ class Case(object):
             #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
             #    except Exception as e:
             #        logger.warning("FAILED to set up infofiles: %s" % str(e))
+
+        if get_model() == "acme":
+            if os.path.exists(os.path.join(machines_dir, "syslog.%s" % machine)):
+                shutil.copy(os.path.join(machines_dir, "syslog.%s" % machine), os.path.join(casetools, "mach_syslog"))
+            else:
+                shutil.copy(os.path.join(machines_dir, "syslog.noop"), os.path.join(casetools, "mach_syslog"))
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
