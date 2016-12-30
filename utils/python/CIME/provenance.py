@@ -52,7 +52,7 @@ def save_build_provenance_acme(case, lid=None):
         os.remove(sourcemods_prov)
     if os.path.isdir(sourcemods):
         with tarfile.open(sourcemods_prov, "w:gz") as tfd:
-            tfd.add(sourcemods)
+            tfd.add(sourcemods, arcname="SourceMods")
 
     # Save build env
     env_prov = os.path.join(exeroot, "build_environment.%s.txt" % lid)
@@ -138,7 +138,7 @@ def save_prerun_provenance_acme(case, lid=None):
     source_mods_dir = os.path.join(caseroot, "SourceMods")
     if os.path.isdir(source_mods_dir):
         with tarfile.open(os.path.join(full_timing_dir, "SourceMods.%s.tar.gz" % lid), "w:gz") as tfd:
-            tfd.add(source_mods_dir)
+            tfd.add(source_mods_dir, arcname="SourceMods")
 
     # Save various case configuration items
     case_docs = os.path.join(full_timing_dir, "CaseDocs.%s" % lid)
@@ -234,8 +234,18 @@ def save_postrun_provenance_acme(case, lid):
                 os.remove(syslog_jobid_path)
 
     # copy/tar timings
-    with tarfile.open(os.path.join(full_timing_dir, "timing.%s.tar.gz" % lid), "w:gz") as tfd:
-        tfd.add(os.path.join(rundir, "timing"))
+    rundir_timing_dir = os.path.join(rundir, "timing." + lid)
+    shutil.move(os.path.join(rundir, "timing"), rundir_timing_dir)
+    with tarfile.open("%s.tar.gz" % rundir_timing_dir, "w:gz") as tfd:
+        tfd.add(rundir_timing_dir, arcname=os.path.basename(rundir_timing_dir))
+
+    shutil.rmtree(rundir_timing_dir)
+    shutil.copy("%s.tar.gz" % rundir_timing_dir, full_timing_dir)
+
+    gzip_existing_file(os.path.join(caseroot, "timing", "acme_timing_stats.%s" % lid))
+
+    # JGF: not sure why we do this
+    touch(os.path.join(caseroot, "timing", "timing.%s.saved" % lid))
 
     #
     # save output files and logs
@@ -251,7 +261,7 @@ def save_postrun_provenance_acme(case, lid):
 
     globs_to_copy.append("logs/acme.log.%s.gz" % lid)
     globs_to_copy.append("logs/cpl.log.%s.gz" % lid)
-    globs_to_copy.append("timing/*.%s" % lid)
+    globs_to_copy.append("timing/*.%s*" % lid)
     globs_to_copy.append("CaseStatus")
 
     for glob_to_copy in globs_to_copy:
