@@ -47,17 +47,19 @@ class NamelistDefinition(EntryID):
             schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
             self.validate_xml_file(infile, schema)
 
-    def get_entries(self, skip_groups=[]):
+    def get_entries(self, skip_groups=None):
         """Return all variables in the namelist definition file
         that do not have attributes of skip_default_entry or per_stream_entry
         """
+        if skip_groups is None:
+            skip_groups = []
         nodes = self.get_entry_nodes(skip_groups)
         entries = []
         for node in nodes:
             entries.append(node.get("id"))
         return entries
 
-    def get_entry_nodes(self, skip_groups=[]):
+    def get_entry_nodes(self, skip_groups=None):
         """Return all variables in the namelist definition file
         that do not have attributes of skip_default_entry or per_stream_entry
         """
@@ -66,7 +68,7 @@ class NamelistDefinition(EntryID):
         for node in nodes:
             skip_default_entry = node.get("skip_default_entry")
             per_stream_entry = node.get("per_stream_entry")
-            if skip_groups:
+            if skip_groups is not None:
                 group_value = self.get_element_text("group", root=node)
                 if not group_value in skip_groups:
                     if not skip_default_entry and not per_stream_entry:

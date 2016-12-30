@@ -106,10 +106,10 @@ class NamelistGenerator(object):
     def __exit__(self, *_):
         return False
 
-    def get_definition_nodes(self, skip_groups=[]):
+    def get_definition_nodes(self, skip_groups=None):
         return self._definition.get_entry_nodes(skip_groups=skip_groups)
 
-    def get_definition_entries(self, skip_groups=[]):
+    def get_definition_entries(self, skip_groups=None):
         """Return array of names of all definition entries"""
         return self._definition.get_entries(skip_groups=skip_groups)
 
@@ -197,6 +197,7 @@ class NamelistGenerator(object):
         the old setting for the variable will be thrown out completely.
         """
         if node is not None:
+            # pylint: disable=protected-access
             var_group = self._definition._get_node_element_info(node, "group")
         else:
             var_group = self._definition.get_node_element_info(name, "group")
@@ -511,6 +512,7 @@ class NamelistGenerator(object):
             expect(len(nodes) == 1, "incorrect number of matchs %s"%len(nodes))
             node = nodes[0]
 
+        # pylint: disable=protected-access
         group = self._definition._get_node_element_info(node, "group")
 
         # Use this to see if we need to raise an error when nothing is found.
