@@ -140,8 +140,8 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
         tprofn = int(stopn / tprof_total)
         if tprofn < 1:
             tprofn = 1
-        nmlgen.set_value('tprof_option', value="tprofoption")
-        nmlgen.set_value('tprof_n'     , value="tprofn")
+        nmlgen.set_value('tprof_option', value=tprofoption)
+        nmlgen.set_value('tprof_n'     , value=tprofn)
 
     #--------------------------------
     # Write output files
