@@ -190,8 +190,6 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
         else:
             ninst = case.get_value("NINST_%s"%comp_class)
             config_dir = os.path.dirname(case.get_value("CONFIG_%s_FILE"%comp_class))
-        import pdb
-        pdb.set_trace()
         comp = case.get_value("COMP_%s"%comp_class)
         thrds =  case.get_value("NTHRDS_%s"%comp_class)
         expect(ninst is not None,"Failed to get ninst for comp_class %s"%comp_class)

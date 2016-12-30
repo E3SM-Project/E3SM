@@ -338,7 +338,7 @@ class EnvBatch(EnvBase):
             depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch)
             if self.batchtype == "cobalt":
                 break
-
+            return sorted(list(depid.values()))
     def submit_single_job(self, case, job, depid=None, no_batch=False):
         logger.warn("Submit job %s"%job)
         caseroot = case.get_value("CASEROOT")

@@ -82,7 +82,6 @@ class Case(object):
         # table and then remove the entry.
         self.lookups = {}
         self.set_lookup_value('CIMEROOT',os.path.abspath(get_cime_root()))
-
         self._compsetname = None
         self._gridname = None
         self._compsetsfile = None
@@ -510,6 +509,12 @@ class Case(object):
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
+        # put anything in the lookups table into env objects
+        for key,value in self.lookups.items():
+            result = self.set_value(key,value)
+            if result is not None:
+                del self.lookups[key]
+
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
@@ -518,12 +523,12 @@ class Case(object):
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
-            expect(comp_config_file is not None,"No config file for component %s"%comp_name)
+            expect(comp_config_file is not None and os.path.isfile(comp_config_file),"Config file %s for component %s not found."%(comp_config_file, comp_name))
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
-
+        # final cleanup of lookups table
         for key,value in self.lookups.items():
             result = self.set_value(key,value)
             if result is not None:
@@ -1002,7 +1007,7 @@ class Case(object):
 
     def submit_jobs(self, no_batch=False, job=None):
         env_batch = self.get_env('batch')
-        env_batch.submit_jobs(self, no_batch=no_batch, job=job)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
