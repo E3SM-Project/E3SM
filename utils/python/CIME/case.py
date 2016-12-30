@@ -102,9 +102,6 @@ class Case(object):
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
 
-    def _set_comp_classes(self, comp_classes):
-        for env_file in self._env_entryid_files:
-            env_file.set_components(comp_classes)
 
     def check_if_comp_var(self, vid):
         vid = vid
@@ -123,7 +120,6 @@ class Case(object):
         """
         env_mach_pes = self.get_env("mach_pes")
         comp_classes = self.get_values("COMP_CLASSES")
-
         total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
@@ -163,12 +159,13 @@ class Case(object):
             expect(False,"Object(s) %s seem to have newer data than the corresponding case file"%files)
 
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvRun(self._caseroot))
-        self._env_entryid_files.append(EnvBuild(self._caseroot))
-        self._env_entryid_files.append(EnvMachPes(self._caseroot))
-        self._env_entryid_files.append(EnvCase(self._caseroot))
+        self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
+        components = self._env_entryid_files[0].get_values("COMP_CLASSES")
+        self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(self._caseroot))
+            self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
         self._env_generic_files = []
         self._env_generic_files.append(EnvBatch(self._caseroot))
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
@@ -233,8 +230,6 @@ class Case(object):
                             new_results.append(result)
                 else:
                     new_results = results
-                if item == "COMP_CLASSES":
-                    self._set_comp_classes(new_results)
                 return new_results
 
         for env_file in self._env_generic_files:
@@ -485,6 +480,10 @@ class Case(object):
                 else:
                     yield key, val
 
+    def _set_comp_classes(self, comp_classes):
+        self._component_classes = comp_classes
+        for env_file in self._env_entryid_files:
+            env_file.set_components(comp_classes)
 
     def _get_component_config_data(self):
         # attributes used for multi valued defaults ($attlist is a hash reference)
@@ -506,10 +505,10 @@ class Case(object):
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        self._component_classes =drv_comp.get_valid_model_components()
+        self._set_comp_classes(drv_comp.get_valid_model_components())
+
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
-        self._set_comp_classes(self._component_classes)
 
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
