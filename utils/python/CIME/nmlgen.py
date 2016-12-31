@@ -76,15 +76,6 @@ class NamelistGenerator(object):
         # Create definition object - this will validate the xml schema in the definition file
         self._definition = NamelistDefinition(definition_files[0])
 
-        # Array of all entry nodes
-        self._entry_nodes = []
-
-        # Array of all entry id names
-        self._entry_ids = []
-
-        # Determine values for the above arrays and dictionaries
-        self._init_data()
-
         # Determine array of _stream_variables from definition object
         # This is only applicable to data models
         self._streams_namelists = {"streams": []}
@@ -102,15 +93,12 @@ class NamelistGenerator(object):
     def __exit__(self, *_):
         return False
 
-    def _init_data(self):
-        self._entry_nodes, self._entry_ids = self._definition.get_entry_nodes()
-
     def init_defaults(self, infiles, config, skip_groups=None ):
         """Return array of names of all definition nodes"""
 
         # Determine the array of entry nodes that will be acted upon 
         entry_nodes = []
-        for node in self._entry_nodes:
+        for node in self._definition.get_entry_nodes():
             skip_default_entry = node.get("skip_default_entry")
             per_stream_entry = node.get("per_stream_entry")
             name = node.get("id")
@@ -639,7 +627,7 @@ class NamelistGenerator(object):
         `data_list_path` argument is the location of the `*.input_data_list`
         file, which will have the input data files added to it.
         """
-        self._definition.validate(self._namelist, entry_ids=self._entry_ids)
+        self._definition.validate(self._namelist)
         if groups is None:
             groups = self._namelist.get_group_names()
 

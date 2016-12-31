@@ -147,7 +147,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
 
     # set variables that are not per-stream
     if datm_mode == 'CPLHISTForcingForOcnIce':
-        nmlgen.add_default("domainfile", 'null')
+        nmlgen.add_default("domainfile", value='null')
         if atm_domain_file != "UNSET":
             if case.get_value('ATM_DOMAIN_FILE') != 'UNSET':
                 case.set_value('ATM_DOMAIN_FILE', 'UNSET')
