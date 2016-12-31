@@ -95,6 +95,7 @@ class NamelistDefinition(EntryID):
         raise TypeError, \
             "NamelistDefinition does not support `set_value`."
 
+    #pylint:disable=arguments-differ
     def get_valid_values(self, name, node=None):
         # The "valid_values" attribute is not required, and an empty string has
         # the same effect as not specifying it.
@@ -359,10 +360,11 @@ class NamelistDefinition(EntryID):
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
 
+    #pylint:disable=arguments-differ
     def get_input_pathname(self, name, node=None):
         if node is None:
             node = self.get_optional_node("entry", attributes={'id': name})
-            
+
         if self.get_version() == "1.0":
             input_pathname = node.get('input_pathname')
         elif self.get_version() == "2.0":
