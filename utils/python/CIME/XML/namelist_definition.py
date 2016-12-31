@@ -54,30 +54,48 @@ class NamelistDefinition(EntryID):
         if skip_groups is None:
             skip_groups = []
         nodes = self.get_entry_nodes(skip_groups)
-        entries = []
+        entry_ids = []
+        entry_group_names = {}
         for node in nodes:
-            entries.append(node.get("id"))
-        return entries
+            id = node.get("id")
+            group_value = self.get_element_text("group", root=node)
+            entries.append(id)
+            entry_group_names[id] = group_value 
+        return entry_ids, entry_group_names
 
     def get_entry_nodes(self, skip_groups=None):
         """Return all variables in the namelist definition file
         that do not have attributes of skip_default_entry or per_stream_entry
         """
-        entries = []
+        entry_nodes = []
+        entry_ids = []
+        entry_group_names = {}
+        entry_valid_values = {}
+        entry_types = {}
         nodes = self.get_nodes("entry")
         for node in nodes:
             skip_default_entry = node.get("skip_default_entry")
             per_stream_entry = node.get("per_stream_entry")
-            if skip_groups is not None:
-                group_value = self.get_element_text("group", root=node)
+            entry_id = node.get("id")
+            group_value = self.get_element_text("group", root=node)
+            valid_values = self.get_valid_values(entry_id, node=node)
+            type_value = self.get_type_info(entry_id, node=node)
+            if skip_groups:
                 if not group_value in skip_groups:
                     if not skip_default_entry and not per_stream_entry:
-                        entries.append(node)
+                        entry_nodes.append(node)
+                        entry_ids.append(entry_id)
+                        entry_group_names[entry_id] = group_value 
+                        entry_valid_values[entry_id] = valid_values
+                        entry_types[entry_id] = type_value
             else:
                 if not skip_default_entry and not per_stream_entry:
-                    entries.append(node)
-
-        return entries
+                    entry_nodes.append(node)
+                    entry_ids.append(entry_id)
+                    entry_group_names[entry_id] = group_value 
+                    entry_valid_values[entry_id] = valid_values
+                    entry_types[entry_id] = type_value
+        return entry_nodes, entry_ids, entry_group_names, entry_valid_values, entry_types
 
     def get_per_stream_entries(self):
         entries = []
@@ -226,7 +244,7 @@ class NamelistDefinition(EntryID):
             canonical_value = [int(scalar) for scalar in canonical_value]
         return canonical_value
 
-    def is_valid_value(self, name, value, node=None):
+    def is_valid_value(self, name, value, node=None, entry_valid_values=None, entry_types=None):
         """Determine whether a value is valid for the named variable.
 
         The `value` argument must be a list of strings formatted as they would
@@ -235,7 +253,10 @@ class NamelistDefinition(EntryID):
         """
         name = name.lower()
         # Separate into a type, optional length, and optional size.
-        type_, max_len, size = self.split_type_string(name, self.get_type_info(name,node=node))
+        if entry_types is None:
+            type_, max_len, size = self.split_type_string(name, self.get_type_info(name,node=node))
+        else:
+            type_, max_len, size = self.split_type_string(name, entry_types[name])
         invalid = []
 
         # Check value against type.
@@ -257,7 +278,10 @@ class NamelistDefinition(EntryID):
                     return False
 
         # Check valid value constraints (if applicable).
-        valid_values = self.get_valid_values(name, node=node)
+        if entry_valid_values is None:
+            valid_values = self.get_valid_values(name, node=node)
+        else:
+            valid_values = entry_valid_values[name]
         if valid_values is not None:
             expect(type_ in ('integer', 'character'),
                    "Found valid_values attribute for variable %s with "
@@ -280,12 +304,15 @@ class NamelistDefinition(EntryID):
             return False
         return True
 
-    def _expect_variable_in_definition(self, name, variable_template):
+    def _expect_variable_in_definition(self, name, variable_template, entry_ids=None):
         """Used to get a better error message for an unexpected variable."""
-        node = self.get_optional_node("entry", attributes={'id': name})
-        expect(node is not None,
-               (variable_template + " is not in the namelist definition.") %
-               str(name))
+        if entry_ids is not None:
+            expect(name in entry_ids,
+                   (variable_template + " is not in the namelist definition.") % str(name))
+        else:
+            node = self.get_optional_node("entry", attributes={'id': name})
+            expect(node is not None,
+                   (variable_template + " is not in the namelist definition.") % str(name))
 
     def _user_modifiable_in_variable_definition(self, name):
         # Is name user modifiable?
@@ -299,7 +326,8 @@ class NamelistDefinition(EntryID):
             expect(False,
                    "Cannot change %s in user_nl_xxx file, %s" %(name, user_cannot_modify))
 
-    def validate(self, namelist, filename=None):
+    def validate(self, namelist,filename=None, entry_ids=None, 
+                 entry_group_names=None, entry_valid_values=None, entry_types=None):
         """Validate a namelist object against this definition.
 
         The optional `filename` argument can be used to assist in error
@@ -315,21 +343,22 @@ class NamelistDefinition(EntryID):
         for group_name in namelist.get_group_names():
             for variable_name in namelist.get_variable_names(group_name):
                 # Check that the variable is defined...
-                self._expect_variable_in_definition(variable_name, variable_template)
+                self._expect_variable_in_definition(variable_name, variable_template, entry_ids=entry_ids)
 
                 # Check if can actually change this variable via filename change
                 if filename is not None:
                     self._user_modifiable_in_variable_definition(variable_name)
 
                 # and has the right group name...
-                var_group = self.get_group_name(variable_name)
+                var_group = self.get_group_name(variable_name, entry_group_names=entry_group_names)
                 expect(var_group == group_name,
                        (variable_template + " is in a group named %r, but should be in %r.") %
                        (str(variable_name), str(group_name), str(var_group)))
 
                 # and has a valid value.
                 value = namelist.get_variable_value(group_name, variable_name)
-                expect(self.is_valid_value(variable_name, value),
+                expect(self.is_valid_value(variable_name, value, 
+                                           entry_valid_values=entry_valid_values, entry_types=entry_types),
                        (variable_template + " has invalid value %r.") %
                        (str(variable_name), [str(scalar) for scalar in value]))
 
@@ -381,15 +410,17 @@ class NamelistDefinition(EntryID):
             type_info = self._get_type_info(node)
         return(type_info)
 
-    def get_group_name(self, name, node=None):
-        if node is None:
-            node = self.get_optional_node("entry", attributes={'id': name})
-
-        if self.get_version() == "1.0":
-            group = node.get('group')
-        elif self.get_version() == "2.0":
-            group = self._get_node_element_info(node, "group")
-        return(group)
+    def get_group_name(self, name, node=None, entry_group_names=None):
+        if entry_group_names is not None:
+            return entry_group_names[name]
+        else:
+            if node is None:
+                node = self.get_optional_node("entry", attributes={'id': name})
+            if self.get_version() == "1.0":
+                group = node.get('group')
+            elif self.get_version() == "2.0":
+                group = self._get_node_element_info(node, "group")
+            return(group)
 
     def get_default_value(self, item, attribute=None):
         """Return the default value for the variable named `item`.

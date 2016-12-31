@@ -76,6 +76,18 @@ class NamelistGenerator(object):
         # Create definition object.
         self._definition = NamelistDefinition(definition_files[0], attributes=config)
 
+        # Array of entry id names
+        self._entry_ids = []
+
+        # Dictionary associating a group name with each entry id
+        self._entry_group_names = {}
+
+        # Dictionary associating valid_values with each entry id 
+        self._entry_valid_values = {}
+
+        # Dictionary associating a type with each entry id 
+        self._entry_types = {}
+
         # Determine array of _stream_variables from definition object
         # This is only applicable to data models
         self._streams_namelists = {"streams": []}
@@ -106,12 +118,19 @@ class NamelistGenerator(object):
     def __exit__(self, *_):
         return False
 
-    def get_definition_nodes(self, skip_groups=None):
-        return self._definition.get_entry_nodes(skip_groups=skip_groups)
+    def get_definition_nodes(self, skip_groups=[]):
+        entry_nodes, ids, group_names, valid_values, entry_types = self._definition.get_entry_nodes(skip_groups=skip_groups)
+        self._entry_ids = ids
+        self._entry_group_names = group_names
+        self._entry_valid_values = valid_values
+        self._entry_types = entry_types
+        return entry_nodes
 
     def get_definition_entries(self, skip_groups=None):
         """Return array of names of all definition entries"""
-        return self._definition.get_entries(skip_groups=skip_groups)
+        entry_ids = self._definition.get_entries(skip_groups=skip_groups)
+        self._entry_ids = entry_ids
+        return entry_ids
 
     @staticmethod
     def quote_string(string):
@@ -612,7 +631,10 @@ class NamelistGenerator(object):
         `data_list_path` argument is the location of the `*.input_data_list`
         file, which will have the input data files added to it.
         """
-        self._definition.validate(self._namelist)
+        self._definition.validate(self._namelist, entry_ids=self._entry_ids, 
+                                  entry_group_names=self._entry_group_names, 
+                                  entry_valid_values=self._entry_valid_values, 
+                                  entry_types=self._entry_types)
         if groups is None:
             groups = self._namelist.get_group_names()
 
