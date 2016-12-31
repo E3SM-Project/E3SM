@@ -59,8 +59,8 @@ class NamelistGenerator(object):
 
     _streams_variables = []
 
-    def __init__(self, case, infiles, #pylint:disable=too-many-arguments
-                 definition_files, config):
+    #pylint:disable=too-many-arguments
+    def __init__(self, case, definition_files):
         """Construct a namelist generator.
 
         Arguments:
@@ -73,20 +73,17 @@ class NamelistGenerator(object):
         self._case = case
         self._din_loc_root = case.get_value('DIN_LOC_ROOT')
 
-        # Create definition object.
-        self._definition = NamelistDefinition(definition_files[0], attributes=config)
+        # Create definition object - this will validate the xml schema in the definition file
+        self._definition = NamelistDefinition(definition_files[0])
 
-        # Array of entry id names
+        # Array of all entry nodes
+        self._entry_nodes = []
+
+        # Array of all entry id names
         self._entry_ids = []
 
-        # Dictionary associating a group name with each entry id
-        self._entry_group_names = {}
-
-        # Dictionary associating valid_values with each entry id 
-        self._entry_valid_values = {}
-
-        # Dictionary associating a type with each entry id 
-        self._entry_types = {}
+        # Determine values for the above arrays and dictionaries
+        self._init_data()
 
         # Determine array of _stream_variables from definition object
         # This is only applicable to data models
@@ -97,6 +94,40 @@ class NamelistGenerator(object):
 
         # Create namelist object.
         self._namelist = Namelist()
+
+    # Define __enter__ and __exit__ so that we can use this as a context manager
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def _init_data(self):
+        self._entry_nodes, self._entry_ids = self._definition.get_entry_nodes()
+
+    def init_defaults(self, infiles, config, skip_groups=None ):
+        """Return array of names of all definition nodes"""
+
+        # Determine the array of entry nodes that will be acted upon 
+        entry_nodes = []
+        for node in self._entry_nodes:
+            skip_default_entry = node.get("skip_default_entry")
+            per_stream_entry = node.get("per_stream_entry")
+            name = node.get("id")
+            if skip_groups:
+                group_name = self._definition.get_group(name)
+                if not group_name in skip_groups:
+                    if not skip_default_entry and not per_stream_entry:
+                        entry_nodes.append(node)
+            else:
+                if not skip_default_entry and not per_stream_entry:
+                    entry_nodes.append(node)
+
+        # Add attributes to definition object 
+        self._definition.add_attributes(config)
+
+        # Parse the infile and create namelist settings for the contents of infile
+        # this will override all other settings in add_defaults
         for file_ in infiles:
             # Parse settings in "groupless" mode.
             nml_dict = parse(in_file=file_, groupless=True)
@@ -111,26 +142,7 @@ class NamelistGenerator(object):
             # over later settings).
             self._namelist.merge_nl(new_namelist)
 
-    # Define __enter__ and __exit__ so that we can use this as a context manager
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        return False
-
-    def get_definition_nodes(self, skip_groups=[]):
-        entry_nodes, ids, group_names, valid_values, entry_types = self._definition.get_entry_nodes(skip_groups=skip_groups)
-        self._entry_ids = ids
-        self._entry_group_names = group_names
-        self._entry_valid_values = valid_values
-        self._entry_types = entry_types
         return entry_nodes
-
-    def get_definition_entries(self, skip_groups=None):
-        """Return array of names of all definition entries"""
-        entry_ids = self._definition.get_entries(skip_groups=skip_groups)
-        self._entry_ids = entry_ids
-        return entry_ids
 
     @staticmethod
     def quote_string(string):
@@ -143,9 +155,9 @@ class NamelistGenerator(object):
             string = string_to_character_literal(string)
         return string
 
-    def _to_python_value(self, name, literals, node=None):
+    def _to_python_value(self, name, literals):
         """Transform a literal list as needed for `get_value`."""
-        var_type, _, var_size, = self._definition.split_type_string(name, self._definition.get_type_info(name, node=node))
+        var_type, _, var_size, = self._definition.split_type_string(name)
         if len(literals) > 0:
             value = expand_literal_list(literals)
         else:
@@ -161,13 +173,13 @@ class NamelistGenerator(object):
         else:
             return value
 
-    def _to_namelist_literals(self, name, value, node=None):
+    def _to_namelist_literals(self, name, value):
         """Transform a literal list as needed for `set_value`.
 
         This is the inverse of `_to_python_value`, except that many of the
         changes have potentially already been performed.
         """
-        var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name, node=node))
+        var_type, _, var_size, =  self._definition.split_type_string(name)
         if var_size == 1 and not isinstance(value, list):
             value = [value]
         for i, scalar in enumerate(value):
@@ -196,7 +208,7 @@ class NamelistGenerator(object):
         All other literals are returned as the raw string values that will be
         written to the namelist.
         """
-        return self._to_python_value(name, self._namelist.get_value(name), node=node)
+        return self._to_python_value(name, self._namelist.get_value(name))
 
     def set_value(self, name, value, node=None):
         """Set the current value of a given namelist variable.
@@ -221,7 +233,7 @@ class NamelistGenerator(object):
         else:
             var_group = self._definition.get_node_element_info(name, "group")
         var_group = self._definition.get_node_element_info(name, "group")
-        literals = self._to_namelist_literals(name, value, node=node)
+        literals = self._to_namelist_literals(name, value)
         self._namelist.set_variable_value(var_group, name, literals)
 
     def get_default(self, name, config=None, allow_none=False, node=None):
@@ -259,10 +271,7 @@ class NamelistGenerator(object):
             return None
         default = expand_literal_list(default)
 
-        if node is not None:
-            var_type,_,_ = self._definition.split_type_string(name, self._definition.get_type_info(name, node=node))
-        else:
-            var_type,_,_ = self._definition.split_type_string(name, self._definition.get_type_info(name))
+        var_type,_,_ = self._definition.split_type_string(name)
 
         for i, scalar in enumerate(default):
             # Skip single-quoted strings.
@@ -287,7 +296,7 @@ class NamelistGenerator(object):
                 if scalar != '':
                     default[i] = self.quote_string(scalar)
 
-        default = self._to_python_value(name, default, node=node)
+        default = self._to_python_value(name, default)
         return default
 
     def get_streams(self):
@@ -532,7 +541,7 @@ class NamelistGenerator(object):
             node = nodes[0]
 
         # pylint: disable=protected-access
-        group = self._definition._get_node_element_info(node, "group")
+        group = self._definition.get_group(name)
 
         # Use this to see if we need to raise an error when nothing is found.
         have_value = False
@@ -600,8 +609,7 @@ class NamelistGenerator(object):
                 if input_pathname is not None:
                     # This is where we end up for all variables that are paths
                     # to input data files.
-                    literals = self._namelist.get_variable_value(group_name,
-                                                                 variable_name)
+                    literals = self._namelist.get_variable_value(group_name, variable_name)
                     for literal in literals:
                         file_path = character_literal_to_string(literal)
                         # NOTE - these are hard-coded here and a better way is to make these extensible
@@ -631,10 +639,7 @@ class NamelistGenerator(object):
         `data_list_path` argument is the location of the `*.input_data_list`
         file, which will have the input data files added to it.
         """
-        self._definition.validate(self._namelist, entry_ids=self._entry_ids, 
-                                  entry_group_names=self._entry_group_names, 
-                                  entry_valid_values=self._entry_valid_values, 
-                                  entry_types=self._entry_types)
+        self._definition.validate(self._namelist, entry_ids=self._entry_ids)
         if groups is None:
             groups = self._namelist.get_group_names()
 

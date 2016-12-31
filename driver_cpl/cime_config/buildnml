@@ -22,7 +22,7 @@ from CIME.buildnml import create_namelist_infile, parse_input
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def _create_drv_namelists(case, infiles, definition_file, confdir):
+def _create_drv_namelists(case, infile, confdir, nmlgen):
 ###############################################################################
 
     #--------------------------------
@@ -54,16 +54,15 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
     elif case.get_value('RUN_TYPE') == 'branch':
         config['run_type'] = 'branch'
 
-    #--------------------------------
-    # Create nmlgen object - using config dictionary
-    #--------------------------------
-    nmlgen = NamelistGenerator(case, infiles, definition_file, config)
-
-    #--------------------------------
-    # Add default values for all entries in namelist_definition_drv.xml
-    #--------------------------------
+    #----------------------------------------------------
+    # Obtain entry nodes and initialize the defaults
+    #----------------------------------------------------
     skip_groups = []
-    entries = nmlgen.get_definition_nodes(skip_groups=skip_groups)
+    entries = nmlgen.init_defaults(infile, config, skip_groups=skip_groups)
+
+    #----------------------------------------------------
+    # Add default entries
+    #----------------------------------------------------
     for entry in entries:
         nmlgen.add_default(entry.get("id"), node=entry)
 
@@ -145,20 +144,23 @@ def _create_drv_namelists(case, infiles, definition_file, confdir):
         nmlgen.set_value('tprof_n'     , value=tprofn)
 
     #--------------------------------
-    # Write output files
-    #--------------------------------
     # (1) Write output namelist file drv_in and  input dataset list.
+    #--------------------------------
     data_list_path = os.path.join(case.get_case_root(), "Buildconf", "cpl.input_data_list")
     if os.path.exists(data_list_path):
         os.remove(data_list_path)
     namelist_file = os.path.join(confdir, "drv_in")
     nmlgen.write_output_file(namelist_file, data_list_path )
 
+    #--------------------------------
     # (2) Write out seq_map.rc file
+    #--------------------------------
     seq_maps_file = os.path.join(confdir, "seq_maps.rc")
     nmlgen.write_seq_maps(seq_maps_file)
 
+    #--------------------------------
     # (3) Construct and write out drv_flds_in
+    #--------------------------------
     # In thte following, all values come simply from the infiles - no default values need to be added
     # FIXME - do want to add the possibility that will use a user definition file for drv_flds_in
 
@@ -196,9 +198,12 @@ def _create_component_modelio_namelists(case):
 
     models = ["cpl", "atm", "lnd", "ice", "ocn", "glc", "rof", "wav", "esp"]
     for model in models:
-        config = {}
-        config['component'] = model
-        with NamelistGenerator(case, infiles, definition_file, config) as nmlgen:
+        with NamelistGenerator(case, definition_file) as nmlgen:
+            config = {}
+            config['component'] = model
+            skip_groups = []
+            entries = nmlgen.init_defaults(infiles, config, skip_groups=skip_groups)
+
             if model == 'cpl':
                 inst_count = 1
             else:
@@ -215,9 +220,8 @@ def _create_component_modelio_namelists(case):
                     inst_string = "0" + str(inst_string)
 
                 # set default values
-                entries = nmlgen.get_definition_entries()
                 for entry in entries:
-                    nmlgen.add_default(entry)
+                    nmlgen.add_default(entry.get("id"), node=entry)
 
                 # overwrite defaults
                 moddiri = case.get_value('EXEROOT') + "/" + model
@@ -263,6 +267,9 @@ def buildnml(case, caseroot, component):
     if os.path.isfile(user_definition):
         definition_file = [user_definition]
 
+    # Create the namelist generator object - independent of instance
+    nmlgen = NamelistGenerator(case, definition_file)
+
     # create cplconf/namelist
     infile_text = ""
     if case.get_value('COMP_ATM') == 'cam':
@@ -280,7 +287,7 @@ def buildnml(case, caseroot, component):
     infile = [namelist_infile]
 
     # create the files drv_in, drv_flds_in and seq_maps.rc
-    _create_drv_namelists(case, infile, definition_file, confdir)
+    _create_drv_namelists(case, infile, confdir, nmlgen)
 
     # create the files comp_modelio.nml where comp = [atm, lnd...]
     _create_component_modelio_namelists(case)
