@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 ####################################################################################
-def _create_namelists(case, confdir, inst_string, infile, definition_file):
+def _create_namelists(case, confdir, inst_string, infile, nmlgen):
 ####################################################################################
     """Write out the namelist for this component.
 
@@ -72,9 +72,10 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     config['drof_mode'] = drof_mode
 
     #----------------------------------------------------
-    # Construct the namelist generator.
+    # Obtain entry nodes and initialize the defaults
     #----------------------------------------------------
-    nmlgen = NamelistGenerator(case, infile, definition_file, config)
+    skip_groups = []
+    entries = nmlgen.init_defaults(infile, config, skip_groups=skip_groups)
 
     #----------------------------------------------------
     # Construct the list of streams.
@@ -120,8 +121,6 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Create `drof_nml` namelist group.
     #----------------------------------------------------
-    skip_groups = []
-    entries = nmlgen.get_definition_nodes(skip_groups=skip_groups)
     for entry in entries:
         nmlgen.add_default(entry.get("id"), node=entry)
 
@@ -144,10 +143,14 @@ def buildnml(case, caseroot, compname):
     ninst = case.get_value("NINST_ROF")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
 
-    if not os.path.isdir(din_loc_root):
-        os.makedirs(din_loc_root)
-        logger.debug("Created input root directory %s" %din_loc_root)
+    # Determine configuration directory
+    confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
+    if not os.path.isdir(confdir):
+        os.makedirs(confdir)
 
+    #----------------------------------------------------
+    # Construct the namelist generator 
+    #----------------------------------------------------
     # determine directory for user modified namelist_definitions.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
     expect (os.path.isdir(user_xml_dir),
@@ -159,19 +162,16 @@ def buildnml(case, caseroot, compname):
     user_definition = os.path.join(user_xml_dir, "namelist_definition_drof.xml")
     if os.path.isfile(user_definition):
         definition_file = [user_definition]
-
-    # Checkout if definition file exists
     for file_ in definition_file:
         expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
 
-    confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
-    if not os.path.isdir(confdir):
-        os.makedirs(confdir)
-
+    # Create the namelist generator object - independent of instance
+    nmlgen = NamelistGenerator(case, definition_file)
+    
+    #----------------------------------------------------
     # Loop over instances
-    inst_string = ""
-    inst_counter = 1
-    while (inst_counter <= ninst):
+    #----------------------------------------------------
+    for inst_counter in range(1, ninst+1):
 
         # determine instance string
         inst_string = ""
@@ -199,7 +199,7 @@ def buildnml(case, caseroot, compname):
         namelist_infile = [infile]
 
         # create namelist and stream file(s) data component
-        _create_namelists(case, confdir, inst_string, namelist_infile, definition_file)
+        _create_namelists(case, confdir, inst_string, namelist_infile, nmlgen)
 
         # copy namelist files and stream text files, to rundir
         if os.path.isdir(rundir):
@@ -212,9 +212,6 @@ def buildnml(case, caseroot, compname):
 
             for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
                 shutil.copy(txtfile, rundir)
-
-        # increment instance counter
-        inst_counter = inst_counter + 1
 
 ###############################################################################
 def _main_func():
