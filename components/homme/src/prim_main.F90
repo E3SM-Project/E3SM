@@ -60,6 +60,7 @@ program prim_main
   ! =====================================
   ! Set number of threads...
   ! =====================================
+  if(par%masterproc) print *,"Primitive Equation Init1..."
   call t_initf('input.nl',LogPrint=par%masterproc, &
 	Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
@@ -142,6 +143,7 @@ program prim_main
   nets=dom_mt(ithr)%start
   nete=dom_mt(ithr)%end
 
+  if(hybrid%masterthread) print *,"Primitive Equation Init2..."
   call t_startf('prim_init2')
   call prim_init2(elem, hybrid,nets,nete,tl, hvcoord)
   call t_stopf('prim_init2')
@@ -177,7 +179,7 @@ program prim_main
   end if
 #endif
   
-
+  if(par%masterproc) print *,"I/O init..."
 #ifdef PIO_INTERP
   ! initialize history files.  filename constructed with restart time
   ! so we have to do this after ReadRestart in prim_init2 above
@@ -189,6 +191,7 @@ program prim_main
 
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
+     if(par%masterproc) print *,"Output of initial state..."
 #ifdef PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0, hvcoord=hvcoord)
 #else

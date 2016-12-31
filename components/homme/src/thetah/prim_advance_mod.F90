@@ -682,7 +682,7 @@ contains
 
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
   use physics_mod, only : virtual_specific_heat, virtual_temperature
-  use prim_si_mod, only : preq_vertadv, preq_vertadv_v, preq_omega_ps, preq_hydrostatic, preq_hydrostatic_v2
+  use prim_si_mod, only : preq_vertadv_v, preq_omega_ps, preq_hydrostatic, preq_hydrostatic_v2
 
   use time_mod, only : tevolve
 
@@ -722,7 +722,6 @@ contains
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
   real (kind=real_kind), dimension(np,np,nlev+1) :: pi         ! pressure at interfaces
   real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
-  real (kind=real_kind), dimension(np,np,nlev)   :: rdp        ! inverse of delta pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_p    ! v.grad(p)
   real (kind=real_kind), dimension(np,np,2,nlev) :: v_vadv   ! velocity vertical advection
   real (kind=real_kind), dimension(np,np,nlev,3) :: s_vadv     ! vertical advection u
@@ -762,7 +761,6 @@ contains
         grad_exner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)        
 
         grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
-        rdp(:,:,k) = 1.0D0/dp3d(:,:,k)
 
         ! ============================
         ! compute vgrad_lnps
@@ -855,13 +853,11 @@ contains
         ! ===========================================================
         ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
         ! ==============================================
-!        call preq_vertadv(theta(:,:,:),elem(ie)%state%v(:,:,:,:,n0), &
-!             eta_dot_dpdn,rdp,theta_vadv,v_vadv)
         s_state(:,:,:,1)=elem(ie)%state%w(:,:,:,n0)
         s_state(:,:,:,2)=elem(ie)%state%theta(:,:,:,n0)
         s_state(:,:,:,3)=elem(ie)%state%phi(:,:,:,n0)
 
-        call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,rdp,v_vadv,s_vadv)
+        call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
      endif
 
 

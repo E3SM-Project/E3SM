@@ -411,10 +411,6 @@ contains
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%IEner(:,:,n)
        enddo
-!BUG: prim_advance_si_bug1
-!BUG To observe the prim_advance_si_bug1 uncomment the following line.  It
-!BUG should after several iterations generate NaN's
-!BUG       print *,'IAM: ',iam,' prim_printstate: SUM(tmp): ',SUM(tmp)
        IEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        IEner(n) = IEner(n)*scale
        

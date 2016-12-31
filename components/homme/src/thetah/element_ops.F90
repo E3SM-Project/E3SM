@@ -95,7 +95,7 @@ contains
   !$omp parallel do default(shared), private(k)
 #endif
   do k=1,nlev
-     if (use_moisture==1) then
+     if (use_moisture) then
         Qt(:,:,k) = Qdp(:,:,k)/dp(:,:,k)
         
         if (use_cpstar==1) then
@@ -236,7 +236,7 @@ subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
   elem%state%phis(i,j)           = phis
 
 
-  if (use_moisture==1) then
+  if (use_moisture) then
      call abortmp('ERROR: thetah set_state not yet coded for moisture')
   else
      elem%state%theta(i,j,k,n0:n1)=T/((p/p0)**kappa)
