@@ -57,8 +57,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
     #----------------------------------------------------
     # Obtain entry nodes and initialize the defaults
     #----------------------------------------------------
-    skip_groups = []
-    entries = nmlgen.init_defaults(infile, config, skip_groups=skip_groups)
+    entries = nmlgen.init_defaults(infile, config)
 
     #----------------------------------------------------
     # Add default entries
@@ -181,7 +180,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
         config = {}
         definition_file = [os.path.join(cimeroot, "driver_cpl", "bld",
                                         "namelist_files", "namelist_definition_drv_flds.xml")]
-        nmlgen = NamelistGenerator(case, infiles, definition_file, config)
+        nmlgen = NamelistGenerator(case, definition_file)
+        entries = nmlgen.init_defaults(infiles, config)
         drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
         nmlgen.write_output_file(drv_flds_in)
 
@@ -201,8 +201,7 @@ def _create_component_modelio_namelists(case):
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model
-            skip_groups = []
-            entries = nmlgen.init_defaults(infiles, config, skip_groups=skip_groups)
+            entries = nmlgen.init_defaults(infiles, config)
 
             if model == 'cpl':
                 inst_count = 1
