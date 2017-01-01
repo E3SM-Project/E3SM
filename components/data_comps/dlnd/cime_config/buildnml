@@ -75,10 +75,9 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     config['dlnd_mode'] = dlnd_mode
 
     #----------------------------------------------------
-    # Obtain entry nodes and initialize the defaults
+    # Initialize namelist defaults 
     #----------------------------------------------------
-    skip_groups = []
-    entries = nmlgen.init_defaults(infile, config, skip_groups=skip_groups)
+    nmlgen.init_defaults(infile, config)
 
     #----------------------------------------------------
     # Construct the list of streams.
@@ -119,13 +118,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     if lnd_domain_file != "UNSET":
         full_domain_path = os.path.join(lnd_domain_path, lnd_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
-    nmlgen.add_default("vectors")
-
-    #----------------------------------------------------
-    # Create `dlnd_nml` namelist group.
-    #----------------------------------------------------
-    for entry in entries:
-        nmlgen.add_default(entry.get("id"), node=entry)
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
