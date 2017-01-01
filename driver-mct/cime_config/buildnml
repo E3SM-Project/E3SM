@@ -55,15 +55,9 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
         config['run_type'] = 'branch'
 
     #----------------------------------------------------
-    # Obtain entry nodes and initialize the defaults
+    # Initialize namelist defaults 
     #----------------------------------------------------
-    entries = nmlgen.init_defaults(infile, config)
-
-    #----------------------------------------------------
-    # Add default entries
-    #----------------------------------------------------
-    for entry in entries:
-        nmlgen.add_default(entry.get("id"), node=entry)
+    nmlgen.init_defaults(infile, config)
 
     #--------------------------------
     # Overwrite: set brnch_retain_casename
@@ -71,7 +65,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
     start_type = nmlgen.get_value('start_type')
     if start_type != 'startup':
         if case.get_value('CASE') == case.get_value('RUN_REFCASE'):
-            nmlgen.set_value('brnch_retain_casename' , value='.true.')
+            nmlgen.add_default('brnch_retain_casename' , value='.true.')
 
     #--------------------------------
     # Overwrite: set component coupling frequencies
@@ -110,7 +104,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
     # Overwrite: set start_ymd
     #--------------------------------
     run_startdate = "".join(str(x) for x in case.get_value('RUN_STARTDATE').split('-'))
-    nmlgen.set_value('start_ymd', value=run_startdate)
+    nmlgen.add_default('start_ymd', value=run_startdate)
 
     #--------------------------------
     # Overwrite: set tprof_option and tprof_n - if tprof_total is > 0
@@ -139,8 +133,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
         tprofn = int(stopn / tprof_total)
         if tprofn < 1:
             tprofn = 1
-        nmlgen.set_value('tprof_option', value=tprofoption)
-        nmlgen.set_value('tprof_n'     , value=tprofn)
+        nmlgen.add_default('tprof_option', value=tprofoption)
+        nmlgen.add_default('tprof_n'     , value=tprofn)
 
     #--------------------------------
     # (1) Write output namelist file drv_in and  input dataset list.
@@ -181,7 +175,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
         definition_file = [os.path.join(cimeroot, "driver_cpl", "bld",
                                         "namelist_files", "namelist_definition_drv_flds.xml")]
         nmlgen = NamelistGenerator(case, definition_file)
-        entries = nmlgen.init_defaults(infiles, config)
+        entries = nmlgen.init_defaults(infiles, config, skip_adding_entries=True)
         drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
         nmlgen.write_output_file(drv_flds_in)
 
@@ -201,7 +195,7 @@ def _create_component_modelio_namelists(case):
         with NamelistGenerator(case, definition_file) as nmlgen:
             config = {}
             config['component'] = model
-            entries = nmlgen.init_defaults(infiles, config)
+            entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
 
             if model == 'cpl':
                 inst_count = 1
@@ -220,20 +214,20 @@ def _create_component_modelio_namelists(case):
 
                 # set default values
                 for entry in entries:
-                    nmlgen.add_default(entry.get("id"), node=entry)
+                    nmlgen.add_default(entry.get("id"))
 
                 # overwrite defaults
                 moddiri = case.get_value('EXEROOT') + "/" + model
-                nmlgen.set_value('diri',    value=moddiri)
+                nmlgen.set_value('diri', moddiri)
 
                 moddiro = case.get_value('RUNDIR')
-                nmlgen.set_value('diro',    value=moddiro)
+                nmlgen.set_value('diro', moddiro)
 
                 if inst_count > 1:
                     logfile = model + "_" + inst_string + ".log." + str(lid)
                 else:
                     logfile = model + ".log." + str(lid)
-                nmlgen.set_value('logfile', value=logfile)
+                nmlgen.set_value('logfile', logfile)
 
                 # Write output file
                 if inst_count > 1:
