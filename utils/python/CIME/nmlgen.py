@@ -510,7 +510,7 @@ class NamelistGenerator(object):
             fullpath = os.path.join(self._din_loc_root, file_path)
             return fullpath
 
-    def add_default(self, name, value=None):
+    def add_default(self, name, value=None, ignore_abs_path=None):
         """Add a value for the specified variable to the namelist.
 
         If the specified variable is already defined in the object, the existing
@@ -552,23 +552,24 @@ class NamelistGenerator(object):
 
         # Go through file names and prepend input data root directory for
         # absolute pathnames.
-        var_input_pathname = self._definition.get_input_pathname(name)
-        if var_input_pathname == 'abs':
-            current_literals = expand_literal_list(current_literals)
-            for i, literal in enumerate(current_literals):
-                if literal == '':
-                    continue
-                file_path = character_literal_to_string(literal)
-                # NOTE - these are hard-coded here and a better way is to make these extensible
-                if file_path == 'UNSET' or file_path == 'idmap':
-                    continue
-                if file_path == 'null':
-                    continue
-                file_path = self.set_abs_file_path(file_path)
-                if not os.path.exists(file_path):
-                    logger.warn ("File not found: %s = %s, will attempt to download in check_input_data phase" % (name, literal))
-                current_literals[i] = string_to_character_literal(file_path)
-            current_literals = compress_literal_list(current_literals)
+        if ignore_abs_path is None:
+            var_input_pathname = self._definition.get_input_pathname(name)
+            if var_input_pathname == 'abs':
+                current_literals = expand_literal_list(current_literals)
+                for i, literal in enumerate(current_literals):
+                    if literal == '':
+                        continue
+                    file_path = character_literal_to_string(literal)
+                    # NOTE - these are hard-coded here and a better way is to make these extensible
+                    if file_path == 'UNSET' or file_path == 'idmap':
+                        continue
+                    if file_path == 'null':
+                        continue
+                    file_path = self.set_abs_file_path(file_path)
+                    if not os.path.exists(file_path):
+                        logger.warn ("File not found: %s = %s, will attempt to download in check_input_data phase" % (name, literal))
+                    current_literals[i] = string_to_character_literal(file_path)
+                current_literals = compress_literal_list(current_literals)
 
         # Set the new value.
         self._namelist.set_variable_value(group, name, current_literals)
