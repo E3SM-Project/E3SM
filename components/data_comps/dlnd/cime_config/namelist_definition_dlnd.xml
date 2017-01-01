@@ -217,7 +217,7 @@
     </values>
   </entry>
 
-  <entry id="domainfile">
+  <entry id="domainfile" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <input_pathname>abs</input_pathname>
