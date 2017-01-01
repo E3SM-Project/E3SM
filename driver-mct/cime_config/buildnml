@@ -175,7 +175,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
         definition_file = [os.path.join(cimeroot, "driver_cpl", "bld",
                                         "namelist_files", "namelist_definition_drv_flds.xml")]
         nmlgen = NamelistGenerator(case, definition_file)
-        entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=True)
+        skip_entry_loop = True
+        entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=skip_entry_loop)
         drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
         nmlgen.write_output_file(drv_flds_in)
 
