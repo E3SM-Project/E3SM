@@ -40,6 +40,7 @@ class NamelistDefinition(EntryID):
         """Construct a `NamelistDefinition` from an XML file."""
         super(NamelistDefinition, self).__init__(infile)
 
+        self._attributes = {}
         self._entry_nodes = []
         self._entry_ids = []
         self._valid_values = {}
@@ -49,8 +50,8 @@ class NamelistDefinition(EntryID):
             name = node.get("id")
             self._entry_nodes.append(node)
             self._entry_ids.append(name)
-            self._entry_types[name] = self.get_type_info(name, node)
-            self._valid_values[name] = self.get_valid_values(name, node)
+            self._entry_types[name] = self.get_type_info(node)
+            self._valid_values[name] = self.get_valid_values(node)
             self._group_names[name] = self.get_element_text("group", root=node)
 
         # if the file is invalid we may not be able to check the version
@@ -60,14 +61,14 @@ class NamelistDefinition(EntryID):
             schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
             self.validate_xml_file(infile, schema)
 
-    def get_type_info(self, name, node):
+    def get_type_info(self, node):
         if self.get_version() == "1.0":
             type_info = node.get('type')
         elif self.get_version() == "2.0":
             type_info = self._get_type_info(node)
         return(type_info)
 
-    def get_valid_values(self, name, node):
+    def get_valid_values(self, node):
         # The "valid_values" attribute is not required, and an empty string has
         # the same effect as not specifying it.
         # Returns a list from a comma seperated string in xml
@@ -236,7 +237,7 @@ class NamelistDefinition(EntryID):
             canonical_value = [int(scalar) for scalar in canonical_value]
         return canonical_value
 
-    def is_valid_value(self, name, value, node=None):
+    def is_valid_value(self, name, value):
         """Determine whether a value is valid for the named variable.
 
         The `value` argument must be a list of strings formatted as they would

@@ -178,7 +178,7 @@ class NamelistGenerator(object):
                 value[i] = self.quote_string(scalar)
         return compress_literal_list(value)
 
-    def get_value(self, name, node=None):
+    def get_value(self, name):
         """Get the current value of a given namelist variable.
 
         Note that the return value of this function is always a string or a list
