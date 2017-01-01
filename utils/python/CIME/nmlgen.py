@@ -93,7 +93,7 @@ class NamelistGenerator(object):
     def __exit__(self, *_):
         return False
 
-    def init_defaults(self, infiles, config, skip_groups=None ):
+    def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
         """Return array of names of all definition nodes"""
 
         # Determine the array of entry nodes that will be acted upon 
@@ -130,7 +130,11 @@ class NamelistGenerator(object):
             # over later settings).
             self._namelist.merge_nl(new_namelist)
 
-        return entry_nodes
+        if skip_entry_loop is None:
+            for entry in entry_nodes:
+                self.add_default(entry.get("id"))
+        else:
+            return entry_nodes
 
     @staticmethod
     def quote_string(string):
@@ -198,7 +202,7 @@ class NamelistGenerator(object):
         """
         return self._to_python_value(name, self._namelist.get_value(name))
 
-    def set_value(self, name, value, node=None):
+    def set_value(self, name, value):
         """Set the current value of a given namelist variable.
 
         Usually, you should use `add_default` instead of this function.
@@ -215,16 +219,11 @@ class NamelistGenerator(object):
         a user-specified setting. Even if `value` is (or contains) a null value,
         the old setting for the variable will be thrown out completely.
         """
-        if node is not None:
-            # pylint: disable=protected-access
-            var_group = self._definition._get_node_element_info(node, "group")
-        else:
-            var_group = self._definition.get_node_element_info(name, "group")
-        var_group = self._definition.get_node_element_info(name, "group")
+        var_group = self._definition.get_group(name)
         literals = self._to_namelist_literals(name, value)
         self._namelist.set_variable_value(var_group, name, literals)
 
-    def get_default(self, name, config=None, allow_none=False, node=None):
+    def get_default(self, name, config=None, allow_none=False):
         """Get the value of a variable from the namelist definition file.
 
         The `config` argument is passed through to the underlying
@@ -253,7 +252,7 @@ class NamelistGenerator(object):
            exists. This behavior is suppressed within single-quoted strings
            (similar to parameter expansion in shell scripts).
         """
-        default = self._definition.get_value_match(name, attributes=config, exact_match=False, entry_node=node)
+        default = self._definition.get_value_match(name, attributes=config, exact_match=False)
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None
@@ -511,7 +510,7 @@ class NamelistGenerator(object):
             fullpath = os.path.join(self._din_loc_root, file_path)
             return fullpath
 
-    def add_default(self, name, value=None, node=None):
+    def add_default(self, name, value=None):
         """Add a value for the specified variable to the namelist.
 
         If the specified variable is already defined in the object, the existing
@@ -523,11 +522,6 @@ class NamelistGenerator(object):
         If no value for the variable is found via any of the above, this method
         will raise an exception.
         """
-        if node is None:
-            nodes = self._definition.get_nodes_by_id(name)
-            expect(len(nodes) == 1, "incorrect number of matchs %s"%len(nodes))
-            node = nodes[0]
-
         # pylint: disable=protected-access
         group = self._definition.get_group(name)
 
@@ -549,7 +543,7 @@ class NamelistGenerator(object):
             current_literals = merge_literal_lists(literals, current_literals)
 
         # Check for default value.
-        default = self.get_default(name, allow_none=True, node=node)
+        default = self.get_default(name, allow_none=True)
         if default is not None:
             have_value = True
             default_literals = self._to_namelist_literals(name, default)

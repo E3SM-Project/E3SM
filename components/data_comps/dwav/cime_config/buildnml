@@ -75,9 +75,9 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     config['dwav_mode'] = dwav_mode
 
     #----------------------------------------------------
-    # Obtain entry nodes and initialize the defaults
+    # Initialize namelist defaults 
     #----------------------------------------------------
-    entries = nmlgen.init_defaults(infile, config)
+    nmlgen.init_defaults(infile, config)
 
     #----------------------------------------------------
     # Construct the list of streams.
@@ -114,18 +114,12 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     nmlgen.create_shr_strdata_nml()
     nmlgen.add_default("decomp", "1d")
-    nmlgen.add_default("force_prognostic_true", ".false.")
-    nmlgen.add_default("restfilm", "undefined")
-    nmlgen.add_default("restfils", "undefined")
+    nmlgen.add_default("force_prognostic_true", value=".false.")
+    nmlgen.add_default("restfilm", value="undefined")
+    nmlgen.add_default("restfils", value="undefined")
     if wav_domain_file != "UNSET":
         full_domain_path = os.path.join(wav_domain_path, wav_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
-
-    #----------------------------------------------------
-    # Create `dwav_nml` namelist group.
-    #----------------------------------------------------
-    for entry in entries:
-        nmlgen.add_default(entry.get("id"), node=entry)
 
     #----------------------------------------------------
     # Finally, write out all the namelists.

@@ -46,13 +46,15 @@ class NamelistDefinition(EntryID):
         self._valid_values = {}
         self._entry_types = {}
         self._group_names = {}
+        self._nodes = {}
         for node in self.get_nodes("entry"):
             name = node.get("id")
             self._entry_nodes.append(node)
             self._entry_ids.append(name)
-            self._entry_types[name] = self.get_type_info(node)
-            self._valid_values[name] = self.get_valid_values(node)
-            self._group_names[name] = self.get_group_name(node) 
+            self._nodes[name] = node
+            self._entry_types[name] = self._get_type(node)
+            self._valid_values[name] = self._get_valid_values(node)
+            self._group_names[name] = self._get_group_name(node) 
 
         # if the file is invalid we may not be able to check the version
         # but we need to do it this way until we remove the version 1 files
@@ -61,21 +63,21 @@ class NamelistDefinition(EntryID):
             schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
             self.validate_xml_file(infile, schema)
 
-    def get_group_name(self, node=None):
+    def _get_group_name(self, node=None):
         if self.get_version() == "1.0":
             group = node.get('group')
         elif self.get_version() == "2.0":
             group = self.get_element_text("group", root=node)
         return(group)
 
-    def get_type_info(self, node):
+    def _get_type(self, node):
         if self.get_version() == "1.0":
             type_info = node.get('type')
         elif self.get_version() == "2.0":
             type_info = self._get_type_info(node)
         return(type_info)
 
-    def get_valid_values(self, node):
+    def _get_valid_values(self, node):
         # The "valid_values" attribute is not required, and an empty string has
         # the same effect as not specifying it.
         # Returns a list from a comma seperated string in xml
@@ -89,6 +91,9 @@ class NamelistDefinition(EntryID):
         if valid_values is not None:
             valid_values = valid_values.split(',')
         return valid_values
+
+    def get_group(self, name):
+        return self._group_names[name]
 
     def add_attributes(self, attributes):
         self._attributes = attributes        
@@ -112,7 +117,7 @@ class NamelistDefinition(EntryID):
         raise TypeError, \
             "NamelistDefinition does not support `set_value`."
 
-    def get_value_match(self, item, attributes=None, exact_match=True, entry_node=None):
+    def get_value_match(self, item, attributes=None, exact_match=True):
         """Return the default value for the variable named `item`.
 
         The return value is a list of strings corresponding to the
@@ -126,9 +131,9 @@ class NamelistDefinition(EntryID):
         if attributes is not None:
             all_attributes.update(attributes)
 
+        entry_node = self._nodes[item]
         value = super(NamelistDefinition, self).get_value_match(item.lower(),attributes=all_attributes, exact_match=exact_match,
                                                                 entry_node=entry_node)
-
         if value is None:
             value = ''
         else:
@@ -357,10 +362,8 @@ class NamelistDefinition(EntryID):
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
 
-    def get_input_pathname(self, name, node=None):
-        if node is None:
-            node = self.get_optional_node("entry", attributes={'id': name})
-            
+    def get_input_pathname(self, name):
+        node = self._nodes[name]
         if self.get_version() == "1.0":
             input_pathname = node.get('input_pathname')
         elif self.get_version() == "2.0":
