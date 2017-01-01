@@ -182,7 +182,6 @@ def buildnml(case, caseroot, compname):
     cimeroot = case.get_value("CIMEROOT")
     rundir = case.get_value("RUNDIR")
     ninst = case.get_value("NINST_ATM")
-    din_loc_root = case.get_value("DIN_LOC_ROOT")
 
     # Determine configuration directory
     confdir = os.path.join(caseroot,"Buildconf",compname + "conf")

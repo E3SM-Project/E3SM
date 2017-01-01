@@ -52,7 +52,7 @@ class NamelistDefinition(EntryID):
             self._entry_ids.append(name)
             self._entry_types[name] = self.get_type_info(node)
             self._valid_values[name] = self.get_valid_values(node)
-            self._group_names[name] = self.get_element_text("group", root=node)
+            self._group_names[name] = self.get_group_name(node) 
 
         # if the file is invalid we may not be able to check the version
         # but we need to do it this way until we remove the version 1 files
@@ -60,6 +60,13 @@ class NamelistDefinition(EntryID):
             cimeroot = get_cime_root()
             schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
             self.validate_xml_file(infile, schema)
+
+    def get_group_name(self, node=None):
+        if self.get_version() == "1.0":
+            group = node.get('group')
+        elif self.get_version() == "2.0":
+            group = self.get_element_text("group", root=node)
+        return(group)
 
     def get_type_info(self, node):
         if self.get_version() == "1.0":
