@@ -12,7 +12,10 @@
 !  see src/preqx/element_ops.F90 for documentation
 !     
 !  helper fuctions in here not required to be provided by all models:
-!     get_exnerpressure
+!     get_pfull_and_exner
+!     get_temperature
+!     get_pottemp
+!    
 !
 module element_ops
 
@@ -79,40 +82,6 @@ contains
   
 
 
-  subroutine get_exnerpressure(exner,p,dp,Qdp)
-  implicit none
-  
-  real (kind=real_kind), intent(out)  :: exner(np,np,nlev)
-  real (kind=real_kind), intent(in) :: p(np,np,nlev)
-  real (kind=real_kind), intent(in) :: dp(np,np,nlev)
-  real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)
-  !   local
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: Qt(np,np,nlev)
-  integer :: k
-  
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-  do k=1,nlev
-     if (use_moisture) then
-        Qt(:,:,k) = Qdp(:,:,k)/dp(:,:,k)
-        
-        if (use_cpstar==1) then
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
-                (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
-        else
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
-        endif
-        exner(:,:,k)= (p(:,:,k)/p0)**kappa_star(:,:,k)
-     else
-        exner(:,:,k)= (p(:,:,k)/p0)**kappa
-     endif
-    enddo
-  end subroutine 
-
-
-
   subroutine get_temperature(elem,temperature,hvcoord,nt,ntQ)
   implicit none
   
@@ -123,9 +92,10 @@ contains
   integer, intent(in) :: ntQ
   
   !   local
-  real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: pfull(np,np,nlev)
+  real (kind=real_kind) :: pfull_i(np,np,nlevp)
   integer :: k
   
   
@@ -133,12 +103,13 @@ contains
   !$omp parallel do default(shared), private(k)
 #endif
   do k=1,nlev
-     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-  call get_exnerpressure(exner,p,dp,elem%state%Qdp(:,:,:,1,ntQ))
+  call get_pfull_and_exner(pfull,pfull_i,exner,hvcoord,elem%state%theta(:,:,:,nt),&
+       dp,elem%state%phi(:,:,:,nt),elem%state%phis,elem%state%Qdp(:,:,:,1,ntQ))
+
 
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
@@ -148,6 +119,146 @@ contains
   enddo
 
   end subroutine get_temperature
+
+
+
+
+  subroutine get_pfull_and_exner(pfull,pfull_i,exner,hvcoord,theta,dp3d,phi,phis,Qdp)
+  implicit none
+!
+! compute exner pressure, full presure
+!
+!
+! hydrostatic case:
+!    input:  dp3d, Qdp (if use_moisture)
+!    output:  pfull = compute from dp3d
+!             exner = pfull**kappa_star
+!
+
+! nonhydro formula used in hydrostatic model (used to debug this routine)
+!         call this routine with phi computed from hydrostatic exner
+!         
+! nonhydro case:
+! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
+! output:  
+!       for k=2..nlev, use the equation of state:  pfull/e = rho*Rstar*theta
+!                                                    rho   = -dp3d/dphi 
+! for k=1, we cant compute rho because we dont know phi at the model top
+! (our boundary condition specifies ptop) so we take p(k=1) = 2/3 ptop + 1/3 p(k=2)
+!
+!  
+  real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner full pressure
+  real (kind=real_kind), intent(out) :: pfull(np,np,nlev)   ! full nonhyrdo pressure
+  real (kind=real_kind), intent(out) :: pfull_i(np,np,nlevp) ! full nonhyrdo pressure interfaces
+  type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
+  real (kind=real_kind), intent(in) :: theta(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: phi(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: phis(np,np)
+  real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)   
+
+  !   local
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind) :: R_star(np,np,nlev)
+  real (kind=real_kind) :: Qt(np,np,nlev)
+  real (kind=real_kind) :: p(np,np,nlev)
+  real (kind=real_kind) :: rho(np,np,nlev)
+  real (kind=real_kind) :: temp_i(np,np,nlevp)  ! temp variable on level interfaces
+  real (kind=real_kind) :: dphi(np,np,nlev)
+  real (kind=real_kind) :: ptop
+  integer :: k
+
+
+  ptop = hvcoord%hyai(1)*hvcoord%ps0
+
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
+  do k=1,nlev
+     if (use_moisture) then
+        Qt(:,:,k) = Qdp(:,:,k)/dp3d(:,:,k)
+        R_star(:,:,k)=(Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k))
+        
+        if (use_cpstar==1) then
+           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
+                (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
+        else
+           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
+        endif
+     else
+        R_star(:,:,k)=Rgas
+        kappa_star(:,:,k)=Rgas/Cp
+     endif
+  enddo
+
+! hydrostatic model:
+  pfull_i(:,:,1)=ptop
+  do k=1,nlev
+     pfull_i(:,:,k+1)=pfull_i(:,:,k) + dp3d(:,:,k)
+  enddo
+  
+  do k=1,nlev
+     pfull(:,:,k)=pfull_i(:,:,k) + dp3d(:,:,k)/2
+  enddo
+  exner  = (pfull/p0)**kappa_star
+  return
+
+
+! compute dphi at mid points.  
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
+  do k=2,nlev
+     temp_i(:,:,k) = (phi(:,:,k-1)+phi(:,:,k))/2
+  enddo
+  temp_i(:,:,nlev+1) = phis(:,:)
+
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
+  do k=2,nlev
+     dphi(:,:,k) = temp_i(:,:,k+1) - temp_i(:,:,k)
+  enddo
+
+
+! we dont yet know phi_i(:,:1) (model top) and so cant compute dphi(:,:,1)  
+!
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
+  do k=2,nlev
+     rho(:,:,k) = -dp3d(:,:,k)/dphi(:,:,k)
+     ! exner = (p/p0)**kappa
+     ! p/exner = rho* Rstar * theta
+     ! exner**( 1/kappa - 1)  = rho* Rstar * theta / p0
+     ! exner = (rho* Rstar * theta / p0) ** ( kappa / 1-kappa)
+     exner(:,:,k)=(rho(:,:,k)*R_star(:,:,k)*theta(:,:,k)/p0) ** &
+          (kappa_star(:,:,k) / ( 1 - kappa_star(:,:,k)))
+     pfull(:,:,k) = exner(:,:,k)*rho(:,:,k)*R_star(:,:,k)*theta(:,:,k)
+  enddo
+!
+! use top of model boundary condition to compute
+! pfull (and exner) at model top
+!
+  pfull(:,:,1) = (2*ptop + pfull(:,:,2)) / 3
+! cant use p/exner = rho*R*theta since rho(1) not yet known
+  exner(:,:,1) = (pfull(:,:,1)/p0)**kappa_star(:,:,1)
+
+
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
+  do k=2,nlev
+     pfull_i(:,:,k) = (pfull(:,:,k-1)+pfull(:,:,k))/2
+  enddo
+  pfull_i(:,:,1) = ptop  
+  pfull_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)  
+
+
+  end subroutine 
+
+
+
 
 
 
@@ -170,6 +281,13 @@ contains
 
 
   subroutine set_thermostate(elem,temperature,hvcoord,nt,ntQ)
+!
+! Assuming a hydrostatic intital state and given surface pressure,
+! and no moisture, compute theta and phi 
+!
+! input:  ps_v, temperature
+! ouput:  state variables:   theta, phi
+!
   implicit none
   
   type (element_t), intent(inout)   :: elem
@@ -179,7 +297,6 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: dexner(np,np,nlev)
   real (kind=real_kind) :: integrand(np,np,nlev)
   real (kind=real_kind) :: pi(np,np,nlev+1)
@@ -194,14 +311,11 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-  call get_exnerpressure(exner,p,dp,elem%state%Qdp(:,:,:,1,ntQ))
-
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
   do k=1,nlev
-     elem%state%theta(:,:,k,nt)=temperature(:,:,k)/exner(:,:,k)
-     integrand(:,:,k) = Cp*(temperature(:,:,k)/exner(:,:,k))*dexner(:,:,k)
+     elem%state%theta(:,:,k,nt)=temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
   enddo
 
 
@@ -220,10 +334,10 @@ contains
 
 
 
-subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
-
-  ! set state variables at node(i,j,k) at layer midpoints
-
+  subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
+!
+! set state variables at node(i,j,k) at layer midpoints
+!
   real(real_kind),  intent(in)    :: u,v,T,ps,phis,p,dp,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
   type(element_t),  intent(inout) :: elem
@@ -235,22 +349,19 @@ subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phis(i,j)           = phis
 
-
   if (use_moisture) then
      call abortmp('ERROR: thetah set_state not yet coded for moisture')
   else
      elem%state%theta(i,j,k,n0:n1)=T/((p/p0)**kappa)
   endif
-
-
-
   ! set some diagnostic variables
   elem%derived%dp(i,j,k)         = dp
   elem%derived%phi(i,j,k)        = g*zm
+  end subroutine set_state
 
-  
 
-end subroutine
+
+
   
 end module
 
