@@ -47,14 +47,6 @@ class NamelistDefinition(EntryID):
         self._entry_types = {}
         self._group_names = {}
         self._nodes = {}
-        for node in self.get_nodes("entry"):
-            name = node.get("id")
-            self._entry_nodes.append(node)
-            self._entry_ids.append(name)
-            self._nodes[name] = node
-            self._entry_types[name] = self._get_type(node)
-            self._valid_values[name] = self._get_valid_values(node)
-            self._group_names[name] = self._get_group_name(node) 
 
         # if the file is invalid we may not be able to check the version
         # but we need to do it this way until we remove the version 1 files
@@ -62,6 +54,38 @@ class NamelistDefinition(EntryID):
             cimeroot = get_cime_root()
             schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
             self.validate_xml_file(infile, schema)
+
+    def set_nodes(self, skip_groups=None):
+        """
+        populates the object data types for all nodes that are not part of the skip_groups array
+        returns nodes that do not have attributes of `skip_default_entry` or `per_stream_entry`
+        """
+        default_nodes = []
+        for node in self.get_nodes("entry"):
+            name = node.get("id")
+            skip_default_entry = node.get("skip_default_entry")
+            per_stream_entry = node.get("per_stream_entry")
+            set_node_values = False
+            if skip_groups:
+                group_name = self._get_group_name(node)
+                if not group_name in skip_groups:
+                    self._entry_nodes.append(node)
+                    set_node_values = True
+                    if not skip_default_entry and not per_stream_entry:
+                        default_nodes.append(node)
+            else:
+                self._entry_nodes.append(node)
+                set_node_values = True
+                if not skip_default_entry and not per_stream_entry:
+                    default_nodes.append(node)
+            if set_node_values:
+                self._entry_nodes.append(node)
+                self._entry_ids.append(name)
+                self._nodes[name] = node
+                self._entry_types[name] = self._get_type(node)
+                self._valid_values[name] = self._get_valid_values(node)
+                self._group_names[name] = self._get_group_name(node) 
+        return default_nodes
 
     def _get_group_name(self, node=None):
         if self.get_version() == "1.0":

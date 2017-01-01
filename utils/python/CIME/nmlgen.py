@@ -94,22 +94,12 @@ class NamelistGenerator(object):
         return False
 
     def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
-        """Return array of names of all definition nodes"""
+        """Return array of names of all definition nodes
+        """
+        self._definition.set_nodes(skip_groups=skip_groups)
 
         # Determine the array of entry nodes that will be acted upon 
-        entry_nodes = []
-        for node in self._definition.get_entry_nodes():
-            skip_default_entry = node.get("skip_default_entry")
-            per_stream_entry = node.get("per_stream_entry")
-            name = node.get("id")
-            if skip_groups:
-                group_name = self._definition.get_group(name)
-                if not group_name in skip_groups:
-                    if not skip_default_entry and not per_stream_entry:
-                        entry_nodes.append(node)
-            else:
-                if not skip_default_entry and not per_stream_entry:
-                    entry_nodes.append(node)
+        entry_nodes = self._definition.set_nodes(skip_groups=skip_groups)
 
         # Add attributes to definition object 
         self._definition.add_attributes(config)
@@ -600,7 +590,11 @@ class NamelistGenerator(object):
                             continue
                         if input_pathname == 'abs':
                             # No further mangling needed for absolute paths.
-                            pass
+                            # At this point, there are overwrites that should be ignored
+                            if not os.path.isabs(file_path):
+                                continue
+                            else:
+                                pass
                         elif input_pathname.startswith('rel:'):
                             # The part past "rel" is the name of a variable that
                             # this variable specifies its path relative to.
