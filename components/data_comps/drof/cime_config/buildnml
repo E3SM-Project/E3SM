@@ -74,8 +74,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Obtain entry nodes and initialize the defaults
     #----------------------------------------------------
-    skip_groups = []
-    entries = nmlgen.init_defaults(infile, config, skip_groups=skip_groups)
+    entries = nmlgen.init_defaults(infile, config)
 
     #----------------------------------------------------
     # Construct the list of streams.
@@ -141,7 +140,6 @@ def buildnml(case, caseroot, compname):
     cimeroot = case.get_value("CIMEROOT")
     rundir = case.get_value("RUNDIR")
     ninst = case.get_value("NINST_ROF")
-    din_loc_root = case.get_value("DIN_LOC_ROOT")
 
     # Determine configuration directory
     confdir = os.path.join(caseroot,"Buildconf",compname + "conf")

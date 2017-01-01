@@ -87,8 +87,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Obtain entry nodes and initialize the defaults
     #----------------------------------------------------
-    skip_groups = []
-    entries = nmlgen.init_defaults(infile, config, skip_groups=skip_groups)
+    entries = nmlgen.init_defaults(infile, config)
 
     #----------------------------------------------------
     # Construct the list of streams.
