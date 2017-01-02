@@ -104,7 +104,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
     # Overwrite: set start_ymd
     #--------------------------------
     run_startdate = "".join(str(x) for x in case.get_value('RUN_STARTDATE').split('-'))
-    nmlgen.add_default('start_ymd', value=run_startdate)
+    nmlgen.set_value('start_ymd', value=run_startdate)
 
     #--------------------------------
     # Overwrite: set tprof_option and tprof_n - if tprof_total is > 0
