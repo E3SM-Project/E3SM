@@ -186,21 +186,26 @@ ifndef AR
 endif
 
 ifdef NETCDF_PATH
+  NETCDF_SEPARATE:=false
   ifndef INC_NETCDF
     INC_NETCDF:=$(NETCDF_PATH)/include
   endif
   ifndef LIB_NETCDF
     LIB_NETCDF:=$(NETCDF_PATH)/lib
   endif
-endif
-
-ifdef NETCDFF_PATH
-  ifndef INC_NETCDFF
-    INC_NETCDFF:=$(NETCDFF_PATH)/include
+else ifdef NETCDF_C_PATH
+  ifndef NETCDF_FORTRAN_PATH
+    $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
   endif
-  ifndef LIB_NETCDFF
-    LIB_NETCDFF:=$(NETCDFF_PATH)/lib
+  NETCDF_SEPARATE:=true
+  ifndef INC_NETCDF_C
+    INC_NETCDF_C:=$(NETCDF_C_PATH)/include
   endif
+  ifndef LIB_NETCDF_FORTRAN
+    LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
+  endif
+else ifdef NETCDF_FORTRAN_PATH
+  $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
 endif
 
 ifeq ($(MPILIB),mpi-serial)
@@ -337,11 +342,12 @@ endif
 #===============================================================================
 INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
 
-ifdef INC_NETCDF
-  INCLDIR += -I$(INC_NETCDF)
-endif
-ifdef INC_NETCDFF
-  INCLDIR += -I$(INC_NETCDFF)
+ifdef NETCDF_SEPARATE
+  ifeq ($NETCDF_SEPARATE, false)
+    INCLDIR += -I$(INC_NETCDF)
+  else
+    INCLDIR += -I$(INC_NETCDF_C) -I$(INC_NETCDF_FORTRAN)
+  endif
 endif
 ifdef MOD_NETCDF
   INCLDIR += -I$(MOD_NETCDF)
@@ -368,7 +374,12 @@ ifeq ($(MODEL),driver)
 # nagfor requires the weird "-Wl,-Wl,," syntax.
 # If done in config_compilers.xml, we break MCT.
   ifeq ($(strip $(COMPILER)),nag)
-     SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
+     ifeq ($NETCDF_SEPARATE, false)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF)
+     else
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_C)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_FORTRAN)
+     endif
   endif
 else
   ifeq ($(strip $(COMPILER)),nag)
@@ -415,7 +426,16 @@ CXXFLAGS := $(CFLAGS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
-                NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"
+                LDFLAGS="$(LDFLAGS)"
+
+ifdef NETCDF_PATH
+  CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
+else ifdef NETCDF_C_PATH
+  CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
+else
+  $(error No NETCDF Path defined)
+endif
+
 ifeq ($(COMPILER),nag)
   CONFIG_ARGS += LIBS="$(SLIBS)"
 endif
@@ -430,24 +450,24 @@ COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
 endif
 
 ifeq ($(MODEL),cam)
-   # These RRTMG files take an extraordinarily long time to compile with optimization.
-   # Until mods are made to read the data from files, just remove optimization from
-   # their compilation.
-rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
+  # These RRTMG files take an extraordinarily long time to compile with optimization.
+  # Until mods are made to read the data from files, just remove optimization from
+  # their compilation.
+  rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
+  rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
 
 
-ifdef COSP_LIBDIR
-INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
-$(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
-	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
-	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
-	F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
+  ifdef COSP_LIBDIR
+    INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
+    $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
+    $(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
+    F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
+    F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
 
-cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
-endif
+    cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
+  endif
 
 endif
 
@@ -463,7 +483,11 @@ endif
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
-   SLIBS := -L$(LIB_NETCDF) -lnetcdf
+  ifeq ($NETCDF_SEPARATE, false)
+    SLIBS := -L$(LIB_NETCDF) -lnetcdf
+  else
+    SLIBS := -L$(LIB_NETCDF_C) -L$(LIB_NETCDF_FORTRAN) -lnetcdf
+  endif
 endif
 ifdef LIB_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
@@ -575,14 +599,16 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
               -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-              -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
               -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
-ifdef NETCDFF_PATH
-	CMAKE_OPTS += -D NETCDF_Fortran_DIR:PATH="$(NETCDFF_PATH)"
+ifeq ($NETCDF_SEPARATE, false)
+  CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_PATH)
+else
+  CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_C_PATH) \
+                -D NETCDF_Fortran_DIR:PATH=$(NETCDF_FORTRAN_PATH)
 endif
 
 ifdef PNETCDF_PATH
@@ -677,8 +703,13 @@ db_flags:
 
 test_fc: test_fc.o
 	$(LD) -o $@ test_fc.o $(LDFLAGS)
+ifeq ($NETCDF_SEPARATE, false)
 test_nc: test_nc.o
 	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
+else
+test_nc: test_nc.o
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
+endif
 test_mpi: test_mpi.o
 	$(LD) -o $@ test_mpi.o $(LDFLAGS)
 test_esmf: test_esmf.o

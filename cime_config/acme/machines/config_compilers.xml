@@ -1424,10 +1424,13 @@ for mct, etc.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
+  <!-- <NETCDF_C_PATH><env>NETCDFROOT</env></NETCDF_C_PATH> -->
+  <!-- <NETCDF_FORTRAN_PATH><env>NETCDFROOT</env></NETCDF_FORTRAN_PATH> -->
   <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
   <SLIBS>
+    <!-- <append> <var>NETCDF_FORTRAN_PATH</var>/lib -L/projects/ccsm/BLAS-intel -lblas_LINUX</append> -->
     <append> <shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
     <append MPILIB="mpich"> -mkl=cluster </append>
     <append MPILIB="mpich2"> -mkl=cluster </append>
