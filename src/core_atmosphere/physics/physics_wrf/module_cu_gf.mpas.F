@@ -812,7 +812,7 @@ CONTAINS
         xz(i,k)=zo(i,k)
         cupclw(i,k)=0.
         cd(i,k)=1.*entr_rate
-        cdd(i,k)=xlamdd
+        cdd(i,k)=xlamdd(i)
         hcdo(i,k)=0.
         qrcdo(i,k)=0.
         dellaqc(i,k)=0.
@@ -1093,7 +1093,7 @@ CONTAINS
             zuhe(i)=zustart
             do k=2,kbegzu 
               dz=z_cup(i,k+1)-z_cup(i,k)
-              frh=zuhe(i)
+              frh(i)=zuhe(i)
               zuhe(i)=zuhe(i)+entr_rate_2d(i,k)*dz*zuhe(i)-cd(i,k)*dz*zuhe(i)
             enddo
          ENDIF
@@ -1401,7 +1401,7 @@ CONTAINS
 ! calculate downdraft mass terms
 !
             do ki=jmin(i)-1,1,-1
-               mentrd_rate=mentrd_rate_2d(i,ki)
+               mentrd_rate(i)=mentrd_rate_2d(i,ki)
                dzo=zo_cup(i,ki+1)-zo_cup(i,ki)
                dd_massentro(i,ki)=mentrd_rate(i)*dzo*zdo(i,ki+1)
                dd_massdetro(i,ki)=cdd(i,ki)*dzo*zdo(i,ki+1)
