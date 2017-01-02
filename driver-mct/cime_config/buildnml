@@ -65,7 +65,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
     start_type = nmlgen.get_value('start_type')
     if start_type != 'startup':
         if case.get_value('CASE') == case.get_value('RUN_REFCASE'):
-            nmlgen.add_default('brnch_retain_casename' , value='.true.')
+            nmlgen.set_value('brnch_retain_casename' , value='.true.')
 
     #--------------------------------
     # Overwrite: set component coupling frequencies
@@ -133,8 +133,8 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
         tprofn = int(stopn / tprof_total)
         if tprofn < 1:
             tprofn = 1
-        nmlgen.add_default('tprof_option', value=tprofoption)
-        nmlgen.add_default('tprof_n'     , value=tprofn)
+        nmlgen.set_value('tprof_option', value=tprofoption)
+        nmlgen.set_value('tprof_n'     , value=tprofn)
 
     #--------------------------------
     # (1) Write output namelist file drv_in and  input dataset list.
