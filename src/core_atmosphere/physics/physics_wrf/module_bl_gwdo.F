@@ -455,14 +455,14 @@ contains
      ol(i) = ol4(i,mod(nwd-1,4)+1)
    enddo
 !
+   kpblmax = 2
    kpblmin = kte
    do i = its,ite
+     if (oa(i).le.0.0) kbl(i) = kpbl(i) + 1
+     kpblmax = max(kpblmax,kbl(i))
      kpblmin = min(kpblmin, kbl(i))
    enddo
-!
-   do i = its,ite
-     if (oa(i).le.0.0) kbl(i) = kpbl(i) + 1
-   enddo
+   kpblmax = min(kpblmax+1,kte-1)
 !
    do i = its,ite
      delks(i) = 1.0 / (prsi(i,1) - prsi(i,kbl(i)))
