@@ -409,5 +409,5 @@ class NamelistDefinition(EntryID):
         if attribute is not None:
             all_attributes.update(attribute)
 
-        value = self.get_value_match(item.lower(), all_attributes, True, )
+        value = self.get_value_match(item.lower(), all_attributes, True)
         return self._split_defaults_text(value)
