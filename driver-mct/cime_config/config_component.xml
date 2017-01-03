@@ -2786,6 +2786,22 @@
       introduced to coordinate this value among multiple components.</desc>
   </entry>
 
+  <entry id="CO2_TYPE_COSTANT_VALUE">
+    <type>real</type>
+    <valid_values></valid_values>
+    <default_value>284.7</default_value>
+    <values>
+      <value compset="^2000">367.0</value>
+      <value compset="^4804">367.0</value>
+    </values>
+    <group>run_co2</group>
+    <file>env_run.xml</file>
+    <desc>
+      Mechanism for setting the CO2 value in ppmv for CLM if
+      CLM_CO2_TYPE is constant POP if OCN_CO2_TYPE is constant.
+    </desc>
+  </entry>
+
   <entry id="FLDS_WISO">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
