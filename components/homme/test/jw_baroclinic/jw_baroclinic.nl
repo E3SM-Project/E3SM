@@ -19,6 +19,7 @@ qsplit = 1
 tstep_type = 5
 energy_fixer  = -1
 integration   = "explicit"
+theta_hydrostatic_mode=.false.
 smooth        = 0
 nu=7e15
 nu_div=7e15

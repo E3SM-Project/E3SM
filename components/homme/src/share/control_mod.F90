@@ -13,9 +13,12 @@ module control_mod
   integer, public, parameter :: MAX_FILE_LEN=240
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
-! none of this is used anymore:
+! experimental option for preqx model:
   logical, public  :: use_semi_lagrange_transport   = .false.
   logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
+
+! set to .true. to run the theta nonydrostatic model in hydrostatic mode
+  logical, public :: theta_hydrostatic_mode = .false.  
 
 
 !shallow water advection tests:

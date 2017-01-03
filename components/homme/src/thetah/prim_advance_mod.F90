@@ -8,7 +8,7 @@
 !
 module prim_advance_mod
 
-  use control_mod,    only: qsplit,rsplit, use_moisture
+  use control_mod,    only: qsplit,rsplit, use_moisture, theta_hydrostatic_mode
   use derivative_mod, only: derivative_t
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
@@ -440,20 +440,23 @@ contains
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: pfull(np,np,nlev)
-  real (kind=real_kind) :: pfull_i(np,np,nlevp)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: pnh_i(np,np,nlevp)
 
   do ie=nets,nete
      do k=1,nlev
         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
      enddo
-!     call get_p_nonhydrostatic(pfull,pfull_i,exner,hvcoord,&
-!          elem(ie)%state%theta(:,:,:,np1),&
-!          dp,elem(ie)%state%phi(:,:,:,np1),elem(ie)%state%phis,&
-!           elem(ie)%state%Qdp(:,:,:,1,np1_qdp))
-     call get_p_hydrostatic(pfull,pfull_i,exner,hvcoord,&
+     if (theta_hydrostatic_mode) then
+        call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,&
           dp,elem(ie)%state%Qdp(:,:,:,1,np1_qdp))
+     else
+        call get_p_nonhydrostatic(pnh,pnh_i,exner,hvcoord,&
+             elem(ie)%state%theta(:,:,:,np1),&
+             dp,elem(ie)%state%phi(:,:,:,np1),elem(ie)%state%phis,&
+             elem(ie)%state%Qdp(:,:,:,1,np1_qdp))
+     endif
 
      elem(ie)%state%theta(:,:,:,np1) = elem(ie)%state%theta(:,:,:,np1) + &
           dt*elem(ie)%derived%FT(:,:,:) / exner(:,:,:)
@@ -707,11 +710,11 @@ contains
   real (kind=real_kind) :: omega_p(np,np,nlev)
   real (kind=real_kind) :: vort(np,np,nlev)      ! vorticity
   real (kind=real_kind) :: divdp(np,np,nlev)     
-  real (kind=real_kind) :: pfull(np,np,nlev)     ! full (nonydro) pressure
-  real (kind=real_kind) :: dpfull(np,np,nlev)    ! 
-  real (kind=real_kind) :: pfull_i(np,np,nlevp)  ! full pressre on interfaces
-  real (kind=real_kind) :: exner(np,np,nlev)     ! exner full pressure
-  real (kind=real_kind) :: dpfulldp(np,np,nlev)   ! dpfull / dp3d  
+  real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
+  real (kind=real_kind) :: dpnh(np,np,nlev)    ! 
+  real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! nh pressre on interfaces
+  real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
+  real (kind=real_kind) :: dpnh_dp(np,np,nlev)   ! dpnh / dp3d  
   real (kind=real_kind) :: grad_exner(np,np,2,nlev)     
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
 
@@ -741,48 +744,47 @@ contains
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta  => elem(ie)%state%theta(:,:,:,n0)
 
-#define XXXTHETAH_HYDROSTATIC
-#ifdef THETAH_HYDROSTATIC
-     phi => elem(ie)%derived%phi(:,:,:)
+     if (theta_hydrostatic_mode) then
+        phi => elem(ie)%derived%phi(:,:,:)
 
-
-     call get_p_hydrostatic(pfull,pfull_i,exner,hvcoord,&
-          dp3d,elem(ie)%state%Qdp(:,:,:,1,qn0))
-
-     ! Compute Hydrostatic equation, modeld after CCM-3
-     do k=1,nlev
-        !temp(:,:,k) = Cp*theta(:,:,k)*&
-        !  ( (pfull_i(:,:,k+1)/p0)**kappa - (pfull_i(:,:,k)/p0)**kappa )
-        temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pfull(:,:,k))
-     enddo
-     call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
-
-!    as a debug step, use nonhydrostatic formulas to compute exner pressure:
-!    rsplit=3 crashes
-!    rsplit=0 runs - but results are bad
-!     call get_p_nonhydrostatic(pfull,dpfull,exner,hvcoord,theta,dp3d,&
-!          phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0))
-     dpfulldp(:,:,:) = 1
-#else
-     phi => elem(ie)%state%phi(:,:,:,n0)
-     call get_p_nonhydrostatic(pfull,dpfull,exner,hvcoord,theta,dp3d,&
-          phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0))
-
-     ! d(p-full) / d(p-hyrdostatic)
-     dpfulldp(:,:,:) = dpfull(:,:,:)/dp3d(:,:,:)
-#if 0
-     if (hybrid%masterthread) then
-        if (ie==1) then
-        do k=1,nlev,5
-           write(*,"(i3,4f15.5)") k,minval(elem(ie)%state%phi(:,:,k,n0)),&
-                maxval(elem(ie)%state%phi(:,:,k,n0)),&
-                minval(dpfulldp(:,:,k)),maxval(dpfulldp(:,:,k))
+        call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,&
+             dp3d,elem(ie)%state%Qdp(:,:,:,1,qn0))
+        
+        ! Compute Hydrostatic equation, modeld after CCM-3
+        do k=1,nlev
+           !temp(:,:,k) = Cp*theta(:,:,k)*&
+           !  ( (pnh_i(:,:,k+1)/p0)**kappa - (pnh_i(:,:,k)/p0)**kappa )
+           temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
         enddo
+        call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
+        dpnh_dp(:,:,:) = 1
+
+        
+        !    as a debug step, use nonhydrostatic formulas to compute exner pressure:
+        !    rsplit=3 crashes
+        !    rsplit=0 runs - but results are bad
+        !call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,&
+        !     phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0))
+     else
+        phi => elem(ie)%state%phi(:,:,:,n0)
+        call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,&
+             phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0))
+        
+        ! d(p-nh) / d(p-hyrdostatic)
+        dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
+#if 0
+        if (hybrid%masterthread) then
+           if (ie==1) then
+              do k=1,nlev,5
+                 write(*,"(i3,4f15.5)") k,minval(elem(ie)%state%phi(:,:,k,n0)),&
+                      maxval(elem(ie)%state%phi(:,:,k,n0)),&
+                      minval(dpnh_dp(:,:,k)),maxval(dpnh_dp(:,:,k))
+              enddo
+           endif
         endif
+#endif
      endif
-#endif
-     !dpfulldp=1
-#endif
+
 
 
 
@@ -895,7 +897,7 @@ contains
         stens(:,:,k,1) = -s_vadv(:,:,k,1) &
              -elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
              -elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) &
-             - g *(1-dpfulldp(:,:,k) )
+             - g *(1-dpnh_dp(:,:,k) )
 
         vtemp(:,:,:)   = gradient_sphere(theta(:,:,k),deriv,elem(ie)%Dinv)
         stens(:,:,k,2) = -s_vadv(:,:,k,2) &
@@ -919,8 +921,8 @@ contains
         end do
         vtemp = gradient_sphere(KE(:,:),deriv,elem(ie)%Dinv)
         vtemp2 = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
-        vtemp2(:,:,1) = vtemp2(:,:,1)*dpfulldp(:,:,k)
-        vtemp2(:,:,2) = vtemp2(:,:,2)*dpfulldp(:,:,k)
+        vtemp2(:,:,1) = vtemp2(:,:,1)*dpnh_dp(:,:,k)
+        vtemp2(:,:,2) = vtemp2(:,:,2)*dpnh_dp(:,:,k)
 
         do j=1,np
            do i=1,np

@@ -28,7 +28,7 @@ module element_ops
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa
-  use control_mod, only:    use_moisture, use_cpstar
+  use control_mod, only:    use_moisture, use_cpstar, theta_hydrostatic_mode
   use prim_si_mod, only: preq_hydrostatic_v2
   implicit none
 
@@ -94,8 +94,9 @@ contains
   !   local
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: pfull(np,np,nlev)
-  real (kind=real_kind) :: pfull_i(np,np,nlevp)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: pnh_i(np,np,nlevp)
   integer :: k
   
   
@@ -107,9 +108,12 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-!  call get_p_nonhydrostatic(pfull,dpfull,exner,hvcoord,elem%state%theta(:,:,:,nt),&
-!       dp,elem%state%phi(:,:,:,nt),elem%state%phis,elem%state%Qdp(:,:,:,1,ntQ))
-  call get_p_hydrostatic(pfull,pfull_i,exner,hvcoord,dp,elem%state%Qdp(:,:,:,1,ntQ))
+  if (theta_hydrostatic_mode) then
+     call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,dp,elem%state%Qdp(:,:,:,1,ntQ))
+  else
+     call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,elem%state%theta(:,:,:,nt),&
+          dp,elem%state%phi(:,:,:,nt),elem%state%phis,elem%state%Qdp(:,:,:,1,ntQ))
+  endif
 
 
 #if (defined COLUMN_OPENMP)
@@ -128,21 +132,21 @@ contains
 
 
 
-  subroutine get_p_hydrostatic(pfull,pfull_i,exner,hvcoord,dp3d,Qdp)
+  subroutine get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,dp3d,Qdp)
   implicit none
 !
-! compute exner pressure and full presure
+! compute exner pressure and nh presure
 !
 ! hydrostatic case:
 !    input:  dp3d, Qdp (if use_moisture)
-!    output:  pfull = compute from dp3d
-!             exner = pfull**kappa_star
+!    output:  pnh = compute from dp3d
+!             exner = pnh**kappa_star
 !
 !
 !  
-  real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner full pressure
-  real (kind=real_kind), intent(out) :: pfull(np,np,nlev)   ! full nonhyrdo pressure
-  real (kind=real_kind), intent(out) :: pfull_i(np,np,nlevp) ! full nonhyrdo pressure interfaces
+  real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner nh pressure
+  real (kind=real_kind), intent(out) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
+  real (kind=real_kind), intent(out) :: pnh_i(np,np,nlevp) ! nh nonhyrdo pressure interfaces
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
   real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)   
@@ -178,26 +182,26 @@ contains
   enddo
 
 ! hydrostatic model:
-  pfull_i(:,:,1)=ptop
+  pnh_i(:,:,1)=ptop
   do k=1,nlev
-     pfull_i(:,:,k+1)=pfull_i(:,:,k) + dp3d(:,:,k)
+     pnh_i(:,:,k+1)=pnh_i(:,:,k) + dp3d(:,:,k)
   enddo
   
   do k=1,nlev
-     pfull(:,:,k)=pfull_i(:,:,k) + dp3d(:,:,k)/2
+     pnh(:,:,k)=pnh_i(:,:,k) + dp3d(:,:,k)/2
   enddo
-  exner  = (pfull/p0)**kappa_star
+  exner  = (pnh/p0)**kappa_star
 
   end subroutine 
 
 
 
 
-#if 0
-  subroutine get_p_nonhydrostatic(pfull,dpfull,exner,hvcoord,theta,dp3d,phi,phis,Qdp)
+
+  subroutine get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,phi,phis,Qdp)
   implicit none
 !
-! compute exner pressure, full presure
+! compute exner pressure, nh presure
 !
 ! nonhydro formula used in hydrostatic model (used to debug this routine)
 !         call this routine with phi computed from hydrostatic exner
@@ -205,15 +209,15 @@ contains
 ! nonhydro case:
 ! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
 ! output:  
-!       for k=2..nlev, use the equation of state:  pfull/e = rho*Rstar*theta
+!       for k=2..nlev, use the equation of state:  pnh/e = rho*Rstar*theta
 !                                                    rho   = -dp3d/dphi 
 ! for k=1, we cant compute rho because we dont know phi at the model top
 ! (our boundary condition specifies ptop) so we take p(k=1) = 2/3 ptop + 1/3 p(k=2)
 !
 !  
-  real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner full pressure
-  real (kind=real_kind), intent(out) :: pfull(np,np,nlev)   ! full nonhyrdo pressure
-  real (kind=real_kind), intent(out) :: dpfull(np,np,nlev) ! full nonhyrdo pressure interfaces
+  real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner nh pressure
+  real (kind=real_kind), intent(out) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
+  real (kind=real_kind), intent(out) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: theta(np,np,nlev)   
   real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
@@ -224,145 +228,18 @@ contains
   !   local
   real (kind=real_kind) :: ptop
   real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind) :: kappa_star_i(np,np,nlev)
   real (kind=real_kind) :: R_star(np,np,nlev)
   real (kind=real_kind) :: Qt(np,np,nlev)
-  real (kind=real_kind) :: rho(np,np,nlev)
-  real (kind=real_kind) :: dphi(np,np,nlev)
-  real (kind=real_kind) :: temp_i(np,np,nlevp)  ! temp variable on level interfaces
-  integer :: k
-
-
-  ptop = hvcoord%hyai(1)*hvcoord%ps0
-
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-  do k=1,nlev
-     if (use_moisture) then
-        Qt(:,:,k) = Qdp(:,:,k)/dp3d(:,:,k)
-        R_star(:,:,k)=(Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k))
-        
-        if (use_cpstar==1) then
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
-                (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
-        else
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
-        endif
-     else
-        R_star(:,:,k)=Rgas
-        kappa_star(:,:,k)=Rgas/Cp
-     endif
-  enddo
-
-! compute dphi at mid points.  
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-  do k=2,nlev
-     temp_i(:,:,k) = (phi(:,:,k-1)+phi(:,:,k))/2
-  enddo
-  temp_i(:,:,nlev+1) = phis(:,:)
-
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-  do k=2,nlev
-     dphi(:,:,k) = temp_i(:,:,k+1) - temp_i(:,:,k)
-  enddo
-
-
-
-! we dont yet know phi_i(:,:1) (model top) and so cant compute dphi(:,:,1)  
-!
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-  do k=2,nlev
-     rho(:,:,k) = -dp3d(:,:,k)/dphi(:,:,k)
-!     if (minval(rho(:,:,k))<0) then
-!        print *,k,dp3d(1,1,k),dphi(1,1,k)
-!        call abortmp('error: rho<0')
-!     endif
-     ! theta = T/e
-     ! exner = (p/p0)**kappa         p = p0*exner**(1/kappa)
-     ! p/exner = rho* Rstar * theta 
-     ! exner**( 1/kappa - 1)  = (rho* Rstar * theta / p0)
-     ! exner = (rho* Rstar * theta / p0) ** ( kappa / 1-kappa)
-     exner(:,:,k)=(rho(:,:,k)*R_star(:,:,k)*theta(:,:,k)/p0) ** &
-          (kappa_star(:,:,k) / ( 1 - kappa_star(:,:,k)))
-     pfull(:,:,k) = rho(:,:,k)*R_star(:,:,k)*theta(:,:,k)*exner(:,:,k)
-  enddo
-!
-! use top of model boundary condition to compute
-! pfull (and exner) at model top
-!
-#if 1
-  pfull(:,:,1) = (2*ptop + pfull(:,:,2)) / 3
-  exner(:,:,1) = (pfull(:,:,1)/p0)**kappa_star(:,:,1)
-#else
-  exner(:,:,1) = (2*((ptop/p0)**kappa) + exner(:,:,2)) / 3
-  pfull(:,:,1) = p0*exner(:,:,1)**(1/kappa_star(:,:,1))
-#endif
-
-
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-  do k=2,nlev
-     temp_i(:,:,k) = (pfull(:,:,k-1)+pfull(:,:,k))/2
-  enddo
-  temp_i(:,:,1) = ptop  
-  temp_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)  
-
-  do k=1,nlev
-     dpfull(:,:,k)=temp_i(:,:,k+1)-temp_i(:,:,k)
-  enddo
-
-  end subroutine 
-#else
-
-
-
-  subroutine get_p_nonhydrostatic(pfull,dpfull,exner,hvcoord,theta,dp3d,phi,phis,Qdp)
-  implicit none
-!
-! compute exner pressure, full presure
-!
-! nonhydro formula used in hydrostatic model (used to debug this routine)
-!         call this routine with phi computed from hydrostatic exner
-!         
-! nonhydro case:
-! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
-! output:  
-!       for k=2..nlev, use the equation of state:  pfull/e = rho*Rstar*theta
-!                                                    rho   = -dp3d/dphi 
-! for k=1, we cant compute rho because we dont know phi at the model top
-! (our boundary condition specifies ptop) so we take p(k=1) = 2/3 ptop + 1/3 p(k=2)
-!
-!  
-  real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner full pressure
-  real (kind=real_kind), intent(out) :: pfull(np,np,nlev)   ! full nonhyrdo pressure
-  real (kind=real_kind), intent(out) :: dpfull(np,np,nlev) ! full nonhyrdo pressure interfaces
-  type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
-  real (kind=real_kind), intent(in) :: theta(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: phis(np,np)
-  real (kind=real_kind), intent(in) :: phi(np,np,nlev)
-  real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)   
-
-  !   local
-  real (kind=real_kind) :: ptop,p0kappa
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
-  real (kind=real_kind) :: R_star(np,np,nlev)
-  real (kind=real_kind) :: Qt(np,np,nlev)
-  real (kind=real_kind) :: pfull_i(np,np,nlevp) 
+  real (kind=real_kind) :: pnh_i(np,np,nlevp) 
+  real (kind=real_kind) :: rho_R_theta(np,np,nlevp) 
   real (kind=real_kind) :: rho_i(np,np,nlevp) 
   real (kind=real_kind) :: theta_i(np,np,nlevp) 
+  real (kind=real_kind) :: exner_i(np,np,nlevp) 
   integer :: k
 
 
   ptop = hvcoord%hyai(1)*hvcoord%ps0
-  p0kappa = p0**(-kappa)
 
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
@@ -384,11 +261,13 @@ contains
      endif
   enddo
 
+  pnh_i(:,:,1) = ptop
+  pnh_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)
 
-  pfull_i(:,:,1) = ptop
-  pfull_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)
 
-
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
   do k=2,nlev
      ! interfaces
      rho_i(:,:,k) = - ((dp3d(:,:,k)+dp3d(:,:,k-1))/2) / &
@@ -399,25 +278,34 @@ contains
              minval(phi(:,:,k-1)-phi(:,:,k))
         call abortmp('error: rho<0')
      endif
+
+     kappa_star_i(:,:,k) = (kappa_star(:,:,k)+kappa_star(:,:,k-1))/2
+
+     rho_R_theta(:,:,k) = rho_i(:,:,k)*(theta(:,:,k)+theta(:,:,k-1))*&
+          (R_star(:,:,k)+R_star(:,:,k-1)) / 4
      
-     theta_i(:,:,k) = (theta(:,:,k)+theta(:,:,k-1))/2
      ! theta = T/e
      ! exner = (p/p0)**kappa         p = p0*exner**(1/kappa)
      ! p/exner = rho* Rstar * theta 
-     pfull_i(:,:,k) = ( p0kappa * rho_i(:,:,k)*Rgas*theta_i(:,:,k) ) ** &
-          ( 1/(1-kappa))
+     ! use this formula which only has 1 exponential:
+     exner_i(:,:,k) = (rho_R_theta(:,:,k)/p0)**&
+          ( kappa_star_i(:,:,k)/ ( 1-kappa_star_i(:,:,k)))
+     pnh_i(:,:,k) = rho_R_theta(:,:,k)*exner_i(:,:,k)
   enddo
+
+
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
   do k=1,nlev
-     dpfull(:,:,k)=pfull_i(:,:,k+1)-pfull_i(:,:,k)
-     pfull(:,:,k)=(pfull_i(:,:,k)+pfull_i(:,:,k+1))/2
-     exner(:,:,k) = (pfull(:,:,k)/p0)**kappa     
+     dpnh(:,:,k)=pnh_i(:,:,k+1)-pnh_i(:,:,k)
+     pnh(:,:,k)=(pnh_i(:,:,k)+pnh_i(:,:,k+1))/2
+     exner(:,:,k) = (pnh(:,:,k)/p0)**kappa_star(:,:,k)
   enddo
 
 
 
   end subroutine 
-
-#endif
 
 
 
@@ -463,7 +351,7 @@ contains
   real (kind=real_kind) :: phi_i(np,np,nlev+1)
 
   real (kind=real_kind) :: rho(np,np,nlev)
-  real (kind=real_kind) :: pfull(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dphi(np,np,nlev)
   real (kind=real_kind) :: theta(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
