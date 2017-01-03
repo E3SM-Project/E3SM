@@ -201,8 +201,14 @@ else ifdef NETCDF_C_PATH
   ifndef INC_NETCDF_C
     INC_NETCDF_C:=$(NETCDF_C_PATH)/include
   endif
-  ifndef LIB_NETCDF_FORTRAN
+  ifndef INC_NETCDF_FORTRAN
+    INC_NETCDF_FORTRAN:=$(NETCDF_FORTRAN_PATH)/include
+  endif
+  ifndef LIB_NETCDF_C
     LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
+  endif
+  ifndef LIB_NETCDF_FORTRAN
+    LIB_NETCDF_FORTRAN:=$(NETCDF_C_PATH)/lib
   endif
 else ifdef NETCDF_FORTRAN_PATH
   $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
@@ -288,7 +294,6 @@ ifdef CPRE
 else
   FPPDEFS := $(CPPDEFS)
 endif
-
 
 #===============================================================================
 # Set config args for pio and mct to blank and then enable serial
@@ -430,7 +435,8 @@ CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
 
 ifdef NETCDF_PATH
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
-else ifdef NETCDF_C_PATH
+else ifeq ($NETCDF_SEPARATE, true)
+  # The mct library needs the NetCDF_C library
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
 else
   $(error No NETCDF Path defined)
@@ -453,9 +459,10 @@ ifeq ($(MODEL),cam)
   # These RRTMG files take an extraordinarily long time to compile with optimization.
   # Until mods are made to read the data from files, just remove optimization from
   # their compilation.
-  rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
+rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
-  rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
+
+rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
 
 
@@ -489,6 +496,7 @@ ifndef SLIBS
     SLIBS := -L$(LIB_NETCDF_C) -L$(LIB_NETCDF_FORTRAN) -lnetcdf
   endif
 endif
+
 ifdef LIB_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
 endif
@@ -607,6 +615,8 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
 ifeq ($NETCDF_SEPARATE, false)
   CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_PATH)
 else
+  # NETCDF_Fortran_DIR points to the separate
+  # installation of Fortran NetCDF for PIO
   CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_C_PATH) \
                 -D NETCDF_Fortran_DIR:PATH=$(NETCDF_FORTRAN_PATH)
 endif
@@ -708,7 +718,7 @@ test_nc: test_nc.o
 	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
 else
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_C) -lnetcdf $(LDFLAGS)
 endif
 test_mpi: test_mpi.o
 	$(LD) -o $@ test_mpi.o $(LDFLAGS)
