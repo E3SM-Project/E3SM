@@ -29,7 +29,7 @@ logger = logging.getLogger("xmlquery")
 ###############################################################################
 def parse_command_line(args):
 ###############################################################################
-    parser = argparse.ArgumentParser(   description="Querry the xml files for attributes and return their values." ,
+    parser = argparse.ArgumentParser(   description="Query the xml files for attributes and return their values." ,
                                         formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(__doc__) )
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -44,7 +44,7 @@ def parse_command_line(args):
                         help="apply to this subgroup only")
 
     parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
-                        help="Case directory to build")
+                        help="Case directory to reference")
 
     parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
                         help="List all variables and their values")
@@ -95,36 +95,53 @@ def parse_command_line(args):
         args.value, args.no_resolve, args.raw, args.description, args.group, args.full, \
         args.type, args.valid_values
 
+
+def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
+    thistype = case.get_type_info(var)
+    value = case.get_value(var, attribute=attribute, resolved=resolved, subgroup=subgroup)
+    if value is not None and thistype:
+        value = convert_to_string(value, thistype, var)
+    return value
+
+
 def xmlquery(case, variables, subgroup=None, fileonly=False,
              resolved=True, raw=False, description=False, group=False,
              full=False, dtype=False, valid_values=False):
     """
-    Return list of attributes and their values , print formatted
+    Return list of attributes and their values, print formatted
 
     """
     results = {}
-
+    comp_classes = case.get_values("COMP_CLASSES")
     for var in variables:
         if subgroup is not None:
             groups = [subgroup]
         else:
             groups = case.get_record_fields(var, "group")
 
-
+        expect(groups, " No results found for variable %s"%var)
         for group in groups:
             if not group in results:
                 results[group] = {}
             if not var in results[group]:
                 results[group][var] = {}
             expect(group, "No group found for var %s"% var)
-            thistype = case.get_record_fields(var, "type")
-            if thistype:
-                results[group][var]['value'] = convert_to_string(
-                    case.get_value(var, resolved=resolved, subgroup=group),
-                    thistype[0])
-            else:
-                results[group][var]['value'] = \
-                    case.get_value(var, resolved=resolved, subgroup=group)
+            value = get_value_as_string(case, var, resolved=resolved, subgroup=subgroup)
+            if value is None:
+                var, comp, iscompvar = case.check_if_comp_var(var)
+                if iscompvar:
+                    value = []
+                    for comp in comp_classes:
+                        nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                        if nextval is not None:
+                            value.append(comp + ":" + "%s"%nextval)
+                else:
+                    value = get_value_as_string(case, var, resolved=resolved, subgroup=group)
+
+            expect(value is not None, " No results found for variable %s"%var)
+
+            results[group][var]['value'] = value
+
             if raw:
                 results[group][var]['raw'] = case.get_record_fields(var, "raw")
             if description or full:
@@ -132,11 +149,9 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
             if fileonly or full:
                 results[group][var]['file'] = case.get_record_fields(var, "file")
             if dtype or full:
-                results[group][var]['type'] = case.get_record_fields(var, "type")
+                results[group][var]['type'] = case.get_type_info(var)
             if valid_values or full:
                 results[group][var]['valid_values'] = case.get_record_fields(var, "valid_values")
-
-
 
     return results
 
@@ -153,7 +168,7 @@ def _main_func():
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
         if listall:
-            variables = case.get_record_fields(None, "varid")
+            variables = sorted(case.get_record_fields(None, "varid"))
         expect(variables, "No variables found")
         results = xmlquery(case, variables, subgroup, fileonly, resolved=not no_resolve,
                            raw=raw, description=description, group=group, full=full,
@@ -164,7 +179,7 @@ def _main_func():
         wrapper.subsequent_indent = "\t\t\t"
         wrapper.fix_sentence_endings = True
 
-    for group in iter(results):
+    for group in sorted(iter(results)):
         if len(variables) > 1 or len(results.keys()) > 1 or full:
             print "\nResults in group %s"%group
         for var in variables:

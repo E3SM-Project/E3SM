@@ -170,6 +170,10 @@ class GenericXML(object):
         logger.debug("Get Value for " + item)
         return None
 
+    def get_values(self, vid, attribute=None, resolved=True, subgroup=None):# pylint: disable=unused-argument
+        logger.debug("Get Values for " + vid)        
+        return []
+
     def set_value(self, vid, value, subgroup=None, ignore_type=True): # pylint: disable=unused-argument
         """
         ignore_type is not used in this flavor

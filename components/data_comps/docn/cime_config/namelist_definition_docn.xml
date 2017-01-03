@@ -318,7 +318,7 @@
     </values>
   </entry>
 
-  <entry id="domainfile">
+  <entry id="domainfile" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <input_pathname>abs</input_pathname>
@@ -525,7 +525,7 @@
     </values>
   </entry>
 
-  <entry id="vectors" skip_default_entry="true">
+  <entry id="vectors">
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>

@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 # Is not of type EntryID but can use functions from EntryID (e.g
 # get_type) otherwise need to implement own functions and make GenericXML parent class
 class EnvMachSpecific(EnvBase):
-
-    def __init__(self, caseroot, infile="env_mach_specific.xml"):
+    # pylint: disable=unused-argument
+    def __init__(self, caseroot, infile="env_mach_specific.xml",components=None):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """

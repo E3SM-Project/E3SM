@@ -24,8 +24,6 @@ class PEA(SystemTestsCompareTwo):
 
     def _common_setup(self):
         for comp in self._case.get_values("COMP_CLASSES"):
-            if comp == "DRV":
-                comp = "CPL"
             self._case.set_value("NTASKS_%s"%comp, 1)
             self._case.set_value("NTHRDS_%s"%comp, 1)
             self._case.set_value("ROOTPE_%s"%comp, 0)

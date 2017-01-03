@@ -82,7 +82,6 @@ class Case(object):
         # table and then remove the entry.
         self.lookups = {}
         self.set_lookup_value('CIMEROOT',os.path.abspath(get_cime_root()))
-
         self._compsetname = None
         self._gridname = None
         self._compsetsfile = None
@@ -101,6 +100,17 @@ class Case(object):
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
+
+
+    def check_if_comp_var(self, vid):
+        vid = vid
+        comp = None
+        iscompvar = False
+        for env_file in self._env_entryid_files:
+            vid, comp, iscompvar = env_file.check_if_comp_var(vid)
+            if iscompvar:
+                return vid, comp, iscompvar
+        return vid, comp, iscompvar
 
     def initialize_derived_attributes(self):
         """
@@ -148,12 +158,13 @@ class Case(object):
             expect(False,"Object(s) %s seem to have newer data than the corresponding case file"%files)
 
         self._env_entryid_files = []
-        self._env_entryid_files.append(EnvRun(self._caseroot))
-        self._env_entryid_files.append(EnvBuild(self._caseroot))
-        self._env_entryid_files.append(EnvMachPes(self._caseroot))
-        self._env_entryid_files.append(EnvCase(self._caseroot))
+        self._env_entryid_files.append(EnvCase(self._caseroot, components=None))
+        components = self._env_entryid_files[0].get_values("COMP_CLASSES")
+        self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
+        self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
+        self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(self._caseroot))
+            self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
         self._env_generic_files = []
         self._env_generic_files.append(EnvBatch(self._caseroot))
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
@@ -206,7 +217,6 @@ class Case(object):
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
             results = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
-
             if len(results) > 0:
                 new_results = []
                 vtype = env_file.get_type_info(item)
@@ -294,8 +304,6 @@ class Case(object):
                             result.extend(vv)
                     elif field == "file":
                         result.append(env_file.filename)
-                    elif field == "type":
-                        result.append(env_file.get_type_info(variable))
 
         if not result:
             for env_file in self._env_generic_files:
@@ -317,11 +325,11 @@ class Case(object):
             result = env_file.get_type_info(item)
             if result is not None:
                 return result
-
-        logging.debug("Not able to retreive type for item '%s'" % item)
+        env_batch = self.get_env("batch")
+        return env_batch.get_type_info(item)
 
     def get_resolved_value(self, item, recurse=0):
-        num_unresolved = item.count("$")
+        num_unresolved = item.count("$") if item else 0
         recurse_limit = 10
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
@@ -471,6 +479,10 @@ class Case(object):
                 else:
                     yield key, val
 
+    def _set_comp_classes(self, comp_classes):
+        self._component_classes = comp_classes
+        for env_file in self._env_entryid_files:
+            env_file.set_components(comp_classes)
 
     def _get_component_config_data(self):
         # attributes used for multi valued defaults ($attlist is a hash reference)
@@ -482,7 +494,7 @@ class Case(object):
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist)
-        drv_config_file = files.get_value("CONFIG_DRV_FILE")
+        drv_config_file = files.get_value("CONFIG_CPL_FILE")
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
@@ -492,9 +504,16 @@ class Case(object):
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        self._component_classes =drv_comp.get_valid_model_components()
+        self._set_comp_classes(drv_comp.get_valid_model_components())
+
         if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
+
+        # put anything in the lookups table into env objects
+        for key,value in self.lookups.items():
+            result = self.set_value(key,value)
+            if result is not None:
+                del self.lookups[key]
 
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
@@ -504,12 +523,12 @@ class Case(object):
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
-            expect(comp_config_file is not None,"No config file for component %s"%comp_name)
+            expect(comp_config_file is not None and os.path.isfile(comp_config_file),"Config file %s for component %s not found."%(comp_config_file, comp_name))
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
 
-
+        # final cleanup of lookups table
         for key,value in self.lookups.items():
             result = self.set_value(key,value)
             if result is not None:
@@ -522,7 +541,7 @@ class Case(object):
         """
 
         files = Files()
-        drv_comp = Component(files.get_value("CONFIG_DRV_FILE"))
+        drv_comp = Component(files.get_value("CONFIG_CPL_FILE"))
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
@@ -618,7 +637,7 @@ class Case(object):
         self.schedule_rewrite(env_mach_specific_obj)
 
         #--------------------------------------------
-        # pe payout
+        # pe layout
         #--------------------------------------------
         match1 = re.match('([0-9]+)x([0-9]+)', "" if pecount is None else pecount)
         match2 = re.match('([0-9]+)', "" if pecount is None else pecount)
@@ -635,8 +654,6 @@ class Case(object):
         other = {}
         if match1 or match2:
             for component_class in self._component_classes:
-                if component_class == "DRV":
-                    component_class = "CPL"
                 string_ = "NTASKS_" + component_class
                 pes_ntasks[string_] = opti_tasks
                 string_ = "NTHRDS_" + component_class
@@ -647,7 +664,7 @@ class Case(object):
             pesobj = Pes(self._pesfile)
 
             pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
-                                                                    machine_name, pesize_opts=pecount)
+                                                                    machine_name, pesize_opts=pecount, mpilib=mpilib)
 
         mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
@@ -655,18 +672,18 @@ class Case(object):
         # we can get rid of this code when all of the perl is removed
         for key, value in other.items():
             self.set_value(key, value)
-        pes_per_node = self.get_value("PES_PER_NODE")
         for key, value in pes_ntasks.items():
             totaltasks[key[-3:]] = int(value)
-            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
+            mach_pes_obj.set_value(key,int(value))
         for key, value in pes_rootpe.items():
             totaltasks[key[-3:]] += int(value)
-            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
+            mach_pes_obj.set_value(key,int(value))
         for key, value in pes_nthrds.items():
             totaltasks[key[-3:]] *= int(value)
-            mach_pes_obj.set_value(key,int(value), pes_per_node=pes_per_node)
+            mach_pes_obj.set_value(key,int(value))
 
         maxval = 1
+        pes_per_node = self.get_value("PES_PER_NODE")
         if mpilib != "mpi-serial":
             for key, val in totaltasks.items():
                 if val < 0:
@@ -677,7 +694,7 @@ class Case(object):
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
         for compclass in self._component_classes:
-            if compclass == "DRV":
+            if compclass == "CPL":
                 continue
             key = "NINST_%s"%compclass
             mach_pes_obj.set_value(key, ninst)
@@ -798,7 +815,8 @@ class Case(object):
                     os.path.join(toolsdir, "check_case"),
                     os.path.join(toolsdir, "archive_metadata.sh"),
                     os.path.join(toolsdir, "xmlchange"),
-                    os.path.join(toolsdir, "xmlquery"))
+                    os.path.join(toolsdir, "xmlquery"),
+                    os.path.join(toolsdir, "pelayout"))
         try:
             for exefile in exefiles:
                 destfile = os.path.join(self._caseroot,os.path.basename(exefile))
@@ -880,7 +898,7 @@ class Case(object):
                       (self.get_value("PES_SPEC_FILE")),
                       caseroot=self._caseroot, sfile="README.case")
         for component_class in self._component_classes:
-            if component_class == "DRV":
+            if component_class == "CPL":
                 continue
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
@@ -990,7 +1008,7 @@ class Case(object):
 
     def submit_jobs(self, no_batch=False, job=None):
         env_batch = self.get_env('batch')
-        env_batch.submit_jobs(self, no_batch=no_batch, job=job)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')

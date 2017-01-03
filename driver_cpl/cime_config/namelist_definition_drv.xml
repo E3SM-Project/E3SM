@@ -2788,68 +2788,6 @@
     </values>
   </entry>
 
-  <entry id="pio_stride" modify_via_xml="PIO_STRIDE">
-    <type>integer</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <desc>
-      stride of tasks in pio used generically, component based value takes precedent.
-    </desc>
-    <values>
-      <value>$PIO_STRIDE</value>
-    </values>
-  </entry>
-
-  <entry id="pio_root" modify_via_xml="PIO_ROOT">
-    <type>integer</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <desc>
-      io task root in pio used generically, component based value takes precedent.
-    </desc>
-    <values>
-      <value>$PIO_ROOT</value>
-    </values>
-  </entry>
-
-  <entry id="pio_rearranger" modify_via_xml="PIO_REARRANGER">
-    <type>integer</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <desc>
-      Rearranger method for pio 1=box, 2=subset.
-    </desc>
-    <values>
-      <value>$PIO_REARRANGER</value>
-    </values>
-  </entry>
-
-  <entry id="pio_numiotasks" modify_via_xml="PIO_NUMTASKS">
-    <type>integer</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <desc>
-      number of io tasks in pio used generically, component based value takes precedent.
-    </desc>
-    <values>
-      <value>$PIO_NUMTASKS</value>
-    </values>
-  </entry>
-
-  <entry id="pio_typename" modify_via_xml="PIO_TYPENAME">
-    <type>char</type>
-    <category>pio</category>
-    <group>pio_default_inparm</group>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <desc>
-      io type in pio used generically, component based value takes precedent.
-      valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default
-    </desc>
-    <values>
-      <value>$PIO_TYPENAME</value>
-    </values>
-  </entry>
-
   <entry id="pio_debug_level" modify_via_xml="PIO_DEBUG_LEVEL">
     <type>integer</type>
     <category>pio</category>

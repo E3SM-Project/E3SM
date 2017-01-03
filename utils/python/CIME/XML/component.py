@@ -20,7 +20,7 @@ class Component(EntryID):
         # not checking schema on external components yet
         cimeroot = get_cime_root()
         if  cimeroot in os.path.abspath(infile):
-            schema = files.get_schema("CONFIG_DRV_FILE")
+            schema = files.get_schema("CONFIG_CPL_FILE")
 
         EntryID.__init__(self, infile, schema=schema)
 
@@ -31,7 +31,7 @@ class Component(EntryID):
     def get_valid_model_components(self):
         """
         return a list of all possible valid generic (e.g. atm, clm, ...) model components
-        from the entries in the model CONFIG_DRV_FILE
+        from the entries in the model CONFIG_CPL_FILE
         """
         components = []
         comps_node = self.get_node("entry", {"id":"COMP_CLASSES"})
@@ -51,6 +51,9 @@ class Component(EntryID):
             return
         # use the default_value if present
         val_node = self.get_optional_node("default_value", root=node)
+        if val_node is None:
+            logger.debug("No default_value for %s"%node.get("id"))
+            return val_node
         value = val_node.text
         if value is not None and len(value) > 0 and value != "UNSET":
             match_values.append(value)

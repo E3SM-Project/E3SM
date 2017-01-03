@@ -3,7 +3,7 @@
   <!-- base schema -->
   <xs:include schemaLocation="entry_id_base.xsd"/>
   <!-- attributes -->
-  <xs:attribute name="modify_via_xml" type="xs:NCName"/>
+  <xs:attribute name="modify_via_xml" type="xs:string"/>
   <xs:attribute name="skip_default_entry" type="xs:boolean"/>
   <xs:attribute name="per_stream_entry" type="xs:boolean"/>
 

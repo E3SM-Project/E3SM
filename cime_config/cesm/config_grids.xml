@@ -1274,66 +1274,66 @@
     <!-- ====================  -->
 
     <gridmap lnd_grid="0.9x1.25" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_aave.150514.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_blin.150514.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.150514.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.150514.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.161223.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="1.9x2.5" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland4km_aave.150514.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland4km_blin.150514.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv1.9x2.5_aave.150514.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv1.9x2.5_aave.150514.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv1.9x2.5_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv1.9x2.5_aave.161223.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="T31" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/T31/map_T31_TO_gland4km_aave.150514.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/T31/map_T31_TO_gland4km_blin.150514.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_T31_aave.150514.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_T31_aave.150514.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/T31/map_T31_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/T31/map_T31_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_T31_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_T31_aave.161223.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="360x720cru" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/360x720/map_360x720_TO_gland4km_aave.160329.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/360x720/map_360x720_TO_gland4km_blin.160329.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_360x720_aave.160329.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_360x720_aave.160329.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/360x720/map_360x720_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/360x720/map_360x720_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_360x720_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_360x720_aave.161223.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="10x15" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv10x15/map_fv10x15_TO_gland4km_aave.160329.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv10x15/map_fv10x15_TO_gland4km_blin.160329.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv10x15_aave.160329.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv10x15_aave.160329.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv10x15/map_fv10x15_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv10x15/map_fv10x15_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv10x15_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv10x15_aave.161223.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="4x5" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv4x5/map_fv4x5_TO_gland4km_aave.160329.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv4x5/map_fv4x5_TO_gland4km_blin.160329.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv4x5_aave.160329.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv4x5_aave.160329.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv4x5/map_fv4x5_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv4x5/map_fv4x5_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv4x5_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_fv4x5_aave.161223.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="ne16np4" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne16np4/map_ne16np4_TO_gland4km_aave.160329.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne16np4/map_ne16np4_TO_gland4km_blin.160329.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne16np4_aave.160329.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne16np4_aave.160329.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne16np4/map_ne16np4_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne16np4/map_ne16np4_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne16np4_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne16np4_aave.161223.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="ne30np4" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_TO_gland4km_aave.160329.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_TO_gland4km_blin.160329.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne30np4_aave.160329.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne30np4_aave.160329.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne30np4_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne30np4_aave.161223.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="ne120np4" glc_grid="gland4" >
-      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne120np4/map_ne120np4_TO_gland4km_aave.160329.nc</map>
-      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne120np4/map_ne120np4_TO_gland4km_blin.160329.nc</map>
-      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne120np4_aave.160329.nc</map>
-      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne120np4_aave.160329.nc</map>
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne120np4/map_ne120np4_TO_gland4km_aave.161223.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne120np4/map_ne120np4_TO_gland4km_blin.161223.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne120np4_aave.161223.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne120np4_aave.161223.nc</map>
     </gridmap>
 
     <!-- ====================  -->
@@ -1576,10 +1576,10 @@
     <!-- ======================================================== -->
 
     <gridmap ocn_grid="gx1v6" glc_grid="gland4" >
-      <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx1v6_nnsm_e1000r300_150512.nc</map>
+      <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx1v6_nnsm_e1000r300_161227.nc</map>
     </gridmap>
     <gridmap ocn_grid="gx3v7" glc_grid="gland4" >
-      <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r300_150514.nc</map>
+      <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r300_161227.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="gx1v6" glc_grid="gland5" >

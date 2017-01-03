@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 ####################################################################################
-def _create_namelists(case, confdir, inst_string, infile, definition_file):
+def _create_namelists(case, confdir, inst_string, infile, nmlgen):
 ####################################################################################
     """Write out the namelist for this component.
 
@@ -74,9 +74,9 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     config['sstice_stream'] = sstice_stream
 
     #----------------------------------------------------
-    # Construct the namelist generator.
+    # Initialize namelist defaults 
     #----------------------------------------------------
-    nmlgen = NamelistGenerator(case, infile, definition_file, config)
+    nmlgen.init_defaults(infile, config)
 
     #----------------------------------------------------
     # Construct the list of streams.
@@ -117,14 +117,6 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     if ocn_domain_file != "UNSET":
         full_domain_path = os.path.join(ocn_domain_path, ocn_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
-    nmlgen.add_default("vectors")
-
-    #----------------------------------------------------
-    # Create `docn_nml` namelist group.
-    #----------------------------------------------------
-    entries = nmlgen.get_definition_entries()
-    for entry in entries:
-        nmlgen.add_default(entry)
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
@@ -143,12 +135,15 @@ def buildnml(case, caseroot, compname):
     cimeroot = case.get_value("CIMEROOT")
     rundir = case.get_value("RUNDIR")
     ninst = case.get_value("NINST_OCN")
-    din_loc_root = case.get_value("DIN_LOC_ROOT")
 
-    if not os.path.isdir(din_loc_root):
-        os.makedirs(din_loc_root)
-        logger.debug("Created input root directory %s" %din_loc_root)
+    # Determine configuration directory
+    confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
+    if not os.path.isdir(confdir):
+        os.makedirs(confdir)
 
+    #----------------------------------------------------
+    # Construct the namelist generator 
+    #----------------------------------------------------
     # determine directory for user modified namelist_definitions.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
     expect (os.path.isdir(user_xml_dir),
@@ -160,19 +155,16 @@ def buildnml(case, caseroot, compname):
     user_definition = os.path.join(user_xml_dir, "namelist_definition_docn.xml")
     if os.path.isfile(user_definition):
         definition_file = [user_definition]
-
-    # Checkout if definition file exists
     for file_ in definition_file:
         expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
 
-    confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
-    if not os.path.isdir(confdir):
-        os.makedirs(confdir)
+    # Create the namelist generator object - independent of instance
+    nmlgen = NamelistGenerator(case, definition_file)
 
+    #----------------------------------------------------
     # Loop over instances
-    inst_string = ""
-    inst_counter = 1
-    while (inst_counter <= ninst):
+    #----------------------------------------------------
+    for inst_counter in range(1, ninst+1):
 
         # determine instance string
         inst_string = ""
@@ -200,7 +192,7 @@ def buildnml(case, caseroot, compname):
         namelist_infile = [infile]
 
         # create namelist and stream file(s) data component
-        _create_namelists(case, confdir, inst_string, namelist_infile, definition_file)
+        _create_namelists(case, confdir, inst_string, namelist_infile, nmlgen)
 
         # copy namelist files and stream text files, to rundir
         if os.path.isdir(rundir):
@@ -213,9 +205,6 @@ def buildnml(case, caseroot, compname):
 
             for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
                 shutil.copy(txtfile, rundir)
-
-        # increment instance counter
-        inst_counter = inst_counter + 1
 
 ###############################################################################
 def _main_func():

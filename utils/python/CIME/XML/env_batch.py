@@ -21,11 +21,11 @@ class EnvBatch(EnvBase):
         """
         initialize an object interface to file env_batch.xml in the case directory
         """
-        EnvBase.__init__(self, case_root, infile)
         self.prereq_jobid = None
         self.batchtype = None
         # This arbitrary setting should always be overwritten
         self._default_walltime = "00:20:00"
+        EnvBase.__init__(self, case_root, infile)
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         """
@@ -70,12 +70,13 @@ class EnvBatch(EnvBase):
 
         value = None
         if subgroup is None:
-            node = self.get_optional_node(item, attribute)
-            if node is not None:
+            nodes = self.get_nodes(item, attribute)
+            if len(nodes) == 1:
+                node = nodes[0]
                 value = node.text
                 if resolved:
                     value = self.get_resolved_value(value)
-            else:
+            elif not nodes:
                 value = EnvBase.get_value(self,item,attribute,resolved)
         else:
             job_node = self.get_optional_node("job", {"name":subgroup})
@@ -89,7 +90,7 @@ class EnvBatch(EnvBase):
 
                     # Return value as right type if we were able to fully resolve
                     # otherwise, we have to leave as string.
-                    if "$" not in value:
+                    if value is not None and "$" not in value:
                         type_str = self._get_type_info(node)
                         value = convert_to_type(value, type_str, item)
         return value
@@ -337,6 +338,7 @@ class EnvBatch(EnvBase):
             depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch)
             if self.batchtype == "cobalt":
                 break
+        return sorted(list(depid.values()))
 
     def submit_single_job(self, case, job, depid=None, no_batch=False):
         logger.warn("Submit job %s"%job)

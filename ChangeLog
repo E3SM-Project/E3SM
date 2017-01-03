@@ -24,6 +24,118 @@ Modified files: git diff --name-status
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-03-2017
+Tag: cime5.2.0-alpha.14
+Answer Changes: None
+Tests: scripts_regression_tests, cesm component testing
+
+Dependencies:
+
+Brief Summary: Changes several variables of the form XXX_COMP to variables of the
+	form XXX with values for each COMP.   Remove clm40 from all active
+	compsets.  Build gptl prior to MCT.   Performance improvements in buildnml
+
+User interface changes: Perl scripts in component models can no longer read these
+	COMP variables directely  - they must now use xmlquery.
+
+Modified files: git diff --name-status
+M       cime_config/acme/config_files.xml
+M       cime_config/acme/machines/Makefile
+M       cime_config/buildlib.mct
+A       cime_config/buildlib.mpi-serial
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/config_grids.xml
+M       cime_config/cesm/machines/Makefile
+M       cime_config/cesm/machines/config_machines.xml
+M       cime_config/config_headers.xml
+M       cime_config/xml_schemas/entry_id_base.xsd
+M       cime_config/xml_schemas/entry_id_namelist.xsd
+M       components/data_comps/datm/cime_config/buildnml
+M       components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       components/data_comps/dice/cime_config/buildnml
+M       components/data_comps/dice/cime_config/namelist_definition_dice.xml
+M       components/data_comps/dlnd/cime_config/buildnml
+M       components/data_comps/dlnd/cime_config/namelist_definition_dlnd.xml
+M       components/data_comps/docn/cime_config/buildnml
+M       components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M       components/data_comps/drof/cime_config/buildnml
+M       components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M       components/data_comps/dwav/cime_config/buildnml
+M       driver_cpl/cime_config/buildnml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/cime_config/namelist_definition_drv.xml
+M       driver_cpl/cime_config/namelist_definition_modelio.xml
+M       scripts/Tools/case.build
+M       scripts/Tools/case.setup
+A       scripts/Tools/pelayout
+M       scripts/Tools/xmlchange
+M       scripts/Tools/xmlquery
+M       scripts/create_test
+M       scripts/manage_case
+M       scripts/manage_pes
+M       tools/mapping/map_field/README
+M       utils/python/CIME/SystemTests/erp.py
+M       utils/python/CIME/SystemTests/nck.py
+M       utils/python/CIME/SystemTests/pea.py
+M       utils/python/CIME/SystemTests/seq.py
+M       utils/python/CIME/XML/component.py
+M       utils/python/CIME/XML/entry_id.py
+M       utils/python/CIME/XML/env_archive.py
+M       utils/python/CIME/XML/env_base.py
+M       utils/python/CIME/XML/env_batch.py
+M       utils/python/CIME/XML/env_build.py
+M       utils/python/CIME/XML/env_case.py
+M       utils/python/CIME/XML/env_mach_pes.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/XML/env_run.py
+M       utils/python/CIME/XML/env_test.py
+M       utils/python/CIME/XML/generic_xml.py
+M       utils/python/CIME/XML/namelist_definition.py
+M       utils/python/CIME/XML/pes.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_run.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/case_submit.py
+M       utils/python/CIME/get_timing.py
+M       utils/python/CIME/namelist.py
+M       utils/python/CIME/nmlgen.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/test_status.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer
+Date: 12-23-2016
+Tag: cime5.2.0-alpha.13.bhist
+Answer Changes: None
+Tests: prealpha pgi tests on hobart, BHIST restart on yellowstone
+
+Dependencies:
+
+Brief Summary: Fix pnetcdf module on hobart for pgi.  Update BHIST compset
+names
+
+User interface changes:
+
+Modified files: git diff --name-status
+
+        M       cime_config/cesm/allactive/config_compsets.xml
+        M       cime_config/cesm/allactive/testlist_allactive.xml
+        M       cime_config/cesm/machines/config_machines.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 12-20-2016
 Tag: cime5.2.0-alpha.13
 Answer Changes: None

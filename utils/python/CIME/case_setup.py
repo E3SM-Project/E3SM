@@ -26,7 +26,7 @@ def _check_pelayouts_require_rebuild(case, models):
     if os.path.exists(locked_pes):
         # Look to see if $comp_PE_CHANGE_REQUIRES_REBUILD is defined
         # for any component
-        env_mach_pes_locked = EnvMachPes(infile=locked_pes)
+        env_mach_pes_locked = EnvMachPes(infile=locked_pes, components=case.get_values("COMP_CLASSES"))
         for comp in models:
             if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % comp):
                 # Changing these values in env_mach_pes.xml will force
@@ -40,7 +40,7 @@ def _check_pelayouts_require_rebuild(case, models):
                 new_inst    = case.get_value("NINST_%s" % comp)
 
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
-                    logger.warn("%s pe change requires clean build" % comp)
+                    logger.warn("%s pe change requires clean build %s %s" % (comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
                     run_cmd_no_fail("./case.build --clean %s" % cleanflag)
 
@@ -53,7 +53,12 @@ def _build_usernl_files(case, model, comp):
     Create user_nl_xxx files, expects cwd is caseroot
     """
     model = model.upper()
-    model_file = case.get_value("CONFIG_%s_FILE" % model)
+    if model == "DRV":
+        model_file = case.get_value("CONFIG_CPL_FILE")
+    else:
+        model_file = case.get_value("CONFIG_%s_FILE" % model)
+    expect(model_file is not None,
+           "Could not locate CONFIG_%s_FILE in config_files.xml"%model)
     model_dir = os.path.dirname(model_file)
 
     expect(os.path.isdir(model_dir),
@@ -153,7 +158,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
         for comp in models:
-            if comp == "DRV":
+            if comp == "CPL":
                 continue
             ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
