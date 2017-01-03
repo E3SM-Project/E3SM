@@ -351,11 +351,10 @@ contains
   real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)   
 
   !   local
-  real (kind=real_kind) :: ptop
+  real (kind=real_kind) :: ptop,p0kappa
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: R_star(np,np,nlev)
   real (kind=real_kind) :: Qt(np,np,nlev)
-  real (kind=real_kind) :: exner_i(np,np,nlevp) 
   real (kind=real_kind) :: pfull_i(np,np,nlevp) 
   real (kind=real_kind) :: rho_i(np,np,nlevp) 
   real (kind=real_kind) :: theta_i(np,np,nlevp) 
@@ -363,6 +362,7 @@ contains
 
 
   ptop = hvcoord%hyai(1)*hvcoord%ps0
+  p0kappa = p0**(-kappa)
 
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
@@ -386,10 +386,7 @@ contains
 
 
   pfull_i(:,:,1) = ptop
-  exner_i(:,:,1) = (ptop/p0)**kappa
-
   pfull_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)
-  exner_i(:,:,nlev+1) = (pfull_i(:,:,nlev+1)/p0)**kappa
 
 
   do k=2,nlev
@@ -402,22 +399,18 @@ contains
              minval(phi(:,:,k-1)-phi(:,:,k))
         call abortmp('error: rho<0')
      endif
-
      
      theta_i(:,:,k) = (theta(:,:,k)+theta(:,:,k-1))/2
      ! theta = T/e
      ! exner = (p/p0)**kappa         p = p0*exner**(1/kappa)
      ! p/exner = rho* Rstar * theta 
-     ! exner**( 1/kappa - 1)  = (rho* Rstar * theta / p0)
-     ! exner = (rho* Rstar * theta / p0) ** ( kappa / 1-kappa)
-     exner_i(:,:,k)=(rho_i(:,:,k)*Rgas*theta_i(:,:,k)/p0) ** &
-          (kappa / ( 1 - kappa))
-     pfull_i(:,:,k) = rho_i(:,:,k)*Rgas*theta_i(:,:,k)*exner_i(:,:,k)
+     pfull_i(:,:,k) = ( p0kappa * rho_i(:,:,k)*Rgas*theta_i(:,:,k) ) ** &
+          ( 1/(1-kappa))
   enddo
   do k=1,nlev
      dpfull(:,:,k)=pfull_i(:,:,k+1)-pfull_i(:,:,k)
-     exner(:,:,k)=(exner_i(:,:,k)+exner_i(:,:,k+1))/2
      pfull(:,:,k)=(pfull_i(:,:,k)+pfull_i(:,:,k+1))/2
+     exner(:,:,k) = (pfull(:,:,k)/p0)**kappa     
   enddo
 
 

@@ -741,7 +741,7 @@ contains
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta  => elem(ie)%state%theta(:,:,:,n0)
 
-#define THETAH_HYDROSTATIC
+#define XXXTHETAH_HYDROSTATIC
 #ifdef THETAH_HYDROSTATIC
      phi => elem(ie)%derived%phi(:,:,:)
 
@@ -781,8 +781,7 @@ contains
         endif
      endif
 #endif
-!     dpfulldp=1
-
+     !dpfulldp=1
 #endif
 
 
@@ -896,7 +895,7 @@ contains
         stens(:,:,k,1) = -s_vadv(:,:,k,1) &
              -elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
              -elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) &
-             + g *(1-dpfulldp(:,:,k) )
+             - g *(1-dpfulldp(:,:,k) )
 
         vtemp(:,:,:)   = gradient_sphere(theta(:,:,k),deriv,elem(ie)%Dinv)
         stens(:,:,k,2) = -s_vadv(:,:,k,2) &

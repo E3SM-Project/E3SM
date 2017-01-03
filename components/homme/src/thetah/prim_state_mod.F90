@@ -762,8 +762,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !$omp parallel do private(k,E)
 #endif
        do k=1,nlev
-          E = (elem(ie)%state%v(:,:,1,k,t1)**2 +  &
-                  elem(ie)%state%v(:,:,2,k,t1)**2 ) / 2 
+          E = ( elem(ie)%state%v(:,:,1,k,t1)**2 +  &
+                elem(ie)%state%v(:,:,2,k,t1)**2 + &
+                elem(ie)%state%w(:,:,k,t1)**2 ) / 2 
           sumlk(:,:,k) = E*dpt1(:,:,k)
        enddo
        suml=0
