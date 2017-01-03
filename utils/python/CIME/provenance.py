@@ -176,7 +176,7 @@ def save_prerun_provenance_acme(case, lid=None):
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.%s" % lid)
             os.mkdir(archive_checkpoints)
             touch("%s/acme.log.%s" % (rundir, lid))
-            syslog_jobid = run_cmd_no_fail("./mach_syslog %d %s %s %s %s/timing/checkpoints %s/checkpoints >& /dev/null & echo $!" %
+            syslog_jobid = run_cmd_no_fail("./mach_syslog %d %s %s %s %s/timing/checkpoints %s >& /dev/null & echo $!" %
                                            (sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
                                            from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid.%s" % job_id), "w") as fd:
@@ -245,7 +245,8 @@ def save_postrun_provenance_acme(case, lid):
     gzip_existing_file(os.path.join(caseroot, "timing", "acme_timing_stats.%s" % lid))
 
     # JGF: not sure why we do this
-    touch(os.path.join(caseroot, "timing", "timing.%s.saved" % lid))
+    timing_saved_file = "timing.%s.saved" % lid
+    touch(os.path.join(caseroot, "timing", timing_saved_file))
 
     #
     # save output files and logs
@@ -267,10 +268,11 @@ def save_postrun_provenance_acme(case, lid):
     for glob_to_copy in globs_to_copy:
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
             basename = os.path.basename(item)
-            if lid not in basename and not basename.endswith(".gz"):
-                shutil.copy(item, os.path.join(full_timing_dir, "%s.%s" % (basename, lid)))
-            else:
-                shutil.copy(item, full_timing_dir)
+            if basename != timing_saved_file:
+                if lid not in basename and not basename.endswith(".gz"):
+                    shutil.copy(item, os.path.join(full_timing_dir, "%s.%s" % (basename, lid)))
+                else:
+                    shutil.copy(item, full_timing_dir)
 
     # zip everything
     for root, _, files in os.walk(full_timing_dir):
