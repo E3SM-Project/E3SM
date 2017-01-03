@@ -46,7 +46,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Comma seperated list of settings in the form: var1=value,var2=value,...")
 
     parser.add_argument("--caseroot", default=os.getcwd(),
-                        help="Case directory to build")
+                        help="Case directory to change")
     # Need to support older single dash version of arguments for compatibility with components
     parser.add_argument("-loglevel",
                         help="ignored, backward compatibility only")
