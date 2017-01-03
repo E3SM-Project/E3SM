@@ -183,7 +183,7 @@ def save_prerun_provenance_acme(case, lid=None):
                 fd.write("%s\n" % syslog_jobid)
 
     # Save state of repo
-    run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=cimeroot)
+    run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=os.path.dirname(cimeroot))
 
 def save_prerun_provenance_cesm(case, lid=None): # pylint: disable=unused-argument
     pass
