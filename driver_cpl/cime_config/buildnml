@@ -55,7 +55,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
         config['run_type'] = 'branch'
 
     #----------------------------------------------------
-    # Initialize namelist defaults 
+    # Initialize namelist defaults
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
 
@@ -176,7 +176,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen):
                                         "namelist_files", "namelist_definition_drv_flds.xml")]
         nmlgen = NamelistGenerator(case, definition_file)
         skip_entry_loop = True
-        entries = nmlgen.init_defaults(infiles, config, skip_entry_loop=skip_entry_loop)
+        nmlgen.init_defaults(infiles, config, skip_entry_loop=skip_entry_loop)
         drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
         nmlgen.write_output_file(drv_flds_in)
 
