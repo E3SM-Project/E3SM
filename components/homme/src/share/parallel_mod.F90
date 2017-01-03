@@ -70,8 +70,6 @@ module parallel_mod
   public :: initmp
   public :: haltmp
   public :: abortmp
-  public :: split
-  public :: connect
   public :: syncmp
   public :: psum_1d
   public :: pmax_1d,pmin_1d
@@ -358,97 +356,6 @@ contains
   stop
 end subroutine haltmp
 
-  ! =========================================================
-  ! split:
-  !
-  ! splits the message passing world into components
-  ! and returns a new parallel structure for the
-  ! component resident at this process, i.e. lcl_component
-  ! =========================================================
-  function split(par,leader,lcl_component) result(newpar)
-
-    type (parallel_t)  :: par
-    type (parallel_t)  :: newpar
-    integer            :: lcl_component
-    integer            :: leader(0:ncomponents-1)
-
-#ifdef _MPI
-    integer ierr
-    integer info
-    integer            :: key
-#endif
-
-    lcl_component=ncomponents-1
-    do while(leader(lcl_component) > par%rank)
-      lcl_component=lcl_component-1
-    end do
-
-#ifdef _MPI
-    key=par%rank   ! simplest key for most cases
-
-    call MPI_comm_split(par%comm, lcl_component, key, newpar%comm,ierr);
-
-    call MPI_comm_rank(newpar%comm,newpar%rank,info)
-    call MPI_comm_size(newpar%comm,newpar%nprocs,info)
-    newpar%root=0
-#else
-    newpar%comm=-1
-    newpar%root=0
-    newpar%rank=0
-    newpar%nprocs=1
-#endif
-
-  end function split
-
-  ! =========================================================
-  ! connect:
-  !
-  ! connects this MPI component to all others by constructing
-  ! intercommunicator array and storing it in the local parallel
-  ! structure lcl_par. Connect assumes you have called split
-  ! to create the lcl_par structure.
-  !
-  ! =========================================================
-  subroutine connect(gbl_par, lcl_par, lcl_component, leader)
-
-    type (parallel_t) :: gbl_par
-    type (parallel_t) :: lcl_par
-    integer           :: lcl_component
-    integer           :: leader(0:ncomponents-1) ! leader rank in bridge group
-
-#ifdef _MPI
-    integer tag
-    integer i
-    integer ierr
-
-    do i=0,ncomponents-1
-
-      if (i > lcl_component) then
-        tag=ncomponents*lcl_component + i
-      else
-        tag=ncomponents*i+lcl_component
-      end if
-
-      if (i .ne. lcl_component) then
-#ifdef _DEBUG
-        write(iulog,10) lcl_component,
-     &                  gbl_par%rank,
-     &                  leader(lcl_component),
-     &                  leader(i),
-                        tag
-10      format("component=",i4, 
-     &         " gbl rank =",i4,   
-     &         " lcl leader=",i4,  
-     &         " rem leader=",i4, 
-     &         " tag=",i4)
-#endif
-        call MPI_Intercomm_create(lcl_par%comm, lcl_par%root, gbl_par%comm, &
-                                  leader(i), tag, lcl_par%intercomm(i), ierr)  
-      end if
-    end do     
-#endif 
-  end subroutine connect
-
 ! =====================================
 ! syncmp:
 ! 
@@ -474,87 +381,6 @@ end subroutine haltmp
 #endif
   end subroutine syncmp
 
-#if 0
-  ! =============================================
-  ! psum_1d:
-  ! 1D version of the parallel SUM
-  ! =============================================
-  function psum_1d(variable,type,par) result(res)
-    implicit none
-    ! ==========================
-    !     Arguments   
-    ! ==========================
-    real(kind=real_kind),intent(in)  :: variable(:)
-    integer,intent(in)               :: type 
-    type (parallel_t),intent(in)     :: par
-
-    ! ==========================
-    !       Local Variables 
-    ! ==========================
-    real(kind=real_kind)             :: res
-    real(kind=real_kind)             :: local_sum
-    !
-    ! Note this is a real kludge here since it may be used for 
-    !  arrays of size other then nelem
-    ! 
-    real(kind=real_kind),allocatable :: Global(:),buffer(:)
-    integer                          :: ierr,i,ie,ig,disp,nelemr,ip
-    
-#ifdef _MPI
-#if 0
-    if(type == ORDERED) then 
-      allocate(buffer(nelem))
-      call MPI_GATHERV(variable,nelemd,MPIreal_t,buffer,recvcount, &
-                       displs,MPIreal_t,par%root,par%comm)
-
-      if(par%masterproc) then 
-        allocate(Global(nelem))
-        Global(:)=0.D0
-        do ip=1,par%nprocs
-          nelemr = recvcount(ip)
-          disp   = displs(ip)
-          do ie=1,nelemr
-            ig = Schedule(ip)%Local2Global(ie)
-            Global(ig) = buffer(disp+ie)
-          enddo
-        enddo
-        ! ===========================
-        !  Perform the ordererd sum  
-        ! ===========================
-        res = 0.0d0
-        do i=1,nelem
-          res = res + Global(i)
-        enddo
-        write(iulog,*)'psum_1d: before call to deallocate' 
-        deallocate(Global)
-      endif
-      call syncmp(par)
-      ! =============================================
-      !  Broadcast the results back everybody
-      ! =============================================
-      call MPI_Bcast(res,1,MPIreal_t,par%root,par%comm,ierr)
-    else
-#endif
-      local_sum=SUM(variable)
-
-      call MPI_Allreduce(local_sum,res,1,MPIreal_t, &
-                         MPI_SUM,par%comm,ierr)
-#else
-    if(type == ORDERED) then 
-      ! ===========================
-      !  Perform the ordererd sum  
-      ! ===========================
-      res = 0.0d0
-      do i=1,nelem
-        res = res + variable(i)
-      enddo
-    else
-      res=SUM(variable)
-    endif
-#endif
-  end function psum_1d
-#endif
-  
   ! =============================================
   ! pmin_1d:
   ! 1D version of the parallel MIN

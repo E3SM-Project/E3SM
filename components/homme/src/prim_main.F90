@@ -165,7 +165,7 @@ program prim_main
         close(447)
      else
         print *,'Error creating file in directory ',trim(output_dir)
-        call haltmp("Please be sure the directory exist or specify 'output_dir' in the namelist.")
+        call abortmp("Please be sure the directory exist or specify 'output_dir' in the namelist.")
      end if
   endif
 #if 0
@@ -175,7 +175,7 @@ program prim_main
      if(par%masterproc) print *,'Directory ',output_dir, ' does exist: initialing IO'
   else
      if(par%masterproc) print *,'Directory ',output_dir, ' does not exist: stopping'
-     call haltmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
+     call abortmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
   end if
 #endif
   

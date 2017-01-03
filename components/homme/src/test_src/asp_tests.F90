@@ -1037,7 +1037,7 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
                              z0      = 4500.0d0,                        & ! center point in z
                              slot    = 1.0d0/8.0d0                        ! half width of the slot in radians
 
-    if (hybrid%masterthread) write(iulog,*) 'initializing Polvani-Scott-Thomas baroclinic instability test'
+    if (hybrid%masterthread) write(iulog,*) 'initializing DCMIP 2008 baroclinic instability test'
 
     perturbation = (u_perturb/=0)
 
