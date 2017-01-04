@@ -54,7 +54,7 @@ def parse_command_line(args):
     parser.add_argument("-set-nasks" ,  "--set-ntasks", default=None,
                         help="Total number of tasks to set for the case")
 
-    parser.add_argument("-set-nthrds" ,  "--set-nthrds", 
+    parser.add_argument("-set-nthrds" ,  "--set-nthrds",
                         "-set-nthreads", "--set-nthreads", default=None,
                         help="Number of threads to set for all components")
 
@@ -73,7 +73,7 @@ def parse_command_line(args):
     CIME.utils.handle_standard_logging_options(args)
 
     if (args.no_header):
-      args.header = None
+        args.header = None
     # End if
 
     return args.format, args.set_ntasks, args.set_nthrds, args.header, args.caseroot
@@ -90,14 +90,14 @@ def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None
     return value
 
 ###############################################################################
-def format_pelayout(comp, ntasks, nthreads, rootpe, format):
+def format_pelayout(comp, ntasks, nthreads, rootpe, arg_format):
 ###############################################################################
     """
     Format the PE layout information for each component, using a default format,
-    or using the format input, if it exists.
+    or using the arg_format input, if it exists.
     """
     subs = { 'C': comp, 'T': ntasks, 'H': nthreads, 'R': rootpe }
-    layout_str = re.sub(r"%([0-9]*)C", r"{C:\1}", format)
+    layout_str = re.sub(r"%([0-9]*)C", r"{C:\1}", arg_format)
     layout_str = re.sub(r"%([-+0-9]*)T", r"{T:\1}", layout_str)
     layout_str = re.sub(r"%([-+0-9]*)H", r"{H:\1}", layout_str)
     layout_str = re.sub(r"%([-+0-9]*)R", r"{R:\1}", layout_str)
@@ -106,7 +106,7 @@ def format_pelayout(comp, ntasks, nthreads, rootpe, format):
 # End def format_pelayout
 
 ###############################################################################
-def print_pelayout(case, ntasks, nthreads, rootpes, format, header):
+def print_pelayout(case, ntasks, nthreads, rootpes, arg_format, header):
 ###############################################################################
     """
     Print the PE layout information for each component, using the format,
@@ -115,12 +115,12 @@ def print_pelayout(case, ntasks, nthreads, rootpes, format, header):
     comp_classes = case.get_values("COMP_CLASSES")
 
     if (header is not None):
-      print header
+        print header
     # End if
     for comp in comp_classes:
-        print format_pelayout(comp, ntasks[comp], nthreads[comp], rootpes[comp], format)
+        print format_pelayout(comp, ntasks[comp], nthreads[comp], rootpes[comp], arg_format)
     # End for
-    
+
 # End def print_pelayout
 
 ###############################################################################
@@ -161,7 +161,7 @@ def modify_ntasks(case, new_tot_tasks):
     curr_tot_tasks = 0
 
     # First, gather current task and root pe info
-    curr_tasks, curr_thrds, curr_roots = gather_pelayout(case)
+    curr_tasks, _, curr_roots = gather_pelayout(case)
 
     # How many tasks are currently being used?
     for comp in comp_classes:
@@ -201,7 +201,7 @@ def _main_func():
         sys.exit(1 if test_results.failed > 0 else 0)
 
     # Initialize command line parser and get command line options
-    format, set_ntasks, set_nthrds, header, caseroot = parse_command_line(sys.argv)
+    arg_format, set_ntasks, set_nthrds, header, caseroot = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
@@ -212,7 +212,7 @@ def _main_func():
             modify_ntasks(case, int(set_ntasks))
         # End if
         ntasks, nthreads, rootpes = gather_pelayout(case)
-        print_pelayout(case, ntasks, nthreads, rootpes, format, header)
+        print_pelayout(case, ntasks, nthreads, rootpes, arg_format, header)
     # End with
 
 # End def _main_func
