@@ -948,3 +948,34 @@ def get_lids(case):
     model = case.get_value("MODEL")
     rundir = case.get_value("RUNDIR")
     return _get_most_recent_lid_impl(glob.glob("%s/%s.log*" % (rundir, model)))
+
+def get_umask():
+    current_umask = os.umask(0)
+    os.umask(current_umask)
+
+    return current_umask
+
+def copy_umask(src, dst):
+    """
+    Preserves all file metadata except making sure new file obeys umask
+    """
+    curr_umask = get_umask()
+    shutil.copy2(src, dst)
+    octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
+    dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
+    os.chmod(dst, octal_base - curr_umask)
+
+class SharedArea(object):
+    """
+    Enable 0002 umask within this manager
+    """
+
+    def __init__(self, new_perms=0o002):
+        self._orig_umask = None
+        self._new_perms  = new_perms
+
+    def __enter__(self):
+        self._orig_umask = os.umask(self._new_perms)
+
+    def __exit__(self, *_):
+        os.umask(self._orig_umask)
