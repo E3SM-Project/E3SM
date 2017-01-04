@@ -72,27 +72,35 @@ def create_namelists(case):
         else:
             compname = case.get_value("COMP_%s" % model_str.upper())
         cmd = os.path.join(config_dir, "buildnml")
-        logger.info("   Calling %s buildnml"%compname)
         try:
-            mod = imp.load_source("buildnml", cmd)
-            mod.buildnml(case, caseroot, compname)
-
-        except SyntaxError as detail:
             with open(cmd, 'r') as f:
                 first_line = f.readline()
+            if "python" in first_line:    
+                logger.info("   Calling %s buildnml"%compname)
+                mod = imp.load_source("buildnml", cmd)
+                mod.buildnml(case, caseroot, compname)
+            else:
+                raise SyntaxError
+
+        except SyntaxError as detail:
             if 'python' in first_line:
                 expect(False, detail)
             else:
+                logger.info("   Running %s buildnml"%compname)
                 run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+                # refresh case xml object from file
+                case.read_xml()
         except AttributeError:
+            logger.info("   Running %s buildnml"%compname)
             run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+            # refresh case xml object from file
+            case.read_xml()
         except:
             raise
 
+
     logger.info("Finished creating component namelists")
 
-    # refresh case xml object from file
-    case.read_xml()
 
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
