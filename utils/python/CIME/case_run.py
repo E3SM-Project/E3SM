@@ -177,9 +177,9 @@ def resubmit_check(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def do_data_assimilation(da_script, cycle, data_assimilation_cycles, lid):
+def do_data_assimilation(da_script, caseroot, cycle, lid):
 ###############################################################################
-    cmd = da_script + " 1> da.log.%s %d %d 2>&1" %(lid, cycle, data_assimilation_cycles)
+    cmd = da_script + " 1> da.log.%s %d %d 2>&1" %(lid, caseroot, cycle)
     logger.debug("running %s" %da_script)
     run_cmd_no_fail(cmd)
     # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
@@ -218,7 +218,7 @@ def case_run(case):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
-            do_data_assimilation(data_assimilation_script, cycle, data_assimilation_cycles, lid)
+            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid)
 
         save_postrun_provenance(case)
 

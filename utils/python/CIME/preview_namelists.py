@@ -72,6 +72,7 @@ def create_namelists(case):
         else:
             compname = case.get_value("COMP_%s" % model_str.upper())
         cmd = os.path.join(config_dir, "buildnml")
+        do_run_cmd = False
         try:
             with open(cmd, 'r') as f:
                 first_line = f.readline()
@@ -81,24 +82,22 @@ def create_namelists(case):
                 mod.buildnml(case, caseroot, compname)
             else:
                 raise SyntaxError
-
         except SyntaxError as detail:
             if 'python' in first_line:
                 expect(False, detail)
             else:
-                logger.info("   Running %s buildnml"%compname)
-                run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
-                # refresh case xml object from file
-                case.read_xml()
+                do_run_cmd = True
         except AttributeError:
-            logger.info("   Running %s buildnml"%compname)
-            run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
-            # refresh case xml object from file
-            case.read_xml()
+            do_run_cmd = True
         except:
             raise
 
-
+        if do_run_cmd:
+            logger.info("   Running %s buildnml"%compname)
+            case.flush()
+            run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+            # refresh case xml object from file
+            case.read_xml()            
     logger.info("Finished creating component namelists")
 
 
