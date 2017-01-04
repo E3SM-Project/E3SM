@@ -188,16 +188,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             expect(not (case.get_value("BUILD_THREADED")  and compiler == "nag"),
                    "it is not possible to run with OpenMP if using the NAG Fortran compiler")
-
-
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
 
-            # create batch file
+            # create batch files
             logger.info("Creating batch script case.run")
-
-            # Use BatchFactory to get the appropriate instance of a BatchMaker,
-            # use it to create our batch scripts
             env_batch = case.get_env("batch")
             num_nodes = env_mach_pes.get_total_nodes(pestot, thread_count)
             tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
@@ -212,6 +207,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+            # Make sure pio settings are consistant
+            for comp in models:
+                pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
+                pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
+                ntasks = case.get_value("NTASKS_%s"%comp)
+                if pio_stride < 0 or pio_stride > ntasks:
+                    pio_stride = min(ntasks, tasks_per_node)
+                    case.set_value("PIO_STRIDE_%s"%comp, pio_stride)
+                if pio_numtasks < 0 or pio_numtasks > ntasks:
+                    pio_numtasks = max(1, ntasks//pio_stride)
+                    case.set_value("PIO_NUMTASKS_%s"%comp, pio_numtasks)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
