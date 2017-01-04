@@ -1,6 +1,37 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-04-2017
+Tag: cime5.2.0-alpha.15
+Answer Changes: None
+Tests: scripts_regression_tests, cesm development 
+Dependencies:
+
+Brief Summary: fix issues with clm 1pt configurations, issues with pio namelist settings, data assimilation script arguments, sharedarea context manager, 
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/config_grids.xml
+M       cime_config/cesm/machines/config_compilers.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       scripts/Tools/pelayout
+M       share/csm_share/shr/shr_pio_mod.F90
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_run.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/check_input_data.py
+M       utils/python/CIME/preview_namelists.py
+M       utils/python/CIME/provenance.py
+M       utils/python/CIME/utils.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 01-03-2017
 Tag: cime5.2.0-alpha.14
 Answer Changes: None
