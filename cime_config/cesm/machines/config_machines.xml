@@ -956,6 +956,7 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
     </environment_variables>
   </machine>
 

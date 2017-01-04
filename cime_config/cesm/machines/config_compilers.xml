@@ -978,7 +978,9 @@ using a fortran linker.
   <FFLAGS>
     <append> -vec-report </append>
   </FFLAGS>
-
+  <CMAKE_OPTS>
+    <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
+  </CMAKE_OPTS>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="gnu">
