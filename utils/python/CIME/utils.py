@@ -985,3 +985,18 @@ def analyze_build_log(comp, log, compiler):
 
     if warncnt > 0:
         logger.info("Component %s build complete with %s warnings"%(comp,warncnt))
+
+class SharedArea(object):
+    """
+    Enable 0002 umask within this manager
+    """
+
+    def __init__(self, new_perms=0o002):
+        self._orig_umask = None
+        self._new_perms  = new_perms
+
+    def __enter__(self):
+        self._orig_umask = os.umask(self._new_perms)
+
+    def __exit__(self, *_):
+        os.umask(self._orig_umask)
