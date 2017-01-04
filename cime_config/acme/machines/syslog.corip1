@@ -41,7 +41,7 @@ if ("X$runt_secs" == "X")  set runt_secs  = 0
 cat > $run/Walltime.Remaining <<EOF1
 $remaining $sample_interval
 EOF1
-/bin/cp -p $run/acme.log.$lid $dir/acme.log.$lid.$remaining
+/bin/cp --preserve=timestamps $run/acme.log.$lid $dir/acme.log.$lid.$remaining
 
 while ($remaining > 0)
   grep -a -i -e "nstep" -e "model date" $run/*atm.log.$lid | tail > $dir/atm.log.$lid.nstep.$remaining
@@ -50,7 +50,7 @@ while ($remaining > 0)
   grep -a -i -e "timestep" -e "Step number" -e "model date" $run/*ocn.log.$lid | tail > $dir/ocn.log.$lid.stepnum.$remaining
   grep -a -i -e "timestep" -e "istep" -e "model date" $run/*ice.log.$lid | tail > $dir/ice.log.$lid.istep.$remaining
   grep -a -i "model date" $run/*cpl.log.$lid | tail > $dir/cpl.log.$lid.modeldata.$remaining
-  cp -p -u $timing/* $dir
+  /bin/cp --preserve=timestamps -u $timing/* $dir
 # xtnodestat > $dir/xtnodestat.$lid.$remaining
   sqs -w -a > $dir/sqsw.$lid.$remaining
   chmod a+r $dir/*
