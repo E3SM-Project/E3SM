@@ -10,7 +10,7 @@ module prim_restart_mod
    !------------------
    use parallel_mod, only : parallel_t, MPIreal_t, abortmp
    !------------------
-   use element_state, only : elem_state_t, StateComponents
+   use element_state, only : elem_state_t
    !------------------
    use restart_io_mod, only : nwordsRestartBuffer_t, RestartBuffer,  File_elem_t, &
         StateDesc_t, createstatedescriptor, AddStateField, constructelementfile, &
@@ -69,8 +69,7 @@ contains
     !================================================================
     !   Construct the descriptor of the state variable for MPI I/O
     !================================================================
-    NumComponents = StateComponents     !  number of variable components in the state buffer
-
+    NumComponents = 9   ! THIS NUMBER MUST MATCH NUMBER OF TIMES AddStateField is called below
     RestDesc = CreateStateDescriptor(NumComponents)
 
     type = MPIReal_t       !  All the types are Real

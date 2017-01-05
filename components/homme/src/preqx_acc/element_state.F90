@@ -32,7 +32,6 @@ module element_state
     real (kind=real_kind), pointer :: Qdp (:,:,:,:,:)  ! Tracer mass                        7  (np,np,nlev,qsize,2)   
   end type elem_state_t
 
-  integer(kind=int_kind),public,parameter::StateComponents=7  ! num prognistics variables (for prim_restart_mod.F90)
   type, public :: derived_state_t
     ! diagnostic variables for preqx solver
     ! storage for subcycling tracers/dynamics

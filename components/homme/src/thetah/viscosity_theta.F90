@@ -47,7 +47,7 @@ type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
 integer              , intent(in)  :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
-real (kind=real_kind), dimension(np,np,nlev,3,nets:nete) :: stens  ! dp3d, theta, w
+real (kind=real_kind), dimension(np,np,nlev,4,nets:nete) :: stens  ! dp3d, theta, w,phi
 type (EdgeBuffer_t)  , intent(inout) :: edgebuf  ! initialized for 5 vars
 type (derivative_t)  , intent(in) :: deriv
 
@@ -97,13 +97,15 @@ logical var_coef1
               deriv,elem(ie),var_coef=var_coef1)
          stens(:,:,k,3,ie)=laplace_sphere_wk(elem(ie)%state%w(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)
+         stens(:,:,k,4,ie)=laplace_sphere_wk(elem(ie)%state%phi(:,:,k,nt),&
+              deriv,elem(ie),var_coef=var_coef1)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
               var_coef=var_coef1,nu_ratio=nu_ratio1)
       enddo
       kptr=0
-      call edgeVpack(edgebuf, stens(1,1,1,1,ie),3*nlev,kptr,ie)
-      kptr=3*nlev
       call edgeVpack(edgebuf, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
+      kptr=2*nlev
+      call edgeVpack(edgebuf, stens(1,1,1,1,ie),4*nlev,kptr,ie)
    enddo
    
    call t_startf('biwkdp3d_bexchV')
@@ -114,9 +116,11 @@ logical var_coef1
       rspheremv     => elem(ie)%rspheremp(:,:)
       
       kptr=0
-      call edgeVunpack(edgebuf, stens(1,1,1,1,ie), 3*nlev, kptr, ie)
-      kptr=3*nlev
       call edgeVunpack(edgebuf, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
+      kptr=2*nlev
+      call edgeVunpack(edgebuf, stens(1,1,1,1,ie), 4*nlev, kptr, ie)
+
+
       
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
@@ -131,6 +135,9 @@ logical var_coef1
 
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,3,ie)
          stens(:,:,k,3,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+
+         tmp(:,:)=rspheremv(:,:)*stens(:,:,k,4,ie)
+         stens(:,:,k,4,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
 
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)

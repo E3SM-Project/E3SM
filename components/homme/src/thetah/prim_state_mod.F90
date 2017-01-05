@@ -11,8 +11,9 @@ module prim_state_mod
   use global_norms_mod, only: wrap_repro_sum
   use hybrid_mod,       only: hybrid_t
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
-  use control_mod,      only: integration, test_case, runtype, moisture, &
-                              tstep_type,qsplit, ftype, use_cpstar, rsplit
+  use control_mod,      only: integration, test_case,  moisture, &
+                              tstep_type,qsplit, ftype, use_cpstar, rsplit,&
+                              theta_hydrostatic_mode
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
@@ -87,6 +88,8 @@ contains
     real (kind=real_kind)  :: tmp1(nets:nete)
     real (kind=real_kind)  :: ps(np,np)
     real (kind=real_kind)  :: dp(np,np)
+    real (kind=real_kind)  :: dphi(np,np,nlev-1)
+    real (kind=real_kind)  :: tdiag(np,np,nlev)
     !    real (kind=real_kind)  :: E(np,np)
 
     real (kind=real_kind) :: umin_local(nets:nete), umax_local(nets:nete), usum_local(nets:nete), &
@@ -126,7 +129,7 @@ contains
     real (kind=real_kind) :: KEvert,IEvert,T1,T2,T2_s,T2_m,S1,S2,S1_wet
     real (kind=real_kind) :: KEhorz,IEhorz,IEhorz_wet,IEvert_wet
     real (kind=real_kind) :: ddt_tot,ddt_diss
-    integer               :: n0, nm1, np1
+    integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
     
     call t_startf('prim_printstate')
@@ -143,6 +146,7 @@ contains
     n0=tl%n0
     nm1=tl%nm1
     np1=tl%np1
+    call TimeLevel_Qdp( tl, qsplit, n0q) !get n0 level into t2_qdp 
 
 
     dt=tstep*qsplit
@@ -189,20 +193,27 @@ contains
 
     !
     do ie=nets,nete
+       !tdiag = elem(ie)%state%theta(:,:,:,n0)
+       if (theta_hydrostatic_mode) then
+          call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
+       else
+          call get_field(elem(ie),'dpnh_dp',tdiag,hvcoord,n0,n0q)
+       endif
 
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
-
-
+       do k=1,nlev-1
+          dphi(:,:,k)=elem(ie)%state%phi(:,:,k,n0)-elem(ie)%state%phi(:,:,k+1,n0)
+       enddo
        !======================================================  
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
        wmax_local(ie)    = MAXVAL(elem(ie)%state%w(:,:,:,n0))
-       phimax_local(ie)  = MAXVAL(elem(ie)%state%phi(:,:,:,n0))
+       phimax_local(ie)  = MAXVAL(dphi(:,:,:))
 
        fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:))
        fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:))
 
-       tmax_local(ie)    = MAXVAL(elem(ie)%state%theta(:,:,:,n0))
+       tmax_local(ie)    = MAXVAL(tdiag)
 
        if (rsplit>0) &
             dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
@@ -215,12 +226,12 @@ contains
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
        Wmin_local(ie)    = MINVAL(elem(ie)%state%w(:,:,:,n0))
-       phimin_local(ie)  = MINVAL(elem(ie)%state%phi(:,:,:,n0))
+       phimin_local(ie)  = MINVAL(dphi)
 
        Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:))
        Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:))
 
-       tmin_local(ie)    = MINVAL(elem(ie)%state%theta(:,:,:,n0))
+       tmin_local(ie)    = MINVAL(tdiag)
 
        if (rsplit>0) &
             dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
@@ -235,11 +246,11 @@ contains
        usum_local(ie)    = SUM(elem(ie)%state%v(:,:,1,:,n0))
        vsum_local(ie)    = SUM(elem(ie)%state%v(:,:,2,:,n0))
        Wsum_local(ie)    = SUM(elem(ie)%state%w(:,:,:,n0))
-       phisum_local(ie)  = SUM(elem(ie)%state%phi(:,:,:,n0))
+       phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
 
-       tsum_local(ie)    = SUM(elem(ie)%state%theta(:,:,:,n0))
+       tsum_local(ie)    = SUM(tdiag)
        if (rsplit>0) then
           dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
        else
@@ -344,8 +355,8 @@ contains
        write(iulog,100) "u     = ",umin_p,umax_p,usum_p
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
        write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
-       write(iulog,100) "theta = ",tmin_p,tmax_p,tsum_p
-       write(iulog,100) "phi(nh)=",phimin_p,phimax_p,phisum_p
+       write(iulog,100) "tdiag = ",tmin_p,tmax_p,tsum_p
+       write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
        if (rsplit>0) &
        write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 

@@ -32,6 +32,7 @@ module element_ops
   use prim_si_mod, only: preq_hydrostatic_v2
   implicit none
 
+
 contains
 
   subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
@@ -51,6 +52,8 @@ contains
   case ('phi')
      field = elem%state%phi(:,:,:,nt)
      !field = elem%derived%phi(:,:,:)
+  case ('dpnh_dp')
+     call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
   case default
      print *,'name = ',trim(name)
      call abortmp('ERROR: get_field name not supported in this model')
@@ -124,6 +127,43 @@ contains
   enddo
 
   end subroutine get_temperature
+
+
+
+
+
+  subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt,ntQ)
+  implicit none
+  
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind), intent(out)  :: dpnh_dp(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt
+  integer, intent(in) :: ntQ
+  
+  !   local
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: pnh_i(np,np,nlevp)
+  integer :: k
+  
+  
+  do k=1,nlev
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+  enddo
+
+  if (theta_hydrostatic_mode) then
+     dpnh_dp=1
+     !call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,dp,elem%state%Qdp(:,:,:,1,ntQ))
+  else
+     call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,elem%state%theta(:,:,:,nt),&
+          dp,elem%state%phi(:,:,:,nt),elem%state%phis,elem%state%Qdp(:,:,:,1,ntQ))
+     dpnh_dp = dpnh/dp
+  endif
+  end subroutine 
 
 
 
@@ -269,20 +309,28 @@ contains
   !$omp parallel do default(shared), private(k)
 #endif
   do k=2,nlev
-     ! interfaces
-     rho_i(:,:,k) = - ((dp3d(:,:,k)+dp3d(:,:,k-1))/2) / &
-          (phi(:,:,k)-phi(:,:,k-1))
 
-     if (minval(rho_i(:,:,k))<0) then
+     kappa_star_i(:,:,k) = (kappa_star(:,:,k)+kappa_star(:,:,k-1))/2
+
+!     rho_i(:,:,k) = - ((dp3d(:,:,k)+dp3d(:,:,k-1))/2) / &
+!          (phi(:,:,k)-phi(:,:,k-1))
+!     rho_R_theta(:,:,k) = rho_i(:,:,k)*(theta(:,:,k)+theta(:,:,k-1))*&
+!          (R_star(:,:,k)+R_star(:,:,k-1)) / 4
+!     rho_R_theta(:,:,k) = rho_i(:,:,k)*&
+!          (theta(:,:,k)*R_star(:,:,k) +theta(:,:,k-1)*R_star(:,:,k))/2
+     rho_R_theta(:,:,k) = &
+          (dp3d(:,:,k)  *theta(:,:,k)  *R_star(:,:,k) +&
+            dp3d(:,:,k-1)*theta(:,:,k-1)*R_star(:,:,k-1))/2 / &
+            (phi(:,:,k-1)-phi(:,:,k))
+
+
+
+     if (minval(rho_R_theta(:,:,k))<0) then
         print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2),&
              minval(phi(:,:,k-1)-phi(:,:,k))
         call abortmp('error: rho<0')
      endif
 
-     kappa_star_i(:,:,k) = (kappa_star(:,:,k)+kappa_star(:,:,k-1))/2
-
-     rho_R_theta(:,:,k) = rho_i(:,:,k)*(theta(:,:,k)+theta(:,:,k-1))*&
-          (R_star(:,:,k)+R_star(:,:,k-1)) / 4
      
      ! theta = T/e
      ! exner = (p/p0)**kappa         p = p0*exner**(1/kappa)
@@ -347,7 +395,7 @@ contains
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: dexner(np,np,nlev)
   real (kind=real_kind) :: integrand(np,np,nlev)
-  real (kind=real_kind) :: pi(np,np,nlev+1)
+  real (kind=real_kind) :: p_i(np,np,nlev+1)
   real (kind=real_kind) :: phi_i(np,np,nlev+1)
 
   real (kind=real_kind) :: rho(np,np,nlev)
@@ -355,8 +403,10 @@ contains
   real (kind=real_kind) :: dphi(np,np,nlev)
   real (kind=real_kind) :: theta(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: dp_theta_R(np,np,nlev)
   integer :: k,nt,ntQ
 
+  p_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
@@ -364,6 +414,7 @@ contains
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+     p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
 
 #if (defined COLUMN_OPENMP)
@@ -381,33 +432,45 @@ contains
      phi_i(:,:,k)=phi_i(:,:,k+1) + integrand(:,:,k)
   enddo
 
-#if 1
+#if 0
 !  call preq_hydrostatic_v2(elem%state%phi(:,:,:,nt),elem%state%phis,integrand)
 ! another version (should be the same as calling preq_hydrostatic)
   do k=1,nlev
      elem%state%phi(:,:,k,nt) = (phi_i(:,:,k+1)+phi_i(:,:,k))/2
   enddo
+! if we use this version, we need to define 
+! dphi = phi_i(k+1)-phi_i(k)
+! phi_i(k) =  2*phi(k) - phi_i(k+1)
+! which only needs phi_i at the surface, not the model top
 #endif
 
 #if 0
 ! another version, inverse of phi_i(k) = (phi(k-1)+phi(k)/2
 ! with b.c. at phi_s
+! use this version if we define dphi by averaging phi to interfaces and
+! then differencing
   elem%state%phi(:,:,nlev,nt) = phi_i(:,:,nlev+1) + integrand(:,:,nlev)/2
   do k=nlev-1,1,-1
      elem%state%phi(:,:,k,nt) = 2*phi_i(:,:,k+1) - elem%state%phi(:,:,k+1,nt)
   enddo
 #endif
 
-#if 0  
-! another version, inverse of phi_i(k) = (phi(k-1)+phi(k)/2
-! with b.c. at model top
-  elem%state%phi(:,:,1,nt) = phi_i(:,:,nlev+1) - integrand(:,:,nlev)/2
-  do k=2,nlev
-     elem%state%phi(:,:,k,nt) = 2*phi_i(:,:,k) - elem%state%phi(:,:,k-1,nt)
+
+#if 1
+  ! inverse of get_p_nonhydrostatic
+  elem%state%phi(:,:,nlev,nt) = elem%state%phis(:,:) + integrand(:,:,nlev)/2
+  do k=nlev,2,-1
+     !  invert this equation at interfaces:
+     !  p/exner = dp_theta_R / d(phi)    
+     ! d(phi) = dp_theta_R*exer/p
+     dp_theta_R(:,:,k) = &
+          (dp(:,:,k)  *elem%state%theta(:,:,k,nt)  *Rgas +&
+           dp(:,:,k-1)*elem%state%theta(:,:,k-1,nt)*Rgas)/2
+     ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
+     elem%state%phi(:,:,k-1,nt) = elem%state%phi(:,:,k,nt) +&
+          dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
   enddo
-#endif  
-
-
+#endif
 
   end subroutine set_thermostate
 

@@ -28,7 +28,7 @@ module prim_advance_mod
   public :: prim_advance_exp, prim_advance_init, &
        applyCAMforcing_dynamics, applyCAMforcing
 
-  type (EdgeBuffer_t) :: edge5
+!  type (EdgeBuffer_t) :: edge5
   type (EdgeBuffer_t) :: edge6
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -44,7 +44,7 @@ contains
     integer :: i
     integer :: ie
 
-    call initEdgeBuffer(par,edge5,elem,5*nlev)
+!    call initEdgeBuffer(par,edge5,elem,5*nlev)
     call initEdgeBuffer(par,edge6,elem,6*nlev)
 
     ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
@@ -325,7 +325,7 @@ contains
     ! note:time step computes u(t+1)= u(t*) + RHS.
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
     ! forward-in-time, hypervis applied to dp3d
-    call advance_hypervis(edge5,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
+    call advance_hypervis(edge6,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
 
 #ifdef ENERGY_DIAGNOSTICS
     if (compute_diagnostics) then
@@ -466,7 +466,7 @@ contains
 
 
 
-  subroutine advance_hypervis(edge3,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
+  subroutine advance_hypervis(edgebuf,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
   !
   !  take one timestep of:
   !          u(:,:,:,np) = u(:,:,:,np) +  dt2*nu*laplacian**order ( u )
@@ -476,7 +476,7 @@ contains
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use control_mod, only : nu, nu_div, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
+  use control_mod, only : nu, nu_div, hypervis_order, hypervis_subcycle, nu_s, nu_p, nu_top, psurf_vis, swest
   use hybvcoord_mod, only : hvcoord_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
@@ -488,7 +488,7 @@ contains
 
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
-  type (EdgeBuffer_t)  , intent(inout) :: edge3
+  type (EdgeBuffer_t)  , intent(inout) :: edgebuf
   type (derivative_t)  , intent(in) :: deriv
   type (hvcoord_t), intent(in)      :: hvcoord
 
@@ -500,7 +500,7 @@ contains
   real (kind=real_kind) :: nu_scale_top
   integer :: k,kptr,i,j,ie,ic,nt
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
-  real (kind=real_kind), dimension(np,np,nlev,3,nets:nete)      :: stens  ! dp3d,theta,w
+  real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
 !  real (kind=real_kind), dimension(np,np,nlev) :: p
 
 
@@ -510,7 +510,7 @@ contains
   !       real (kind=real_kind), dimension(:,:), pointer :: spheremp,rspheremp
   !       real (kind=real_kind), dimension(:,:,:), pointer   :: ps
 
-  real (kind=real_kind), dimension(np,np,3) :: lap_s  ! dp3d,theta,w
+  real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating
   real (kind=real_kind) :: temp(np,np,nlev)
@@ -542,7 +542,7 @@ contains
 !
   if (hypervis_order == 2) then
      do ic=1,hypervis_subcycle
-        call biharmonic_wk_theta(elem,stens,vtens,deriv,edge5,hybrid,nt,nets,nete)
+        call biharmonic_wk_theta(elem,stens,vtens,deriv,edge6,hybrid,nt,nets,nete)
 
         do ie=nets,nete
 
@@ -566,6 +566,7 @@ contains
                  lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%theta(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phi(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
                  lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               endif
               nu_scale_top = 1
@@ -579,31 +580,35 @@ contains
                  stens(:,:,k,1,ie)=(-nu_p*stens(:,:,k,1,ie) + nu_scale_top*nu_top*lap_s(:,:,1)) ! dp3d
                  stens(:,:,k,2,ie)=(  -nu*stens(:,:,k,2,ie) + nu_scale_top*nu_top*lap_s(:,:,2)) ! theta
                  stens(:,:,k,3,ie)=(  -nu*stens(:,:,k,3,ie) + nu_scale_top*nu_top*lap_s(:,:,3)) ! w
+                 stens(:,:,k,4,ie)=(-nu_s*stens(:,:,k,4,ie) + nu_scale_top*nu_top*lap_s(:,:,4)) ! w
               else
                  vtens(:,:,:,k,ie)=  -nu*vtens(:,:,:,k,ie)
                  stens(:,:,k,1,ie)=-nu_p*stens(:,:,k,1,ie)
                  stens(:,:,k,2,ie)=  -nu*stens(:,:,k,2,ie)
                  stens(:,:,k,3,ie)=  -nu*stens(:,:,k,3,ie)
+                 stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie)
               endif
            enddo
 
 
            kptr=0
-           call edgeVpack(edge5,stens(:,:,:,:,ie),3*nlev,kptr,ie)
-           kptr=3*nlev
-           call edgeVpack(edge5,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
+           call edgeVpack(edgebuf,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
+           kptr=2*nlev
+           call edgeVpack(edgebuf,stens(:,:,:,:,ie),4*nlev,kptr,ie)
         enddo
 
         call t_startf('ahdp_bexchV2')
-        call bndry_exchangeV(hybrid,edge3)
+        call bndry_exchangeV(hybrid,edgebuf)
         call t_stopf('ahdp_bexchV2')
 
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge5, stens(:,:,:,:,ie), 3*nlev, kptr, ie)
-           kptr=3*nlev
-           call edgeVunpack(edge5, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
+           call edgeVunpack(edgebuf, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
+           kptr=2*nlev
+           call edgeVunpack(edgebuf, stens(:,:,:,:,ie), 4*nlev, kptr, ie)
+
+
 
 
            ! apply inverse mass matrix, accumulate tendencies
@@ -616,6 +621,7 @@ contains
               stens(:,:,k,1,ie)=dt*stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:)  ! dp3d
               stens(:,:,k,2,ie)=dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)  ! theta
               stens(:,:,k,3,ie)=dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)  ! w
+              stens(:,:,k,4,ie)=dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)  ! phi
            enddo
 
 
@@ -633,12 +639,18 @@ contains
                     v2=elem(ie)%state%v(i,j,2,k,nt)
 !                    heating = (vtens(i,j,1,k,ie)*v1  + vtens(i,j,2,k,ie)*v2 )
                     heating = 0
-                    elem(ie)%state%theta(i,j,k,nt)=elem(ie)%state%theta(i,j,k,nt) &
-                         +stens(i,j,k,2,ie)-heating/cp
-                    elem(ie)%state%w(i,j,k,nt)=elem(ie)%state%w(i,j,k,nt) &
-                         +stens(i,j,k,3,ie)
+
                     elem(ie)%state%dp3d(i,j,k,nt)=elem(ie)%state%dp3d(i,j,k,nt) &
                          +stens(i,j,k,1,ie)
+
+                    elem(ie)%state%theta(i,j,k,nt)=elem(ie)%state%theta(i,j,k,nt) &
+                         +stens(i,j,k,2,ie)-heating/cp
+
+                    elem(ie)%state%w(i,j,k,nt)=elem(ie)%state%w(i,j,k,nt) &
+                         +stens(i,j,k,3,ie)
+
+                    elem(ie)%state%phi(i,j,k,nt)=elem(ie)%state%phi(i,j,k,nt) &
+                         +stens(i,j,k,4,ie)
 
                  enddo
               enddo
@@ -758,11 +770,9 @@ contains
         enddo
         call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
         dpnh_dp(:,:,:) = 1
-
         
         !    as a debug step, use nonhydrostatic formulas to compute exner pressure:
-        !    rsplit=3 crashes
-        !    rsplit=0 runs - but results are bad
+        !    needs 2x smaller timestep, results are ok, maybe noisy
         !call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,&
         !     phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0))
      else
@@ -775,9 +785,9 @@ contains
 #if 0
         if (hybrid%masterthread) then
            if (ie==1) then
-              do k=1,nlev,5
-                 write(*,"(i3,4f15.5)") k,minval(elem(ie)%state%phi(:,:,k,n0)),&
-                      maxval(elem(ie)%state%phi(:,:,k,n0)),&
+              do k=2,nlev,4
+                 write(*,"(i3,4f15.5)") k,(elem(ie)%state%phi(1,1,k,n0)),&
+                      (elem(ie)%state%phi(:,:,k-1,n0)),&
                       minval(dpnh_dp(:,:,k)),maxval(dpnh_dp(:,:,k))
               enddo
            endif
@@ -878,7 +888,7 @@ contains
              elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
      enddo
      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
-          elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
+             elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
 
 
 

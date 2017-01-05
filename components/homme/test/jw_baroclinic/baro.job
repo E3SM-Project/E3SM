@@ -36,9 +36,9 @@ setenv CRAY_CUDA_PROXY 1
 #
 #  mpi run command
 #
-set NCPU = 40
-#setenv OMP_NUM_THREADS 4
-setenv OMP_NUM_THREADS 1
+set NCPU = 1
+setenv OMP_NUM_THREADS 4
+#setenv OMP_NUM_THREADS 1
 
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
@@ -67,7 +67,7 @@ set u_perturb = 1
 set rotate = 0
 
                   # number of elemnets:  6*ne*ne
-set ne = 16        # horizontal resolution   4,16,30,60,120,240
+set ne = 4        # horizontal resolution   4,16,30,60,120,240
 set qsize = 4     # use 4 tracers for testing
 
 # CAM4
