@@ -402,7 +402,7 @@ type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
 integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
-call make_c0_hybrid_klev(zeta,elem,hybrid,1,nelemd,nlev)
+call make_c0_hybrid_klev(zeta,elem,hybrid,nets,nete,nlev)
 end subroutine
 
 subroutine make_C0_hybrid1(zeta,elem,hybrid,nets,nete)
