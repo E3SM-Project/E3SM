@@ -19,7 +19,8 @@ from  CIME.XML.compilers import Compilers
 from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
-from CIME.test_status import *
+from  CIME.code_checker import check_code, get_all_checkable_files
+from  CIME.test_status import *
 
 SCRIPT_DIR  = CIME.utils.get_scripts_root()
 TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
@@ -1229,12 +1230,6 @@ class L_TestSaveTimings(TestCreateTestCommon):
     ###########################################################################
         self.simple_test(manual_timing=True)
 
-###############################################################################
-class B_CheckCode(unittest.TestCase):
-###############################################################################
-    # Tests are generated in the main loop below
-    longMessage = True
-
 # Machinery for Macros generation tests.
 
 class MockMachines(object):
@@ -1859,16 +1854,23 @@ class S_TestManageAndQuery(unittest.TestCase):
         self._run_and_assert_query_testlist(extra_args="--list categories")
 
 ###############################################################################
-def make_pylint_test(pyfile, cimeroot):
+class B_CheckCode(unittest.TestCase):
+###############################################################################
+    # Tests are generated in the main loop below
+    longMessage = True
+
+    all_results = None
+
+def make_pylint_test(pyfile, all_files):
     def test(self):
-        code_checker = os.path.join(TOOLS_DIR, "code_checker")
-        run_cmd_assert_result(self, "%s --dir %s %s"\
-                                  %(code_checker, cimeroot, pyfile), from_dir=cimeroot)
+        if B_CheckCode.all_results is None:
+            B_CheckCode.all_results = check_code(all_files)
+        result = B_CheckCode.all_results[pyfile]
+        self.assertTrue(result == "", msg=result)
+
     return test
 
-
 def check_for_pylint():
-    ###########################################################################
     from distutils.spawn import find_executable
     pylint = find_executable("pylint")
     if pylint is not None:
@@ -1929,32 +1931,13 @@ def _main_func():
 
     # Find all python files in repo and create a pylint test for each
     if check_for_pylint():
-        cimeroot = CIME.utils.get_cime_root()
-        files_to_test = run_cmd_no_fail("git ls-files --full-name %s"%cimeroot).splitlines()
-        files_to_test = [item for item in files_to_test if item.endswith(".py")]
-        files_to_test.extend(run_cmd_no_fail("git grep -l '#!/usr/bin/env python'",
-                                        from_dir=cimeroot).splitlines())
-        #TODO - get rid of this
-        list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs", "unit_test")
-        testnames = []
-        cnt = 0
-        for file_ in files_to_test:
-            # Dont test template files
-            test_this = True
-            for dir_ in list_of_directories_to_ignore:
-                if dir_ in file_:
-                    test_this = False
-                    break
-            if test_this:
-                pylint_test = make_pylint_test(file_, cimeroot)
-                testname = "test_pylint_%s"%(os.path.basename(file_))
-                # if two files have the same name this will generate
-                # different test names so that both are tested
-                if testname in testnames:
-                    testname += "_%s"%cnt
-                    cnt = cnt + 1
-                testnames.append(testname)
-                setattr(B_CheckCode, testname, pylint_test)
+        files_to_test = get_all_checkable_files()
+
+        for file_to_test in files_to_test:
+            pylint_test = make_pylint_test(file_to_test, files_to_test)
+            testname = "test_pylint_%s" % file_to_test.replace("/", "_").replace(".", "_")
+            expect(not hasattr(B_CheckCode, testname), "Repeat %s" % testname)
+            setattr(B_CheckCode, testname, pylint_test)
 
     unittest.main(verbosity=2, catchbreak=True)
 

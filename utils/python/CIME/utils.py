@@ -986,6 +986,12 @@ def analyze_build_log(comp, log, compiler):
     if warncnt > 0:
         logger.info("Component %s build complete with %s warnings"%(comp,warncnt))
 
+def is_python_executable(filepath):
+    with open(filepath, "r") as f:
+        first_line = f.readline()
+
+    return first_line.startswith("#!") and "python" in first_line
+
 class SharedArea(object):
     """
     Enable 0002 umask within this manager
