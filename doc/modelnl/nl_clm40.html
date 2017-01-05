@@ -1,0 +1,1132 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>CESM Component Models Namelist Definitions </title>
+  <link rel="stylesheet" type="text/css" href="/models/cesm1.0/cam/docs/namelist/nl_style_sheet.css" />
+  <script src=./showinfo.js> </script>
+</head>
+
+<body>
+
+<h2>Search or Browse CLM4_0 Component Model Namelist Variables</h2>
+<p>
+This page contains the complete list of CLM4_0 namelist variables available. They are grouped
+by categories designed to aid browsing.  Clicking on the name of a variable will display descriptive
+information.  If search terms are entered in the text box below, the list will be condensed to contain
+only matched variables.
+</p>
+
+<form id="filter_form" name="filter_form" style="margin: 0px; padding: 0px;" action="javascript:void(0);">
+  <table border="0" cellpadding="2" cellspacing="1">
+    <tbody>
+      <tr>
+        <td valign="top">
+          <input id="filter_text" name="filter_text" size="40"
+                 onkeydown="if (event.keyCode==13) applyFilter(document.getElementById('filter_text').value);"
+                 type="text">
+          <input id="btn_search" value="Search Variable Names"
+                 onclick="applyFilter(document.getElementById('filter_text').value);"
+		 type="button">
+          <input id="btn_show_all" value="Show All Variable Names"
+		 onclick="clearFilter();return false;"
+                 type="button">
+          <br>
+          <label>
+            <input id="logical_operator_and" name="logical_operator" value="AND"
+                   type="radio" checked> AND
+          </label>
+          <label>
+            <input id="logical_operator_or" name="logical_operator" value="OR"
+                   type="radio"> OR
+          </label>
+          (separate search terms with spaces)
+          <br>
+          <label>
+            <input id="search_help_text" name="search_help_text" type="checkbox"> Also search help text
+          </label>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+
+<div id="filter_matches" style="visibility: hidden; margin-bottom: 10px;">
+  Found <span id="filter_matches_num"></span> standard names matching query: <span id="filter_matches_query"></span>
+</div>
+
+<p>
+
+<center>
+<input id="btn_expand_help" value="Show All Help Text"
+       onclick="expandAllHelp();return false;"
+       type="button">
+<input id="btn_collapse_help" value="Collapse All Help Text"
+       onclick="collapseAllHelp();return false;"
+       type="button">
+</center>
+
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="datasets"       >CLM: Input Datasetes </a></h3></span>
+<table id="datasets_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="fatmlndfrc_tr">
+    <td><a name="fatmlndfrc"></a>
+        <img id="fatmlndfrc_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('fatmlndfrc')">fatmlndfrc</a>
+        </code>
+        <div id="fatmlndfrc_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Full pathname of land fraction data file.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="fglcmask_tr">
+    <td><a name="fglcmask"></a>
+        <img id="fglcmask_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('fglcmask')">fglcmask</a>
+        </code>
+        <div id="fglcmask_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Full pathname of land-ice mask data file (on lnd grid).
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="finidat_tr">
+    <td><a name="finidat"></a>
+        <img id="finidat_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('finidat')">finidat</a>
+        </code>
+        <div id="finidat_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Full pathname of initial conditions file. If blank CLM will startup from
+arbitrary initial conditions.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="flanduse_timeseries_tr">
+    <td><a name="flanduse_timeseries"></a>
+        <img id="flanduse_timeseries_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('flanduse_timeseries')">flanduse_timeseries</a>
+        </code>
+        <div id="flanduse_timeseries_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Full pathname of time varying PFT data file. This causes the land-use types of
+the initial surface dataset to vary over time.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="flndtopo_tr">
+    <td><a name="flndtopo"></a>
+        <img id="flndtopo_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('flndtopo')">flndtopo</a>
+        </code>
+        <div id="flndtopo_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Full pathname of topography data file. Only required when
+land-ice model is active.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="fpftcon_tr">
+    <td><a name="fpftcon"></a>
+        <img id="fpftcon_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('fpftcon')">fpftcon</a>
+        </code>
+        <div id="fpftcon_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Full pathname datafile with plant function type (PFT) constants
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="fsnowaging_tr">
+    <td><a name="fsnowaging"></a>
+        <img id="fsnowaging_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('fsnowaging')">fsnowaging</a>
+        </code>
+        <div id="fsnowaging_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+SNICAR (SNow, ICe, and Aerosol Radiative model) snow aging data file name
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="fsnowoptics_tr">
+    <td><a name="fsnowoptics"></a>
+        <img id="fsnowoptics_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('fsnowoptics')">fsnowoptics</a>
+        </code>
+        <div id="fsnowoptics_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+SNICAR (SNow, ICe, and Aerosol Radiative model) optical data file name
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="fsurdat_tr">
+    <td><a name="fsurdat"></a>
+        <img id="fsurdat_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('fsurdat')">fsurdat</a>
+        </code>
+        <div id="fsurdat_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Full pathname of surface data file.
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="model_year_align_ndep_tr">
+    <td><a name="model_year_align_ndep"></a>
+        <img id="model_year_align_ndep_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('model_year_align_ndep')">model_year_align_ndep</a>
+        </code>
+        <div id="model_year_align_ndep_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Simulation year that aligns with stream_year_first_ndep value
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ndepdyn_nml</td>
+  </tr>
+  <tr id="ndepmapalgo_tr">
+    <td><a name="ndepmapalgo"></a>
+        <img id="ndepmapalgo_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('ndepmapalgo')">ndepmapalgo</a>
+        </code>
+        <div id="ndepmapalgo_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Mapping method from Nitrogen deposition input file to the model resolution
+    bilinear = bilinear interpolation
+    nn       = nearest neighbor
+    nnoni    = nearest neighbor on the "i" (longitude) axis
+    nnonj    = nearest neighbor on the "j" (latitude) axis
+    spval    = set to special value
+    copy     = copy using the same indices
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ndepdyn_nml</td>
+  </tr>
+  <tr id="stream_fldfilename_ndep_tr">
+    <td><a name="stream_fldfilename_ndep"></a>
+        <img id="stream_fldfilename_ndep_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('stream_fldfilename_ndep')">stream_fldfilename_ndep</a>
+        </code>
+        <div id="stream_fldfilename_ndep_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Filename of input stream data for Nitrogen Deposition
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>ndepdyn_nml</td>
+  </tr>
+  <tr id="stream_year_first_ndep_tr">
+    <td><a name="stream_year_first_ndep"></a>
+        <img id="stream_year_first_ndep_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('stream_year_first_ndep')">stream_year_first_ndep</a>
+        </code>
+        <div id="stream_year_first_ndep_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+First year to loop over for Nitrogen Deposition data
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ndepdyn_nml</td>
+  </tr>
+  <tr id="stream_year_last_ndep_tr">
+    <td><a name="stream_year_last_ndep"></a>
+        <img id="stream_year_last_ndep_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('stream_year_last_ndep')">stream_year_last_ndep</a>
+        </code>
+        <div id="stream_year_last_ndep_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Last year to loop over for Nitrogen Deposition data
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>ndepdyn_nml</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="clm_physics"    >CLM: Physics Settings </a></h3></span>
+<table id="clm_physics_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="albice_tr">
+    <td><a name="albice"></a>
+        <img id="albice_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('albice')">albice</a>
+        </code>
+        <div id="albice_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Visible and Near-infrared albedo's for glacier ice
+</pre>
+        </div>
+    </td>
+    <td>real(2)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="co2_ppmv_tr">
+    <td><a name="co2_ppmv"></a>
+        <img id="co2_ppmv_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('co2_ppmv')">co2_ppmv</a>
+        </code>
+        <div id="co2_ppmv_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Atmospheric CO2 molar ratio (by volume) only used when co2_type==constant (umol/mol)
+(Set by CCSM_CO2_PPMV)
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="co2_type_tr">
+    <td><a name="co2_type"></a>
+        <img id="co2_type_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('co2_type')">co2_type</a>
+        </code>
+        <div id="co2_type_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Type of CO2 feedback.
+    constant   = use the input co2_ppmv value
+    prognostic = use the prognostic value sent from the atmosphere
+    diagnostic = use the diagnostic value sent from the atmosphere
+</pre>
+        </div>
+    </td>
+    <td>char*16</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="create_crop_landunit_tr">
+    <td><a name="create_crop_landunit"></a>
+        <img id="create_crop_landunit_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('create_crop_landunit')">create_crop_landunit</a>
+        </code>
+        <div id="create_crop_landunit_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="dtime_tr">
+    <td><a name="dtime"></a>
+        <img id="dtime_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('dtime')">dtime</a>
+        </code>
+        <div id="dtime_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Time step (seconds)
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="glc_dyntopo_tr">
+    <td><a name="glc_dyntopo"></a>
+        <img id="glc_dyntopo_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('glc_dyntopo')">glc_dyntopo</a>
+        </code>
+        <div id="glc_dyntopo_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If TRUE, dynamically change topographic height over glacier points.
+Only works when glc_nec is greater than zero.
+(EXPERIMENTAL AND NOT FUNCTIONAL!)
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="glc_grid_tr">
+    <td><a name="glc_grid"></a>
+        <img id="glc_grid_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('glc_grid')">glc_grid</a>
+        </code>
+        <div id="glc_grid_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Glacier model grid
+    gland20  = Greenland at 20km resolution
+    gland10  = Greenland at 10km resolution
+    gland5   = Greenland at  5km resolution
+    gland5UM = Greenland at  5km resolution, using new UMontana ice sheet data for present day Greenland
+</pre>
+        </div>
+    </td>
+    <td>char*10</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="glc_smb_tr">
+    <td><a name="glc_smb"></a>
+        <img id="glc_smb_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('glc_smb')">glc_smb</a>
+        </code>
+        <div id="glc_smb_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If TRUE, calculate surface mass balance for glacier multi-elevation class points.
+If false use growing degree day information for glaciers multi-elevation class points.
+Only works when glc_nec is greater than 0.
+(Only tested with glc_smb=.true., setting it to .false. is NOT tested)
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="maxpatch_glcmec_tr">
+    <td><a name="maxpatch_glcmec"></a>
+        <img id="maxpatch_glcmec_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('maxpatch_glcmec')">maxpatch_glcmec</a>
+        </code>
+        <div id="maxpatch_glcmec_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Number of  multiple elevation classes over glacier points.
+Normally this is ONLY used when running CESM with the active glacier model.
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="pertlim_tr">
+    <td><a name="pertlim"></a>
+        <img id="pertlim_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('pertlim')">pertlim</a>
+        </code>
+        <div id="pertlim_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Perturbation limit when doing error growth test
+</pre>
+        </div>
+    </td>
+    <td>real</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="suplnitro_tr">
+    <td><a name="suplnitro"></a>
+        <img id="suplnitro_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('suplnitro')">suplnitro</a>
+        </code>
+        <div id="suplnitro_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Supplemental Nitrogen mode and for what type of vegetation it's turned on for.
+In this mode Nitrogen is unlimited rather than prognosed and in general vegetation is
+over-productive. It does act as a proxy for fertilization for crops however.
+    NONE           = No vegetation types get supplemental Nitrogen
+    PROG_CROP_ONLY = Supplemental Nitrogen is only active for prognostic Crops
+    ALL            = Supplemental Nitrogen is active for all vegetation types
+</pre>
+        </div>
+    </td>
+    <td>char*15</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="urban_hac_tr">
+    <td><a name="urban_hac"></a>
+        <img id="urban_hac_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('urban_hac')">urban_hac</a>
+        </code>
+        <div id="urban_hac_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Turn urban air conditioning/heating ON or OFF and add wasteheat:
+    OFF          = Air conditioning/heating is OFF in buildings, internal temperature allowed to float freely
+    ON           = Air conditioning/heating is ON in buildings, internal temperature constrained
+    ON_WASTEHEAT = Air conditioning/heating is ON and waste-heat sent to urban canyon
+</pre>
+        </div>
+    </td>
+    <td>char*16</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="urban_traffic_tr">
+    <td><a name="urban_traffic"></a>
+        <img id="urban_traffic_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('urban_traffic')">urban_traffic</a>
+        </code>
+        <div id="urban_traffic_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If TRUE, urban traffic flux will be activated (Currently NOT implemented).
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>clm_inparm</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="dry-deposition" >CLM: Dry Deposition Settings </a></h3></span>
+<table id="dry-deposition_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="drydep_list_tr">
+    <td><a name="drydep_list"></a>
+        <img id="drydep_list_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('drydep_list')">drydep_list</a>
+        </code>
+        <div id="drydep_list_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+List of chemical constituents that dry deposition will be calculated for
+</pre>
+        </div>
+    </td>
+    <td>char*32(100)</td>
+    <td>drydep_inparm</td>
+  </tr>
+  <tr id="drydep_method_tr">
+    <td><a name="drydep_method"></a>
+        <img id="drydep_method_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('drydep_method')">drydep_method</a>
+        </code>
+        <div id="drydep_method_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Where dry deposition is calculated (from land, atmosphere, or from a table)
+</pre>
+        </div>
+    </td>
+    <td>char*16</td>
+    <td>drydep_inparm</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="clm_restart"    >CLM: Restart Control Settings</a></h3></span>
+<table id="clm_restart_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="nrevsn_tr">
+    <td><a name="nrevsn"></a>
+        <img id="nrevsn_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nrevsn')">nrevsn</a>
+        </code>
+        <div id="nrevsn_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Full pathname of master restart file for a branch run. (only used if RUN_TYPE=branch)
+(Set with RUN_REFCASE and RUN_REFDATE)
+</pre>
+        </div>
+    </td>
+    <td>char*256</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="override_nsrest_tr">
+    <td><a name="override_nsrest"></a>
+        <img id="override_nsrest_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('override_nsrest')">override_nsrest</a>
+        </code>
+        <div id="override_nsrest_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Override the start type from the driver: it can only be
+set to 3 meaning branch.
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="rest_flag_tr">
+    <td><a name="rest_flag"></a>
+        <img id="rest_flag_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('rest_flag')">rest_flag</a>
+        </code>
+        <div id="rest_flag_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If FALSE, don't write any restart files.
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>clm_inparm</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="clm_performance">CLM: Decomposition Settings </a></h3></span>
+<table id="clm_performance_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="clump_pproc_tr">
+    <td><a name="clump_pproc"></a>
+        <img id="clump_pproc_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('clump_pproc')">clump_pproc</a>
+        </code>
+        <div id="clump_pproc_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Clumps per processor.
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="nsegspc_tr">
+    <td><a name="nsegspc"></a>
+        <img id="nsegspc_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('nsegspc')">nsegspc</a>
+        </code>
+        <div id="nsegspc_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+number of segments per clump for decomposition
+<default><br/>Default: 20</default>
+</pre>
+        </div>
+    </td>
+    <td>integer</td>
+    <td>clm_inparm</td>
+  </tr>
+</table>
+<h3><span style="background-color: #00FFFF" font color="purple"><a name="history"        >CLM: History Control Settings </a></h3></span>
+<table id="history_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Namelist Variable</th>
+  <th width="10%">Type</th>
+  <th width="10%">Group</th>
+  <tr id="hist_avgflag_pertape_tr">
+    <td><a name="hist_avgflag_pertape"></a>
+        <img id="hist_avgflag_pertape_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_avgflag_pertape')">hist_avgflag_pertape</a>
+        </code>
+        <div id="hist_avgflag_pertape_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Per file averaging flag.
+    'A' (average over history period)
+    'I' (instantaneous)
+    'X' (maximum over history period)
+    'M' (minimum over history period)
+</pre>
+        </div>
+    </td>
+    <td>char*1(6)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_dov2xy_tr">
+    <td><a name="hist_dov2xy"></a>
+        <img id="hist_dov2xy_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_dov2xy')">hist_dov2xy</a>
+        </code>
+        <div id="hist_dov2xy_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If TRUE, implies output data on a 2D latitude/longitude grid. False means
+output in 1D vector format.  One setting per history tape series.
+</pre>
+        </div>
+    </td>
+    <td>logical(6)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_empty_htapes_tr">
+    <td><a name="hist_empty_htapes"></a>
+        <img id="hist_empty_htapes_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_empty_htapes')">hist_empty_htapes</a>
+        </code>
+        <div id="hist_empty_htapes_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If TRUE, indicates do NOT output any default history fields (requires you to use
+hist_fincl* to set the exact output fields to use)..
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fexcl1_tr">
+    <td><a name="hist_fexcl1"></a>
+        <img id="hist_fexcl1_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fexcl1')">hist_fexcl1</a>
+        </code>
+        <div id="hist_fexcl1_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to exclude from history tape series 1.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fexcl2_tr">
+    <td><a name="hist_fexcl2"></a>
+        <img id="hist_fexcl2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fexcl2')">hist_fexcl2</a>
+        </code>
+        <div id="hist_fexcl2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to exclude from history tape series  2.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fexcl3_tr">
+    <td><a name="hist_fexcl3"></a>
+        <img id="hist_fexcl3_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fexcl3')">hist_fexcl3</a>
+        </code>
+        <div id="hist_fexcl3_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to exclude from history tape series  3.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fexcl4_tr">
+    <td><a name="hist_fexcl4"></a>
+        <img id="hist_fexcl4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fexcl4')">hist_fexcl4</a>
+        </code>
+        <div id="hist_fexcl4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to exclude from history tape series  4.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fexcl5_tr">
+    <td><a name="hist_fexcl5"></a>
+        <img id="hist_fexcl5_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fexcl5')">hist_fexcl5</a>
+        </code>
+        <div id="hist_fexcl5_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to exclude from history tape series  5.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fexcl6_tr">
+    <td><a name="hist_fexcl6"></a>
+        <img id="hist_fexcl6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fexcl6')">hist_fexcl6</a>
+        </code>
+        <div id="hist_fexcl6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to exclude from history tape series  6.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fincl1_tr">
+    <td><a name="hist_fincl1"></a>
+        <img id="hist_fincl1_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fincl1')">hist_fincl1</a>
+        </code>
+        <div id="hist_fincl1_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to add to history tape series  1.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fincl2_tr">
+    <td><a name="hist_fincl2"></a>
+        <img id="hist_fincl2_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fincl2')">hist_fincl2</a>
+        </code>
+        <div id="hist_fincl2_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to add to history tape series  2.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fincl3_tr">
+    <td><a name="hist_fincl3"></a>
+        <img id="hist_fincl3_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fincl3')">hist_fincl3</a>
+        </code>
+        <div id="hist_fincl3_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to add to history tape series  3.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fincl4_tr">
+    <td><a name="hist_fincl4"></a>
+        <img id="hist_fincl4_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fincl4')">hist_fincl4</a>
+        </code>
+        <div id="hist_fincl4_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to add to history tape series  4.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fincl5_tr">
+    <td><a name="hist_fincl5"></a>
+        <img id="hist_fincl5_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fincl5')">hist_fincl5</a>
+        </code>
+        <div id="hist_fincl5_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to add to history tape series  5.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_fincl6_tr">
+    <td><a name="hist_fincl6"></a>
+        <img id="hist_fincl6_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_fincl6')">hist_fincl6</a>
+        </code>
+        <div id="hist_fincl6_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Fields to add to history tape series  6.
+</pre>
+        </div>
+    </td>
+    <td>char*34(1000)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_mfilt_tr">
+    <td><a name="hist_mfilt"></a>
+        <img id="hist_mfilt_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_mfilt')">hist_mfilt</a>
+        </code>
+        <div id="hist_mfilt_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Per tape series  maximum number of time samples.
+</pre>
+        </div>
+    </td>
+    <td>integer(6)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_ndens_tr">
+    <td><a name="hist_ndens"></a>
+        <img id="hist_ndens_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_ndens')">hist_ndens</a>
+        </code>
+        <div id="hist_ndens_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Per tape series  history file density (i.e. output precision)
+    1=double precision
+    2=single precision
+<default><br/>Default: 2,2,2,2,2,2</default>
+</pre>
+        </div>
+    </td>
+    <td>integer(6)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_nhtfrq_tr">
+    <td><a name="hist_nhtfrq"></a>
+        <img id="hist_nhtfrq_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_nhtfrq')">hist_nhtfrq</a>
+        </code>
+        <div id="hist_nhtfrq_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Per tape series history write frequency.
+    positive means in time steps
+    0=monthly
+    negative means hours
+(i.e. 5 means every 24 time-steps and -24 means every day
+<default><br/>Default: 0,-24,-24,-24,-24,-24</default>
+</pre>
+        </div>
+    </td>
+    <td>integer(6)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="hist_type1d_pertape_tr">
+    <td><a name="hist_type1d_pertape"></a>
+        <img id="hist_type1d_pertape_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('hist_type1d_pertape')">hist_type1d_pertape</a>
+        </code>
+        <div id="hist_type1d_pertape_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+Averaging type of output for 1D vector output (when hist_dov2xy is false).
+    GRID means average all land-units up to the grid-point level
+    LAND means average all columns up to the land-unit level
+    COLS means average all PFT's up to the column level
+    PFTS means report everything on native PFT level
+</pre>
+        </div>
+    </td>
+    <td>char*4(6)</td>
+    <td>clm_inparm</td>
+  </tr>
+  <tr id="wrtdia_tr">
+    <td><a name="wrtdia"></a>
+        <img id="wrtdia_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('wrtdia')">wrtdia</a>
+        </code>
+        <div id="wrtdia_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>
+If TRUE, write diagnostic of global radiative temperature written to CLM log file.
+</pre>
+        </div>
+    </td>
+    <td>logical</td>
+    <td>clm_inparm</td>
+  </tr>
+</table>
+</body>
+</html>
