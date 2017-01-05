@@ -186,7 +186,6 @@ ifndef AR
 endif
 
 ifdef NETCDF_C_PATH
-  $(info "NetCDF Split Directory in $(NETCDF_FORTRAN_PATH)   $(NETCDF_C_PATH)")
   ifndef NETCDF_FORTRAN_PATH
     $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
   endif
@@ -207,7 +206,6 @@ else ifdef NETCDF_FORTRAN_PATH
   $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
 else ifdef NETCDF_PATH
   NETCDF_SEPARATE:=false
-  $(info "NetCDF Single Directory in $(NETCDF_PATH)")
   ifndef INC_NETCDF
     INC_NETCDF:=$(NETCDF_PATH)/include
   endif
@@ -321,7 +319,7 @@ VPATH+=$(CSM_SHR_INCLUDE)
 #===============================================================================
 INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(CSM_SHR_INCLUDE)
 
-ifeq ($NETCDF_SEPARATE, false)
+ifeq ($(NETCDF_SEPARATE), false)
   INCLDIR += -I$(INC_NETCDF)
 else
   INCLDIR += -I$(INC_NETCDF_C) -I$(INC_NETCDF_FORTRAN)
@@ -345,7 +343,7 @@ ifeq ($(MODEL),driver)
 # nagfor requires the weird "-Wl,-Wl,," syntax.
 # If done in config_compilers.xml, we break MCT.
   ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($NETCDF_SEPARATE, false)
+    ifeq ($(NETCDF_SEPARATE), false)
       SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
     else
       SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_C_PATH)/lib
@@ -397,7 +395,7 @@ CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
 		MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
 		CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)"
 
-ifeq ($NETCDF_SEPARATE, false)
+ifeq ($(NETCDF_SEPARATE), false)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
 else
   # The mct library needs the NetCDF_C library
@@ -451,7 +449,7 @@ endif
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
-  ifeq ($NETCDF_SEPARATE, false)
+  ifeq ($(NETCDF_SEPARATE), false)
     SLIBS := -L$(LIB_NETCDF) -lnetcdf
   else
     SLIBS := -L$(LIB_NETCDF_C) -L$(LIB_NETCDF_FORTRAN) -lnetcdf
@@ -561,7 +559,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
 	      -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
-ifeq ($NETCDF_SEPARATE, false)
+ifeq ($(NETCDF_SEPARATE), false)
   CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_PATH)
 else
   CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_C_PATH) \
@@ -668,7 +666,7 @@ db_flags:
 
 test_fc: test_fc.o
 	$(LD) -o $@ test_fc.o $(LDFLAGS)
-ifeq ($NETCDF_SEPARATE, false)
+ifeq ($(NETCDF_SEPARATE), false)
 test_nc: test_nc.o
 	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
 else
