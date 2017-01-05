@@ -1,0 +1,1782 @@
+{
+ "P": {
+  "plotset5_0_x_0": {
+   "box1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.7016666666666667,
+    "y2": 0.95
+   },
+   "box2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.8354333564160071,
+    "y1": 0.7182222304455871,
+    "y2": 0.958277769554744
+   },
+   "box3": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.8272444752216158,
+    "y1": 0.7264999999999172,
+    "y2": 0.95
+   },
+   "box4": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.082055554369172,
+    "y1": 0.5940555637789204,
+    "y2": 0.5940555637789204
+   },
+   "comment1": {
+    "priority": 0,
+    "textorientation": "plotset5_comment1",
+    "texttable": "default",
+    "x": 0.865,
+    "y": 0.7016666666666667
+   },
+   "comment2": {
+    "priority": 0,
+    "textorientation": "plotset5_comment1",
+    "texttable": "default",
+    "x": 0.865,
+    "y": 0.6866666666666666
+   },
+   "comment3": {
+    "priority": 0,
+    "textorientation": "__textorientation_652676653668587",
+    "texttable": "default",
+    "x": 0.16394444563066418,
+    "y": 1
+   },
+   "comment4": {
+    "priority": 0,
+    "textorientation": "__textorientation_616889705435504",
+    "texttable": "default",
+    "x": 0.16394444563066418,
+    "y": 1
+   },
+   "crdate": {
+    "priority": 0,
+    "textorientation": "__textorientation_393117636830746",
+    "texttable": "default",
+    "x": 0.6962222296792794,
+    "y": 0.9760749839645337
+   },
+   "crtime": {
+    "priority": 0,
+    "textorientation": "__textorientation_906641516993525",
+    "texttable": "default",
+    "x": 0.7781111392445762,
+    "y": 0.9760749839645337
+   },
+   "data": {
+    "priority": 1,
+    "ratio": -999,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.7016666666666667,
+    "y2": 0.95
+   },
+   "dataname": {
+    "priority": 0,
+    "textorientation": "__textorientation_112930675296446",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.96
+   },
+   "file": {
+    "priority": 0,
+    "textorientation": "__textorientation_801440167186177",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.5994361192316756
+   },
+   "function": {
+    "priority": 0,
+    "textorientation": "__textorientation_591598476380835",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.5994361192316756
+   },
+   "legend": {
+    "arrow": 0.05,
+    "line": "default",
+    "offset": 0.023000000000000003,
+    "priority": 1,
+    "textorientation": "__textorientation_870326671604450",
+    "texttable": "default",
+    "x1": 0.88,
+    "x2": 0.9193066666666667,
+    "y1": 0.7265,
+    "y2": 0.9251666666666666
+   },
+   "line1": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.8258333333333333,
+    "y2": 0.8258333333333334
+   },
+   "line2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.49150000457591025,
+    "x2": 0.4915000045759102,
+    "y1": 0.7016666666666667,
+    "y2": 0.95
+   },
+   "line3": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.08205555436917207,
+    "x2": 0.8190555452173516,
+    "y1": 0.8134166543319918,
+    "y2": 0.8134166543319918
+   },
+   "line4": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.08205555436917207,
+    "x2": 0.8190555452173516,
+    "y1": 1,
+    "y2": 1
+   },
+   "logicalmask": {
+    "priority": 1,
+    "textorientation": "__textorientation_213009276754435",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.6077138964955138
+   },
+   "max": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_max",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.99
+   },
+   "mean": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_mean",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.975
+   },
+   "min": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_min",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.96
+   },
+   "source": {
+    "priority": 0,
+    "textorientation": "__textorientation_540288126871991",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.9565555391090741
+   },
+   "title": {
+    "priority": 0,
+    "textorientation": "__textorientation_675849204359008",
+    "texttable": "default",
+    "x": 0.4915,
+    "y": 0.96
+   },
+   "tname": {
+    "priority": 0,
+    "textorientation": "__textorientation_9108476535614",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 1
+   },
+   "transformation": {
+    "priority": 0,
+    "textorientation": "__textorientation_664276330270330",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.615991673759352
+   },
+   "tunits": {
+    "priority": 0,
+    "textorientation": "__textorientation_965224426810793",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 1
+   },
+   "tvalue": {
+    "format": "default",
+    "priority": 0,
+    "textorientation": "__textorientation_782854384406963",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.9595194448554595
+   },
+   "units": {
+    "priority": 0,
+    "textorientation": "plotset5_units",
+    "texttable": "default",
+    "x": 0.855,
+    "y": 0.96
+   },
+   "xlabel1": {
+    "priority": 1,
+    "textorientation": "__textorientation_911289949893415",
+    "texttable": "default",
+    "y": 0.687319448556189
+   },
+   "xlabel2": {
+    "priority": 0,
+    "textorientation": "__textorientation_14491334146690",
+    "texttable": "default",
+    "y": 0.954138884777165
+   },
+   "xmintic1": {
+    "line": "default",
+    "priority": 1,
+    "y1": 0.7016666666666667,
+    "y2": 0.7004250037006674
+   },
+   "xmintic2": {
+    "line": "default",
+    "priority": 0,
+    "y1": 0.95,
+    "y2": 0.95
+   },
+   "xname": {
+    "priority": 1,
+    "textorientation": "__textorientation_215623628190429",
+    "texttable": "default",
+    "x": 0.49150000457591025,
+    "y": 0.6739722269918086
+   },
+   "xtic1": {
+    "line": "default",
+    "priority": 1,
+    "y1": 0.7016666666666667,
+    "y2": 0.6962861127557303
+   },
+   "xtic2": {
+    "line": "default",
+    "priority": 0,
+    "y1": 0.95,
+    "y2": 0.9549666518648251
+   },
+   "xunits": {
+    "priority": 1,
+    "textorientation": "__textorientation_550712825812798",
+    "texttable": "default",
+    "x": 0.5733889141412071,
+    "y": 0.7087027855901276
+   },
+   "xvalue": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "__textorientation_295706591627086",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.9839388699756546
+   },
+   "ylabel1": {
+    "priority": 1,
+    "textorientation": "__textorientation_264735585981589",
+    "texttable": "default",
+    "x": 0.11081110965354256
+   },
+   "ylabel2": {
+    "priority": 0,
+    "textorientation": "__textorientation_128697912127139",
+    "texttable": "default",
+    "x": 0.8681888811943914
+   },
+   "ymintic1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.1189055563520337
+   },
+   "ymintic2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.86,
+    "x2": 0.8640944405976051
+   },
+   "yname": {
+    "priority": 1,
+    "textorientation": "__textorientation_563997221085601",
+    "texttable": "default",
+    "x": 0.07396888777165293,
+    "y": 0.8258333323466223
+   },
+   "ytic1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.11481110965354246
+   },
+   "ytic2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.86,
+    "x2": 0.8681888811943913
+   },
+   "yunits": {
+    "priority": 1,
+    "textorientation": "__textorientation_144509100957954",
+    "texttable": "default",
+    "x": 0.09843333201139826,
+    "y": 0.8668083222320349
+   },
+   "yvalue": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "__textorientation_56749982263435",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.9760749839645337
+   },
+   "zname": {
+    "priority": 0,
+    "textorientation": "__textorientation_170501124996227",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 1
+   },
+   "zunits": {
+    "priority": 0,
+    "textorientation": "__textorientation_859294926264171",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 1
+   },
+   "zvalue": {
+    "format": "default",
+    "priority": 0,
+    "textorientation": "__textorientation_972703188910046",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.9677972144102035
+   }
+  },
+  "plotset5_0_x_1": {
+   "box1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.3883333333333333,
+    "y2": 0.6366666666666666
+   },
+   "box2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.8354333564160071,
+    "y1": 0.40488889711225373,
+    "y2": 0.6449444362214106
+   },
+   "box3": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.8272444752216158,
+    "y1": 0.41316666666658386,
+    "y2": 0.6366666666666666
+   },
+   "box4": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.082055554369172,
+    "y1": 0.2807222304455871,
+    "y2": 0.28072223044558714
+   },
+   "comment1": {
+    "priority": 0,
+    "textorientation": "plotset5_comment1",
+    "texttable": "default",
+    "x": 0.865,
+    "y": 0.3883333333333333
+   },
+   "comment2": {
+    "priority": 0,
+    "textorientation": "plotset5_comment1",
+    "texttable": "default",
+    "x": 0.865,
+    "y": 0.3733333333333333
+   },
+   "comment3": {
+    "priority": 0,
+    "textorientation": "__textorientation_547292232482988",
+    "texttable": "default",
+    "x": 0.16394444563066418,
+    "y": 0.6925416604991221
+   },
+   "comment4": {
+    "priority": 0,
+    "textorientation": "__textorientation_574329820307643",
+    "texttable": "default",
+    "x": 0.16394444563066418,
+    "y": 0.6941972193442886
+   },
+   "crdate": {
+    "priority": 0,
+    "textorientation": "__textorientation_471856179635865",
+    "texttable": "default",
+    "x": 0.6962222296792794,
+    "y": 0.6627416506312003
+   },
+   "crtime": {
+    "priority": 0,
+    "textorientation": "__textorientation_318958469558748",
+    "texttable": "default",
+    "x": 0.7781111392445762,
+    "y": 0.6627416506312003
+   },
+   "data": {
+    "priority": 1,
+    "ratio": -999,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.3883333333333333,
+    "y2": 0.6366666666666666
+   },
+   "dataname": {
+    "priority": 0,
+    "textorientation": "__textorientation_732683257747507",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.6466666666666666
+   },
+   "file": {
+    "priority": 0,
+    "textorientation": "__textorientation_39641467810594",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.2861027858983423
+   },
+   "function": {
+    "priority": 0,
+    "textorientation": "__textorientation_855525224690232",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.2861027858983423
+   },
+   "legend": {
+    "arrow": 0.05,
+    "line": "default",
+    "offset": 0.023000000000000003,
+    "priority": 1,
+    "textorientation": "__textorientation_421716528231962",
+    "texttable": "default",
+    "x1": 0.88,
+    "x2": 0.9193066666666667,
+    "y1": 0.4131666666666666,
+    "y2": 0.6118333333333332
+   },
+   "line1": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.5125,
+    "y2": 0.5125
+   },
+   "line2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.49150000457591025,
+    "x2": 0.4915000045759102,
+    "y1": 0.3883333333333333,
+    "y2": 0.6366666666666666
+   },
+   "line3": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.08205555436917207,
+    "x2": 0.8190555452173516,
+    "y1": 0.5000833209986585,
+    "y2": 0.5000833209986585
+   },
+   "line4": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.08205555436917207,
+    "x2": 0.8190555452173516,
+    "y1": 0.6904722181107465,
+    "y2": 0.6904722181107467
+   },
+   "logicalmask": {
+    "priority": 1,
+    "textorientation": "__textorientation_909586311825110",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.2943805631621805
+   },
+   "max": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_max",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.6766666666666666
+   },
+   "mean": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_mean",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.6616666666666666
+   },
+   "min": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_min",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.6466666666666666
+   },
+   "source": {
+    "priority": 0,
+    "textorientation": "__textorientation_611762695750690",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.6432222057757409
+   },
+   "title": {
+    "priority": 0,
+    "textorientation": "__textorientation_428791170453960",
+    "texttable": "default",
+    "x": 0.4915,
+    "y": 0.6466666666666666
+   },
+   "tname": {
+    "priority": 0,
+    "textorientation": "__textorientation_841285756086509",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 0.6925416604991221
+   },
+   "transformation": {
+    "priority": 0,
+    "textorientation": "__textorientation_413348055776360",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.30265834042601863
+   },
+   "tunits": {
+    "priority": 0,
+    "textorientation": "__textorientation_568928937875182",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 0.6925416604991221
+   },
+   "tvalue": {
+    "format": "default",
+    "priority": 0,
+    "textorientation": "__textorientation_418697761723079",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.6461861115221261
+   },
+   "units": {
+    "priority": 0,
+    "textorientation": "plotset5_units",
+    "texttable": "default",
+    "x": 0.855,
+    "y": 0.6466666666666666
+   },
+   "xlabel1": {
+    "priority": 1,
+    "textorientation": "__textorientation_797627606202613",
+    "texttable": "default",
+    "y": 0.3739861152228556
+   },
+   "xlabel2": {
+    "priority": 0,
+    "textorientation": "__textorientation_624786486378251",
+    "texttable": "default",
+    "y": 0.6408055514438316
+   },
+   "xmintic1": {
+    "line": "default",
+    "priority": 1,
+    "y1": 0.3883333333333333,
+    "y2": 0.38709167036733405
+   },
+   "xmintic2": {
+    "line": "default",
+    "priority": 0,
+    "y1": 0.6366666666666666,
+    "y2": 0.6366666666666666
+   },
+   "xname": {
+    "priority": 1,
+    "textorientation": "__textorientation_695995107511199",
+    "texttable": "default",
+    "x": 0.49150000457591025,
+    "y": 0.36063889365847523
+   },
+   "xtic1": {
+    "line": "default",
+    "priority": 1,
+    "y1": 0.3883333333333333,
+    "y2": 0.38295277942239697
+   },
+   "xtic2": {
+    "line": "default",
+    "priority": 0,
+    "y1": 0.6366666666666666,
+    "y2": 0.6416333185314917
+   },
+   "xunits": {
+    "priority": 1,
+    "textorientation": "__textorientation_645980208474352",
+    "texttable": "default",
+    "x": 0.5733889141412071,
+    "y": 0.39536945225679415
+   },
+   "xvalue": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "__textorientation_420590661868592",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.6706055366423213
+   },
+   "ylabel1": {
+    "priority": 1,
+    "textorientation": "__textorientation_66968163786836",
+    "texttable": "default",
+    "x": 0.11081110965354256
+   },
+   "ylabel2": {
+    "priority": 0,
+    "textorientation": "__textorientation_493613061588300",
+    "texttable": "default",
+    "x": 0.8681888811943914
+   },
+   "ymintic1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.1189055563520337
+   },
+   "ymintic2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.86,
+    "x2": 0.8640944405976051
+   },
+   "yname": {
+    "priority": 1,
+    "textorientation": "__textorientation_368998393104842",
+    "texttable": "default",
+    "x": 0.07396888777165293,
+    "y": 0.5124999990132889
+   },
+   "ytic1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.11481110965354246
+   },
+   "ytic2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.86,
+    "x2": 0.8681888811943913
+   },
+   "yunits": {
+    "priority": 1,
+    "textorientation": "__textorientation_16010787379509",
+    "texttable": "default",
+    "x": 0.09843333201139826,
+    "y": 0.5534749888987016
+   },
+   "yvalue": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "__textorientation_782523782732002",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.6627416506312003
+   },
+   "zname": {
+    "priority": 0,
+    "textorientation": "__textorientation_311553778529739",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 0.6925416604991221
+   },
+   "zunits": {
+    "priority": 0,
+    "textorientation": "__textorientation_995398237322083",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 0.6925416604991221
+   },
+   "zvalue": {
+    "format": "default",
+    "priority": 0,
+    "textorientation": "__textorientation_383124927004085",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.6544638810768701
+   }
+  },
+  "plotset5_0_x_2": {
+   "box1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.07499999999999993,
+    "y2": 0.32333333333333325
+   },
+   "box2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.8354333564160071,
+    "y1": 0.09155556377892035,
+    "y2": 0.3316111028880773
+   },
+   "box3": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.8272444752216158,
+    "y1": 0.09983333333325048,
+    "y2": 0.32333333333333325
+   },
+   "box4": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.08205555436917207,
+    "x2": 0.082055554369172,
+    "y1": 0,
+    "y2": 0
+   },
+   "comment1": {
+    "priority": 0,
+    "textorientation": "plotset5_comment1",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.07499999999999993
+   },
+   "comment2": {
+    "priority": 0,
+    "textorientation": "plotset5_comment1",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.05999999999999993
+   },
+   "comment3": {
+    "priority": 0,
+    "textorientation": "__textorientation_258945381801557",
+    "texttable": "default",
+    "x": 0.16394444563066418,
+    "y": 0.3792083271657889
+   },
+   "comment4": {
+    "priority": 0,
+    "textorientation": "__textorientation_564969208040841",
+    "texttable": "default",
+    "x": 0.16394444563066418,
+    "y": 0.3808638860109552
+   },
+   "crdate": {
+    "priority": 0,
+    "textorientation": "__textorientation_741427114589993",
+    "texttable": "default",
+    "x": 0.6962222296792794,
+    "y": 0.34940831729786703
+   },
+   "crtime": {
+    "priority": 0,
+    "textorientation": "__textorientation_251919760150336",
+    "texttable": "default",
+    "x": 0.7781111392445762,
+    "y": 0.34940831729786703
+   },
+   "data": {
+    "priority": 1,
+    "ratio": -999,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.07499999999999993,
+    "y2": 0.32333333333333325
+   },
+   "dataname": {
+    "priority": 0,
+    "textorientation": "__textorientation_937211945085079",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.33333333333333326
+   },
+   "file": {
+    "priority": 0,
+    "textorientation": "__textorientation_872256583377682",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0
+   },
+   "function": {
+    "priority": 0,
+    "textorientation": "__textorientation_958143069043046",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0
+   },
+   "legend": {
+    "arrow": 0.05,
+    "line": "default",
+    "offset": 0.023000000000000003,
+    "priority": 1,
+    "textorientation": "__textorientation_694634048052796",
+    "texttable": "default",
+    "x1": 0.88,
+    "x2": 0.9193066666666667,
+    "y1": 0.09983333333333325,
+    "y2": 0.29849999999999993
+   },
+   "line1": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.12300000000000001,
+    "x2": 0.86,
+    "y1": 0.1991666666666666,
+    "y2": 0.19916666666666663
+   },
+   "line2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.49150000457591025,
+    "x2": 0.4915000045759102,
+    "y1": 0.07499999999999993,
+    "y2": 0.32333333333333325
+   },
+   "line3": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.08205555436917207,
+    "x2": 0.8190555452173516,
+    "y1": 0.18674998766532513,
+    "y2": 0.18674998766532516
+   },
+   "line4": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.08205555436917207,
+    "x2": 0.8190555452173516,
+    "y1": 0.3771388847774133,
+    "y2": 0.3771388847774133
+   },
+   "logicalmask": {
+    "priority": 1,
+    "textorientation": "__textorientation_529346399359546",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0
+   },
+   "max": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_max",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.3633333333333333
+   },
+   "mean": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_mean",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.3483333333333333
+   },
+   "min": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "plotset5_min",
+    "texttable": "default",
+    "x": 0.873,
+    "y": 0.33333333333333326
+   },
+   "source": {
+    "priority": 0,
+    "textorientation": "__textorientation_581228306408229",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0.3298888724424074
+   },
+   "title": {
+    "priority": 0,
+    "textorientation": "__textorientation_916780501350462",
+    "texttable": "default",
+    "x": 0.4915,
+    "y": 0.33333333333333326
+   },
+   "tname": {
+    "priority": 0,
+    "textorientation": "__textorientation_82421317705121",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 0.3792083271657889
+   },
+   "transformation": {
+    "priority": 0,
+    "textorientation": "__textorientation_541839963929239",
+    "texttable": "default",
+    "x": 0.12300000000000001,
+    "y": 0
+   },
+   "tunits": {
+    "priority": 0,
+    "textorientation": "__textorientation_684759673874257",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 0.3792083271657889
+   },
+   "tvalue": {
+    "format": "default",
+    "priority": 0,
+    "textorientation": "__textorientation_470033425852913",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.3328527781887928
+   },
+   "units": {
+    "priority": 0,
+    "textorientation": "plotset5_units",
+    "texttable": "default",
+    "x": 0.855,
+    "y": 0.33333333333333326
+   },
+   "xlabel1": {
+    "priority": 1,
+    "textorientation": "__textorientation_985238895021474",
+    "texttable": "default",
+    "y": 0.06065278188952222
+   },
+   "xlabel2": {
+    "priority": 0,
+    "textorientation": "__textorientation_504958321994426",
+    "texttable": "default",
+    "y": 0.3274722181104983
+   },
+   "xmintic1": {
+    "line": "default",
+    "priority": 1,
+    "y1": 0.07499999999999993,
+    "y2": 0.07375833703400064
+   },
+   "xmintic2": {
+    "line": "default",
+    "priority": 0,
+    "y1": 0.32333333333333325,
+    "y2": 0.32333333333333325
+   },
+   "xname": {
+    "priority": 1,
+    "textorientation": "__textorientation_976625014034339",
+    "texttable": "default",
+    "x": 0.49150000457591025,
+    "y": 0.04730556032514187
+   },
+   "xtic1": {
+    "line": "default",
+    "priority": 1,
+    "y1": 0.07499999999999993,
+    "y2": 0.06961944608906356
+   },
+   "xtic2": {
+    "line": "default",
+    "priority": 0,
+    "y1": 0.32333333333333325,
+    "y2": 0.3282999851981584
+   },
+   "xunits": {
+    "priority": 1,
+    "textorientation": "__textorientation_233720000793761",
+    "texttable": "default",
+    "x": 0.5733889141412071,
+    "y": 0.0820361189234608
+   },
+   "xvalue": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "__textorientation_537344572025606",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.3572722033089879
+   },
+   "ylabel1": {
+    "priority": 1,
+    "textorientation": "__textorientation_975386746166916",
+    "texttable": "default",
+    "x": 0.11081110965354256
+   },
+   "ylabel2": {
+    "priority": 0,
+    "textorientation": "__textorientation_146423647074747",
+    "texttable": "default",
+    "x": 0.8681888811943914
+   },
+   "ymintic1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.1189055563520337
+   },
+   "ymintic2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.86,
+    "x2": 0.8640944405976051
+   },
+   "yname": {
+    "priority": 1,
+    "textorientation": "__textorientation_684256664741127",
+    "texttable": "default",
+    "x": 0.07396888777165293,
+    "y": 0.19916666567995556
+   },
+   "ytic1": {
+    "line": "default",
+    "priority": 1,
+    "x1": 0.12300000000000001,
+    "x2": 0.11481110965354246
+   },
+   "ytic2": {
+    "line": "default",
+    "priority": 0,
+    "x1": 0.86,
+    "x2": 0.8681888811943913
+   },
+   "yunits": {
+    "priority": 1,
+    "textorientation": "__textorientation_138471680320767",
+    "texttable": "default",
+    "x": 0.09843333201139826,
+    "y": 0.2401416555653682
+   },
+   "yvalue": {
+    "format": "default",
+    "priority": 1,
+    "textorientation": "__textorientation_473789413175846",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.34940831729786703
+   },
+   "zname": {
+    "priority": 0,
+    "textorientation": "__textorientation_583445224754011",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 0.3792083271657889
+   },
+   "zunits": {
+    "priority": 0,
+    "textorientation": "__textorientation_354191416634788",
+    "texttable": "default",
+    "x": 0.08205555436917207,
+    "y": 0.3792083271657889
+   },
+   "zvalue": {
+    "format": "default",
+    "priority": 0,
+    "textorientation": "__textorientation_182714115227410",
+    "texttable": "default",
+    "x": 0.7371666844619278,
+    "y": 0.3411305477435368
+   }
+  }
+ },
+ "To": {
+  "__textorientation_112930675296446": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.260755969852239,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_128697912127139": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_138471680320767": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_144509100957954": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_14491334146690": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_146423647074747": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_16010787379509": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_170501124996227": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_182714115227410": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_213009276754435": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_215623628190429": {
+   "angle": 0,
+   "halign": 1,
+   "height": 9,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_222908345949934": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_233720000793761": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_251919760150336": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_258945381801557": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_264735585981589": {
+   "angle": 0,
+   "halign": 2,
+   "height": 9.76698221874939,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_295706591627086": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_310659716470015": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_311553778529739": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_314278724601243": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_315159204141494": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_318958469558748": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_354191416634788": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_361805040770931": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_367729074352916": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_368998393104842": {
+   "angle": -90,
+   "halign": 1,
+   "height": 9,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_383124927004085": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_393117636830746": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_39641467810594": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_413348055776360": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_418697761723079": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_420590661868592": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_421716528231962": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_428791170453960": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.5,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_470033425852913": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_471856179635865": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_473789413175846": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_493613061588300": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_504958321994426": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_529346399359546": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_537344572025606": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_540288126871991": {
+   "angle": 0,
+   "halign": 0,
+   "height": 8.0,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_541839963929239": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_547292232482988": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_550712825812798": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_563997221085601": {
+   "angle": -90,
+   "halign": 1,
+   "height": 9,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_564969208040841": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_56749982263435": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_568928937875182": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_574329820307643": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_581228306408229": {
+   "angle": 0,
+   "halign": 0,
+   "height": 8.0,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_583445224754011": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_591598476380835": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_611762695750690": {
+   "angle": 0,
+   "halign": 0,
+   "height": 8.0,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_616889705435504": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_624786486378251": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_625944173548510": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_645980208474352": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_652676653668587": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_664276330270330": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_66968163786836": {
+   "angle": 0,
+   "halign": 2,
+   "height": 9.76698221874939,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_675849204359008": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.5,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_684256664741127": {
+   "angle": -90,
+   "halign": 1,
+   "height": 9,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_684759673874257": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_694634048052796": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_695995107511199": {
+   "angle": 0,
+   "halign": 1,
+   "height": 9,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_732683257747507": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.260755969852239,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_741427114589993": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_782523782732002": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_782854384406963": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_797627606202613": {
+   "angle": 0,
+   "halign": 1,
+   "height": 9.76698221874939,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_801440167186177": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_82421317705121": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_841285756086509": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_855525224690232": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_859294926264171": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_870326671604450": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_872256583377682": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_906641516993525": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_909586311825110": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_9108476535614": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_911289949893415": {
+   "angle": 0,
+   "halign": 1,
+   "height": 9.76698221874939,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_916780501350462": {
+   "angle": 0,
+   "halign": 1,
+   "height": 11.5,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_937211945085079": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.260755969852239,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_958143069043046": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_965224426810793": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_972703188910046": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_975386746166916": {
+   "angle": 0,
+   "halign": 2,
+   "height": 9.76698221874939,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_976625014034339": {
+   "angle": 0,
+   "halign": 1,
+   "height": 9,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_985238895021474": {
+   "angle": 0,
+   "halign": 1,
+   "height": 9.76698221874939,
+   "path": 0,
+   "valign": 2
+  },
+  "__textorientation_995398237322083": {
+   "angle": 0,
+   "halign": 0,
+   "height": 11.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "plotset5_comment1": {
+   "angle": 0,
+   "halign": 0,
+   "height": 10.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "plotset5_max": {
+   "angle": 0,
+   "halign": 0,
+   "height": 10.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "plotset5_mean": {
+   "angle": 0,
+   "halign": 0,
+   "height": 10.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "plotset5_min": {
+   "angle": 0,
+   "halign": 0,
+   "height": 10.490567316175754,
+   "path": 0,
+   "valign": 2
+  },
+  "plotset5_units": {
+   "angle": 0,
+   "halign": 2,
+   "height": 9.76698221874939,
+   "path": 0,
+   "valign": 2
+  }
+ }
+}
