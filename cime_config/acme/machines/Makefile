@@ -185,15 +185,8 @@ ifndef AR
    AR := ar
 endif
 
-ifdef NETCDF_PATH
-  NETCDF_SEPARATE:=false
-  ifndef INC_NETCDF
-    INC_NETCDF:=$(NETCDF_PATH)/include
-  endif
-  ifndef LIB_NETCDF
-    LIB_NETCDF:=$(NETCDF_PATH)/lib
-  endif
-else ifdef NETCDF_C_PATH
+ifdef NETCDF_C_PATH
+  $(info "NetCDF Split Directory in $(NETCDF_FORTRAN_PATH)   $(NETCDF_C_PATH)")
   ifndef NETCDF_FORTRAN_PATH
     $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
   endif
@@ -212,6 +205,18 @@ else ifdef NETCDF_C_PATH
   endif
 else ifdef NETCDF_FORTRAN_PATH
   $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
+else ifdef NETCDF_PATH
+  NETCDF_SEPARATE:=false
+  $(info "NetCDF Single Directory in $(NETCDF_PATH)")
+  ifndef INC_NETCDF
+    INC_NETCDF:=$(NETCDF_PATH)/include
+  endif
+  ifndef LIB_NETCDF
+    LIB_NETCDF:=$(NETCDF_PATH)/lib
+  endif
+else
+  # Not certain if safe to assume this, but it seems like it should be
+  $(error "No NetCDF Specified")
 endif
 
 ifeq ($(MPILIB),mpi-serial)
@@ -433,13 +438,11 @@ CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
                 LDFLAGS="$(LDFLAGS)"
 
-ifdef NETCDF_PATH
+ifeq ($NETCDF_SEPARATE, false)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
-else ifeq ($NETCDF_SEPARATE, true)
+else 
   # The mct library needs the NetCDF_C library
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
-else
-  $(error No NETCDF Path defined)
 endif
 
 ifeq ($(COMPILER),nag)
