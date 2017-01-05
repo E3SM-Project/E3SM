@@ -3,6 +3,7 @@ Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
 import logging, gzip, sys, os, time, re, shutil, glob
+import stat as statlib
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -859,7 +860,9 @@ def gunzip_existing_file(filepath):
 
 def gzip_existing_file(filepath):
     """
-    Gzips an existing file, removes the unzipped version, returns path to zip file
+    Gzips an existing file, removes the unzipped version, returns path to zip file.
+    Note the that the timestamp of the original file will be maintained in
+    the zipped file.
 
     >>> import tempfile
     >>> fd, filename = tempfile.mkstemp(text=True)
@@ -871,12 +874,18 @@ def gzip_existing_file(filepath):
     >>> os.remove(gzfile)
     """
     expect(os.path.exists(filepath), "%s does not exists" % filepath)
+
+    st = os.stat(filepath)
+    orig_atime, orig_mtime = st[statlib.ST_ATIME], st[statlib.ST_MTIME]
+
     gzpath = '%s.gz' % filepath
     with open(filepath, "rb") as f_in:
         with gzip.open(gzpath, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     os.remove(filepath)
+
+    os.utime(gzpath, (orig_atime, orig_mtime))
 
     return gzpath
 
