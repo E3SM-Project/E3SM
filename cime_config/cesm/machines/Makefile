@@ -185,36 +185,38 @@ ifndef AR
    AR := ar
 endif
 
-ifdef NETCDF_C_PATH
-  ifndef NETCDF_FORTRAN_PATH
-    $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
+# To prevent breaking cleaning and building components which don't require NetCDF directly
+ifeq ($(if $(or $(filter pio, $(subst /,  , $(MAKECMDGOALS))), $(filter exec_se, $(subst /,  , $(MAKECMDGOALS)))), true, false), true)
+  ifdef NETCDF_C_PATH
+    ifndef NETCDF_FORTRAN_PATH
+      $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
+    endif
+    NETCDF_SEPARATE:=true
+    ifndef INC_NETCDF_C
+      INC_NETCDF_C:=$(NETCDF_C_PATH)/include
+    endif
+    ifndef INC_NETCDF_FORTRAN
+      INC_NETCDF_FORTRAN:=$(NETCDF_FORTRAN_PATH)/include
+    endif
+    ifndef LIB_NETCDF_C
+      LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
+    endif
+    ifndef LIB_NETCDF_FORTRAN
+      LIB_NETCDF_FORTRAN:=$(NETCDF_C_PATH)/lib
+    endif
+  else ifdef NETCDF_FORTRAN_PATH
+    $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
+  else ifdef NETCDF_PATH
+    NETCDF_SEPARATE:=false
+    ifndef INC_NETCDF
+      INC_NETCDF:=$(NETCDF_PATH)/include
+    endif
+    ifndef LIB_NETCDF
+      LIB_NETCDF:=$(NETCDF_PATH)/lib
+    endif
+  else
+    $(error No NetCDF Specified, required for PIO and CESM)
   endif
-  NETCDF_SEPARATE:=true
-  ifndef INC_NETCDF_C
-    INC_NETCDF_C:=$(NETCDF_C_PATH)/include
-  endif
-  ifndef INC_NETCDF_FORTRAN
-    INC_NETCDF_FORTRAN:=$(NETCDF_FORTRAN_PATH)/include
-  endif
-  ifndef LIB_NETCDF_C
-    LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
-  endif
-  ifndef LIB_NETCDF_FORTRAN
-    LIB_NETCDF_FORTRAN:=$(NETCDF_C_PATH)/lib
-  endif
-else ifdef NETCDF_FORTRAN_PATH
-  $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
-else ifdef NETCDF_PATH
-  NETCDF_SEPARATE:=false
-  ifndef INC_NETCDF
-    INC_NETCDF:=$(NETCDF_PATH)/include
-  endif
-  ifndef LIB_NETCDF
-    LIB_NETCDF:=$(NETCDF_PATH)/lib
-  endif
-else
-  # Not certain if safe to assume this, but it seems like it should be
-  $(error "No NetCDF Specified")
 endif
 
 ifeq ($(MPILIB),mpi-serial)
