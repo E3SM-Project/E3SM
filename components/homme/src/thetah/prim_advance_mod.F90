@@ -628,13 +628,19 @@ contains
                     ! update v first (gives better results than updating v after heating)
                     elem(ie)%state%v(i,j,:,k,nt)=elem(ie)%state%v(i,j,:,k,nt) + &
                          vtens(i,j,:,k,ie)
-
+                    elem(ie)%state%w(i,j,k,nt)=elem(ie)%state%w(i,j,k,nt) &
+                         +stens(i,j,k,3,ie)
                     v1=elem(ie)%state%v(i,j,1,k,nt)
                     v2=elem(ie)%state%v(i,j,2,k,nt)
-!                    heating = (vtens(i,j,1,k,ie)*v1  + vtens(i,j,2,k,ie)*v2 )
-                    heating = 0
+!                   For the 3D non-hydrostatic with hypervisosity in the horizontal components, 
+!                   the heating term to be added to theta is (dpi/ds)*HVterm/ p^kappa as opposed to 
+!                   HVterm/c_p^*
+!                    
+!                   Form u*nu div^H(u)
+                    heating = (vtens(i,j,1,k,ie)*v1  + vtens(i,j,2,k,ie)*v2     &
+!                    heating = 0
                     elem(ie)%state%theta(i,j,k,nt)=elem(ie)%state%theta(i,j,k,nt) &
-                         +stens(i,j,k,2,ie)-heating/cp
+                         +stens(i,j,k,2,ie)-dpnh(i,j,k)*heating/exner(i,j,k)
                     elem(ie)%state%w(i,j,k,nt)=elem(ie)%state%w(i,j,k,nt) &
                          +stens(i,j,k,3,ie)
                     elem(ie)%state%dp3d(i,j,k,nt)=elem(ie)%state%dp3d(i,j,k,nt) &
@@ -731,7 +737,6 @@ contains
   real (kind=real_kind), dimension(np,np,2)    :: vtemp2    ! secondary generic gradient storage
   real (kind=real_kind), dimension(np,np,2,nlev):: vdp       !                            
   real (kind=real_kind), dimension(np,np)      :: KE
-  real (kind=real_kind), dimension(np,np)      :: Eexner     ! energy diagnostic Exner pressure
   real (kind=real_kind), dimension(np,np,2)      :: thetau  !  theta*u in the diagnostics
   real (kind=real_kind), dimension(np,np)        :: divtemp ! temp divergence in the  in the diagnostics
 
@@ -1022,8 +1027,7 @@ contains
               do i=1,np
                  v1     = elem(ie)%state%v(i,j,1,k,n0)
                  v2     = elem(ie)%state%v(i,j,2,k,n0)
-                 Ephi(i,j)=0.5D0*( v1*v1 + v2*v2 )
-		 Eexner(i,j)=(p(i,j,k)/p0)**kappa                 
+                 Ephi(i,j)=0.5D0*( v1*v1 + v2*v2 )                 
                  thetau(i,j,1)=theta(i,j,k)*v1
                  thetau(i,j,2)=theta(i,j,k)*v2
               enddo
@@ -1047,7 +1051,7 @@ contains
 
            ! vtemp = grad_phi(:,:,k)
            vtemp  =gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
-           vtemp2 =gradient_sphere(Eexner(:,:),deriv,elem(ie)%Dinv)
+           vtemp2 =gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)
            divtemp=divergence_sphere(thetau(:,:),deriv,elem(ie))
            do j=1,np
               do i=1,np
@@ -1058,7 +1062,7 @@ contains
                  elem(ie)%accum%IEhorz1(i,j)=-theta(i,j,k)*(vtemp2(i,j,1)*v1+vtemp2(i,j,1)*v2)+ &
                  dp3d(i,j,k)*vtemp(i,j,1)*v1+vtemp(i,j,2)*v2) 
                ! Form IEhorz2
-                 elem(ie)%accum%IEhorz1(i,j)=-Eexner(i,j)*divtemp+dp3d(i,j,k)*(vtemp(i,j,1)*v1+ &
+                 elem(ie)%accum%IEhorz1(i,j)=-exner(i,j,k)*divtemp+dp3d(i,j,k)*(vtemp(i,j,1)*v1+ &
                  vtemp(i,j,2)*v2)
                ! Form PEhorz1 
 		 elem(ie)accum%PEhorz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-dp3d(i,j,k)*(vtemp(i,j,1)* &
