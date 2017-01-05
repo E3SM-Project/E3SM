@@ -1011,20 +1011,24 @@ contains
         ! PE = ps*phi
         !
         ! dH/dt = int(dKE/dt+dPE/dt+dIE/dt)=0
-        ! dKE/dt = KEhorz1+KEvert1+IEhorz1-pi*g*w + (sdot terms)
-        ! dPE/dt = PEhorz1 + IEvert1 +  pi*g*w + (sdot terms)
+        ! dKE/dt = KEhorz1+KEvert1+T1+T2-pi*g*w + (sdot terms)
+        ! dPE/dt = PEhorz1 + S1+S2 + pi*g*w + (sdot terms)
         ! dIE/dt = IEhorz2 + (sdot terms)
         ! 
         ! Note: as of now, we do not form the dp/ds * g * w terms
 	! KEhorz1 = -0.5*u^2 + div(u *ps) - 0.5*ps * grad(u^2)^T u
         ! KEvert1 = -0.5*w^2 *div(u*ps) - ps*(grad(w)^T u)*w (likely to be the troublsome term)
-        ! IEhorz1 = -theta*grad(p^kappa)^T u - (dp/ds)*grad(phi)^T u +(dp/ds)*g*w
+        ! T1 = -theta*grad(p^kappa)^T u
+        ! T2 = - (dp/ds)*grad(phi)^T u +(dp/ds)*g*w
         ! PEhorz1 = -phi*div(ps*u)-ps*grad(phi)^T u
         ! IEvert1 = (d/ds)(p dphi/dt)+ptop*dphitop/dt
-        ! IEhorz2 = -p^kappa div(theta*u) + (dp/ds) grad(phi)^T	u - (dp/ds)*g*w
+        ! S1 = -p^kappa div(theta*u)
+        ! S2 = (dp/ds) grad(phi)^T u - (dp/ds)*g*w
+        !
+        ! Forming S2 and T2 is unnecessary, since these terms will cancel automatically
         ! 
         ! Upon integration, we should have:  KEhorz1=KEvert1=0,
-        ! IEhorz1=-IEhorz2, PEhorz1=0, IEvert1=0 
+        ! T1=S1, T2=S2, PEhorz1=0, IEvert1=0 
         ! likely will not have KEver1 = 0, should hopefully be small
 
         do j=1,np
@@ -1071,12 +1075,10 @@ contains
                  v1 = elem(ie)%state%v(i,j,1,k,n0)
                  v2 = elem(ie)%state%v(i,j,2,k,n0)
                  E = 0.5D0*( v1*v1 + v2*v2 )
-               ! Form IEhorz1
-                 elem(ie)%accum%IEhorz1(i,j)=-theta(i,j,k)*(vtemp2(i,j,1)*v1+vtemp2(i,j,1)*v2)+ &
-                 dp3d(i,j,k)*vtemp(i,j,1)*v1+vtemp(i,j,2)*v2) 
-               ! Form IEhorz2
-                 elem(ie)%accum%IEhorz1(i,j)=-exner(i,j,k)*divtemp+dp3d(i,j,k)*(vtemp(i,j,1)*v1+ &
-                 vtemp(i,j,2)*v2)
+               ! Form T1
+                 elem(ie)%accum%T1(i,j)=-theta(i,j,k)*(vtemp2(i,j,1)*v1+vtemp2(i,j,1)*v2)
+               ! Form S1
+                 elem(ie)%accum%S1(i,j)=-exner(i,j,k)*divtemp
                ! Form PEhorz1 
 		 elem(ie)accum%PEhorz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-dp3d(i,j,k)*(vtemp(i,j,1)* &
                  v1+vtemp(i,j,2)*v2)	
