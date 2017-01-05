@@ -1424,13 +1424,12 @@ for mct, etc.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
-  <NETCDF_C_PATH><env>NETCDFROOT</env></NETCDF_C_PATH>
-  <NETCDF_FORTRAN_PATH><env>NETCDFROOT</env></NETCDF_FORTRAN_PATH>
+  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
   <!-- Don't rely on nf-config, as it's not available with all NetCDF modules on Skybridge -->
   <SLIBS>
-    <append> -L<var>NETCDF_FORTRAN_PATH</var>/lib -lnetcdff -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
+    <append> -L<var>NETCDF_PATH</var>/lib -lnetcdff -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
     <append MPILIB="mpich"> -mkl=cluster </append>
     <append MPILIB="mpich2"> -mkl=cluster </append>
     <append MPILIB="mpt"> -mkl=cluster </append>

@@ -186,7 +186,6 @@ ifndef AR
 endif
 
 ifdef NETCDF_C_PATH
-  $(info "NetCDF Split Directory in $(NETCDF_FORTRAN_PATH)   $(NETCDF_C_PATH)")
   ifndef NETCDF_FORTRAN_PATH
     $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
   endif
@@ -207,7 +206,6 @@ else ifdef NETCDF_FORTRAN_PATH
   $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
 else ifdef NETCDF_PATH
   NETCDF_SEPARATE:=false
-  $(info "NetCDF Single Directory in $(NETCDF_PATH)")
   ifndef INC_NETCDF
     INC_NETCDF:=$(NETCDF_PATH)/include
   endif
@@ -352,12 +350,10 @@ endif
 #===============================================================================
 INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
 
-ifdef NETCDF_SEPARATE
-  ifeq ($NETCDF_SEPARATE, false)
-    INCLDIR += -I$(INC_NETCDF)
-  else
-    INCLDIR += -I$(INC_NETCDF_C) -I$(INC_NETCDF_FORTRAN)
-  endif
+ifeq ($NETCDF_SEPARATE, false)
+  INCLDIR += -I$(INC_NETCDF)
+else
+  INCLDIR += -I$(INC_NETCDF_C) -I$(INC_NETCDF_FORTRAN)
 endif
 ifdef MOD_NETCDF
   INCLDIR += -I$(MOD_NETCDF)
