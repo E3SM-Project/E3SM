@@ -7,10 +7,54 @@ logger=logging.getLogger(__name__)
 # pragma pylint: disable=unsubscriptable-object
 
 ###############################################################################
+def _normalize_lists(value_str):
+###############################################################################
+    """
+    >>> _normalize_lists("'one two' 'three four'")
+    "'one two','three four'"
+    >>> _normalize_lists("'one two'   'three four'")
+    "'one two','three four'"
+    >>> _normalize_lists("'one two' ,  'three four'")
+    "'one two','three four'"
+    >>> _normalize_lists("'one two'")
+    "'one two'"
+    >>> _normalize_lists("1 2  3, 4 ,  5")
+    '1,2,3,4,5'
+    """
+    result = ""
+    inside_quotes = False
+    idx = 0
+    while idx < len(value_str):
+        value_c = value_str[idx]
+        if value_c == "'":
+            inside_quotes = not inside_quotes
+            result += value_c
+            idx += 1
+        elif value_c.isspace() or value_c == ",":
+            if inside_quotes:
+                result += value_c
+                idx += 1
+            else:
+                result += ","
+                idx += 1
+                while idx < len(value_str):
+                    value_c = value_str[idx]
+                    if not value_c.isspace() and value_c != ",":
+                        break
+                    idx += 1
+        else:
+            result += value_c
+            idx += 1
+
+    return result
+
+###############################################################################
 def _interpret_value(value_str, filename):
 ###############################################################################
     comma_re = re.compile(r'\s*,\s*')
     dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
+
+    value_str = _normalize_lists(value_str)
 
     tokens = [item.strip() for item in comma_re.split(value_str) if item.strip() != ""]
     if ("->" in value_str):
@@ -104,6 +148,18 @@ def _parse_namelists(namelist_lines, filename):
     ... /'''
     >>> _parse_namelists(teststr.splitlines(), 'foo')
     OrderedDict([('nml', OrderedDict([('val', ['2', '13', '13'])]))])
+
+    >>> teststr = '''&nml
+    ... val = 2 2 3
+    ... /'''
+    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    OrderedDict([('nml', OrderedDict([('val', ['2', '2', '3'])]))])
+
+    >>> teststr = '''&nml
+    ... val =  'a brown cow' 'a red hen'
+    ... /'''
+    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    OrderedDict([('nml', OrderedDict([('val', ["'a brown cow'", "'a red hen'"])]))])
     """
 
     comment_re = re.compile(r'^[#!]')
@@ -117,6 +173,7 @@ def _parse_namelists(namelist_lines, filename):
     for line in namelist_lines:
 
         line = line.strip()
+        line = line.replace('"',"'")
 
         logger.debug("Parsing line: '%s'" % line)
 
@@ -129,7 +186,7 @@ def _parse_namelists(namelist_lines, filename):
             # Defining a variable (AKA name)
             name, value = rcline.groups()
 
-            value = value.replace('"',"'")
+
             logger.debug("  Parsing variable '%s' with data '%s'" % (name, value))
 
             if 'seq_maps.rc' not in rv:
@@ -173,7 +230,6 @@ def _parse_namelists(namelist_lines, filename):
             # Defining a variable (AKA name)
             name, value_str = name_re.match(line).groups()
 
-            value_str = value_str.replace('"',"'")
             logger.debug("  Parsing variable '%s' with data '%s'" % (name, value_str))
 
             expect(multiline_variable is None,
