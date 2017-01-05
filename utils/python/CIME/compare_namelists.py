@@ -7,6 +7,84 @@ logger=logging.getLogger(__name__)
 # pragma pylint: disable=unsubscriptable-object
 
 ###############################################################################
+def _normalize_lists(value_str):
+###############################################################################
+    """
+    >>> _normalize_lists("'one two' 'three four'")
+    "'one two','three four'"
+    >>> _normalize_lists("'one two'   'three four'")
+    "'one two','three four'"
+    >>> _normalize_lists("'one two' ,  'three four'")
+    "'one two','three four'"
+    >>> _normalize_lists("'one two'")
+    "'one two'"
+    >>> _normalize_lists("1 2  3, 4 ,  5")
+    '1,2,3,4,5'
+    """
+    result = ""
+    inside_quotes = False
+    idx = 0
+    while idx < len(value_str):
+        value_c = value_str[idx]
+        if value_c == "'":
+            inside_quotes = not inside_quotes
+            result += value_c
+            idx += 1
+        elif value_c.isspace() or value_c == ",":
+            if inside_quotes:
+                result += value_c
+                idx += 1
+            else:
+                result += ","
+                idx += 1
+                while idx < len(value_str):
+                    value_c = value_str[idx]
+                    if not value_c.isspace() and value_c != ",":
+                        break
+                    idx += 1
+        else:
+            result += value_c
+            idx += 1
+
+    return result
+
+###############################################################################
+def _interpret_value(value_str, filename):
+###############################################################################
+    comma_re = re.compile(r'\s*,\s*')
+    dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
+
+    value_str = _normalize_lists(value_str)
+
+    tokens = [item.strip() for item in comma_re.split(value_str) if item.strip() != ""]
+    if ("->" in value_str):
+        # dict
+        rv = OrderedDict()
+        for token in tokens:
+            m = dict_re.match(token)
+            expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
+            k, v = m.groups()
+            rv[k] = _interpret_value(v, filename)
+
+        return rv
+    else:
+        new_tokens = []
+        for token in tokens:
+            if "*" in token:
+                # the following ensure that the following to namelist settings trigger a match
+                # nmlvalue = 1,1,1 versus nmlvalue = 3*1
+                sub_tokens = [item.strip() for item in token.split("*")]
+                expect(len(sub_tokens) == 2, "Incorrect usage of multiplication in token '%s'" % token)
+                new_tokens.extend([sub_tokens[1]] * int(sub_tokens[0]))
+            else:
+                new_tokens.append(token)
+
+        if "," in value_str or len(new_tokens) > 1:
+            return new_tokens
+        else:
+            return new_tokens[0]
+
+###############################################################################
 def _parse_namelists(namelist_lines, filename):
 ###############################################################################
     """
@@ -64,15 +142,30 @@ def _parse_namelists(namelist_lines, filename):
     Traceback (most recent call last):
         ...
     SystemExit: ERROR: In file 'foo', multiline list variable 'val' had dict entries
+
+    >>> teststr = '''&nml
+    ... val = 2, 2*13
+    ... /'''
+    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    OrderedDict([('nml', OrderedDict([('val', ['2', '13', '13'])]))])
+
+    >>> teststr = '''&nml
+    ... val = 2 2 3
+    ... /'''
+    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    OrderedDict([('nml', OrderedDict([('val', ['2', '2', '3'])]))])
+
+    >>> teststr = '''&nml
+    ... val =  'a brown cow' 'a red hen'
+    ... /'''
+    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    OrderedDict([('nml', OrderedDict([('val', ["'a brown cow'", "'a red hen'"])]))])
     """
 
     comment_re = re.compile(r'^[#!]')
     namelist_re = re.compile(r'^&(\S+)$')
     name_re = re.compile(r"^([^\s=']+)\s*=\s*(.+)$")
     rcline_re = re.compile(r"^([^&\s':]+)\s*:\s*(.+)$")
-    dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
-    comma_re = re.compile(r'\s*,\s*')
-    compress_item_re = re.compile(r'([0-9]+)[*](.+)$')
 
     rv = OrderedDict()
     current_namelist = None
@@ -80,6 +173,7 @@ def _parse_namelists(namelist_lines, filename):
     for line in namelist_lines:
 
         line = line.strip()
+        line = line.replace('"',"'")
 
         logger.debug("Parsing line: '%s'" % line)
 
@@ -92,7 +186,7 @@ def _parse_namelists(namelist_lines, filename):
             # Defining a variable (AKA name)
             name, value = rcline.groups()
 
-            value = value.replace('"',"'")
+
             logger.debug("  Parsing variable '%s' with data '%s'" % (name, value))
 
             if 'seq_maps.rc' not in rv:
@@ -134,47 +228,22 @@ def _parse_namelists(namelist_lines, filename):
 
         elif (name_re.match(line)):
             # Defining a variable (AKA name)
-            name, value = name_re.match(line).groups()
+            name, value_str = name_re.match(line).groups()
 
-            value = value.replace('"',"'")
-            logger.debug("  Parsing variable '%s' with data '%s'" % (name, value))
+            logger.debug("  Parsing variable '%s' with data '%s'" % (name, value_str))
 
             expect(multiline_variable is None,
                    "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
             expect(name not in rv[current_namelist], "In file '%s', Duplicate name: '%s'" % (filename, name))
 
-            tokens = [item.strip() for item in comma_re.split(value) if item.strip() != ""]
-            if ("->" in value):
-                # dict
-                rv[current_namelist][name] = OrderedDict()
-                for token in tokens:
-                    m = dict_re.match(token)
-                    expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
-                    k, v = m.groups()
-                    rv[current_namelist][name][k] = v
-                    logger.debug("    Adding dict entry '%s' -> '%s'" % (k, v))
+            real_value = _interpret_value(value_str, filename)
 
-            elif ("," in value):
-                # list
-                rv[current_namelist][name] = tokens
-
-                logger.debug("    Adding list entries: %s" % ", ".join(tokens))
-
-            elif (compress_item_re.match(value) is not None):
-                # the following ensure that the following to namelist settings trigger a match
-                # nmlvalue = 1,1,1 versus nmlvalue = 3*1
-
-                repeat, value = compress_item_re.match(value).groups()
-                rv[current_namelist][name] = list(value) * int(repeat)
-
-            else:
-                rv[current_namelist][name] = value
-
-                logger.debug("    Setting to value '%s'" % value)
+            rv[current_namelist][name] = real_value
+            logger.debug("    Adding value: %s" % real_value)
 
             if (line.endswith(",")):
                 # Value will continue on in subsequent lines
-                multiline_variable = (name, rv[current_namelist][name])
+                multiline_variable = (name, real_value)
 
                 logger.debug("    Var is multiline...")
 
@@ -182,20 +251,21 @@ def _parse_namelists(namelist_lines, filename):
             # Continuation of list or dict variable
             current_value = multiline_variable[1]
             logger.debug("  Continuing multiline variable '%s' with data '%s'" % (multiline_variable[0], line))
-            tokens = [item.strip() for item in comma_re.split(line) if item.strip() != ""]
+
+            real_value = _interpret_value(line, filename)
             if (type(current_value) is list):
-                expect("->" not in line, "In file '%s', multiline list variable '%s' had dict entries" % (filename, multiline_variable[0]))
-                current_value.extend(tokens)
-                logger.debug("    Adding list entries: %s" % ", ".join(tokens))
+                expect(type(real_value) is not OrderedDict, "In file '%s', multiline list variable '%s' had dict entries" % (filename, multiline_variable[0]))
+                real_value = real_value if type(real_value) is list else [real_value]
+                current_value.extend(real_value)
+
             elif (type(current_value) is OrderedDict):
-                for token in tokens:
-                    m = dict_re.match(token)
-                    expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
-                    k, v = m.groups()
-                    current_value[k] = v
-                    logger.debug("    Adding dict entry '%s' -> '%s'" % (k, v))
+                expect(type(real_value) is OrderedDict, "In file '%s', multiline dict variable '%s' had non-dict entries" % (filename, multiline_variable[0]))
+                current_value.update(real_value)
+
             else:
                 expect(False, "In file '%s', Continuation should have been for list or dict, instead it was: '%s'" % (filename, type(current_value)))
+
+            logger.debug("    Adding value: %s" % real_value)
 
             if (not line.endswith(",")):
                 # Completed
