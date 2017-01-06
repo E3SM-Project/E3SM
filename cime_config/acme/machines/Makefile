@@ -186,7 +186,8 @@ ifndef AR
 endif
 
 # To prevent breaking cleaning and building components which don't require NetCDF directly
-ifeq ($(if $(or $(filter pio, $(subst /,  , $(MAKECMDGOALS))), $(filter exec_se, $(subst /,  , $(MAKECMDGOALS)))), true, false), true)
+# NetCDF is only required for building the coupled model and the PIO library
+ifeq ($(if $(or $(findstring PIO, $(MODEL)), $(findstring CIME_MODEL, $(MODEL))), true, false), true)
   ifdef NETCDF_C_PATH
     ifndef NETCDF_FORTRAN_PATH
       $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
@@ -492,9 +493,9 @@ endif
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
   ifeq ($(NETCDF_SEPARATE), false)
-    SLIBS := -L$(LIB_NETCDF) -lnetcdf
+    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
   else ifeq ($(NETCDF_SEPARATE), true)
-    SLIBS := -L$(LIB_NETCDF_C) -L$(LIB_NETCDF_FORTRAN) -lnetcdf
+    SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
   endif
 endif
 
@@ -716,10 +717,10 @@ test_fc: test_fc.o
 	$(LD) -o $@ test_fc.o $(LDFLAGS)
 ifeq ($(NETCDF_SEPARATE), false)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(LDFLAGS)
 else ifeq ($(NETCDF_SEPARATE), true)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_C) -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(LDFLAGS)
 endif
 test_mpi: test_mpi.o
 	$(LD) -o $@ test_mpi.o $(LDFLAGS)
