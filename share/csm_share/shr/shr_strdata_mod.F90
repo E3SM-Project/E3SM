@@ -205,20 +205,30 @@ module shr_strdata_mod
 
   call MPI_COMM_SIZE(mpicom,npes,ierr)
   call MPI_COMM_RANK(mpicom,my_task,ierr)
+
   !--- Count streams again in case user made changes ---
   if (my_task == master_task) then
      do n=1,nStrMax
+
         !--- check if a streams string is defined in strdata
-        if (trim(SDAT%streams(n)) /= trim(shr_strdata_nullstr)) SDAT%nstreams = max(SDAT%nstreams,n)
+        if (trim(SDAT%streams(n)) /= trim(shr_strdata_nullstr)) then
+           SDAT%nstreams = max(SDAT%nstreams,n)
+        end if
+
         !--- check if a filename is defined in the stream
         call shr_stream_getNFiles(SDAT%stream(n),nfiles)
-        if (nfiles > 0) SDAT%nstreams = max(SDAT%nstreams,n)
-
-        if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) SDAT%dtlimit(n) = 1.0e30
+        if (nfiles > 0) then
+           SDAT%nstreams = max(SDAT%nstreams,n)
+        end if
+        if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) then
+           SDAT%dtlimit(n) = 1.0e30
+        end if
      end do
      SDAT%nvectors = 0
      do n=1,nVecMax
-        if (trim(SDAT%vectors(n)) /= trim(shr_strdata_nullstr)) SDAT%nvectors = n
+        if (trim(SDAT%vectors(n)) /= trim(shr_strdata_nullstr)) then
+           SDAT%nvectors = n
+        end if
      end do
   endif
 
@@ -312,6 +322,7 @@ module shr_strdata_mod
   ! --- initialize model domain ---
 
   if (present(gsmap)) then
+
      SDAT%nxg = nxg
      SDAT%nyg = nyg
      SDAT%nzg = nzg
@@ -319,7 +330,12 @@ module shr_strdata_mod
      call mct_gsmap_Copy(gsmap,SDAT%gsmap)
      call mct_ggrid_init(SDAT%grid, ggrid, lsize)
      call mct_aVect_copy(ggrid%data, SDAT%grid%data)
+
   else
+
+     ! NOTE: if the stream model domainfile is 'null' (or shr_strdata_nullstr), 
+     ! then set the model domain to the domain of the first stream
+
      if (trim(SDAT%domainfile) == trim(shr_strdata_nullstr)) then
         if (SDAT%nstreams > 0) then
            if (my_task == master_task) then
@@ -699,10 +715,11 @@ module shr_strdata_mod
         SDAT%dtmin(n) = min(SDAT%dtmin(n),dtime)
         SDAT%dtmax(n) = max(SDAT%dtmax(n),dtime)
         if ((SDAT%dtmax(n)/SDAT%dtmin(n)) > SDAT%dtlimit(n)) then
+           write(logunit,*) trim(subname),' ERROR: for stream ',n
            write(logunit,*) trim(subName),' ERROR: dt limit1 ',SDAT%dtmax(n),SDAT%dtmin(n),SDAT%dtlimit(n)
            write(logunit,*) trim(subName),' ERROR: dt limit2 ',SDAT%ymdLB(n),SDAT%todLB(n), &
                                                                SDAT%ymdUB(n),SDAT%todUB(n)
-           call shr_sys_abort(trim(subName)//' ERROR dt limit')
+           call shr_sys_abort(trim(subName)//' ERROR dt limit for stream')
         endif
      endif
      call t_stopf(trim(lstr)//trim(timname)//'_readLBUB')
