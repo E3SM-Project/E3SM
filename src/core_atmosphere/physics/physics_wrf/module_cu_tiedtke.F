@@ -381,24 +381,6 @@ contains
         enddo
       enddo
 
-#if defined(mpas)
-      do k=kts,kte
-        zz = kte+1-k        
-        do i=its,ite
-          u1(i,zz)=u3d(i,k,j)
-          v1(i,zz)=v3d(i,k,j)
-          t1(i,zz)=t3d(i,k,j)
-          q1(i,zz)= qv3d(i,k,j)
-          q1b(i,zz)=qvften(i,k,j)
-          q1bl(i,zz)=qvpblten(i,k,j)
-          q2(i,zz)=qc3d(i,k,j)
-          q3(i,zz)=qi3d(i,k,j)
-          omg(i,zz)=dot(i,k)
-          ght(i,zz)=zl(i,k)
-          prsl(i,zz) = pcps(i,k,j)
-        enddo
-      enddo
-#else
       do k=kts,kte
         zz = kte+1-k        
         do i=its,ite
@@ -420,7 +402,6 @@ contains
           prsl(i,zz) = pcps(i,k,j)
         enddo
       enddo
-#endif
 
       do k=kts,kte+1
         zz = kte+2-k
