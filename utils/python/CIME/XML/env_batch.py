@@ -461,7 +461,10 @@ class EnvBatch(EnvBase):
     def get_job_id(self, output):
         jobid_pattern = self.get_value("jobid_pattern", subgroup=None)
         expect(jobid_pattern is not None, "Could not find jobid_pattern in env_batch.xml")
-        jobid = re.search(jobid_pattern, output).group(1)
+        search_match = re.search(jobid_pattern, output)
+        expect(search_match is not None,
+               "Couldn't match jobid_pattern '%s' within submit output:\n '%s'" % (jobid_pattern, output))
+        jobid = search_match.group(1)
         return jobid
 
     def select_best_queue(self, num_pes, job=None):
