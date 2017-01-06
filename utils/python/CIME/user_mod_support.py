@@ -83,7 +83,7 @@ def update_user_nl_file(case_user_nl, contents):
         with open(case_user_nl, "r") as fd:
             old_contents = fd.read()
         contents = contents + old_contents
-    logger.info("Pre-pending file %s"%(case_user_nl))
+    logger.debug("Pre-pending file %s"%(case_user_nl))
     with open(case_user_nl, "w") as fd:
         fd.write(contents)
 

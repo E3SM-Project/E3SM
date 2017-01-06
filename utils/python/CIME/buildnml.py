@@ -6,7 +6,6 @@ These are used by components/<model_type>/<component>/cime_config/buildnml
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, handle_standard_logging_options, setup_standard_logging_options
-from CIME.case import Case
 import sys, os, argparse, doctest
 
 logger = logging.getLogger(__name__)
@@ -33,22 +32,22 @@ def parse_input(argv):
     return args.caseroot
 
 ###############################################################################
-def build_xcpl_nml(argv, compclass):
+#pylint: disable=unused-argument
+def build_xcpl_nml(case, caseroot, compname):
 ###############################################################################
-
-    caseroot = parse_input(argv)
-
-    compname = "x" + compclass
-
-    caseroot = parse_input(argv)
-
-    with Case(caseroot) as case:
-        rundir = case.get_value("RUNDIR")
-        ninst  = case.get_value("NINST_%s" % compclass.upper())
-        nx     = case.get_value("%s_NX" % compclass.upper())
-        ny     = case.get_value("%s_NY" % compclass.upper())
-        if compname == "xrof":
-            flood_mode = case.get_value('XROF_FLOOD_MODE')
+    compclasses = case.get_values("COMP_CLASSES")
+    compclass = None
+    for compclass in compclasses:
+        if case.get_value("COMP_%s"%compclass) == compname:
+            break
+    expect(compclass is not None,
+           "Could not identify compclass for compname %s"%compname)
+    rundir = case.get_value("RUNDIR")
+    ninst  = case.get_value("NINST_%s" % compclass.upper())
+    nx     = case.get_value("%s_NX" % compclass.upper())
+    ny     = case.get_value("%s_NY" % compclass.upper())
+    if compname == "xrof":
+        flood_mode = case.get_value('XROF_FLOOD_MODE')
 
     extras = []
     dtype = 1
@@ -108,7 +107,7 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
     lines_output.append("&comp_inparm \n")
     if infile_text:
         lines_output.append(infile_text)
-        logger.info("file_infile %s " %infile_text)
+        logger.debug("file_infile %s " %infile_text)
 
     for line in lines_input:
         match1 = re.search(r"^[\&\/\!]", line)

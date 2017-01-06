@@ -30,6 +30,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of all supported model grids, domains and mapping files (for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/cime_config/xml_schemas/config_grids_v2.xsd</schema>
   </entry>
 
   <entry id="MACHINES_SPEC_FILE">
@@ -46,14 +47,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing compiler specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="BUILD_SPEC_FILE">
-    <type>char</type>
-    <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_build.xml</default_value>
-    <group>case_last</group>
-    <file>env_case.xml</file>
-    <desc>file containing build specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_compilers_v2.xsd</schema>
   </entry>
 
   <entry id="PIO_SPEC_FILE">
@@ -200,7 +194,7 @@
   <!-- File names for all component specific configuration variables -->
   <!-- =============================================================== -->
 
-  <entry id="CONFIG_DRV_FILE">
+  <entry id="CONFIG_CPL_FILE">
     <type>char</type>
     <default_value>$CIMEROOT/driver_cpl/cime_config/config_component.xml</default_value>
     <group>case_last</group>
@@ -307,7 +301,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="ww"  >$SRCROOT/components/ww3/cime_config/config_component.xml</value>
+      <value component="ww3" >$SRCROOT/components/ww3/cime_config/config_component.xml</value>
       <value component="dwav">$CIMEROOT/components/data_comps/dwav/cime_config/config_component.xml</value>
       <value component="swav">$CIMEROOT/components/stub_comps/swav/cime_config/config_component.xml</value>
       <value component="xwav">$CIMEROOT/components/xcpl_comps/xwav/cime_config/config_component.xml</value>
@@ -331,4 +325,3 @@
   </entry>
 
 </entry_id>
-

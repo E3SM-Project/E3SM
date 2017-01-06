@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file
+from CIME.utils import touch, gzip_existing_file, SharedArea
 
 import tarfile, getpass, signal, glob, shutil
 
@@ -18,7 +18,7 @@ def _get_batch_job_id_for_syslog(case):
     mach = case.get_value("MACH")
     if mach == 'titan':
         return os.environ["PBS_JOBID"]
-    elif mach in ['edison', 'corip1']:
+    elif mach in ['edison', 'cori-haswell', 'cori-knl']:
         return os.environ["SLURM_JOB_ID"]
     elif mach == 'mira':
         return os.environ["COBALT_JOBID"]
@@ -81,11 +81,12 @@ def save_build_provenance_cesm(case, lid=None): # pylint: disable=unused-argumen
         fd.write("CESM version is %s\n"%version)
 
 def save_build_provenance(case, lid=None):
-    model = case.get_value("MODEL")
-    if model == "acme":
-        save_build_provenance_acme(case, lid=lid)
-    elif model == "cesm":
-        save_build_provenance_cesm(case, lid=lid)
+    with SharedArea():
+        model = case.get_value("MODEL")
+        if model == "acme":
+            save_build_provenance_acme(case, lid=lid)
+        elif model == "cesm":
+            save_build_provenance_cesm(case, lid=lid)
 
 def save_prerun_provenance_acme(case, lid=None):
     if not case.get_value("SAVE_TIMING"):
@@ -118,7 +119,7 @@ def save_prerun_provenance_acme(case, lid=None):
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
-    elif mach in ["corip1", "edison"]:
+    elif mach in ["edison", "cori-haswell", "cori-knl"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
@@ -191,11 +192,12 @@ def save_prerun_provenance_cesm(case, lid=None): # pylint: disable=unused-argume
     pass
 
 def save_prerun_provenance(case, lid=None):
-    model = case.get_value("MODEL")
-    if model == "acme":
-        save_prerun_provenance_acme(case, lid=lid)
-    elif model == "cesm":
-        save_prerun_provenance_cesm(case, lid=lid)
+    with SharedArea():
+        model = case.get_value("MODEL")
+        if model == "acme":
+            save_prerun_provenance_acme(case, lid=lid)
+        elif model == "cesm":
+            save_prerun_provenance_cesm(case, lid=lid)
 
 def save_postrun_provenance_cesm(case, lid=None):
     save_timing = case.get_value("SAVE_TIMING")
@@ -248,7 +250,7 @@ def save_postrun_provenance_acme(case, lid):
     elif mach == "mira":
         globs_to_copy.append("%s*output" % job_id)
         globs_to_copy.append("%s*cobaltlog" % job_id)
-    elif mach in ["edison", "corip1"]:
+    elif mach in ["edison", "cori-haswell", "cori-knl"]:
         globs_to_copy.append("%s" % case.get_value("CASE"))
 
     globs_to_copy.append("logs/acme.log.%s.gz" % lid)
@@ -271,8 +273,9 @@ def save_postrun_provenance_acme(case, lid):
                 gzip_existing_file(os.path.join(root, filename))
 
 def save_postrun_provenance(case, lid=None):
-    model = case.get_value("MODEL")
-    if model == "acme":
-        save_postrun_provenance_acme(case, lid=lid)
-    elif model == "cesm":
-        save_postrun_provenance_cesm(case, lid=lid)
+    with SharedArea():
+        model = case.get_value("MODEL")
+        if model == "acme":
+            save_postrun_provenance_acme(case, lid=lid)
+        elif model == "cesm":
+            save_postrun_provenance_cesm(case, lid=lid)

@@ -422,12 +422,6 @@ LII    CLM initial condition interpolation test
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
-  <test NAME="NOC">
-    <DESC>multi-instance validation for single instance ocean (default length)</DESC>
-    <INFO_DBUG>1</INFO_DBUG>
-    <DOUT_S>FALSE</DOUT_S>
-  </test>
-
   <test NAME="OCP">
     <DESC>pop performance test</DESC>
     <INFO_DBUG>1</INFO_DBUG>

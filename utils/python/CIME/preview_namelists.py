@@ -4,7 +4,7 @@ API for preview namelist
 
 from CIME.XML.standard_module_setup import *
 
-import glob, shutil
+import glob, shutil, imp
 logger = logging.getLogger(__name__)
 
 def create_dirs(case):
@@ -18,11 +18,12 @@ def create_dirs(case):
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
 
+
     docdir = os.path.join(caseroot, "CaseDocs")
     dirs_to_make = []
     models = case.get_values("COMP_CLASSES")
     for model in models:
-        dirname = "cpl" if model == "DRV" else model.lower()
+        dirname = model.lower()
         dirs_to_make.append(os.path.join(exeroot, dirname, "obj"))
 
     dirs_to_make.extend([exeroot, libroot, incroot, rundir, docdir])
@@ -41,7 +42,9 @@ def create_dirs(case):
             fd.write(caseroot+"\n")
 
 def create_namelists(case):
-
+    """
+    Create component namelists
+    """
     case.flush()
 
     casebuild = case.get_value("CASEBUILD")
@@ -53,17 +56,50 @@ def create_namelists(case):
     # Load modules
     case.load_env()
 
-    # Create namelists
+    logger.info("Creating component namelists")
+
+    # Create namelists - must have cpl last in the list below
+    # Note - cpl must be last in the loop below so that in generating its namelist,
+    # it can use xml vars potentially set by other component's buildnml scripts
     models = case.get_values("COMP_CLASSES")
+    models += [models.pop(0)]
     for model in models:
         model_str = model.lower()
         config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
         config_dir = os.path.dirname(config_file)
+        if model_str == "cpl":
+            compname = "drv"
+        else:
+            compname = case.get_value("COMP_%s" % model_str.upper())
         cmd = os.path.join(config_dir, "buildnml")
-        run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=True)
+        do_run_cmd = False
+        try:
+            with open(cmd, 'r') as f:
+                first_line = f.readline()
+            if "python" in first_line:    
+                logger.info("   Calling %s buildnml"%compname)
+                mod = imp.load_source("buildnml", cmd)
+                mod.buildnml(case, caseroot, compname)
+            else:
+                raise SyntaxError
+        except SyntaxError as detail:
+            if 'python' in first_line:
+                expect(False, detail)
+            else:
+                do_run_cmd = True
+        except AttributeError:
+            do_run_cmd = True
+        except:
+            raise
 
-    # refresh case xml object from file
-    case.read_xml()
+        if do_run_cmd:
+            logger.info("   Running %s buildnml"%compname)
+            case.flush()
+            run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+            # refresh case xml object from file
+            case.read_xml()            
+    logger.info("Finished creating component namelists")
+
 
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):

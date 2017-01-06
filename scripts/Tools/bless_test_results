@@ -48,7 +48,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
     default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-    default_baseline_root = _MACHINE.get_value("CCSM_BASELINE")
+    default_baseline_root = _MACHINE.get_value("BASELINE_ROOT")
     default_compiler      = _MACHINE.get_default_compiler()
     scratch_root          = _MACHINE.get_value("CIME_OUTPUT_ROOT")
     default_testroot      = os.path.join(scratch_root)

@@ -59,8 +59,8 @@ class NamelistGenerator(object):
 
     _streams_variables = []
 
-    def __init__(self, case, infiles, #pylint:disable=too-many-arguments
-                 definition_files, config):
+    #pylint:disable=too-many-arguments
+    def __init__(self, case, definition_files):
         """Construct a namelist generator.
 
         Arguments:
@@ -73,8 +73,8 @@ class NamelistGenerator(object):
         self._case = case
         self._din_loc_root = case.get_value('DIN_LOC_ROOT')
 
-        # Create definition object.
-        self._definition = NamelistDefinition(definition_files[0], attributes=config)
+        # Create definition object - this will validate the xml schema in the definition file
+        self._definition = NamelistDefinition(definition_files[0])
 
         # Determine array of _stream_variables from definition object
         # This is only applicable to data models
@@ -85,6 +85,27 @@ class NamelistGenerator(object):
 
         # Create namelist object.
         self._namelist = Namelist()
+
+    # Define __enter__ and __exit__ so that we can use this as a context manager
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
+        """Return array of names of all definition nodes
+        """
+        self._definition.set_nodes(skip_groups=skip_groups)
+
+        # Determine the array of entry nodes that will be acted upon 
+        entry_nodes = self._definition.set_nodes(skip_groups=skip_groups)
+
+        # Add attributes to definition object 
+        self._definition.add_attributes(config)
+
+        # Parse the infile and create namelist settings for the contents of infile
+        # this will override all other settings in add_defaults
         for file_ in infiles:
             # Parse settings in "groupless" mode.
             nml_dict = parse(in_file=file_, groupless=True)
@@ -99,16 +120,11 @@ class NamelistGenerator(object):
             # over later settings).
             self._namelist.merge_nl(new_namelist)
 
-    # Define __enter__ and __exit__ so that we can use this as a context manager
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        return False
-
-    def get_definition_entries(self):
-        """Return array of names of all definition entries"""
-        return self._definition.get_entries()
+        if skip_entry_loop is None:
+            for entry in entry_nodes:
+                self.add_default(entry.get("id"))
+        else:
+            return entry_nodes
 
     @staticmethod
     def quote_string(string):
@@ -123,7 +139,7 @@ class NamelistGenerator(object):
 
     def _to_python_value(self, name, literals):
         """Transform a literal list as needed for `get_value`."""
-        var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name))
+        var_type, _, var_size, = self._definition.split_type_string(name)
         if len(literals) > 0:
             value = expand_literal_list(literals)
         else:
@@ -145,7 +161,7 @@ class NamelistGenerator(object):
         This is the inverse of `_to_python_value`, except that many of the
         changes have potentially already been performed.
         """
-        var_type, _, var_size, =  self._definition.split_type_string(name, self._definition.get_type_info(name))
+        var_type, _, var_size, =  self._definition.split_type_string(name)
         if var_size == 1 and not isinstance(value, list):
             value = [value]
         for i, scalar in enumerate(value):
@@ -193,7 +209,7 @@ class NamelistGenerator(object):
         a user-specified setting. Even if `value` is (or contains) a null value,
         the old setting for the variable will be thrown out completely.
         """
-        var_group = self._definition.get_node_element_info(name, "group")
+        var_group = self._definition.get_group(name)
         literals = self._to_namelist_literals(name, value)
         self._namelist.set_variable_value(var_group, name, literals)
 
@@ -226,13 +242,13 @@ class NamelistGenerator(object):
            exists. This behavior is suppressed within single-quoted strings
            (similar to parameter expansion in shell scripts).
         """
-        default = self._definition.get_value_match(name, attributes=config, exact_match=True)
+        default = self._definition.get_value_match(name, attributes=config, exact_match=False)
         if default is None:
             expect(allow_none, "No default value found for %s." % name)
             return None
         default = expand_literal_list(default)
 
-        var_type,_,_ = self._definition.split_type_string(name, self._definition.get_type_info(name))
+        var_type,_,_ = self._definition.split_type_string(name)
 
         for i, scalar in enumerate(default):
             # Skip single-quoted strings.
@@ -415,6 +431,12 @@ class NamelistGenerator(object):
         year_end = int(self.get_default("strm_year_end", config))
         data_filenames = self._sub_paths(data_filenames, year_start, year_end)
         domain_filenames = self._sub_paths(domain_filenames, year_start, year_end)
+
+        # Overwrite domain_file if should be set from stream data
+        if domain_filenames == 'null':
+            domain_filepath = data_filepath
+            domain_filenames = data_filenames.splitlines()[0]
+
         stream_file_text = _stream_file_template.format(
             domain_varnames=domain_varnames,
             domain_filepath=domain_filepath,
@@ -478,7 +500,7 @@ class NamelistGenerator(object):
             fullpath = os.path.join(self._din_loc_root, file_path)
             return fullpath
 
-    def add_default(self, name, value=None):
+    def add_default(self, name, value=None, ignore_abs_path=None):
         """Add a value for the specified variable to the namelist.
 
         If the specified variable is already defined in the object, the existing
@@ -490,7 +512,8 @@ class NamelistGenerator(object):
         If no value for the variable is found via any of the above, this method
         will raise an exception.
         """
-        group = self._definition.get_node_element_info(name, "group")
+        # pylint: disable=protected-access
+        group = self._definition.get_group(name)
 
         # Use this to see if we need to raise an error when nothing is found.
         have_value = False
@@ -499,11 +522,14 @@ class NamelistGenerator(object):
         current_literals = self._namelist.get_variable_value(group, name)
         if current_literals != [""]:
             have_value = True
+            # Do not proceed further since this has been obtained the -infile contents
+            return 
 
         # Check for input argument.
         if value is not None:
             have_value = True
-            literals = self._to_namelist_literals(name, value) #FIXME - this is where an array is compressed into a 3*value
+            # if compression were to occur, this is where it does
+            literals = self._to_namelist_literals(name, value) 
             current_literals = merge_literal_lists(literals, current_literals)
 
         # Check for default value.
@@ -511,28 +537,29 @@ class NamelistGenerator(object):
         if default is not None:
             have_value = True
             default_literals = self._to_namelist_literals(name, default)
-            current_literals = merge_literal_lists(default_literals,
-                                                   current_literals)
+            current_literals = merge_literal_lists(default_literals, current_literals)
         expect(have_value, "No default value found for %s." % name)
 
         # Go through file names and prepend input data root directory for
         # absolute pathnames.
-        var_input_pathname = self._definition.get_input_pathname(name)
-        if var_input_pathname == 'abs':
-            current_literals = expand_literal_list(current_literals)
-            for i, literal in enumerate(current_literals):
-                if literal == '':
-                    continue
-                file_path = character_literal_to_string(literal)
-                if file_path == 'UNSET' or file_path == 'idmap':
-                    continue
-                if file_path == 'null':
-                    continue
-                file_path = self.set_abs_file_path(file_path)
-                expect(os.path.exists(file_path),
-                       "File not found: %s = %s" % (name, literal))
-                current_literals[i] = string_to_character_literal(file_path)
-            current_literals = compress_literal_list(current_literals)
+        if ignore_abs_path is None:
+            var_input_pathname = self._definition.get_input_pathname(name)
+            if var_input_pathname == 'abs':
+                current_literals = expand_literal_list(current_literals)
+                for i, literal in enumerate(current_literals):
+                    if literal == '':
+                        continue
+                    file_path = character_literal_to_string(literal)
+                    # NOTE - these are hard-coded here and a better way is to make these extensible
+                    if file_path == 'UNSET' or file_path == 'idmap':
+                        continue
+                    if file_path == 'null':
+                        continue
+                    file_path = self.set_abs_file_path(file_path)
+                    if not os.path.exists(file_path):
+                        logger.warn ("File not found: %s = %s, will attempt to download in check_input_data phase" % (name, literal))
+                    current_literals[i] = string_to_character_literal(file_path)
+                current_literals = compress_literal_list(current_literals)
 
         # Set the new value.
         self._namelist.set_variable_value(group, name, current_literals)
@@ -555,13 +582,19 @@ class NamelistGenerator(object):
                 if input_pathname is not None:
                     # This is where we end up for all variables that are paths
                     # to input data files.
-                    literals = self._namelist.get_variable_value(group_name,
-                                                                 variable_name)
+                    literals = self._namelist.get_variable_value(group_name, variable_name)
                     for literal in literals:
                         file_path = character_literal_to_string(literal)
+                        # NOTE - these are hard-coded here and a better way is to make these extensible
+                        if file_path == 'UNSET' or file_path == 'idmap':
+                            continue
                         if input_pathname == 'abs':
                             # No further mangling needed for absolute paths.
-                            pass
+                            # At this point, there are overwrites that should be ignored
+                            if not os.path.isabs(file_path):
+                                continue
+                            else:
+                                pass
                         elif input_pathname.startswith('rel:'):
                             # The part past "rel" is the name of a variable that
                             # this variable specifies its path relative to.
@@ -573,10 +606,9 @@ class NamelistGenerator(object):
                                    "Bad input_pathname value: %s." %
                                    input_pathname)
                         # Write to the input data list.
-                        input_data_list.write("%s = %s\n" %
-                                              (variable_name, file_path))
+                        input_data_list.write("%s = %s\n" % (variable_name, file_path))
 
-    def write_output_file(self, namelist_file, data_list_path=None, groups=None):
+    def write_output_file(self, namelist_file, data_list_path=None, groups=None, sorted_groups=True):
         """Write out the namelists and input data files.
 
         The `namelist_file` and `modelio_file` are the locations to which the
@@ -595,12 +627,16 @@ class NamelistGenerator(object):
             groups.remove("seq_maps")
 
         # write namelist file
-        self._namelist.write(namelist_file, groups=groups)
+        self._namelist.write(namelist_file, groups=groups, sorted_groups=sorted_groups)
 
         if data_list_path is not None:
             # append to input_data_list file
             with open(data_list_path, "a") as input_data_list:
                 self._write_input_files(input_data_list)
+
+    def add_nmlcontents(self, filename, group, append=True, format_="nmlcontents", sorted_groups=True):
+        """ Write only contents of nml group """
+        self._namelist.write(filename, groups=[group], append=append, format_=format_, sorted_groups=sorted_groups)
 
     def write_seq_maps(self, filename):
         """ Write out seq_maps.rc"""

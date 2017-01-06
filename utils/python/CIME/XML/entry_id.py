@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class EntryID(GenericXML):
 
-    def __init__(self, infile=None):
-        GenericXML.__init__(self, infile)
+    def __init__(self, infile=None, schema=None):
+        GenericXML.__init__(self, infile, schema)
         self.groups={}
 
     def get_default_value(self, node, attributes=None):
@@ -24,9 +24,7 @@ class EntryID(GenericXML):
         value = self._get_value_match(node, attributes)
         if value is None:
             # Fall back to default value
-            val_node = self.get_optional_node("default_value", root=node)
-            if val_node is not None:
-                value = val_node.text
+            value = self.get_element_text("default_value", root=node)
         else:
             logger.debug("node is %s value is %s" % (node.get("id"), value))
 
@@ -39,15 +37,13 @@ class EntryID(GenericXML):
     def set_default_value(self, vid, val):
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
-            default_node = self.get_optional_node("default_value", root=node)
-            if default_node is not None:
-                default_node.text = val
-            else:
+            val = self.set_element_text("default_value", val, root=node)
+            if val is None:
                 logger.warn("Called set_default_value on a node without default_value field")
 
         return val
 
-    def get_value_match(self, vid, attributes=None, exact_match=False):
+    def get_value_match(self, vid, attributes=None, exact_match=False, entry_node=None):
         # Handle this case:
         # <entry id ...>
         #  <values>
@@ -57,10 +53,13 @@ class EntryID(GenericXML):
         #  </values>
         # </entry>
 
-        node = self.get_optional_node("entry", {"id":vid})
-        value = None
-        if node is not None:
-            value = self._get_value_match(node, attributes, exact_match)
+        if entry_node is not None:
+            value = self._get_value_match(entry_node, attributes, exact_match)
+        else:
+            node = self.get_optional_node("entry", {"id":vid})
+            value = None
+            if node is not None:
+                value = self._get_value_match(node, attributes, exact_match)
         logger.debug("(get_value_match) vid %s value %s"%(vid, value))
         return value
 
@@ -74,22 +73,22 @@ class EntryID(GenericXML):
         for vnode in nodes:
             # For each node in the list start a score.
             score = 0
-            for attribute in vnode.keys():
-                # For each attribute, add to the score.
-                score += 1
-                # If some attribute is specified that we don't know about,
-                # or the values don't match, it's not a match we want.
-                if exact_match:
-                    if attribute not in attributes or \
-                            attributes[attribute] != vnode.get(attribute):
-                        score = -1
-                        break
-                else:
-                    if attribute not in attributes or \
-                            not re.search(vnode.get(attribute),
-                                          attributes[attribute]):
-                        score = -1
-                        break
+            if attributes:
+                for attribute in vnode.keys():
+                    # For each attribute, add to the score.
+                    score += 1
+                    # If some attribute is specified that we don't know about,
+                    # or the values don't match, it's not a match we want.
+                    if exact_match:
+                        if attribute not in attributes or \
+                                attributes[attribute] != vnode.get(attribute):
+                            score = -1
+                            break
+                    else:
+                        if attribute not in attributes or not \
+                                re.search(vnode.get(attribute),attributes[attribute]):
+                            score = -1
+                            break
 
             # Add valid matches to the list.
             if score >= 0:
@@ -111,64 +110,87 @@ class EntryID(GenericXML):
             return self._get_node_element_info(node, element_name)
 
     def _get_node_element_info(self, node, element_name):
-        element_node = self.get_optional_node(element_name, root=node)
-        if element_node is not None:
-            return element_node.text
-        return None
+        return self.get_element_text(element_name, root=node)
 
     def _get_type_info(self, node):
+        if node is None:
+            return None
         val = self._get_node_element_info(node, "type")
         if val is None:
             return "char"
         return val
 
     def get_type_info(self, vid):
-        val = self.get_node_element_info(vid, "type")
-        if val is None:
-            return "char"
-        return val
+        vid, _, _ = self.check_if_comp_var(vid, None)
+        node = self.get_optional_node("entry", {"id":vid})
+        return self._get_type_info(node)
+
+    # pylint: disable=unused-argument
+    def check_if_comp_var(self, vid, comp=None):
+        # handled in classes
+        return vid, None, False
+
 
     def _get_default(self, node):
         return self._get_node_element_info(node, "default_value")
 
     # Get description , expect child with tag "description" for parent node
-    def _get_description (self, node):
+    def get_description (self, node):
         return self._get_node_element_info(node, "desc")
 
     # Get group , expect node with tag "group"
     # entry id nodes are children of group nodes
-    def _get_group (self, node):
-        return self._get_node_element_info(node, "group")
+    def get_groups(self, node):
+        groups = self.get_nodes("group")
+        result = []
+        nodes = []
+        vid = node.get("id")
+        for group in groups:
+            nodes = self.get_nodes("entry", attributes={"id":vid}, root=group)
+            if nodes:
+                result.append(group.get("id"))
+
+        return result
+
 
     def get_valid_values(self, vid):
         node = self.get_optional_node("entry", {"id":vid})
         if node is None:
             return None
+        return self._get_valid_values(node)
 
-        vv_node = self.get_optional_node("valid_values", root=node)
-        if vv_node is None:
-            return None
-        else:
-            return vv_node.text.split(",")
+    def _get_valid_values(self, node):
+        valid_values = self.get_element_text("valid_values", root=node)
+        valid_values_list = None
+        if valid_values is not None:
+            valid_values_list = [item.lstrip() for item in valid_values.split(',')]
+        return valid_values_list
 
     def set_valid_values(self, vid, new_valid_values):
         node = self.get_optional_node("entry", {"id":vid})
         if node is None:
             return None
-        vv_node = self.get_optional_node("valid_values", root=node)
-        if vv_node is None:
+        return self._set_valid_values(node, new_valid_values)
+
+    def get_nodes_by_id(self, vid):
+        return self.get_nodes("entry", {"id":vid})
+
+
+    def _set_valid_values(self, node, new_valid_values):
+        old_vv = self._get_valid_values(node)
+        if old_vv is None:
             vv_node = ET.Element("valid_values")
             vv_node.text = new_valid_values
             self.add_child(vv_node)
+            logger.debug("Adding valid_values %s for %s"%(new_valid_values, node.get("id")))
         else:
-            logger.debug("Replacing valid_values %s for %s"%(vv_node.text, vid))
-            vv_node.text = new_valid_values
-        logger.debug("Adding valid_values %s for %s"%(new_valid_values, vid))
+            vv_text = self.set_element_text("valid_values", new_valid_values, root=node)
+            logger.debug("Replacing valid_values %s with %s for %s"%(old_vv, vv_text, node.get("id")))
 
         current_value = node.get("value")
-        valid_values_list = new_valid_values.split(',')
+        valid_values_list = self._get_valid_values(node)
         if current_value is not None and current_value not in valid_values_list:
-            logger.warn("WARNING: Current setting for %s not in new valid values. Updating setting to \"%s\""%(vid, valid_values_list[0]))
+            logger.warn("WARNING: Current setting for %s not in new valid values. Updating setting to \"%s\""%(node.get("id"), valid_values_list[0]))
             self._set_value(node, valid_values_list[0])
         return new_valid_values
 
@@ -179,16 +201,15 @@ class EntryID(GenericXML):
         subgroup is ignored in the general routine and applied in specific methods
         """
         expect(subgroup is None, "Subgroup not supported")
-        valid_values = self.get_optional_node("valid_values", root=node)
+        valid_values = self._get_valid_values(node)
         if ignore_type:
             expect(type(value) is str, "Value must be type string if ignore_type is true")
             str_value = value
         else:
             type_str = self._get_type_info(node)
             str_value = convert_to_string(value, type_str, vid)
-        if valid_values is not None and valid_values.text is not None and not str_value.startswith('$'):
-            vvlist = [item.lstrip() for item in valid_values.text.split(',')]
-            expect(str_value in vvlist, "Did not find %s in valid values:%s"%(value, vvlist))
+        if valid_values is not None and not str_value.startswith('$'):
+            expect(str_value in valid_values, "Did not find %s in valid values:%s"%(value, valid_values))
         node.set("value", str_value)
 
         return value
@@ -239,6 +260,8 @@ class EntryID(GenericXML):
         val = self._get_value(node, attribute=attribute, resolved=resolved, subgroup=subgroup)
         # Return value as right type if we were able to fully resolve
         # otherwise, we have to leave as string.
+        if val is None:
+            return val
         if "$" in val:
             return val
         else:
@@ -257,9 +280,7 @@ class EntryID(GenericXML):
 
         logger.debug("Found node %s with attributes %s" , node.tag , node.attrib)
         if attribute:
-            valnodes = self.get_optional_node("value", attribute, root=node)
-            if valnodes is not None:
-                val = valnodes.text
+            val = self.get_element_text("value", attributes=attribute, root=node)
         elif node.get("value") is not None:
             val = node.get("value")
         else:
@@ -270,77 +291,19 @@ class EntryID(GenericXML):
 
         return val
 
-    def get_full_records(self, item, attribute=None, resolved=True, subgroup=None): # (self, vid, att, resolved=True , subgroup=None ):
-        """
-        If an entry includes a list of values return a list of dict matching each
-        attribute to its associated value and group
-        """
-        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" ,  self.__class__.__name__ , item, attribute, resolved, subgroup)
-
-        nodes   = [] # List of identified xml elements
-        results = [] # List of identified parameters
-
-        # Find all nodes with attribute name and attribute value item
-        # xpath .//*[name='item']
-
-        groups = self.get_nodes("group")
-
-        if (len(groups) == 0) :
-            groups = [None]
-
-        for group in groups :
-
-            if item :
-                nodes = self.get_nodes("entry",{"id" : item} , root=group)
-            else :
-                # Return all nodes
-                logger.debug("(get_full_records) Retrieving all parameter")
-                nodes = self.get_nodes("entry" , root=group)
-
-            if (len(nodes) == 0) :
-                logger.debug("(get_full_records) Found no nodes for %s" , item)
-            else :
-                logger.debug("(get_full_records) Building return structure for %s nodes" , len(nodes))
-
-            for node in nodes :
-                logger.debug("(get_full_records) Node tag=%s attribute=%s" , node.tag , node.attrib )
-
-                g       = self._get_group(group)
-                val     = node.attrib['value']
-                attr    = node.attrib['id']
-                t       = self._get_type_info(node)
-                desc    = self._get_description(node)
-                default = self._get_default(node)
-                file_   = None
-                try :
-                    file_   = self.filename
-                except AttributeError:
-                    logger.debug("(get_full_records) Can't call filename on %s (%s)" , self , self.__class__.__name__ )
-                #t   =  super(EnvBase , self).get_type( node )
-                v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file_}
-
-                results.append(v)
-
-        logger.debug("(get_full_records) Returning %s items" , len(results) )
-        return results
-
     def get_child_content(self, vid, childname):
         val = None
         node = self.get_optional_node("entry", {"id" : vid})
         if node is not None:
-            childmatch  = self.get_optional_node(childname, root=node[0])
-            if childmatch is not None:
-                val = childmatch.text
-
+            val = self.get_element_text(childname, root=node)
         return val
 
     def get_elements_from_child_content(self, childname, childcontent):
         nodes = self.get_nodes("entry")
         elements = []
         for node in nodes:
-            childnode = self.get_optional_node(childname,root=node)
-            expect(childnode is not None,"No childname %s for id %s"%(childname,node.get("id")))
-            content = childnode.text
+            content = self.get_element_text(childname, root=node)
+            expect(content is not None,"No childname %s for id %s"%(childname,node.get("id")))
             if content == childcontent:
                 elements.append(deepcopy(node))
 
@@ -387,26 +350,17 @@ class EntryID(GenericXML):
             # expression match to a dictionary value in attributes matching a
             # value attribute in node
             value = srcobj.get_default_value(src_node, attributes)
-
-            self._set_value(node,value)
+            if value is not None and len(value):
+                self._set_value(node,value)
             logger.debug ("Adding to group " + gname)
 
         return nodelist
 
     def cleanupnode(self, node):
         """
-        Remove the <group>, <file>, <values> and <value> childnodes from node
+        in env_base.py, not expected to get here
         """
-        fnode = node.find(".//file")
-        node.remove(fnode)
-        gnode = node.find(".//group")
-        node.remove(gnode)
-        dnode = node.find(".//default_value")
-        node.remove(dnode)
-        vnode = node.find(".//values")
-        if vnode is not None:
-            node.remove(vnode)
-        return node
+        expect(False, " Not expected to be here %s"%node.get("id"))
 
     def compare_xml(self, other):
         xmldiffs = {}

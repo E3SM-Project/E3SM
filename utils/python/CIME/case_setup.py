@@ -7,11 +7,12 @@ from CIME.XML.standard_module_setup import *
 from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
-from CIME.XML.compilers     import Compilers
+from CIME.XML.machines      import Machines
+from CIME.BuildTools.configure import configure
 from CIME.utils             import append_status, get_cime_root
 from CIME.test_status       import *
 
-import shutil, time, glob
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ def _check_pelayouts_require_rebuild(case, models):
     if os.path.exists(locked_pes):
         # Look to see if $comp_PE_CHANGE_REQUIRES_REBUILD is defined
         # for any component
-        env_mach_pes_locked = EnvMachPes(infile=locked_pes)
+        env_mach_pes_locked = EnvMachPes(infile=locked_pes, components=case.get_values("COMP_CLASSES"))
         for comp in models:
             if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % comp):
                 # Changing these values in env_mach_pes.xml will force
@@ -39,7 +40,7 @@ def _check_pelayouts_require_rebuild(case, models):
                 new_inst    = case.get_value("NINST_%s" % comp)
 
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
-                    logger.warn("%s pe change requires clean build" % comp)
+                    logger.warn("%s pe change requires clean build %s %s" % (comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
                     run_cmd_no_fail("./case.build --clean %s" % cleanflag)
 
@@ -52,7 +53,12 @@ def _build_usernl_files(case, model, comp):
     Create user_nl_xxx files, expects cwd is caseroot
     """
     model = model.upper()
-    model_file = case.get_value("CONFIG_%s_FILE" % model)
+    if model == "DRV":
+        model_file = case.get_value("CONFIG_CPL_FILE")
+    else:
+        model_file = case.get_value("CONFIG_%s_FILE" % model)
+    expect(model_file is not None,
+           "Could not locate CONFIG_%s_FILE in config_files.xml"%model)
     model_dir = os.path.dirname(model_file)
 
     expect(os.path.isdir(model_dir),
@@ -104,16 +110,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Create batch script
     if reset or clean:
-        # Clean batch script
-
-        backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
-        if not os.path.isdir(backup_dir):
-            os.makedirs(backup_dir)
-
         # back up relevant files
-        for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
-            for filename in glob.glob(fileglob):
-                shutil.copy(filename, backup_dir)
         if os.path.exists("case.run"):
             os.remove("case.run")
 
@@ -124,19 +121,14 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             # backup and then clean test script
             if os.path.exists("case.test"):
-                shutil.copy("case.test", backup_dir)
                 os.remove("case.test")
                 logger.info("Successfully cleaned test script case.test")
 
             if os.path.exists("case.testdriver"):
-                shutil.copy("case.testdriver", backup_dir)
                 os.remove("case.testdriver")
                 logger.info("Successfully cleaned test script case.testdriver")
 
         logger.info("Successfully cleaned batch script case.run")
-
-        logger.info("Successfully cleaned batch script case.run")
-        logger.info("Some files have been saved to %s" % backup_dir)
 
         msg = "case.setup clean complete"
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
@@ -145,18 +137,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         case.load_env()
 
         models = case.get_values("COMP_CLASSES")
-
-        mach, compiler, debug, mpilib = \
-            case.get_value("MACH"), case.get_value("COMPILER"), case.get_value("DEBUG"), case.get_value("MPILIB")
+        mach = case.get_value("MACH")
+        compiler = case.get_value("COMPILER")
+        debug = case.get_value("DEBUG")
+        mpilib = case.get_value("MPILIB")
+        sysos = case.get_value("OS")
         expect(mach is not None, "xml variable MACH is not set")
 
-        # Create Macros file only if it does not exist
-        if not os.path.exists("Macros"):
-            logger.debug("Creating Macros file for %s" % mach)
-            compilers = Compilers(compiler=compiler, machine=mach, os_=case.get_value("OS"), mpilib=mpilib)
-            compilers.write_macros_file()
-        else:
-            logger.debug("Macros script already created ...skipping")
+        # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
+        # and env_mach_specific.xml if they don't already exist.
+        if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, sysos)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
@@ -167,7 +158,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
         for comp in models:
-            if comp == "DRV":
+            if comp == "CPL":
                 continue
             ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
@@ -197,16 +188,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
             expect(not (case.get_value("BUILD_THREADED")  and compiler == "nag"),
                    "it is not possible to run with OpenMP if using the NAG Fortran compiler")
-
-
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
 
-            # create batch file
+            # create batch files
             logger.info("Creating batch script case.run")
-
-            # Use BatchFactory to get the appropriate instance of a BatchMaker,
-            # use it to create our batch scripts
             env_batch = case.get_env("batch")
             num_nodes = env_mach_pes.get_total_nodes(pestot, thread_count)
             tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
@@ -221,6 +207,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+            # Make sure pio settings are consistant
+            for comp in models:
+                pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
+                pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
+                ntasks = case.get_value("NTASKS_%s"%comp)
+                if pio_stride < 0 or pio_stride > ntasks:
+                    pio_stride = min(ntasks, tasks_per_node)
+                    case.set_value("PIO_STRIDE_%s"%comp, pio_stride)
+                if pio_numtasks < 0 or pio_numtasks > ntasks:
+                    pio_numtasks = max(1, ntasks//pio_stride)
+                    case.set_value("PIO_NUMTASKS_%s"%comp, pio_numtasks)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
@@ -235,7 +232,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         # loop over models
         for model in models:
             comp = case.get_value("COMP_%s" % model)
-            logger.info("Building %s usernl files"%model)
+            logger.debug("Building %s usernl files"%model)
             _build_usernl_files(case, model, comp)
             if comp == "cism":
                 run_cmd_no_fail("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
@@ -255,8 +252,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 run_cmd_no_fail("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
 
-        # some tests need namelists created here (ERP)
+        # Some tests need namelists created here (ERP) - so do this if are in test mode
         if test_mode:
+            logger.info("Generating component namelists as part of setup")
             create_namelists(case)
 
         msg = "case.setup complete"

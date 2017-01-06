@@ -233,10 +233,7 @@ def get_full_test_names(testargs, machine, compiler):
 
     for negation in negations:
         if (negation in acme_test_suites):
-            for test, testmod in get_test_suite(negation, machine, compiler):
-                fullname = CIME.utils.get_full_test_name(test, machine=machine, compiler=compiler, testmod=testmod)
-                if (fullname in tests_to_run):
-                    tests_to_run.remove(fullname)
+            tests_to_run -= set(get_test_suite(negation, machine, compiler))
         else:
             fullname = CIME.utils.get_full_test_name(negation, machine=machine, compiler=compiler)
             if (fullname in tests_to_run):

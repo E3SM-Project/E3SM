@@ -60,6 +60,8 @@ def pre_run_check(case):
     os.makedirs(os.path.join(rundir, "timing", "checkpoints"))
 
     # This needs to be done everytime the LID changes in order for log files to be set up correctly
+    # The following also needs to be called in case a user changes a user_nl_xxx file OR an env_run.xml
+    # variable while the job is in the queue
     create_namelists(case)
 
     # document process
@@ -67,7 +69,7 @@ def pre_run_check(case):
                   sfile="CaseStatus")
 
     logger.info("-------------------------------------------------------------------------")
-    logger.info(" - To prestage required restarts, untar a restart.tar file into %s" %(rundir))
+    logger.info(" - Prestage required restarts into %s" %(rundir))
     logger.info(" - Case input data directory (DIN_LOC_ROOT) is %s " %(din_loc_root))
     logger.info(" - Checking for required input datasets in DIN_LOC_ROOT")
     logger.info("-------------------------------------------------------------------------")
@@ -175,9 +177,9 @@ def resubmit_check(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def do_data_assimilation(da_script, cycle, data_assimilation_cycles, lid):
+def do_data_assimilation(da_script, caseroot, cycle, lid):
 ###############################################################################
-    cmd = da_script + " 1> da.log.%s %d %d 2>&1" %(lid, cycle, data_assimilation_cycles)
+    cmd = da_script + " 1> da.log.%s %d %d 2>&1" %(lid, caseroot, cycle)
     logger.debug("running %s" %da_script)
     run_cmd_no_fail(cmd)
     # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
@@ -216,7 +218,7 @@ def case_run(case):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
-            do_data_assimilation(data_assimilation_script, cycle, data_assimilation_cycles, lid)
+            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid)
 
         save_postrun_provenance(case)
 

@@ -1,6 +1,6 @@
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.test_scheduler import NAMELIST_PHASE
-from CIME.utils import run_cmd, expect
+from CIME.utils import run_cmd, expect, get_scripts_root, get_model
 from CIME.test_status import *
 from CIME.hist_utils import generate_baseline, compare_baseline
 from CIME.case import Case
@@ -18,11 +18,14 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
     print "Test '%s' had a namelist diff" % test_name
     if (not report_only and
         (force or raw_input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
-        stat, _, err = run_cmd("create_test -n -g %s -b %s --baseline-root %s" % (test_name, baseline_name, baseline_root))
+        create_test_gen_args = " -g %s " % baseline_name if get_model() == "cesm" else " -g -b %s " % baseline_name
+        stat, _, err = run_cmd("%s/create_test %s -n %s --baseline-root %s -o" % (get_scripts_root(), test_name, create_test_gen_args, baseline_root))
         if stat != 0:
             return False, "Namelist regen failed: '%s'" % err
         else:
             return True, None
+    else:
+        return True, None
 
 ###############################################################################
 def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root, report_only, force):
@@ -104,7 +107,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
                 if (not nl_no_bless):
                     success, reason = bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
                     if not success:
-                        broken_blesses.append(test_name, reason)
+                        broken_blesses.append((test_name, reason))
 
                 # Bless hist files
                 if (not hist_no_bless):

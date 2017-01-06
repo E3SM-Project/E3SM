@@ -10,6 +10,7 @@ from standard_script_setup import *
 
 from CIME.preview_namelists import create_namelists
 from CIME.case              import Case
+from CIME.utils             import expect
 
 import argparse, doctest
 
@@ -54,6 +55,8 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot = parse_command_line(sys.argv, description)
+    expect(os.path.isfile(os.path.join(caseroot, "CaseStatus")),
+           "case.setup must be run prior to running preview_namelists")
     with Case(caseroot, read_only=False) as case:
         create_namelists(case)
 

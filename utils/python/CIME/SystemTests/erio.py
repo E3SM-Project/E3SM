@@ -6,8 +6,6 @@ This class inherits from SystemTestsCommon
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
-import shutil
-
 logger = logging.getLogger(__name__)
 
 class ERIO(SystemTestsCommon):
@@ -22,9 +20,6 @@ class ERIO(SystemTestsCommon):
         self._stop_n = self._case.get_value("STOP_N")
 
     def _full_run(self, pio_type):
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = self._case.get_value("MODEL")
-
         stop_option = self._case.get_value("STOP_OPTION")
         expect(self._stop_n > 0, "Bad STOP_N: %d" % self._stop_n)
 
@@ -43,8 +38,6 @@ class ERIO(SystemTestsCommon):
         self.run_indv(suffix=pio_type)
 
     def _restart_run(self, pio_type, other_pio_type):
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = self._case.get_value("MODEL")
         stop_option = self._case.get_value("STOP_OPTION")
 
         rest_n = self._stop_n/2 + 1

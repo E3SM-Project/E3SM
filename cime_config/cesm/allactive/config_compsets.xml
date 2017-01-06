@@ -14,7 +14,7 @@
     Where for the CAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [CAM40, CAM50, CAM60]
-    LND  = [CLM40, CLM45, CLM50, SLND]
+    LND  = [CLM45, CLM50, SLND]
     ICE  = [CICE, DICE, SICE]
     OCN  = [DOCN, ,AQUAP, SOCN]
     ROF  = [RTM, MOSART, SROF]
@@ -60,45 +60,14 @@
     <lname>1850_CAM60%WTSM_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_WW3</lname>
   </compset>
 
-
-
-
-
-
-  <!-- Other B compsets -->
-
-  <compset>
-    <alias>BC5L45BGC</alias>
-    <lname>2000_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>BC4FCHML40CNR</alias>
-    <lname>2000_CAM40%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>BC4TMOZL40SPR</alias>
-    <lname>2000_CAM40%TMOZ_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>B1850C5L40SPR</alias>
-    <lname>1850_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
+  <!-- 
+       Other B water isotope compsets that are only relevant for clm water isotope branches
+       where only clm40 is supported
+  -->
 
   <compset>
     <alias>Bi1850C5</alias>
     <lname>1850_CAM50%WISOall_CLM40%SP-WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>B1850C4L40CNR</alias>
-    <lname>1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>B1850C5L40CNR</alias>
-    <lname>1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -107,106 +76,122 @@
   </compset>
 
   <compset>
+    <alias>BiHISTC5CN</alias>
+    <lname>HIST_CAM50_CLM40%CN-WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>BiHISTC5CN5</alias>
+    <lname>HIST_CAM5_CLM50%CN-WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- No longer supported B compsets with CLM40 -->
+
+  <!-- <compset> -->
+  <!--   <alias>B1850C5L40SPR</alias> -->
+  <!--   <lname>1850_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>B1850C4L40CNR</alias> -->
+  <!--   <lname>1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>B1850C5L40CNR</alias> -->
+  <!--   <lname>1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+  <!-- </compset> -->
+
+  <compset>
+    <alias>BHIST</alias>
+    <lname>HIST_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD</lname>
+  </compset>
+  <!-- <compset> -->
+  <!--   <alias>B1850C4RCO2L40CNR</alias> -->
+  <!--   <lname>1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>B1850C4L40CNRBDRD</alias> -->
+  <!--   <lname>1850_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>BHISTC5L40CNRWs</alias> -->
+  <!--   <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>BHISTC5L40CNR</alias> -->
+  <!--   <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_WW3</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>BRCP26C4L40CNR</alias> -->
+  <!--   <lname>RCP2_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>BRCP45C4L40CNRBDRD</alias> -->
+  <!--   <lname>RCP4_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>BRCP85C4L40CNRBPRP</alias> -->
+  <!--   <lname>RCP8_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BPRP</lname> -->
+  <!-- </compset> -->
+
+  <!-- <compset> -->
+  <!--   <alias>BHISTC4L40CNRBDRD</alias> -->
+  <!--   <lname>HIST_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname> -->
+  <!-- </compset> -->
+
+  <!-- Other B compsets -->
+
+<!--  <compset> -->
+<!--    <alias>BHISTC5L40CNRWs</alias> -->
+<!--    <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+<!--  </compset> -->
+
+  <compset>
+    <alias>BC5L45BGC</alias>
+    <lname>2000_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>B1850C5L45BGCR</alias>
     <lname>1850_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</lname>
   </compset>
+
+<!--  <compset> -->
+<!--    <alias>BHISTC5L40CNR</alias> -->
+<!--    <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_WW3</lname> -->
+<!--  </compset> -->
 
   <compset>
     <alias>B1850C5L45BGC</alias>
     <lname>1850_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
   </compset>
 
+<!--  <compset> -->
+<!--    <alias>BHISTC5L45BGCRWs</alias> -->
+<!--    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</lname> -->
+<!--  </compset> -->
 
-  <compset>
-    <alias>B1850C4RCO2L40CNR</alias>
-    <lname>1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
+<!--  <compset> -->
+<!--    <alias>BHISTC5L45BGCR</alias> -->
+<!--    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_WW3</lname> -->
+<!--  </compset> -->
 
+<!--  <compset> -->
+<!--    <alias>BHISTC5L45BGCWs</alias> -->
+<!--    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname> -->
+<!--  </compset> -->
 
-  <compset>
-    <alias>B1850C5WCCML45CNRWs</alias>
-    <lname>1850_CAM50%WCCM_CLM45%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>B1850C5WCCML45CN</alias>
-    <lname>1850_CAM50%WCCM_CLM45%CN_CICE_POP2_MOSART_SGLC_SWAV</lname>
-  </compset>
-
-
-  <compset>
-    <alias>BC4WCBCL40CNR</alias>
-    <lname>2013_CAM40%WCBC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>B1850C4L40CNRBDRD</alias>
-    <lname>1850_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname>
-  </compset>
-
-  <compset>
-    <alias>BHISTC5L40CNRWs</alias>
-    <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>BiHISTC5CN</alias>
-    <lname>HIST_CAM50_CLM40%CN-WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>BiHISTC5CN5</alias>
-    <lname>HIST_CAM5_CLM50%CN-WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>BHISTC5L40CNR</alias>
-    <lname>HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_WW3</lname>
-  </compset>
-
-  <compset>
-    <alias>BHISTC5L45BGCRWs</alias>
-    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>BHISTC5L45BGCR</alias>
-    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_RTM_SGLC_WW3</lname>
-  </compset>
-
-  <compset>
-    <alias>BHISTC5L45BGCWs</alias>
-    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>BHISTC5L45BGC</alias>
-    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_WW3</lname>
-  </compset>
-
-  <compset>
-    <alias>BHISTC4FCHML40CNRWs</alias>
-    <lname>HIST_CAM40%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>BHISTC4FCHML40CNR</alias>
-    <lname>HIST_CAM40%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_WW3</lname>
-  </compset>
-
-  <compset>
-    <alias>BRCP26C4L40CNR</alias>
-    <lname>RCP2_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>BRCP45C4L40CNRBDRD</alias>
-    <lname>RCP4_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname>
-  </compset>
-
-  <compset>
-    <alias>BRCP85C4L40CNRBPRP</alias>
-    <lname>RCP8_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BPRP</lname>
-  </compset>
+<!--  <compset> -->
+<!--    <alias>BHISTC5L45BGC</alias> -->
+<!--    <lname>HIST_CAM50_CLM45%BGC_CICE_POP2_MOSART_SGLC_WW3</lname> -->
+<!--  </compset> -->
 
   <compset>
     <alias>BRCP85C5L45BGCR</alias>
@@ -219,6 +204,7 @@
   </compset>
 
   <!-- Climate Simulation Lab compsets for Keith Lindsay -->
+
   <compset>
     <alias>B1850C4L45BGCRBPRP</alias>
     <lname>1850_CAM40_CLM45%BGC_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BPRP</lname>
@@ -234,11 +220,10 @@
     <lname>1850_CAM50_CLM45%BGC_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BPRP</lname>
   </compset>
 
-  <compset>
-    <alias>BHISTC4L40CNRBDRD</alias>
-    <lname>HIST_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname>
-  </compset>
-
+<!--  <compset> -->
+<!--    <alias>BHISTC4L40CNRBDRD</alias> -->
+<!--    <lname>HIST_CAM40_CLM40%CN_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname> -->
+<!--  </compset> -->
 
   <!-- BG compsets -->
 
@@ -296,10 +281,10 @@
 
   <entries>
 
- <entry id="RUN_TYPE">
-      <values>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null"	compset="1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD"	   >hybrid</value>
-      </values>
+  <entry id="RUN_TYPE">
+    <values>
+      <value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null"	compset="1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD"	   >hybrid</value>
+    </values>
     </entry>
     <entry id="RUN_REFCASE">
       <values>
@@ -311,187 +296,6 @@
 	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null"   compset="1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD"			   >0041-01-01</value>
       </values>
     </entry>
-<!-- Reference cases from older cesm versions are no longer valid
-    <entry id="RUN_TYPE">
-      <values>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCCM_CLM40%CN"			   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCSC_CLM40%CN"			   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="5505_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="5505_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP2_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP4_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP8_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP2_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP4_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP8_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_CISM1_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM40%CHEM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP8_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP8_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP6_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP6_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP4_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP4_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP2_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP2_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7"		compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="2013_CAM40%WCBC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_WW3"        >hybrid</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV"       >hybrid</value>
-      </values>
-    </entry>
-
-    <entry id="RUN_REFCASE">
-      <values>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCCM_CLM40%CN"			   >b40.1850.track1.2deg.wcm.007</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCSC_CLM40%CN"			   >b40.1850.track1.2deg.wcm.007</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.1850.track1.2deg.003</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"	   >b40_1850_c02c_76jpf</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40_1850_2d_r07c5cn_160jp</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1850.track1.2deg.003</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.1850.track1.2deg.003</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"	   >b40_1850_c02c_76jpf</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50%WISOall_CLM40%CN-WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV"   >b.ie12.Bi1850C5CN.f19_g16.KFoff.01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40_1850_2d_r07c5cn_160jp</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1850.track1.2deg.wcm.007</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="5505_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.20th.track1.2deg.wcm.007</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="5505_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.20th.track1.2deg.wcm.007</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP2_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1955-2005.2deg.wcm.002</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP4_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1955-2005.2deg.wcm.002</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP8_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1955-2005.2deg.wcm.002</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP2_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1955-2005.2deg.wcm.002</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP4_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1955-2005.2deg.wcm.002</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP8_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1955-2005.2deg.wcm.002</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40_1850_1d_b08c5cn_138j</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.1850.track1.1deg.006</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_CISM1_SWAV"	   >bg40.1850.track1.1deg.006b</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.1850.track1.1deg.006</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >trk1_1deg_chm_1850_b55.01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.1850.track1.1deg.006</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM40%CHEM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >trk1_1deg_chm_1850_b55.01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40_1850_1d_b08c5cn_138j</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP8_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.20th.track1.1deg.008</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP8_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b.e10.BHISTC5CN.f09_g16.001</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP6_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.20th.track1.1deg.008</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP6_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b.e10.BHISTC5CN.f09_g16.001</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP4_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.20th.track1.1deg.008</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP4_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b.e10.BHISTC5CN.f09_g16.001</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP2_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.20th.track1.1deg.008</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP2_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b.e10.BHISTC5CN.f09_g16.001</value>
-	<value grid="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7"		compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b40.t31x3.037c</value>
-	<value grid="a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >b.e11.B1850C5CN.ne30_g16.tuning.004</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="2013_CAM40%WCBC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >b40.rcp4_5.2deg.wcm.carma.bc0tg.002</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_WW3"        >b40_1850_c02c_76jpf</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV"       >b40_1850_c02c_76jpf</value>
-      </values>
-    </entry>
-
-    <entry id="RUN_REFDATE">
-      <values>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCCM_CLM40%CN"			   >0156-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCCM_CLM40%CN"			   >0156-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCSC_CLM40%CN"			   >0156-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0501-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"	   >0221-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50%WISOall_CLM40%CN-WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV"	   >0561-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0070-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >0501-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0501-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"	   >0221-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0070-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >0156-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="5505_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >1955-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="5505_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >1955-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP2_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >2005-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP4_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >2005-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP8_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >2005-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP2_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >2005-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP4_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >2005-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP8_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >2005-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0320-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0863-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_CISM1_SWAV"	   >0863-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >0863-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >0086-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0863-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM40%CHEM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >0086-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0320-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP8_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >2005-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP8_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >2006-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP6_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >2005-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP6_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >2006-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP4_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >2005-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP4_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >2006-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP2_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >2005-01-01</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP2_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >2006-01-01</value>
-	<value grid="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7"		compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0507-01-01</value>
-	<value grid="a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >0026-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="2013_CAM40%WCBC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >2013-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_WW3"        >0221-01-01</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV"       >0221-01-01</value>
-      </values>
-    </entry>
-
-    <entry id="RUN_REFDIR">
-      <values>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCCM_CLM40%CN"			   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCCM_CLM40%CN"			   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%WCSC_CLM40%CN"			   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="HIST_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="5505_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="5505_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP2_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP4_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP8_CAM40%WCCM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP2_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP4_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="RCP8_CAM40%WCSC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_CISM1_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM40%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM40%CHEM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="HIST_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP8_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP8_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP6_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP6_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP4_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP4_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP2_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6"	compset="RCP2_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7"		compset="1850_CAM40_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6"	compset="1850_CAM50_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"	   >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="2013_CAM40%WCBC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV"  >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_WW3"        >ccsm4_init</value>
-	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM50_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV"       >ccsm4_init</value>
-      </values>
-    </entry>
--->
     <entry id="RUN_STARTDATE">
       <values>
 	<value compset="1850_"     >0001-01-01</value>

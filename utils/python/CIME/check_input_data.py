@@ -3,7 +3,7 @@ API for checking input for testcase
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import get_model
+from CIME.utils import get_model, SharedArea
 
 import fnmatch, glob, shutil
 
@@ -45,16 +45,17 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
         logging.warning("FAIL: SVN repo '%s' does not have file '%s'\nReason:%s\n%s\n" % (svn_loc, full_url, out, err))
         return False
     else:
-        stat, output, errput = \
-            run_cmd("svn --non-interactive --trust-server-cert export %s %s" % (full_url, full_path))
-        if (stat != 0):
-            logging.warning("svn export failed with output: %s and errput %s\n" % (output, errput))
-            return False
-        else:
-            # Make sure it is group r/w
-            os.chmod(full_path, 0664)
-            logging.info("SUCCESS\n")
-            return True
+        # Use umask to make sure files are group read/writable. As long as parent directories
+        # have +s, then everything should work.
+        with SharedArea():
+            stat, output, errput = \
+                run_cmd("svn --non-interactive --trust-server-cert export %s %s" % (full_url, full_path))
+            if (stat != 0):
+                logging.warning("svn export failed with output: %s and errput %s\n" % (output, errput))
+                return False
+            else:
+                logging.info("SUCCESS\n")
+                return True
 
 ###############################################################################
 def check_all_input_data(case):

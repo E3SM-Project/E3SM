@@ -2,7 +2,7 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
 
   <!-- attributes -->
-  <xs:attribute name="id" type="xs:NCName"/>
+  <xs:attribute name="id" type="xs:string"/>
   <xs:attribute name="compset" type="xs:string"/>
   <xs:attribute name="component" type="xs:string"/>
   <xs:attribute name="grid"  type="xs:string"/>

@@ -531,7 +531,7 @@ contains
        if(pio_root == -99) pio_root = pio_default_root
        if(pio_rearranger == -99) pio_rearranger = pio_default_rearranger
        if(pio_numiotasks == -99) then
-          pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
+          pio_numiotasks = npes/pio_stride
        endif
     endif
 

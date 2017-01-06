@@ -62,21 +62,21 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value     stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value     stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value     stream="rof.cplhist">$ROF_DOMAIN_PATH</value>
+      <value stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
+      <value stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
+      <value stream="rof.cplhist">null</value>
     </values>
   </entry>
 
-  <entry id="strm_domfil"  skip_default_entry="true">
+  <entry id="strm_domfil" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream domain file path(s).</desc>
     <values>
-      <value     stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</value>
-      <value     stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.nc</value>
-      <value     stream="rof.cplhist">$ROF_DOMAIN_FILE</value>
+      <value stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</value>
+      <value stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.nc</value>
+      <value stream="rof.cplhist">null</value>
     </values>
   </entry>
 
@@ -100,6 +100,13 @@
         arear  area
         mask   mask
       </value>
+      <value stream="rof.cplhist">
+        time           time
+        domrb_lon      lon
+        domrb_lat      lat
+        domrb_aream    area
+        domrb_mask     mask
+      </value>
     </values>
   </entry>
 
@@ -109,9 +116,9 @@
     <group>streams_file</group>
     <desc>Stream data file directory.</desc>
     <values>
-      <value     stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value     stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value     stream="rof.cplhist">$DROF_CPLHIST_DIR</value>
+      <value stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
+      <value stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
+      <value stream="rof.cplhist">$DROF_CPLHIST_DIR</value>
     </values>
   </entry>
 
@@ -121,9 +128,9 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value     stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</value>
-      <value     stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.nc</value>
-      <value     stream="rof.cplhist">$DROF_CPLHIST_CASE.cpl.hr2xacc.%y.nc</value>
+      <value stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</value>
+      <value stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.nc</value>
+      <value stream="rof.cplhist">$DROF_CPLHIST_CASE.cpl.hr2x.%ym.nc</value>
     </values>
   </entry>
 
@@ -133,15 +140,15 @@
     <group>streams_file</group>
     <desc>Stream data variable name(s).</desc>
     <values>
-      <value     stream="rof.diatren_ann_rx1">
+      <value stream="rof.diatren_ann_rx1">
         runoff rofl
       </value>
-      <value     stream="rof.diatren_iaf_rx1">
+      <value stream="rof.diatren_iaf_rx1">
         runoff rofl
       </value>
-      <value     stream="rof.cplhist">
-        r2xacc_Forr_roff  rofl
-        r2xacc_Forr_ioff  rofi
+      <value stream="rof.cplhist">
+        r2x_Forr_rofl  rofl
+        r2x_Forr_rofi  rofi
       </value>
     </values>
   </entry>
@@ -153,7 +160,7 @@
     <desc>Stream offset.</desc>
     <values>
       <value>0</value>
-      <value stream="rof.cplhist">-43200</value>
+      <value stream="rof.cplhist">0</value>
     </values>
   </entry>
 
@@ -187,9 +194,9 @@
     <group>streams_file</group>
     <desc>Last year of stream.</desc>
     <values>
-      <value   stream="rof.diatren_ann_rx1">1</value>
-      <value   stream="rof.diatren_iaf_rx1">2009</value>
-      <value   stream="rof.cplhist">$DROF_CPLHIST_YR_END</value>
+      <value stream="rof.diatren_ann_rx1">1</value>
+      <value stream="rof.diatren_iaf_rx1">2009</value>
+      <value stream="rof.cplhist">$DROF_CPLHIST_YR_END</value>
     </values>
   </entry>
 
@@ -393,7 +400,7 @@
       <value>linear</value>
       <value stream="rof.diatren_ann_rx1">upper</value>
       <value stream="rof.diatren_iaf_rx1">upper</value>
-      <value stream="rof.cplhist">lower</value>
+      <value stream="rof.cplhist">nearest</value>
     </values>
   </entry>
 
@@ -442,7 +449,7 @@
     </values>
   </entry>
 
-  <entry id="vectors" skip_default_entry="true">
+  <entry id="vectors">
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>

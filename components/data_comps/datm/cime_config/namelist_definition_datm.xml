@@ -9,7 +9,7 @@
     The element names are the same as the corresponding namelist
     variables.  Values that depend on the model configuration use
     attributes to express the dependency.  The recognized attributes
-    are: stream, grid, presaero_mode, presaero_flag, ispresaeorostream.
+    are: stream, grid
 
     strm_year_first is the first year of the stream data that will be used
     strm_year_last  is the last  year of the stream data that will be used
@@ -31,21 +31,22 @@
 
     Currently the following streams are supported (term definitions precede the streams)
 
-    CLM_QIAN        = Run with the CLM Qian dataset valid from 1948 to 2004 (force CLM)
-    CLM_QIAN_WISO   = Run with the CLM Qian dataset with isotopes valid from 2000 to 2004 (force CLM)
-    CLMCRUNCEP      = Run with the CLM CRU NCEP V4 ( default ) forcing valid from 1900 to 2010 (force CLM)
-    CLMCRUNCEP_V5   = Run with the CLM CRU NCEP V5 forcing valid from 1900 to 2010 (force CLM)
-    CLMGSWP3        = Run with the CLM GSWP3 forcing (force CLM)
-    CLM1PT          = Run with supplied single point data (force CLM)
-    CORE2_NYF       = CORE2 normal year forcing (for forcing POP and CICE)
-    CORE2_IAF       = CORE2 intra-annual year forcing (for forcing POP and CICE)
-    CPLHIST3HrWx    = Run with CESM 3-hourly coupler history output
-    presaero        = Prescribed aerosol forcing
-    topo            = Surface topography
-    co2tseries      = Time series of prescribed CO2 forcing
-    Anomaly.Forcing = Time series of correction terms
-    BC              = Bias Correction for a stream to a given set of observations
-    WW3             = Wave model forcing
+    CLM_QIAN			= Run with the CLM Qian dataset valid from 1948 to 2004 (force CLM)
+    CLM_QIAN_WISO		= Run with the CLM Qian dataset with isotopes valid from 2000 to 2004 (force CLM)
+    CLMCRUNCEP			= Run with the CLM CRU NCEP V4 ( default ) forcing valid from 1900 to 2010 (force CLM)
+    CLMCRUNCEP_V5		= Run with the CLM CRU NCEP V5 forcing valid from 1900 to 2010 (force CLM)
+    CLMGSWP3			= Run with the CLM GSWP3 forcing (force CLM)
+    CLM1PT			= Run with supplied single point data (force CLM)
+    CORE2_NYF			= CORE2 normal year forcing (for forcing POP and CICE)
+    CORE2_IAF			= CORE2 intra-annual year forcing (for forcing POP and CICE)
+    CPLHIST3HrWx		= Streams for 3-hourly coupler history output (for forcing CLM)
+    CPLHISTForcingForOcnIce	= Streams for ocn/ice forcing used for spinup (for forcing POP and CICE)
+    presaero			= Prescribed aerosol forcing
+    topo			= Surface topography
+    co2tseries			= Time series of prescribed CO2 forcing
+    Anomaly.Forcing		= Time series of correction terms
+    BC				= Bias Correction for a stream to a given set of observations
+    WW3				= Wave model forcing
 
     Anomaly.Forcing.Humidity
     Anomaly.Forcing.Longwave
@@ -75,6 +76,11 @@
     CPLHIST3Hrly.Solar
     CPLHIST3Hrly.Precip
     CPLHIST3HrWx.nonSolarNonPrecip
+
+    CPLHISTForcingForOcnIce.Solar
+    CPLHISTForcingForOcnIce.nonSolarFlux
+    CPLHISTForcingForOcnIce.State3hr
+    CPLHISTForcingForOcnIce.State1hr
 
     CLM_QIAN.Solar
     CLM_QIAN.Precip
@@ -126,19 +132,6 @@
     CORE2_IAF.NCEP.V_10
     CORE2_IAF.CORE2.ArcFactor
 
-    presaero.1x1_brazil
-    presaero.1x1_camdenNJ
-    presaero.1x1_tropicAtl
-    presaero.1x1_asphaltjungleNJ
-    presaero.1x1_vancouverCAN
-    presaero.1x1_mexicocityMEX
-    presaero.1x1_urbanc_alpha
-    presaero.1x1_numaIA
-    presaero.1x1_smallvilleIA
-    presaero.5x5_amazon
-    presaero.clim_1850.1x1_tropicAtl
-    presaero.clim_2000.1x1_tropicAtl
-    presaero.trans_1850-2000.1x1_tropicAtl
     presaero.clim_1850
     presaero.clim_2000
     presaero.trans_1850-2000
@@ -146,10 +139,26 @@
     presaero.rcp4.5
     presaero.rcp6.0
     presaero.rcp8.5
+    presaero.cplhist
 
     topo.observed
 
     WW3
+
+      **********IMPORTANT NOTE: *************
+      In the value matches below, regular expressions are used **** 
+      If two matches are equivalent, the FIRST one will be used, so need to make sure
+      that matches are not equivalent if possible
+
+	 As an example, say datm_mode=CLMCRUNCEP_V5, 
+
+         the following order would result in an INCORRECT setting of streams for this datm_mode
+             <value datm_mode="CLMCRUNCEP">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
+             <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
+
+         the following will results in the CORRECT set of streams for this datm_mode
+             <value datm_mode="CLMCRUNCEP.\">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
+             <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
   -->
 
   <!-- ========================================================================================  -->
@@ -162,18 +171,19 @@
     <group>streams_file</group>
     <desc>List of streams used for the given datm_mode</desc>
     <values>
-      <value datm_mode="CLM_QIAN">CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</value>
+      <value datm_mode="CLM_QIAN$">CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</value>
       <value datm_mode="CLM_QIAN_WISO">CLM_QIAN_WISO.Solar,CLM_QIAN_WISO.Precip,CLM_QIAN_WISO.TPQW</value>
       <value datm_mode="CLM1PT">CLM1PT.$ATM_GRID</value>
-      <value datm_mode="CLMCRUNCEP">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
+      <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</value>
       <value datm_mode="CLMGSWP3">CLMGSWP3.Solar,CLMGSWP3.Precip,CLMGSWP3.TPQW</value>
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
-      <value datm_mode="CPLHIST3HrWx">CPLHIST3HrWx.Solar,CPLHIST3HrWx.Precip,CPLHIST3HrWx.nonSolarNonPrecip</value>
       <value datm_mode="WW3">WW3</value>
       <value datm_mode="NLDAS">NLDAS</value>
+      <value datm_mode="CPLHIST3HrWx">CPLHIST3HrWx.Solar,CPLHIST3HrWx.Precip,CPLHIST3HrWx.nonSolarNonPrecip</value>
+      <value datm_mode="CPLHISTForcingForOcnIce">CPLHISTForcingForOcnIce.Solar,CPLHISTForcingForOcnIce.nonSolarFlux,CPLHISTForcingForOcnIce.State3hr,CPLHISTForcingForOcnIce.State1hr</value>
     </values>
   </entry>
 
@@ -184,31 +194,16 @@
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
-      <value stream="CLM1PT.1x1_mexicocityMEX">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
-      <value stream="CLM1PT.1x1_vancouverCAN">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
-      <value stream="CLM1PT.1x1_urbanc_alpha">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
+      <value stream="CLM1PT.1x1">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
-      <value stream="CPLHIST3HrWx.Solar">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CPLHIST3HrWx.Precip">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CPLHIST3HrWx.nonSolarNonPrecip">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLM_QIAN.TPQW">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLM_QIAN_WISO.Solar">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLM_QIAN_WISO.Precip">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLM_QIAN_WISO.TPQW">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CLMCRUNCEP.Solar">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CLMCRUNCEP.Precip">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CLMCRUNCEP.TPQW">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="CLMCRUNCEP_V5.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
-      <value stream="CLMCRUNCEP_V5.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
-      <value stream="CLMCRUNCEP_V5.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
-      <value stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</value>
-      <value stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</value>
-      <value stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</value>
-      <value stream="CORE2_NYF.GISS">$DIN_LOC_ROOT/atm/datm7/NYF</value>
-      <value stream="CORE2_NYF.GXGXS">$DIN_LOC_ROOT/atm/datm7/NYF</value>
-      <value stream="CORE2_NYF.NCEP">$DIN_LOC_ROOT/atm/datm7/NYF</value>
+      <value stream="CPLHIST3HrWx">$DIN_LOC_ROOT/atm/datm7</value>
+      <value stream="CPLHISTForcingForOcnIce">$DATM_CPLHIST_DIR</value>
+      <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
+      <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
+      <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
+      <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</value>
+      <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
+      <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">$DIN_LOC_ROOT/share/domains</value>
       <value stream="CORE2_IAF.NCEP.PSLV.SOFS">$DIN_LOC_ROOT/share/domains</value>
       <value stream="CORE2_IAF.PREC.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</value>
@@ -229,40 +224,18 @@
       <value stream="CORE2_IAF.NCEP.T_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CORE2_IAF.NCEP.U_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CORE2_IAF.NCEP.V_10">$DIN_LOC_ROOT/atm/datm7</value>
-      <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="WW3">$DIN_LOC_ROOT/wav/ww3</value>
-      <value stream="NLDAS">$DIN_LOC_ROOT/share/domains/domain.clm</value>
-      <value stream="co2tseries.20tr">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="co2tseries.rcp2.6">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="co2tseries.rcp4.5">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="co2tseries.rcp6.0">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="co2tseries.rcp8.5">$DIN_LOC_ROOT/atm/datm7/CO2</value>
+      <value stream="NLDAS">$DIN_LOC_ROOT/share/domains/domain.clm </value>
+      <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2 </value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
-      <value stream="Anomaly.Forcing.Precip">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Temperature">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Pressure">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Humidity">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Uwind">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Vwind">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Shortwave">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Longwave">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value presaero_mode="pt1_pt1" grid="CLM_USRDAT" ispresaerostream="TRUE">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.clim_1850" grid="1x1_tropicAtl">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.clim_2000" grid="1x1_tropicAtl">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.trans_1850-2000" grid="1x1_tropicAtl">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
+      <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
+      <value stream="presaero.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
+      <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value presaero_mode="presaero.trans_1850-2000" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp2.6">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp2.6" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp4.5">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp4.5" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp6.0">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp6.0" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp8.5">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
+      <value stream="presaero.rcp">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
     </values>
   </entry>
@@ -278,24 +251,13 @@
       <value stream="CLM1PT.1x1_vancouverCAN">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </value>
       <value stream="CLM1PT.1x1_urbanc_alpha">domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc </value>
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_FILE</value>
-      <value stream="CPLHIST3HrWx.Solar">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</value>
-      <value stream="CPLHIST3HrWx.Precip">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</value>
-      <value stream="CPLHIST3HrWx.nonSolarNonPrecip">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</value>
-      <value stream="CLM_QIAN.Solar">domain.T62.050609.nc</value>
-      <value stream="CLM_QIAN.Precip">domain.T62.050609.nc</value>
-      <value stream="CLM_QIAN.TPQW">domain.T62.050609.nc</value>
-      <value stream="CLM_QIAN_WISO.Solar">domain.T62.050609.nc</value>
-      <value stream="CLM_QIAN_WISO.Precip">domain.T62.050609.nc</value>
-      <value stream="CLM_QIAN_WISO.TPQW">domain.T62.050609.nc</value>
-      <value stream="CLMCRUNCEP.Solar">domain.lnd.360x720.130305.nc</value>
-      <value stream="CLMCRUNCEP.Precip">domain.lnd.360x720.130305.nc</value>
-      <value stream="CLMCRUNCEP.TPQW">domain.lnd.360x720.130305.nc</value>
-      <value stream="CLMCRUNCEP_V5.Solar">domain.cruncep.V5.c2013.0.5d.nc</value>
-      <value stream="CLMCRUNCEP_V5.Precip">domain.cruncep.V5.c2013.0.5d.nc</value>
-      <value stream="CLMCRUNCEP_V5.TPQW">domain.cruncep.V5.c2013.0.5d.nc</value>
-      <value stream="CLMGSWP3.Solar">domain.GSWP3.c2014.0.5d.nc</value>
-      <value stream="CLMGSWP3.Precip">domain.GSWP3.c2014.0.5d.nc</value>
-      <value stream="CLMGSWP3.TPQW">domain.GSWP3.c2014.0.5d.nc</value>
+      <value stream="CPLHIST3HrWx">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</value>
+      <value stream="CPLHISTForcingForOcnIce">null</value>
+      <value stream="CLM_QIAN\.">domain.T62.050609.nc</value>
+      <value stream="CLM_QIAN_WISO">domain.T62.050609.nc</value>
+      <value stream="CLMCRUNCEP_V5">domain.cruncep.V5.c2013.0.5d.nc</value>
+      <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
+      <value stream="CLMGSWP3">domain.GSWP3.c2014.0.5d.nc</value>
       <value stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</value>
       <value stream="CORE2_NYF.GXGXS">nyf.gxgxs.T62.051007.nc</value>
       <value stream="CORE2_NYF.NCEP">nyf.ncep.T62.050923.nc</value>
@@ -330,38 +292,24 @@
       <value stream="BC.QIAN.Precip">qian.bc.domain.c130531.nc</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">cruncep.bc.domain.0.9x1.25.nc</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">cruncep.bc.domain.c100429.nc</value>
-      <value stream="Anomaly.Forcing.Precip">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="Anomaly.Forcing.Temperature">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="Anomaly.Forcing.Pressure">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="Anomaly.Forcing.Humidity">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="Anomaly.Forcing.Uwind">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="Anomaly.Forcing.Vwind">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="Anomaly.Forcing.Shortwave">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="Anomaly.Forcing.Longwave">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="presaero.pt1_pt1.CLM_USRDAT">aerosoldep_monthly_1849-2006_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_brazil">aerosoldep_2000_mean_1x1_brazil_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_camdenNJ">aerosoldep_2000_mean_1x1_camdenNJ_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_tropicAtl">aerosoldep_2000_mean_1x1_tropicAtl_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_asphaltjungleNJ">aerosoldep_2000_mean_1x1_asphaltjungleNJ_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_vancouverCAN">aerosoldep_2000_mean_1x1_vancouverCAN_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_mexicocityMEX">aerosoldep_2000_mean_1x1_mexicocityMEX_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_urbanc_alpha">aerosoldep_2000_mean_1x1_urbanc_alpha_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_numaIA">aerosoldep_2000_mean_1x1_numaIA_c110124.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_smallvilleIA">aerosoldep_2000_mean_1x1_smallvilleIA_c110124.nc</value>
-      <value stream="presaero.pt1_pt1.5x5_amazon">aerosoldep_2000_mean_5x5_amazon_c090716.nc</value>
-      <value stream="presaero.clim_1850" grid="1x1_tropicAtl">aerosoldep_monthly_1850_1x1_tropicAtl_c091026.nc</value>
-      <value stream="presaero.clim_2000" grid="1x1_tropicAtl">aerosoldep_monthly_1849-2006_1x1_tropicAtl_c091026.nc</value>
-      <value stream="presaero.trans_1850-2000" grid="1x1_tropicAtl">aerosoldep_monthly_1849-2006_1x1_tropicAtl_c091026.nc</value>
+      <value stream="Anomaly.Forcing">domain.permafrostRCN_P2.c2013.nc</value>
+      <value stream="presaero.cplhist">null</value>
+      <value stream="presaero atm_grid=CLM_USRDAT">aerosoldep_monthly_1849-2006_${CLM_USRDAT_NAME}.nc</value>
+      <value stream="presaero.rcp2.6" atm_grid="CLM_USRDAT">aerosoldep_rcp2.6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
+      <value stream="presaero.rcp4.5" atm_grid="CLM_USRDAT">aerosoldep_rcp4.5_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
+      <value stream="presaero.rcp6.0" atm_grid="CLM_USRDAT">aerosoldep_rcp6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
+
+      <!-- Need to resolve if want to use single point forcing or not
+      <value stream="presaero.clim_1850" atm_grid="1x1_tropicAtl">aerosoldep_monthly_1850_1x1_tropicAtl_c091026.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_tropicAtl">aerosoldep_monthly_1849-2006_1x1_tropicAtl_c091026.nc</value>
+      <value stream="presaero.trans_1850-2000" atm_grid="1x1_tropicAtl">aerosoldep_monthly_1849-2006_1x1_tropicAtl_c091026.nc</value>
+      -->
       <value stream="presaero.clim_1850">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
       <value stream="presaero.clim_2000">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
       <value stream="presaero.trans_1850-2000">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
-      <value stream="presaero.pt1_pt1.CLM_USRDAT">aerosoldep_monthly_1849-2006_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp2.6">aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</value>
-      <value stream="presaero.rcp2.6" grid="CLM_USRDAT">aerosoldep_rcp2.6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp4.5">aerosoldep_rcp4.5_monthly_1849-2104_1.9x2.5_c100402.nc</value>
-      <value stream="presaero.rcp4.5" grid="CLM_USRDAT">aerosoldep_rcp4.5_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp6.0">aerosoldep_rcp6.0_monthly_1849-2104_1.9x2.5_c100830.nc</value>
-      <value stream="presaero.rcp6.0" grid="CLM_USRDAT">aerosoldep_rcp6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp8.5">aerosoldep_rcp8.5_monthly_1849-2104_1.9x2.5_c100201.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
     </values>
@@ -380,31 +328,33 @@
         area    area
         mask    mask
       </value>
-      <value stream="CORE2_NYF.GISS">
-        time    time
-        lon      lon
-        lat      lat
-        area    area
-        mask    mask
+      <value stream="CPLHISTForcingForOcnIce|presaero.cplhist">
+        time         time
+        doma_lon     lon
+        doma_lat     lat
+        doma_aream   area
+        doma_mask    mask
       </value>
-      <value stream="CORE2_NYF.GXGXS">
-        time    time
-        lon      lon
-        lat      lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="CORE2_NYF.NCEP">
+      <value stream="presaero">
         time    time
         lon     lon
         lat     lat
         area    area
         mask    mask
       </value>
+      <value stream="CORE2_NYF">
+        time    time
+        lon      lon
+        lat      lat
+        area    area
+        mask    mask
+      </value>
       <value stream="WW3">
         time    time
-        gridLon     lon
-        gridLat     lat
+        gridLon lon
+        gridLat lat
+        area    area
+        mask    mask
       </value>
       <value stream="topo.observed">
         time   time
@@ -413,42 +363,7 @@
         area   area
         mask   mask
       </value>
-      <value presaero_flag="active" ispresaerostream="TRUE">
-        time    time
-        lon     lon
-        lat     lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="co2tseries.20tr">
-        time    time
-        lonc    lon
-        latc    lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="co2tseries.rcp2.6">
-        time    time
-        lonc    lon
-        latc    lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="co2tseries.rcp4.5">
-        time    time
-        lonc    lon
-        latc    lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="co2tseries.rcp6.0">
-        time    time
-        lonc    lon
-        latc    lat
-        area    area
-        mask    mask
-      </value>
-      <value stream="co2tseries.rcp8.5">
+      <value stream="co2tseries">
         time    time
         lonc    lon
         latc    lat
@@ -469,16 +384,14 @@
       <value stream="CLM1PT.1x1_vancouverCAN">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/vancouverCAN.c080124 </value>
       <value stream="CLM1PT.1x1_urbanc_alpha">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416 </value>
       <value stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT_CLMFORC/$CLM_USRDAT_NAME/CLM1PT_data</value>
-      <value stream="CPLHIST3HrWx.Solar">/glade/p/cesm/shared_outputdata/cases/ccsm4/$DATM_CPLHIST_CASE/cpl/hist</value>
-      <value stream="CPLHIST3HrWx.Precip">/glade/p/cesm/shared_outputdata/cases/ccsm4/$DATM_CPLHIST_CASE/cpl/hist</value>
-      <value presaero_mode="pt1_pt1" grid="CLM_USRDAT" ispresaerostream="TRUE">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="CPLHIST3HrWx.nonSolarNonPrecip">/glade/p/cesm/shared_outputdata/cases/ccsm4/$DATM_CPLHIST_CASE/cpl/hist</value>
+      <value stream="CPLHIST3HrWx">/glade/p/cesm/shared_outputdata/cases/ccsm4/$DATM_CPLHIST_CASE/cpl/hist</value>
+      <value stream="CPLHISTForcingForOcnIce">$DATM_CPLHIST_DIR</value>
       <value stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Solar6Hrly</value>
       <value stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Precip6Hrly</value>
       <value stream="CLM_QIAN.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
       <value stream="CLM_QIAN_WISO.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Solar6Hrly</value>
       <value stream="CLM_QIAN_WISO.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/Precip6Hrly</value>
-      <value stream="CLM_QIAN_WISO.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
+      <value stream="CLM_QIAN_WISO.TPQW	">$DIN_LOC_ROOT/atm/datm7/atm_forcing_iso.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
       <value stream="CLMCRUNCEP.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Solar6Hrly</value>
       <value stream="CLMCRUNCEP.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/Precip6Hrly</value>
       <value stream="CLMCRUNCEP.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V4.c130305/TPHWL6Hrly</value>
@@ -488,62 +401,18 @@
       <value stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/Solar</value>
       <value stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/Precip</value>
       <value stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/TPHWL</value>
-      <value stream="CORE2_NYF.GISS">$DIN_LOC_ROOT/atm/datm7/NYF</value>
-      <value stream="CORE2_NYF.GXGXS">$DIN_LOC_ROOT/atm/datm7/NYF</value>
-      <value stream="CORE2_NYF.NCEP">$DIN_LOC_ROOT/atm/datm7/NYF</value>
-      <value stream="CORE2_IAF.NCEP.DENS.SOFS">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.NCEP.PSLV.SOFS">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.PREC.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.LWDN.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.SWDN.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.SWUP.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.SHUM.SOFS.6HOUR">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.TBOT.SOFS.6HOUR">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.U.SOFS.6HOUR">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.V.SOFS.6HOUR">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.GCGCS.PREC">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.GISS.LWDN">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.GISS.SWDN">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.GISS.SWUP">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.NCEP.DN10">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.NCEP.Q_10">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.NCEP.SLP_">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.NCEP.T_10">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.NCEP.U_10">$DIN_LOC_ROOT/ocn/iaf</value>
-      <value stream="CORE2_IAF.NCEP.V_10">$DIN_LOC_ROOT/ocn/iaf</value>
+      <value stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/NYF</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
+      <value stream="CORE2_IAF">$DIN_LOC_ROOT/ocn/iaf</value>
       <value stream="WW3">$DIN_LOC_ROOT/wav/ww3</value>
       <value stream="NLDAS">$DIN_LOC_ROOT/atm/datm7/NLDAS</value>
-      <value stream="co2tseries.20tr">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="co2tseries.rcp2.6">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="co2tseries.rcp4.5">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="co2tseries.rcp6.0">$DIN_LOC_ROOT/atm/datm7/CO2</value>
-      <value stream="co2tseries.rcp8.5">$DIN_LOC_ROOT/atm/datm7/CO2</value>
+      <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2</value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">$DIN_LOC_ROOT/atm/datm7/clm_output/cruncep_precip_1deg/gpcp_1deg_bias_correction</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
-      <value stream="Anomaly.Forcing.Precip">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Temperature">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Pressure">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Humidity">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Uwind">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Vwind">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Shortwave">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="Anomaly.Forcing.Longwave">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
-      <value stream="presaero.clim_1850" grid="1x1_tropicAtl">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.clim_2000" grid="1x1_tropicAtl">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.trans_1850-2000" grid="1x1_tropicAtl">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.trans_1850-2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value presaero_mode="presaero.trans_1850-2000" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp2.6">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp2.6" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp4.5">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp4.5" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp6.0">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp6.0" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
-      <value stream="presaero.rcp8.5">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
+      <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
+      <value stream="presaero.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
     </values>
   </entry>
@@ -579,6 +448,11 @@
       <value  stream="CPLHIST3HrWx.Solar">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="CPLHIST3HrWx.Precip">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="CPLHIST3HrWx.nonSolarNonPrecip">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="CPLHISTForcingForOcnIce.Solar">$DATM_CPLHIST_CASE.cpl.ha2x1hi.%ym.nc</value>
+      <value  stream="CPLHISTForcingForOcnIce.nonSolarFlux">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="CPLHISTForcingForOcnIce.State3hr">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="CPLHISTForcingForOcnIce.State1hr">$DATM_CPLHIST_CASE.cpl.ha2x1h.%ym.nc</value>
+      <value  stream="presaero.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x1d.%ym.nc</value>
       <value  stream="CLM_QIAN.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</value>
       <value  stream="CLM_QIAN.Precip">clmforc.Qian.c2006.T62.Prec.%ym.nc</value>
       <value  stream="CLM_QIAN.TPQW">clmforc.Qian.c2006.T62.TPQW.%ym.nc</value>
@@ -1279,30 +1153,21 @@
       <value stream="Anomaly.Forcing.Vwind">af.vas.ccsm4.rcp45.2006-2300.nc</value>
       <value stream="Anomaly.Forcing.Shortwave">af.rsds.ccsm4.rcp45.2006-2300.nc</value>
       <value stream="Anomaly.Forcing.Longwave">af.rlds.ccsm4.rcp45.2006-2300.nc</value>
-      <value stream="presaero.pt1_pt1.CLM_USRDAT">aerosoldep_monthly_1849-2006_${CLM_USRDAT_NAME}.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_brazil">aerosoldep_2000_mean_1x1_brazil_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_camdenNJ">aerosoldep_2000_mean_1x1_camdenNJ_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_tropicAtl">aerosoldep_2000_mean_1x1_tropicAtl_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_asphaltjungleNJ">aerosoldep_2000_mean_1x1_asphaltjungleNJ_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_vancouverCAN">aerosoldep_2000_mean_1x1_vancouverCAN_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_mexicocityMEX">aerosoldep_2000_mean_1x1_mexicocityMEX_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_urbanc_alpha">aerosoldep_2000_mean_1x1_urbanc_alpha_c090716.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_numaIA">aerosoldep_2000_mean_1x1_numaIA_c110124.nc</value>
-      <value stream="presaero.pt1_pt1.1x1_smallvilleIA">aerosoldep_2000_mean_1x1_smallvilleIA_c110124.nc</value>
-      <value stream="presaero.pt1_pt1.5x5_amazon">aerosoldep_2000_mean_5x5_amazon_c090716.nc</value>
-      <value stream="presaero.clim_1850" grid="1x1_tropicAtl">aerosoldep_monthly_1850_1x1_tropicAtl_c091026.nc</value>
-      <value stream="presaero.clim_2000" grid="1x1_tropicAtl">aerosoldep_monthly_1849-2006_1x1_tropicAtl_c091026.nc</value>
-      <value stream="presaero.trans_1850-2000" grid="1x1_tropicAtl">aerosoldep_monthly_1849-2006_1x1_tropicAtl_c091026.nc</value>
+
+      <!-- Need to resolve if want to use single point forcing or not
+      <value stream="presaero.clim_1850" atm_grid="1x1_tropicAtl">aerosoldep_monthly_1850_1x1_tropicAtl_c091026.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_tropicAtl">aerosoldep_monthly_1849-2006_1x1_tropicAtl_c091026.nc</value>
+      <value stream="presaero.trans_1850-2000" atm_grid="1x1_tropicAtl">aerosoldep_monthly_1849-2006_1x1_tropicAtl_c091026.nc</value>
+      -->
       <value stream="presaero.clim_1850">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
       <value stream="presaero.clim_2000">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
       <value stream="presaero.trans_1850-2000">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
-      <value stream="presaero.pt1_pt1.CLM_USRDAT">aerosoldep_monthly_1849-2006_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp2.6">aerosoldep_rcp2.6_monthly_1849-2104_1.9x2.5_c100402.nc</value>
-      <value stream="presaero.rcp2.6" grid="CLM_USRDAT">aerosoldep_rcp2.6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
+      <value stream="presaero.rcp2.6" atm_grid="CLM_USRDAT">aerosoldep_rcp2.6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp4.5">aerosoldep_rcp4.5_monthly_1849-2104_1.9x2.5_c100402.nc</value>
-      <value stream="presaero.rcp4.5" grid="CLM_USRDAT">aerosoldep_rcp4.5_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
+      <value stream="presaero.rcp4.5" atm_grid="CLM_USRDAT">aerosoldep_rcp4.5_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp6.0">aerosoldep_rcp6.0_monthly_1849-2104_1.9x2.5_c100830.nc</value>
-      <value stream="presaero.rcp6.0" grid="CLM_USRDAT">aerosoldep_rcp6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
+      <value stream="presaero.rcp6.0" atm_grid="CLM_USRDAT">aerosoldep_rcp6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp8.5">aerosoldep_rcp8.5_monthly_1849-2104_1.9x2.5_c100201.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
     </values>
@@ -1384,6 +1249,34 @@
         a2x3h_Faxa_lwdn      lwdn
         a2x3h_Sa_dens        dens
         a2x3h_Sa_pslv        pslv
+      </value>
+      <value stream="CPLHISTForcingForOcnIce.Solar">
+        a2x1hi_Faxa_swndr swndr
+        a2x1hi_Faxa_swvdr swvdr
+        a2x1hi_Faxa_swndf swndf
+        a2x1hi_Faxa_swvdf swvdf
+      </value>
+      <value stream="CPLHISTForcingForOcnIce.nonSolarFlux">
+        a2x3h_Faxa_rainc rainc
+        a2x3h_Faxa_rainl rainl
+        a2x3h_Faxa_snowc snowc
+        a2x3h_Faxa_snowl snowl
+        a2x3h_Faxa_lwdn  lwdn
+      </value>
+      <value stream="CPLHISTForcingForOcnIce.State3hr">
+        a2x3h_Sa_z       z
+        a2x3h_Sa_tbot    tbot
+        a2x3h_Sa_ptem    ptem  
+        a2x3h_Sa_shum    shum
+        a2x3h_Sa_pbot    pbot
+        a2x3h_Sa_dens    dens
+        a2x3h_Sa_pslv    pslv
+	a2x3h_Sa_co2diag co2diag
+	a2x3h_Sa_co2prog co2prog
+      </value>
+      <value stream="CPLHISTForcingForOcnIce.State1hr">
+        a2x1h_Sa_u  u
+        a2x1h_Sa_v  v
       </value>
       <value  stream="CLM_QIAN.Solar">
         FSDS swdn
@@ -1587,7 +1480,23 @@
       <value  stream="Anomaly.Forcing.Longwave">
         rlds  lwdn_af
       </value>
-      <value    presaero_flag="active" ispresaerostream="TRUE">
+      <value stream="presaero.cplhist">
+        a2x1d_Faxa_bcphiwet  bcphiwet
+        a2x1d_Faxa_bcphodry  bcphodry
+        a2x1d_Faxa_bcphidry  bcphidry
+        a2x1d_Faxa_ocphiwet  ocphiwet
+        a2x1d_Faxa_ocphidry  ocphidry
+        a2x1d_Faxa_ocphodry  ocphodry
+        a2x1d_Faxa_dstwet1   dstwet1
+        a2x1d_Faxa_dstdry1   dstdry1
+        a2x1d_Faxa_dstwet2   dstwet2
+        a2x1d_Faxa_dstdry2   dstdry2
+        a2x1d_Faxa_dstwet3   dstwet3
+        a2x1d_Faxa_dstdry3   dstdry3
+        a2x1d_Faxa_dstwet4   dstwet4
+        a2x1d_Faxa_dstdry4   dstdry4
+      </value>
+      <value  stream="presaero">
         BCDEPWET   bcphiwet
         BCPHODRY   bcphodry
         BCPHIDRY   bcphidry
@@ -1616,82 +1525,27 @@
     <desc>Simulation year to align stream to.</desc>
     <values>
       <value>-999</value>
-      <value stream="CLM1PT.1x1_mexicocityMEX">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLM1PT.1x1_vancouverCAN">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLM1PT.1x1_urbanc_alpha">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CPLHIST3HrWx.Solar">$DATM_CPLHIST_YR_ALIGN</value>
-      <value stream="CPLHIST3HrWx.Precip">$DATM_CPLHIST_YR_ALIGN</value>
-      <value stream="CPLHIST3HrWx.nonSolarNonPrecip">$DATM_CPLHIST_YR_ALIGN</value>
-      <value stream="CLM_QIAN.Solar">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLM_QIAN.Precip">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLM_QIAN.TPQW">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLM_QIAN_WISO.Solar">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLM_QIAN_WISO.Precip">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLM_QIAN_WISO.TPQW">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMCRUNCEP.Solar">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMCRUNCEP.Precip">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMCRUNCEP.TPQW">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMCRUNCEP_V5.Solar">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMCRUNCEP_V5.Precip">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMCRUNCEP_V5.TPQW">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMGSWP3.Solar">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMGSWP3.Precip">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CLMGSWP3.TPQW">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="CORE2_NYF.GISS">1</value>
-      <value stream="CORE2_NYF.GXGXS">1</value>
-      <value stream="CORE2_NYF.NCEP">1</value>
-      <value stream="CORE2_IAF.NCEP.DENS.SOFS">1</value>
-      <value stream="CORE2_IAF.NCEP.PSLV.SOFS">1</value>
-      <value stream="CORE2_IAF.PREC.SOFS.DAILY">1</value>
-      <value stream="CORE2_IAF.LWDN.SOFS.DAILY">1</value>
-      <value stream="CORE2_IAF.SWDN.SOFS.DAILY">1</value>
-      <value stream="CORE2_IAF.SWUP.SOFS.DAILY">1</value>
-      <value stream="CORE2_IAF.SHUM.SOFS.6HOUR">1</value>
-      <value stream="CORE2_IAF.TBOT.SOFS.6HOUR">1</value>
-      <value stream="CORE2_IAF.U.SOFS.6HOUR">1</value>
-      <value stream="CORE2_IAF.V.SOFS.6HOUR">1</value>
-      <value stream="CORE2_IAF.GCGCS.PREC">1</value>
-      <value stream="CORE2_IAF.GISS.LWDN">1</value>
-      <value stream="CORE2_IAF.GISS.SWDN">1</value>
-      <value stream="CORE2_IAF.GISS.SWUP">1</value>
-      <value stream="CORE2_IAF.NCEP.DN10">1</value>
-      <value stream="CORE2_IAF.NCEP.Q_10">1</value>
-      <value stream="CORE2_IAF.NCEP.SLP_">1</value>
-      <value stream="CORE2_IAF.NCEP.T_10">1</value>
-      <value stream="CORE2_IAF.NCEP.U_10">1</value>
-      <value stream="CORE2_IAF.NCEP.V_10">1</value>
+      <value stream="CLM1PT">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="CPLHIST3HrWx">$DATM_CPLHIST_YR_ALIGN</value>
+      <value stream="CPLHISTForcingForOcnIce">$DATM_CPLHIST_YR_ALIGN</value>
+      <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1</value>
+      <value stream="CORE2_IAF">1</value>
       <value stream="WW3">2000</value>
       <value stream="NLDAS">1980</value>
       <value stream="co2tseries.20tr">1850</value>
-      <value stream="co2tseries.rcp2.6">2005</value>
-      <value stream="co2tseries.rcp4.5">2005</value>
-      <value stream="co2tseries.rcp6.0">2005</value>
-      <value stream="co2tseries.rcp8.5">2005</value>
+      <value stream="co2tseries.rcp">2005</value>
       <value stream="BC.QIAN.Precip">1979</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">1979</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">1979</value>
-      <value stream="Anomaly.Forcing.Precip">2006</value>
-      <value stream="Anomaly.Forcing.Temperature">2006</value>
-      <value stream="Anomaly.Forcing.Pressure">2006</value>
-      <value stream="Anomaly.Forcing.Humidity">2006</value>
-      <value stream="Anomaly.Forcing.Uwind">2006</value>
-      <value stream="Anomaly.Forcing.Vwind">2006</value>
-      <value stream="Anomaly.Forcing.Shortwave">2006</value>
-      <value stream="Anomaly.Forcing.Longwave">2006</value>
-      <value presaero_mode="pt1_pt1" ispresaerostream="TRUE">1</value>
-      <value presaero_mode="pt1_pt1" grid="CLM_USRDAT" ispresaerostream="TRUE">2000</value>
-      <value stream="presaero.clim_1850" grid="1x1_tropicAtl">1</value>
-      <value stream="presaero.clim_2000" grid="1x1_tropicAtl">1</value>
-      <value stream="presaero.trans_1850-2000" grid="1x1_tropicAtl">1849</value>
-      <value stream="presaero.clim_1850">1</value>
-      <value stream="presaero.clim_2000">1</value>
+      <value stream="Anomaly.Forcing">2006</value>
+      <value stream="presaero.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
+      <value stream="presaero.clim">1</value>
       <value stream="presaero.trans_1850-2000">1849</value>
-      <value stream="presaero.rcp2.6">1849</value>
-      <value stream="presaero.rcp4.5">1849</value>
-      <value stream="presaero.rcp6.0">1849</value>
-      <value stream="presaero.rcp8.5">1849</value>
+      <value stream="presaero.rcp">1849</value>
       <value stream="topo.observed">1</value>
     </values>
   </entry>
@@ -1707,27 +1561,13 @@
       <value stream="CLM1PT.1x1_vancouverCAN">1992</value>
       <value stream="CLM1PT.1x1_urbanc_alpha">0001</value>
       <value stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CPLHIST3HrWx.Solar">$DATM_CPLHIST_YR_START</value>
-      <value stream="CPLHIST3HrWx.Precip">$DATM_CPLHIST_YR_START</value>
-      <value stream="CPLHIST3HrWx.nonSolarNonPrecip">$DATM_CPLHIST_YR_START</value>
-      <value stream="CLM_QIAN.Solar">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLM_QIAN.Precip">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLM_QIAN.TPQW">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLM_QIAN_WISO.Solar">2000</value>
-      <value stream="CLM_QIAN_WISO.Precip">2000</value>
-      <value stream="CLM_QIAN_WISO.TPQW">2000</value>
-      <value stream="CLMCRUNCEP.Solar">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMCRUNCEP.Precip">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMCRUNCEP.TPQW">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMCRUNCEP_V5.Solar">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMCRUNCEP_V5.Precip">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMCRUNCEP_V5.TPQW">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMGSWP3.Solar">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMGSWP3.Precip">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CLMGSWP3.TPQW">$DATM_CLMNCEP_YR_START</value>
-      <value stream="CORE2_NYF.GISS">1</value>
-      <value stream="CORE2_NYF.GXGXS">1</value>
-      <value stream="CORE2_NYF.NCEP">1</value>
+      <value stream="CPLHIST3HrWx">$DATM_CPLHIST_YR_START</value>
+      <value stream="CPLHISTForcingForOcnIce">$DATM_CPLHIST_YR_START</value>
+      <value stream="CLM_QIAN_WISO">2000</value>
+      <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_START</value>
+      <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_START</value>
+      <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_START</value>
+      <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">2010</value>
       <value stream="CORE2_IAF.NCEP.PSLV.SOFS">2010</value>
       <value stream="CORE2_IAF.PREC.SOFS.DAILY">2010</value>
@@ -1752,35 +1592,16 @@
       <value stream="WW3">2000</value>
       <value stream="NLDAS">1980</value>
       <value stream="co2tseries.20tr">1850</value>
-      <value stream="co2tseries.rcp2.6">2005</value>
-      <value stream="co2tseries.rcp4.5">2005</value>
-      <value stream="co2tseries.rcp6.0">2005</value>
-      <value stream="co2tseries.rcp8.5">2005</value>
-      <value stream="BC.QIAN.Precip">1979</value>
-      <value stream="BC.CRUNCEP.GPCP.Precip">1979</value>
-      <value stream="BC.CRUNCEP.CMAP.Precip">1979</value>
-      <value stream="Anomaly.Forcing.Precip">2006</value>
-      <value stream="Anomaly.Forcing.Temperature">2006</value>
-      <value stream="Anomaly.Forcing.Pressure">2006</value>
-      <value stream="Anomaly.Forcing.Humidity">2006</value>
-      <value stream="Anomaly.Forcing.Uwind">2006</value>
-      <value stream="Anomaly.Forcing.Vwind">2006</value>
-      <value stream="Anomaly.Forcing.Shortwave">2006</value>
-      <value stream="Anomaly.Forcing.Longwave">2006</value>
-      <value presaero_mode="pt1_pt1" ispresaerostream="TRUE">1</value>
-      <value presaero_mode="pt1_pt1" grid="CLM_USRDAT" ispresaerostream="TRUE">2000</value>
-      <value stream="presaero.clim_1850" grid="1x1_tropicAtl">1</value>
-      <value stream="presaero.clim_2000" grid="1x1_tropicAtl">1</value>
-      <value stream="presaero.trans_1850-2000" grid="1x1_tropicAtl">1849</value>
-      <value stream="presaero.clim_1850">1</value>
-      <value stream="presaero.clim_2000">1</value>
+      <value stream="co2tseries.rcp">2005</value>
+      <value stream="BC.QIAN">1979</value>
+      <value stream="BC.CRUNCEP">1979</value>
+      <value stream="Anomaly.Forcing">2006</value>
+      <value stream="presaero.cplhist">$DATM_CPLHIST_YR_START</value>
+      <value stream="presaero.clim">1</value>
       <value stream="presaero.trans_1850-2000">1849</value>
-      <value stream="presaero.rcp2.6">1849</value>
-      <value stream="presaero.rcp4.5">1849</value>
-      <value stream="presaero.rcp6.0">1849</value>
-      <value stream="presaero.rcp8.5">1849</value>
+      <value stream="presaero.rcp">1849</value>
       <value stream="topo.observed">1</value>
-    </values>
+    </values									>
   </entry>
 
   <entry id="strm_year_end">
@@ -1794,27 +1615,13 @@
       <value stream="CLM1PT.1x1_vancouverCAN">1992</value>
       <value stream="CLM1PT.1x1_urbanc_alpha">0002</value>
       <value stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_END</value>
-      <value stream="CPLHIST3HrWx.Solar">$DATM_CPLHIST_YR_END</value>
-      <value stream="CPLHIST3HrWx.Precip">$DATM_CPLHIST_YR_END</value>
-      <value stream="CPLHIST3HrWx.nonSolarNonPrecip">$DATM_CPLHIST_YR_END</value>
-      <value stream="CLM_QIAN.Solar">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLM_QIAN.Precip">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLM_QIAN.TPQW">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLM_QIAN_WISO.Solar">2004  </value>
-      <value stream="CLM_QIAN_WISO.Precip">2004  </value>
-      <value stream="CLM_QIAN_WISO.TPQW">2004  </value>
-      <value stream="CLMCRUNCEP.Solar">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMCRUNCEP.Precip">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMCRUNCEP.TPQW">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMCRUNCEP_V5.Solar">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMCRUNCEP_V5.Precip">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMGSWP3.Solar">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMGSWP3.Precip">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMCRUNCEP_V5.TPQW">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CLMGSWP3.TPQW">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="CORE2_NYF.GISS">1</value>
-      <value stream="CORE2_NYF.GXGXS">1</value>
-      <value stream="CORE2_NYF.NCEP">1</value>
+      <value stream="CPLHIST3HrWx">$DATM_CPLHIST_YR_END</value>
+      <value stream="CPLHISTForcingForOcnIce">$DATM_CPLHIST_YR_END</value>
+      <value stream="CLM_QIAN_WISO">2004  </value>
+      <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.NCEP.DENS.SOFS">2011</value>
       <value stream="CORE2_IAF.NCEP.PSLV.SOFS">2011</value>
       <value stream="CORE2_IAF.PREC.SOFS.DAILY">2011</value>
@@ -1839,33 +1646,15 @@
       <value stream="WW3">2000</value>
       <value stream="NLDAS">1980</value>
       <value stream="co2tseries.20tr">2007</value>
-      <value stream="co2tseries.rcp2.6">2500</value>
-      <value stream="co2tseries.rcp4.5">2500</value>
-      <value stream="co2tseries.rcp6.0">2500</value>
-      <value stream="co2tseries.rcp8.5">2500</value>
+      <value stream="co2tseries.rcp">2500</value>
       <value stream="BC.QIAN.Precip">2004</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">2012</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">2010</value>
-      <value stream="Anomaly.Forcing.Precip">2300</value>
-      <value stream="Anomaly.Forcing.Temperature">2300</value>
-      <value stream="Anomaly.Forcing.Pressure">2300</value>
-      <value stream="Anomaly.Forcing.Humidity">2300</value>
-      <value stream="Anomaly.Forcing.Uwind">2300</value>
-      <value stream="Anomaly.Forcing.Vwind">2300</value>
-      <value stream="Anomaly.Forcing.Shortwave">2300</value>
-      <value stream="Anomaly.Forcing.Longwave">2300</value>
-      <value presaero_mode="pt1_pt1" ispresaerostream="TRUE">1</value>
-      <value presaero_mode="pt1_pt1" grid="CLM_USRDAT" ispresaerostream="TRUE">2000</value>
-      <value stream="presaero.clim_1850" grid="1x1_tropicAtl">1</value>
-      <value stream="presaero.clim_2000" grid="1x1_tropicAtl">1</value>
-      <value stream="presaero.trans_1850-2000" grid="1x1_tropicAtl">2006</value>
-      <value stream="presaero.clim_1850">1</value>
-      <value stream="presaero.clim_2000">1</value>
+      <value stream="Anomaly.Forcing">2300</value>
+      <value stream="presaero.cplhist">$DATM_CPLHIST_YR_END</value>
+      <value stream="presaero.clim">1</value>
       <value stream="presaero.trans_1850-2000">2006</value>
-      <value stream="presaero.rcp2.6">2104</value>
-      <value stream="presaero.rcp4.5">2104</value>
-      <value stream="presaero.rcp6.0">2104</value>
-      <value stream="presaero.rcp8.5">2104</value>
+      <value stream="presaero.rcp">2104</value>
       <value stream="topo.observed">1</value>
     </values>
   </entry>
@@ -1880,7 +1669,11 @@
       <value stream="CPLHIST3HrWx.Solar">-10800</value>
       <value stream="CPLHIST3HrWx.Precip">-5400</value>
       <value stream="CPLHIST3HrWx.nonSolarNonPrecip">-5400</value>
-      <value presaero_flag="active" ispresaerostream="TRUE">0</value>
+      <value stream="CPLHISTForcingForOcnIce.Solar">2700</value>
+      <value stream="CPLHISTForcingForOcnIce.nonSolarFlux">900</value>
+      <value stream="CPLHISTForcingForOcnIce.State3hr">900</value>
+      <value stream="CPLHISTForcingForOcnIce.State1hr">900</value>
+      <value stream="presaero.cplhist">0</value>
     </values>
   </entry>
 
@@ -1944,21 +1737,17 @@
     </desc>
     <values>
       <value>NULL</value>
-      <value datm_mode="CLM_QIAN"      >CLMNCEP</value>
-      <value datm_mode="CLM_QIAN_WISO" >CLMNCEP</value>
-      <value datm_mode="CLM1PT"        >CLMNCEP</value>
-      <value datm_mode="CLMCRUNCEP"    >CLMNCEP</value>
-      <value datm_mode="CLMCRUNCEP_V5" >CLMNCEP</value>
-      <value datm_mode="CLMGSWP3"      >CLMNCEP</value>
-      <value datm_mode="CPLHIST3HrWx"  >CPLHIST</value>
-      <value datm_mode="CORE2_NYF"     >CORE2_NYF</value>
-      <value datm_mode="CORE2_IAF"     >CORE2_IAF</value>
-      <value datm_mode="WW3"           >COPYALL</value>
-      <value datm_mode="NLDAS"         >CLMNCEP</value>
+      <value datm_mode="CLM">CLMNCEP</value>
+      <value datm_mode="CPLHIST3HrWx">CPLHIST</value>
+      <value datm_mode="CORE2_NYF">CORE2_NYF</value>
+      <value datm_mode="CORE2_IAF">CORE2_IAF</value>
+      <value datm_mode="WW3">COPYALL</value>
+      <value datm_mode="NLDAS">CLMNCEP</value>
+      <value datm_mode="CPLHISTForcingForOcnIce">CPLHIST</value>
     </values>
   </entry>
 
-  <entry id="domainfile">
+  <entry id="domainfile" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <input_pathname>abs</input_pathname>
@@ -2066,21 +1855,9 @@
     <values>
       <value>bilinear</value>
       <value datm_mode="CLM1PT">nn</value>
-      <value datm_mode="CLM1PT" presaero_mode="pt1_pt1">nn</value>
-      <value stream="CLMCRUNCEP.Solar" atm_grid="hcru">copy</value>
-      <value stream="CLMCRUNCEP.Precip" atm_grid="hcru">copy</value>
-      <value stream="CLMCRUNCEP.TPQW" atm_grid="hcru">copy</value>
-      <value stream="CLMCRUNCEP_V5.Solar" atm_grid="hcru">copy</value>
-      <value stream="CLMCRUNCEP_V5.Precip" atm_grid="hcru">copy</value>
-      <value stream="CLMCRUNCEP_V5.TPQW" atm_grid="hcru">copy</value>
-      <value stream="CLMGSWP3.Solar" atm_grid="hcru">copy</value>
-      <value stream="CLMGSWP3.Precip" atm_grid="hcru">copy</value>
-      <value stream="CLMGSWP3.TPQW" atm_grid="hcru">copy</value>
-      <value stream="co2tseries.20tr">nn</value>
-      <value stream="co2tseries.rcp2.6">nn</value>
-      <value stream="co2tseries.rcp4.5">nn</value>
-      <value stream="co2tseries.rcp6.0">nn</value>
-      <value stream="co2tseries.rcp8.5">nn</value>
+      <value stream="CLMCRUNCEP" atm_grid="hcru">copy</value>
+      <value stream="CLMGSWP3" atm_grid="hcru">copy</value>
+      <value stream="co2tseries">nn</value>
     </values>
   </entry>
 
@@ -2137,6 +1914,11 @@
       <value stream="CLM1PT.CLM_USRDAT">nearest</value>
       <value stream="CPLHIST3HrWx.Solar">coszen</value>
       <value stream="CPLHIST3HrWx.Precip">nearest</value>
+      <value stream="CPLHISTForcingForOcnIce.Solar">nearest</value>
+      <value stream="CPLHISTForcingForOcnIce.nonSolarFlux">nearest</value>
+      <value stream="CPLHISTForcingForOcnIce.State3hr">linear</value>
+      <value stream="CPLHISTForcingForOcnIce.State1hr">linear</value>
+      <value stream="presaero.cplhist">nearest</value>
       <value stream="CLM_QIAN.Solar">coszen</value>
       <value stream="CLM_QIAN.Precip">nearest</value>
       <value stream="CLM_QIAN_WISO.Solar">coszen</value>
@@ -2182,12 +1964,9 @@
     <values>
       <value>cycle</value>
       <value stream="co2tseries.20tr">extend</value>
-      <value stream="co2tseries.rcp2.6">extend</value>
-      <value stream="co2tseries.rcp4.5">extend</value>
-      <value stream="co2tseries.rcp6.0">extend</value>
-      <value stream="co2tseries.rcp8.5">extend</value>
-      <value grid="CLM_USRDAT">cycle</value>
+      <value stream="co2tseries.rcp">extend</value>
       <value datm_mode="CLM1PT">extend</value>
+      <value atm_grid="CLM_USRDAT">cycle</value>
     </values>
   </entry>
 
@@ -2212,10 +1991,15 @@
     <values>
       <value>1.5</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1.e30</value>
+      <value stream="CPLHISTForcingForOcnIce.Solar">2.0</value>
+      <value stream="CPLHISTForcingForOcnIce.nonSolarFlux">2.0</value>
+      <value stream="CPLHISTForcingForOcnIce.State3hr">2.0</value>
+      <value stream="CPLHISTForcingForOcnIce.State1hr">2.0</value>
+      <value stream="presaero.cplhist">2.0</value>
     </values>
   </entry>
 
-  <entry id="vectors" skip_default_entry="true">
+  <entry id="vectors">
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
@@ -2230,17 +2014,12 @@
     </desc>
     <values>
       <value>null</value>
-      <value datm_mode="CLM_QIAN"      >null</value>
-      <value datm_mode="CLM_QIAN_WISO" >null</value>
-      <value datm_mode="CLMCRUNCEP"    >null</value>
-      <value datm_mode="CLMCRUNCEP_V5" >null</value>
-      <value datm_mode="CLMGSWP3"      >null</value>
-      <value datm_mode="CLM1PT"        >null</value>
-      <value datm_mode="CPLHIST3HrWx"  >null</value>
-      <value datm_mode="CORE2_NYF"     >u:v</value>
-      <value datm_mode="CORE2_IAF"     >u:v</value>
-      <value datm_mode="WW3"           >u:v</value>
-      <value datm_mode="NLDAS"         >null</value>
+      <value datm_mode="CLM">null</value>
+      <value datm_mode="CPLHIST3HrWx">u:v</value>
+      <value datm_mode="CORE2_NYF">u:v</value>
+      <value datm_mode="CORE2_IAF">u:v</value>
+      <value datm_mode="WW3">u:v</value>
+      <value datm_mode="NLDAS">null</value>
     </values>
   </entry>
 
@@ -2368,6 +2147,7 @@
     </desc>
     <values>
       <value>1</value>
+      <value datm_mode="CPLHISTForcingForOcnIce">-1</value>
     </values>
   </entry>
 

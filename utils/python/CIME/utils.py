@@ -770,6 +770,7 @@ def append_status(msg, caseroot='.', sfile="CaseStatus"):
         ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
     with open(os.path.join(caseroot,sfile), "a") as fd:
         fd.write(ctime + msg + "\n")
+        fd.write("\n ---------------------------------------------------\n\n")
 
 def does_file_have_string(filepath, text):
     """
@@ -851,8 +852,6 @@ def get_build_threaded(case):
         return True
     comp_classes = case.get_values("COMP_CLASSES")
     for comp_class in comp_classes:
-        if comp_class == "DRV":
-            comp_class = "CPL"
         if case.get_value("NTHRDS_%s"%comp_class) > 1:
             return True
     return False
@@ -949,8 +948,8 @@ def _get_most_recent_lid_impl(files):
 
 def get_lids(case):
     model = case.get_value("MODEL")
-    rundir = case.get_value("RUNDIR")
-    return _get_most_recent_lid_impl(glob.glob("%s/%s.log*" % (rundir, model)))
+    logdir = case.get_value("LOGDIR")
+    return _get_most_recent_lid_impl(glob.glob("%s/%s.log*" % (logdir, model)))
 
 def new_lid():
     lid = time.strftime("%y%m%d-%H%M%S")
@@ -986,3 +985,24 @@ def analyze_build_log(comp, log, compiler):
 
     if warncnt > 0:
         logger.info("Component %s build complete with %s warnings"%(comp,warncnt))
+
+def is_python_executable(filepath):
+    with open(filepath, "r") as f:
+        first_line = f.readline()
+
+    return first_line.startswith("#!") and "python" in first_line
+
+class SharedArea(object):
+    """
+    Enable 0002 umask within this manager
+    """
+
+    def __init__(self, new_perms=0o002):
+        self._orig_umask = None
+        self._new_perms  = new_perms
+
+    def __enter__(self):
+        self._orig_umask = os.umask(self._new_perms)
+
+    def __exit__(self, *_):
+        os.umask(self._orig_umask)

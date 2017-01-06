@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class GenericXML(object):
 
-    def __init__(self, infile=None):
+    def __init__(self, infile=None, schema=None):
         """
         Initialize an object
         """
@@ -28,6 +28,9 @@ class GenericXML(object):
             # If file is defined and exists, read it
             self.filename = infile
             self.read(infile)
+
+            if schema is not None and self.get_version() != "1.0":
+                self.validate_xml_file(infile, schema)
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
@@ -67,11 +70,8 @@ class GenericXML(object):
             outfile = self.filename
 
         logger.debug("write: " + outfile)
-        try:
-            xmlstr = ET.tostring(self.root)
-        except ET.ParseError as e:
-            ET.dump(self.root)
-            expect(False, "Could not write file %s, xml formatting error '%s'" % (self.filename, e))
+
+        xmlstr = self.get_raw_record()
 
         # xmllint provides a better format option for the output file
         xmllint = find_executable("xmllint")
@@ -170,6 +170,10 @@ class GenericXML(object):
         logger.debug("Get Value for " + item)
         return None
 
+    def get_values(self, vid, attribute=None, resolved=True, subgroup=None):# pylint: disable=unused-argument
+        logger.debug("Get Values for " + vid)        
+        return []
+
     def set_value(self, vid, value, subgroup=None, ignore_type=True): # pylint: disable=unused-argument
         """
         ignore_type is not used in this flavor
@@ -229,7 +233,7 @@ class GenericXML(object):
             elif var in os.environ:
                 # this is a list of suppressed warnings (things normally expected to be resolved in env)
                 if var not in ("USER",):
-                    logging.warn("Resolved from env: " + var)
+                    logging.debug("Resolved from env: " + var)
                 item_data = item_data.replace(m.group(), os.environ[var])
         if math_re.search(item_data):
             try:
@@ -259,4 +263,28 @@ class GenericXML(object):
             run_cmd_no_fail("%s --noout --schema %s %s"%(xmllint, schema, filename))
         else:
             logger.warn("xmllint not found, could not validate file %s"%filename)
+
+    def get_element_text(self, element_name, attributes=None, root=None, xpath=None):
+        element_node = self.get_optional_node(element_name, attributes, root, xpath)
+        if element_node is not None:
+            return element_node.text
+        return None
+
+    def set_element_text(self, element_name, new_text, attributes=None, root=None, xpath=None):
+        element_node = self.get_optional_node(element_name, attributes, root, xpath)
+        if element_node is not None:
+            element_node.text = new_text
+            return new_text
+        return None
+
+    def get_raw_record(self, root=None):
+        if root is None:
+            root = self.root
+        try:
+            xmlstr = ET.tostring(root)
+        except ET.ParseError as e:
+            ET.dump(root)
+            expect(False, "Could not write file %s, xml formatting error '%s'" % (self.filename, e))
+        return xmlstr
+
 

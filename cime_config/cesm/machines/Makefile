@@ -137,7 +137,7 @@ ifeq (,$(SHAREDPATH))
 endif
 INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 
-include $(CASEROOT)/Macros
+include $(CASEROOT)/Macros.make
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), true)
@@ -247,9 +247,7 @@ endif
 ifndef CONFIG_ARGS
   CONFIG_ARGS :=
 endif
-ifeq ($(MPILIB),mpi-serial)
-   CONFIG_ARGS+= --enable-mpiserial
-endif
+
 ifeq  ($(findstring pio,$(MODEL)),pio)
   CONFIG_ARGS+= --enable-timing
   ifeq ($DEBUG,TRUE)
@@ -277,7 +275,7 @@ ifeq ($(strip $(MPILIB)), mpi-serial)
   MPIFC   := $(SFC)
   MPICC   := $(SCC)
   MPICXX  := $(SCXX)
-  CONFIG_ARGS += --enable-mpiserial MCT_PATH=$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial
+  CONFIG_ARGS +=  MCT_PATH=$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial
 else
   CC  := $(MPICC)
   FC  := $(MPIFC)
@@ -287,11 +285,13 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
-
+CSM_SHR_INCLUDE:=$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
+# This is needed so that dependancies are found
+VPATH+=$(CSM_SHR_INCLUDE)
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
-INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
+INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(CSM_SHR_INCLUDE)
 
 ifdef INC_NETCDF
   INCLDIR += -I$(INC_NETCDF)
@@ -324,15 +324,11 @@ else
        # GCC needs to be able to link to
        # nagfor runtime to get autoconf
        # tests to work.
-         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
        endif
     endif
   endif
-endif
-
-ifeq ($(COMP_OCN), pop)
-  INCLDIR += -I$(EXEROOT)/ocn/cvmix
 endif
 
 ifndef MCT_LIBDIR
@@ -362,10 +358,10 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
 
-CONFIG_ARGS +=  CC="$(SCC)" FC="$(SFC)" MPICC="$(MPICC)" \
-                MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
-                CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
-                NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"
+CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
+		MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
+		CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
+		NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"
 ifeq ($(COMPILER),nag)
   CONFIG_ARGS += LIBS="$(SLIBS)"
 endif
@@ -475,7 +471,7 @@ $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/Makefile.conf:
 
 $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
+	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct/mpi-serial
 
 ifeq ($(PIO_VERSION),2)
 # This is a pio2 library
@@ -511,24 +507,24 @@ endif
 # doesn't seem to be able to differentiate between free & fixed
 # fortran flags)
 CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
-              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
-              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
-              -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-              -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
-              -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
-              -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
+	      -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
+	      -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
+	      -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+	      -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
+	      -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
+	      -D PIO_ENABLE_TESTS:BOOL=OFF \
+	      -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)"
 else
-        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
+	CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif
 
 # NAG doesn't get along too nicely with PnetCDF Fortran interfaces.
 ifeq ($(COMPILER),nag)
   ifeq ($(PIO_VERSION),1)
-        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
+	CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
   endif
 endif
 
@@ -546,9 +542,9 @@ ifndef CMAKE_ENV_VARS
   CMAKE_ENV_VARS :=
 endif
 CMAKE_ENV_VARS += CC=$(CC) \
-                  CXX=$(CXX) \
-                  FC=$(FC) \
-                  LDFLAGS="$(LDFLAGS)"
+		  CXX=$(CXX) \
+		  FC=$(FC) \
+		  LDFLAGS="$(LDFLAGS)"
 
 
 # We declare $(GLC_DIR)/Makefile to be a phony target so that cmake is
@@ -634,12 +630,17 @@ ifeq ($(CLMVER),$(null))
   LNDOBJDIR = $(EXEROOT)/lnd/obj
   LNDLIBDIR=$(LIBROOT)
   LNDLIB := liblnd.a
+  INCLDIR += -I$(LNDOBJDIR)
 else
   LNDOBJDIR = $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
   LNDLIBDIR = $(EXEROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
   LNDLIB := libclm.a
+  INCLDIR += -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  ifeq ($(MODEL),clm)
+    INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  endif
 endif
-INCLDIR += -I$(LNDOBJDIR)
+
 
 ifeq ($(ULIBDEP),$(null))
    ifneq ($(LIBROOT),$(null))
@@ -647,9 +648,6 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/libice.a
      ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
      ULIBDEP += $(LIBROOT)/libocn.a
-     ifeq ($(COMP_OCN), pop)
-       ULIBDEP += $(LIBROOT)/libcvmix.a
-     endif
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
@@ -657,7 +655,7 @@ ifeq ($(ULIBDEP),$(null))
      ifeq ($(COMP_GLC), cism)
        ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
        ifeq ($(CISM_USE_TRILINOS), TRUE)
-         ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
+	 ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
        endif
      endif
      ifeq ($(OCN_SUBMODEL),moby)
@@ -712,11 +710,14 @@ endif
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-$(COMPLIB): $(OBJS)
+ifdef INCLUDE_DIR
+  $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
-
-$(LIBROOT)/libcvmix.a:
-	$(MAKE) -f $(CIMEROOT)/../components/pop/source/cvmix/Makefile SRC_DIR=$(CIMEROOT)/../components/pop/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
+	$(CP) *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
+else
+  $(COMPLIB): $(OBJS)
+	$(AR) -r $(COMPLIB) $(OBJS)
+endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
@@ -728,6 +729,7 @@ $(LIBROOT)/libcvmix.a:
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  $<
 .F90.o:
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(CONTIGUOUS_FLAG) $<
+
 .cpp.o:
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 
@@ -742,7 +744,7 @@ cleancpl:
 	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.mod
 
 cleanocn:
-	$(RM) -f $(LIBROOT)/libocn.a $(LIBROOT)/libcvmix.a
+	$(RM) -f $(LIBROOT)/libocn.a
 	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.mod
 
 cleanwav:

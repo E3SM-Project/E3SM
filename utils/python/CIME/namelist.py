@@ -631,37 +631,47 @@ def compress_literal_list(literals):
     >>> compress_literal_list(['true'])
     ['true']
     >>> compress_literal_list(['1', '2', 'f*', '3', '3', '3', '5'])
-    ['1', '2', 'f*', '3*3', '5']
+    ['1', '2', 'f*', '3', '3', '3', '5']
     >>> compress_literal_list([u'f*', u'f*'])
-    [u'2*f*']
+    [u'f*', u'f*']
     """
     compressed = []
     if len(literals) == 0:
         return compressed
-    # Start with the first literal.
-    old_literal = literals[0]
-    num_reps = 1
-    for literal in literals[1:]:
-        if literal == old_literal:
-            # For each new literal, if it matches the old one, it increases the
-            # number of repetitions by one.
-            num_reps += 1
-        else:
-            # Otherwise, write out the previous literal and start tracking the
-            # new one.
-            rep_str = str(num_reps) + '*' if num_reps > 1 else ''
-            if isinstance(old_literal, basestring):
-                compressed.append(rep_str + old_literal)
+    # for right now do not compress
+    do_compression = False
+    if do_compression:
+        # Start with the first literal.
+        old_literal = literals[0]
+        num_reps = 1
+        for literal in literals[1:]:
+            if literal == old_literal:
+                # For each new literal, if it matches the old one, it increases the
+                # number of repetitions by one.
+                num_reps += 1
             else:
-                compressed.append(rep_str + str(old_literal))
-            old_literal = literal
-            num_reps = 1
-    rep_str = str(num_reps) + '*' if num_reps > 1 else ''
-    if isinstance(old_literal, basestring):
-        compressed.append(rep_str + old_literal)
+                # Otherwise, write out the previous literal and start tracking the
+                # new one.
+                rep_str = str(num_reps) + '*' if num_reps > 1 else ''
+                if isinstance(old_literal, basestring):
+                    compressed.append(rep_str + old_literal)
+                else:
+                    compressed.append(rep_str + str(old_literal))
+                old_literal = literal
+                num_reps = 1
+        rep_str = str(num_reps) + '*' if num_reps > 1 else ''
+        if isinstance(old_literal, basestring):
+            compressed.append(rep_str + old_literal)
+        else:
+            compressed.append(rep_str + str(old_literal))
+        return compressed
     else:
-        compressed.append(rep_str + str(old_literal))
-    return compressed
+        for literal in literals:
+            if isinstance(literal, basestring):
+                compressed.append(literal)
+            else:
+                compressed.append(str(literal))
+        return compressed
 
 def merge_literal_lists(default, overwrite):
     """Merge two lists of literal value strings.
@@ -686,7 +696,7 @@ def merge_literal_lists(default, overwrite):
     >>> merge_literal_lists(['true'], [])
     ['true']
     >>> merge_literal_lists(['3*false', '3*true'], ['true', '4*', 'false'])
-    ['true', '2*false', '2*true', 'false']
+    ['true', 'false', 'false', 'true', 'true', 'false']
     """
     merged = []
     default = expand_literal_list(default)
@@ -953,7 +963,7 @@ class Namelist(object):
         >>> x.get_value('bar')
         [u'2']
         >>> x.get_value('bazz')
-        [u'3*1']
+        [u'1', u'1', u'1']
         >>> x.get_value('brat')
         [u'3']
         >>> x.get_value('baker')
@@ -973,7 +983,7 @@ class Namelist(object):
                     merged_val = merge_literal_lists(other_val, self_val)
                 self.set_variable_value(group_name, variable_name, merged_val)
 
-    def write(self, out_file, groups=None, append=False, format_='nml'):
+    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True):
         """Write a Fortran namelist to a file.
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -988,31 +998,42 @@ class Namelist(object):
         specifies the file format. Formats other than 'nml' may not support all
         possible output values.
         """
-        expect(format_ in ('nml', 'rc'),
+        expect(format_ in ('nml', 'rc', 'nmlcontents'),
                "Namelist.write: unexpected output format %r" % str(format_))
         if isinstance(out_file, str) or isinstance(out_file, unicode):
             logger.debug("Writing namelist to: %s", out_file)
             flag = 'a' if append else 'w'
             with open(out_file, flag) as file_obj:
-                self._write(file_obj, groups, format_)
+                self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing namelist to file object")
-            self._write(out_file, groups, format_)
+            self._write(out_file, groups, format_, sorted_groups=sorted_groups)
 
-    def _write(self, out_file, groups, format_):
+    def _write(self, out_file, groups, format_, sorted_groups):
         """Unwrapped version of `write` assuming that a file object is input."""
         if groups is None:
             groups = self._groups.keys()
-        if format_ == 'nml':
+        if format_ == 'nml' or format_ == 'nmlcontents':
             equals = ' ='
         elif format_ == 'rc':
             equals = ':'
-        for group_name in sorted(group.lower() for group in groups):
+        if (sorted_groups):
+            group_names = sorted(group.lower() for group in groups)
+        else:
+            group_names = groups
+        for group_name in group_names:
             if format_ == 'nml':
                 out_file.write("&%s\n" % group_name)
             group = self._groups[group_name]
             for name in sorted(group.keys()):
                 values = group[name]
+
+                # @ is used in a namelist to put the same namelist variable in multiple groups
+                # in the write phase, all characters in the namelist variable name after 
+                # the @ and including the @ should be removed
+                if "@" in name:
+                    name = re.sub('@.+$', "", name)
+
                 # To prettify things for long lists of values, build strings
                 # line-by-line.
                 if values[0] == "True" or values[0] == "False":
@@ -1031,6 +1052,8 @@ class Namelist(object):
                     out_file.write(line)
             if format_ == 'nml':
                 out_file.write("/\n")
+            if format_ == 'nmlcontents':
+                out_file.write("\n")
 
 
 class _NamelistEOF(Exception):

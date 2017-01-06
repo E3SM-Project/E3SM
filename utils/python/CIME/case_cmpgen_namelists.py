@@ -14,10 +14,10 @@ import os, shutil, traceback, stat, glob
 
 logger = logging.getLogger(__name__)
 
-def _do_full_nl_comp(case, test, compare_name):
+def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
     test_dir       = case.get_value("CASEROOT")
     casedoc_dir    = os.path.join(test_dir, "CaseDocs")
-    baseline_root  = case.get_value("BASELINE_ROOT")
+    baseline_root  = case.get_value("BASELINE_ROOT") if baseline_root is None else baseline_root
 
     all_match         = True
     baseline_dir      = os.path.join(baseline_root, compare_name, test)
@@ -52,10 +52,10 @@ def _do_full_nl_comp(case, test, compare_name):
     logging.info(comments)
     return all_match, comments
 
-def _do_full_nl_gen(case, test, generate_name):
+def _do_full_nl_gen(case, test, generate_name, baseline_root=None):
     test_dir       = case.get_value("CASEROOT")
     casedoc_dir    = os.path.join(test_dir, "CaseDocs")
-    baseline_root  = case.get_value("BASELINE_ROOT")
+    baseline_root  = case.get_value("BASELINE_ROOT") if baseline_root is None else baseline_root
 
     baseline_dir      = os.path.join(baseline_root, generate_name, test)
     baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
@@ -79,7 +79,7 @@ def _do_full_nl_gen(case, test, generate_name):
         shutil.copy2(item, baseline_dir)
         os.chmod(preexisting_baseline, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
 
-def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None, generate_name=None):
+def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None, generate_name=None, baseline_root=None, logfile_name="TestStatus.log"):
     expect(case.get_value("TEST"), "Only makes sense to run this for a test case")
 
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
@@ -117,9 +117,9 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
             success = True
             output = ""
             if compare:
-                success, output = _do_full_nl_comp(case, test_name, compare_name)
+                success, output = _do_full_nl_comp(case, test_name, compare_name, baseline_root)
             if generate:
-                _do_full_nl_gen(case, test_name, generate_name)
+                _do_full_nl_gen(case, test_name, generate_name, baseline_root)
         except:
             ts.set_status(NAMELIST_PHASE, TEST_FAIL_STATUS)
             success = False
@@ -128,7 +128,7 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
             logging.warning(warn)
         finally:
             ts.set_status(NAMELIST_PHASE, TEST_PASS_STATUS if success else TEST_FAIL_STATUS)
-            append_status(output, caseroot=caseroot, sfile="TestStatus.log")
+            append_status(output, caseroot=caseroot, sfile=logfile_name)
 
         return success
 

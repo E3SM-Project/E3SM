@@ -7,6 +7,7 @@ DEBUG = False
 def list_tests_from():
     loader = unittest.TestLoader()
     suite = loader.discover(".", pattern="scripts_regression_tests.py")
+    test_classes = []
     for atest in suite:
         tests = atest._tests
         if len(tests):
@@ -15,7 +16,11 @@ def list_tests_from():
                     print atest
                 for btest in atest._tests:
                     btestname = btest.__str__().split()
-                    print btestname[1][1:-1] + "." + btestname[0]
+                    test_classes.append(btestname[1][1:-1].split('.')[1])
+            # add this explicitly, not captured by the above
+            test_classes.append("B_CheckCode")
+            for ctest in sorted(list(set(test_classes))):
+                print ctest
 
 if __name__ == "__main__":
     # Include the directories

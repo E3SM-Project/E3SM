@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 # Is not of type EntryID but can use functions from EntryID (e.g
 # get_type) otherwise need to implement own functions and make GenericXML parent class
 class EnvMachSpecific(EnvBase):
-
-    def __init__(self, caseroot, infile="env_mach_specific.xml"):
+    # pylint: disable=unused-argument
+    def __init__(self, caseroot, infile="env_mach_specific.xml",components=None):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
@@ -50,42 +50,6 @@ class EnvMachSpecific(EnvBase):
             else:
                 for node in nodes:
                     self.add_child(node)
-
-    def get_full_records(self, item, attribute=None, resolved=True, subgroup=None):
-        """Returns the value as a string of the first xml element with item as attribute value.
-        <element_name attribute='attribute_value>value</element_name>"""
-
-        logger.debug("(get_full_records) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
-
-        nodes   = [] # List of identified xml elements
-        results = [] # List of identified parameters
-
-        # Find all nodes with attribute name and attribute value item
-        # xpath .//*[name='item']
-        if item :
-            nodes = self.get_nodes("*",{"name" : item})
-        else :
-            # Return all nodes
-            logger.debug("(get_full_records) Retrieving all parameter")
-            nodes = self.get_nodes("env")
-
-        # Return value for first occurence of node with attribute value = item
-        for node in nodes:
-
-            group   = super(EnvMachSpecific, self)._get_group(node)
-            val     = node.text
-            attr    = node.attrib['name']
-            t       = self._get_type_info(node)
-            desc    = self._get_description(node)
-            default = self._get_default(node)
-            filename    = self.filename
-
-            #t   =  super(EnvBase , self).get_type( node )
-            v = { 'group' : group , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : filename}
-            logger.debug("(get_full_records) Found node with value for %s = %s" , item , v )
-            results.append(v)
-
-        return results
 
     def _get_modules_for_case(self, compiler, debug, mpilib):
         module_nodes = self.get_nodes("modules")
@@ -158,7 +122,6 @@ class EnvMachSpecific(EnvBase):
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
         modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
         envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
-
         filename = ".env_mach_specific.%s" % shell
         lines = []
         if modules_to_load is not None:
@@ -244,7 +207,9 @@ class EnvMachSpecific(EnvBase):
     def _load_module_modules(self, modules_to_load):
         for cmd in self._get_module_commands(modules_to_load, "python"):
             logger.debug("module command is %s"%cmd)
-            py_module_code = run_cmd_no_fail(cmd)
+            stat, py_module_code, errout = run_cmd(cmd)
+            expect(stat==0 and len(errout) == 0,
+                   "module command %s failed with message:\n%s"%(cmd,errout))
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
@@ -414,4 +379,3 @@ class EnvMachSpecific(EnvBase):
         executable = exec_node.text
 
         return executable, args
-

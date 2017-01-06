@@ -184,16 +184,15 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     complist = []
     for comp_class in comp_classes:
-        if comp_class == "DRV":
-            comp_class = "CPL"
+        if comp_class == "CPL":
             ninst = 1
             config_dir = None
         else:
             ninst = case.get_value("NINST_%s"%comp_class)
             config_dir = os.path.dirname(case.get_value("CONFIG_%s_FILE"%comp_class))
-
         comp = case.get_value("COMP_%s"%comp_class)
         thrds =  case.get_value("NTHRDS_%s"%comp_class)
+        expect(ninst is not None,"Failed to get ninst for comp_class %s"%comp_class)
         complist.append((comp_class.lower(), comp, thrds, ninst, config_dir ))
         os.environ["COMP_%s"%comp_class] = comp
 
@@ -296,6 +295,8 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
                                 lid, caseroot, cimeroot, compiler))
 
     if not sharedlib_only:
+        # in case component build scripts updated the xml files, update the case object
+        case.read_xml()
         post_build(case, logs)
 
     t3 = time.time()
@@ -407,6 +408,7 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
 
     case.flush()
     if not model_only:
+        logger.info("Generating component namelists as part of build")
         create_namelists(case)
 
     return sharedpath
@@ -420,14 +422,18 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
     for shared_item in [shared_lib, shared_inc]:
         if (not os.path.exists(shared_item)):
             os.makedirs(shared_item)
-
-    libs = ["mct", "gptl", "pio", "csm_share"]
+    mpilib = case.get_value("MPILIB")
+    libs = ["gptl", "mct", "pio", "csm_share"]
+    if mpilib == "mpi-serial":
+        libs.insert(0, mpilib)
     logs = []
     sharedlibroot = case.get_value("SHAREDLIBROOT")
     for lib in libs:
         if lib == "csm_share":
             # csm_share adds its own dir name
             full_lib_path = os.path.join(sharedlibroot, sharedpath)
+        elif lib == "mpi-serial":
+            full_lib_path = os.path.join(sharedlibroot, sharedpath, "mct", lib)
         else:
             full_lib_path = os.path.join(sharedlibroot, sharedpath, lib)
         # pio build creates its own directory
