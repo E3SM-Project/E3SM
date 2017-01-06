@@ -1429,7 +1429,7 @@ for mct, etc.
   <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
   <!-- Don't rely on nf-config, as it's not available with all NetCDF modules on Skybridge -->
   <SLIBS>
-    <append> -L<var>NETCDF_PATH</var>/lib -lnetcdff -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
+    <append> -L<var>NETCDF_PATH</var>/lib -lnetcdff -lnetcdf -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
     <append MPILIB="mpich"> -mkl=cluster </append>
     <append MPILIB="mpich2"> -mkl=cluster </append>
     <append MPILIB="mpt"> -mkl=cluster </append>

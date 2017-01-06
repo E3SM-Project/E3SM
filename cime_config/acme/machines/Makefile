@@ -354,7 +354,7 @@ INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERF
 
 ifeq ($(NETCDF_SEPARATE), false)
   INCLDIR += -I$(INC_NETCDF)
-else
+else ifeq ($(NETCDF_SEPARATE), true)
   INCLDIR += -I$(INC_NETCDF_C) -I$(INC_NETCDF_FORTRAN)
 endif
 ifdef MOD_NETCDF
@@ -384,7 +384,7 @@ ifeq ($(MODEL),driver)
   ifeq ($(strip $(COMPILER)),nag)
      ifeq ($(NETCDF_SEPARATE), false)
        SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF)
-     else
+     else ifeq ($(NETCDF_SEPARATE), true)
        SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_C)
        SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_FORTRAN)
      endif
@@ -438,7 +438,7 @@ CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
 
 ifeq ($(NETCDF_SEPARATE), false)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
-else 
+else ifeq ($(NETCDF_SEPARATE), true)
   # The mct library needs the NetCDF_C library
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
 endif
@@ -493,7 +493,7 @@ endif
 ifndef SLIBS
   ifeq ($(NETCDF_SEPARATE), false)
     SLIBS := -L$(LIB_NETCDF) -lnetcdf
-  else
+  else ifeq ($(NETCDF_SEPARATE), true)
     SLIBS := -L$(LIB_NETCDF_C) -L$(LIB_NETCDF_FORTRAN) -lnetcdf
   endif
 endif
@@ -615,7 +615,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
 # Allow for separate installations of the NetCDF C and Fortran libraries
 ifeq ($(NETCDF_SEPARATE), false)
   CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_PATH)
-else
+else ifeq ($(NETCDF_SEPARATE), true)
   # NETCDF_Fortran_DIR points to the separate
   # installation of Fortran NetCDF for PIO
   CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_C_PATH) \
@@ -717,7 +717,7 @@ test_fc: test_fc.o
 ifeq ($(NETCDF_SEPARATE), false)
 test_nc: test_nc.o
 	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
-else
+else ifeq ($(NETCDF_SEPARATE), true)
 test_nc: test_nc.o
 	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_C) -lnetcdf $(LDFLAGS)
 endif
