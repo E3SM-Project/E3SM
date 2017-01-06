@@ -40,21 +40,6 @@ f_mod=cdms2.open(test_data_path + test_data_set)
 obs_pr=f_obs('PRECT')
 mod_pr=(f_mod('PRECC')+f_mod('PRECL'))*3600.0*24.0*1000.0
 
-print obs_pr.shape, mod_pr.shape
-
-mean_obs=cdutil.averager(obs_pr, axis='xy', weights='generate') #area-weighting
-mean_mod=cdutil.averager(mod_pr, axis='xy', weights='generate') #area-weighting
-
-max_obs=obs_pr.max()
-min_obs=obs_pr.min()
-
-max_mod=mod_pr.max()
-min_mod=mod_pr.min()
-print min_obs, max_obs
-
-max_obs=obs_pr.max()
-min_obs=obs_pr.min()
-print min_obs, max_obs
 
 #For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size
 #model_grid=mod_pr.getGrid()
@@ -64,11 +49,26 @@ print min_obs, max_obs
 obs_grid=obs_pr.getGrid()
 obs_pr_reg=obs_pr
 mod_pr_reg=mod_pr.regrid(obs_grid,regridTool='esmf',regridMethod='linear')
-diff_pr_reg=mod_pr_reg-obs_pr_reg
+dif_pr=mod_pr_reg-obs_pr_reg
+
+#calculate metrics and pass in as mv attribute,failed
+#obs_pr.mean=round(cdutil.averager(obs_pr, axis='xy', weights='generate'),2) #area-weighting
+#mod_pr.mean=round(cdutil.averager(mod_pr, axis='xy', weights='generate'),2) #area-weighting
+#dif_pr.mean=round(cdutil.averager(dif_pr, axis='xy', weights='generate'),2) #area-weighting
+#
+#obs_pr.max=round(mod_pr.max(),2)
+#mod_pr.max=round(mod_pr.max(),2)
+#dif_pr.max=round(dif_pr.max(),2)
+#
+#obs_pr.min=round(mod_pr.min(),2)
+#mod_pr.min=round(mod_pr.min(),2)
+#dif_pr.min=round(dif_pr.min(),2)
+
 
 #CORR and RMSE need to be calculated after reduction to ensure same array shapes.
-print round(compute_rmse(obs_pr_reg, mod_pr_reg),2)
-print round(compute_corr(obs_pr_reg, mod_pr_reg),2)
+rmse= 'RMSE:'+'%.2f' %round(compute_rmse(obs_pr_reg, mod_pr_reg),2)
+corr= 'CORR:'+'%.2f' %round(compute_corr(obs_pr_reg, mod_pr_reg),2)
+print rmse, corr
 
 #Plotting
 x = vcs.init(bg=True, geometry=(1212,1628))
@@ -82,7 +82,7 @@ template_2 = x.gettemplate('plotset5_0_x_2')
 #It turns out the long_name attribute of the mv appears as title in .json.
 mod_pr.long_name='model'
 obs_pr.long_name='observation'
-diff_pr_reg.long_name='model-observation'
+dif_pr.long_name='model-observation'
 template_0.title.priority=1
 template_1.title.priority=1
 template_2.title.priority=1
@@ -97,10 +97,23 @@ isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 
 x.plot(obs_pr, template_1, isofill)
 #x.setcolormap('bl_to_darkred')
-#
+
+#output rmse and corr
+out_1=vcs.createtext()
+out_1.x=0.87
+out_1.y=0.08
+out_1.height=12
+out_1.color='red'
+out_1.string=rmse
+x.plot(out_1)
+out_1.y=0.06
+out_1.string=corr
+x.plot(out_1)
+
+
 isofill = x.createisofill()
 isofill.levels=[-10,-8, -6, -4, -3, -2, -1,-0.5, 0, 0.5, 1, 2, 3, 4, 6, 8,10]
-x.plot(diff_pr_reg, template_2, isofill)
+x.plot(dif_pr, template_2, isofill)
 
 x.png('test.png')
 
