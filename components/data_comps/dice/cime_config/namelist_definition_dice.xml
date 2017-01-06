@@ -25,9 +25,24 @@
       'streamN.txt year_align year_first year_last '
 
       Currently the following datamode values are supported
-      SSMI
       SSMI_IAF
+      SSMI
       NULL
+
+      **********IMPORTANT NOTE: *************
+      In the value matches below, regular expressions are used **** 
+      If two matches are equivalent, the FIRST one will be used, so need to make sure
+      that matches are not equivalent if possible
+
+	 As an example, say dice_mode=SSMI_IAF
+
+         the following order would result in an INCORRECT setting of streams for this dice_mode
+              <value dice_mode="ssmi"    >SSMI</value>
+              <value dice_mode="ssmi_iaf">SSMI_IAF</value>
+
+         the following order would result in an CORRECT setting of streams for this dice_mode
+              <value dice_mode="ssmi$"   >SSMI</value>
+              <value dice_mode="ssmi_iaf">SSMI_IAF</value>
   -->
 
   <!-- ========================================================================================  -->
@@ -41,7 +56,7 @@
     <desc>List of streams used for the given dice_mode.</desc>
     <values>
       <value dice_mode="null"      >NULL</value>
-      <value dice_mode="ssmi"      >SSMI</value>
+      <value dice_mode="ssmi$"     >SSMI</value>
       <value dice_mode="ssmi_iaf"  >SSMI_IAF</value>
       <value dice_mode="prescribed">prescribed</value>
       <value dice_mode="copyall"   >copyall</value>
@@ -77,7 +92,7 @@
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
-      <value stream="SSMI">$DIN_LOC_ROOT/ice/dice7</value>
+      <value stream="SSMI$">$DIN_LOC_ROOT/ice/dice7</value>
       <value stream="SSMI_IAF">$DIN_LOC_ROOT/ice/dice7</value>
     </values>
   </entry>
@@ -89,7 +104,7 @@
     <desc>Stream domain file path(s).</desc>
     <values>
       <value>null</value>
-      <value stream="SSMI">domain.ocn.x0.5.090227.nc</value>
+      <value stream="SSMI$">domain.ocn.x0.5.090227.nc</value>
       <value stream="SSMI_IAF">domain.ocn.x0.5.090227.nc</value>
     </values>
   </entry>
@@ -122,7 +137,7 @@
     <desc>Stream data file directory.</desc>
     <values>
       <value>null</value>
-      <value stream="SSMI">$DIN_LOC_ROOT/ice/dice7/SSMI</value>
+      <value stream="SSMI$">$DIN_LOC_ROOT/ice/dice7/SSMI</value>
       <value stream="SSMI_IAF">$DIN_LOC_ROOT/ocn/iaf</value>
     </values>
   </entry>
@@ -134,7 +149,7 @@
     <desc>Stream data file path(s).</desc>
     <values>
       <value>null</value>
-      <value stream="SSMI">ssmi_ifrac.clim.x0.5.090319.nc</value>
+      <value stream="SSMI$">ssmi_ifrac.clim.x0.5.090319.nc</value>
       <value stream="SSMI_IAF">
         ssmi.ifrac.0.5x0.5.1948.nc
         ssmi.ifrac.0.5x0.5.1949.nc
@@ -234,7 +249,7 @@
   <desc>Simulation year to align stream to.</desc>
   <values>
     <value>-999</value>
-    <value stream="SSMI">1 </value>
+    <value stream="SSMI$">1 </value>
     <value stream="SSMI_IAF">1</value>
     <value stream="prescribed">$SSTICE_YEAR_ALIGN</value>
     <value stream="copyall">$SSTICE_YEAR_ALIGN</value>
@@ -248,7 +263,7 @@
     <desc>First year of stream.</desc>
     <values>
       <value>-999</value>
-      <value stream="SSMI">1 </value>
+      <value stream="SSMI$">1 </value>
       <value stream="SSMI_IAF">1948</value>
       <value stream="prescribed">$SSTICE_YEAR_START</value>
       <value stream="copyall">$SSTICE_YEAR_START</value>
@@ -262,7 +277,7 @@
     <desc>Last year of stream.</desc>
     <values>
       <value>-999</value>
-      <value stream="SSMI">1 </value>
+      <value stream="SSMI$">1 </value>
       <value stream="SSMI_IAF">2009</value>
       <value stream="prescribed">$SSTICE_YEAR_END</value>
       <value stream="copyall">$SSTICE_YEAR_END</value>
@@ -312,8 +327,8 @@
     </desc>
     <values>
       <value dice_mode="null"      >NULL</value>
-      <value dice_mode="ssmi"      >SSTDATA</value>
       <value dice_mode="ssmi_iaf"  >SSTDATA</value>
+      <value dice_mode="ssmi"      >SSTDATA</value>
       <value dice_mode="prescribed">SSTDATA</value>
       <value dice_mode="copyall"   >COPYALL</value>
     </values>
@@ -526,7 +541,7 @@
     </values>
   </entry>
 
-  <entry id="vectors" skip_default_entry="true">
+  <entry id="vectors">
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>

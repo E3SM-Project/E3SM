@@ -18,36 +18,13 @@ from standard_script_setup import *
 from CIME.case import Case
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect
-from CIME.utils import handle_standard_logging_options
-from CIME.utils import setup_standard_logging_options
-from CIME.buildnml import create_namelist_infile
+from CIME.buildnml import create_namelist_infile, parse_input
 
 logger = logging.getLogger(__name__)
 
-###############################################################################
-def _parse_input(argv):
-###############################################################################
-
-    if "--test" in argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
-    parser = argparse.ArgumentParser()
-
-    setup_standard_logging_options(parser)
-
-    parser.add_argument("caseroot",
-                        help="case directory")
-
-    args = parser.parse_args()
-
-    handle_standard_logging_options(args)
-
-    return args.caseroot
-
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 ####################################################################################
-def _create_namelists(case, confdir, inst_string, infile, definition_file):
+def _create_namelists(case, confdir, inst_string, infile, nmlgen):
 ####################################################################################
     """Write out the namelist for this component.
 
@@ -60,7 +37,6 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
-    din_loc_root = case.get_value("DIN_LOC_ROOT")
     rof_domain_file = case.get_value("ROF_DOMAIN_FILE")
     rof_domain_path = case.get_value("ROF_DOMAIN_PATH")
     drof_mode = case.get_value("DROF_MODE")
@@ -77,8 +53,8 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     #----------------------------------------------------
     # Log some settings.
     #----------------------------------------------------
-    logger.info("DROF mode is %s", drof_mode)
-    logger.info("DROF grid is %s", rof_grid)
+    logger.debug("DROF mode is %s", drof_mode)
+    logger.debug("DROF grid is %s", rof_grid)
 
     #----------------------------------------------------
     # Clear out old data.
@@ -96,9 +72,9 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     config['drof_mode'] = drof_mode
 
     #----------------------------------------------------
-    # Construct the namelist generator.
+    # Initialize namelist defaults 
     #----------------------------------------------------
-    nmlgen = NamelistGenerator(case, infile, definition_file, config)
+    nmlgen.init_defaults(infile, config)
 
     #----------------------------------------------------
     # Construct the list of streams.
@@ -116,7 +92,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
             continue
 
         inst_stream = stream + inst_string
-        logger.info("DROF stream is %s", inst_stream)
+        logger.debug("DROF stream is %s", inst_stream)
         stream_path = os.path.join(confdir, "drof.streams.txt." + inst_stream)
         user_stream_path = os.path.join(case.get_case_root(),
                                         "user_drof.streams.txt." + inst_stream)
@@ -124,6 +100,8 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
         # Use the user's stream file, or create one if necessary.
         if os.path.exists(user_stream_path):
             shutil.copyfile(user_stream_path, stream_path)
+            config['stream'] = stream
+            nmlgen.update_shr_strdata_nml(config, stream, stream_path)
         else:
             nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
 
@@ -137,14 +115,6 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     if rof_domain_file != "UNSET":
         full_domain_path = os.path.join(rof_domain_path, rof_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
-    nmlgen.add_default("vectors")
-
-    #----------------------------------------------------
-    # Create `drof_nml` namelist group.
-    #----------------------------------------------------
-    entries = nmlgen.get_definition_entries()
-    for entry in entries:
-        nmlgen.add_default(entry)
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
@@ -153,93 +123,93 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     nmlgen.write_output_file(namelist_file, data_list_path, groups=['drof_nml','shr_strdata_nml'])
 
 ###############################################################################
-def _main_func():
+def buildnml(case, caseroot, compname):
 ###############################################################################
 
     # Build the component namelist and required stream txt files
+    if compname != "drof":
+        raise AttributeError
 
-    compname = "drof"
-    caseroot = _parse_input(sys.argv)
+    cimeroot = case.get_value("CIMEROOT")
+    rundir = case.get_value("RUNDIR")
+    ninst = case.get_value("NINST_ROF")
 
-    with Case(caseroot) as case:
-        cimeroot = case.get_value("CIMEROOT")
-        rundir = case.get_value("RUNDIR")
-        ninst = case.get_value("NINST_ROF")
-        din_loc_root = case.get_value("DIN_LOC_ROOT")
+    # Determine configuration directory
+    confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
+    if not os.path.isdir(confdir):
+        os.makedirs(confdir)
 
-        if not os.path.isdir(din_loc_root):
-            os.makedirs(din_loc_root)
-            logger.info("Created input root directory %s" %din_loc_root)
+    #----------------------------------------------------
+    # Construct the namelist generator 
+    #----------------------------------------------------
+    # determine directory for user modified namelist_definitions.xml
+    user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
+    expect (os.path.isdir(user_xml_dir),
+            "user_xml_dir %s does not exist " %user_xml_dir)
 
-        # determine directory for user modified namelist_definitions.xml
-        user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
-        expect (os.path.isdir(user_xml_dir),
-                "user_xml_dir %s does not exist " %user_xml_dir)
+    # NOTE: User definition *replaces* existing definition.
+    namelist_xml_dir = os.path.join(cimeroot, "components", "data_comps", compname, "cime_config")
+    definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_drof.xml")]
+    user_definition = os.path.join(user_xml_dir, "namelist_definition_drof.xml")
+    if os.path.isfile(user_definition):
+        definition_file = [user_definition]
+    for file_ in definition_file:
+        expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
 
-        # NOTE: User definition *replaces* existing definition.
-        namelist_xml_dir = os.path.join(cimeroot, "components", "data_comps", compname, "cime_config")
-        definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_drof.xml")]
-        user_definition = os.path.join(user_xml_dir, "namelist_definition_drof.xml")
-        if os.path.isfile(user_definition):
-            definition_file = [user_definition]
+    # Create the namelist generator object - independent of instance
+    nmlgen = NamelistGenerator(case, definition_file)
+    
+    #----------------------------------------------------
+    # Loop over instances
+    #----------------------------------------------------
+    for inst_counter in range(1, ninst+1):
 
-        # Checkout if definition file exists
-        for file_ in definition_file:
-            expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
-
-        confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
-        if not os.path.isdir(confdir):
-            os.makedirs(confdir)
-
-        # Loop over instances
+        # determine instance string
         inst_string = ""
-        inst_counter = 1
-        while (inst_counter <= ninst):
+        if ninst > 1:
+            inst_string = '_' + '%04d' % inst_counter
 
-            # determine instance string
-            inst_string = ""
-            if ninst > 1:
-                inst_string = '_' + '%04d' % inst_counter
+        # If multi-instance case does not have restart file, use
+        # single-case restart for each instance
+        rpointer = "rpointer." + compname
+        if (os.path.isfile(os.path.join(rundir,rpointer)) and
+            (not os.path.isfile(os.path.join(rundir,rpointer + inst_string)))):
+            shutil.copy(os.path.join(rundir, rpointer),
+                        os.path.join(rundir, rpointer + inst_string))
 
-            # If multi-instance case does not have restart file, use
-            # single-case restart for each instance
-            rpointer = "rpointer." + compname
-            if (os.path.isfile(os.path.join(rundir,rpointer)) and
-                (not os.path.isfile(os.path.join(rundir,rpointer + inst_string)))):
-                shutil.copy(os.path.join(rundir, rpointer),
-                            os.path.join(rundir, rpointer + inst_string))
+        inst_string_label = inst_string
+        if not inst_string_label:
+            inst_string_label = "\"\""
 
-            inst_string_label = inst_string
-            if not inst_string_label:
-                inst_string_label = "\"\""
+        # create namelist output infile using user_nl_file as input
+        user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
+        expect(os.path.isfile(user_nl_file),
+               "Missing required user_nl_file %s " %(user_nl_file))
+        infile = os.path.join(confdir, "namelist_infile")
+        create_namelist_infile(case, user_nl_file, infile)
+        namelist_infile = [infile]
 
-            # create namelist output infile using user_nl_file as input
-            user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
-            expect(os.path.isfile(user_nl_file),
-                   "Missing required user_nl_file %s " %(user_nl_file))
-            infile = os.path.join(confdir, "namelist_infile")
-            create_namelist_infile(case, user_nl_file, infile)
-            namelist_infile = [infile]
+        # create namelist and stream file(s) data component
+        _create_namelists(case, confdir, inst_string, namelist_infile, nmlgen)
 
-            # create namelist and stream file(s) data component
-            _create_namelists(case, confdir, inst_string, namelist_infile, definition_file)
+        # copy namelist files and stream text files, to rundir
+        if os.path.isdir(rundir):
+            filename = compname + "_in"
+            file_src  = os.path.join(confdir, filename)
+            file_dest = os.path.join(rundir, filename)
+            if inst_string:
+                file_dest += inst_string
+            shutil.copy(file_src,file_dest)
 
-            # copy namelist files and stream text files, to rundir
-            if os.path.isdir(rundir):
-                filename = compname + "_in"
-                file_src  = os.path.join(confdir, filename)
-                file_dest = os.path.join(rundir, filename)
-                if inst_string:
-                    file_dest += inst_string
-                shutil.copy(file_src,file_dest)
-
-                for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
-                    shutil.copy(txtfile, rundir)
-
-            # increment instance counter
-            inst_counter = inst_counter + 1
+            for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
+                shutil.copy(txtfile, rundir)
 
 ###############################################################################
+def _main_func():
+    # Build the component namelist and required stream txt files
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "drof")
 
 if __name__ == "__main__":
     _main_func()
