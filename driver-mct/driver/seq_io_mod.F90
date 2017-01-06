@@ -95,18 +95,17 @@ module seq_io_mod
 !-------------------------------------------------------------------------------
 
    character(*),parameter :: prefix = "seq_io_"
-   character(CL)          :: wfilename = ''
    real(r8)    ,parameter :: fillvalue = SHR_CONST_SPVAL
-
    character(*),parameter :: modName = "(seq_io_mod) "
    integer(in) ,parameter :: debug = 1 ! internal debug level
+   character(*),parameter :: version ='cpl7v10'
+   character(*),parameter :: version0='cpl7v00'
+   integer(in), parameter :: file_desc_t_cnt = 20 ! Note - this is hard-wired for now
 
-
-   type(file_desc_t), save :: cpl_io_file
-   integer(IN)             :: cpl_pio_iotype
+   character(CL)                  :: wfilename = ''
+   type(file_desc_t), save        :: cpl_io_file(0:file_desc_t_cnt)
+   integer(IN)                    :: cpl_pio_iotype
    type(iosystem_desc_t), pointer :: cpl_io_subsystem
-   character(*),parameter  :: version ='cpl7v10'
-   character(*),parameter  :: version0='cpl7v00'
 
    character(CL) :: charvar   ! buffer for string read/write
    integer(IN) :: io_comm
@@ -140,13 +139,14 @@ contains
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_io_wopen(filename,clobber,cdf64)
+subroutine seq_io_wopen(filename,clobber,cdf64,file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(*),intent(in) :: filename
     logical,optional,intent(in):: clobber
     logical,optional,intent(in):: cdf64
+    integer,optional,intent(in):: file_ind
 
     !EOP
 
@@ -156,6 +156,7 @@ subroutine seq_io_wopen(filename,clobber,cdf64)
     integer :: iam,mpicom
     integer :: rcode
     integer :: nmode
+    integer :: lfile_ind
     character(CL)  :: lversion
     character(*),parameter :: subName = '(seq_io_wopen) '
 
@@ -171,9 +172,12 @@ subroutine seq_io_wopen(filename,clobber,cdf64)
     lcdf64 = .false.
     if (present(cdf64)) lcdf64=cdf64
 
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
     call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
 
-    if (.not. pio_file_is_open(cpl_io_file)) then
+    if (.not. pio_file_is_open(cpl_io_file(lfile_ind))) then
        ! filename not open
        if (iam==0) inquire(file=trim(filename),exist=exists)
        call shr_mpi_bcast(exists,mpicom,'seq_io_wopen exists')
@@ -181,28 +185,28 @@ subroutine seq_io_wopen(filename,clobber,cdf64)
           if (lclobber) then
              nmode = pio_clobber
              if (lcdf64) nmode = ior(nmode,PIO_64BIT_OFFSET)
-             rcode = pio_createfile(cpl_io_subsystem, cpl_io_file, cpl_pio_iotype, trim(filename), nmode)
+             rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
              if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
-             rcode = pio_put_att(cpl_io_file,pio_global,"file_version",version)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
           else
 
-             rcode = pio_openfile(cpl_io_subsystem, cpl_io_file, cpl_pio_iotype, trim(filename), pio_write)
+             rcode = pio_openfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), pio_write)
              if(iam==0) write(logunit,*) subname,' open file ',trim(filename)
-             call pio_seterrorhandling(cpl_io_file,PIO_BCAST_ERROR)
-             rcode = pio_get_att(cpl_io_file,pio_global,"file_version",lversion)
-             call pio_seterrorhandling(cpl_io_file,PIO_INTERNAL_ERROR)
+             call pio_seterrorhandling(cpl_io_file(lfile_ind),PIO_BCAST_ERROR)
+             rcode = pio_get_att(cpl_io_file(lfile_ind),pio_global,"file_version",lversion)
+             call pio_seterrorhandling(cpl_io_file(lfile_ind),PIO_INTERNAL_ERROR)
              if (trim(lversion) /= trim(version)) then
-                rcode = pio_redef(cpl_io_file)
-                rcode = pio_put_att(cpl_io_file,pio_global,"file_version",version)
-                rcode = pio_enddef(cpl_io_file)
+                rcode = pio_redef(cpl_io_file(lfile_ind))
+                rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
+                rcode = pio_enddef(cpl_io_file(lfile_ind))
              endif
           endif
        else
           nmode = pio_noclobber
           if (lcdf64) nmode = ior(nmode,PIO_64BIT_OFFSET)
-          rcode = pio_createfile(cpl_io_subsystem, cpl_io_file, cpl_pio_iotype, trim(filename), nmode)
+          rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
           if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
-          rcode = pio_put_att(cpl_io_file,pio_global,"file_version",version)
+          rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
        endif
     elseif (trim(wfilename) /= trim(filename)) then
        ! filename is open, better match open filename
@@ -227,7 +231,7 @@ end subroutine seq_io_wopen
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_io_close(filename)
+subroutine seq_io_close(filename,file_ind)
 
     use pio, only : pio_closefile
 
@@ -235,10 +239,12 @@ subroutine seq_io_close(filename)
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(*),intent(in) :: filename
+    integer,optional,intent(in):: file_ind
 
     !EOP
 
     integer :: iam
+    integer :: lfile_ind
     integer :: rcode
     character(*),parameter :: subName = '(seq_io_close) '
 
@@ -246,17 +252,19 @@ subroutine seq_io_close(filename)
 !
 !-------------------------------------------------------------------------------
 
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
     call seq_comm_setptrs(CPLID,iam=iam)
 
-
-    if (.not. pio_file_is_open(cpl_io_file)) then
+    if (.not. pio_file_is_open(cpl_io_file(lfile_ind))) then
        ! filename not open, just return
     elseif (trim(wfilename) /= trim(filename)) then
        ! filename matches, close it
-       call pio_closefile(cpl_io_file)
+       call pio_closefile(cpl_io_file(lfile_ind))
     else
        ! different filename is open, abort
-       if(iam==0) write(logunit,*) subname,' different file currently open ',trim(filename)
+       if(iam==0) write(logunit,*) subname,' different file currently open, aborting ',trim(filename)
        call shr_sys_abort()
     endif
 
@@ -266,20 +274,31 @@ end subroutine seq_io_close
 
 !===============================================================================
 
-subroutine seq_io_redef(filename)
+subroutine seq_io_redef(filename,file_ind)
     character(len=*), intent(in) :: filename
+
+    integer,optional,intent(in):: file_ind
+    integer :: lfile_ind
     integer :: rcode
 
-    rcode = pio_redef(cpl_io_file)
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
+    rcode = pio_redef(cpl_io_file(lfile_ind))
 end subroutine seq_io_redef
 
 !===============================================================================
 
-subroutine seq_io_enddef(filename)
+subroutine seq_io_enddef(filename,file_ind)
     character(len=*), intent(in) :: filename
+    integer,optional,intent(in):: file_ind
+    integer :: lfile_ind
     integer :: rcode
 
-    rcode = pio_enddef(cpl_io_file)
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
+    rcode = pio_enddef(cpl_io_file(lfile_ind))
 end subroutine seq_io_enddef
 
 !===============================================================================
@@ -365,7 +384,7 @@ end function seq_io_sec2hms
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_av(filename,gsmap,AV,dname,whead,wdata,nx,ny,nt,fillval,pre,tavg,&
-	                     use_float)
+	                     use_float, file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -382,6 +401,7 @@ end function seq_io_sec2hms
     character(len=*),optional,intent(in) :: pre      ! prefix to variable name
     logical,optional,intent(in) :: tavg     ! is this a tavg
     logical,optional,intent(in) :: use_float ! write output as float rather than double
+    integer,optional,intent(in) :: file_ind
 
     !EOP
 
@@ -411,6 +431,7 @@ end function seq_io_sec2hms
     character(*),parameter :: subName = '(seq_io_write_av) '
     integer :: lbnum
     integer, pointer :: Dof(:)
+    integer :: lfile_ind
 
     real(r8), allocatable :: tmpdata(:)
 
@@ -441,6 +462,9 @@ end function seq_io_sec2hms
     luse_float = .false.
     if (present(use_float)) luse_float = use_float
 
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
     call seq_comm_setptrs(CPLID,iam=iam)
 
     ng = mct_gsmap_gsize(gsmap)
@@ -468,12 +492,12 @@ end function seq_io_sec2hms
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file,trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file,trim(lpre)//'_ny',lny,dimid2(2))
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
 
        if (present(nt)) then
           dimid3(1:2) = dimid2
-          rcode = pio_inq_dimid(cpl_io_file,'time',dimid3(3))
+          rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid3(3))
           dimid => dimid3
        else
           dimid => dimid2
@@ -488,25 +512,25 @@ end function seq_io_sec2hms
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then
-             rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
-             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid,varid)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
           else
-             rcode = pio_def_var(cpl_io_file,trim(name1),PIO_DOUBLE,dimid,varid)
-             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
           end if
-          rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
-          rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
-          rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
-          rcode = pio_put_att(cpl_io_file,varid,"internal_dname",trim(dname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
           if (present(tavg)) then
              if (tavg) then
-                rcode = pio_put_att(cpl_io_file,varid,"cell_methods","time: mean")
+                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"cell_methods","time: mean")
              endif
           endif
 !-------tcraig
         endif
        enddo
-       if (lwdata) call seq_io_enddef(filename)
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     end if
 
     if (lwdata) then
@@ -522,15 +546,15 @@ end function seq_io_sec2hms
 !-------tcraig, this is a temporary mod to NOT write hgt
         if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
-          rcode = pio_inq_varid(cpl_io_file,trim(name1),varid)
-          call pio_setframe(cpl_io_file,varid,frame)
+          rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
+          call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
           tmpdata = av%rattr(k,:)
-          call pio_write_darray(cpl_io_file, varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
+          call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
 !-------tcraig
         endif
        enddo
        deallocate(tmpdata)
-       call pio_freedecomp(cpl_io_file, iodesc)
+       call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
 
     end if
   end subroutine seq_io_write_av
@@ -549,7 +573,7 @@ end function seq_io_sec2hms
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_avs(filename,gsmap,AVS,dname,whead,wdata,nx,ny,nt,fillval,pre,tavg,&
-	                     use_float)
+	                     use_float,file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -566,6 +590,7 @@ end function seq_io_sec2hms
     character(len=*),optional,intent(in) :: pre      ! prefix to variable name
     logical,optional,intent(in) :: tavg     ! is this a tavg
     logical,optional,intent(in) :: use_float ! write output as float rather than double
+    integer,optional,intent(in) :: file_ind
 
     !EOP
 
@@ -598,6 +623,7 @@ end function seq_io_sec2hms
     integer :: lbnum
     integer, pointer :: Dof(:)
     integer, pointer :: Dofn(:)
+    integer :: lfile_ind
 
     !-------------------------------------------------------------------------------
     !
@@ -625,6 +651,9 @@ end function seq_io_sec2hms
 
     luse_float = .false.
     if (present(use_float)) luse_float = use_float
+
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
 
     call seq_comm_setptrs(CPLID,iam=iam)
 
@@ -657,15 +686,15 @@ end function seq_io_sec2hms
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file,trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file,trim(lpre)//'_ny',lny,dimid2(2))
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
 
        if (ni > 1) then
-          rcode = pio_def_dim(cpl_io_file,trim(lpre)//'_ni',ni,dimid3(3))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ni',ni,dimid3(3))
           if (present(nt)) then
              dimid4(1:2) = dimid2
              dimid4(3) = dimid3(3)
-             rcode = pio_inq_dimid(cpl_io_file,'time',dimid4(4))
+             rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid4(4))
              dimid => dimid4
           else
              dimid3(1:2) = dimid2
@@ -674,7 +703,7 @@ end function seq_io_sec2hms
        else
           if (present(nt)) then
              dimid3(1:2) = dimid2
-             rcode = pio_inq_dimid(cpl_io_file,'time',dimid3(3))
+             rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid3(3))
              dimid => dimid3
           else
              dimid => dimid2
@@ -690,25 +719,25 @@ end function seq_io_sec2hms
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then
-             rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
-             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid,varid)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
           else
-             rcode = pio_def_var(cpl_io_file,trim(name1),PIO_DOUBLE,dimid,varid)
-             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
           end if
-          rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
-          rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
-          rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
-          rcode = pio_put_att(cpl_io_file,varid,"internal_dname",trim(dname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
           if (present(tavg)) then
              if (tavg) then
-                rcode = pio_put_att(cpl_io_file,varid,"cell_methods","time: mean")
+                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"cell_methods","time: mean")
              endif
           endif
 !-------tcraig
         endif
        enddo
-       if (lwdata) call seq_io_enddef(filename)
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     end if
 
     if (lwdata) then
@@ -736,21 +765,21 @@ end function seq_io_sec2hms
 !-------tcraig, this is a temporary mod to NOT write hgt
         if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
-          rcode = pio_inq_varid(cpl_io_file,trim(name1),varid)
-          call pio_setframe(cpl_io_file,varid,frame)
+          rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
+          call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
           n = 0
           do k1 = 1,ni
              data(n+1:n+ns) = AVS(k1)%rAttr(k,:)
              n = n + ns
           enddo
-         call pio_write_darray(cpl_io_file, varid, iodesc, data, rcode, fillval=lfillvalue)
+         call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
          call pio_setdebuglevel(0)
 !-------tcraig
         endif
        enddo
 
        deallocate(data)
-       call pio_freedecomp(cpl_io_file, iodesc)
+       call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
 
     end if
   end subroutine seq_io_write_avs
@@ -769,12 +798,12 @@ end function seq_io_sec2hms
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_avscomp(filename, comp, flow, dname, &
-       whead, wdata, nx, ny, nt, fillval, pre, tavg, use_float)
+       whead, wdata, nx, ny, nt, fillval, pre, tavg, use_float, file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(len=*) ,intent(in)          :: filename  ! file
-    type(component_type)  ,intent(in)          :: comp(:)   ! data to be written
+    type(component_type)  ,intent(in)     :: comp(:)   ! data to be written
     character(len=3) ,intent(in)          :: flow      ! 'c2x' or 'x2c'
     character(len=*) ,intent(in)          :: dname     ! name of data
     logical          ,optional,intent(in) :: whead     ! write header
@@ -786,6 +815,7 @@ end function seq_io_sec2hms
     character(len=*) ,optional,intent(in) :: pre       ! prefix to variable name
     logical          ,optional,intent(in) :: tavg      ! is this a tavg
     logical          ,optional,intent(in) :: use_float ! write output as float rather than double
+    integer          ,optional,intent(in) :: file_ind
 
     !EOP
 
@@ -821,6 +851,7 @@ end function seq_io_sec2hms
     integer                  :: lbnum
     integer, pointer         :: Dof(:)
     integer, pointer         :: Dofn(:)
+    integer                  :: lfile_ind
 
     !-------------------------------------------------------------------------------
     !
@@ -852,6 +883,9 @@ end function seq_io_sec2hms
 
     luse_float = .false.
     if (present(use_float)) luse_float = use_float
+
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
 
     call seq_comm_setptrs(CPLID,iam=iam)
 
@@ -885,15 +919,15 @@ end function seq_io_sec2hms
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file,trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file,trim(lpre)//'_ny',lny,dimid2(2))
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
 
        if (ni > 1) then
-          rcode = pio_def_dim(cpl_io_file,trim(lpre)//'_ni',ni,dimid3(3))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ni',ni,dimid3(3))
           if (present(nt)) then
              dimid4(1:2) = dimid2
              dimid4(3) = dimid3(3)
-             rcode = pio_inq_dimid(cpl_io_file,'time',dimid4(4))
+             rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid4(4))
              dimid => dimid4
           else
              dimid3(1:2) = dimid2
@@ -902,7 +936,7 @@ end function seq_io_sec2hms
        else
           if (present(nt)) then
              dimid3(1:2) = dimid2
-             rcode = pio_inq_dimid(cpl_io_file,'time',dimid3(3))
+             rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid3(3))
              dimid => dimid3
           else
              dimid => dimid2
@@ -918,25 +952,25 @@ end function seq_io_sec2hms
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then
-             rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
-             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid,varid)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
           else
-             rcode = pio_def_var(cpl_io_file,trim(name1),PIO_DOUBLE,dimid,varid)
-             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
           end if
-          rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
-          rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
-          rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
-          rcode = pio_put_att(cpl_io_file,varid,"internal_dname",trim(dname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
           if (present(tavg)) then
              if (tavg) then
-                rcode = pio_put_att(cpl_io_file,varid,"cell_methods","time: mean")
+                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"cell_methods","time: mean")
              endif
           endif
 !-------tcraig
         endif
        enddo
-       if (lwdata) call seq_io_enddef(filename)
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     end if
 
     if (lwdata) then
@@ -966,8 +1000,8 @@ end function seq_io_sec2hms
 !-------tcraig, this is a temporary mod to NOT write hgt
         if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
-          rcode = pio_inq_varid(cpl_io_file,trim(name1),varid)
-          call pio_setframe(cpl_io_file,varid,frame)
+          rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
+          call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
           n = 0
           do k1 = 1,ni
              if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(k1))
@@ -977,13 +1011,13 @@ end function seq_io_sec2hms
                 data(n) = avcomp%rAttr(k,k2)
              enddo
           enddo
-          call pio_write_darray(cpl_io_file, varid, iodesc, data, rcode, fillval=lfillvalue)
+          call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
 !-------tcraig
         endif
        enddo
 
        deallocate(data)
-       call pio_freedecomp(cpl_io_file, iodesc)
+       call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
 
     end if
   end subroutine seq_io_write_avscomp
@@ -1001,7 +1035,7 @@ end function seq_io_sec2hms
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_int(filename,idata,dname,whead,wdata)
+  subroutine seq_io_write_int(filename,idata,dname,whead,wdata,file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -1010,6 +1044,7 @@ end function seq_io_sec2hms
     character(len=*),intent(in) :: dname    ! name of data
     logical,optional,intent(in) :: whead    ! write header
     logical,optional,intent(in) :: wdata    ! write data
+    integer,optional,intent(in) :: file_ind
 
     !EOP
 
@@ -1021,6 +1056,7 @@ end function seq_io_sec2hms
     character(CL)    :: sname       ! standard name
     logical :: exists
     logical :: lwhead, lwdata
+    integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_int) '
 
     !-------------------------------------------------------------------------------
@@ -1037,22 +1073,25 @@ end function seq_io_sec2hms
        return
     endif
 
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
     call seq_comm_setptrs(CPLID,iam=iam)
 
     if (lwhead) then
        call seq_flds_lookup(trim(dname),longname=lname,stdname=sname,units=cunit)
-!       rcode = pio_def_dim(cpl_io_file,trim(dname)//'_nx',1,dimid(1))
-!       rcode = pio_def_var(cpl_io_file,trim(dname),PIO_INT,dimid,varid)
-       rcode = pio_def_var(cpl_io_file,trim(dname),PIO_INT,varid)
-       rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
-       rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
-       rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
-       if (lwdata) call seq_io_enddef(filename)
+!       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_nx',1,dimid(1))
+!       rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_INT,dimid,varid)
+       rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_INT,varid)
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
 
     if (lwdata) then
-       rcode = pio_inq_varid(cpl_io_file,trim(dname),varid)
-       rcode = pio_put_var(cpl_io_file,varid,idata)
+       rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(dname),varid)
+       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,idata)
 
        !      write(logunit,*) subname,' wrote AV ',trim(dname),lwhead,lwdata
     endif
@@ -1072,7 +1111,7 @@ end function seq_io_sec2hms
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_int1d(filename,idata,dname,whead,wdata)
+  subroutine seq_io_write_int1d(filename,idata,dname,whead,wdata,file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -1081,6 +1120,7 @@ end function seq_io_sec2hms
     character(len=*),intent(in) :: dname    ! name of data
     logical,optional,intent(in) :: whead    ! write header
     logical,optional,intent(in) :: wdata    ! write data
+    integer,optional,intent(in) :: file_ind
 
     !EOP
 
@@ -1094,6 +1134,7 @@ end function seq_io_sec2hms
     integer(in) :: lnx
     logical :: exists
     logical :: lwhead, lwdata
+    integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_int1d) '
 
     !-------------------------------------------------------------------------------
@@ -1110,22 +1151,25 @@ end function seq_io_sec2hms
        return
     endif
 
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
     call seq_comm_setptrs(CPLID,iam=iam)
 
     if (lwhead) then
        call seq_flds_lookup(trim(dname),longname=lname,stdname=sname,units=cunit)
        lnx = size(idata)
-       rcode = pio_def_dim(cpl_io_file,trim(dname)//'_nx',lnx,dimid(1))
-       rcode = pio_def_var(cpl_io_file,trim(dname),PIO_INT,dimid,varid)
-       rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
-       rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
-       rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
-       if (lwdata) call seq_io_enddef(filename)
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_nx',lnx,dimid(1))
+       rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_INT,dimid,varid)
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
 
     if (lwdata) then
-       rcode = pio_inq_varid(cpl_io_file,trim(dname),varid)
-       rcode = pio_put_var(cpl_io_file,varid,idata)
+       rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(dname),varid)
+       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,idata)
     endif
 
        !      write(logunit,*) subname,' wrote AV ',trim(dname),lwhead,lwdata
@@ -1145,7 +1189,7 @@ end function seq_io_sec2hms
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_r8(filename,rdata,dname,whead,wdata)
+  subroutine seq_io_write_r8(filename,rdata,dname,whead,wdata,file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -1154,6 +1198,7 @@ end function seq_io_sec2hms
     character(len=*),intent(in) :: dname    ! name of data
     logical,optional,intent(in) :: whead    ! write header
     logical,optional,intent(in) :: wdata    ! write data
+    integer,optional,intent(in) :: file_ind
 
     !EOP
 
@@ -1165,6 +1210,7 @@ end function seq_io_sec2hms
     character(CL)    :: sname       ! standard name
     logical :: exists
     logical :: lwhead, lwdata
+    integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_r8) '
 
     !-------------------------------------------------------------------------------
@@ -1180,26 +1226,30 @@ end function seq_io_sec2hms
        ! should we write a warning?
        return
     endif
+
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
     call seq_comm_setptrs(CPLID,iam=iam)
 
     if (lwhead) then
        call seq_flds_lookup(trim(dname),longname=lname,stdname=sname,units=cunit)
-!       rcode = pio_def_dim(cpl_io_file,trim(dname)//'_nx',1,dimid(1))
-!       rcode = pio_def_var(cpl_io_file,trim(dname),PIO_DOUBLE,dimid,varid)
+!       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_nx',1,dimid(1))
+!       rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_DOUBLE,dimid,varid)
 
 
-       rcode = pio_def_var(cpl_io_file,trim(dname),PIO_DOUBLE,varid)
+       rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_DOUBLE,varid)
        if(rcode==PIO_NOERR) then
-          rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
-          rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
-          rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
-          if (lwdata) call seq_io_enddef(filename)
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+          if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
        end if
     endif
 
     if (lwdata) then
-       rcode = pio_inq_varid(cpl_io_file,trim(dname),varid)
-       rcode = pio_put_var(cpl_io_file,varid,rdata)
+       rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(dname),varid)
+       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,rdata)
     endif
 
 
@@ -1218,7 +1268,7 @@ end function seq_io_sec2hms
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_r81d(filename,rdata,dname,whead,wdata)
+  subroutine seq_io_write_r81d(filename,rdata,dname,whead,wdata,file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -1227,6 +1277,7 @@ end function seq_io_sec2hms
     character(len=*),intent(in) :: dname    ! name of data
     logical,optional,intent(in) :: whead    ! write header
     logical,optional,intent(in) :: wdata    ! write data
+    integer,optional,intent(in) :: file_ind
 
     !EOP
 
@@ -1241,6 +1292,7 @@ end function seq_io_sec2hms
     integer(in) :: lnx
     logical :: exists
     logical :: lwhead, lwdata
+    integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_r81d) '
 
     !-------------------------------------------------------------------------------
@@ -1256,22 +1308,25 @@ end function seq_io_sec2hms
        ! should we write a warning?
        return
     endif
+
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
     call seq_comm_setptrs(CPLID,iam=iam)
 
     if (lwhead) then
        call seq_flds_lookup(trim(dname),longname=lname,stdname=sname,units=cunit)
        lnx = size(rdata)
-       rcode = pio_def_dim(cpl_io_file,trim(dname)//'_nx',lnx,dimid(1))
-       rcode = pio_def_var(cpl_io_file,trim(dname),PIO_DOUBLE,dimid,varid)
-       rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
-       rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
-       rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
-       if (lwdata) call seq_io_enddef(filename)
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_nx',lnx,dimid(1))
+       rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_DOUBLE,dimid,varid)
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
 
     if (lwdata) then
-       rcode = pio_inq_varid(cpl_io_file,trim(dname),varid)
-       rcode = pio_put_var(cpl_io_file,varid,rdata)
+       rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(dname),varid)
+       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,rdata)
 
        !      write(logunit,*) subname,' wrote AV ',trim(dname),lwhead,lwdata
     endif
@@ -1291,7 +1346,7 @@ end function seq_io_sec2hms
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_char(filename,rdata,dname,whead,wdata)
+  subroutine seq_io_write_char(filename,rdata,dname,whead,wdata,file_ind)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -1300,6 +1355,7 @@ end function seq_io_sec2hms
     character(len=*),intent(in) :: dname    ! name of data
     logical,optional,intent(in) :: whead    ! write header
     logical,optional,intent(in) :: wdata    ! write data
+    integer,optional,intent(in) :: file_ind
 
     !EOP
 
@@ -1314,6 +1370,7 @@ end function seq_io_sec2hms
     integer(in) :: lnx
     logical :: exists
     logical :: lwhead, lwdata
+    integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_char) '
 
     !-------------------------------------------------------------------------------
@@ -1329,24 +1386,28 @@ end function seq_io_sec2hms
        ! should we write a warning?
        return
     endif
+
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
     call seq_comm_setptrs(CPLID,iam=iam)
 
     if (lwhead) then
        call seq_flds_lookup(trim(dname),longname=lname,stdname=sname,units=cunit)
        lnx = len(charvar)
-       rcode = pio_def_dim(cpl_io_file,trim(dname)//'_len',lnx,dimid(1))
-       rcode = pio_def_var(cpl_io_file,trim(dname),PIO_CHAR,dimid,varid)
-       rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
-       rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
-       rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
-       if (lwdata) call seq_io_enddef(filename)
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_len',lnx,dimid(1))
+       rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_CHAR,dimid,varid)
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
 
     if (lwdata) then
        charvar = ''
        charvar = trim(rdata)
-       rcode = pio_inq_varid(cpl_io_file,trim(dname),varid)
-       rcode = pio_put_var(cpl_io_file,varid,charvar)
+       rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(dname),varid)
+       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,charvar)
     endif
 
   end subroutine seq_io_write_char
@@ -1364,7 +1425,7 @@ end function seq_io_sec2hms
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdata,tbnds)
+subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdata,tbnds,file_ind)
 
    use shr_cal_mod, only : shr_cal_calMaxLen, shr_cal_calendarName, &
                            shr_cal_noleap, shr_cal_gregorian
@@ -1379,6 +1440,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
    logical,optional,intent(in) :: whead         ! write header
    logical,optional,intent(in) :: wdata         ! write data
    real(r8),optional,intent(in) :: tbnds(2)     ! time bounds
+   integer,optional,intent(in) :: file_ind
 
 !EOP
 
@@ -1393,6 +1455,7 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
    integer :: start(4),count(4)
    character(len=shr_cal_calMaxLen) :: lcalendar
    real(r8) :: time_val_1d(1)
+   integer :: lfile_ind
    character(*),parameter :: subName = '(seq_io_write_time) '
 
 !-------------------------------------------------------------------------------
@@ -1409,26 +1472,29 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
       return
    endif
 
+   lfile_ind = 0
+   if (present(file_ind)) lfile_ind=file_ind
+
    call seq_comm_setptrs(CPLID,iam=iam)
 
    if (lwhead) then
-      rcode = pio_def_dim(cpl_io_file,'time',PIO_UNLIMITED,dimid(1))
-      rcode = pio_def_var(cpl_io_file,'time',PIO_DOUBLE,dimid,varid)
-      rcode = pio_put_att(cpl_io_file,varid,'units',trim(time_units))
+      rcode = pio_def_dim(cpl_io_file(lfile_ind),'time',PIO_UNLIMITED,dimid(1))
+      rcode = pio_def_var(cpl_io_file(lfile_ind),'time',PIO_DOUBLE,dimid,varid)
+      rcode = pio_put_att(cpl_io_file(lfile_ind),varid,'units',trim(time_units))
       lcalendar = shr_cal_calendarName(time_cal,trap=.false.)
       if (trim(lcalendar) == trim(shr_cal_noleap)) then
          lcalendar = 'noleap'
       elseif (trim(lcalendar) == trim(shr_cal_gregorian)) then
          lcalendar = 'gregorian'
       endif
-      rcode = pio_put_att(cpl_io_file,varid,'calendar',trim(lcalendar))
+      rcode = pio_put_att(cpl_io_file(lfile_ind),varid,'calendar',trim(lcalendar))
       if (present(tbnds)) then
-         rcode = pio_put_att(cpl_io_file,varid,'bounds','time_bnds')
+         rcode = pio_put_att(cpl_io_file(lfile_ind),varid,'bounds','time_bnds')
          dimid2(2)=dimid(1)
-         rcode = pio_def_dim(cpl_io_file,'ntb',2,dimid2(1))
-         rcode = pio_def_var(cpl_io_file,'time_bnds',PIO_DOUBLE,dimid2,varid)
+         rcode = pio_def_dim(cpl_io_file(lfile_ind),'ntb',2,dimid2(1))
+         rcode = pio_def_var(cpl_io_file(lfile_ind),'time_bnds',PIO_DOUBLE,dimid2,varid)
       endif
-      if (lwdata) call seq_io_enddef(filename)
+      if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
    endif
 
    if (lwdata) then
@@ -1438,17 +1504,17 @@ subroutine seq_io_write_time(filename,time_units,time_cal,time_val,nt,whead,wdat
          start(1) = nt
       endif
       time_val_1d(1) = time_val
-      rcode = pio_inq_varid(cpl_io_file,'time',varid)
-      rcode = pio_put_var(cpl_io_file,varid,start,count,time_val_1d)
+      rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time',varid)
+      rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,time_val_1d)
       if (present(tbnds)) then
-         rcode = pio_inq_varid(cpl_io_file,'time_bnds',varid)
+         rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time_bnds',varid)
          start = 1
          count = 1
          if (present(nt)) then
             start(2) = nt
          endif
          count(1) = 2
-         rcode = pio_put_var(cpl_io_file,varid,start,count,tbnds)
+         rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,tbnds)
       endif
 
       !      write(logunit,*) subname,' wrote time ',lwhead,lwdata
