@@ -1360,7 +1360,7 @@
                              packages="bl_mynn_in;mp_thompson_in"/>
 
                         <var name="nr" array_group="number" units="nb kg^{-1}"
-                             decription="Rain number concentration"
+                             description="Rain number concentration"
                              packages="mp_thompson_in"/>
                 </var_array>
 
