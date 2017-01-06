@@ -1450,7 +1450,7 @@
     <OS>LINUX</OS>
     <NODENAME_REGEX>.*stampede</NODENAME_REGEX>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>impi,mvapich2</MPILIBS>
+    <MPILIBS>mvapich2,impi</MPILIBS>
     <CIME_OUTPUT_ROOT>$SCRATCH</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
