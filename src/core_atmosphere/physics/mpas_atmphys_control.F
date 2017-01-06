@@ -352,12 +352,10 @@
        case("noah")
        !initialize the thickness of the soil layers for the Noah scheme:
           do iCell = 1, nCells
-             if(landmask(iCell) == 1) then  
-                dzs(1,iCell) = 0.10_RKIND
-                dzs(2,iCell) = 0.30_RKIND
-                dzs(3,iCell) = 0.60_RKIND
-                dzs(4,iCell) = 1.00_RKIND
-             endif
+             dzs(1,iCell) = 0.10_RKIND
+             dzs(2,iCell) = 0.30_RKIND
+             dzs(3,iCell) = 0.60_RKIND
+             dzs(4,iCell) = 1.00_RKIND
           enddo
 
        case default
