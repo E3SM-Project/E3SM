@@ -3,13 +3,32 @@ import vcs
 import MV2
 import EzTemplate
 from metrics.computation.reductions import set_mean
-#from regrid import Regridder
+import genutil.statistics
+import numpy
+import cdutil
 
+def compute_rmse(model, obs):
+    rmse = -numpy.infty
+    try:
+        weights = cdutil.area_weights(model)
+        rmse = float(genutil.statistics.rms(model, obs, axis='xy', weights=weights))
+    except Exception, err:
+        print err
+    return rmse
 
-reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
-test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
-#reference_data_path='./'
-#test_data_path='./'
+def compute_corr(model, obs):
+    corr = -numpy.infty
+    try:
+        weights = cdutil.area_weights(model)
+        corr = float(genutil.statistics.correlation(model, obs, axis='xy', weights=weights))
+    except Exception, err:
+        print err
+    return corr
+
+#reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
+#test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
+reference_data_path='../'
+test_data_path='../'
 
 #Read in data
 reference_data_set='GPCP_v2.2_ANN_climo.nc'  # observation
@@ -22,6 +41,9 @@ obs_pr=f_obs('PRECT')
 mod_pr=(f_mod('PRECC')+f_mod('PRECL'))*3600.0*24.0*1000.0
 
 print obs_pr.shape, mod_pr.shape
+print compute_rmse(obs_pr, mod_pr)
+print compute_corr(obs_pr, mod_pr)
+
 mean_obs=cdutil.averager(obs_pr, axis='xy', weights='generate') #area-weighting
 mean_mod=cdutil.averager(mod_pr, axis='xy', weights='generate') #area-weighting
 
