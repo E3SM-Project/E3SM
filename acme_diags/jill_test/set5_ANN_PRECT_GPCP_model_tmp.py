@@ -52,16 +52,24 @@ max_mod=mod_pr.max()
 min_mod=mod_pr.min()
 print min_obs, max_obs
 
-model_grid=mod_pr.getGrid()
-mod_pr_reg=mod_pr
-obs_pr_reg=obs_pr.regrid(model_grid,regridTool='esmf',regridMethod='linear')
-max_obs=obs_pr_reg.max()
-min_obs=obs_pr_reg.min()
+max_obs=obs_pr.max()
+min_obs=obs_pr.min()
 print min_obs, max_obs
+
+#For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size
+#model_grid=mod_pr.getGrid()
+#mod_pr_reg=mod_pr
+#obs_pr_reg=obs_pr.regrid(model_grid,regridTool='esmf',regridMethod='linear')
+
+obs_grid=obs_pr.getGrid()
+obs_pr_reg=obs_pr
+mod_pr_reg=mod_pr.regrid(obs_grid,regridTool='esmf',regridMethod='linear')
+
 #CORR and RMSE need to be calculated after reduction to ensure same array shapes.
 print round(compute_rmse(obs_pr_reg, mod_pr_reg),2)
 print round(compute_corr(obs_pr_reg, mod_pr_reg),2)
 
+#Plotting
 x = vcs.init(bg=True, geometry=(1212,1628))
 x.portrait()
 
@@ -69,16 +77,36 @@ x.scriptrun('plot_set_5.json')
 template_0 = x.gettemplate('plotset5_0_x_0')
 template_1 = x.gettemplate('plotset5_0_x_1')
 template_2 = x.gettemplate('plotset5_0_x_2')
-#template_0.blank(["title","mean","min","max","dataname","crdate","crtime","units"]) ## Turn off additional information
+
+plot_title = vcs.createtext()
+plot_title.x=template_0.title.x 
+plot_title.y=template_0.title.y
+plot_title.string='model'
+x.plot(plot_title)
+
 isofill = x.createisofill()
 isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 #x.setcolormap('rainbow')
 x.plot(mod_pr, template_0, isofill)
+
+plot_title = vcs.createtext()
+plot_title.x=template_1.title.x 
+plot_title.y=template_1.title.y
+plot_title.string='observation'
+x.plot(plot_title)
+
 isofill = x.createisofill()
 isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
-#x.setcolormap('rainbow')
+
 x.plot(obs_pr, template_1, isofill)
 #x.setcolormap('bl_to_darkred')
+
+plot_title = vcs.createtext()
+plot_title.x=template_2.title.x 
+plot_title.y=template_2.title.y
+plot_title.string='model - observation'
+x.plot(plot_title)
+
 isofill = x.createisofill()
 isofill.levels=[-10,-8, -6, -4, -3, -2, -1,-0.5, 0, 0.5, 1, 2, 3, 4, 6, 8,10]
 x.plot(mod_pr_reg-obs_pr_reg, template_2, isofill)
