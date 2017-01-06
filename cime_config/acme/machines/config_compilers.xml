@@ -1233,6 +1233,27 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler MACH="sandia-srn-sems" COMPILER="gnu">
+  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
+  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <SLIBS>
+    <append> <shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -lblas -llapack</append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="mira" COMPILER="ibm">
   <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
   <CPPDEFS>
