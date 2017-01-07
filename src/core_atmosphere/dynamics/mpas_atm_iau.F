@@ -31,7 +31,7 @@ module mpas_atm_iau
       integer :: nsteps_iau       ! Total number of time steps where the IAU forcing is applied.
       logical, parameter :: debug = .false.
 
-      integer, pointer :: iopt
+      character(len=StrKIND), pointer :: iau_opt
       real (kind=RKIND), pointer :: time_window_sec
       
 !      type (mpas_pool_type), intent(in) :: configs
@@ -42,15 +42,15 @@ module mpas_atm_iau
 !      character(len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time
 !      real (kind=RKIND),      pointer :: time_window_sec, runtime_window
 
-      call mpas_pool_get_config(configs, 'config_IAU_option', iopt)
+      call mpas_pool_get_config(configs, 'config_IAU_option', iau_opt)
       call mpas_pool_get_config(configs, 'config_IAU_window_length_s', time_window_sec)
 
 ! Initialization
       wgt_iau = 0.
       
 
-!     For config_IAU_option >= 1, we compute a weighting function here based on the time info in namelist.atmosphere.
-!     The default option (config_IAU_option = 1) defines a constant forcing with the same weight
+!     For config_IAU_option /= 'off', we compute a weighting function here based on the time info in namelist.atmosphere.
+!     The default option (config_IAU_option = 'on') defines a constant forcing with the same weight
 !     (= config_IAU_window_length_s/config_dt + 1) during the IAU time window.      
 !     The model is assumed to be further advanced after the forcing (or the filtering) applied (as a free run),
 !     we need to fill up the weighting function with zeros for the period from the end of the IAU window
@@ -61,14 +61,14 @@ module mpas_atm_iau
 !      call mpas_pool_get_config(configs, 'config_dt',           config_dt)
 !      call mpas_pool_get_config(configs, 'config_IAU_window_length_s', time_window_sec)
 
-      if(iopt == 1) then   ! HA: We should be able to expand this for more options later on.
+      if(trim(iau_opt) == 'on') then   ! HA: We should be able to expand this for more options later on.
             
          nsteps_iau = nint(time_window_sec / dt)
          !if(debug) write(0,*) 'atm_compute_iau_coef: nsteps_iau =',nsteps_iau
       
          if(itimestep <= nsteps_iau) then
             !wgt_iau = 1./nsteps_iau     
-            wgt_iau = dt / time_window_sec
+            wgt_iau = 1.0_RKIND / time_window_sec
             if(debug) write(0,*) 'atm_compute_iau_coef: wgt_iau =', wgt_iau
          end if
       
@@ -77,14 +77,18 @@ module mpas_atm_iau
  end function atm_iau_coef
       
 !==================================================================================================
- subroutine atm_add_tend_anal_incr (structs, wgt_iau, dt)
+ subroutine atm_add_tend_anal_incr (configs, structs, itimestep, dt, tend_ru, tend_rtheta, tend_rho)
 !==================================================================================================
       
       implicit none
 
+      type (mpas_pool_type), intent(in) :: configs
       type (mpas_pool_type), intent(inout) :: structs
-      real (kind=RKIND),     intent(in) :: wgt_iau
-      real (kind=RKIND),     intent(in) :: dt
+      integer,           intent(in)  :: itimestep
+      real (kind=RKIND), intent(in)  :: dt
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tend_ru
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tend_rtheta
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tend_rho
 
       type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: tend_iau
@@ -98,9 +102,21 @@ module mpas_atm_iau
       integer, pointer:: moist_start, moist_end
       
       real (kind=RKIND), dimension(:,:), pointer :: rho_edge, rho_zz, theta_m, theta, u, zz, &
-                                                    tend_u, tend_rho, tend_theta, tend_th, tend_w
+                                                    tend_th, tend_w
+!                                                    tend_u, tend_rho, tend_theta, tend_th, tend_w
       real(kind=RKIND),dimension(:,:,:), pointer :: scalars, tend_scalars, scalars_amb
       real(kind=RKIND),dimension(:,:), pointer:: u_amb, theta_amb, rho_amb
+
+      real (kind=RKIND) :: wgt_iau
+
+      !
+      ! Compute weight for IAU forcing in this timestep, and return if weight
+      ! is essentially zero.
+      !
+      wgt_iau = atm_iau_coef(configs, itimestep, dt)
+      if (wgt_iau <= 1.0e-12_RKIND) then
+         return
+      end if
 
       call mpas_pool_get_subpool(structs, 'tend', tend)
       call mpas_pool_get_subpool(structs, 'tend_iau', tend_iau)
@@ -128,9 +144,9 @@ module mpas_atm_iau
       ! Joe did not recommend to add w tendecies in IAU.
       !call mpas_pool_get_array(tend, 'w', tend_w)       
 
-      call mpas_pool_get_array(tend, 'u', tend_u)
-      call mpas_pool_get_array(tend, 'rho_zz',  tend_rho)
-      call mpas_pool_get_array(tend, 'theta_m', tend_theta)
+!      call mpas_pool_get_array(tend, 'u', tend_u)
+!      call mpas_pool_get_array(tend, 'rho_zz',  tend_rho)
+!      call mpas_pool_get_array(tend, 'theta_m', tend_theta)
       call mpas_pool_get_array(tend, 'scalars_tend', tend_scalars)
 
       call mpas_pool_get_array(tend_iau, 'theta',     theta_amb)
@@ -150,21 +166,21 @@ module mpas_atm_iau
 !     add coupled tendencies for u on edges
       do i = 1, nEdgesSolve
          do k = 1, nVertLevels
-            tend_u(k,i) = tend_u(k,i) + wgt_iau * rho_edge(k,i) * u_amb(k,i)/dt
+            tend_ru(k,i) = tend_ru(k,i) + wgt_iau * rho_edge(k,i) * u_amb(k,i)
          enddo
       enddo
 
 !     add tendencies for rho_zz (instead of rho)
       do i = 1, nCellsSolve
          do k = 1, nVertLevels
-            tend_rho(k,i) = tend_rho(k,i) + wgt_iau * rho_amb(k,i)/zz(k,i)/dt
+            tend_rho(k,i) = tend_rho(k,i) + wgt_iau * rho_amb(k,i)/zz(k,i)
          enddo
       enddo
       
 !     add tendencies for w (tend_w = 0 at k=1 and k=nVertLevelsP1) - Not tested yet
 !      do i = 1, nCellsSolve
 !         do k = 2, nVertLevels
-!            tend_w(k,i) = tend_w(k,i) + wgt_iau * w_amb(k,i)*rho_zz(k,i)/dt
+!            tend_w(k,i) = tend_w(k,i) + wgt_iau * w_amb(k,i)*rho_zz(k,i)
 !         enddo
 !      enddo
       
@@ -177,9 +193,9 @@ module mpas_atm_iau
 !     add coupled tendencies for other state variables on cell centers
       do i = 1, nCellsSolve
          do k = 1, nVertLevels
-            tend_th(k,i) = tend_th(k,i) + wgt_iau * (theta_amb(k,i)*rho_zz(k,i) + theta(k,i)*rho_amb(k,i)/zz(k,i))/dt
+            tend_th(k,i) = tend_th(k,i) + wgt_iau * (theta_amb(k,i)*rho_zz(k,i) + theta(k,i)*rho_amb(k,i)/zz(k,i))
             tend_scalars(moist_start:moist_end,k,i) = tend_scalars(moist_start:moist_end,k,i) &
-                + wgt_iau * (scalars_amb(moist_start:moist_end,k,i)*rho_zz(k,i) + scalars(moist_start:moist_end,k,i)*rho_amb(k,i)/zz(k,i))/dt
+                + wgt_iau * (scalars_amb(moist_start:moist_end,k,i)*rho_zz(k,i) + scalars(moist_start:moist_end,k,i)*rho_amb(k,i)/zz(k,i))
          enddo
       enddo
 
@@ -189,7 +205,7 @@ module mpas_atm_iau
          do k = 1, nVertLevels
             tend_th(k,i) = (1. + rvord * scalars(index_qv,k,i))   * tend_th(k,i) &
                                + rvord * theta(k,i) * tend_scalars(index_qv,k,i)
-            tend_theta(k,i) = tend_theta(k,i) + tend_th(k,i)
+            tend_rtheta(k,i) = tend_rtheta(k,i) + tend_th(k,i)
          enddo
       enddo
       

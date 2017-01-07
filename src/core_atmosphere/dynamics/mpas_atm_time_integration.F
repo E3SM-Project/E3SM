@@ -30,7 +30,7 @@ module atm_time_integration
    integer :: timerid, secs, u_secs
 
    ! Used to store physics tendencies for dynamics variables
-   real (kind=RKIND), allocatable, dimension(:,:) :: tend_ru_physics, tend_rtheta_physics
+   real (kind=RKIND), allocatable, dimension(:,:) :: tend_ru_physics, tend_rtheta_physics, tend_rho_physics
    
    ! Used in compute_dyn_tend
    real (kind=RKIND), allocatable, dimension(:,:) :: qtot 
@@ -170,9 +170,7 @@ module atm_time_integration
 
       integer, pointer :: num_scalars, index_qv, nCells, nCellsSolve, nEdges, nEdgesSolve, nVertices, nVerticesSolve, nVertLevels
 
-      integer, pointer :: config_IAU_option
-      real(kind=RKIND) :: weight_iau
-      real(kind=RKIND),      pointer :: time_window_sec
+      character(len=StrKIND), pointer :: config_IAU_option
 
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
@@ -180,7 +178,6 @@ module atm_time_integration
       type (mpas_pool_type), pointer :: mesh
       type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: tend_physics
-      type (mpas_pool_type), pointer :: tend_iau
 
       type (field2DReal), pointer :: theta_m_field
       type (field3DReal), pointer :: scalars_field
@@ -196,6 +193,7 @@ module atm_time_integration
       type (field2DReal), pointer :: rho_pp_field
       type (field2DReal), pointer :: pv_edge_field
       type (field2DReal), pointer :: rho_edge_field
+      type (field2DReal), pointer :: exner_field
 
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructZonal, uReconstructMeridional, uReconstructX, uReconstructY, uReconstructZ
@@ -217,13 +215,11 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_microp_scheme', config_microp_scheme)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_convection_scheme', config_convection_scheme)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_IAU_option', config_IAU_option)
 
       !  config variables for dynamics-transport splitting, WCS 18 November 2014
       call mpas_pool_get_config(domain % blocklist % configs, 'config_split_dynamics_transport', config_split_dynamics_transport)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dynamics_split_steps', config_dynamics_split)
-
-      ! Retrieve weight/coefficient for IAU (Incremental Analysis Update) - HA (June-16-2016)
-      weight_iau = atm_iau_coef (domain % blocklist % configs, itimestep, dt)
 
       !
       ! Retrieve field structures
@@ -247,8 +243,13 @@ module atm_time_integration
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
       allocate(qtot(nVertLevels,nCells+1))
+      qtot(:,nCells+1) = 0.0_RKIND
       allocate(tend_rtheta_physics(nVertLevels,nCells+1))
+      tend_rtheta_physics(:,nCells+1) = 0.0_RKIND
+      allocate(tend_rho_physics(nVertLevels,nCells+1))
+      tend_rho_physics(:,nCells+1) = 0.0_RKIND
       allocate(tend_ru_physics(nVertLevels,nEdges+1))
+      tend_ru_physics(:,nEdges+1) = 0.0_RKIND
 
       !
       ! Initialize RK weights
@@ -414,11 +415,24 @@ module atm_time_integration
                               rk_step, &
                      dynamics_substep, &
                       tend_ru_physics, &
-                  tend_rtheta_physics )
+                  tend_rtheta_physics, &
+                     tend_rho_physics )
          block => block % next
       end do
       call mpas_timer_stop('physics_addtend')
 #endif
+
+      !
+      ! IAU - Incremental Analysis Update
+      !
+      if (trim(config_IAU_option) /= 'off') then
+         block => domain % blocklist
+         do while (associated(block))
+            call atm_add_tend_anal_incr(block % configs, block % structs, itimestep, dt, &
+                                        tend_ru_physics, tend_rtheta_physics, tend_rho_physics)
+            block => block % next
+        end do
+      end if
 
 
       DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
@@ -460,6 +474,9 @@ module atm_time_integration
             block => block % next
          end do
          call mpas_timer_stop('atm_compute_vert_imp_coefs')
+
+         call mpas_pool_get_field(diag, 'exner', exner_field)
+         call mpas_dmpar_exch_halo_field(exner_field)
 
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -539,13 +556,19 @@ module atm_time_integration
                call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
 
                allocate(delsq_theta(nVertLevels,nCells+1))
+               delsq_theta(:,nCells+1) = 0.0_RKIND
                allocate(delsq_w(nVertLevels,nCells+1))
+               delsq_w(:,nCells+1) = 0.0_RKIND
 !!               allocate(qtot(nVertLevels,nCells+1))  ! initializing this earlier in solution sequence
                allocate(delsq_divergence(nVertLevels,nCells+1))
+               delsq_divergence(:,nCells+1) = 0.0_RKIND
                allocate(delsq_u(nVertLevels,nEdges+1))
+               delsq_u(:,nEdges+1) = 0.0_RKIND
 !!               allocate(delsq_circulation(nVertLevels,nVertices+1))  ! no longer used -> removed 
                allocate(delsq_vorticity(nVertLevels,nVertices+1))
+               delsq_vorticity(:,nVertices+1) = 0.0_RKIND
                allocate(dpdz(nVertLevels,nCells+1))
+               dpdz(:,nCells+1) = 0.0_RKIND
 
 !$OMP PARALLEL DO
                do thread=1,nThreads
@@ -595,17 +618,6 @@ module atm_time_integration
 !            call mpas_timer_stop('physics_addtend')
 #endif
 
-            if (weight_iau >= 1.e-12) then      ! HA (June-16-2016)
-               if (debug) write(0,*) ' add incremental analysis forcing to tendencies '
-               block => domain % blocklist
- 
-               do while (associated(block))
-
-                  call atm_add_tend_anal_incr ( block % structs, weight_iau, dt )
-
-                  block => block % next
-              end do
-            end if
 
             !***********************************
             !  need tendencies at all edges of owned cells -
@@ -827,17 +839,27 @@ module atm_time_integration
                   call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
 
                   allocate(scalar_old_arr(nVertLevels,nCells+1))
+                  scalar_old_arr(:,nCells+1) = 0.0_RKIND
                   allocate(scalar_new_arr(nVertLevels,nCells+1))
+                  scalar_new_arr(:,nCells+1) = 0.0_RKIND
                   allocate(s_max_arr(nVertLevels,nCells+1))
+                  s_max_arr(:,nCells+1) = 0.0_RKIND
                   allocate(s_min_arr(nVertLevels,nCells+1))
+                  s_min_arr(:,nCells+1) = 0.0_RKIND
                   allocate(scale_array(nVertLevels,2,nCells+1))
+                  scale_array(:,:,nCells+1) = 0.0_RKIND
                   allocate(flux_array(nVertLevels,nEdges+1))
+                  flux_array(:,nEdges+1) = 0.0_RKIND
                   allocate(wdtn_arr(nVertLevels+1,nCells+1))
+                  wdtn_arr(:,nCells+1) = 0.0_RKIND
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                      allocate(horiz_flux_array(num_scalars,nVertLevels,nEdges+1))
+                     horiz_flux_array(:,:,nEdges+1) = 0.0_RKIND
                   else
                      allocate(flux_upwind_tmp_arr(nVertLevels,nEdges+1))
+                     flux_upwind_tmp_arr(:,nEdges+1) = 0.0_RKIND
                      allocate(flux_tmp_arr(nVertLevels,nEdges+1))
+                     flux_tmp_arr(:,nEdges+1) = 0.0_RKIND
                   end if
 
                   !
@@ -921,7 +943,9 @@ module atm_time_integration
                call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
 
                allocate(ke_vertex(nVertLevels,nVertices+1))
+               ke_vertex(:,nVertices+1) = 0.0_RKIND
                allocate(ke_edge(nVertLevels,nEdges+1))
+               ke_edge(:,nEdges+1) = 0.0_RKIND
    
 !$OMP PARALLEL DO
                do thread=1,nThreads
@@ -969,6 +993,14 @@ module atm_time_integration
             call mpas_dmpar_exch_halo_field(theta_m_field)
             call mpas_dmpar_exch_halo_field(pressure_p_field)
             call mpas_dmpar_exch_halo_field(rtheta_p_field)
+
+            !
+            ! Note: A halo exchange for 'exner' here as well as after the call
+            ! to driver_microphysics() can substitute for the exchange at
+            ! the beginning of each dynamics subcycle. Placing halo exchanges
+            ! here and after microphysics may in future allow for aggregation of
+            ! the 'exner' exchange with other exchanges.
+            !
          end if
 
          !  dynamics-transport split, WCS 18 November 2014
@@ -1020,6 +1052,7 @@ module atm_time_integration
 
       deallocate(qtot)  !  we are finished with these now
       deallocate(tend_rtheta_physics)
+      deallocate(tend_rho_physics)
       deallocate(tend_ru_physics)
 
       !
@@ -1072,19 +1105,31 @@ module atm_time_integration
                call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
 
                allocate(scalar_old_arr(nVertLevels,nCells+1))
+               scalar_old_arr(:,nCells+1) = 0.0_RKIND
                allocate(scalar_new_arr(nVertLevels,nCells+1))
+               scalar_new_arr(:,nCells+1) = 0.0_RKIND
                allocate(s_max_arr(nVertLevels,nCells+1))
+               s_max_arr(:,nCells+1) = 0.0_RKIND
                allocate(s_min_arr(nVertLevels,nCells+1))
+               s_min_arr(:,nCells+1) = 0.0_RKIND
                allocate(scale_array(nVertLevels,2,nCells+1))
+               scale_array(:,:,nCells+1) = 0.0_RKIND
                allocate(flux_array(nVertLevels,nEdges+1))
+               flux_array(:,nEdges+1) = 0.0_RKIND
                allocate(wdtn_arr(nVertLevels+1,nCells+1))
+               wdtn_arr(:,nCells+1) = 0.0_RKIND
                allocate(rho_zz_int(nVertLevels,nCells+1))
+               rho_zz_int(:,nCells+1) = 0.0_RKIND
                allocate(scalar_tend_array(num_scalars,nVertLevels,nCells+1))
+               scalar_tend_array(:,:,nCells+1) = 0.0_RKIND
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                   allocate(horiz_flux_array(num_scalars,nVertLevels,nEdges+1))
+                  horiz_flux_array(:,:,nEdges+1) = 0.0_RKIND
                else
                   allocate(flux_upwind_tmp_arr(nVertLevels,nEdges+1))
+                  flux_upwind_tmp_arr(:,nEdges+1) = 0.0_RKIND
                   allocate(flux_tmp_arr(nVertLevels,nEdges+1))
+                  flux_tmp_arr(:,nEdges+1) = 0.0_RKIND
                end if
 
                !
@@ -1241,6 +1286,14 @@ module atm_time_integration
          end if
          block => block % next
       end do
+
+      !
+      ! Note: A halo exchange for 'exner' here as well as at the end of
+      ! the first (n-1) dynamics subcycles can substitute for the exchange at
+      ! the beginning of each dynamics subcycle. Placing halo exchanges here
+      ! and at the end of dynamics subcycles may in future allow for aggregation
+      ! of the 'exner' exchange with other exchanges.
+      !
 #endif
 
       call summarize_timestep(domain)
@@ -1612,7 +1665,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: w_tend, u_tend
       real (kind=RKIND), dimension(:,:), pointer :: rho_pp, rho_p_save, rho_p
       real (kind=RKIND), dimension(:,:), pointer :: ru_p, ru, ru_save
-      real (kind=RKIND), dimension(:,:), pointer :: rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old
+      real (kind=RKIND), dimension(:,:), pointer :: rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old
       real (kind=RKIND), dimension(:,:), pointer :: rw_p, rw_save, rw
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
@@ -1650,7 +1703,7 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
       call mpas_pool_get_array(diag, 'rtheta_p_save', rtheta_p_save)
       call mpas_pool_get_array(diag, 'rtheta_p', rtheta_p)
-      call mpas_pool_get_array(diag, 'zz_rtheta_pp_old', zz_rtheta_pp_old)
+      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
 
       call mpas_pool_get_array(diag, 'rw_p', rw_p)
       call mpas_pool_get_array(diag, 'rw_save', rw_save)
@@ -1659,7 +1712,7 @@ module atm_time_integration
       call atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, &
                                    nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
                                    zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
-                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
+                                   rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -1670,7 +1723,7 @@ module atm_time_integration
    subroutine atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, &
                                    nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
                                    zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
-                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
+                                   rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -1710,7 +1763,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_p_save
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_p
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz_rtheta_pp_old
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp_old
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_p
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_save
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw
@@ -1777,7 +1830,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels+1) :: dpzx
 
       real (kind=RKIND), dimension(:,:), pointer :: rho_zz, theta_m, ru_p, rw_p, rtheta_pp,  &
-                                                    zz_rtheta_pp_old, zz, exner, cqu, ruAvg, &
+                                                    rtheta_pp_old, zz, exner, cqu, ruAvg, &
                                                     wwAvg, rho_pp, cofwt, coftz, zxu,        &
                                                     a_tri, alpha_tri, gamma_tri, dss,        &
                                                     tend_ru, tend_rho, tend_rt, tend_rw,     &
@@ -1815,7 +1868,7 @@ module atm_time_integration
 !      call mpas_pool_get_array(state, 'w', w, 1)
 
       call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
-      call mpas_pool_get_array(diag, 'zz_rtheta_pp_old', zz_rtheta_pp_old)
+      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
       call mpas_pool_get_array(diag, 'ru_p', ru_p)
       call mpas_pool_get_array(diag, 'rw_p', rw_p)
       call mpas_pool_get_array(diag, 'exner', exner)
@@ -1873,7 +1926,7 @@ module atm_time_integration
 
       call atm_advance_acoustic_step_work(nCells, nEdges, nCellsSolve, cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
-                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
+                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
@@ -1885,7 +1938,7 @@ module atm_time_integration
 
    subroutine atm_advance_acoustic_step_work(nCells, nEdges, nCellsSolve, cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
-                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
+                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
                                    rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
                                    tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, divergence_3d, fzm, fzp, rdzw, dcEdge, invDcEdge, &
                                    invAreaCell, cofrz, dvEdge, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
@@ -1910,7 +1963,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_p
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
 
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz_rtheta_pp_old
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp_old
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: divergence_3d
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: exner
@@ -1978,8 +2031,8 @@ module atm_time_integration
            ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
            do k = 1,nVertLevels
               rtheta_pp_tmp = rtheta_pp(k,iCell)
-              rtheta_pp(k,iCell) = (rtheta_pp(k,iCell) + smdiv_p_forward * (rtheta_pp(k,iCell)-zz_rtheta_pp_old(k,iCell)))*zz(k,iCell)
-              zz_rtheta_pp_old(k,iCell) = rtheta_pp_tmp
+              rtheta_pp(k,iCell) = (rtheta_pp(k,iCell) + smdiv_p_forward * (rtheta_pp(k,iCell)-rtheta_pp_old(k,iCell)))*zz(k,iCell)
+              rtheta_pp_old(k,iCell) = rtheta_pp_tmp
            end do
         end do
         
@@ -2005,7 +2058,7 @@ module atm_time_integration
 
 !DIR$ IVDEP
               do k=1,nVertLevels
-!!                 pgrad = ((zz_rtheta_pp(k,cell2)-zz_rtheta_pp_old(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
+!!                 pgrad = ((zz_rtheta_pp(k,cell2)-rtheta_pp_old(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = ((rtheta_pp(k,cell2)-rtheta_pp(k,cell1))*invDcEdge(iEdge) )/(.5*(zz(k,cell2)+zz(k,cell1)))
                  pgrad = cqu(k,iEdge)*0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
                  pgrad = pgrad + 0.5*zxu(k,iEdge)*gravity*(rho_pp(k,cell1)+rho_pp(k,cell2))
@@ -2052,11 +2105,11 @@ module atm_time_integration
 
       if (small_step == 1) then  ! initialize here on first small timestep.
          do iCell=cellStart,cellEnd
-            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+            rtheta_pp_old(1:nVertLevels,iCell) = 0.0
          end do
       end if
 
-!!!OMP BARRIER -- not needed, since zz_rtheta_pp_old not used below when small_step == 1
+!!!OMP BARRIER -- not needed, since rtheta_pp_old not used below when small_step == 1
 
       do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
 
@@ -2068,13 +2121,13 @@ module atm_time_integration
             rho_pp(1:nVertLevels,iCell) = 0.0            
             rtheta_pp(1:nVertLevels,iCell) = 0.0            
 !MGD moved to loop above over all cells
-!            zz_rtheta_pp_old(1:nVertLevels,iCell) = 0.0
+!            rtheta_pp_old(1:nVertLevels,iCell) = 0.0
             rw_p(:,iCell) = 0.0
             divergence_3d(1:nVertLevels,iCell) = 0.
          else  ! reset rtheta_pp to input value;
                !  rtheta_pp_old stores input value for use in div damping on next acoustic step.
                !  Save rho_pp to compute d_rho_pp/dt to get divergence for next acoustic filter application.
-            rtheta_pp(1:nVertLevels,iCell) = zz_rtheta_pp_old(1:nVertLevels,iCell)  
+            rtheta_pp(1:nVertLevels,iCell) = rtheta_pp_old(1:nVertLevels,iCell)  
             divergence_3d(1:nVertLevels,iCell) = rho_pp(1:nVertLevels,iCell)
          end if
             
@@ -4018,6 +4071,7 @@ module atm_time_integration
       inactive_rthdynten = .false.
       if (.not. associated(rthdynten)) then
          allocate(rthdynten(nVertLevels,nCells+1))
+         rthdynten(:,nCells+1) = 0.0_RKIND
          inactive_rthdynten = .true.
       end if
 
@@ -4305,7 +4359,7 @@ module atm_time_integration
 
 !DIR$ IVDEP
           do k = 1,nVertLevels
-            tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
+            tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell)) + tend_rho_physics(k,iCell)
             dpdz(k,iCell) = -gravity*(rb(k,iCell)*(qtot(k,iCell)) + rr_save(k,iCell)*(1.+qtot(k,iCell)))
           end do
         end do

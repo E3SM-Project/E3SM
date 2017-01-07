@@ -395,11 +395,12 @@
  logical:: log_convection
 
  integer:: i,j
- integer:: icount
+ integer:: icount,initflag
 
  real(kind=RKIND):: dx
 
 !local pointers:
+ logical,pointer:: config_do_restart
  integer,pointer:: gfconv_closure_deep,gfconv_closure_shallow
  real(kind=RKIND),pointer:: len_disp
 
@@ -417,6 +418,7 @@
  call mpas_pool_get_config(configs,'config_gfconv_closure_deep',gfconv_closure_deep)
  call mpas_pool_get_config(configs,'config_gfconv_closure_shallow',gfconv_closure_shallow)
  call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+ call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
 
 !initialize instantaneous precipitation, and copy convective tendencies from the dynamics to
 !the physics grid:
@@ -434,6 +436,10 @@
     cu_act_flag(i,j) = .false.
  enddo
  enddo
+
+!... initialization of initflag needed in the calls cu_tiedtke and cu_ntiedtke:
+ initflag = 1
+ if(config_do_restart .or. itimestep > 1) initflag = 0
 
  convection_select: select case(convection_scheme)
 
@@ -511,7 +517,7 @@
        call cu_tiedtke( &
              pcps        = pres_hyd_p    , p8w       = pres2_hyd_p   ,               &
              znu         = znu_hyd_p     , t3d       = t_p           ,               &
-             dt          = dt_dyn        , itimestep = itimestep     ,               &
+             dt          = dt_dyn        , itimestep = initflag      ,               &
              stepcu      = n_cu          , raincv    = raincv_p      ,               &
              pratec      = pratec_p      , qfx       = qfx_p         ,               &
              u3d         = u_p           , v3d       = v_p           ,               &
@@ -535,7 +541,7 @@
        call cu_ntiedtke( &
              pcps      = pres_hyd_p  , p8w         = pres2_hyd_p ,                   &
              t3d       = t_p         , dz8w        = dz_p        ,                   &
-             dt        = dt_dyn      , itimestep   = itimestep   ,                   &
+             dt        = dt_dyn      , itimestep   = initflag    ,                   &
              stepcu    = n_cu        , raincv      = raincv_p    ,                   & 
              pratec    = pratec_p    , qfx         = qfx_p       ,                   &
              hfx       = hfx_p       , xland       = xland_p     ,                   &

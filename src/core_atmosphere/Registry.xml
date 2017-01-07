@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" core_abbrev="atm" version="4.0">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="5.0">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -210,9 +210,9 @@
                      possible_values="0 $\leq$ config_coef_3rd_order $\leq$ 1"/>
 
                 <nml_option name="config_smagorinsky_coef" type="real" default_value="0.125" in_defaults="false"
-                     units="TBD"
-                     description="TBD"
-                     possible_values="TBD"/>
+                     units="-"
+                     description="Dimensionless empirical parameter relating the strain tensor to the eddy viscosity in the Smagorinsky turbulence model"
+                     possible_values="Real values typically in the range 0.1 to 0.4"/>
 
                 <nml_option name="config_mix_full" type="logical" default_value="true" in_defaults="false"
                      units="-"
@@ -230,9 +230,9 @@
                      possible_values="Positive real values"/>
 
                 <nml_option name="config_smdiv_p_forward" type="real" default_value="0.1"
-                     units="TBD"
-                     description="TBD"
-                     possible_values="TBD"/>
+                     units="-"
+                     description="Fractional forward weighting of the pressure during the acoustic step --- a form of 3D divergence damping"
+                     possible_values="Real values typically in the range 0 to 0.2"/>
 
                 <nml_option name="config_apvm_upwinding" type="real" default_value="0.5" in_defaults="false"
                      units="-"
@@ -331,10 +331,10 @@
         </nml_record>
 
         <nml_record name="IAU" in_defaults="true">
-                <nml_option name="config_IAU_option" type="integer" default_value="0"
+                <nml_option name="config_IAU_option" type="character" default_value="off"
                      units="-"
                      description="Incremental Analysis Update scheme"
-                     possible_values="0 or 1; 0 turns off IAU, 1 uses equal weighting of increments across the IAU window"/>
+                     possible_values="`off' or `on'; `off' turns off IAU, `on' uses equal weighting of increments across the IAU window"/>
                 <nml_option name="config_IAU_window_length_s" type="real" default_value="21600."
                      units="s"
                      description="Length of window over which analysis increments are applied"
@@ -1202,14 +1202,14 @@
                 <var name="meshScalingDel4" type="real" dimensions="nEdges" units="unitless"
                      description="Scaling coefficient for $\nabla^4$ eddy hyper-viscosity"/>
 
-                <var name="edgesOnVertex_sign" type="real" dimensions="vertexDegree nVertices" units="TBD"
-                     description="TBD"/>
+                <var name="edgesOnVertex_sign" type="real" dimensions="vertexDegree nVertices" units="-"
+                     description="Sign for edges incident with a vertex: positive for positive inward tengential velocity"/>
 
-                <var name="edgesOnCell_sign" type="real" dimensions="maxEdges nCells" units="TBD"
-                     description="TBD"/>
+                <var name="edgesOnCell_sign" type="real" dimensions="maxEdges nCells" units="-"
+                     description="Sign for edges surrounding a cell: positive for positive outward normal velocity"/>
 
-                <var name="kiteForCell" type="integer" dimensions="maxEdges nCells" units="TBD"
-                     description="TBD"/>
+                <var name="kiteForCell" type="integer" dimensions="maxEdges nCells" units="-"
+                     description="Index of kite in kiteAreasOnVertex that lies within a cell for each of verticesOnCell"/>
 
                 <!-- coefficients for vertical extrapolation to the surface -->
                 <var name="cf1" type="real" dimensions="" units="unitless"
@@ -1247,16 +1247,16 @@
                      description="d(zeta)/dz, vertical metric term"/>
 
                 <var name="zb" type="real" dimensions="nVertLevelsP1 TWO nEdges" units="unitless"
-                     description="Coefficients for contribution from u to omega diagnosis"/>
+                     description="Coefficients for contribution from u to omega diagnosis, edge-oriented"/>
 
                 <var name="zb3" type="real" dimensions="nVertLevelsP1 TWO nEdges" units="unitless"
-                     description="Coefficients for 3rd-order correction to contribution from u to omega diagnosis"/>
+                     description="Coefficients for 3rd-order correction to contribution from u to omega diagnosis, edge-oriented"/>
 
-                <var name="zb_cell" type="real" dimensions="nVertLevelsP1 maxEdges nCells" units="TBD"
-                     description="TBD"/>
+                <var name="zb_cell" type="real" dimensions="nVertLevelsP1 maxEdges nCells" units="unitless"
+                     description="Coefficients for contribution from u to omega diagnosis, cell-oriented"/>
 
-                <var name="zb3_cell" type="real" dimensions="nVertLevelsP1 maxEdges nCells" units="TBD"
-                     description="TBD"/>
+                <var name="zb3_cell" type="real" dimensions="nVertLevelsP1 maxEdges nCells" units="unitless"
+                     description="Coefficients for 3rd-order correction to contribution from u to omega diagnosis, cell-oriented"/>
 
                 <!-- W-Rayleigh damping coefficients -->
                 <var name="dss" type="real" dimensions="nVertLevels nCells" units="unitless"
@@ -1360,7 +1360,7 @@
                              packages="bl_mynn_in;mp_thompson_in"/>
 
                         <var name="nr" array_group="number" units="nb kg^{-1}"
-                             decription="Rain number concentration"
+                             description="Rain number concentration"
                              packages="mp_thompson_in"/>
                 </var_array>
 
@@ -1577,10 +1577,7 @@
                      description="predicted value rtheta_p, saved before acoustic steps"/>
 
                 <var name="rtheta_pp_old" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3}"
-                     description="predicted value rtheta_pp, saved during acoustic steps for divergence damping calculation"/>
-
-                <var name="zz_rtheta_pp_old" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
+                     description="old time level values of rho*theta_m/zz perturbation from rtheta_p, used in 3D divergence damping"/>
 
                 <var name="rho_p" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
                      description="rho/zz perturbation from the reference state value, advanced over acoustic steps"/>
@@ -1597,8 +1594,8 @@
                 <var name="kdiff" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
                      description="Smagorinsky horizontal eddy viscosity"/>
 
-                <var name="tend_rtheta_adv" type="real" dimensions="nVertLevels nCells Time" units="TBD"
-                     description="TBD"/>
+                <var name="tend_rtheta_adv" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3} s^{-1}"
+                     description="flux divergence for rho*theta_m/zz, used in the Tiedtke convective parameterization"/>
 
                 <var name="surface_pressure" type="real" dimensions="nCells Time" units="Pa"
                      description="Diagnosed surface pressure"/>
@@ -1618,8 +1615,8 @@
                 <var name="tend_rho" name_in_code="rho_zz" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
                      description="Tendency of dry density from dynamics"/>
 
-                <var name="tend_theta" name_in_code="theta_m" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
-                     description="Tendency of potential temperature from dynamics"/>
+                <var name="tend_theta" name_in_code="theta_m" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3} s^{-1}"
+                     description="tendency of coupled potential temperature rho*theta_m/zz from dynamics and physics, updated each RK step"/>
 
                 <var name="rt_diabatic_tend" type="real" dimensions="nVertLevels nCells Time" units="kg K s^{-1}"
                      description="Tendency of coupled potential temperature from physics"/>
@@ -1630,8 +1627,8 @@
                 <var name="euler_tend_w" name_in_code="w_euler" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
                      description="Tendency of w from dynamics"/>
 
-                <var name="euler_tend_theta" name_in_code="theta_euler" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
-                     description="Tendency of potential temperature from dynamics"/>
+                <var name="euler_tend_theta" name_in_code="theta_euler" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3} s^{-1}"
+                     description="tendency of coupled potential temperature rho*theta_m/zz from dynamics and physics that does not change over a Runge-Kutta timestep (it excludes the flux divergence)"/>
 
                 <var name="tend_w_pgf" name_in_code="w_pgf" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
                      description="Tendency of w due to pressure gradient force"/>
@@ -1813,17 +1810,17 @@
                 <nml_option name="config_physics_suite" type="character" default_value="mesoscale_reference" in_defaults="true"
                      units="-"
                      description="Choice of physics suite"
-                     possible_values="`mesoscale_reference',`convection_scale_aware',`none'"/>
+                     possible_values="`mesoscale_reference',`convection_permitting',`none'"/>
 
                 <nml_option name="config_microp_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for cloud microphysics schemes"
-                     possible_values="`suite',`wsm6',`off'"/>
+                     possible_values="`suite',`mp_wsm6',`mp_thompson',`mp_kessler',`off'"/>
 
                 <nml_option name="config_convection_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for convection schemes"
-                     possible_values="`suite',`kain_fritsch',`tiedtke',`off'"/>
+                     possible_values="`suite',`cu_kain_fritsch',`cu_tiedtke',`cu_ntiedtke',`cu_grell_freitas',`off'"/>
 
                 <nml_option name="config_lsm_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
@@ -1833,12 +1830,12 @@
                 <nml_option name="config_pbl_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for planetary boundary layer schemes"
-                     possible_values="`suite',`ysu',`off'"/>
+                     possible_values="`suite',`bl_ysu',`bl_mynn',`off'"/>
 
                 <nml_option name="config_gwdo_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration of gravity wave drag over orography"
-                     possible_values="`suite',`ysu_gwdo',`off'"/>
+                     possible_values="`suite',`bl_ysu_gwdo',`off'"/>
 
                 <nml_option name="config_radt_cld_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
@@ -1858,17 +1855,17 @@
                 <nml_option name="config_sfclayer_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for surface layer-scheme"
-                     possible_values="`suite',`monin_obukhov',`off'"/>
+                     possible_values="`suite',`sf_monin_obukhov',`sf_mynn',`off'"/>
 
                 <nml_option name="config_gfconv_closure_deep" type="integer" default_value="0" in_defaults="false"
                      units="-"
                      description="closure option for deep convection in Grell-Freitas convection scheme"
-                     possible_values="TBD"/>
+                     possible_values="0"/>
 
                 <nml_option name="config_gfconv_closure_shallow" type="integer" default_value="8" in_defaults="false"
                      units="-"
                      description="closure option for shallow convection in Grell-Freitas convection scheme"
-                     possible_values="TBD"/>
+                     possible_values="8"/>
 
                 <nml_option name="config_bucket_radt" type="real" default_value="1.0e9" in_defaults="false"
                      units="-"
@@ -1886,24 +1883,24 @@
                      possible_values="Positive real values"/>
 
                 <nml_option name="config_oml1d" type="logical" default_value="false" in_defaults="false"
-                     units="TBD"
-                     description="TBD"
-                     possible_values="TBD"/>
+                     units="-"
+                     description="Whether to activate the 1-d ocean mixed-layer model"
+                     possible_values=".true. or .false."/>
 
                 <nml_option name="config_oml_hml0" type="real" default_value="30.0" in_defaults="false"
-                     units="TBD"
-                     description="TBD"
-                     possible_values="TBD"/>
+                     units="m"
+                     description="If greater than zero, provides the constant, initial mixed-layer depth; if zero, initial mixed-layer depth will be taken from the `oml_initial` field." 
+                     possible_values="Non-negative real values"/>
 
                 <nml_option name="config_oml_gamma" type="real" default_value="0.14" in_defaults="false"
-                     units="TBD"
-                     description="TBD"
-                     possible_values="TBD"/>
+                     units="K m^{-1}"
+                     description="Deep water lapse rate in 1-d OML model"
+                     possible_values="Real values"/>
 
                 <nml_option name="config_oml_relaxation_time" type="real" default_value="864000." in_defaults="false"
-                     units="TBD"
-                     description="TBD"
-                     possible_values="TBD"/>
+                     units="s"
+                     description="Relaxation time to initial values in 1-d OML"
+                     possible_values="Non-negative real values"/>
         </nml_record>
 
         <var_struct name="diag_physics" time_levs="1">
@@ -2209,10 +2206,6 @@
 
                 <var name="zol" type="real" dimensions="nCells Time" units="unitless"
                      description="z/L height over Monin-Obukhov length"
-                     packages="bl_mynn_in;bl_ysu_in"/>
-
-                <var name="znt" type="real" dimensions="nCells Time" units="m"
-                     description="Roughness length"
                      packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="br" type="real" dimensions="nCells Time" units="unitless"
@@ -2664,6 +2657,9 @@
 
                 <var name="z0" type="real" dimensions="nCells Time" units="m"
                      description="roughness height"/>
+
+                <var name="znt" type="real" dimensions="nCells Time" units="m"
+                     description="roughness length"/>
 
                 <var name="zs" type="real" dimensions="nCells Time" units="m"
                      description="depth of centers of soil layers"/>

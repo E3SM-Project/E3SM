@@ -307,6 +307,14 @@
           hv_oml(iCell) = 0.
           t_oml_200m_initial(iCell) = sst(iCell) - 5.
         end do
+      else if (config_oml_hml0 .eq. 0) then
+! initializing with climatological mixed layer depth only
+        do iCell = 1, nCellsSolve
+          h_oml(iCell) = h_oml_initial(iCell)
+          hu_oml(iCell) = 0.
+          hv_oml(iCell) = 0.
+          t_oml_200m_initial(iCell) = sst(iCell) - 5.
+        end do
       else
         do iCell = 1, nCellsSolve
           h_oml(iCell) = h_oml_initial(iCell)
