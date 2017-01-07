@@ -23,7 +23,6 @@ module mpas_block_decomp
    use mpas_hash
    use mpas_sort
    use mpas_derived_types
-   use mpas_configure
    use mpas_io_units
 
    type graph
@@ -34,11 +33,6 @@ module mpas_block_decomp
       integer, dimension(:), pointer :: nAdjacent
       integer, dimension(:,:), pointer :: adjacencyList
    end type graph
-
-   integer :: total_blocks
-   logical :: explicitDecomp
-   integer, dimension(:), allocatable :: block_proc_list
-   integer, dimension(:), allocatable :: block_local_id_list
 
    contains
 
@@ -55,11 +49,9 @@ module mpas_block_decomp
 !-----------------------------------------------------------------------
    subroutine mpas_block_decomp_cells_for_proc(dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, block_count, numBlocks, explicitProcDecomp, blockFilePrefix, procFilePrefix)!{{{
 
-      use mpas_configure
-
       implicit none
 
-      type (dm_info), intent(in) :: dminfo !< Input: domain information
+      type (dm_info), intent(inout) :: dminfo !< Input: domain information
       type (graph), intent(in) :: partial_global_graph_info !< Input: Global graph information
       integer, dimension(:), pointer :: local_cell_list !< Output: list of cells this processor owns, ordered by block
       integer, dimension(:), pointer :: block_id !< Output: list of global block id's this processor owns
@@ -79,7 +71,7 @@ module mpas_block_decomp
       integer, dimension(:,:), allocatable :: sorted_local_cell_list
 
       integer :: i, global_block_id, local_block_id, owning_proc, iunit, istatus
-      integer :: blocks_per_proc
+      integer :: blocks_per_proc, err
       integer, dimension(:), pointer :: local_nvertices
       character (len=StrKIND) :: filename
 
@@ -88,17 +80,17 @@ module mpas_block_decomp
       no_blocks = .false.
 
       if (numBlocks == 0) then
-        total_blocks = dminfo % nProcs
+        dminfo % total_blocks = dminfo % nProcs
       else
-        total_blocks = numBlocks 
+        dminfo % total_blocks = numBlocks
       end if
 
-      explicitDecomp = explicitProcDecomp
+      dminfo % explicitDecomp = explicitProcDecomp
 
       call mpas_build_block_proc_list(dminfo, procFilePrefix)
       call mpas_get_blocks_per_proc(dminfo, dminfo % my_proc_id, blocks_per_proc)
 
-      if(total_blocks > 1) then
+      if(dminfo % total_blocks > 1) then
         allocate(local_nvertices(dminfo % nprocs))
         allocate(global_start(dminfo % nprocs))
         allocate(global_cell_list(partial_global_graph_info % nVerticesTotal))
@@ -107,38 +99,52 @@ module mpas_block_decomp
         if (dminfo % my_proc_id == IO_NODE) then
   
            iunit = 50 + dminfo % my_proc_id
-           if (total_blocks < 10) then
-              write(filename,'(a,i1)') trim(blockFilePrefix), total_blocks
-           else if (total_blocks < 100) then
-              write(filename,'(a,i2)') trim(blockFilePrefix), total_blocks
-           else if (total_blocks < 1000) then
-              write(filename,'(a,i3)') trim(blockFilePrefix), total_blocks
-           else if (total_blocks < 10000) then
-              write(filename,'(a,i4)') trim(blockFilePrefix), total_blocks
-           else if (total_blocks < 100000) then
-              write(filename,'(a,i5)') trim(blockFilePrefix), total_blocks
-           else if (total_blocks < 1000000) then
-              write(filename,'(a,i6)') trim(blockFilePrefix), total_blocks
-           else if (total_blocks < 10000000) then
-              write(filename,'(a,i7)') trim(blockFilePrefix), total_blocks
+           if (dminfo % total_blocks < 10) then
+              write(filename,'(a,i1)') trim(blockFilePrefix), dminfo % total_blocks
+           else if (dminfo % total_blocks < 100) then
+              write(filename,'(a,i2)') trim(blockFilePrefix), dminfo % total_blocks
+           else if (dminfo % total_blocks < 1000) then
+              write(filename,'(a,i3)') trim(blockFilePrefix), dminfo % total_blocks
+           else if (dminfo % total_blocks < 10000) then
+              write(filename,'(a,i4)') trim(blockFilePrefix), dminfo % total_blocks
+           else if (dminfo % total_blocks < 100000) then
+              write(filename,'(a,i5)') trim(blockFilePrefix), dminfo % total_blocks
+           else if (dminfo % total_blocks < 1000000) then
+              write(filename,'(a,i6)') trim(blockFilePrefix), dminfo % total_blocks
+           else if (dminfo % total_blocks < 10000000) then
+              write(filename,'(a,i7)') trim(blockFilePrefix), dminfo % total_blocks
            end if
          
            open(unit=iunit, file=trim(filename), form='formatted', status='old', iostat=istatus)
      
            if (istatus /= 0) then
-              write(stderrUnit,*) 'Could not open block decomposition file for ',total_blocks,' blocks.'
+              write(stderrUnit,*) 'ERROR: Could not open block decomposition file for ',dminfo % total_blocks,' blocks.'
               write(stderrUnit,*) 'Filename: ',trim(filename)
               call mpas_dmpar_abort(dminfo)
            end if
   
            local_nvertices(:) = 0
            do i=1,partial_global_graph_info % nVerticesTotal
-              read(unit=iunit, fmt=*) global_block_id
+              read(unit=iunit, fmt=*, iostat=err) global_block_id
+
+              if ( err .ne. 0 ) then
+                 write(stderrUnit, *) 'ERROR: Decomoposition file: ', trim(filename), ' contains less than ', &
+                                      partial_global_graph_info % nVerticesTotal, ' cells.'
+                 call mpas_dmpar_abort(dminfo)
+              end if
               call mpas_get_owning_proc(dminfo, global_block_id, owning_proc)
               local_nvertices(owning_proc+1) = local_nvertices(owning_proc+1) + 1
            end do
+
+           read(unit=iunit, fmt=*, iostat=err)
+
+           if ( err == 0 ) then
+              write(stderrUnit, *) 'ERROR: Decomposition file: ', trim(filename), ' contains more than ', &
+                                   partial_global_graph_info % nVerticesTotal, ' cells.'
+              call mpas_dmpar_abort(dminfo)
+           end if
      
-            allocate(global_cell_list(partial_global_graph_info % nVerticesTotal))
+           allocate(global_cell_list(partial_global_graph_info % nVerticesTotal))
   
            global_start(1) = 1
            do i=2,dminfo % nprocs
@@ -148,14 +154,14 @@ module mpas_block_decomp
            rewind(unit=iunit)
      
            do i=1,partial_global_graph_info % nVerticesTotal
-              read(unit=iunit, fmt=*) global_block_id
+              read(unit=iunit, fmt=*, iostat=err) global_block_id
               call mpas_get_owning_proc(dminfo, global_block_id, owning_proc)
   
               global_cell_list(global_start(owning_proc+1)) = i
               global_block_list(global_start(owning_proc+1)) = global_block_id
               global_start(owning_proc+1) = global_start(owning_proc+1) + 1
            end do
-  
+
            global_start(1) = 0
            do i=2,dminfo % nprocs
               global_start(i) = global_start(i-1) + local_nvertices(i-1)
@@ -503,11 +509,11 @@ module mpas_block_decomp
      integer :: blocks_per_proc_min, even_blocks, remaining_blocks
      integer :: i, owning_proc, local_block_id
 
-     if(.not. explicitDecomp) then
-       if(total_blocks > dminfo % nProcs) then
-         blocks_per_proc_min = total_blocks / dminfo % nProcs
-         remaining_blocks = total_blocks - (blocks_per_proc_min * dminfo % nProcs)
-         even_blocks = total_blocks - remaining_blocks
+     if(.not. dminfo % explicitDecomp) then
+       if(dminfo % total_blocks > dminfo % nProcs) then
+         blocks_per_proc_min = dminfo % total_blocks / dminfo % nProcs
+         remaining_blocks = dminfo % total_blocks - (blocks_per_proc_min * dminfo % nProcs)
+         even_blocks = dminfo % total_blocks - remaining_blocks
   
          blocks_per_proc = blocks_per_proc_min
   
@@ -515,7 +521,7 @@ module mpas_block_decomp
            blocks_per_proc = blocks_per_proc + 1
          end if
        else
-         if(dminfo % my_proc_id < total_blocks) then
+         if(dminfo % my_proc_id < dminfo % total_blocks) then
            blocks_per_proc = 1
          else
            blocks_per_proc = 0
@@ -523,7 +529,7 @@ module mpas_block_decomp
        end if
      else
        blocks_per_proc = 0
-       do i = 0, total_blocks-1
+       do i = 0, dminfo % total_blocks-1
          call mpas_get_owning_proc(dminfo, i, owning_proc)
          if(owning_proc == proc_number) then
            call mpas_get_local_block_id(dminfo, i, local_block_id)
@@ -552,11 +558,11 @@ module mpas_block_decomp
 
      integer :: blocks_per_proc_min, even_blocks, remaining_blocks
 
-     if(.not.explicitDecomp) then
-       if(total_blocks > dminfo % nProcs) then
-         blocks_per_proc_min = total_blocks / dminfo % nProcs
-         remaining_blocks = total_blocks - (blocks_per_proc_min * dminfo % nProcs)
-         even_blocks = total_blocks - remaining_blocks
+     if(.not.dminfo % explicitDecomp) then
+       if(dminfo % total_blocks > dminfo % nProcs) then
+         blocks_per_proc_min = dminfo % total_blocks / dminfo % nProcs
+         remaining_blocks = dminfo % total_blocks - (blocks_per_proc_min * dminfo % nProcs)
+         even_blocks = dminfo % total_blocks - remaining_blocks
   
          if(global_block_number > even_blocks) then
              local_block_number = blocks_per_proc_min
@@ -567,7 +573,7 @@ module mpas_block_decomp
          local_block_number = 0
        end if
      else
-       local_block_number = block_local_id_list(global_block_number+1)
+       local_block_number = dminfo % block_local_id_list(global_block_number+1)
      end if
    end subroutine mpas_get_local_block_id!}}}
 
@@ -589,11 +595,11 @@ module mpas_block_decomp
 
      integer :: blocks_per_proc_min, even_blocks, remaining_blocks
 
-     if(.not.explicitDecomp) then
-       if(total_blocks >= dminfo % nProcs) then
-         blocks_per_proc_min = total_blocks / dminfo % nProcs
-         remaining_blocks = total_blocks - (blocks_per_proc_min * dminfo % nProcs)
-         even_blocks = total_blocks - remaining_blocks
+     if(.not.dminfo % explicitDecomp) then
+       if(dminfo % total_blocks >= dminfo % nProcs) then
+         blocks_per_proc_min = dminfo % total_blocks / dminfo % nProcs
+         remaining_blocks = dminfo % total_blocks - (blocks_per_proc_min * dminfo % nProcs)
+         even_blocks = dminfo % total_blocks - remaining_blocks
 
          if((global_block_number+1) > even_blocks) then
              owning_proc = global_block_number - even_blocks
@@ -604,7 +610,7 @@ module mpas_block_decomp
          owning_proc = global_block_number
        end if
      else
-       owning_proc = block_proc_list(global_block_number+1)
+       owning_proc = dminfo % block_proc_list(global_block_number+1)
      end if
    end subroutine mpas_get_owning_proc!}}}
 
@@ -621,11 +627,9 @@ module mpas_block_decomp
 !-----------------------------------------------------------------------
    subroutine mpas_build_block_proc_list(dminfo, procFilePrefix)!{{{
 
-     use mpas_configure
-
      implicit none
 
-     type(dm_info), intent(in) :: dminfo !< Input: Domain information
+     type(dm_info), intent(inout) :: dminfo !< Input: Domain information
      character (len=*), intent(in) :: procFilePrefix
 
      integer :: iounit, istatus, i, owning_proc
@@ -633,10 +637,10 @@ module mpas_block_decomp
 
      integer, dimension(:), allocatable :: block_counter
 
-     if(.not.explicitDecomp) return
+     if(.not.dminfo % explicitDecomp) return
 
-     allocate(block_proc_list(total_blocks))
-     allocate(block_local_id_list(total_blocks))
+     allocate(dminfo % block_proc_list(dminfo % total_blocks))
+     allocate(dminfo % block_local_id_list(dminfo % total_blocks))
 
      if (dminfo % my_proc_id == IO_NODE) then
          allocate(block_counter(dminfo % nProcs))
@@ -661,22 +665,22 @@ module mpas_block_decomp
 
          open(unit=iounit, file=trim(filename), form='formatted', status='old', iostat=istatus)
 
-         do i=1,total_blocks
+         do i=1,dminfo % total_blocks
            read(unit=iounit, fmt=*) owning_proc
 
-           block_proc_list(i) = owning_proc
-           block_local_id_list(i) = block_counter(owning_proc+1)
+           dminfo % block_proc_list(i) = owning_proc
+           dminfo % block_local_id_list(i) = block_counter(owning_proc+1)
 
            block_counter(owning_proc+1) = block_counter(owning_proc+1) + 1
          end do
 
          close(unit=iounit)
          deallocate(block_counter)
-         call mpas_dmpar_bcast_ints(dminfo, total_blocks, block_proc_list)
-         call mpas_dmpar_bcast_ints(dminfo, total_blocks, block_local_id_list)
+         call mpas_dmpar_bcast_ints(dminfo, dminfo % total_blocks, dminfo % block_proc_list)
+         call mpas_dmpar_bcast_ints(dminfo, dminfo % total_blocks, dminfo % block_local_id_list)
      else
-         call mpas_dmpar_bcast_ints(dminfo, total_blocks, block_proc_list)
-         call mpas_dmpar_bcast_ints(dminfo, total_blocks, block_local_id_list)
+         call mpas_dmpar_bcast_ints(dminfo, dminfo % total_blocks, dminfo % block_proc_list)
+         call mpas_dmpar_bcast_ints(dminfo, dminfo % total_blocks, dminfo % block_local_id_list)
      endif
 
    end subroutine mpas_build_block_proc_list!}}}
@@ -692,10 +696,12 @@ module mpas_block_decomp
 !>  This routine destroys the mapping of blocks to processors.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_finish_block_proc_list()!{{{
-     if(.not.explicitDecomp) return
-     deallocate(block_proc_list)
-     deallocate(block_local_id_list)
+   subroutine mpas_finish_block_proc_list(dminfo)!{{{
+     type (dm_info), intent(inout) :: dminfo
+
+     if(.not.dminfo % explicitDecomp) return
+     deallocate(dminfo % block_proc_list)
+     deallocate(dminfo % block_local_id_list)
    end subroutine mpas_finish_block_proc_list!}}}
 
 end module mpas_block_decomp

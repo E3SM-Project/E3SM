@@ -1,3 +1,18 @@
+# Duplicate logic from Tools/Makefile to set compile_threaded
+compile_threaded = false
+ifeq ($(strip $(SMP)),TRUE)
+   compile_threaded = true
+   THREADDIR = threads
+else
+   ifeq ($(strip $(BUILD_THREADED)),TRUE)
+      compile_threaded = true
+      THREADDIR = threads
+   else
+      THREADDIR = nothreads
+   endif
+endif
+# End duplicated logic
+
 include $(CASEROOT)/Macros
 
 ifneq ($(wildcard core_$(CORE)/build_options.mk), ) # Check for build_options.mk
@@ -26,15 +41,16 @@ RM = rm -f
 CPP = cpp -P -traditional
 FC=$(MPIFC)
 CC=$(MPICC)
+CXX=$(MPICXX)
 NETCDF=$(NETCDF_PATH)
 PNETCDF=$(PNETCDF_PATH)
 PIO=$(EXEROOT)/pio
 FILE_OFFSET = -DOFFSET64BIT
-CFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST
-FFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST
-CPPFLAGS += $(CPPDEFS) $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -D_MPI -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX) -DMPAS_EXE_NAME=$(EXE_NAME)
-CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+override CFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
+override FFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
+override CPPFLAGS += $(CPPDEFS) $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -D_MPI -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX) -DMPAS_EXE_NAME=$(EXE_NAME) -DMPAS_PERF_MOD_TIMERS
+override CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
 LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
 
 ifneq (,$(findstring FORTRANUNDERSCORE, $(CPPFLAGS)))
@@ -47,11 +63,15 @@ ifeq ($(DEBUG), TRUE)
     override CPPFLAGS += -DMPAS_DEBUG
 endif
 
+ifeq ($(compile_threaded), true)
+    override CPPFLAGS += -DMPAS_OPENMP
+endif
+
 all:
 	@echo $(CPPINCLUDES)
 	@echo $(FCINCLUDES)
 	( $(MAKE) mpas RM="$(RM)" CPP="$(CPP)" NETCDF="$(NETCDF)" PNETCDF="$(PNETCDF)" \
-	  PIO="$(PIO)" FC="$(FC)" CC="$(CC)" SFC="$(SFC)" SCC="$(SCC)" \
+	  PIO="$(PIO)" FC="$(FC)" CC="$(CC)" CXX="$(CXX)" SFC="$(SFC)" SCC="$(SCC)" \
 	  CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FCINCLUDES="$(FCINCLUDES)" \
 	  FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" )
 
@@ -63,7 +83,7 @@ mpas: externals frame ops dycore drver
 	ar ru lib$(COMPONENT).a $(DRIVER)/*.o
 
 externals:
-	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" ezxml-lib )
+	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" CXX="$(CXX)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" ezxml-lib )
 
 drver: externals frame ops dycore
 	( cd $(DRIVER); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FREEFLAGS="$(FREEFLAGS)" all ) 

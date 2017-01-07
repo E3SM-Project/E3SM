@@ -42,6 +42,8 @@ module mpas_derived_types
 
 #include "mpas_pool_types.inc"
 
+#include "mpas_particle_list_types.inc"
+
 #include "mpas_io_types.inc"
 
 #include "mpas_io_streams_types.inc"

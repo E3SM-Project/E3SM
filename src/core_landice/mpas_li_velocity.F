@@ -25,7 +25,6 @@ module li_velocity
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_configure
 !!!   use li_lifev
    use li_sia
    use li_setup

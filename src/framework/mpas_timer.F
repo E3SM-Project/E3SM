@@ -10,12 +10,13 @@
 !  mpas_timer
 !
 !> \brief   MPAS Timer module
-!> \author  Michael Duda, Doug Jacobsen
-!> \date    03/27/13
-!> \details 
-!> This module provides developers with internal timer routines. These can be
-!> use to profile various parts of code within MPAS. Calls to TAU happen in this module as well
-!> to provide more detailed profiling.
+!> \author  Doug Jacobsen
+!> \date    12/22/2015
+!> \details
+!> This module provides developers with internal timer routines. 
+!> Additionally it provides standard interfaces to additional timer libarries,
+!> such as tau or gptl.
+!> Timers are stored as trees of lists of timers.
 !
 !-----------------------------------------------------------------------
       module mpas_timer
@@ -23,6 +24,17 @@
         use mpas_kind_types
         use mpas_derived_types
         use mpas_io_units
+        use mpas_dmpar
+        use mpas_threading
+        use mpas_abort, only : mpas_dmpar_global_abort
+
+#ifdef MPAS_PERF_MOD_TIMERS
+        use perf_mod
+#endif
+
+#ifdef MPAS_GPTL_TIMERS
+        use gptl
+#endif
 
         implicit none
         save
@@ -31,17 +43,36 @@
         include 'f90papi.h'
 #endif
 
-        type (timer_node), pointer :: all_timers
-        integer :: levels, synced
+        type (mpas_timer_root), pointer :: timer_root => null()
 
-        type (dm_info), pointer :: domain_info
-
-        public :: mpas_timer_start, &
+        public :: mpas_timer_set_context, &
+                  mpas_timer_start, &
                   mpas_timer_stop, &
                   mpas_timer_write, &
-                  mpas_timer_init
+                  mpas_timer_init, &
+                  mpas_timer_finalize
 
         contains
+
+!***********************************************************************
+!
+!  routine mpas_timer_set_context
+!
+!> \brief   MPAS Timer set context routine
+!> \author  Doug Jacobsen
+!> \date    12/22/2015
+!> \details
+!> This routine sets the timer_root for the timer infrastructure to point to a specific domain's timer_root.
+!> This allows multiple cores to have MPAS timers, and keep their timing information separate.
+!
+!-----------------------------------------------------------------------
+        subroutine mpas_timer_set_context(domain)!{{{
+
+           type (domain_type), intent(in) :: domain
+
+           timer_root => domain % timer_root
+
+        end subroutine mpas_timer_set_context!}}}
 
 !***********************************************************************
 !
@@ -49,328 +80,404 @@
 !
 !> \brief   MPAS Timer start routine
 !> \author  Doug Jacobsen
-!> \date    03/27/13
-!> \details 
-!> This routine starts a timer. By default, timer_name is searched for in the linked list of timers.
-!> If timer_ptr is provided, the search doesn't happen and the pointer to the timer is used (or allocated if not created yet).
+!> \date    12/22/2015
+!> \details
+!> This routine starts a timer named 'timer_name' as a child of whatever the
+!> most recently started timer that is still running is.
 !
 !-----------------------------------------------------------------------
-        subroutine mpas_timer_start(timer_name, clear_timer, timer_ptr)!{{{
-#         ifdef _MPI
-          include 'mpif.h'
-#         endif
+        subroutine mpas_timer_start(timer_name, clear_timer_in)!{{{
 
           character (len=*), intent (in) :: timer_name !< Input: name of timer, stored as name of timer
-          logical, optional, intent(in) :: clear_timer !< Input: flag to clear timer
-          type (timer_node), optional, pointer :: timer_ptr !< Output: pointer to store timer in module
+          logical, optional, intent(in) :: clear_timer_in !< Input: flag to clear timer
 
-          character (len=len(timer_name)) :: trimed_name
-          logical :: timer_added, timer_found, string_equal, check_flag
-          type (timer_node), pointer :: current, temp
+          logical :: setup_timer, timer_found, clear_timer, check_flag
 
-          integer :: clock, hz, usecs, nlen
-          trimed_name = trim(timer_name)
-          nlen = len(trimed_name)
+          type (mpas_timer_node), pointer :: current_timer, prev_timer
 
-#ifdef MPAS_TAU 
-          call tau_start(trimed_name)
+          character (len=len_trim(timer_name)) :: trimmed_name
+
+          integer :: usecs, nlen, iErr, threadNum, numThreads
+
+          numThreads = mpas_threading_get_max_threads()
+          threadNum = mpas_threading_get_thread_num()
+
+          trimmed_name = trim(timer_name)
+          nlen = len(trimmed_name)
+
+          clear_timer = .false.
+
+          if ( present(clear_timer_in) ) then
+             clear_timer = clear_timer_in
+          end if
+
+#ifdef MPAS_TAU_TIMERS
+          call tau_start(trimmed_name)
 #endif
 
-          timer_added = .false.
-          timer_found = .false.
+#ifdef MPAS_PERF_MOD_TIMERS
+          call t_startf(trimmed_name)
+#endif
 
-          if(.not.associated(all_timers)) then
-            timer_added = .true.
-            allocate(all_timers)
-            allocate(all_timers%next)
-            levels = 0
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlstart(trimmed_name)
+#endif
 
-            all_timers%timer_name = ''
-            all_timers%nlen = 0
-            current => all_timers%next
-            nullify(current%next)
-          else 
-            current => all_timers%next
-            timer_search: do while ((.not.timer_found) .and. associated(current))
-              string_equal = (current%timer_name(1:current%nlen) == trimed_name)
-              if(string_equal) then
-                timer_found = .true.
-              else
-                current => current%next
-              endif
-            end do timer_search
-          endif
+#ifdef MPAS_NATIVE_TIMERS
+             if ( threadNum == 0 ) then
+                setup_timer = .false.
+   
+                ! If the root_timer in timer_root has not been set, create it and use it for the current timer
+                if ( .not. associated(timer_root % root_timer) ) then
+                   allocate(timer_root % root_timer)
+                   current_timer => timer_root % root_timer
+                   setup_timer = .true.
+                ! If root_timer is set, current_timer should be as well. So look for this timer under current_timer, or 
+                ! create it as a child.
+                else
+                   ! If current_timer is not set, set it to root_timer and search...
+                   if ( .not. associated(timer_root % current_timer) ) then
+                      timer_root % current_timer => timer_root % root_timer
+                   end if
+   
+                   ! If current_timer doesn't have any children, make a new child that will be this timer
+                   if ( .not. associated(timer_root % current_timer % child) ) then
+                      allocate(timer_root % current_timer % child)
+                      current_timer => timer_root % current_timer % child
+                      current_timer % parent => timer_root % current_timer
+                      setup_timer = .true.
+                   else ! Search through current_timer's children for this timer, or create it as a new child
+                      timer_found = .false.
+                      current_timer => timer_root % current_timer % child
+                      do while (associated(current_timer) .and. .not. timer_found)
+                         if ( current_timer % nlen == nlen) then
+                            if ( current_timer % timer_name(1:current_timer % nlen) == trimmed_name(1:nlen) ) then
+                               timer_found = .true.
+                            end if
+                         end if
+   
+                         if ( .not. timer_found ) then
+                            prev_timer => current_timer
+                            current_timer => current_timer % next
+                         end if
+                      end do
+   
+                      if (.not. timer_found) then
+                         allocate(prev_timer % next)
+                         current_timer => prev_timer % next
+                         current_timer % parent => timer_root % current_timer
+                         setup_timer = .true.
+                      end if
+                   end if
+                end if
+   
+                ! Setup timer if needed
+                if ( setup_timer ) then
+                   current_timer % timer_name = trimmed_name
+                   current_timer % nlen = nlen
+                   current_timer % printed = .false.
+                   allocate(current_timer % running(numThreads))
+                   allocate(current_timer % start_time(numThreads))
+                   allocate(current_timer % end_time(numThreads))
+                   allocate(current_timer % total_time(numThreads))
+                   allocate(current_timer % max_time(numThreads))
+                   allocate(current_timer % min_time(numThreads))
+                   allocate(current_timer % avg_time(numThreads))
+                   current_timer % running(:) = .false.
+                   current_timer % start_time(:) = 0.0_R8KIND
+                   current_timer % end_time(:) = 0.0_R8KIND
+                   current_timer % total_time(:) = 0.0_R8KIND
+                   current_timer % max_time(:) = -huge(RKIND)
+                   current_timer % min_time(:) = huge(RKIND)
+                   current_timer % avg_time(:) = 0.0_RKIND
+                   current_timer % calls = 0
+                end if
 
-          if(present(timer_ptr)) then
-            timer_found = .true.
-            if(.not.associated(timer_ptr)) then
-              current => all_timers
-              find_end_ptr: do while((.not.timer_added) .and. (associated(current%next)))
-                current => current%next
-              end do find_end_ptr
+                ! Set current timer to be current timer (so timers started after will be children of this timer instance)
+                timer_root % current_timer => current_timer
+             end if
+             call mpas_threading_barrier()
 
-              allocate(timer_ptr)
+             current_timer => timer_root % current_timer
 
-              current%next => timer_ptr
-              current => timer_ptr
-              nullify(timer_ptr%next)
-              current%levels = levels
-              current%timer_name = trimed_name
-              current%nlen = nlen
-              current%running = .false.
-              current%total_time = 0.0
-              current%max_time = 0.0
-              current%min_time = 100000000.0
-              current%avg_time = 0.0
-              current%calls = 0
-              current%efficiency = 0.0
-            else
-              current => timer_ptr
-            endif
-          endif
+             if ( clear_timer) then
+                if ( threadNum == 0 ) then
+                   current_timer % calls = 0
+                end if
+                current_timer % running(threadNum + 1) = .false.
+                current_timer % start_time(threadNum + 1) = 0.0_R8KIND
+                current_timer % end_time(threadNum + 1) = 0.0_R8KIND
+                current_timer % total_time(threadNum + 1) = 0.0_R8KIND
+                current_timer % max_time(threadNum + 1) = -huge(RKIND)
+                current_timer % min_time(threadNum + 1) = huge(RKIND)
+                current_timer % avg_time(threadNum + 1) = 0.0_RKIND
+             end if
 
-          if(.not.timer_found) then
-            current => all_timers
-            find_end: do while((.not.timer_added) .and. (associated(current%next)))
-              current => current%next
-            end do find_end
-
-            allocate(current%next)
-            current => current%next
-
-            nullify(current%next)
-            timer_added = .true.
-          endif
-
-          if(timer_added .and. (.not.timer_found)) then
-            current%levels = levels
-            current%timer_name = trimed_name
-            current%nlen = nlen
-            current%running = .false.
-            current%total_time = 0.0
-            current%max_time = 0.0
-            current%min_time = 100000000.0
-            current%avg_time = 0.0
-            current%calls = 0
-            current%efficiency = 0.0
-          endif
-
-          if((timer_added .or. timer_found) .and. (.not.current%running)) then
-            current%running = .true.
-            levels = levels + 1
-
+             ! Set start time
+             ! TODO after making sure the timer structures work as expected...
+             if ( threadNum == 0 ) then
+                current_timer % calls = current_timer % calls + 1
+             end if
+             current_timer % running(threadNum + 1) = .true.
 #ifdef _PAPI
-            call PAPIF_get_real_usec(usecs, check_flag)
-            current%start_time = usecs/1.0e6
-#elif _MPI
-            current%start_time = MPI_Wtime()
+             call PAPIF_get_real_usec(usecs, check_flag)
+             current_timer % start_time(threadNum + 1) = usecs/1.0e6
 #else
-            call system_clock (count=clock)
-            call system_clock (count_rate=hz)
-            current%start_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
+             call mpas_dmpar_get_time(current_timer % start_time(threadNum + 1))
 #endif
-          endif
+#endif
 
-          if(present(clear_timer)) then
-            if(clear_timer) then
-              current%start_time = 0.0
-              current%end_time = 0.0
-              current%total_time = 0.0
-              current%max_time = 0.0
-              current%min_time = 0.0
-              current%avg_time = 0.0
-              current%calls = 0
-              current%running = .false.
-            endif
-          endif
-
-          if(present(timer_ptr)) then
-              timer_ptr => current
-          endif
-          
         end subroutine mpas_timer_start!}}}
-       
+
 !***********************************************************************
 !
 !  routine mpas_timer_stop
 !
 !> \brief   MPAS Timer stop routine
 !> \author  Doug Jacobsen
-!> \date    03/27/13
-!> \details 
-!> This routine stops a timer. By default, timer_name is searched for in the linked list of timers.
-!> If timer_ptr is provided, the search doesn't happen and the pointer to the timer is used.
+!> \date    12/22/2015
+!> \details
+!> This routine stops a timer named 'timer_name'. It should be the most
+!> recently started timer, so an error is thrown if it is not.
 !
 !-----------------------------------------------------------------------
-        subroutine mpas_timer_stop(timer_name, timer_ptr)!{{{
-#         ifdef _MPI
-          include 'mpif.h'
-#         endif
+        subroutine mpas_timer_stop(timer_name)!{{{
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
-          type (timer_node), pointer, optional :: timer_ptr !< Input: pointer to timer, for stopping
-          character (len=len(timer_name)) :: trimed_name !< Trimed timer name
 
-          type (timer_node), pointer :: current
-          
-          real (kind=R8KIND) :: time_temp
-          logical :: timer_found, string_equal, check_flag
-          integer :: clock, hz, usecs, nlen
-          trimed_name = trim(timer_name)
-          nlen = len(trimed_name)
+          character (len=len_trim(timer_name)) :: trimmed_name !< Trimmed timer name
 
-#ifdef MPAS_TAU 
-          call tau_stop(trimed_name)
+          real (kind=R8KIND) :: temp_time
+
+          integer :: usecs, nlen, iErr, threadNum
+
+          threadNum = mpas_threading_get_thread_num()
+
+          trimmed_name = trim(timer_name)
+          nlen = len(trimmed_name)
+
+#ifdef MPAS_TAU_TIMERS
+          call tau_stop(trimmed_name)
 #endif
- 
-          timer_found = .false.
- 
-          if(present(timer_ptr)) then
-            timer_found = .true.
-            current => timer_ptr
-          endif
- 
-          if(.not.associated(all_timers)) then
-            print *,' timer_stop :: timer_stop called with no timers initialized'
-          else if(.not. timer_found) then
-            current => all_timers
-            timer_find: do while(.not.timer_found .and. associated(current))
-              string_equal = (current%timer_name(1:current%nlen) == trimed_name)
 
-              if(string_equal) then
-                timer_found = .true.
-              else
-                current => current%next
-              endif
-            end do timer_find
-          endif
+#ifdef MPAS_PERF_MOD_TIMERS
+          call t_stopf(trimmed_name)
+#endif
 
-          if(.not.timer_found) then
-            print *,' timer_stop :: timer_stop called with timer_name =', timer_name,' when timer has not been started.'
-            call mpas_dmpar_global_abort('ERROR: in subroutine mpas_timer_stop()')
-          endif
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlstop(trimmed_name)
+#endif
 
-          if(current%running) then
-            current%running = .false.
-            levels = levels - 1
+#ifdef MPAS_NATIVE_TIMERS
+          ! Timer to stop should be timer_root % current_timer, since you should only be allowed to stop the most 
+          ! recently started timer
+          if ( .not. associated(timer_root % current_timer) ) then
+             write(stderrUnit, *) 'ERROR: Trying to stop a timer when no timer has been started.'
+             call mpas_dmpar_global_abort('ERROR: Incorrect timer usage')
+          end if
 
+          if ( .not. timer_root % current_timer % nlen == nlen ) then
+             if ( .not. timer_root % current_timer % timer_name(1:timer_root % current_timer % nlen) == trimmed_name(1:nlen) ) then
+                write(stderrUnit, * ) 'ERROR: Trying to stop timer ', trim(trimmed_name), ' when ', &
+                                      trim(timer_root % current_timer % timer_name), ' is the most recently started timer.'
+                call mpas_dmpar_global_abort('ERROR: Incorrect timer usage')
+             end if
+          end if
+
+          ! Set stop time
+          ! TODO: Compute timer statistics...
+          timer_root % current_timer % running(threadNum + 1) = .false.
 #ifdef _PAPI
-            call PAPIF_get_real_usec(usecs, check_flag)
-            current%end_time = usecs/1.0e6
-#elif _MPI
-            current%end_time = MPI_Wtime()
+          call PAPIF_get_real_usec(usecs, check_flag)
+          current_timer % end_time(threadNum + 1) = usecs/1.0e6
 #else
-            call system_clock(count=clock)
-            call system_clock(count_rate=hz)
-            current%end_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
+          call mpas_dmpar_get_time(timer_root % current_timer % end_time(threadNum + 1))
 #endif
-            
-            time_temp = current%end_time - current%start_time
-            current%total_time = current%total_time + time_temp
+          temp_time = timer_root % current_timer % end_time(threadNum + 1) &
+                    - timer_root % current_timer % start_time(threadNum + 1)
+          timer_root % current_timer % total_time(threadNum + 1) = timer_root % current_timer % total_time(threadNum + 1) &
+                                                                 + temp_time
+          timer_root % current_timer % max_time(threadNum + 1) = max(timer_root % current_timer % max_time(threadNum + 1), &
+                                                                 real(temp_time, kind=RKIND))
+          timer_root % current_timer % min_time(threadNum + 1) = min(timer_root % current_timer % min_time(threadNum + 1), &
+                                                                 real(temp_time, kind=RKIND))
 
-            if(real(time_temp,RKIND) > current%max_time) then
-              current%max_time = real(time_temp,RKIND)
-            endif
-
-            if(real(time_temp,RKIND) < current%min_time) then
-              current%min_time = real(time_temp,RKIND)
-            endif
-
-            current%calls = current%calls + 1
-          endif
+          ! Set current_timer to the parent of current_timer
+          call mpas_threading_barrier()
+          if ( threadNum == 0 ) then
+             timer_root % current_timer => timer_root % current_timer % parent
+          end if
+          call mpas_threading_barrier()
+#endif
 
         end subroutine mpas_timer_stop!}}}
 
 !***********************************************************************
 !
-!  recursive routine mpas_timer_write
+!  routine mpas_timer_write_header
+!
+!> \brief   MPAS Timer write header routine
+!> \author  Doug Jacobsen
+!> \date    12/22/2015
+!> \details
+!> This routine writes header information about what will be printed for each timer_root.
+!
+!-----------------------------------------------------------------------
+       subroutine mpas_timer_write_header()!{{{
+
+#ifdef MPAS_NATIVE_TIMERS
+          write(stdoutUnit, *) ''
+          write(stdoutUnit, *) ''
+          write(stdoutUnit, *) ' Timer information: '
+          write(stdoutUnit, *) '    Globals are computed across all threads and processors'
+          write(stdoutUnit, *) ''
+          write(stdoutUnit, *) ' Columns:'
+          write(stdoutUnit, *) '    total time: Global max of accumulated time spent in timer'
+          write(stdoutUnit, *) '    calls: Total number of times this timer was started / stopped.'
+          write(stdoutUnit, *) '    min: Global min of time spent in a single start / stop'
+          write(stdoutUnit, *) '    max: Global max of time spent in a single start / stop'
+          write(stdoutUnit, *) '    avg: Global max of average time spent in a single start / stop'
+          write(stdoutUnit, *) '    pct_tot: Percent of the timer at level 1'
+          write(stdoutUnit, *) '    pct_par: Percent of the parent timer (one level up)'
+          write(stdoutUnit, *) '    par_eff: Parallel efficiency, global average total time / global max total time'
+          write(stdoutUnit, *) ''
+          write(stdoutUnit, *) ''
+
+          write(stdoutUnit,'(3x, a10, 34x, a15, a12, a11, a15, a15, a13, a10, a12)') 'timer_name', 'total', 'calls', 'min', 'max', &
+                    'avg', 'pct_tot', 'pct_par', 'par_eff'
+#endif
+
+        end subroutine mpas_timer_write_header!}}}
+
+!***********************************************************************
+!
+!  routine mpas_timer_write
 !
 !> \brief   MPAS Timer write routine
 !> \author  Doug Jacobsen
-!> \date    03/27/13
-!> \details 
-!> This routine writes all timer output to stdout. It recursively calls 
-!> itself until all timers have been written out. Prior to writing timers,
-!> this routine calls mpas_timer_sync.
+!> \date    12/22/2015
+!> \details
+!> This routine writes all timer output to stdout for the currently set
+!> timer_root. It prints timer information in depth first format.
 !
 !-----------------------------------------------------------------------
-        recursive subroutine mpas_timer_write(timer_ptr, total_ptr)!{{{
-          type (timer_node), pointer, optional :: timer_ptr !< Input - Optional: Pointer to a specific timer to write out.
-          type (timer_node), pointer, optional :: total_ptr !< Input - Optional: Pointer to the total_time timer.
-          character (len=StrKIND) :: tname
+       subroutine mpas_timer_write()!{{{
+          type (mpas_timer_node), pointer :: current_timer
+          character (len=StrKIND) :: indentation
+          logical :: next_timer_found
+          integer :: iErr, levels, i, numThreads
 
-          logical :: total_found, string_equals
-          type (timer_node), pointer :: current, total
-          real (kind=RKIND) :: percent
-          integer :: i, nlen
+          real (kind=RKIND) :: percent_inc, percent_exc, efficiency
+          real (kind=RKIND) :: global_time, global_max_total, global_ave_total
 
-          total_found = .false.
-
-#ifdef MPAS_SYNC_TIMERS
-          if(associated(domain_info) .and. synced == 0) then
-            call mpas_timer_sync()
-          endif
+#ifdef MPAS_GPTL_TIMERS
+#ifdef MPAS_DEBUG
+          iErr = gptlpr(timer_root % dminfo % my_proc_id)
+#else
+          if ( timer_root % dminfo % my_proc_id == 0 ) then
+             iErr = gptlpr(timer_root % dminfo % my_proc_id)
+          end if
+#endif
 #endif
 
-          if(present(timer_ptr) .and. (.not.present(total_ptr))) then
-            print *,'timer_write :: timer_ptr valid, but total_ptr is not assigned.'
-            call mpas_dmpar_global_abort('ERROR: in subroutine mpas_timer_write()')
-          else if(present(timer_ptr)) then
-            tname = ''
-            do i=0,timer_ptr%levels+2
-              tname = tname//' '
-            end do
+#ifdef MPAS_NATIVE_TIMERS
+          numThreads = mpas_threading_get_max_threads()
+          current_timer => timer_root % root_timer
+          levels = 1
 
-            if(timer_ptr%total_time == 0.0_R8KIND) then
-              timer_ptr%min_time = 0.0_RKIND
-              timer_ptr%max_time = 0.0_RKIND
-              timer_ptr%avg_time = 0.0_RKIND
-              percent = 0.0_RKIND
-            else
-              timer_ptr%avg_time = timer_ptr%total_time / real(timer_ptr%calls, kind=R8KIND)
-              percent = timer_ptr%total_time / total_ptr%total_time
-            endif
+          ! Initialize indentation with all spaces.
+          indentation = ''
+          do i = 1, StrKIND
+             indentation(i:i) = ' '
+          end do
 
-            write(stdoutUnit,'(i2, 1x, a35, f15.5, i10, 3f15.5, 2f8.2)') timer_ptr%levels, tname(1:timer_ptr%levels)// &
-                      timer_ptr%timer_name, timer_ptr%total_time, timer_ptr%calls, timer_ptr%min_time, timer_ptr%max_time, &
-                      timer_ptr%avg_time, percent, timer_ptr%efficiency
-            return
-          endif
+          do while ( associated(current_timer) )
+             if ( current_timer % running(1) ) then
+                write(stderrUnit, *) 'ERROR: Timer ', trim(current_timer % timer_name), ' is still running.'
+             end if
 
-          total => all_timers
+             if ( .not. current_timer % printed ) then
+                ! Compute average timers for each thread
+                do i = 1, numThreads
+                    current_timer % avg_time(i) = current_timer % total_time(i) / current_timer % calls
+                end do
 
-          find_total: do while((.not.total_found) .and. associated(total))
-            string_equals = (total%timer_name(1:total%nlen) == "total time")
-            if(string_equals) then
-              total_found = .true.
-            else
-              total => total%next
-            endif
-          end do find_total
+                ! Synchronize timers across threads
+                global_ave_total = sum(current_timer % total_time(:))
+                global_ave_total = global_ave_total / numThreads
+                current_timer % total_time(1) = maxval(current_timer % total_time(:))
+                current_timer % max_time(1) = maxval(current_timer % max_time(:))
+                current_timer % min_time(1) = minval(current_timer % min_time(:))
+                current_timer % avg_time(1) = sum(current_timer % avg_time(:)) / numThreads
 
-          if(.not.total_found) then
-            print *,' timer_write :: no timer named "total time" found.'
-            call mpas_dmpar_global_abort('ERROR: in subroutine mpas_timer_write()')
-          end if
+                ! Synchronize timers across procs
+                call mpas_dmpar_sum_real(timer_root  % dminfo, global_ave_total, global_time)
+                global_ave_total = global_time / timer_root % dminfo % nprocs
+                call mpas_dmpar_max_real(timer_root % dminfo, real(current_timer % total_time(1), kind=RKIND), global_time)
+                global_max_total = global_time
+                current_timer % total_time(1) = global_time
+                call mpas_dmpar_max_real(timer_root % dminfo, current_timer % max_time(1), global_time)
+                current_timer % max_time(1) = global_time
+                call mpas_dmpar_min_real(timer_root % dminfo, current_timer % min_time(1), global_time)
+                current_timer % min_time(1) = global_time
+                call mpas_dmpar_sum_real(timer_root % dminfo, current_timer % avg_time(1), global_time)
+                current_timer % avg_time(1) = global_time / timer_root % dminfo % nprocs
 
-          write(stdoutUnit,'(3x, a10, 24x, a15, a10, a13, a15, a15, a12, a12)') 'timer_name', 'total', 'calls', 'min', 'max', &
-                    'avg', 'percent', 'efficiency'
-          write(stdoutUnit,'(i2, 1x, a35, f15.5, i10, 3f15.5)') total%levels, total%timer_name, total%total_time, total%calls, &
-                     total%min_time, total%max_time, total%avg_time
+                ! Compute percent of run time
+                if ( timer_root % root_timer % total_time(1) /= 0.0_RKIND ) then
+                   percent_inc = current_timer % total_time(1) / timer_root % root_timer % total_time(1)
+                else
+                   percent_inc = 0.0_RKIND
+                end if
 
-          current => all_timers
+                if ( associated(current_timer % parent) ) then
+                   percent_exc = current_timer % total_time(1) / current_timer % parent % total_time(1)
+                else
+                   percent_exc = 0.0_RKIND
+                end if
 
-          print_timers: do while(associated(current))
-            string_equals = (current%timer_name(1:current%nlen) == "total time")
-            string_equals = string_equals .or. (current%timer_name(1:current%nlen) == "")
+                ! Compute efficiency
+                if ( global_max_total /= 0.0_RKIND ) then
+                   efficiency = global_ave_total / global_max_total
+                else
+                   efficiency = 1.0_RKIND
+                end if
 
-            if(.not.string_equals) then
-              call mpas_timer_write(current, total)
-              current => current%next
-            else
-              current => current%next
-            endif
-          end do print_timers
+                ! Print current_timer
+                write(stdoutUnit,'(i2, 1x, a45, f15.5, i10, 3f15.5, 1x, f8.2, 3x, f8.2, 3x, f8.2)') levels, indentation(1:levels-1) // &
+                          current_timer % timer_name, current_timer % total_time(1), current_timer % calls, &
+                          current_timer % min_time(1), current_timer % max_time(1), current_timer % avg_time(1), &
+                          percent_inc * 100.0_RKIND, percent_exc * 100.0_RKIND, efficiency
+                current_timer % printed = .true.
+             end if
+
+
+             ! If current_timer has children, move down a level (and increment levels)
+             ! If current_timer has no children, print siblings (without incrementing levels)
+             ! If current_timer has no children, move back to the parent timer, and decrement levels.
+             next_timer_found = .false.
+             if ( associated(current_timer % child) ) then
+                if ( .not. current_timer % child % printed ) then
+                    current_timer => current_timer % child
+                    levels = levels + 1
+                    next_timer_found = .true.
+                end if
+             end if
+
+             if ( .not. next_timer_found ) then
+                if ( associated(current_timer % next) ) then
+                   current_timer => current_timer % next
+                else
+                   if ( associated(current_timer % parent) ) then
+                      current_timer => current_timer % parent
+                      levels = levels - 1
+                   else
+                      nullify(current_timer)
+                   end if
+                end if
+             end if
+          end do
+#endif
 
         end subroutine mpas_timer_write!}}}
 
@@ -380,89 +487,123 @@
 !
 !> \brief   MPAS Timer init routine
 !> \author  Doug Jacobsen
-!> \date    03/27/13
-!> \details 
-!> This routine initializes the mpas_timer setup. It needs to have access to the dminfo object in order to sync timers.
+!> \date    12/22/2015
+!> \details
+!> This routine initializes the timers within a given domain.
+!> Additionally, it sets the context to the timers within the domain, which can
+!> be changed later using the mpas_timer_set_context routine.
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_init(domain)!{{{
-          type (domain_type), intent(in), optional :: domain !< Input - Optional: Domain structure
+          type (domain_type), intent(inout) :: domain !< Input/Output: Domain structure
 
-          if( present(domain) ) then
-              domain_info => domain % dminfo
-          endif
+          integer :: iErr
 
-          synced = 0
+          allocate(domain % timer_root)
+          timer_root => domain % timer_root
+          timer_root % dminfo => domain % dminfo
+
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlsetoption(gptloverhead, 0)
+          iErr = gptlsetoption(gptlpercent, 0)
+          iErr = gptlsetoption(gptlsync_mpi, 1)
+
+          iErr = gptlinitialize()
+#endif
 
         end subroutine mpas_timer_init!}}}
 
 !***********************************************************************
 !
-!  routine mpas_timer_sync
+!  routine mpas_timer_finalize
 !
-!> \brief   MPAS Timer sync routine
+!> \brief   MPAS Timer finalize routine
 !> \author  Doug Jacobsen
-!> \date    03/27/13
-!> \details 
-!> This routine synchronizes timers across all processors in order to better represent
-!> the entire run domain with the timer output.
-!>
-!> Note: To avoid the need for additional implementations of
-!> mpas_dmpar_max_real() and mpas_dmpar_sum_real(), the total_time is
-!> cast from R8KIND to RKIND in the process of computing all_total_time
-!> and all_ave_time. This is not expected to have a practical impact on
-!> the reported times.
+!> \date    12/22/2015
+!> \details
+!> This routine destroys all timers for the given domain.
+!> Timers are destroyed in depth first format
 !
 !-----------------------------------------------------------------------
-        subroutine mpas_timer_sync()!{{{
-          use mpas_dmpar
+        subroutine mpas_timer_finalize(domain)!{{{
+          type (domain_type), intent(inout) :: domain !< Input/Output: Domain structure
 
-          type (timer_node), pointer :: current
-          real (kind=RKIND) :: all_total_time, all_max_time, all_min_time, all_ave_time
+#ifdef MPAS_NATIVE_TIMERS
+          ! Destroy all children of domain's root_timer
+          call mpas_timer_destroy_children(domain % timer_root % root_timer)
 
-          current => all_timers
-
-          sync_timers: do while(associated(current))
-            all_total_time = 0.0
-            all_ave_time = 0.0
-            all_max_time = 0.0
-            all_min_time = 0.0
-
-            call mpas_dmpar_max_real(domain_info, real(current % total_time, kind=RKIND), all_total_time)
-            call mpas_dmpar_sum_real(domain_info, real(current % total_time, kind=RKIND), all_ave_time)
-            
-            all_ave_time = all_ave_time / domain_info % nprocs
-
-            current % total_time = all_total_time
-
-#ifdef _MPI
-            if ( all_total_time > 0.0_RKIND ) then
-               current % efficiency = all_ave_time / all_total_time
-            else
-               current % efficiency = 1.0
-            end if
-#else
-            current % efficiency = 1.0
+          ! Deallocate all arrays of the root_timer, and the timer itself
+          deallocate(domain % timer_root % root_timer % start_time)
+          deallocate(domain % timer_root % root_timer % end_time)
+          deallocate(domain % timer_root % root_timer % total_time)
+          deallocate(domain % timer_root % root_timer % max_time)
+          deallocate(domain % timer_root % root_timer % min_time)
+          deallocate(domain % timer_root % root_timer % avg_time)
+          deallocate(domain % timer_root % root_timer % running)
+          deallocate(domain % timer_root % root_timer)
 #endif
 
-            if ( current % calls > 0 ) then
-               current % avg_time = current % total_time / real(current % calls, kind=R8KIND)
-            else
-               current % avg_time = current % total_time
-            end if
+          deallocate(domain % timer_root)
 
-            call mpas_dmpar_max_real(domain_info, current % max_time, all_max_time)
-            current % max_time = all_max_time
+        end subroutine mpas_timer_finalize!}}}
 
-            call mpas_dmpar_min_real(domain_info, current % min_time, all_min_time)
-            current % min_time = all_min_time
+!***********************************************************************
+!
+!  recursive routine mpas_timer_destroy_chldren
+!
+!> \brief   MPAS Timer Destroy Children Routine
+!> \author  Doug Jacobsen
+!> \date    12/22/2015
+!> \details
+!> This routine destroys all children timers of parent_timer.
+!> It does not destroy parent_timer itself.
+!
+!-----------------------------------------------------------------------
+        recursive subroutine mpas_timer_destroy_children(parent_timer)!{{{
+           type (mpas_timer_node), pointer :: parent_timer
 
-            current => current % next
-          end do sync_timers
+           type (mpas_timer_node), pointer :: current_timer
 
-          synced = 1
+           if (.not. associated(parent_timer % child)) then
+              return
+           end if
 
-        end subroutine mpas_timer_sync!}}}
+           ! First, destroy all children of any sibling in this generation
+           current_timer => parent_timer % child
+           do while ( associated(current_timer) )
+              if ( associated(current_timer % child) ) then
+                 call mpas_timer_destroy_children(current_timer)
+              end if
+              current_timer => current_timer % next
+           end do
+
+           ! This generation should not have any children now, so destroy all siblings
+           do while ( associated(parent_timer % child) )
+              current_timer => parent_timer % child
+
+              if ( associated(current_timer) ) then
+                 ! If there is more than one sibling, delete the first one, and set child to be it's sibling
+                 if ( associated(current_timer % next) ) then
+                    parent_timer % child => current_timer % next
+                 else
+                    nullify(parent_timer % child)
+                 end if
+
+                 ! Deallocate all arrays, and the timer itself
+                 deallocate(current_timer % start_time)
+                 deallocate(current_timer % end_time)
+                 deallocate(current_timer % total_time)
+                 deallocate(current_timer % max_time)
+                 deallocate(current_timer % min_time)
+                 deallocate(current_timer % avg_time)
+                 deallocate(current_timer % running)
+                 deallocate(current_timer)
+              else
+                 nullify(parent_timer % child)
+              end if
+           end do
+
+        end subroutine mpas_timer_destroy_children!}}}
 
       end module mpas_timer
 

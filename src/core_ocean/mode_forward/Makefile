@@ -1,16 +1,13 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_ocn_core.o \
-       mpas_ocn_core_interface.o \
+OBJS = mpas_ocn_forward_mode.o \
        mpas_ocn_time_integration.o \
        mpas_ocn_time_integration_rk4.o \
        mpas_ocn_time_integration_split.o
 
-all: core_ocean
+all: forward_mode
 
-core_ocean: $(OBJS) 
-
-mpas_ocn_core_interface.o: mpas_ocn_core.o
+forward_mode: $(OBJS) 
 
 mpas_ocn_time_integration.o: mpas_ocn_time_integration_rk4.o mpas_ocn_time_integration_split.o
 
@@ -18,12 +15,12 @@ mpas_ocn_time_integration_rk4.o:
 
 mpas_ocn_time_integration_split.o: 
 
-mpas_ocn_core.o: mpas_ocn_time_integration.o \
-                 mpas_ocn_time_integration_rk4.o \
-                 mpas_ocn_time_integration_split.o
+mpas_ocn_forward_mode.o: mpas_ocn_time_integration.o \
+                         mpas_ocn_time_integration_rk4.o \
+                         mpas_ocn_time_integration_split.o
 
 clean:
-	$(RM) *.o *.mod *.f90 libdycore.a
+	$(RM) *.o *.mod *.f90
 
 .F.o:
 	$(RM) $@ $*.mod

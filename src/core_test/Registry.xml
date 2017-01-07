@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="test" core_abbrev="test" version="4.0">
+<registry model="mpas" core="test" core_abbrev="test" version="5.0">
 	<dims>
 		<dim name="nCells"/>
 		<dim name="nEdges"/>
@@ -76,12 +76,16 @@
 		<var name="xtime"                             type="text"     dimensions="Time"/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">
-		<var name="latCell"                           type="real"     dimensions="nCells"/>
-		<var name="lonCell"                           type="real"     dimensions="nCells"/>
+		<var_array name="arrTest" type="real" dimensions="nCells" missing_value="FILLVAL">
+			<var name="test1" units="units1" description="Test var 1 in a var_array" array_group="arrTest"/>
+			<var name="test2" units="units2" description="Test var 2 in a var_array" array_group="arrTest"/>
+		</var_array>
+		<var name="latCell"                           type="real"     dimensions="nCells" description="Latitude of cell centers" units="radians" missing_value="-999"/>
+		<var name="lonCell"                           type="real"     dimensions="nCells" description="Longitude of cell centers" units="radians" missing_value="-999"/>
 		<var name="xCell"                             type="real"     dimensions="nCells"/>
 		<var name="yCell"                             type="real"     dimensions="nCells"/>
 		<var name="zCell"                             type="real"     dimensions="nCells"/>
-		<var name="indexToCellID"                     type="integer"  dimensions="nCells"/>
+		<var name="indexToCellID"                     type="integer"  dimensions="nCells" missing_value="FILLVAL"/>
 		<var name="latEdge"                           type="real"     dimensions="nEdges"/>
 		<var name="lonEdge"                           type="real"     dimensions="nEdges"/>
 		<var name="xEdge"                             type="real"     dimensions="nEdges"/>
@@ -114,5 +118,60 @@
 		<var name="edgesOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
 		<var name="cellsOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
 		<var name="kiteAreasOnVertex"                 type="real"     dimensions="vertexDegree nVertices"/>
+	</var_struct>
+	<var_struct name="haloExchTest" time_levs="1">
+		<var name="cellPersistReal5D" type="real" dimensions="TWO TWO vertexDegree maxEdges nCells"/>
+		<var name="cellPersistReal4D" type="real" dimensions="TWO vertexDegree maxEdges nCells"/>
+		<var name="cellPersistReal3D" type="real" dimensions="vertexDegree maxEdges nCells"/>
+		<var name="cellPersistReal2D" type="real" dimensions="maxEdges nCells"/>
+		<var name="cellPersistReal1D" type="real" dimensions="nCells"/>
+		<var name="cellPersistReal0D" type="real" dimensions=""/>
+		<var name="cellPersistInt3D" type="integer" dimensions="vertexDegree maxEdges nCells"/>
+		<var name="cellPersistInt2D" type="integer" dimensions="maxEdges nCells"/>
+		<var name="cellPersistInt1D" type="integer" dimensions="nCells"/>
+		<var name="cellScratchReal5D" persistence="scratch" type="real" dimensions="TWO TWO vertexDegree maxEdges nCells"/>
+		<var name="cellScratchReal4D" persistence="scratch" type="real" dimensions="TWO vertexDegree maxEdges nCells"/>
+		<var name="cellScratchReal3D" persistence="scratch" type="real" dimensions="vertexDegree maxEdges nCells"/>
+		<var name="cellScratchReal2D" persistence="scratch" type="real" dimensions="maxEdges nCells"/>
+		<var name="cellScratchReal1D" persistence="scratch" type="real" dimensions="nCells"/>
+		<var name="cellScratchInt3D" persistence="scratch" type="integer" dimensions="vertexDegree maxEdges nCells"/>
+		<var name="cellScratchInt2D" persistence="scratch" type="integer" dimensions="maxEdges nCells"/>
+		<var name="cellScratchInt1D" persistence="scratch" type="integer" dimensions="nCells"/>
+
+		<var name="edgePersistReal5D" type="real" dimensions="TWO TWO vertexDegree maxEdges nEdges"/>
+		<var name="edgePersistReal4D" type="real" dimensions="TWO vertexDegree maxEdges nEdges"/>
+		<var name="edgePersistReal3D" type="real" dimensions="vertexDegree maxEdges nEdges"/>
+		<var name="edgePersistReal2D" type="real" dimensions="maxEdges nEdges"/>
+		<var name="edgePersistReal1D" type="real" dimensions="nEdges"/>
+		<var name="edgePersistInt3D" type="integer" dimensions="vertexDegree maxEdges nEdges"/>
+		<var name="edgePersistInt2D" type="integer" dimensions="maxEdges nEdges"/>
+		<var name="edgePersistInt1D" type="integer" dimensions="nEdges"/>
+		<var name="edgeScratchReal5D" persistence="scratch" type="real" dimensions="TWO TWO vertexDegree maxEdges nEdges"/>
+		<var name="edgeScratchReal4D" persistence="scratch" type="real" dimensions="TWO vertexDegree maxEdges nEdges"/>
+		<var name="edgeScratchReal3D" persistence="scratch" type="real" dimensions="vertexDegree maxEdges nEdges"/>
+		<var name="edgeScratchReal2D" persistence="scratch" type="real" dimensions="maxEdges nEdges"/>
+		<var name="edgeScratchReal1D" persistence="scratch" type="real" dimensions="nEdges"/>
+		<var name="edgeScratchInt3D" persistence="scratch" type="integer" dimensions="vertexDegree maxEdges nEdges"/>
+		<var name="edgeScratchInt2D" persistence="scratch" type="integer" dimensions="maxEdges nEdges"/>
+		<var name="edgeScratchInt1D" persistence="scratch" type="integer" dimensions="nEdges"/>
+
+		<var name="vertexPersistReal5D" type="real" dimensions="TWO TWO vertexDegree maxEdges nVertices"/>
+		<var name="vertexPersistReal4D" type="real" dimensions="TWO vertexDegree maxEdges nVertices"/>
+		<var name="vertexPersistReal3D" type="real" dimensions="vertexDegree maxEdges nVertices"/>
+		<var name="vertexPersistReal2D" type="real" dimensions="maxEdges nVertices"/>
+		<var name="vertexPersistReal1D" type="real" dimensions="nVertices"/>
+		<var name="vertexPersistInt3D" type="integer" dimensions="vertexDegree maxEdges nVertices"/>
+		<var name="vertexPersistInt2D" type="integer" dimensions="maxEdges nVertices"/>
+		<var name="vertexPersistInt1D" type="integer" dimensions="nVertices"/>
+		<var name="vertexScratchReal5D" persistence="scratch" type="real" dimensions="TWO TWO vertexDegree maxEdges nVertices"/>
+		<var name="vertexScratchReal4D" persistence="scratch" type="real" dimensions="TWO vertexDegree maxEdges nVertices"/>
+		<var name="vertexScratchReal3D" persistence="scratch" type="real" dimensions="vertexDegree maxEdges nVertices"/>
+		<var name="vertexScratchReal2D" persistence="scratch" type="real" dimensions="maxEdges nVertices"/>
+		<var name="vertexScratchReal1D" persistence="scratch" type="real" dimensions="nVertices"/>
+		<var name="vertexScratchInt3D" persistence="scratch" type="integer" dimensions="vertexDegree maxEdges nVertices"/>
+		<var name="vertexScratchInt2D" persistence="scratch" type="integer" dimensions="maxEdges nVertices"/>
+		<var name="vertexScratchInt1D" persistence="scratch" type="integer" dimensions="nVertices"/>
+
+
 	</var_struct>
 </registry>

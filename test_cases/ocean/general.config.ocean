@@ -1,0 +1,46 @@
+# This file is the ocean core's configuration file. It is specific to the ocean
+# core, and a specific machine. Each machine will configure this file
+# differently, but it can be used to point on version of the testing
+# infrastructure at a different version of the model.
+
+
+# The namelists section defines paths to template namelists that will be used
+# to generate specific namelists. Typically these will point to the forward and
+# init namelists in the default_inputs directory after a successful build of
+# the ocean model.
+[namelists]
+forward = FULL_PATH_TO_FORWARD_TEMPLATE_NAMELIST
+init = FULL_PATH_TO_INIT_TEMPLATE_NAMELIST
+
+
+# The streams section defines paths to template streams files that will be used
+# to generate specific streams files. Typically these will point to the forward and
+# init streams files in the default_inputs directory after a successful build of
+# the ocean model.
+[streams]
+forward = FULL_PATH_TO_FORWARD_TEMPLATE_STREAMS
+init = FULL_PATH_TO_INIT_TEMPLATE_STREAMS
+
+
+# The executables section defines paths to required executables. These
+# executables are provided for use by specific test cases.
+# Full paths should be provided in order to access the executables from
+# anywhere on the machine.
+[executables]
+model = FULL_PATH_TO_MODEL
+mesh_converter = FULL_PATH_TO_MESH_CONVERTER
+cell_culler = FULL_PATH_TO_CELL_CULLER
+metis = FULL_PATH_TO_METIS
+
+
+# The paths section describes paths that are used within the ocean core test
+# cases.
+[paths]
+
+# The mesh_database and the initial_condition_database are locations where
+# meshes / initial conditions might be found on a specific machine. They can be
+# the same directory, or different directory. Additionally, if they are empty
+# some test cases might download data into them, which will then be reused if
+# the test case is run again later.
+mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
+initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE

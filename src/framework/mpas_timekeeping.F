@@ -10,6 +10,9 @@ module mpas_timekeeping
    use mpas_kind_types
    use mpas_derived_types
    use mpas_io_units
+   use mpas_dmpar
+   use mpas_threading
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use ESMF
    use ESMF_BaseMod
@@ -166,31 +169,38 @@ module mpas_timekeeping
       integer, intent(out), optional :: ierr
 
       type (MPAS_Time_type) :: stop_time
+      integer :: threadNum
 
-      if (present(runDuration)) then
-         stop_time = startTime + runDuration
-         if (present(stopTime)) then
-            if (stopTime /= stop_time) then
-               if (present(ierr)) ierr = 1   ! stopTime and runDuration are inconsistent
-               write(stderrUnit,*) 'ERROR: MPAS_createClock: stopTime and runDuration are inconsistent'
-               return
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         if (present(runDuration)) then
+            stop_time = startTime + runDuration
+            if (present(stopTime)) then
+               if (stopTime /= stop_time) then
+                  if (present(ierr)) ierr = 1   ! stopTime and runDuration are inconsistent
+                  write(stderrUnit,*) 'ERROR: MPAS_createClock: stopTime and runDuration are inconsistent'
+                  return
+               end if
             end if
+         else if (present(stopTime)) then 
+            stop_time = stopTime
+         else
+            if (present(ierr)) ierr = 1   ! neither stopTime nor runDuration are specified
+            write(stderrUnit,*) 'ERROR: MPAS_createClock: neither stopTime nor runDuration are specified'
+            return
          end if
-      else if (present(stopTime)) then 
-         stop_time = stopTime
-      else
-         if (present(ierr)) ierr = 1   ! neither stopTime nor runDuration are specified
-         write(stderrUnit,*) 'ERROR: MPAS_createClock: neither stopTime nor runDuration are specified'
-         return
+
+         clock % c = ESMF_ClockCreate(TimeStep=timeStep%ti, StartTime=startTime%t, StopTime=stop_time%t, rc=ierr)
+         if (present(ierr)) then
+            if (ierr == ESMF_SUCCESS) ierr = 0
+         end if
+         clock % direction = MPAS_FORWARD
+         clock % nAlarms = 0
+         nullify(clock % alarmListHead)
       end if
 
-      clock % c = ESMF_ClockCreate(TimeStep=timeStep%ti, StartTime=startTime%t, StopTime=stop_time%t, rc=ierr)
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
-      end if
-      clock % direction = MPAS_FORWARD
-      clock % nAlarms = 0
-      nullify(clock % alarmListHead)
+      !$omp barrier
 
    end subroutine mpas_create_clock
 
@@ -203,18 +213,25 @@ module mpas_timekeeping
       integer, intent(out), optional :: ierr
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
+      integer :: threadNum
 
-      alarmPtr => clock % alarmListHead
-      do while (associated(alarmPtr))
-         clock % alarmListHead => alarmPtr % next
-         deallocate(alarmPtr)
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
          alarmPtr => clock % alarmListHead
-      end do
+         do while (associated(alarmPtr))
+            clock % alarmListHead => alarmPtr % next
+            deallocate(alarmPtr)
+            alarmPtr => clock % alarmListHead
+         end do
 
-      call ESMF_ClockDestroy(clock % c, rc=ierr)
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
+         call ESMF_ClockDestroy(clock % c, rc=ierr)
+         if (present(ierr)) then
+            if (ierr == ESMF_SUCCESS) ierr = 0
+         end if
       end if
+
+      !$omp barrier
 
    end subroutine mpas_destroy_clock
 
@@ -278,21 +295,28 @@ module mpas_timekeeping
       integer, intent(out), optional :: ierr
 
       type (MPAS_TimeInterval_type) :: timeStep
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       if (direction == MPAS_FORWARD .and. clock % direction == MPAS_FORWARD) return
       if (direction == MPAS_BACKWARD .and. clock % direction == MPAS_BACKWARD) return
 
-      clock % direction = direction
-      call ESMF_ClockGet(clock % c, TimeStep=timeStep%ti, rc=ierr)
-      timeStep = neg_ti(timeStep)
-      call ESMF_ClockSet(clock % c, TimeStep=timeStep%ti, rc=ierr)
+      if ( threadNum == 0 ) then
+         clock % direction = direction
+         call ESMF_ClockGet(clock % c, TimeStep=timeStep%ti, rc=ierr)
+         timeStep = neg_ti(timeStep)
+         call ESMF_ClockSet(clock % c, TimeStep=timeStep%ti, rc=ierr)
 
-      ! specify a valid previousRingTime for each alarm
-      call mpas_calibrate_alarms(clock, ierr);
+         ! specify a valid previousRingTime for each alarm
+         call mpas_calibrate_alarms(clock, ierr);
 
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
+         if (present(ierr)) then
+            if (ierr == ESMF_SUCCESS) ierr = 0
+         end if
       end if
+
+      !$omp barrier
 
    end subroutine mpas_set_clock_direction
 
@@ -319,11 +343,18 @@ module mpas_timekeeping
       type (MPAS_Clock_type), intent(inout) :: clock
       type (MPAS_TimeInterval_type), intent(in) :: timeStep
       integer, intent(out), optional :: ierr
+      integer :: threadNum
 
-      call ESMF_ClockSet(clock % c, TimeStep=timeStep%ti, rc=ierr)
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         call ESMF_ClockSet(clock % c, TimeStep=timeStep%ti, rc=ierr)
+         if (present(ierr)) then
+            if (ierr == ESMF_SUCCESS) ierr = 0
+         end if
       end if
+
+      !$omp barrier
 
    end subroutine mpas_set_clock_timestep
 
@@ -356,18 +387,25 @@ module mpas_timekeeping
       integer, intent(out), optional :: ierr
 
       type (ESMF_TimeInterval) :: time_step
+      integer :: threadNum
 
-      if (present(timeStep)) then
-         call ESMF_ClockGet(clock % c, TimeStep=time_step, rc=ierr)
-         call ESMF_ClockSet(clock % c, TimeStep=timeStep % ti, rc=ierr)
-         call ESMF_ClockAdvance(clock % c, rc=ierr)
-         call ESMF_ClockSet(clock % c, TimeStep=time_step, rc=ierr)
-      else
-         call ESMF_ClockAdvance(clock % c, rc=ierr)
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         if (present(timeStep)) then
+            call ESMF_ClockGet(clock % c, TimeStep=time_step, rc=ierr)
+            call ESMF_ClockSet(clock % c, TimeStep=timeStep % ti, rc=ierr)
+            call ESMF_ClockAdvance(clock % c, rc=ierr)
+            call ESMF_ClockSet(clock % c, TimeStep=time_step, rc=ierr)
+         else
+            call ESMF_ClockAdvance(clock % c, rc=ierr)
+         end if
+         if (present(ierr)) then
+            if (ierr == ESMF_SUCCESS) ierr = 0
+         end if
       end if
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
-      end if
+
+      !$omp barrier
 
    end subroutine mpas_advance_clock
 
@@ -380,20 +418,27 @@ module mpas_timekeeping
       type (MPAS_Time_type), intent(in) :: clock_time
       integer, intent(in) :: whichTime
       integer, intent(out), optional :: ierr
+      integer :: threadNum
 
-      if (whichTime == MPAS_NOW) then
-         call ESMF_ClockSet(clock % c, CurrTime=clock_time%t, rc=ierr)
-         call mpas_calibrate_alarms(clock, ierr);
-      else if (whichTime == MPAS_START_TIME) then
-         call ESMF_ClockSet(clock % c, StartTime=clock_time%t, rc=ierr)
-      else if (whichTime == MPAS_STOP_TIME) then
-         call ESMF_ClockSet(clock % c, StopTime=clock_time%t, rc=ierr)
-      else if (present(ierr)) then
-         ierr = 1
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         if (whichTime == MPAS_NOW) then
+            call ESMF_ClockSet(clock % c, CurrTime=clock_time%t, rc=ierr)
+            call mpas_calibrate_alarms(clock, ierr);
+         else if (whichTime == MPAS_START_TIME) then
+            call ESMF_ClockSet(clock % c, StartTime=clock_time%t, rc=ierr)
+         else if (whichTime == MPAS_STOP_TIME) then
+            call ESMF_ClockSet(clock % c, StopTime=clock_time%t, rc=ierr)
+         else if (present(ierr)) then
+            ierr = 1
+         end if
+         if (present(ierr)) then
+            if (ierr == ESMF_SUCCESS) ierr = 0
+         end if
       end if
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
-      end if
+
+      !$omp barrier
 
    end subroutine mpas_set_clock_time
 
@@ -438,55 +483,69 @@ module mpas_timekeeping
       integer, intent(out), optional :: ierr
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( len_trim(alarmID) > ShortStrKIND ) then
+         if ( threadNum == 0 ) then
+            write(stderrUnit, *) 'ERROR: Length of alarmID ''' // trim(alarmID) // ''' is ', len_trim(alarmID), ' which is longer than the allowable length of ', ShortStrKIND
+         end if
+         call mpas_dmpar_global_abort('ERROR: alarmID length is too long')
+      end if
 
       ! Add a new entry to the linked list of alarms for this clock
-      if (.not. associated(clock % alarmListHead)) then
-         allocate(clock % alarmListHead)
-         nullify(clock % alarmListHead % next)
-         alarmPtr => clock % alarmListHead
-      else
-         alarmPtr => clock % alarmListHead
-         do while (associated(alarmPtr % next))
-            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
-               if (present(ierr)) ierr = 1
-               return
-            end if
-            alarmPtr => alarmPtr % next
-         end do
-            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-               write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
-               if (present(ierr)) ierr = 1
-               return
-            end if
-         allocate(alarmPtr % next)
-         alarmPtr => alarmPtr % next
-         nullify(alarmPtr % next)
-      end if
-
-      alarmPtr % alarmID = trim(alarmID)
-
-      clock % nAlarms = clock % nAlarms + 1
-
-      alarmPtr % isSet = .true.
-      alarmPtr % ringTime = alarmTime
-      
-
-      if (present(alarmTimeInterval)) then
-         alarmPtr % isRecurring = .true.
-         alarmPtr % ringTimeInterval = alarmTimeInterval
-         if(clock % direction == MPAS_FORWARD) then
-            alarmPtr % prevRingTime = alarmTime - alarmTimeInterval
+      if ( threadNum == 0 ) then
+         if (.not. associated(clock % alarmListHead)) then
+            allocate(clock % alarmListHead)
+            nullify(clock % alarmListHead % next)
+            alarmPtr => clock % alarmListHead
          else
-            alarmPtr % prevRingTime = alarmTime + alarmTimeInterval         
+            alarmPtr => clock % alarmListHead
+            do while (associated(alarmPtr % next))
+               if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+                  write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
+                  if (present(ierr)) ierr = 1
+                  return
+               end if
+               alarmPtr => alarmPtr % next
+            end do
+               if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+                  write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
+                  if (present(ierr)) ierr = 1
+                  return
+               end if
+            allocate(alarmPtr % next)
+            alarmPtr => alarmPtr % next
+            nullify(alarmPtr % next)
          end if
-      else
-         alarmPtr % isRecurring = .false.
-         alarmPtr % prevRingTime = alarmTime
+
+         alarmPtr % alarmID = trim(alarmID)
+
+         clock % nAlarms = clock % nAlarms + 1
+
+         alarmPtr % isSet = .true.
+         alarmPtr % ringTime = alarmTime
+         
+
+         if (present(alarmTimeInterval)) then
+            alarmPtr % isRecurring = .true.
+            alarmPtr % ringTimeInterval = alarmTimeInterval
+            if(clock % direction == MPAS_FORWARD) then
+               alarmPtr % prevRingTime = alarmTime - alarmTimeInterval
+            else
+               alarmPtr % prevRingTime = alarmTime + alarmTimeInterval         
+            end if
+         else
+            alarmPtr % isRecurring = .false.
+            alarmPtr % prevRingTime = alarmTime
+         end if
+         if (present(ierr)) then
+            if (ierr == ESMF_SUCCESS) ierr = 0
+         end if
       end if
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
-      end if
+
+      !$omp barrier
 
    end subroutine mpas_add_clock_alarm
 
@@ -501,24 +560,31 @@ module mpas_timekeeping
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
       type (MPAS_Alarm_type), pointer :: alarmParentPtr
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       if (present(ierr)) ierr = 0
 
-      alarmPtr => clock % alarmListHead
-      alarmParentPtr => alarmPtr
-      do while (associated(alarmPtr))
-         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-            if (trim(alarmPtr % alarmID) == trim(clock % alarmListHead % alarmID)) then
-               clock % alarmListHead => alarmPtr % next
-            else
-               alarmParentPtr % next => alarmPtr % next
-            end if
-            deallocate(alarmPtr)
-            exit
-         end if
+      if ( threadNum == 0 ) then
+         alarmPtr => clock % alarmListHead
          alarmParentPtr => alarmPtr
-         alarmPtr => alarmPtr % next
-      end do
+         do while (associated(alarmPtr))
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+               if (trim(alarmPtr % alarmID) == trim(clock % alarmListHead % alarmID)) then
+                  clock % alarmListHead => alarmPtr % next
+               else
+                  alarmParentPtr % next => alarmPtr % next
+               end if
+               deallocate(alarmPtr)
+               exit
+            end if
+            alarmParentPtr => alarmPtr
+            alarmPtr => alarmPtr % next
+         end do
+      end if
+
+      !$omp barrier
 
    end subroutine mpas_remove_clock_alarm
 
@@ -647,31 +713,37 @@ module mpas_timekeeping
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
       character (len=StrKIND) :: printString
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       ierr = 0
 
-      alarmPtr => clock % alarmListHead
-      do while (associated(alarmPtr))
-         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-            write(stderrUnit,*) 'ALARM ', trim(alarmID)
+      if ( threadNum == 0 ) then
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+               write(stderrUnit,*) 'ALARM ', trim(alarmID)
 
-            write(stderrUnit,*) 'isRecurring', alarmPtr % isRecurring
-            
-            write(stderrUnit,*) 'isSet', alarmPtr % isSet
+               write(stderrUnit,*) 'isRecurring', alarmPtr % isRecurring
+               
+               write(stderrUnit,*) 'isSet', alarmPtr % isSet
 
-            call mpas_get_time(alarmPtr % ringTime, dateTimeString=printString, ierr=ierr)
-            write(stderrUnit,*) 'ringTime', printString
+               call mpas_get_time(alarmPtr % ringTime, dateTimeString=printString, ierr=ierr)
+               write(stderrUnit,*) 'ringTime', printString
 
-            call mpas_get_time(alarmPtr % prevRingTime, dateTimeString=printString, ierr=ierr)
-            write(stderrUnit,*) 'prevRingTime', printString
+               call mpas_get_time(alarmPtr % prevRingTime, dateTimeString=printString, ierr=ierr)
+               write(stderrUnit,*) 'prevRingTime', printString
 
-            call mpas_get_timeInterval(alarmPtr % ringTimeInterval, timeString=printString, ierr=ierr)
-            write(stderrUnit,*) 'ringTimeInterval', printString
-            
-            exit
-         end if
-         alarmPtr => alarmPtr % next
-      end do
+               call mpas_get_timeInterval(alarmPtr % ringTimeInterval, timeString=printString, ierr=ierr)
+               write(stderrUnit,*) 'ringTimeInterval', printString
+               
+               exit
+            end if
+            alarmPtr => alarmPtr % next
+         end do
+      end if
+      !$omp barrier
 
    end subroutine mpas_print_alarm
 
@@ -802,44 +874,51 @@ module mpas_timekeeping
 
       type (MPAS_TimeInterval_type) :: nowInterval, nowRemainder
       integer :: nDivs
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       if (present(ierr)) ierr = 0
 
-      alarmPtr => clock % alarmListHead
-      do while (associated(alarmPtr))
-      
-         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+      if ( threadNum == 0 ) then
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
+         
+            if (trim(alarmPtr % alarmID) == trim(alarmID)) then
 
-            if (mpas_in_ringing_envelope(clock, alarmPtr, interval, ierr)) then
+               if (mpas_in_ringing_envelope(clock, alarmPtr, interval, ierr)) then
 
-               if (.not. alarmPtr % isRecurring) then
-                  alarmPtr % isSet = .false. 
-               else
-                  alarmNow = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-
-                  if(clock % direction == MPAS_FORWARD) then
-                     if (present(interval)) then
-                        alarmNow = alarmNow + interval
-                     end if
-
-                     nowInterval = alarmNow - alarmPtr % prevRingTime
-                     call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
-                     alarmPtr % prevRingTime = alarmNow - nowRemainder
+                  if (.not. alarmPtr % isRecurring) then
+                     alarmPtr % isSet = .false. 
                   else
-                     if (present(interval)) then
-                        alarmNow = alarmNow - interval
-                     end if
+                     alarmNow = mpas_get_clock_time(clock, MPAS_NOW, ierr)
 
-                     nowInterval = alarmPtr % prevRingTime - alarmNow
-                     call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
-                     alarmPtr % prevRingTime = alarmNow + nowRemainder
+                     if(clock % direction == MPAS_FORWARD) then
+                        if (present(interval)) then
+                           alarmNow = alarmNow + interval
+                        end if
+
+                        nowInterval = alarmNow - alarmPtr % prevRingTime
+                        call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                        alarmPtr % prevRingTime = alarmNow - nowRemainder
+                     else
+                        if (present(interval)) then
+                           alarmNow = alarmNow - interval
+                        end if
+
+                        nowInterval = alarmPtr % prevRingTime - alarmNow
+                        call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                        alarmPtr % prevRingTime = alarmNow + nowRemainder
+                     end if
                   end if
                end if
+               exit
             end if
-            exit
-         end if
-         alarmPtr => alarmPtr % next
-      end do
+            alarmPtr => alarmPtr % next
+         end do
+      end if
+
+      !$omp barrier
 
    end subroutine mpas_reset_clock_alarm
 
@@ -858,59 +937,66 @@ module mpas_timekeeping
       type (MPAS_Time_type) :: negativeNeighborRingTime
       type (MPAS_Time_type) :: positiveNeighborRingTime
       type (MPAS_Alarm_type), pointer :: alarmPtr
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       now = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       
-      alarmPtr => clock % alarmListHead
-      do while (associated(alarmPtr))
-         
-         if (.not. alarmPtr % isRecurring) then
-            alarmPtr % isSet = .true.            
-         else
-         
-            previousRingTime = alarmPtr % prevRingTime
-
-            if (previousRingTime <= now) then
+      if ( threadNum == 0 ) then
+         alarmPtr => clock % alarmListHead
+         do while (associated(alarmPtr))
             
-               do while(previousRingTime <= now)
-                  previousRingTime = previousRingTime + alarmPtr % ringTimeInterval
-               end do
-               positiveNeighborRingTime = previousRingTime
-            
-               do while(previousRingTime >= now)
-                  previousRingTime = previousRingTime - alarmPtr % ringTimeInterval
-               end do
-               negativeNeighborRingTime = previousRingTime
-            
+            if (.not. alarmPtr % isRecurring) then
+               alarmPtr % isSet = .true.            
             else
+            
+               previousRingTime = alarmPtr % prevRingTime
 
-               do while(previousRingTime >= now)
-                  previousRingTime = previousRingTime - alarmPtr % ringTimeInterval
-               end do
-               negativeNeighborRingTime = previousRingTime
+               if (previousRingTime <= now) then
+               
+                  do while(previousRingTime <= now)
+                     previousRingTime = previousRingTime + alarmPtr % ringTimeInterval
+                  end do
+                  positiveNeighborRingTime = previousRingTime
+               
+                  do while(previousRingTime >= now)
+                     previousRingTime = previousRingTime - alarmPtr % ringTimeInterval
+                  end do
+                  negativeNeighborRingTime = previousRingTime
+               
+               else
 
-               do while(previousRingTime <= now)
-                  previousRingTime = previousRingTime + alarmPtr % ringTimeInterval
-               end do
-               positiveNeighborRingTime = previousRingTime
-         
+                  do while(previousRingTime >= now)
+                     previousRingTime = previousRingTime - alarmPtr % ringTimeInterval
+                  end do
+                  negativeNeighborRingTime = previousRingTime
+
+                  do while(previousRingTime <= now)
+                     previousRingTime = previousRingTime + alarmPtr % ringTimeInterval
+                  end do
+                  positiveNeighborRingTime = previousRingTime
+            
+               end if
+
+               if (clock % direction == MPAS_FORWARD) then
+                  alarmPtr % prevRingTime = negativeNeighborRingTime
+               else
+                  alarmPtr % prevRingTime = positiveNeighborRingTime
+               end if
+
             end if
-
-            if (clock % direction == MPAS_FORWARD) then
-               alarmPtr % prevRingTime = negativeNeighborRingTime
-            else
-               alarmPtr % prevRingTime = positiveNeighborRingTime
-            end if
-
+   
+            alarmPtr => alarmPtr % next
+            
+         end do
+   
+         if (present(ierr)) then
+            if (ierr == ESMF_SUCCESS) ierr = 0
          end if
-   
-         alarmPtr => alarmPtr % next
-         
-      end do
-   
-      if (present(ierr)) then
-         if (ierr == ESMF_SUCCESS) ierr = 0
       end if
+
+      !$omp barrier
    
    end subroutine mpas_calibrate_alarms
 
@@ -1230,6 +1316,8 @@ module mpas_timekeeping
             if (present(ierr)) ierr = 1
             write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
             return
+         else ! no second decimals are present - do nothing here
+            deallocate(subStrings)
          end if
 
          call mpas_split_string(timeString_, "_", subStrings)
@@ -1492,14 +1580,20 @@ module mpas_timekeeping
 
    end function div_ti_n
 
+
    !-----------------------------------------------------------------------
    !  routine mpas_interval_division
    !
    !> \brief This routine computes the number intervals that fit into another interval.
-   !> \author Michael Duda, Doug Jacobsen
-   !> \date   10/02/2014
-   !> \details This routine is a wrapper to two different methods of computing
-   !> the number of intervals that fit into another interval.
+   !> \author Michael Duda, Doug Jacobsen, Daniel Henderson
+   !> \date   4 October 2016
+   !> \details 
+   !> This routine performs time-interval division on any intervals with cost
+   !> that is proportional to the log of the result, n.
+   !> It works by first performing a forward search, doubling intervals, until
+   !> it finds the first time larger than the target time. Once this time is
+   !> found, intervals are added (halving the interval) while the time is still
+   !> less than the target time.
    !>
    !-----------------------------------------------------------------------
    subroutine mpas_interval_division(ref_time, num, den, n, rem)
@@ -1512,191 +1606,80 @@ module mpas_timekeeping
       integer, intent(out) :: n
       type (MPAS_TimeInterval_type), intent(out) :: rem
 
-      type (MPAS_TimeInterval_type) :: newNum, newDen
-      integer :: days, secondsNum, secondsDen
-      integer (kind=I8KIND) :: seconds
-
-      if ( num % ti % YR == 0 .and. num % ti % MM == 0 .and. den % ti % YR == 0 .and. den % ti % MM == 0 ) then
-          call mpas_interval_division_log(num, den, n, rem)
-      else
-          call mpas_interval_division_linear(ref_time, num, den, n, rem)
-      end if
-
-   end subroutine mpas_interval_division
-
-   !-----------------------------------------------------------------------
-   !  routine mpas_interval_division_log
-   !
-   !> \brief This routine computes the number intervals that fit into another interval using a log search.
-   !> \author Michael Duda, Doug Jacobsen
-   !> \date   10/02/2014
-   !> \details This routine computes the number of intervals that fit into
-   !>   another time interval using a log search. It is preferred over the
-   !>   _linear alternative, but only works when the intervals are in terms of days
-   !>   or smaller.
-   !>
-   !-----------------------------------------------------------------------
-   subroutine mpas_interval_division_log(num, den, n, rem)
-
-      implicit none
-
-      type (MPAS_TimeInterval_type), intent(in) :: num
-      type (MPAS_TimeInterval_type), intent(in) :: den
-      integer, intent(out) :: n
-      type (MPAS_TimeInterval_type), intent(out) :: rem
+      integer :: m
+      type (MPAS_Time_type) :: target_time
+      type (MPAS_Time_type) :: updated_time
 
       type (MPAS_TimeInterval_type) :: temp
       type (MPAS_TimeInterval_type) :: zero
-      integer :: nn
+
 
       call mpas_set_timeInterval(zero, S=0)
-
-      !
-      ! If the numerator is smaller than the denominator, just return the numerator as the remainder
-      !
-      if (num < den) then
-         n = 0
-         rem = num
-         return
-      end if
-
 
       !
       ! Avoid division by zero
       !
       if (den == zero) then
-         write(stderrUnit,*) 'Error: Attempting to divide by zero.\n'
+         write(stderrUnit,*) 'Error: Attempting to divide by zero.'
          n = 0
          rem = zero
          return
       end if
 
 
-      !
-      ! Begin by finding the smallest multiple of the denominator that is at least as large as the numerator and is also a power of two
-      !
-      temp = den
-      nn = 1
-      do while (temp <= num)
-         temp = temp * 2
-         nn = nn * 2
-      end do
-
-      !
-      ! Dividing by two, we're guaranteed that temp is at most the value of the numerator
-      !
-      temp = temp / 2
-      nn = nn / 2
-
-      !
-      ! Work backwards to zero
-      !
-      n = 0
-      rem = num
-      do while (nn > 0)
-         if (temp <= rem) then
-            rem = rem - temp
-            n = n + nn
-         end if
-         nn = nn / 2
-         temp = temp / 2
-      end do
-
-   end subroutine mpas_interval_division_log
-
-
-   !-----------------------------------------------------------------------
-   !  routine mpas_interval_division_linear
-   !
-   !> \brief This routine computes the number intervals that fit into another interval using a linear search.
-   !> \author Michael Duda, Doug Jacobsen
-   !> \date   10/02/2014
-   !> \details This routine computes the number of intervals that fit into
-   !>   another time interval using a linear search. It is slower than the _log
-   !>   alternative, but works when intervals contain months or longer interval
-   !>   sections.
-   !>
-   !-----------------------------------------------------------------------
-   subroutine mpas_interval_division_linear(ref_time, num, den, n, rem)
-
-      implicit none
-
-      type (MPAS_Time_type), intent(in) :: ref_time
-      type (MPAS_TimeInterval_type), intent(in) :: num
-      type (MPAS_TimeInterval_type), intent(in) :: den
-      integer, intent(out) :: n
-      type (MPAS_TimeInterval_type), intent(out) :: rem
-
-      integer :: m
-
-      type (MPAS_Time_type) :: target_time
-      type (MPAS_Time_type) :: updated_time, mid_time
-
-      type (MPAS_TimeInterval_type) :: temp, mid_int
-      type (MPAS_TimeInterval_type) :: zero
-
       target_time = ref_time + num
-
       updated_time = ref_time + den
 
-      n = 0
+      !
+      ! numerator == denominator
+      !
+      if (target_time == updated_time) then
+         n = 1
+         rem = zero
+         return
+      end if
 
-      ! If the denominator is larger than the numerator, return 0 intervals,
-      ! and the numerator as the remainder
+
+      !
+      ! denominator > numerator
+      !
       if ( target_time < updated_time ) then
+         n = 0
          rem = num
          return
       end if
 
       ! One interval of den already fits into num
-      n = n + 1
-      temp = den
+      n = 1
 
-      ! Search forward, doubling the interval each time.
+      ! Search forward, doubling the interval each time
       do while (target_time > updated_time)
          n = n * 2
          temp = den * n
          updated_time = ref_time + temp
       end do
 
-      ! Setup midpoint of search
-      ! The last value of n puts updated_time after target_time, need to back off and find the final time.
       n = n / 2
       m = n
-      mid_int = den * n
-      temp = mid_int
-      updated_time = ref_time + mid_int + temp
-
-      ! Seach backward, halving the interval each time.
-      do while (target_time < updated_time)
-         m  = m / 2
-         temp = den * m
-         updated_time = ref_time + mid_int + temp
-      end do
-
-      ! Final number of interavls is n + m
-      n = n + m
-
-      ! Do a final linear search, just to ensure we aren't missing any divisions.
       temp = den * n
       updated_time = ref_time + temp
 
-      do while (target_time > updated_time)
-         n = n + 1
-         updated_time = updated_time + den
+
+      ! Search backward, halving the interval each time
+      do while ( m > 0 )
+         temp = den * m
+
+         if ( updated_time + temp <= target_time ) then
+            updated_time = updated_time + temp
+            n = n + m
+         end if
+
+         m = m / 2
       end do
 
-      ! Here, if updated_time is larger than target time. Need to subtract den once, and compute remainder
-      if ( updated_time > target_time ) then
-         updated_time = updated_time - den
-         n = n - 1
-         rem = target_time - updated_time
-      else
-         call mpas_set_timeInterval(rem, S=0)
-      end if
+      rem = target_time - updated_time
 
-      return
-   end subroutine mpas_interval_division_linear
+   end subroutine mpas_interval_division
 
 
    logical function eq_t_t(t1, t2)
@@ -2021,12 +2004,14 @@ module mpas_timekeeping
     !>   $m -> minute
     !>   $s -> second
     !>   $g -> multi-grid level
+    !>   $B -> block ID, if blockID == -1, $B -> 'all'
     !-----------------------------------------------------------------------
-    subroutine mpas_expand_string(timeStamp, inString, outString)!{{{
+    subroutine mpas_expand_string(timeStamp, blockID, inString, outString)!{{{
 
         implicit none
 
         character (len=*), intent(in) :: timeStamp
+        integer, intent(in) :: blockID
         character (len=*), intent(in) :: inString
         character (len=StrKIND), intent(out) :: outString
 
@@ -2084,8 +2069,36 @@ module mpas_timekeeping
                          call mpas_get_time(curTime, S=second)
                          write(timePart, '(i0.2)') second
                          outString = trim(outString) // trim(timePart)
+                     case ('S')
+                         call mpas_get_time(curTime, H=hour)
+                         call mpas_get_time(curTime, M=minute)
+                         call mpas_get_time(curTime, S=second)
+                         second = second + 60 * minute + 3600 * hour
+                         write(timePart, '(i0.5)') second
+                         outString = trim(outString) // trim(timePart)
 !                    case ('G')
                         ! Expands to multi-grid level
+                     case ('B')
+                        if ( blockID == -1 ) then
+                           write(timePart, '(a)') 'all'
+                        else if ( blockID < 10 ) then
+                           write(timePart, '(i1)') blockID
+                        else if ( blockID < 100 ) then
+                           write(timePart, '(i2)') blockID
+                        else if ( blockID < 1000 ) then
+                           write(timePart, '(i3)') blockID
+                        else if ( blockID < 10000 ) then
+                           write(timePart, '(i4)') blockID
+                        else if ( blockID < 100000 ) then
+                           write(timePart, '(i5)') blockID
+                        else if ( blockID < 1000000 ) then
+                           write(timePart, '(i6)') blockID
+                        else if ( blockID < 10000000 ) then
+                           write(timePart, '(i7)') blockID
+                        else
+                           call mpas_dmpar_global_abort('ERROR: Block expansion does not yet support block IDs with more than 7 digits')
+                        end if
+                        outString = trim(outString) // trim(timePart)
                      case default
                         write(stderrUnit, *) 'ERROR: mpas_expand_string option $', inString(i:i), ' is not a valid expansion character.'
                         call mpas_dmpar_global_abort('ERROR: mpas_timekeeping')
@@ -2110,6 +2123,8 @@ end module mpas_timekeeping
 
 
 subroutine wrf_error_fatal(msg)
+
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    implicit none
 

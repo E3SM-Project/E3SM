@@ -22,6 +22,7 @@ module mpas_tracer_advection_mono
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_io_units
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use mpas_tracer_advection_helpers
 

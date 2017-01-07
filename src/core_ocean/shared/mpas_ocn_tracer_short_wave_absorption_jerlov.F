@@ -148,7 +148,7 @@ contains
              depth = depth + refBottomDepth(k)
 
              call ocn_get_jerlov_fraction(depth, weights(k+1))
-             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1)) / layerThickness(k, iCell)
+             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
            end do
          end do
       else
@@ -158,7 +158,7 @@ contains
              depth = depth + layerThickness(k, iCell)
 
              call ocn_get_jerlov_fraction(depth, weights(k+1))
-             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1)) / layerThickness(k, iCell)
+             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
            end do
          end do
       end if

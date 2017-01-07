@@ -12,6 +12,8 @@ module li_core_interface
    use mpas_dmpar
    use mpas_constants
    use mpas_io_units
+   use mpas_attlist
+   use mpas_abort, only : mpas_dmpar_global_abort
    use li_core
 
    public
@@ -42,6 +44,7 @@ module li_core_interface
       core % get_mesh_stream => li_get_mesh_stream
       core % setup_immutable_streams => li_setup_immutable_streams
       core % setup_derived_dimensions => li_setup_derived_dimensions
+      core % setup_decomposed_dimensions => li_setup_decomposed_dimensions
       core % setup_block => li_setup_block
       core % setup_namelist => li_setup_namelists
 
@@ -85,11 +88,12 @@ module li_core_interface
 !>   *not* allocated until after this routine is called.
 !
 !-----------------------------------------------------------------------
-   function li_setup_packages(configPool, packagePool) result(ierr)
+   function li_setup_packages(configPool, packagePool, iocontext) result(ierr)
 
       implicit none
       type (mpas_pool_type), intent(inout) :: configPool
       type (mpas_pool_type), intent(inout) :: packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
       ierr = 0

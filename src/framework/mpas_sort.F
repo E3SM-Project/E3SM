@@ -128,6 +128,7 @@ module mpas_sort
       integer :: pivot_value
       integer, dimension(1) :: temp
       integer, dimension(1000) :: lstack, rstack
+      real :: rnd
 
       if (nArray < 1) return
 
@@ -141,7 +142,8 @@ module mpas_sort
          r = rstack(top)
          top = top - 1
 
-         pivot = (l+r)/2
+         call random_number(rnd)
+         pivot = l + int(rnd * real(r-l))
 
          pivot_value = array(pivot)
          temp(1) = array(pivot)
@@ -201,6 +203,7 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
       real (kind=RKIND) :: pivot_value
       real (kind=RKIND), dimension(1) :: temp
       integer, dimension(1000) :: lstack, rstack
+      real :: rnd
 
       if (nArray < 1) return
 
@@ -214,7 +217,8 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
          r = rstack(top)
          top = top - 1
 
-         pivot = (l+r)/2
+         call random_number(rnd)
+         pivot = l + int(rnd * real(r-l))
 
          pivot_value = array(pivot)
          temp(1) = array(pivot)
@@ -274,6 +278,7 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
       integer :: pivot_value
       integer, dimension(2) :: temp
       integer, dimension(1000) :: lstack, rstack
+      real :: rnd
 
       if (nArray < 1) return
 
@@ -287,7 +292,8 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
          r = rstack(top)
          top = top - 1
 
-         pivot = (l+r)/2
+         call random_number(rnd)
+         pivot = l + int(rnd * real(r-l))
 
          pivot_value = array(1,pivot)
          temp(:) = array(:,pivot)
@@ -347,6 +353,7 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
       real (kind=RKIND) :: pivot_value
       real (kind=RKIND), dimension(2) :: temp
       integer, dimension(1000) :: lstack, rstack
+      real :: rnd
 
       if (nArray < 1) return
 
@@ -360,7 +367,8 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
          r = rstack(top)
          top = top - 1
 
-         pivot = (l+r)/2
+         call random_number(rnd)
+         pivot = l + int(rnd * real(r-l))
 
          pivot_value = array(1,pivot)
          temp(:) = array(:,pivot)

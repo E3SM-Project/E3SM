@@ -3,8 +3,8 @@ MODULE module_sf_bem
 !  Variables and constants used in the BEM module
 ! -----------------------------------------------------------------------
 
+use mpas_abort, only : mpas_dmpar_global_abort
 #ifdef mpas
-!USE mpas_dmpar, only : mpas_dmpar_global_abort
 #define FATAL_ERROR(M) call mpas_dmpar_global_abort( M )
 #else
 #define FATAL_ERROR(M) write(0,*) M ; stop

@@ -13,8 +13,14 @@ module ocn_core_interface
    use mpas_constants
    use mpas_io_units
    use ocn_core
+   use mpas_attlist
 
-   public
+   use ocn_forward_mode
+   use ocn_analysis_mode
+
+   private
+
+   public :: ocn_setup_core, ocn_setup_domain
 
    contains
    !***********************************************************************
@@ -42,6 +48,7 @@ module ocn_core_interface
       core % get_mesh_stream => ocn_get_mesh_stream
       core % setup_immutable_streams => ocn_setup_immutable_streams
       core % setup_derived_dimensions => ocn_setup_derived_dimensions
+      core % setup_decomposed_dimensions => ocn_setup_decomposed_dimensions
       core % setup_block => ocn_setup_block
       core % setup_namelist => ocn_setup_namelists
 
@@ -86,18 +93,19 @@ module ocn_core_interface
    !>   *not* allocated until after this routine is called.
    !
    !-----------------------------------------------------------------------
-   function ocn_setup_packages(configPool, packagePool) result(ierr)!{{{
+   function ocn_setup_packages(configPool, packagePool, iocontext) result(ierr)!{{{
 
-      use mpas_derived_types
       use ocn_analysis_driver
-
-      implicit none
 
       type (mpas_pool_type), intent(inout) :: configPool
       type (mpas_pool_type), intent(inout) :: packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
+
       integer :: ierr
+
       integer :: err_tmp
 
+      logical, pointer :: forwardModeActive, analysisModeActive
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
       logical, pointer :: surfaceRestoringActive
@@ -107,10 +115,12 @@ module ocn_core_interface
 
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_frazil_ice_formation
-      character (len=StrKIND), pointer :: config_time_integrator, config_forcing_type, config_pressure_gradient_type
+      character (len=StrKIND), pointer :: config_time_integrator, config_forcing_type
+      character (len=StrKIND), pointer :: config_ocean_run_mode, config_pressure_gradient_type
 
-      ierr = 0
-
+      ! Get Packages
+      call mpas_pool_get_package(packagePool, 'forwardModeActive', forwardModeActive)
+      call mpas_pool_get_package(packagePool, 'analysisModeActive', analysisModeActive)
       call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
       call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
       call mpas_pool_get_package(packagePool, 'surfaceRestoringActive', surfaceRestoringActive)
@@ -118,39 +128,49 @@ module ocn_core_interface
       call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
       call mpas_pool_get_package(packagePool, 'inSituEOSActive', inSituEOSActive)
 
-      call mpas_pool_get_config(configPool, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
-      call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
-      call mpas_pool_get_config(configPool, 'config_forcing_type', config_forcing_type)
-      call mpas_pool_get_config(configPool, 'config_frazil_ice_formation', config_frazil_ice_formation)
-      call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
+      call mpas_pool_get_config(configPool, 'config_ocean_run_mode', config_ocean_run_mode)
 
-      if (config_use_freq_filtered_thickness) then
-         thicknessFilterActive = .true.
+      ierr = 0
+
+      if ( trim(config_ocean_run_mode) == 'forward' ) then
+         forwardModeActive = .true.
+
+         call mpas_pool_get_config(configPool, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
+         call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
+         call mpas_pool_get_config(configPool, 'config_forcing_type', config_forcing_type)
+         call mpas_pool_get_config(configPool, 'config_frazil_ice_formation', config_frazil_ice_formation)
+         call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
+
+         if (config_use_freq_filtered_thickness) then
+            thicknessFilterActive = .true.
+         end if
+
+         if (config_time_integrator == trim('split_explicit') &
+            .or. config_time_integrator == trim('unsplit_explicit') ) then
+
+            splitTimeIntegratorActive = .true.
+         end if
+
+         if (config_forcing_type == trim('restoring')) then
+            surfaceRestoringActive = .true.
+         else if (config_forcing_type == trim('bulk')) then
+            bulkForcingActive = .true.
+         end if
+
+         if (config_frazil_ice_formation) then
+            frazilIceActive = .true.
+         end if
+
+         if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
+            inSituEOSActive = .true.
+         end if
+
+         call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)
+         ierr = ior(ierr, err_tmp)
+      else if (trim(config_ocean_run_mode) == 'analysis' ) then
+         analysisModeActive = .true.
+         call ocn_analysis_setup_packages(configPool, packagePool, ierr)
       end if
-
-      if (config_time_integrator == trim('split_explicit') &
-         .or. config_time_integrator == trim('unsplit_explicit') ) then
-
-         splitTimeIntegratorActive = .true.
-      end if
-
-      if (config_forcing_type == trim('restoring')) then
-         surfaceRestoringActive = .true.
-      else if (config_forcing_type == trim('bulk')) then
-         bulkForcingActive = .true.
-      end if
-
-      if (config_frazil_ice_formation) then
-         frazilIceActive = .true.
-      end if
-
-      if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
-         inSituEOSActive = .true.
-      end if
-
-      call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)
-      ierr = ior(ierr, err_tmp)
-
 
    end function ocn_setup_packages!}}}
 
@@ -221,7 +241,16 @@ module ocn_core_interface
       type (mpas_pool_type), intent(inout) :: configs
       integer :: ierr
 
-      call ocn_simulation_clock_init(core_clock, configs, ierr)
+      character(len=StrKIND), pointer :: config_ocean_run_mode
+
+      call mpas_pool_get_config(configs, 'config_ocean_run_mode', config_ocean_run_mode)
+
+      if ( trim(config_ocean_run_mode) == 'forward' ) then
+         ierr = ocn_forward_mode_setup_clock(core_clock, configs)
+      else if ( trim(config_ocean_run_mode) == 'analysis' ) then
+         ierr = ocn_analysis_mode_setup_clock(core_clock, configs)
+      end if
+
 
    end function ocn_setup_clock!}}}
 
@@ -252,17 +281,14 @@ module ocn_core_interface
       integer :: ierr
 
       logical, pointer :: config_do_restart
+      character(len=StrKIND), pointer :: config_ocean_run_mode
 
       ierr = 0
 
-      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(configs, 'config_ocean_run_mode', config_ocean_run_mode)
 
-      if (.not. associated(config_do_restart)) then
-         write(stream,'(a)') ''
-      else if (config_do_restart) then
-         write(stream,'(a)') 'restart'
-      else
-         write(stream,'(a)') 'input'
+      if ( trim(config_ocean_run_mode) == 'forward' .or. trim(config_ocean_run_mode) == 'analysis' ) then
+         write(stream,'(a)') 'mesh'
       end if
 
    end function ocn_get_mesh_stream!}}}

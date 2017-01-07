@@ -25,6 +25,7 @@ module ocn_forcing
    use mpas_timekeeping
    use mpas_io_units
    use mpas_dmpar
+   use mpas_abort, only : mpas_dmpar_global_abort
    use ocn_forcing_bulk
    use ocn_forcing_restoring
    use ocn_constants
@@ -47,7 +48,7 @@ module ocn_forcing
 
    public :: ocn_forcing_build_arrays, &
              ocn_forcing_init, &
-             ocn_forcing_build_transmission_array, &
+             ocn_forcing_build_fraction_absorbed_array, &
              ocn_forcing_transmission
 
    !--------------------------------------------------------------------
@@ -206,18 +207,18 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_forcing_build_transmission_array
+!  routine ocn_forcing_build_fraction_absorbed_array
 !
-!> \brief   Transmission coefficient array for surface forcing.
+!> \brief   fraction absorbed coefficient array for surface forcing.
 !> \author  Doug Jacobsen
 !> \date    10/03/2013
 !> \details 
-!>  This subroutine builds the transmission coefficient array for use in
+!>  This subroutine builds the fractionAbsorbed coefficient array for use in
 !>  applying surface fluxes deeper than the surface layer.
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_forcing_build_transmission_array(meshPool, statePool, forcingPool, err, timeLevelIn)!{{{
+    subroutine ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, err, timeLevelIn)!{{{
         type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
         type (mpas_pool_type), intent(in) :: statePool !< Input: State information
         type (mpas_pool_type), intent(inout) :: forcingPool !< Input/Output: Forcing information
@@ -232,7 +233,7 @@ contains
 
         real (kind=RKIND) :: zTop, zBot, transmissionCoeffTop, transmissionCoeffBot
 
-        real (kind=RKIND), dimension(:,:), pointer :: layerThickness, transmissionCoefficients
+        real (kind=RKIND), dimension(:,:), pointer :: layerThickness, fractionAbsorbed
 
         integer :: iCell, k, timeLevel
         integer, pointer :: nCells
@@ -253,7 +254,7 @@ contains
 
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
-        call mpas_pool_get_array(forcingPool, 'transmissionCoefficients', transmissionCoefficients)
+        call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
 
         do iCell = 1, nCells
            zTop = 0.0_RKIND
@@ -262,14 +263,14 @@ contains
               zBot = zTop - layerThickness(k,iCell)
               transmissionCoeffBot = ocn_forcing_transmission(zBot)
 
-              transmissionCoefficients(k, iCell) = transmissionCoeffTop - transmissionCoeffBot
+              fractionAbsorbed(k, iCell) = transmissionCoeffTop - transmissionCoeffBot
 
               zTop = zBot
               transmissionCoeffTop = transmissionCoeffBot
            end do
         end do
 
-    end subroutine ocn_forcing_build_transmission_array!}}}
+    end subroutine ocn_forcing_build_fraction_absorbed_array!}}}
 
 !***********************************************************************
 !

@@ -91,5 +91,6 @@
       integer :: fieldType
       integer :: nDims
       integer :: nTimeLevels
+      integer :: nHaloLayers
       logical :: isActive
    end type mpas_pool_field_info_type

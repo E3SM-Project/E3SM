@@ -205,40 +205,83 @@ module mpas_stream_list
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_list_query
     !
-    !> \brief Get a stream from a stream list
+    !> \brief Get streams from a stream list
     !> \author Michael Duda, Doug Jacobsen
     !> \date   08/06/2014
     !> \details
-    !>  Searches through a stream list, and returns a pointer for the stream with a matching name.
+    !>  This function allows one to search through a stream list for a set of
+    !>  matching streams. In the first call to this function, the stream
+    !>  argument should be a null pointer. When called a single time, this
+    !>  function sets the stream argument to the first stream in the list that
+    !>  matches the streamPattern argument. Upon subsequent calls, searching
+    !>  begins at the first stream *after* the stream argument, to allow one to
+    !>  find all streams that match streamPattern.  Each time a valid stream is
+    !>  found, this function returns .true. and if no more streams are found, it
+    !>  will return .false.
     !
     !-----------------------------------------------------------------------
-    logical function MPAS_stream_list_query(list, streamName, stream, ierr) result(found) !{{{
+    logical function MPAS_stream_list_query(list, streamPattern, stream, ierr) result(found) !{{{
+
+        use iso_c_binding, only: c_char, c_int
+        use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
 
         implicit none
 
         type (MPAS_stream_list_type), intent(in) :: list
-        character (len=*), intent(in) :: streamName
+        character (len=*), intent(in) :: streamPattern
         type (MPAS_stream_list_type), pointer :: stream
         integer, intent(out), optional :: ierr
 
+        character(kind=c_char), dimension(StrKIND+1) :: c_pattern
+        character(kind=c_char), dimension(StrKIND+1) :: c_test_string
+        integer(kind=c_int) :: c_match
+
         type (MPAS_stream_list_type), pointer :: node
 
+        interface
+           subroutine check_regex_match(pattern, string, imatch) bind(c)
+              use iso_c_binding, only: c_char, c_int
+              character(kind=c_char), dimension(*), intent(in) :: pattern, string
+              integer(kind=c_int), intent(out) :: imatch
+           end subroutine check_regex_match
+        end interface
 
         LIST_DEBUG_WRITE(' -- Called MPAS_stream_list_query()')
+
+        call mpas_f_to_c_string(streamPattern, c_pattern)
 
         if (present(ierr)) ierr = MPAS_STREAM_LIST_NOERR
         found = .false.
 
         ! Return if no streams exist in stream list
         if ( list % nItems == 0 ) then
-            LIST_DEBUG_WRITE(' -- Item '//trim(streamName)//' not found in list.')
+            LIST_DEBUG_WRITE(' -- No items matching '//trim(streamPattern)//' found in list.')
             nullify(stream)
             return
         end if
 
-        node => list % head
+        if ( associated(stream) ) then
+           if ( associated(stream % next) ) then
+              node => stream % next
+           else
+              nullify(node)
+           end if
+        else
+           node => list % head
+        end if
+
         do while (associated(node))
-            if (node % name == streamName) then
+            call mpas_f_to_c_string(node % name, c_test_string)
+
+            call check_regex_match(c_pattern, c_test_string, c_match)
+
+            if ( c_match == -1 ) then
+                write(stderrUnit, *) 'ERROR: Regular expression matching failed.'
+                write(stderrUnit, *) '       Pattern was: ', trim(streamPattern)
+                write(stderrUnit, *) '       Test string was: ', trim(node % name)
+            end if
+
+            if ( c_match == 1 ) then
                 found = .true.
                 stream => node
                 return
@@ -246,7 +289,7 @@ module mpas_stream_list
             node => node % next
         end do
 
-        LIST_DEBUG_WRITE(' -- Item '//trim(streamName)//' not found in list.')
+        LIST_DEBUG_WRITE(' -- No items matching '//trim(streamPattern)//' found in list.')
         nullify(stream)
 
     end function MPAS_stream_list_query !}}}

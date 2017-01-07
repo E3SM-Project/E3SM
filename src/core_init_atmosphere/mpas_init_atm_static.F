@@ -9,11 +9,11 @@
  module mpas_init_atm_static
 !==================================================================================================
  use atm_advection
-! use mpas_configure
  use mpas_dmpar
  use mpas_pool_routines
  use init_atm_hinterp
  use init_atm_llxy
+ use mpas_abort, only : mpas_dmpar_global_abort
 
  use mpas_atmphys_utilities
 
@@ -209,10 +209,11 @@
        ismax_lu = 20
        write(mminlu,'(a)') 'MODIFIED_IGBP_MODIS_NOAH'
     case default
-         write(0,*) '*****************************************************************'
-         write(0,*) 'Invalid land use dataset '''//trim(config_landuse_data)//''' selected for config_landuse_data'
-         write(0,*) '   Possible options are: ''USGS'', ''MODIFIED_IGBP_MODIS_NOAH'''
-         write(0,*) '*****************************************************************'
+         call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Invalid land use dataset '''//trim(config_landuse_data) &
+                                       //''' selected for config_landuse_data',                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   Possible options are: ''USGS'', ''MODIFIED_IGBP_MODIS_NOAH''',   deferredAbort=.true.)
+         call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
          call mpas_dmpar_global_abort('Please correct the namelist.')
  end select surface_input_select0
 
@@ -283,10 +284,11 @@
     case('MODIFIED_IGBP_MODIS_NOAH')
        geog_sub_path = 'modis_landuse_20class_30s/'
     case default
-       write(0,*) '*****************************************************************'
-       write(0,*) 'Invalid land use dataset '''//trim(config_landuse_data)//''' selected for config_landuse_data'
-       write(0,*) '   Possible options are: ''USGS'', ''MODIFIED_IGBP_MODIS_NOAH'''
-       write(0,*) '*****************************************************************'
+       call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
+       call mpas_dmpar_global_abort('Invalid land use dataset '''//trim(config_landuse_data) &
+                                     //''' selected for config_landuse_data',                            deferredAbort=.true.)
+       call mpas_dmpar_global_abort('   Possible options are: ''USGS'', ''MODIFIED_IGBP_MODIS_NOAH''',   deferredAbort=.true.)
+       call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
        call mpas_dmpar_global_abort('Please correct the namelist.')
  end select surface_input_select1
  nx = 1200

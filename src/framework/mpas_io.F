@@ -11,6 +11,7 @@ module mpas_io
    use mpas_attlist
    use mpas_dmpar
    use mpas_io_units
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use pio
    use piolib_mod
@@ -21,6 +22,14 @@ module mpas_io
    integer, parameter :: PIO_REALKIND = PIO_REAL
 #else
    integer, parameter :: PIO_REALKIND = PIO_DOUBLE
+#endif
+
+   integer, parameter :: MPAS_INT_FILLVAL = NF_FILL_INT
+   character, parameter :: MPAS_CHAR_FILLVAL = achar(NF_FILL_CHAR)
+#ifdef SINGLE_PRECISION
+   real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = NF_FILL_FLOAT
+#else
+   real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = NF_FILL_DOUBLE
 #endif
    
    interface MPAS_io_get_var
@@ -36,6 +45,7 @@ module mpas_io
       module procedure MPAS_io_get_var_real4d
       module procedure MPAS_io_get_var_real5d
       module procedure MPAS_io_get_var_char0d
+      module procedure MPAS_io_get_var_char1d
    end interface MPAS_io_get_var
 
    interface MPAS_io_put_var
@@ -51,6 +61,7 @@ module mpas_io
       module procedure MPAS_io_put_var_real4d
       module procedure MPAS_io_put_var_real5d
       module procedure MPAS_io_put_var_char0d
+      module procedure MPAS_io_put_var_char1d
    end interface MPAS_io_put_var
 
    interface MPAS_io_get_att
@@ -69,46 +80,64 @@ module mpas_io
       module procedure MPAS_io_put_att_text
    end interface MPAS_io_put_att
 
-   type (iosystem_desc_t), pointer, private, save :: pio_iosystem
-   type (decomplist_type), pointer, private :: decomp_list => null()
-   type (dm_info), private :: local_dminfo
-   integer, private:: master_pio_iotype = -999
-   
-
    contains
 
 
-   subroutine MPAS_io_init(dminfo, io_task_count, io_task_stride, io_system, ierr)
+   subroutine MPAS_io_init(ioContext, io_task_count, io_task_stride, io_system, ierr)
 
       implicit none
 
-      type (dm_info), intent(in) :: dminfo
+      type (mpas_io_context_type), intent(inout) :: ioContext
       integer, intent(in) :: io_task_count
       integer, intent(in) :: io_task_stride
       type (iosystem_desc_t), optional, pointer :: io_system
       integer, intent(out), optional :: ierr
 
+      integer :: local_ierr
+
+      local_ierr = 0
+
 !      write(stderrUnit,*) 'Called MPAS_io_init()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
-      local_dminfo = dminfo
-
       if (present(io_system)) then
-         pio_iosystem => io_system
+         ioContext % pio_iosystem => io_system
       else
 !write(stderrUnit,*) 'MGD PIO_init'
-         allocate(pio_iosystem)
-         call PIO_init(local_dminfo % my_proc_id, &     ! comp_rank
-                       local_dminfo % comm,       &     ! comp_comm
+         if ( io_task_count < 0 .or. io_task_count > ioContext % dminfo % nprocs ) then
+            write(stderrUnit, *) ' ERROR: PIO io_task_count has a value of ', io_task_count
+            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            local_ierr = 1
+         end if
+
+         if ( io_task_stride <= 0 .or. io_task_stride > ioContext % dminfo % nprocs ) then
+            write(stderrUnit, *) ' ERROR: PIO io_task_stride has a value of ', io_task_stride
+            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            local_ierr = 1
+         end if
+
+         if ( io_task_stride * io_task_count > ioContext % dminfo % nprocs ) then
+            write(stderrUnit, *) ' ERROR: PIO io_task_stride * io_task_count has a value of ', io_task_stride * io_task_count
+            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            local_ierr = 1
+         end if
+
+         if ( local_ierr /= 0 ) then
+            call mpas_dmpar_global_abort('ERROR: Invalid PIO configuration.')
+         end if
+
+         allocate(ioContext % pio_iosystem)
+         call PIO_init(ioContext % dminfo % my_proc_id, &  ! comp_rank
+                       ioContext % dminfo % comm,       &  ! comp_comm
                        io_task_count,             &     ! num_iotasks
                        0,                         &     ! num_aggregator
                        io_task_stride,            &     ! stride
                        PIO_rearr_box,             &     ! rearr
-                       pio_iosystem)                    ! iosystem
+                       ioContext % pio_iosystem)           ! iosystem
   
       end if
 
-      call pio_seterrorhandling(pio_iosystem, PIO_BCAST_ERROR)
+      call pio_seterrorhandling(ioContext % pio_iosystem, PIO_BCAST_ERROR)
 
    end subroutine MPAS_io_init
 
@@ -124,10 +153,11 @@ module mpas_io
 !>  This routine sets the master io type for use with PIO.
 !
 !-----------------------------------------------------------------------
-   subroutine MPAS_io_set_iotype(io_type_in, ierr)
+   subroutine MPAS_io_set_iotype(ioContext, io_type_in, ierr)
 
       implicit none
 
+      type (mpas_io_context_type), intent(inout) :: ioContext
       integer, intent(in) :: io_type_in
       integer, intent(out), optional :: ierr
 
@@ -135,7 +165,7 @@ module mpas_io
          ierr = MPAS_IO_NOERR
       end if
 
-      master_pio_iotype = io_type_in
+      ioContext % master_pio_iotype = io_type_in
 
    end subroutine MPAS_io_set_iotype
 
@@ -152,28 +182,30 @@ module mpas_io
 !>  "unset" value.
 !
 !-----------------------------------------------------------------------
-   subroutine MPAS_io_unset_iotype(ierr)
+   subroutine MPAS_io_unset_iotype(ioContext, ierr)
 
       implicit none
 
+      type (mpas_io_context_type), intent(inout) :: ioContext
       integer, intent(out), optional :: ierr
 
       if (present(ierr)) then
          ierr = MPAS_IO_NOERR
       end if
 
-      master_pio_iotype = -999
+      ioContext % master_pio_iotype = -999
 
    end subroutine MPAS_io_unset_iotype
 
    
-   type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, clobber_file, truncate_file, ierr)
+   type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, ioContext, clobber_file, truncate_file, ierr)
 
       implicit none
 
       character (len=*), intent(in) :: filename
       integer, intent(in) :: mode
       integer, intent(in) :: ioformat
+      type (mpas_io_context_type), pointer :: ioContext
       logical, intent(in), optional :: clobber_file
       logical, intent(in), optional :: truncate_file
       integer, intent(out), optional :: ierr
@@ -218,9 +250,10 @@ module mpas_io
       MPAS_io_open % filename = filename
       MPAS_io_open % iomode   = mode
       MPAS_io_open % ioformat = ioformat
+      MPAS_io_open % ioContext => ioContext
 
-      if (master_pio_iotype /= -999) then
-         pio_iotype = master_pio_iotype
+      if (ioContext % master_pio_iotype /= -999) then
+         pio_iotype = ioContext % master_pio_iotype
          pio_mode = PIO_64BIT_OFFSET
       else
          if (ioformat == MPAS_IO_PNETCDF) then
@@ -240,10 +273,10 @@ module mpas_io
 
       if (mode == MPAS_IO_WRITE) then
 !write(stderrUnit,*) 'MGD PIO_createfile'
-         if (local_dminfo % my_proc_id == 0) then
+         if (ioContext % dminfo % my_proc_id == 0) then
             inquire(file=trim(filename), exist=exists)
          end if
-         call mpas_dmpar_bcast_logical(local_dminfo, exists)
+         call mpas_dmpar_bcast_logical(ioContext % dminfo, exists)
 
          ! If the file exists and we are not allowed to clobber it, return an
          !    appropriate error code
@@ -253,10 +286,10 @@ module mpas_io
          end if
  
          if (exists .and. (.not. local_truncate)) then
-            pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_write)
+            pio_ierr = PIO_openfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_write)
             MPAS_io_open % preexisting_file = .true.
          else
-            pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), pio_mode)
+            pio_ierr = PIO_createfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), pio_mode)
             if (exists) then
                write(stderrUnit,'(a)') 'MPAS I/O: Truncating existing data in output file '//trim(filename)
             end if
@@ -269,7 +302,7 @@ module mpas_io
             return
          end if
 !write(stderrUnit,*) 'MGD PIO_openfile'
-         pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
+         pio_ierr = PIO_openfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
       endif
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
@@ -286,10 +319,10 @@ module mpas_io
          end if
 
          ! Here we're depending on the undocumented behavior of PIO to return a
-         ! -1 dimension ID when an unlimited dimension is not found.  This
+         ! negative dimension ID when an unlimited dimension is not found.  This
          ! might change in the future, causing this code to break, though it
          ! shouldn't break for files with unlimited dimensions.
-         if ( MPAS_io_open % pio_unlimited_dimid /= -1 ) then
+         if ( MPAS_io_open % pio_unlimited_dimid >= 0 ) then
             pio_ierr = PIO_inq_dimlen(MPAS_io_open % pio_file, MPAS_io_open % pio_unlimited_dimid, MPAS_io_open % preexisting_records)
             if (pio_ierr /= PIO_noerr) then
                if (present(ierr)) ierr = MPAS_IO_ERR_PIO
@@ -848,7 +881,7 @@ module mpas_io
          call MPAS_io_inq_var(handle, fieldname, inq_fieldtype, inq_ndims, inq_dimnames, ierr=pio_ierr)
          if (pio_ierr /= MPAS_IO_ERR_PIO) then
 
-            ! Verify that the type and dimensions matche...
+            ! Verify that the type and dimensions match...
             if (fieldtype == MPAS_IO_DOUBLE) then
                if (local_precision == MPAS_IO_SINGLE_PRECISION) then
                   pio_type = MPAS_IO_REAL
@@ -933,8 +966,12 @@ module mpas_io
             pio_type = PIO_double
          end if
       else if (new_fieldlist_node % fieldhandle % field_type == MPAS_IO_REAL) then
-         !TODO: handle up-conversion from single-precision to double-precision in file?
-         pio_type = PIO_real
+         if (local_precision == MPAS_IO_DOUBLE_PRECISION) then
+            pio_type = PIO_double
+            new_fieldlist_node % fieldhandle % field_type = MPAS_IO_DOUBLE
+         else
+            pio_type = PIO_real
+         end if
       else if (new_fieldlist_node % fieldhandle % field_type == MPAS_IO_INT) then
          pio_type = PIO_int
       else if (new_fieldlist_node % fieldhandle % field_type == MPAS_IO_CHAR) then
@@ -1030,7 +1067,7 @@ module mpas_io
 
       implicit none
 
-      type (MPAS_IO_Handle_type), intent(in) :: handle
+      type (MPAS_IO_Handle_type), intent(inout) :: handle
       character (len=*), intent(in) :: fieldname
       integer, dimension(:), intent(in) :: indices
       integer, intent(out), optional :: ierr
@@ -1038,12 +1075,12 @@ module mpas_io
       type (fieldlist_type), pointer :: field_cursor
       integer :: pio_type
       integer :: ndims
-      integer (kind=PIO_OFFSET) :: pd, indx
+      integer (kind=MPAS_IO_OFFSET_KIND) :: pd, indx
       integer :: i 
       integer :: early_return, early_return_global
-      integer (kind=PIO_OFFSET) :: i1, i2, i3, i4, i5
+      integer (kind=MPAS_IO_OFFSET_KIND) :: i1, i2, i3, i4, i5
       integer, dimension(:), pointer :: dimlist
-      integer (kind=PIO_OFFSET), dimension(:), pointer :: compdof
+      integer (kind=MPAS_IO_OFFSET_KIND), dimension(:), pointer :: compdof
       type (decomplist_type), pointer :: decomp_cursor, new_decomp
 
 !      write(stderrUnit,*) 'Called MPAS_io_set_var_indices()'
@@ -1086,7 +1123,7 @@ module mpas_io
       !
       ! Check whether a suitable decomposition already exists
       !
-      decomp_cursor => decomp_list
+      decomp_cursor => handle % ioContext % decomp_list
 !if (.not. associated(decomp_cursor)) write(stderrUnit,*) 'No existing decompositions to check...'
       early_return = 0
       DECOMP_LOOP: do while (associated(decomp_cursor))
@@ -1161,7 +1198,7 @@ module mpas_io
       ! 
       ! If all tasks have set early_return to 1, then we have a usable decomposition and can return
       ! 
-      call mpas_dmpar_min_int(local_dminfo, early_return, early_return_global)
+      call mpas_dmpar_min_int(handle % ioContext % dminfo, early_return, early_return_global)
       if (early_return_global == 1) then
          return
       end if
@@ -1204,11 +1241,11 @@ module mpas_io
       do i=1,ndims-1
          dimlist(i) = field_cursor % fieldhandle % dims(i) % dimsize
          new_decomp % decomphandle % dims(i) = dimlist(i)
-         pd = pd * int(dimlist(i),PIO_OFFSET)
+         pd = pd * int(dimlist(i),MPAS_IO_OFFSET_KIND)
       end do
       new_decomp % decomphandle % dims(ndims) = field_cursor % fieldhandle % dims(ndims) % dimsize
       dimlist(ndims) = size(indices)
-      pd = pd * int(dimlist(ndims),PIO_OFFSET)
+      pd = pd * int(dimlist(ndims),MPAS_IO_OFFSET_KIND)
 
       allocate(compdof(pd)) 
 
@@ -1220,10 +1257,10 @@ module mpas_io
          do i2=1,dimlist(2)
          do i1=1,dimlist(1)
             compdof(indx) = i1 &
-                          + (i2-1)*int(dimlist(1),PIO_OFFSET) &
-                          + (i3-1)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET) &
-                          + (i4-1)*int(dimlist(3),PIO_OFFSET)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET) &
-                          + int(indices(i5)-1,PIO_OFFSET)*int(dimlist(4),PIO_OFFSET)*int(dimlist(3),PIO_OFFSET)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET)
+                          + (i2-1)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + (i3-1)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + (i4-1)*int(dimlist(3),MPAS_IO_OFFSET_KIND)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + int(indices(i5)-1,MPAS_IO_OFFSET_KIND)*int(dimlist(4),MPAS_IO_OFFSET_KIND)*int(dimlist(3),MPAS_IO_OFFSET_KIND)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
          end do
@@ -1236,9 +1273,9 @@ module mpas_io
          do i2=1,dimlist(2)
          do i1=1,dimlist(1)
             compdof(indx) = i1 &
-                          + (i2-1)*int(dimlist(1),PIO_OFFSET) &
-                          + (i3-1)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET) &
-                          + int(indices(i4)-1,PIO_OFFSET)*int(dimlist(3),PIO_OFFSET)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET)
+                          + (i2-1)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + (i3-1)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + int(indices(i4)-1,MPAS_IO_OFFSET_KIND)*int(dimlist(3),MPAS_IO_OFFSET_KIND)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
          end do
@@ -1248,7 +1285,7 @@ module mpas_io
          do i3=1,dimlist(3)
          do i2=1,dimlist(2)
          do i1=1,dimlist(1)
-            compdof(indx) = i1 + (i2-1)*int(dimlist(1),PIO_OFFSET) + int(indices(i3)-1,PIO_OFFSET)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET)
+            compdof(indx) = i1 + (i2-1)*int(dimlist(1),MPAS_IO_OFFSET_KIND) + int(indices(i3)-1,MPAS_IO_OFFSET_KIND)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
          end do
@@ -1256,27 +1293,27 @@ module mpas_io
       else if (ndims == 2) then
          do i2=1,dimlist(2)
          do i1=1,dimlist(1)
-            compdof(indx) = i1 + int(indices(i2)-1,PIO_OFFSET)*int(dimlist(1),PIO_OFFSET)
+            compdof(indx) = i1 + int(indices(i2)-1,MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
          end do
       else if (ndims == 1) then
          do i1=1,dimlist(1)
-            compdof(indx) = int(indices(i1),PIO_OFFSET)
+            compdof(indx) = int(indices(i1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
       end if
 
       dimlist(ndims) = field_cursor % fieldhandle % dims(ndims) % dimsize
-      call PIO_initdecomp(pio_iosystem, pio_type, dimlist, compdof, new_decomp % decomphandle % pio_iodesc)
+      call PIO_initdecomp(handle % ioContext % pio_iosystem, pio_type, dimlist, compdof, new_decomp % decomphandle % pio_iodesc)
 
       ! Add new decomposition to the list
-      if (.not. associated(decomp_list)) then
-         decomp_list => new_decomp
+      if (.not. associated(handle % ioContext % decomp_list)) then
+         handle % ioContext % decomp_list => new_decomp
 !write(stderrUnit,*) 'Adding first item to the decomp_list'
       else
-         new_decomp % next => decomp_list
-         decomp_list => new_decomp
+         new_decomp % next => handle % ioContext % decomp_list
+         handle % ioContext % decomp_list => new_decomp
 !write(stderrUnit,*) 'Adding new decomp to the head of the list'
       end if
 
@@ -1292,7 +1329,7 @@ module mpas_io
 
    subroutine MPAS_io_get_var_generic(handle, fieldname, intVal, intArray1d, intArray2d, intArray3d, intArray4d, &
                                                         realVal, realArray1d, realArray2d, realArray3d, realArray4d, realArray5d, &
-                                                        charVal, ierr)
+                                                        charVal, charArray1d, ierr)
 
       implicit none
 
@@ -1310,6 +1347,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:), intent(out), optional :: realArray4d
       real (kind=RKIND), dimension(:,:,:,:,:), intent(out), optional :: realArray5d
       character (len=*), intent(out), optional :: charVal
+      character (len=*), dimension(:), intent(out), optional :: charArray1d
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
@@ -1328,12 +1366,21 @@ module mpas_io
       character (len=StrKIND), dimension(1) :: tempchar
       type (fieldlist_type), pointer :: field_cursor
 
+      integer i, j
+
       real (kind=R4KIND) :: singleVal
       real (kind=R4KIND), dimension(:), allocatable :: singleArray1d
       real (kind=R4KIND), dimension(:,:), allocatable :: singleArray2d
       real (kind=R4KIND), dimension(:,:,:), allocatable :: singleArray3d
       real (kind=R4KIND), dimension(:,:,:,:), allocatable :: singleArray4d
       real (kind=R4KIND), dimension(:,:,:,:,:), allocatable :: singleArray5d
+
+      real (kind=R8KIND) :: doubleVal
+      real (kind=R8KIND), dimension(:), allocatable :: doubleArray1d
+      real (kind=R8KIND), dimension(:,:), allocatable :: doubleArray2d
+      real (kind=R8KIND), dimension(:,:,:), allocatable :: doubleArray3d
+      real (kind=R8KIND), dimension(:,:,:,:), allocatable :: doubleArray4d
+      real (kind=R8KIND), dimension(:,:,:,:,:), allocatable :: doubleArray5d
 
       ! Sanity checks
       if (.not. handle % initialized) then
@@ -1363,7 +1410,11 @@ module mpas_io
 
 !      write(stderrUnit,*) 'Checking for unlimited dim'
       if (field_cursor % fieldhandle % has_unlimited_dim) then
+#ifdef USE_PIO2
+         call PIO_setframe(handle % pio_file, field_cursor % fieldhandle % field_desc, handle % frame_number)
+#else
          call PIO_setframe(field_cursor % fieldhandle % field_desc, handle % frame_number)
+#endif
          start1(1) = handle % frame_number
          count1(1) = 1
      
@@ -1383,6 +1434,14 @@ module mpas_io
                pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, singleVal)
             end if
             realVal = real(singleVal,RKIND)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            if (field_cursor % fieldhandle % has_unlimited_dim) then
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, doubleVal)
+            else
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, doubleVal)
+            end if
+            realVal = real(doubleVal,RKIND)
          else
             if (field_cursor % fieldhandle % has_unlimited_dim) then
                pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, realVal)
@@ -1409,6 +1468,51 @@ module mpas_io
             pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start1, count1, tempchar)
             charVal(1:count1(1)) = tempchar(1)(1:count1(1))
          end if
+      else if (present(charArray1d)) then
+!         write (0,*) '  value is char1'
+         if (field_cursor % fieldhandle % has_unlimited_dim) then
+            ! Can only read one string at a time, since the sizes differ so much (i.e. StrLen != StrKIND)
+            do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
+               start3(1) = 1
+               start3(2) = i
+               start3(3) = handle % frame_number
+               count3(1) = field_cursor % fieldhandle % dims(1) % dimsize ! Should be StrLen
+               count3(2) = 1
+               count3(3) = 1
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, tempchar)
+
+               ! Copy all characters up to the first C null char or the end of
+               ! the string, whichever comes first
+               charArray1d(i)(:) = ' '
+               do j = 1, len(tempchar(1))
+                  if ( tempchar(1)(j:j) /= CHAR(0)) then
+                     charArray1d(i)(j:j) = tempchar(1)(j:j)
+                  else
+                     exit
+                  end if
+               end do
+            end do
+         else
+            ! Can only read one string at a time, since the sizes differ so much (i.e. StrLen != StrKIND)
+            do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
+               start2(1) = 1
+               start2(2) = i
+               count2(1) = field_cursor % fieldhandle % dims(1) % dimsize ! Should be StrLen
+               count2(2) = 1
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, tempchar)
+
+               ! Copy all characters up to the first C null char or the end of
+               ! the string, whichever comes first
+               charArray1d(i)(:) = ' '
+               do j = 1, len(tempchar(1))
+                  if ( tempchar(1)(j:j) /= CHAR(0)) then
+                     charArray1d(i)(j:j) = tempchar(1)(j:j)
+                  else
+                     exit
+                  end if
+               end do
+            end do
+         end if
       else if (present(realArray1d)) then
 !         write (0,*) '  value is real1'
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
@@ -1432,6 +1536,27 @@ module mpas_io
             end if
             realArray1d(:) = real(singleArray1d(:),RKIND)
             deallocate(singleArray1d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray1d(size(realArray1d,1)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    doubleArray1d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start2(1) = 1
+                  start2(2) = handle % frame_number
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, doubleArray1d)
+               else
+                  start1(:) = 1
+                  count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start1, count1, doubleArray1d)
+               end if
+            end if
+            realArray1d(:) = real(doubleArray1d(:),RKIND)
+            deallocate(doubleArray1d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -1475,6 +1600,29 @@ module mpas_io
             end if
             realArray2d(:,:) = real(singleArray2d(:,:),RKIND)
             deallocate(singleArray2d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray2d(size(realArray2d,1), size(realArray2d,2)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    doubleArray2d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start3(:) = 1
+                  start3(3) = handle % frame_number
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, doubleArray2d)
+               else
+                  start2(:) = 1
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, doubleArray2d)
+               end if
+            end if
+            realArray2d(:,:) = real(doubleArray2d(:,:),RKIND)
+            deallocate(doubleArray2d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -1522,6 +1670,31 @@ module mpas_io
             end if
             realArray3d(:,:,:) = real(singleArray3d(:,:,:),RKIND)
             deallocate(singleArray3d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray3d(size(realArray3d,1),size(realArray3d,2),size(realArray3d,3)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    doubleArray3d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start4(:) = 1
+                  start4(4) = handle % frame_number
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start4, count4, doubleArray3d)
+               else
+                  start3(:) = 1
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, doubleArray3d)
+               end if
+            end if
+            realArray3d(:,:,:) = real(doubleArray3d(:,:,:),RKIND)
+            deallocate(doubleArray3d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -1573,6 +1746,33 @@ module mpas_io
             end if
             realArray4d(:,:,:,:) = real(singleArray4d(:,:,:,:),RKIND)
             deallocate(singleArray4d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray4d(size(realArray4d,1),size(realArray4d,2),size(realArray4d,3),size(realArray4d,4)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                    doubleArray4d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start5(:) = 1
+                  start5(5) = handle % frame_number
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start5, count5, doubleArray4d)
+               else
+                  start4(:) = 1
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start4, count4, doubleArray4d)
+               end if
+            end if
+            realArray4d(:,:,:,:) = real(doubleArray4d(:,:,:,:),RKIND)
+            deallocate(doubleArray4d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -1628,6 +1828,35 @@ module mpas_io
             end if
             realArray5d(:,:,:,:,:) = real(singleArray5d(:,:,:,:,:),RKIND)
             deallocate(singleArray5d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray5d(size(realArray5d,1),size(realArray5d,2),size(realArray5d,3),size(realArray5d,4),size(realArray5d,5)))
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                   doubleArray5d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start6(:) = 1
+                  start6(6) = handle % frame_number
+                  count6(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count6(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count6(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count6(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count6(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  count6(6) = 1
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start6, count6, doubleArray5d)
+               else
+                  start5(:) = 1
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start5, count5, doubleArray5d)
+               end if
+            end if
+            realArray5d(:,:,:,:,:) = real(doubleArray5d(:,:,:,:,:),RKIND)
+            deallocate(doubleArray5d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_read_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -1953,6 +2182,23 @@ module mpas_io
    end subroutine MPAS_io_get_var_char0d
 
 
+   subroutine MPAS_io_get_var_char1d(handle, fieldname, val, ierr)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(inout) :: handle
+      character (len=*), intent(in) :: fieldname
+      character (len=*), dimension(:), intent(out) :: val
+      integer, intent(out), optional :: ierr
+
+!     write(stderrUnit,*) 'Called MPAS_io_get_var_char1d()'
+      if (present(ierr)) ierr = MPAS_IO_NOERR
+
+      call MPAS_io_get_var_generic(handle, fieldname, charArray1d=val, ierr=ierr)
+
+   end subroutine MPAS_io_get_var_char1d
+
+
    logical function MPAS_io_would_clobber_records(handle, ierr)
 
       implicit none
@@ -1981,7 +2227,7 @@ module mpas_io
 
    subroutine MPAS_io_put_var_generic(handle, fieldname, intVal, intArray1d, intArray2d, intArray3d, intArray4d, &
                                                         realVal, realArray1d, realArray2d, realArray3d, realArray4d, realArray5d, &
-                                                        charVal, ierr)
+                                                        charVal, charArray1d, ierr)
 
       implicit none
 
@@ -1999,6 +2245,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:), intent(in), optional :: realArray4d
       real (kind=RKIND), dimension(:,:,:,:,:), intent(in), optional :: realArray5d
       character (len=*), intent(in), optional :: charVal
+      character (len=*), dimension(:), intent(in), optional :: charArray1d
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
@@ -2016,12 +2263,21 @@ module mpas_io
       integer, dimension(6) :: count6
       type (fieldlist_type), pointer :: field_cursor
 
+      integer :: i
+
       real (kind=R4KIND) :: singleVal
       real (kind=R4KIND), dimension(:), allocatable :: singleArray1d
       real (kind=R4KIND), dimension(:,:), allocatable :: singleArray2d
       real (kind=R4KIND), dimension(:,:,:), allocatable :: singleArray3d
       real (kind=R4KIND), dimension(:,:,:,:), allocatable :: singleArray4d
       real (kind=R4KIND), dimension(:,:,:,:,:), allocatable :: singleArray5d
+
+      real (kind=R8KIND) :: doubleVal
+      real (kind=R8KIND), dimension(:), allocatable :: doubleArray1d
+      real (kind=R8KIND), dimension(:,:), allocatable :: doubleArray2d
+      real (kind=R8KIND), dimension(:,:,:), allocatable :: doubleArray3d
+      real (kind=R8KIND), dimension(:,:,:,:), allocatable :: doubleArray4d
+      real (kind=R8KIND), dimension(:,:,:,:,:), allocatable :: doubleArray5d
 
       ! Sanity checks
       if (.not. handle % initialized) then
@@ -2062,7 +2318,11 @@ module mpas_io
 
       if (field_cursor % fieldhandle % has_unlimited_dim) then
 
+#ifdef USE_PIO2
+         call PIO_setframe(handle % pio_file, field_cursor % fieldhandle % field_desc, handle % frame_number)
+#else
          call PIO_setframe(field_cursor % fieldhandle % field_desc, handle % frame_number)
+#endif
          start1(1) = handle % frame_number
          count1(1) = 1
      
@@ -2082,6 +2342,14 @@ module mpas_io
                pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, singleVal)
             else
                pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, singleVal)
+            end if
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            doubleVal = real(realVal,R8KIND)
+            if (field_cursor % fieldhandle % has_unlimited_dim) then
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, doubleVal)
+            else
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, doubleVal)
             end if
          else
             if (field_cursor % fieldhandle % has_unlimited_dim) then
@@ -2105,6 +2373,28 @@ module mpas_io
             count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
             pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, charVal(1:count1(1)))
          end if
+      else if (present(charArray1d)) then
+         if (field_cursor % fieldhandle % has_unlimited_dim) then
+            ! Write one string at a time because the sizes differ so much (i.e. StrLen != StrKIND)
+            do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
+               start3(1) = 1
+               start3(2) = i
+               start3(3) = handle % frame_number
+               count3(1) = field_cursor % fieldhandle % dims(1) % dimsize ! Should be StrLen
+               count3(2) = 1
+               count3(3) = 1
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, charArray1d(i)(1:count3(1)))
+            end do
+         else
+            ! Write one string at a time because the sizes differ so much (i.e. StrLen != StrKIND)
+            do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
+               start2(1) = 1
+               start2(2) = i
+               count2(1) = field_cursor % fieldhandle % dims(1) % dimsize ! Should be StrLen
+               count2(2) = 1
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, charArray1d(i)(1:count2(1)))
+            end do
+         end if
       else if (present(realArray1d)) then
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
              (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
@@ -2127,6 +2417,27 @@ module mpas_io
                end if
             end if
             deallocate(singleArray1d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray1d(size(realArray1d)))
+            doubleArray1d(:) = real(realArray1d(:),R8KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     doubleArray1d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start2(1) = 1
+                  start2(2) = handle % frame_number
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, count2, doubleArray1d)
+               else
+                  start1(1) = 1
+                  count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, count1, doubleArray1d)
+               end if
+            end if
+            deallocate(doubleArray1d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -2170,6 +2481,30 @@ module mpas_io
                end if
             end if
             deallocate(singleArray2d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray2d(size(realArray2d,1), size(realArray2d,2)))
+            doubleArray2d(:,:) = real(realArray2d(:,:),R8KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     doubleArray2d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start3(1) = 1
+                  start3(2) = 1
+                  start3(3) = handle % frame_number
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, count3, doubleArray2d)
+               else
+                  start2(:) = 1
+                  count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count2(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, count2, doubleArray2d)
+               end if
+            end if
+            deallocate(doubleArray2d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -2219,6 +2554,33 @@ module mpas_io
                end if
             end if
             deallocate(singleArray3d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray3d(size(realArray3d,1), size(realArray3d,2), size(realArray3d,3)))
+            doubleArray3d(:,:,:) = real(realArray3d(:,:,:),R8KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     doubleArray3d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start4(1) = 1
+                  start4(2) = 1
+                  start4(3) = 1
+                  start4(4) = handle % frame_number
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start4, count4, doubleArray3d)
+               else
+                  start3(:) = 1
+                  count3(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count3(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count3(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, count3, doubleArray3d)
+               end if
+            end if
+            deallocate(doubleArray3d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -2274,6 +2636,36 @@ module mpas_io
                end if
             end if
             deallocate(singleArray4d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray4d(size(realArray4d,1), size(realArray4d,2), size(realArray4d,3), size(realArray4d,4)))
+            doubleArray4d(:,:,:,:) = real(realArray4d(:,:,:,:),R8KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     doubleArray4d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start5(1) = 1
+                  start5(2) = 1
+                  start5(3) = 1
+                  start5(4) = 1
+                  start5(5) = handle % frame_number
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start5, count5, doubleArray4d)
+               else
+                  start4(:) = 1
+                  count4(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count4(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count4(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count4(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start4, count4, doubleArray4d)
+               end if
+            end if
+            deallocate(doubleArray4d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -2335,6 +2727,39 @@ module mpas_io
                end if
             end if
             deallocate(singleArray5d)
+         else if ((field_cursor % fieldhandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+             (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+            allocate(doubleArray5d(size(realArray5d,1), size(realArray5d,2), size(realArray5d,3), size(realArray5d,4), size(realArray5d,5)))
+            doubleArray5d(:,:,:,:,:) = real(realArray5d(:,:,:,:,:),R8KIND)
+            if (associated(field_cursor % fieldhandle % decomp)) then
+               call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
+                                     doubleArray5d, pio_ierr)
+            else
+               if (field_cursor % fieldhandle % has_unlimited_dim) then
+                  start6(1) = 1
+                  start6(2) = 1
+                  start6(3) = 1
+                  start6(4) = 1
+                  start6(5) = 1
+                  start6(6) = handle % frame_number
+                  count6(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count6(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count6(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count6(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count6(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  count6(6) = 1
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start6, count6, doubleArray5d)
+               else
+                  start5(:) = 1
+                  count5(1) = field_cursor % fieldhandle % dims(1) % dimsize
+                  count5(2) = field_cursor % fieldhandle % dims(2) % dimsize
+                  count5(3) = field_cursor % fieldhandle % dims(3) % dimsize
+                  count5(4) = field_cursor % fieldhandle % dims(4) % dimsize
+                  count5(5) = field_cursor % fieldhandle % dims(5) % dimsize
+                  pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start5, count5, doubleArray5d)
+               end if
+            end if
+            deallocate(doubleArray5d)
          else
             if (associated(field_cursor % fieldhandle % decomp)) then
                call PIO_write_darray(handle % pio_file, field_cursor % fieldhandle % field_desc, field_cursor % fieldhandle % decomp % pio_iodesc, &
@@ -2664,6 +3089,23 @@ module mpas_io
    end subroutine MPAS_io_put_var_char0d
 
 
+   subroutine MPAS_io_put_var_char1d(handle, fieldname, val, ierr)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(inout) :: handle
+      character (len=*), intent(in) :: fieldname
+      character (len=*), dimension(:), intent(in) :: val
+      integer, intent(out), optional :: ierr
+
+!      write(stderrUnit,*) 'Called MPAS_io_put_var_char1d()'
+      if (present(ierr)) ierr = MPAS_IO_NOERR
+
+      call MPAS_io_put_var_generic(handle, fieldname, charArray1d=val, ierr=ierr)
+
+   end subroutine MPAS_io_put_var_char1d
+
+
    subroutine MPAS_io_get_att_int0d(handle, attName, attValue, fieldname, ierr)
 
       implicit none
@@ -2676,7 +3118,12 @@ module mpas_io
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len
+#else
+      integer :: len
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -2810,7 +3257,12 @@ module mpas_io
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len, attlen
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len, attlen
+#else
+      integer :: len, attlen
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -2943,7 +3395,7 @@ module mpas_io
    end subroutine MPAS_io_get_att_int1d
 
 
-   subroutine MPAS_io_get_att_real0d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_get_att_real0d(handle, attName, attValue, fieldname, precision, ierr)
 
       implicit none
 
@@ -2951,11 +3403,20 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), intent(out) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len
+      integer :: local_precision
+      real (kind=R4KIND) :: singleVal
+      real (kind=R8KIND) :: doubleVal
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len
+#else
+      integer :: len
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -3021,18 +3482,48 @@ module mpas_io
          varid = PIO_global
       end if
 
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = MPAS_IO_NATIVE_PRECISION
+      end if
+
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
-      if (xtype /= PIO_REALKIND) then
-         if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
-         return
-      end if
 
-      pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
+      if ((local_precision == MPAS_IO_SINGLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+
+         if (xtype /= PIO_REAL) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, singleVal)
+         attValue = real(singleVal,RKIND)
+
+      else if ((local_precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+
+         if (xtype /= PIO_DOUBLE) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, doubleVal)
+         attValue = real(doubleVal,RKIND)
+
+      else
+
+         if (xtype /= PIO_DOUBLE .and. xtype /= PIO_REAL) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
+
+      end if
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3045,6 +3536,7 @@ module mpas_io
       new_att_node % atthandle % attName = attName
       new_att_node % atthandle % attType = MPAS_ATT_REAL
       new_att_node % atthandle % attValueReal = attValue
+      new_att_node % atthandle % precision = local_precision
 
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
@@ -3077,7 +3569,7 @@ module mpas_io
    end subroutine MPAS_io_get_att_real0d
 
 
-   subroutine MPAS_io_get_att_real1d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_get_att_real1d(handle, attName, attValue, fieldname, precision, ierr)
 
       implicit none
 
@@ -3085,11 +3577,20 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), dimension(:), pointer :: attValue
       character (len=*), intent(in), optional :: fieldname
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len, attlen
+      integer :: local_precision
+      real (kind=R4KIND), dimension(:), allocatable :: singleVal
+      real (kind=R8KIND), dimension(:), allocatable :: doubleVal
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len, attlen
+#else
+      integer :: len, attlen
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -3157,15 +3658,16 @@ module mpas_io
          varid = PIO_global
       end if
 
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = MPAS_IO_NATIVE_PRECISION
+      end if
+
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
-         return
-      end if
-
-      if (xtype /= PIO_REALKIND) then
-         if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
          return
       end if
 
@@ -3175,8 +3677,42 @@ module mpas_io
          return
       end if
 
-      allocate(attValue(attlen))
-      pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
+      if ((local_precision == MPAS_IO_SINGLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+
+         if (xtype /= PIO_REAL) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         allocate(attValue(attlen))
+         allocate(singleVal(attlen))
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, singleVal)
+         attValue(:) = real(singleVal(:),RKIND)
+         deallocate(singleVal)
+
+      else if ((local_precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+
+         if (xtype /= PIO_DOUBLE) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         allocate(attValue(attlen))
+         allocate(doubleVal(attlen))
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, doubleVal)
+         attValue(:) = real(doubleVal(:),RKIND)
+         deallocate(doubleVal)
+
+      else
+
+         if (xtype /= PIO_DOUBLE .and. xtype /= PIO_REAL) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         allocate(attValue(attlen))
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
+
+      end if
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3190,6 +3726,7 @@ module mpas_io
       new_att_node % atthandle % attType = MPAS_ATT_REALA
       allocate(new_att_node % atthandle % attValueRealA(attlen))
       new_att_node % atthandle % attValueRealA = attValue
+      new_att_node % atthandle % precision = local_precision
 
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
@@ -3234,7 +3771,12 @@ module mpas_io
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len
+#else
+      integer :: len
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -3356,7 +3898,7 @@ module mpas_io
    end subroutine MPAS_io_get_att_text
 
 
-   subroutine MPAS_io_put_att_int0d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_int0d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3364,12 +3906,16 @@ module mpas_io
       character (len=*), intent(in) :: attName
       integer, intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      attValueLocal = attValue
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_int0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3482,7 +4028,13 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_int(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3493,7 +4045,7 @@ module mpas_io
    end subroutine MPAS_io_put_att_int0d
 
 
-   subroutine MPAS_io_put_att_int1d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_int1d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3501,12 +4053,17 @@ module mpas_io
       character (len=*), intent(in) :: attName
       integer, dimension(:), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer, dimension(:), pointer :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      allocate(attValueLocal(size(attValue, dim=1)))
+      attValueLocal(:) = attValue(:)
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_int1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3628,18 +4185,26 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_ints(handle % iocontext % dminfo, size(attValueLocal, dim=1), attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
+
+      deallocate(attValueLocal)
 
       ! Maybe we should add attribute to list only after a successfull call to PIO?
 
    end subroutine MPAS_io_put_att_int1d
 
 
-   subroutine MPAS_io_put_att_real0d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_real0d(handle, attName, attValue, fieldname, syncVal, precision, ierr)
 
       implicit none
 
@@ -3647,12 +4212,19 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      real (kind=RKIND) :: attValueLocal
+      real (kind=R4KIND) :: singleVal
+      real (kind=R8KIND) :: doubleVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      attValueLocal = attValue
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_real0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3679,6 +4251,11 @@ module mpas_io
       new_attlist_node % attHandle % attType = MPAS_ATT_REAL
       new_attlist_node % attHandle % attValueReal = attValue
 
+      if (present(precision)) then
+         new_attlist_node % attHandle % precision = precision
+      else
+         new_attlist_node % attHandle % precision = MPAS_IO_NATIVE_PRECISION
+      end if
 
       !
       ! For variable attributes, find the structure for fieldname
@@ -3765,7 +4342,24 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_real(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      if ((new_attlist_node % attHandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+         singleVal = real(attValueLocal,R4KIND)
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, singleVal) 
+      else if ((new_attlist_node % attHandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+         doubleVal = real(attValueLocal,R8KIND)
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, doubleVal) 
+      else
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
+      end if
+
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3776,7 +4370,7 @@ module mpas_io
    end subroutine MPAS_io_put_att_real0d
 
 
-   subroutine MPAS_io_put_att_real1d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_real1d(handle, attName, attValue, fieldname, syncVal, precision, ierr)
 
       implicit none
 
@@ -3784,12 +4378,21 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), dimension(:), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      real (kind=RKIND), dimension(:), allocatable :: attValueLocal
+      real (kind=R4KIND), dimension(:), allocatable :: singleVal
+      real (kind=R8KIND), dimension(:), allocatable :: doubleVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      allocate(attValueLocal( size(attValue, dim=1) ) )
+
+      attValueLocal(:) = attValue(:)
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_real1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3817,6 +4420,11 @@ module mpas_io
       allocate(new_attlist_node % attHandle % attValueRealA(size(attValue)))
       new_attlist_node % attHandle % attValueRealA = attValue
 
+      if (present(precision)) then
+         new_attlist_node % attHandle % precision = precision
+      else
+         new_attlist_node % attHandle % precision = MPAS_IO_NATIVE_PRECISION
+      end if
 
       !
       ! For variable attributes, find the structure for fieldname
@@ -3911,18 +4519,40 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_reals(handle % iocontext % dminfo, size(attValueLocal, dim=1), attValueLocal, IO_NODE)
+         end if
+      end if
+
+      if ((new_attlist_node % attHandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+         allocate(singleVal(size(attValueLocal)))
+         singleVal(:) = real(attValueLocal(:),R4KIND)
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, singleVal) 
+         deallocate(singleVal)
+      else if ((new_attlist_node % attHandle % precision == MPAS_IO_DOUBLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_DOUBLE_PRECISION)) then
+         allocate(doubleVal(size(attValueLocal)))
+         doubleVal(:) = real(attValueLocal(:),R8KIND)
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, doubleVal) 
+         deallocate(doubleVal)
+      else
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
+      end if
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
+
+      deallocate(attValueLocal)
 
       ! Maybe we should add attribute to list only after a successfull call to PIO?
 
    end subroutine MPAS_io_put_att_real1d
 
 
-   subroutine MPAS_io_put_att_text(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_text(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3930,12 +4560,25 @@ module mpas_io
       character (len=*), intent(in) :: attName
       character (len=*), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer :: valLen
+      character (len=StrKind) :: attValueLocal, trimmedVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      valLen = len_trim(attValue)
+      trimmedVal = trim(attValue)
+
+      if ( valLen > StrKind ) then
+         write(stderrUnit, *) ' WARNING: Attribute ''' // trim(attName) // ''' has a value longer than StrKIND. It will be cut to a length of ', StrKIND
+         attValueLocal = trimmedVal(1:StrKIND)
+      else
+         attValueLocal = trimmedVal
+      end if
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_text()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -4048,7 +4691,13 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_char(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValueLocal)) 
       if (pio_ierr /= PIO_noerr) then
 
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
@@ -4065,7 +4714,7 @@ module mpas_io
                return
             end if
 
-            pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
+            pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValueLocal)) 
             if (pio_ierr /= PIO_noerr) then
                return
             end if
@@ -4211,11 +4860,12 @@ module mpas_io
    end subroutine MPAS_io_close
 
 
-   subroutine MPAS_io_finalize(io_system, ierr)
+   subroutine MPAS_io_finalize(ioContext, finalize_iosystem, ierr)
 
       implicit none
 
-      type (iosystem_desc_t), optional, pointer :: io_system
+      type (mpas_io_context_type), pointer :: ioContext
+      logical, optional :: finalize_iosystem
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
@@ -4224,7 +4874,7 @@ module mpas_io
 !      write(stderrUnit,*) 'Called MPAS_io_finalize()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
-      decomp_cursor => decomp_list
+      decomp_cursor => ioContext % decomp_list
       do while (associated(decomp_cursor))
          decomp_del => decomp_cursor
          decomp_cursor => decomp_cursor % next
@@ -4232,22 +4882,35 @@ module mpas_io
 !if (.not. associated(decomp_del % decomphandle)) write(stderrUnit,*) 'OOPS... do not have decomphandle'
          deallocate(decomp_del % decomphandle % dims)
          deallocate(decomp_del % decomphandle % indices)
-         call PIO_freedecomp(pio_iosystem, decomp_del % decomphandle % pio_iodesc)
+         call PIO_freedecomp(ioContext % pio_iosystem, decomp_del % decomphandle % pio_iodesc)
          deallocate(decomp_del % decomphandle)
          deallocate(decomp_del)
       end do
 
 !write(stderrUnit,*) 'MGD PIO_finalize'
-      if (.not.present(io_system)) then
-        call PIO_finalize(pio_iosystem, pio_ierr)
-        if (pio_ierr /= PIO_noerr) then
-           if (present(ierr)) ierr = MPAS_IO_ERR_PIO
-           return
-        end if
-        deallocate(pio_iosystem)
+      if (present(finalize_iosystem)) then
+         if ( finalize_iosystem ) then
+           call PIO_finalize(ioContext % pio_iosystem, pio_ierr)
+           if (pio_ierr /= PIO_noerr) then
+              if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+              return
+           end if
+           deallocate(ioContext % pio_iosystem)
+         end if
       end if
 
    end subroutine MPAS_io_finalize
+
+
+   type (dm_info) function MPAS_io_handle_dminfo(handle)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(in) :: handle
+
+      MPAS_io_handle_dminfo = handle % ioContext % dminfo
+
+   end function MPAS_io_handle_dminfo
 
 
    subroutine MPAS_io_err_mesg(ierr, fatal)
@@ -4304,7 +4967,7 @@ module mpas_io
             write(stderrUnit,*) 'MPAS IO Error: Unrecognized error code...'
       end select
 
-      if (fatal .and. (ierr /= MPAS_IO_NOERR)) call mpas_dmpar_abort(local_dminfo)
+      if (fatal .and. (ierr /= MPAS_IO_NOERR)) call mpas_dmpar_global_abort('ERROR In MPAS_IO')
 
    end subroutine MPAS_io_err_mesg
  

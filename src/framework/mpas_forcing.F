@@ -13,6 +13,7 @@
 module mpas_forcing
 
 #define COMMA ,
+#define FORCING_DEBUG_DO(M) !M
 #define FORCING_DEBUG_WRITE(M) !write(stderrUnit,*) M
 #define FORCING_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
 #define FORCING_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
@@ -23,6 +24,7 @@ module mpas_forcing
   use mpas_timekeeping
   use mpas_io_streams
   use mpas_stream_manager
+  use mpas_abort, only : mpas_dmpar_global_abort
 
   implicit none
 
@@ -1000,7 +1002,10 @@ contains
 
     integer :: &
          iTime, & ! index of the forcing time stops
+         iTime2, &
          ierr
+
+    FORCING_DEBUG_WRITE('-------------------------------------------')
 
     ! loop over the forcing time slots
     do iTime = 1, forcingStream % nTimeStencil
@@ -1057,13 +1062,41 @@ contains
        endif
 
        ! other initialization types
-       if (trim(forcingStream % forcingInitializationType) == "next" .and. &
-            iTime <= forcingStream % nTimeStencilLower) then
-          forcingTimeCycle = forcingStream % forcingTimes(forcingStream % nTimeStencilLower+1)
+       if (trim(forcingStream % forcingInitializationType) == "next") then
+
+          if (forcingGroup % forcingCycleStartInclusive) then
+
+             if (forcingTimeCycle .lt. forcingGroup % forcingCycleStart) then
+
+                do iTime2 = 1, forcingStream % nTimeStencil
+                   if (forcingStream % forcingTimes(iTime2) .ge. forcingGroup % forcingCycleStart) then
+                      forcingTimeCycle = forcingStream % forcingTimes(iTime2)
+                      exit
+                   endif
+                enddo ! iTime2
+
+             endif
+
+          else
+
+             if (forcingTimeCycle .le. forcingGroup % forcingCycleStart) then
+
+                do iTime2 = 1, forcingStream % nTimeStencil
+                   if (forcingStream % forcingTimes(iTime2) .gt. forcingGroup % forcingCycleStart) then
+                      forcingTimeCycle = forcingStream % forcingTimes(iTime2)
+                      exit
+                   endif
+                enddo ! iTime2
+
+             endif
+
+          endif
+
        endif
 
        ! load the data into the slot
        call mpas_get_time(forcingTimeCycle, dateTimeString=forcingTimeStr)
+       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: READ ATTEMPT: ' COMMA trim(forcingTimeStr))
        call MPAS_stream_mgr_read(&
             streamManager, &
             forcingStream % forcingStreamID, &
@@ -1078,9 +1111,11 @@ contains
           call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
-       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: ' COMMA iTime COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr) COMMA ierr)
+       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: ' COMMA iTime COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr))
 
     enddo ! iTime
+
+    FORCING_DEBUG_WRITE('-------------------------------------------')
 
   end subroutine get_initial_forcing_data!}}}
 
@@ -1336,7 +1371,8 @@ contains
          forcingTimeNew ! the next forcing time 
 
     character(len=strKIND) :: &
-         forcingTimeCycleStr ! the cycled forcing time
+         forcingTimeCycleStr, & ! the cycled forcing time
+         forcingTimeStr         ! time string of forcing
 
     integer :: &
          iTime, & ! forcing times index
@@ -1397,9 +1433,12 @@ contains
           call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
-       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: '//trim(forcingTimeCycleStr)//' ' COMMA ierr)
+       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: ' COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeCycleStr))
 
     endif ! forcingAlarmID ringing
+
+    FORCING_DEBUG_DO(call mpas_get_time(currentTime, dateTimeString=forcingTimeStr))
+    FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: FORCING: ' COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr) COMMA " " COMMA trim(forcingTimeStrAll))
 
     ! interpolate data
     call forcing_data_interpolation(&
@@ -1542,7 +1581,7 @@ contains
     call mpas_get_timeInterval(diff2, currentTime, dt=diffr2)
 
     interpolants(1) = diffr2 / diffr
-    interpolants(2) = diffr1 / diffr
+    interpolants(2) = 1.0_RKIND - interpolants(1) !diffr1 / diffr
 
   end subroutine get_interpolants_linear!}}}
 
@@ -2464,25 +2503,54 @@ contains
 
     character(len=strKIND) :: forcingClockTimeStr
 
+    integer :: restartTimestampUnit
+
     ! open restart time file
-    open(22,file=trim(forcingTimeRestartFilename), form='formatted', status='replace')
+    forcingGroup => forcingGroupHead
+    do while (associated(forcingGroup))
+
+       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
+
+          call mpas_new_unit(restartTimestampUnit)
+          open(restartTimestampUnit,file=trim(forcingTimeRestartFilename), form='formatted', status='replace')
+          exit
+
+       endif
+
+       forcingGroup => forcingGroup % next
+    enddo
 
     ! loop over forcing groups
     forcingGroup => forcingGroupHead
     do while (associated(forcingGroup))
 
-       ! get the forcing clock time
-       forcingClockTime = MPAS_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
+       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
 
-       call MPAS_get_time(forcingClockTime, dateTimeString=forcingClockTimeStr)
+          ! get the forcing clock time
+          forcingClockTime = MPAS_get_clock_time(forcingGroup % forcingClock, MPAS_NOW)
 
-       ! write the forcing time to the restart file
-       write(22,*) trim(forcingGroup % forcingGroupName), " ", trim(forcingClockTimeStr)
+          call MPAS_get_time(forcingClockTime, dateTimeString=forcingClockTimeStr)
+
+          ! write the forcing time to the restart file
+          write(restartTimestampUnit,*) trim(forcingGroup % forcingGroupName), " ", trim(forcingClockTimeStr)
+
+       endif
 
        forcingGroup => forcingGroup % next
     end do
 
-    close(22)
+    ! close the file
+    forcingGroup => forcingGroupHead
+    do while (associated(forcingGroup))
+
+       if (forcingGroup % domain_ptr % dminfo % my_proc_id == IO_NODE) then
+          close(restartTimestampUnit)
+          call mpas_release_unit(restartTimestampUnit)
+          exit
+       endif
+
+       forcingGroup => forcingGroup % next
+    end do
 
   end subroutine mpas_forcing_write_restart_times!}}}
 
@@ -2494,7 +2562,7 @@ contains
 !> \author Adrian K. Turner, LANL
 !> \date 9th December 2014
 !> \details
-!>  read in the forcing group restart times from an external file and 
+!>  read in the forcing group restart times from an external file and
 !>  set the correct forcing group clock to this time
 !
 !-----------------------------------------------------------------------
@@ -2541,7 +2609,7 @@ contains
        if (trim(forcingGroup % forcingGroupName) == trim(forcingGroupName)) then
 
           ! set the forcing group time
-          FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: set time')
+          FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: set time' COMMA " " COMMA trim(forcingClockTimeStr))
           call MPAS_set_time(forcingClockTime, dateTimeString=trim(forcingClockTimeStr))
           FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: create clock')
           call mpas_create_clock(forcingGroup % forcingClock, startTime=forcingClockTime, timeStep=timeStep, stopTime=stopTime)

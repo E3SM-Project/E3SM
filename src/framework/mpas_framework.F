@@ -25,7 +25,7 @@ module mpas_framework
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
-   use mpas_configure
+   use mpas_block_decomp
 
 
    contains
@@ -82,9 +82,10 @@ module mpas_framework
       integer :: pio_num_iotasks
       integer :: pio_stride
 
+      call mpas_timer_init(domain)
+
 #ifdef MPAS_DEBUG
       call mpas_pool_set_error_level(MPAS_POOL_WARN)
-      call mpas_pool_set_error_level(MPAS_POOL_FATAL)
 #endif
 
       call mpas_pool_get_config(domain % configs, 'config_calendar_type', config_calendar_type)
@@ -102,7 +103,8 @@ module mpas_framework
       if (pio_num_iotasks == 0) then
          pio_num_iotasks = domain % dminfo % nprocs
       end if
-      call MPAS_io_init(domain % dminfo, pio_num_iotasks, pio_stride, io_system)
+      domain % ioContext % dminfo => domain % dminfo
+      call MPAS_io_init(domain % ioContext, pio_num_iotasks, pio_stride, io_system)
 
    end subroutine mpas_framework_init_phase2!}}}
 
@@ -125,11 +127,13 @@ module mpas_framework
       type (domain_type), pointer :: domain
       type (iosystem_desc_t), optional, pointer :: io_system
 
-      call MPAS_io_finalize(io_system)
+      call MPAS_io_finalize(domain % ioContext, .false.)
 
       call mpas_deallocate_domain(domain)
 
       call mpas_dmpar_finalize(dminfo)
+
+      call mpas_finish_block_proc_list(dminfo)
 
       call mpas_timekeeping_finalize()
 

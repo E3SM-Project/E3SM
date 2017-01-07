@@ -10,7 +10,6 @@ module sw_time_integration
    use mpas_vector_reconstruction
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_configure
    use mpas_constants
    use mpas_dmpar
 
@@ -97,9 +96,6 @@ module sw_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: hOld, hNew, hProvis, hTend
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersOld, tracersNew, tracersProvis, tracersTend
-
-      type (field2DReal), pointer :: pvEdgeField, divergenceField, vorticityField, uField, hField
-      type (field3DReal), pointer :: tracersField
 
       integer, pointer :: config_test_case
       real (kind=RKIND), pointer :: config_h_mom_eddy_visc4
@@ -197,17 +193,11 @@ module sw_time_integration
      do rk_step = 1, 4
 
 ! --- update halos for diagnostic variables
-        call mpas_pool_get_subpool(domain % blocklist % structs, 'provis_state', provisStatePool)
-
-        call mpas_pool_get_field(provisStatePool, 'pv_edge', pvEdgeField, 1)
-
-        call mpas_dmpar_exch_halo_field(pvEdgeField)
+        call mpas_dmpar_field_halo_exch(domain, 'pv_edge', timeLevel=1)
 
         if (config_h_mom_eddy_visc4 > 0.0) then
-            call mpas_pool_get_field(statePool, 'divergence', divergenceField, 2)
-            call mpas_pool_get_field(statePool, 'vorticity', vorticityField, 2)
-            call mpas_dmpar_exch_halo_field(divergenceField)
-            call mpas_dmpar_exch_halo_field(vorticityField)
+            call mpas_dmpar_field_halo_exch(domain, 'divergence', timeLevel=2)
+            call mpas_dmpar_field_halo_exch(domain, 'vorticity', timeLevel=2)
         end if
 
 ! --- compute tendencies
@@ -226,15 +216,9 @@ module sw_time_integration
 
 ! --- update halos for prognostic variables
 
-       call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
-
-       call mpas_pool_get_field(tendPool, 'u', uField)
-       call mpas_pool_get_field(tendPool, 'h', hField)
-       call mpas_pool_get_field(tendPool, 'tracers', tracersField)
-
-       call mpas_dmpar_exch_halo_field(uField)
-       call mpas_dmpar_exch_halo_field(hField)
-       call mpas_dmpar_exch_halo_field(tracersField)
+       call mpas_dmpar_field_halo_exch(domain, 'tend_u')
+       call mpas_dmpar_field_halo_exch(domain, 'tend_h')
+       call mpas_dmpar_field_halo_exch(domain, 'tend_tracers')
 
 ! --- compute next substep state
 

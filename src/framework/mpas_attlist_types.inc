@@ -4,6 +4,10 @@
    integer, parameter :: MPAS_ATT_REALA = 4
    integer, parameter :: MPAS_ATT_TEXT  = 5
 
+   type att_lists_type
+      type (att_list_type), pointer :: attList => null()
+   end type att_lists_type
+
    ! Derived type for holding field attributes
    type att_list_type
       character (len=StrKIND) :: attName

@@ -14,10 +14,10 @@ module mpas_bootstrapping
    use mpas_block_decomp
    use mpas_block_creator
    use mpas_sort
-   use mpas_configure
    use mpas_timekeeping
    use mpas_io_streams
    use mpas_io_units
+   use mpas_abort, only : mpas_dmpar_global_abort
 
 
    integer :: readCellStart, readCellEnd, nReadCells
@@ -67,6 +67,11 @@ module mpas_bootstrapping
    !>  Attributes required to be present in the grid file:
    !>      on_a_sphere
    !>      sphere_radius
+   !>      parent_id
+   !>      mesh_spec
+   !>      is_periodic
+   !>      x_period
+   !>      y_period
    !>      ***** these are needed by mpas_block_creator_finalize_block_init()
    !>            so they can be set in the mesh pool and queried by, e.g.,
    !>            mpas_initialize_vectors()
@@ -87,8 +92,8 @@ module mpas_bootstrapping
       integer :: ierr
       type (MPAS_IO_Handle_type) :: inputHandle
 
-      character (len=StrKIND) :: c_on_a_sphere
-      real (kind=RKIND) :: r_sphere_radius
+      character (len=StrKIND) :: c_on_a_sphere, c_is_periodic, c_parent_id, c_file_id, c_mesh_spec
+      real (kind=RKIND) :: r_sphere_radius, r_x_period, r_y_period
 
       type (field1dInteger), pointer :: indexToCellIDField
       type (field1dInteger), pointer :: indexToEdgeIDField
@@ -143,7 +148,7 @@ module mpas_bootstrapping
       nHalos = config_num_halos
 
 
-      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, mesh_iotype, ierr=ierr)
+      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, mesh_iotype, domain % ioContext, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
          write(stderrUnit,*) ' '
          write(stderrUnit,*) '************************************************************************************'
@@ -278,6 +283,78 @@ module mpas_bootstrapping
          domain % sphere_radius = 1.0
       else
          domain % sphere_radius = r_sphere_radius
+      end if
+
+      !
+      ! We need to read in the file_id, parent_id, and mesh spec attributes as well, to
+      ! set them appropriately in the output files.
+      !
+      call MPAS_io_get_att(inputHandle, 'file_id', c_file_id, ierr=ierr)
+      if ( ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit, *) 'Warning: Attribute file_id not found in '//trim(mesh_filename)
+         write(stderrUnit, *) '  Using '''' for the previous file_id.'
+         c_file_id = ''
+      end if
+
+      call MPAS_io_get_att(inputHandle, 'parent_id', c_parent_id, ierr=ierr)
+      if ( ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit, *) 'Warning: Attribute parent_id not found in '//trim(mesh_filename)
+         write(stderrUnit, *) '  Setting parent_id to '''''
+         c_parent_id = ''
+      end if
+
+      if ( trim(c_file_id) == '' ) then
+         domain % parent_id = c_parent_id
+      else
+         domain % parent_id = trim(c_file_id) // NEW_LINE('A') // trim(c_parent_id)
+      end if
+
+      call MPAS_io_get_att(inputHandle, 'mesh_spec', c_mesh_spec, ierr=ierr)
+      if ( ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit, *) 'Warning: Attribute mesh_spec not found in '//trim(mesh_filename)
+         write(stderrUnit, *) '  Setting mesh_spec to ''0.0'''
+         domain % mesh_spec = '0.0'
+      else
+        domain % mesh_spec = c_mesh_spec
+      end if
+
+      !
+      ! Get attributes based on planar mesh
+      !
+      if ( .not. domain % on_a_sphere ) then
+         call MPAS_io_get_att(inputHandle, 'is_periodic', c_is_periodic, ierr=ierr)
+         if ( ierr /= MPAS_IO_NOERR ) then
+            write(stderrUnit, *) 'Warning: is_periodic attribute not found in '//trim(mesh_filename)
+            write(stderrUnit, *) '   Setting is_periodic to .false.'
+            domain % is_periodic = .false.
+         else
+            if (index(c_is_periodic, 'YES') /= 0) then
+               domain % is_periodic = .true.
+            else
+               domain % is_periodic = .false.
+            end if
+         end if
+      else
+        domain % is_periodic = .false.
+      end if
+
+      if ( domain % is_periodic ) then
+         call MPAS_io_get_att(inputHandle, 'x_period', r_x_period, ierr=ierr)
+         if ( ierr /= MPAS_IO_NOERR ) then
+            call mpas_dmpar_global_abort('ERROR: Required attribute ''x_period'' missing from periodic input mesh. Exiting...')
+         else
+            domain % x_period = r_x_period
+         end if
+
+         call MPAS_io_get_att(inputHandle, 'y_period', r_y_period, ierr=ierr)
+         if ( ierr /= MPAS_IO_NOERR ) then
+            call mpas_dmpar_global_abort('ERROR: Required attribute ''y_period'' missing from periodic input mesh. Exiting...')
+         else
+            domain % y_period = r_y_period
+         end if
+      else
+         domain % x_period = 0
+         domain % y_period = 0
       end if
 
 
@@ -422,7 +499,7 @@ module mpas_bootstrapping
                                               MPAS_STREAM_PROPERTY_IOTYPE, ioType, ierr = err_local)
 
             ! Try to open file
-            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, ioType, ierr = err_local)
+            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, ioType, domain % ioContext, ierr = err_local)
 
             ! If to determine if file was opened or not.
             if ( err_local == MPAS_IO_NOERR ) then

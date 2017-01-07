@@ -12,17 +12,21 @@ xlf:
 	"FC_SERIAL = xlf90" \
 	"CC_SERIAL = xlc" \
 	"CXX_SERIAL = xlcxx" \
-	"FFLAGS_OPT = -O3 -qrealsize=8" \
+	"FFLAGS_PROMOTION = -qrealsize=8" \
+	"FFLAGS_OPT = -O3" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -O0 -g -C -qrealsize=8" \
+	"FFLAGS_DEBUG = -O0 -g -C" \
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
+	"FFLAGS_OMP = -qsmp=omp" \
+	"CFLAGS_OMP = -qsmp=omp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
  
 ftn:
@@ -33,13 +37,17 @@ ftn:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
-	"FFLAGS_OPT = -i4 -r8 -gopt -O2 -Mvect=nosse -Kieee -convert big_endian" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -i4 -gopt -O2 -Mvect=nosse -Kieee -convert big_endian" \
 	"CFLAGS_OPT = -fast" \
 	"CXXFLAGS_OPT = -fast" \
 	"LDFLAGS_OPT = " \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 titan-cray:
@@ -48,12 +56,16 @@ titan-cray:
 	"CC_PARALLEL = cc" \
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = gcc" \
-	"FFLAGS_OPT = -s integer32 -default64 -O3 -f free -N 255 -em -ef" \
+	"FFLAGS_PROMOTION = -default64" \
+	"FFLAGS_OPT = -s integer32 -O3 -f free -N 255 -em -ef" \
 	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = " \
+	"CFLAGS_OMP = " \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi:
@@ -64,17 +76,21 @@ pgi:
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
 	"CXX_SERIAL = pgc++" \
-	"FFLAGS_OPT = -r8 -O3 -byteswapio -Mfree" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -r8 -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
+	"FFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
 	"CFLAGS_DEBUG = -O0 -g -traceback" \
 	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
 	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -Ktrap=divz,fp,inv,ovf -traceback" \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-nersc:
@@ -85,13 +101,17 @@ pgi-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
-	"FFLAGS_OPT = -r8 -O3 -byteswapio -Mfree" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-llnl:
@@ -102,13 +122,17 @@ pgi-llnl:
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
 	"CXX_SERIAL = pgc++" \
-	"FFLAGS_OPT = -i4 -r8 -g -O2 -byteswapio" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -i4 -g -O2 -byteswapio" \
 	"CFLAGS_OPT = -fast" \
 	"CXXFLAGS_OPT = -fast" \
 	"LDFLAGS_OPT = " \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort:
@@ -119,17 +143,46 @@ ifort:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
-	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
+	"FFLAGS_PROMOTION = -real-size 64" \
+	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"CXXFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+
+ifort-scorep:
+	( $(MAKE) all \
+	"FC_PARALLEL = scorep --compiler mpif90" \
+	"CC_PARALLEL = scorep --compiler mpicc" \
+	"CXX_PARALLEL = scorep --compiler mpicxx" \
+	"FC_SERIAL = ifort" \
+	"CC_SERIAL = icc" \
+	"CXX_SERIAL = icpc" \
+	"FFLAGS_PROMOTION = -real-size 64" \
+	"FFLAGS_OPT = -O3 -g -convert big_endian -FR" \
+	"CFLAGS_OPT = -O3 -g" \
+	"CXXFLAGS_OPT = -O3 -g" \
+	"LDFLAGS_OPT = -O3 -g" \
+	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
+	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort-gcc:
@@ -140,17 +193,21 @@ ifort-gcc:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
-	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
+	"FFLAGS_PROMOTION = -real-size 64" \
+	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
 	"CFLAGS_DEBUG = -g" \
 	"CXXFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gfortran:
@@ -161,17 +218,46 @@ gfortran:
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
-	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
+	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
 	"CFLAGS_OPT = -O3 -m64" \
 	"CXXFLAGS_OPT = -O3 -m64" \
 	"LDFLAGS_OPT = -O3 -m64" \
-	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
 	"CFLAGS_DEBUG = -g -m64" \
 	"CXXFLAGS_DEBUG = -O3 -m64" \
 	"LDFLAGS_DEBUG = -g -m64" \
+	"FFLAGS_OMP = -fopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+
+gfortran-clang:
+	( $(MAKE) all \
+	"FC_PARALLEL = mpif90" \
+	"CC_PARALLEL = mpicc -cc=clang" \
+	"CXX_PARALLEL = mpicxx -cxx=clang++" \
+	"FC_SERIAL = gfortran" \
+	"CC_SERIAL = clang" \
+	"CXX_SERIAL = clang++" \
+	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
+	"CFLAGS_OPT = -O3 -m64" \
+	"CXXFLAGS_OPT = -O3 -m64" \
+	"LDFLAGS_OPT = -O3 -m64" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"CFLAGS_DEBUG = -g -m64" \
+	"CXXFLAGS_DEBUG = -O3 -m64" \
+	"LDFLAGS_DEBUG = -g -m64" \
+	"FFLAGS_OMP = -fopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 g95:
@@ -182,13 +268,17 @@ g95:
 	"FC_SERIAL = g95" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
-	"FFLAGS_OPT = -O3 -ffree-line-length-huge -r8 -fendian=big" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -O3 -ffree-line-length-huge -fendian=big" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = -fopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pathscale-nersc:
@@ -199,13 +289,17 @@ pathscale-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
-	"FFLAGS_OPT = -r8 -O3 -freeform -extend-source" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -O3 -freeform -extend-source" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 cray-nersc:
@@ -216,13 +310,17 @@ cray-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
-	"FFLAGS_OPT = -default64 -O3 -f free" \
+	"FFLAGS_PROMOTION = -default64" \
+	"FFLAGS_OPT = -O3 -f free" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = " \
+	"CFLAGS_OMP = " \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gnu-nersc:
@@ -233,11 +331,12 @@ gnu-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
-	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
+	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
 	"CFLAGS_OPT = -O3 -m64" \
 	"CXXFLAGS_OPT = -O3 -m64" \
 	"LDFLAGS_OPT = -O3 -m64" \
-	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
 	"CFLAGS_DEBUG = -g -m64" \
 	"CXXFLAGS_DEBUG = -g -m64" \
 	"LDFLAGS_DEBUG = -g -m64" \
@@ -255,13 +354,21 @@ intel-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
-	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
+	"FFLAGS_PROMOTION = -real-size 64" \
+	"FFLAGS_OPT = -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
+	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -gen-interfaces -warn interfaces -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
+	"LDFLAGS_DEBUG = -g -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 bluegene:
@@ -272,30 +379,46 @@ bluegene:
 	"FC_SERIAL = bgxlf95_r" \
 	"CC_SERIAL = bgxlc_r" \
 	"CXX_SERIAL = bgxlc++_r" \
-	"FFLAGS_OPT = -O2 -g -qrealsize=8" \
+	"FFLAGS_PROMOTION = -qrealsize=8" \
+	"FFLAGS_OPT = -O2 -g" \
 	"CFLAGS_OPT = -O2 -g" \
 	"CXXFLAGS_OPT = -O2 -g" \
 	"LDFLAGS_OPT = -O2 -g" \
-	"FFLAGS_DEBUG = -O0 -g -C -qinitalloc -qinitauto -qrealsize=8" \
+	"FFLAGS_DEBUG = -O0 -g -C -qinitalloc -qinitauto" \
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
+	"FFLAGS_OMP = -qsmp=omp" \
+	"CFLAGS_OMP = -qsmp=omp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 CPPINCLUDES = 
 FCINCLUDES = 
 LIBS = 
 ifneq ($(wildcard $(PIO)/lib), ) # Check for newer PIO version
+ifeq "$(USE_PIO2)" "true"
+	CPPINCLUDES = -DUSE_PIO2 -I$(PIO)/include
+	FCINCLUDES = -DUSE_PIO2 -I$(PIO)/include
+	LIBS = -L$(PIO)/lib -lpiof -lpioc
+else
 	CPPINCLUDES = -I$(PIO)/include
 	FCINCLUDES = -I$(PIO)/include
 	LIBS = -L$(PIO)/lib -lpio
+endif
+else
+ifeq "$(USE_PIO2)" "true"
+	CPPINCLUDES = -DUSE_PIO2 -I$(PIO)/include
+	FCINCLUDES = -DUSE_PIO2 -I$(PIO)/include
+	LIBS = -L$(PIO) -lpiof -lpioc
 else
 	CPPINCLUDES = -I$(PIO)
 	FCINCLUDES = -I$(PIO)
 	LIBS = -L$(PIO) -lpio
+endif
 endif
 
 ifneq "$(PNETCDF)" ""
@@ -313,6 +436,11 @@ ifneq "$(NETCDF)" ""
 	ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
 		LIBS += $(NCLIBF)
 	endif # CHECK FOR NETCDF4
+	ifneq "$(NETCDFF)" ""
+		FCINCLUDES += -I$(NETCDFF)/include
+		LIBS += -L$(NETCDFF)/lib
+		LIBS += $(NCLIBF)
+	endif
 	LIBS += $(NCLIB)
 endif
 
@@ -372,6 +500,25 @@ SFC=$(FC_SERIAL)
 SCC=$(CC_SERIAL)
 PARALLEL_MESSAGE="Parallel version is on."
 
+ifeq "$(OPENMP)" "true"
+	FFLAGS += $(FFLAGS_OMP)
+	CFLAGS += $(CFLAGS_OMP)
+	CXXFLAGS += $(CFLAGS_OMP)
+	override CPPFLAGS += "-DMPAS_OPENMP"
+	LDFLAGS += $(FFLAGS_OMP)
+endif #OPENMP IF
+
+ifeq "$(PRECISION)" "single"
+	FFLAGS += "-DSINGLE_PRECISION"
+	CFLAGS += "-DSINGLE_PRECISION"
+	CXXFLAGS += "-DSINGLE_PRECISION"
+	override CPPFLAGS += "-DSINGLE_PRECISION"
+	PRECISION_MESSAGE="MPAS was built with default single-precision reals."
+else
+	FFLAGS += $(FFLAGS_PROMOTION)
+	PRECISION_MESSAGE="MPAS was built with default double-precision reals."
+endif #PRECISION IF
+
 ifeq "$(USE_PAPI)" "true"
 	CPPINCLUDES += -I$(PAPI)/include -D_PAPI
 	FCINCLUDES += -I$(PAPI)/include
@@ -381,9 +528,40 @@ else # USE_PAPI IF
 	PAPI_MESSAGE="Papi libraries are off."
 endif # USE_PAPI IF
 
+ifeq "$(USE_PIO2)" "true"
+	PIO_MESSAGE="Using the PIO 2 library."
+else # USE_PIO2 IF
+	PIO_MESSAGE="Using the PIO 1.x library."
+endif # USE_PIO2 IF
+
+ifdef TIMER_LIB
+ifeq "$(TIMER_LIB)" "tau"
+	override TAU=true
+	TIMER_MESSAGE="TAU is being used for the timer interface"
+endif
+
+ifeq "$(TIMER_LIB)" "gptl"
+	override CPPFLAGS += -DMPAS_GPTL_TIMERS
+	override FCINCLUDES += -I${GPTL}/include
+	override LIBS += -L${GPTL}/lib -lgptl
+	TIMER_MESSAGE="GPTL is being used for the timer interface"
+endif
+
+ifeq "$(TIMER_LIB)" ""
+	override CPPFLAGS += -DMPAS_NATIVE_TIMERS
+	TIMER_MESSAGE="The native timer interface is being used"
+endif
+
+else # else ifdef $(TIMER_LIB)
+
+	override CPPFLAGS += -DMPAS_NATIVE_TIMERS
+	TIMER_MESSAGE="The native timer interface is being used"
+
+endif # endif ifdef $(TIMER_LIB)
+
 ifeq "$(TAU)" "true"
 	LINKER=tau_f90.sh
-	CPPINCLUDES += -DMPAS_TAU
+	CPPINCLUDES += -DMPAS_TAU -DMPAS_TAU_TIMERS
 	TAU_MESSAGE="TAU Hooks are on."
 else
 	LINKER=$(FC)
@@ -395,6 +573,12 @@ ifeq "$(GEN_F90)" "true"
 else
 	override GEN_F90=false
 	GEN_F90_MESSAGE="MPAS was built with .F files."
+endif
+
+ifeq "$(OPENMP)" "true"
+	OPENMP_MESSAGE="MPAS was built with OpenMP enabled."
+else
+	OPENMP_MESSAGE="MPAS was built without OpenMP support."
 endif
 
 ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
@@ -450,11 +634,14 @@ endif # END OF GIT DESCRIBE VERSION
 # Section for adding external libraries and includes
 ####################################################
 ifdef MPAS_EXTERNAL_LIBS
- LIBS += $(MPAS_EXTERNAL_LIBS)
+	override LIBS += $(MPAS_EXTERNAL_LIBS)
 endif
 ifdef MPAS_EXTERNAL_INCLUDES
- CPPINCLUDES += $(MPAS_EXTERNAL_INCLUDES)
- FCINCLUDES += $(MPAS_EXTERNAL_INCLUDES)
+	override CPPINCLUDES += $(MPAS_EXTERNAL_INCLUDES)
+	override FCINCLUDES += $(MPAS_EXTERNAL_INCLUDES)
+endif
+ifdef MPAS_EXTERNAL_CPPFLAGS
+	override CPPFLAGS += $(MPAS_EXTERNAL_CPPFLAGS)
 endif
 ####################################################
 
@@ -478,7 +665,24 @@ endif
 endif
 
 
-mpas_main:
+compiler_test:
+ifeq "$(OPENMP)" "true"
+	@echo "Testing compiler for OpenMP support"
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
+		(echo "$(SCC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
+		(echo "$(CC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
+		(echo "$(CXX) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
+		(echo "$(SFC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
+		(echo "$(FC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@rm -fr conftest.*
+endif
+
+
+mpas_main: compiler_test
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
@@ -508,14 +712,18 @@ endif
 	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
 	( cd src/core_$(CORE); $(MAKE) ROOT_DIR="$(PWD)" post_build )
 	@echo "*******************************************************************************"
+	@echo $(PRECISION_MESSAGE)
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
 	@echo $(PAPI_MESSAGE)
 	@echo $(TAU_MESSAGE)
+	@echo $(OPENMP_MESSAGE)
 ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
 endif
 	@echo $(GEN_F90_MESSAGE)
+	@echo $(TIMER_MESSAGE)
+	@echo $(PIO_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
@@ -586,6 +794,13 @@ errmsg:
 	@echo "    TAU=true      - builds version using TAU hooks for profiling. Default is off."
 	@echo "    AUTOCLEAN=true    - forces a clean of infrastructure prior to build new core."
 	@echo "    GEN_F90=true  - Generates intermediate .f90 files through CPP, and builds with them."
+	@echo "    TIMER_LIB=opt - Selects the timer library interface to be used for profiling the model. Options are:"
+	@echo "                    TIMER_LIB=native - Uses native built-in timers in MPAS"
+	@echo "                    TIMER_LIB=gptl - Uses gptl for the timer interface instead of the native interface"
+	@echo "                    TIMER_LIB=tau - Uses TAU for the timer interface instead of the native interface"
+	@echo "    OPENMP=true   - builds and links with OpenMP flags. Default is to not use OpenMP."
+	@echo "    USE_PIO2=true - links with the PIO 2 library. Default is to use the PIO 1.x library."
+	@echo "    PRECISION=single - builds with default single-precision real kind. Default is to use double-precision."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."

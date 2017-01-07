@@ -12,6 +12,7 @@ module sw_core_interface
    use mpas_dmpar
    use mpas_constants
    use mpas_io_units
+   use mpas_attlist
    use sw_core
 
    public
@@ -42,6 +43,7 @@ module sw_core_interface
       core % get_mesh_stream => sw_get_mesh_stream
       core % setup_immutable_streams => sw_setup_immutable_streams
       core % setup_derived_dimensions => sw_setup_derived_dimensions
+      core % setup_decomposed_dimensions => sw_setup_decomposed_dimensions
       core % setup_block => sw_setup_block
       core % setup_namelist => sw_setup_namelists
 
@@ -86,7 +88,7 @@ module sw_core_interface
    !>   *not* allocated until after this routine is called.
    !
    !-----------------------------------------------------------------------
-   function sw_setup_packages(configPool, packagePool) result(ierr)!{{{
+   function sw_setup_packages(configPool, packagePool, iocontext) result(ierr)!{{{
 
       use mpas_derived_types
 
@@ -94,6 +96,7 @@ module sw_core_interface
 
       type (mpas_pool_type), intent(inout) :: configPool
       type (mpas_pool_type), intent(inout) :: packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
       ierr = 0

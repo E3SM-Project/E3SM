@@ -16,7 +16,6 @@ module init_atm_core
       use mpas_derived_types
       use mpas_stream_manager
       use mpas_io_streams, only : MPAS_STREAM_NEAREST
-      use mpas_configure
       use init_atm_cases
    
       implicit none
@@ -88,7 +87,7 @@ module init_atm_core
    !   call atm_initialize_advection_rk(mesh)
    !   call atm_initialize_deformation_weights(mesh)
   
-      call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
+      call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
    
    end function init_atm_core_run
@@ -99,6 +98,7 @@ module init_atm_core
       use mpas_derived_types
       use mpas_decomp
       use mpas_stream_manager
+      use mpas_io_units, only : stderrUnit
    
       implicit none
    
@@ -109,6 +109,11 @@ module init_atm_core
       ierr = 0
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
+
+      write(stderrUnit,'(a)') ''
+      write(stderrUnit,'(a)') '********************************************************'
+      write(stderrUnit,'(a)') '   Finished running the init_atmosphere core'
+      write(stderrUnit,'(a)') '********************************************************'
    
    end function init_atm_core_finalize
    

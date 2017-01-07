@@ -115,19 +115,19 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, k
-      integer, pointer :: nCellsSolve
+      integer, pointer :: nCells
 
       real (kind=RKIND) :: invTemp, invSalinity
 
       err = 0
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       invTemp = 1.0 / (temperatureTimeScale * 86400.0)
       invSalinity = 1.0 / (salinityTimeScale * 86400.0)
 
       k = 1  ! restoring only in top layer
-      do iCell=1,nCellsSolve
+      do iCell=1,nCells
         surfaceTracerFluxes(indexTFlux, iCell) = - temperatureLengthScale * (tracers(indexT, k, iCell) - temperatureRestoring(iCell)) * invTemp
         surfaceTracerFluxes(indexSFlux, iCell) = - salinityLengthScale * (tracers(indexS, k, iCell) - salinityRestoring(iCell)) * invSalinity
       enddo

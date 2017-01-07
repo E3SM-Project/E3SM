@@ -21,13 +21,32 @@
       integer :: blockID   ! Unique global ID number for this block
       integer :: localBlockID  ! Unique local ID number for this block
 
+      ! Pointer to domain that owns the block
       type (domain_type), pointer :: domain
 
+      ! Data structures for exchange lists for a block (exchanging standard fields)
       type (parallel_info), pointer :: parinfo
 
+      ! Linked list pointers
       type (block_type), pointer :: prev => null()
       type (block_type), pointer :: next => null()
 
+      ! Data structures for core specific data
       type (mpas_pool_type), pointer :: structs, dimensions, configs, packages
+
+      ! Data structures for IO infrastructure
       type (mpas_pool_type), pointer :: allFields, allStructs
+
+      ! Data types for particle lists {{{
+
+      ! Define the particle list on a block
+      type (mpas_particle_list_type), pointer :: particlelist => null()
+
+      ! Define the list of neighboring blocks on a block, for exchanging particles
+      integer, dimension(:), pointer :: blockNeighs => null()
+      ! Define the list of neighboring processors on a block, for exchanging particles
+      integer, dimension(:), pointer :: procNeighs => null()
+
+      !}}}
+
    end type block_type

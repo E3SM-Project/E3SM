@@ -1,3 +1,9 @@
+#ifdef USE_PIO2
+   integer, parameter :: MPAS_IO_OFFSET_KIND = PIO_OFFSET_KIND
+#else
+   integer, parameter :: MPAS_IO_OFFSET_KIND = PIO_OFFSET
+#endif
+
    ! File access modes
    integer, parameter :: MPAS_IO_READ  = 1, &
                          MPAS_IO_WRITE = 2
@@ -61,13 +67,14 @@
       integer :: ioformat
       integer :: pio_unlimited_dimid
       integer :: preexisting_records = 0
-      integer (kind=PIO_offset) :: frame_number = 1
+      integer (kind=MPAS_IO_OFFSET_KIND) :: frame_number = 1
       type (dimlist_type), pointer :: dimlist_head => null()
       type (dimlist_type), pointer :: dimlist_tail => null()
       type (fieldlist_type), pointer :: fieldlist_head => null()
       type (fieldlist_type), pointer :: fieldlist_tail => null()
       type (attlist_type), pointer :: attlist_head => null()
       type (attlist_type), pointer :: attlist_tail => null()
+      type (mpas_io_context_type), pointer :: ioContext => null()
    end type MPAS_IO_Handle_type
 
    type decomphandle_type
@@ -81,6 +88,7 @@
       character (len=StrKIND) :: attName
       integer :: attType
       integer :: attValueInt
+      integer :: precision
       integer, dimension(:), pointer :: attValueIntA => null()
       real (kind=RKIND) :: attValueReal
       real (kind=RKIND), dimension(:), pointer :: attValueRealA => null()
@@ -128,3 +136,9 @@
       type (fieldlist_type), pointer :: next => null()
    end type fieldlist_type
 
+   type mpas_io_context_type
+      type (decomplist_type), pointer :: decomp_list => null()
+      type (iosystem_desc_t), pointer :: pio_iosystem => null()
+      integer :: master_pio_iotype = -999
+      type (dm_info), pointer :: dminfo => null()
+   end type mpas_io_context_type

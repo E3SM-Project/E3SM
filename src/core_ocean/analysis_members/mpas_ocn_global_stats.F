@@ -21,7 +21,6 @@ module ocn_global_stats
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -45,8 +44,7 @@ module ocn_global_stats
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_global_stats, &
-             ocn_init_global_stats, &
+   public :: ocn_init_global_stats, &
              ocn_compute_global_stats, &
              ocn_restart_global_stats, &
              ocn_finalize_global_stats
@@ -57,67 +55,9 @@ module ocn_global_stats
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: amGlobalStatsTimer
-
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_setup_packages_global_stats
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_global_stats(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      logical, pointer :: amGlobalStatsActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'amGlobalStatsActive', amGlobalStatsActive)
-
-      ! turn on package for this analysis member
-      amGlobalStatsActive = .true.
-
-   end subroutine ocn_setup_packages_global_stats!}}}
-
 
 !***********************************************************************
 !
@@ -126,8 +66,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -162,9 +102,72 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (dm_info), pointer :: dminfo
+      logical, pointer :: config_AM_globalStats_text_file
+      character (len=StrKIND), pointer :: config_AM_globalStats_directory
+      integer :: fileID, i
+
       err = 0
 
+      call mpas_pool_get_config(domain % configs, 'config_AM_globalStats_directory', config_AM_globalStats_directory)
+      call mpas_pool_get_config(domain % configs, 'config_AM_globalStats_text_file', config_AM_globalStats_text_file)
+      if (config_AM_globalStats_text_file) then
+      dminfo => domain % dminfo
+      if (dminfo % my_proc_id == IO_NODE) then
+         fileID = getFreeUnit()
+         open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_readme.txt',STATUS='UNKNOWN', POSITION='rewind')
+
+            write (fileID,'(a)') 'readme file for MPAS-Ocean global statistics'
+            write (fileID,'(/,a)') 'stats_time.txt. contains: timeIndex, timestamp, CFLNumberGlobal'
+            write (fileID,'(/,a)') 'All other stats_*.txt. contain the following columns.  Rows correspond to timestamps in rows of stats_time.txt'
+            write (fileID,'(a)')   "See user's guide for units associated with these variables."
+
+            i=1
+            write (fileID,'(i5,a)') i,'. time, in days, using a 360 day calendar'; i=i+1
+            write (fileID,'(i5,a)') i,'. layerThickness'; i=i+1
+            write (fileID,'(i5,a)') i,'. normalVelocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. tangentialVelocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. layerThicknessEdge'; i=i+1
+            write (fileID,'(i5,a)') i,'. relativeVorticity'; i=i+1
+            write (fileID,'(i5,a)') i,'. enstrophy = relativeVorticity**2'; i=i+1
+            write (fileID,'(i5,a)') i,'. kineticEnergyCell'; i=i+1
+            write (fileID,'(i5,a)') i,'. normalizedAbsoluteVorticity = (relative vorticity + planetary vorticity)/layer thickness'; i=i+1
+            write (fileID,'(i5,a)') i,'. pressure'; i=i+1
+            write (fileID,'(i5,a)') i,'. montgomeryPotential'; i=i+1
+            write (fileID,'(i5,a)') i,'. vertVelocityTop vertical velocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. vertAleTransportTop vertical transport'; i=i+1
+            write (fileID,'(i5,a)') i,'. lowFreqDivergence'; i=i+1
+            write (fileID,'(i5,a)') i,'. highFreqThickness'; i=i+1
+            write (fileID,'(i5,a)') i,'. Tracers: usually T, S, then others in remaining columns'
+
+            write (fileID,'(/,a)') 'A chain of simple unix commands may be used to access a specific part of the data. For example,'
+            write (fileID,'(a)') 'to view the last three values of column seven in the global average, use:'
+            write (fileID,'(a)') "cat stats_avg.txt | awk '{print $7}' | tail -n3"
+  
+         close (fileID)
+      endif
+
+      endif
+
    end subroutine ocn_init_global_stats!}}}
+
+   integer function getFreeUnit()!{{{
+      implicit none
+
+      integer :: index
+      logical :: isOpened
+
+      getFreeUnit = 0
+      do index = 1,99
+         if((index /= 5) .and. (index /= 6)) then
+            inquire(unit = index, opened = isOpened)
+            if( .not. isOpened) then
+               getFreeUnit = index
+               return
+            end if
+         end if
+      end do
+   end function getFreeUnit!}}}
 
 !***********************************************************************
 !
@@ -173,7 +176,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -211,7 +214,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: amGlobalStatsPool
+      type (mpas_pool_type), pointer :: globalStatsAMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
@@ -237,36 +240,36 @@ contains
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertAleTransportTop, vertVelocityTop, &
          lowFreqDivergence, highFreqThickness, density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      
+
       real (kind=RKIND), dimension(:), pointer :: minGlobalStats,maxGlobalStats,sumGlobalStats, averages, rms, verticalSumMins, verticalSumMaxes
       real (kind=RKIND), dimension(kMaxVariables) :: sumSquares, reductions, sums, mins, maxes
       real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, sumSquares_tmp, mins_tmp, maxes_tmp, averages_tmp, verticalSumMins_tmp, verticalSumMaxes_tmp
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
 
-      logical, pointer :: thicknessFilterActive, amGlobalStatsActive
+      logical, pointer :: thicknessFilterActive, globalStatsAMPKGActive
+      logical, pointer :: config_AM_globalStats_text_file
+      character (len=StrKIND), pointer :: config_AM_globalStats_directory
 
       err = 0
 
-      call mpas_pool_get_package(ocnPackages, 'amGlobalStatsActive', amGlobalStatsActive)
+      call mpas_pool_get_package(ocnPackages, 'globalStatsAMPKGActive', globalStatsAMPKGActive)
 
-      if ( .not. amGlobalStatsActive ) return
+      if ( .not. globalStatsAMPKGActive ) return
 
       dminfo = domain % dminfo
-
-      call mpas_timer_start("compute_global_stats", .false., amGlobalStatsTimer)
 
       call mpas_pool_get_package(ocnPackages, 'thicknessFilterActive', thicknessFilterActive)
 
       ! write out data to Analysis Member output
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'amGlobalStats', amGlobalStatsPool)
-      call mpas_pool_get_array(amGlobalStatsPool, 'minGlobalStats', minGlobalStats)
-      call mpas_pool_get_array(amGlobalStatsPool, 'maxGlobalStats', maxGlobalStats)
-      call mpas_pool_get_array(amGlobalStatsPool, 'sumGlobalStats', sumGlobalStats)
-      call mpas_pool_get_array(amGlobalStatsPool, 'rmsGlobalStats', rms)
-      call mpas_pool_get_array(amGlobalStatsPool, 'avgGlobalStats', averages)
-      call mpas_pool_get_array(amGlobalStatsPool, 'vertSumMinGlobalStats', verticalSumMins)
-      call mpas_pool_get_array(amGlobalStatsPool, 'vertSumMaxGlobalStats', verticalSumMaxes)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'globalStatsAM', globalStatsAMPool)
+      call mpas_pool_get_array(globalStatsAMPool, 'minGlobalStats', minGlobalStats)
+      call mpas_pool_get_array(globalStatsAMPool, 'maxGlobalStats', maxGlobalStats)
+      call mpas_pool_get_array(globalStatsAMPool, 'sumGlobalStats', sumGlobalStats)
+      call mpas_pool_get_array(globalStatsAMPool, 'rmsGlobalStats', rms)
+      call mpas_pool_get_array(globalStatsAMPool, 'avgGlobalStats', averages)
+      call mpas_pool_get_array(globalStatsAMPool, 'vertSumMinGlobalStats', verticalSumMins)
+      call mpas_pool_get_array(globalStatsAMPool, 'vertSumMaxGlobalStats', verticalSumMaxes)
 
       sums = 0.0
       sumSquares = 0.0
@@ -288,24 +291,24 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'amGlobalStats', amGlobalStatsPool)
-         
+         call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
+
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)        
-         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)          
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)          
-         call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)    
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)    
-         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop) 
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
          call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness)  
-         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity)  
-         call mpas_pool_get_array(statePool, 'tracers', tracers)         
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
          if(thicknessFilterActive) then
-            call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence)
-            call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness)
+            call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, 1)
+            call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness, 1)
          end if
 
          call mpas_pool_get_array(diagnosticsPool, 'density', density)
@@ -490,7 +493,7 @@ contains
             verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
          end if
-   
+
          ! highFreqThickness
          variableIndex = variableIndex + 1
          if (thicknessFilterActive) then
@@ -662,7 +665,7 @@ contains
          variableIndex = variableIndex + 1
          averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
          rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
-   
+
          ! highFreqThickness
          variableIndex = variableIndex + 1
          averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
@@ -672,7 +675,7 @@ contains
          variableIndex = variableIndex + 1
          averages(variableIndex) = 0.0_RKIND
          rms(variableIndex) = 0.0_RKIND
-   
+
          ! highFreqThickness
          variableIndex = variableIndex + 1
          averages(variableIndex) = 0.0_RKIND
@@ -690,7 +693,43 @@ contains
       maxGlobalStats(1:nVariables) =  maxes(1:nVariables)
       sumGlobalStats(1:nVariables) =  sums(1:nVariables)
 
-      call mpas_timer_stop("global_stats", amGlobalStatsTimer)
+      call mpas_pool_get_config(domain % configs, 'config_AM_globalStats_text_file', config_AM_globalStats_text_file)
+      call mpas_pool_get_config(domain % configs, 'config_AM_globalStats_directory', config_AM_globalStats_directory)
+      if (config_AM_globalStats_text_file) then
+
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
+
+         ! write out the data to files
+         if (dminfo % my_proc_id == IO_NODE) then
+            fileID = getFreeUnit()
+            open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_min.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, mins(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_max.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, maxes(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_sum.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, sums(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_rms.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, rms(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_avg.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, averages(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_time.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(a)') trim(xtime)
+            close (fileID)
+            open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') verticalSumMins(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_colmax.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') verticalSumMaxes(1:nVariables)
+            close (fileID)
+         end if
+
+      endif
 
    end subroutine ocn_compute_global_stats!}}}
 
@@ -701,7 +740,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -748,7 +787,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !
