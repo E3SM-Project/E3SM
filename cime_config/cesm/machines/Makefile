@@ -187,7 +187,7 @@ endif
 
 # To prevent breaking cleaning and building components which don't require NetCDF directly
 # NetCDF is only required for building the coupled model and the PIO library
-ifeq ($(if $(or $(findstring PIO, $(MODEL)), $(findstring cesm, $(MODEL))), true, false), true)
+ifneq ($(or $(findstring pio, $(MODEL)), $(findstring driver, $(MODEL)), $(findstring cesm, $(MODEL))),)
   ifdef NETCDF_C_PATH
     ifndef NETCDF_FORTRAN_PATH
       $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
