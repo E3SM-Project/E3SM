@@ -1,15 +1,49 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-07-2017
+Tag: cime5.2.0-alpha.16
+Answer Changes: None
+Tests: scripts_regression_tests.py,
+Dependencies:
+
+Brief Summary: Add support for NETCDF C and Fortran libraries in seperate locations
+	Test modifications for CESM allactive cases, refactor code_checker, improve
+	compare_namelists tool.
+
+
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/machines/Makefile
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/machines/Makefile
+M       cime_config/cesm/machines/config_compilers.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       cime_config/xml_schemas/config_compilers_v2.xsd
+M       scripts/Tools/case_diff
+M       scripts/Tools/code_checker
+A       utils/python/CIME/code_checker.py
+M       utils/python/CIME/compare_namelists.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 01-04-2017
 Tag: cime5.2.0-alpha.15
 Answer Changes: None
-Tests: scripts_regression_tests, cesm development 
+Tests: scripts_regression_tests, cesm development
 Dependencies:
 
-Brief Summary: fix issues with clm 1pt configurations, issues with pio namelist settings, data assimilation script arguments, sharedarea context manager, 
+Brief Summary: fix issues with clm 1pt configurations, issues with pio namelist settings, data assimilation script arguments, sharedarea context manager,
 
-User interface changes: 
+User interface changes:
 
 Modified files: git diff --name-status
 M       cime_config/cesm/allactive/config_compsets.xml
