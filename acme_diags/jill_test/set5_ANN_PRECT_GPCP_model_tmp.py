@@ -41,15 +41,20 @@ obs_pr=f_obs('PRECT')
 mod_pr=(f_mod('PRECC')+f_mod('PRECL'))*3600.0*24.0*1000.0
 
 
-#For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size
-#model_grid=mod_pr.getGrid()
-#mod_pr_reg=mod_pr
-#obs_pr_reg=obs_pr.regrid(model_grid,regridTool='esmf',regridMethod='linear')
-
-obs_grid=obs_pr.getGrid()
-obs_pr_reg=obs_pr
-mod_pr_reg=mod_pr.regrid(obs_grid,regridTool='esmf',regridMethod='linear')
+#For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
+axes1=mod_pr.getAxisList() 
+axes2=obs_pr.getAxisList() 
+if len(axes1[1])<=len(axes2[1]): #use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
+    model_grid=mod_pr.getGrid()
+    mod_pr_reg=mod_pr
+    obs_pr_reg=obs_pr.regrid(model_grid,regridTool='esmf',regridMethod='linear')
+else:
+    obs_grid=obs_pr.getGrid()
+    obs_pr_reg=obs_pr
+    mod_pr_reg=mod_pr.regrid(obs_grid,regridTool='esmf',regridMethod='linear')
 dif_pr=mod_pr_reg-obs_pr_reg
+print dir(dif_pr)
+quit(dif_pr)
 
 #calculate metrics and pass in as mv attribute,failed
 #obs_pr.mean=round(cdutil.averager(obs_pr, axis='xy', weights='generate'),2) #area-weighting
