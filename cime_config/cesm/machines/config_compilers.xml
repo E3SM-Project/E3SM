@@ -871,7 +871,7 @@ using a fortran linker.
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
   <SLIBS>
-    <append> <shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
+    <append> -L<var>NETCDF_PATH</var>/lib -lnetcdff -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
   </SLIBS>
 </compiler>
 

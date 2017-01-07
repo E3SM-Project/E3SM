@@ -167,6 +167,8 @@
       <xs:element name="MPICXX" type="systemPath"/>
       <xs:element name="MPIFC" type="systemPath"/>
       <xs:element name="NETCDF_PATH" type="systemPath"/>
+      <xs:element name="NETCDF_C_PATH" type="systemPath"/>
+      <xs:element name="NETCDF_FORTRAN_PATH" type="systemPath"/>
       <xs:element name="PAPI_INC" type="systemPath"/>
       <xs:element name="PAPI_LIB" type="systemPath"/>
       <xs:element name="PETSC_PATH" type="systemPath"/>

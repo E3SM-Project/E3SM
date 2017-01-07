@@ -185,14 +185,41 @@ ifndef AR
    AR := ar
 endif
 
-ifdef NETCDF_PATH
-  ifndef INC_NETCDF
-    INC_NETCDF:=$(NETCDF_PATH)/include
-  endif
-  ifndef LIB_NETCDF
-    LIB_NETCDF:=$(NETCDF_PATH)/lib
+# To prevent breaking cleaning and building components which don't require NetCDF directly
+# NetCDF is only required for building the coupled model and the PIO library
+ifneq ($(or $(findstring pio, $(MODEL)), $(findstring driver, $(MODEL)), $(findstring cesm, $(MODEL))),)
+  ifdef NETCDF_C_PATH
+    ifndef NETCDF_FORTRAN_PATH
+      $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
+    endif
+    NETCDF_SEPARATE:=true
+    ifndef INC_NETCDF_C
+      INC_NETCDF_C:=$(NETCDF_C_PATH)/include
+    endif
+    ifndef INC_NETCDF_FORTRAN
+      INC_NETCDF_FORTRAN:=$(NETCDF_FORTRAN_PATH)/include
+    endif
+    ifndef LIB_NETCDF_C
+      LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
+    endif
+    ifndef LIB_NETCDF_FORTRAN
+      LIB_NETCDF_FORTRAN:=$(NETCDF_C_PATH)/lib
+    endif
+  else ifdef NETCDF_FORTRAN_PATH
+    $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
+  else ifdef NETCDF_PATH
+    NETCDF_SEPARATE:=false
+    ifndef INC_NETCDF
+      INC_NETCDF:=$(NETCDF_PATH)/include
+    endif
+    ifndef LIB_NETCDF
+      LIB_NETCDF:=$(NETCDF_PATH)/lib
+    endif
+  else
+    $(error No NetCDF Specified, required for PIO and CESM)
   endif
 endif
+
 ifeq ($(MPILIB),mpi-serial)
   undefine PNETCDF_PATH
 else
@@ -293,8 +320,10 @@ VPATH+=$(CSM_SHR_INCLUDE)
 #===============================================================================
 INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(CSM_SHR_INCLUDE)
 
-ifdef INC_NETCDF
+ifeq ($(NETCDF_SEPARATE), false)
   INCLDIR += -I$(INC_NETCDF)
+else ifeq ($(NETCDF_SEPARATE), true)
+  INCLDIR += -I$(INC_NETCDF_C) -I$(INC_NETCDF_FORTRAN)
 endif
 ifdef MOD_NETCDF
   INCLDIR += -I$(MOD_NETCDF)
@@ -315,7 +344,12 @@ ifeq ($(MODEL),driver)
 # nagfor requires the weird "-Wl,-Wl,," syntax.
 # If done in config_compilers.xml, we break MCT.
   ifeq ($(strip $(COMPILER)),nag)
-     SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
+    ifeq ($(NETCDF_SEPARATE), false)
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
+    else ifeq ($(NETCDF_SEPARATE), true)
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_C_PATH)/lib
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_FORTRAN_PATH)/lib
+    endif
   endif
 else
   ifeq ($(strip $(COMPILER)),nag)
@@ -360,8 +394,15 @@ CXXFLAGS := $(CFLAGS)
 
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
 		MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
-		CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
-		NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"
+		CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)"
+
+ifeq ($(NETCDF_SEPARATE), false)
+  CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
+else ifeq ($(NETCDF_SEPARATE), true)
+  # The mct library needs the NetCDF_C library
+  CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
+endif
+
 ifeq ($(COMPILER),nag)
   CONFIG_ARGS += LIBS="$(SLIBS)"
 endif
@@ -409,7 +450,11 @@ endif
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
-   SLIBS := -L$(LIB_NETCDF) -lnetcdf
+  ifeq ($(NETCDF_SEPARATE), false)
+    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
+  else ifeq ($(NETCDF_SEPARATE), true)
+    SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
+  endif
 endif
 ifdef LIB_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
@@ -510,10 +555,17 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
 	      -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
 	      -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
 	      -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-	      -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
 	      -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
 	      -D PIO_ENABLE_TESTS:BOOL=OFF \
 	      -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
+
+# Allow for separate installations of the NetCDF C and Fortran libraries
+ifeq ($(NETCDF_SEPARATE), false)
+  CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_PATH)
+else ifeq ($(NETCDF_SEPARATE), true)
+  CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_C_PATH) \
+                -D NETCDF_Fortran_DIR:PATH=$(NETCDF_FORTRAN_PATH)
+endif
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)"
@@ -615,8 +667,13 @@ db_flags:
 
 test_fc: test_fc.o
 	$(LD) -o $@ test_fc.o $(LDFLAGS)
+ifeq ($(NETCDF_SEPARATE), false)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(LDFLAGS)
+else ifeq ($(NETCDF_SEPARATE), true)
+test_nc: test_nc.o
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(LDFLAGS)
+endif
 test_mpi: test_mpi.o
 	$(LD) -o $@ test_mpi.o $(LDFLAGS)
 test_esmf: test_esmf.o
