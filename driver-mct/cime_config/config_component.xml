@@ -2406,12 +2406,12 @@
     <valid_values>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
     <default_value>CESM1_MOD_TIGHT</default_value>
     <values>
-      <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
-      <value compset="_POP2"                     >CESM1_MOD</value>
-      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">CESM1_MOD</value>
-      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
-      <value compset="_SOCN"                     >CESM1_MOD</value>
-      <value compset="_MPAS"                     >CESM1_MOD</value>
+      <value compset="_DATM.*_DOCN%SOM"          >RASM_OPTION1</value>
+      <value compset="_POP2"                     >RASM_OPTION1</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">RASM_OPTION1</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">RASM_OPTION1</value>
+      <value compset="_SOCN"                     >RASM_OPTION1</value>
+      <value compset="_MPAS"                     >RASM_OPTION1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -2548,15 +2548,15 @@
     <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
-      <value compset="_POP2">1</value>
-      <value compset="_POP2" grid="oi%tx0.1v2">4</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
-      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
-      <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
-      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
-      <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
-      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_POP2">24</value>
+      <value compset="_POP2" grid="oi%tx0.1v2">24</value>
+      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">24</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">24</value>
+      <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">24</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">24</value>
+      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">24</value>
+      <value compset="_SATM.*_SLND.*_SICE.*_SOCN">24</value>
+      <value compset="_DLND.*_CISM\d">24</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
