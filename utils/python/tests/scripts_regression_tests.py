@@ -1107,6 +1107,20 @@ class Z_FullSystemTest(TestCreateTestCommon):
             self.assertIs(type(test_time), int, msg="get time did not return int for %s" % test_status)
             self.assertTrue(test_time > 0, msg="test time was zero for %s" % test_status)
 
+        # Test that re-running works
+        tests = update_acme_tests.get_test_suite("cime_developer")
+        for test in tests:
+            if test.startswith("ERI"):
+                # TODO: these need to all work in the future but currently do not support re-run
+                pass
+            else:
+                casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
+                run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
+
+        if (self._hasbatch):
+            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
+                                  from_dir=self._testroot)
+
 ###############################################################################
 class K_TestCimeCase(TestCreateTestCommon):
 ###############################################################################
