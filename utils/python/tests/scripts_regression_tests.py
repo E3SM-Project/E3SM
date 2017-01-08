@@ -28,7 +28,7 @@ MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
-TEST_ROOT = None
+TEST_ROOT   = None
 
 os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
@@ -1887,7 +1887,9 @@ def write_provenance_info():
     curr_commit = get_current_commit(repo=LIB_DIR)
     logging.info("\nTesting commit %s" % curr_commit)
     cime_model = CIME.utils.get_model()
-    logging.info("Using cime_model = %s\n" % cime_model)
+    logging.info("Using cime_model = %s" % cime_model)
+    logging.info("Testing machine = %s" % MACHINE.get_machine_name())
+    logging.info("Test root: %s\n" % TEST_ROOT)
 
 def _main_func():
     global MACHINE
@@ -1910,7 +1912,8 @@ def _main_func():
     if "--machine" in sys.argv:
         midx = sys.argv.index("--machine")
         mach_name = sys.argv[midx + 1]
-        MACHINES = Machines(machine=mach_name)
+        MACHINE = Machines(machine=mach_name)
+        os.environ["CIME_MACHINE"] = mach_name
         del sys.argv[midx + 1]
         del sys.argv[midx]
 
