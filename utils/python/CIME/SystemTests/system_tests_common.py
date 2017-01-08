@@ -158,7 +158,7 @@ class SystemTestsCommon(object):
             self._test_status.set_status(RUN_PHASE, status, comments=("time=%d" % int(time_taken)))
 
         # We only return success if every phase, build and later, passed
-        return self._test_status.get_overall_test_status(ignore_namelists=True) == TEST_PASS_STATUS
+        return self._test_status.get_overall_test_status(ignore_namelists=True, ignore_memleak=True) == TEST_PASS_STATUS
 
     def run_phase(self):
         """
