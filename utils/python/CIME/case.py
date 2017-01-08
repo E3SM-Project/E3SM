@@ -90,6 +90,7 @@ class Case(object):
         self._components = []
         self._component_classes = []
         self._is_env_loaded = False
+        self._cime_model = get_model()
 
         self.thread_count = None
         self.tasks_per_node = None
@@ -485,12 +486,14 @@ class Case(object):
             env_file.set_components(comp_classes)
 
     def _get_component_config_data(self):
-        # attributes used for multi valued defaults ($attlist is a hash reference)
-        attlist = {"compset":self._compsetname, "grid":self._gridname}
+        # attributes used for multi valued defaults 
+        # attlist is a dictionary used to determine the value element that has the most matches
+        attlist = {"compset":self._compsetname, "grid":self._gridname, "cime_model":self._cime_model}
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
         files = Files()
+
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist)
@@ -498,6 +501,7 @@ class Case(object):
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
+
         # Add the group and elements for env_batch
         env_batch = self.get_env("batch")
         env_batch.add_elements_by_group(drv_comp, attributes=attlist)
