@@ -597,7 +597,6 @@ module namelist_mod
     nsplit          = se_nsplit
     call MPI_bcast(vthreads  ,      1, MPIinteger_t, par%root,par%comm,ierr)
 #else
-    call MPI_bcast(omega,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(pertlim,         1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nmax,            1, MPIinteger_t, par%root,par%comm,ierr)

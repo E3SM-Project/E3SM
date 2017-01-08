@@ -12,7 +12,7 @@ module prim_state_mod
   use hybrid_mod,       only: hybrid_t
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   use control_mod,      only: integration, test_case, runtype, moisture, &
-                              tstep_type,qsplit, ftype, use_cpstar, rsplit
+                              qsplit, ftype, use_cpstar, rsplit
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
@@ -336,11 +336,9 @@ contains
        if (rsplit>0) &
        write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 
-       if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
-          do q=1,qsize
-             write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
-          enddo
-       endif
+       do q=1,qsize
+          write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
+       enddo
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,' mb     '
 
@@ -588,19 +586,17 @@ contains
           ddt_tot = (TOTE(2)-TOTE(1))/(dt)
           write(iulog,'(a,3E22.14)') " E,dE/dt     ",TOTE(2),ddt_tot
           
-          if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
-             do q=1,qsize
-                write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
-                     (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
-             enddo
-          endif
+          do q=1,qsize
+             write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
+                  (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
+          enddo
 
           write(iulog,'(a)') 'Physics tendencies applied by dycore:'
           write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
           write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
           write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt
           q=1
-          write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
+          if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
        endif
 
        ! Print change in energy and tracer mass from the start of the simulation
@@ -611,13 +607,11 @@ contains
 #endif       
        if (TOTE0>0) then
           write(iulog,100) "(E-E0)/E0    ",(TOTE(2)-TOTE0)/TOTE0
-          if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
-             do q=1,qsize
-                if(Qmass0(q)>0.0D0) then
-                   write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
-                end if
-             enddo
-          endif
+          do q=1,qsize
+             if(Qmass0(q)>0.0D0) then
+                write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
+             end if
+          enddo
        endif
     endif
     

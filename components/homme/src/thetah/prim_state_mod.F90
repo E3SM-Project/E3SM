@@ -12,7 +12,7 @@ module prim_state_mod
   use hybrid_mod,       only: hybrid_t
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   use control_mod,      only: integration, test_case,  moisture, &
-                              tstep_type,qsplit, ftype, use_cpstar, rsplit,&
+                              qsplit, ftype, use_cpstar, rsplit,&
                               theta_hydrostatic_mode
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
@@ -193,10 +193,11 @@ contains
 
     !
     do ie=nets,nete
-       !tdiag = elem(ie)%state%theta(:,:,:,n0)
        if (theta_hydrostatic_mode) then
+          ! show min/max/num of temperature as a diagnostic
           call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
        else
+          ! show min/max/num of dpnh / dp as a diagnostic
           call get_field(elem(ie),'dpnh_dp',tdiag,hvcoord,n0,n0q)
        endif
 
@@ -566,34 +567,20 @@ contains
           write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
-          write(iulog,'(a,2e22.14)') 'Tot KE advection horiz, vert:      ',-KEhorz,-KEvert
-          write(iulog,'(a,2e22.14)') 'Tot IE dry advection horiz, vert:  ',-IEhorz,-IEvert
-          if (use_cpstar==1) then
-             write(iulog,'(a,2e22.14)') 'Tot IE wet advection horiz, vert:  ',-IEhorz_wet,-IEvert_wet
-          endif
+          write(iulog,'(a,2e22.14)')'Tot KE advection horiz, vert: ',-KEhorz,-KEvert
+          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',-IEhorz,-IEvert
           
-          write(iulog,'(a,2e22.14)') 'Transfer:   KE->IE, KE->PE:        ',-(T1+T2_m), -T2_s
-          write(iulog,'(a,2e22.14)') 'Transfer:   IE->KE, PE->KE:        ',-S1,-S2
-          if (use_cpstar==1) then
-             write(iulog,'(a,2e22.14)') 'Transfer:   IE->KE(wet only):      ',-S1_wet
-          endif
+          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE, KE->PE:   ',-(T1+T2_m), -T2_s
+          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE, PE->KE:   ',-S1,-S2
+
           
           ddt_tot =  (KEner(2)-KEner(1))/(dt)
           ddt_diss = ddt_tot -(T1+T2) 
           write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
           
-          if (use_cpstar==1) then
-             ddt_tot =  ( (IEner(2)-IEner_wet(2)) - (IEner(1)-IEner_wet(1))  )/dt
-             ddt_diss = ddt_tot - (S1 -S1_wet)
-             write(iulog,'(a,3E22.14,a)') "IE,d/dt,diss:",IEner(2)-IEner_wet(2),ddt_tot,ddt_diss,' (dry)'
-             ddt_tot =  ( IEner_wet(2) - IEner_wet(1) )/dt 
-             ddt_diss =  ddt_tot - S1_wet
-             write(iulog,'(a,3E22.14,a)') "IE,d/dt,diss:",IEner_wet(2),ddt_tot,ddt_diss,' (wet)'
-          else
-             ddt_tot =  (IEner(2)-IEner(1))/(dt)
-             ddt_diss = ddt_tot - S1 
-             write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
-          endif
+          ddt_tot =  (IEner(2)-IEner(1))/(dt)
+          ddt_diss = ddt_tot - S1 
+          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           
           ddt_tot = (PEner(2)-PEner(1))/(dt)
           ddt_diss = ddt_tot - S2
@@ -606,19 +593,17 @@ contains
           ddt_tot = (TOTE(2)-TOTE(1))/(dt)
           write(iulog,'(a,3E22.14)') " E,dE/dt     ",TOTE(2),ddt_tot
           
-          if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
-             do q=1,qsize
-                write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
-                     (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
-             enddo
-          endif
+          do q=1,qsize
+             write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
+                  (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
+          enddo
 
           write(iulog,'(a)') 'Physics tendencies applied by dycore:'
           write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt
           write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt
           write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt
           q=1
-          write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
+          if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
        endif
 
        ! Print change in energy and tracer mass from the start of the simulation
@@ -629,13 +614,11 @@ contains
 #endif       
        if (TOTE0>0) then
           write(iulog,100) "(E-E0)/E0    ",(TOTE(2)-TOTE0)/TOTE0
-          if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
-             do q=1,qsize
-                if(Qmass0(q)>0.0D0) then
-                   write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
-                end if
-             enddo
-          endif
+          do q=1,qsize
+             if(Qmass0(q)>0.0D0) then
+                write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
+             end if
+          enddo
        endif
     endif
     
@@ -693,7 +676,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !
     use kinds, only : real_kind
     use dimensions_mod, only : np, np, nlev
-    use control_mod, only : use_cpstar
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, cpwater_vapor
