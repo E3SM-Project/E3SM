@@ -1890,6 +1890,7 @@ def write_provenance_info():
     logging.info("Using cime_model = %s\n" % cime_model)
 
 def _main_func():
+    global MACHINE
 
     if "--fast" in sys.argv:
         sys.argv.remove("--fast")
@@ -1906,6 +1907,13 @@ def _main_func():
         global NO_CMAKE
         NO_CMAKE = True
 
+    if "--machine" in sys.argv:
+        midx = sys.argv.index("--machine")
+        mach_name = sys.argv[midx + 1]
+        MACHINES = Machines(machine=mach_name)
+        del sys.argv[midx + 1]
+        del sys.argv[midx]
+
     if "--test-root" in sys.argv:
         global TEST_ROOT
         trindex = sys.argv.index("--test-root")
@@ -1915,6 +1923,7 @@ def _main_func():
     else:
         TEST_ROOT = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
                                  "scripts_regression_test.%s"% CIME.utils.get_timestamp())
+
 
     args = lambda: None # just something to set attrs on
     for log_param in ["debug", "silent", "verbose"]:
