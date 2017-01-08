@@ -88,12 +88,12 @@ module element_state
     ! With leapfrog, energy equations are all exact except KE
     ! (has an Err term that goes to zero as dt**2)
     !
-    ! Transfer terms:
-    ! T1   = -< dp/dn u, RT_v/p grad_p >     KE<->IE:   T1 + T2-T2_s = S1
-    ! T2   = -< dp/dn u, grad_phi >          KE<->PE:   T2_s         = S2
-    ! T2_s = -< dp/dn u, grad_phis >
-    ! S1   = < Cp_star dp/dn , RT omega_p/Cp_star >
-    ! S2   = -< div (u dp/dn), phis >
+    ! Transfer terms: 
+    ! T1 = -< theta grad_exner,u >             (KE<->IE)_1: T1 = S1
+    ! T2 = -< grad_phi, u dp/dn > + g w dp/dn  (KE<->IE)_2: T2 = S2
+    ! S1 = -< exner, div(theta u) > 
+    ! S2 = < grad_phi , u dp/dn > - g w dp/dn
+    !
 
     real (kind=real_kind) :: KEvert1(np,np)                           ! term from continuity equ
     real (kind=real_kind) :: KEvert2(np,np)                           ! term from momentum equ
