@@ -217,7 +217,7 @@ else
   ifneq ($(MAKECMDGOALS), db_files)
   ifneq ($(MAKECMDGOALS), db_flags)
   ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-      $(error NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH)
+      $(error NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH in config_machines.xml or config_compilers.xml)
   endif
   endif
   endif
