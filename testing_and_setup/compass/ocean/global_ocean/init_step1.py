@@ -7,11 +7,12 @@ includes:
 2. combining transects defining cricial passages.*
 3. combining points used to seed a flood fill of the global ocean.
 4. create masks from land coverage.
-5. create masks from transects.*
-6. cull cells based on land coverage but with transects present
-7. create flood-fill mask based on seeds
-8. cull cells based on flood-fill mask
-9. create masks from transects on the final culled mesh*
+5. add land-locked cells to land coverage mask.
+6. create masks from transects.*
+7. cull cells based on land coverage but with transects present
+8. create flood-fill mask based on seeds
+9. cull cells based on flood-fill mask
+10. create masks from transects on the final culled mesh*
 * skipped if flag --with_critical_passages not present
 
 Optionally, the -p flag provides the path to the geometric_features
@@ -51,7 +52,6 @@ landCoverageMask = '{}/ocean/region/Global_Ocean_90S_to_60S/' \
     'region.geojson'.format(path)
 
 removeFile('land_coverage.geojson')
-
 # mask the land coverage to exclude the region below 60S
 args = ['{}/difference_features.py'.format(path),
         '-f', landCoverage,
@@ -78,6 +78,15 @@ subprocess.check_call(args, env=os.environ.copy())
 # ./MpasMaskCreator.x  base_mesh.nc land_mask.nc -f land_coverage.geojson
 args = ['./MpasMaskCreator.x', 'base_mesh.nc', 'land_mask.nc',
         '-f', 'land_coverage.geojson']
+print "running", ' '.join(args)
+subprocess.check_call(args, env=os.environ.copy())
+
+# Add land-locked cells to land coverage mask.
+args = ['./add_land_locked_cells_to_mask.py',
+        '-f', 'land_mask.nc',
+        '-m', 'base_mesh.nc',
+        '-l', '43.0',
+        '-n', '10']
 print "running", ' '.join(args)
 subprocess.check_call(args, env=os.environ.copy())
 
@@ -108,6 +117,15 @@ if options.with_critical_passages:
     # -f critical_passages.geojson
     args = ['./MpasMaskCreator.x', 'base_mesh.nc', 'critical_passages_mask.nc',
             '-f', 'critical_passages.geojson']
+    print "running", ' '.join(args)
+    subprocess.check_call(args, env=os.environ.copy())
+
+    # Alter critical passages to be at least two cells wide, to avoid sea ice
+    # blockage.
+    args = ['./widen_transect_edge_masks.py',
+            '-f', 'critical_passages_mask.nc',
+            '-m', 'base_mesh.nc',
+            '-l', '43.0']
     print "running", ' '.join(args)
     subprocess.check_call(args, env=os.environ.copy())
 

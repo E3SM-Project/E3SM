@@ -34,7 +34,6 @@ mask_creator = FULL_PATH_TO_MASK_CREATOR
 metis = FULL_PATH_TO_METIS
 mesh_generator = FULL_PATH_TO_EXECUTABLE_MESH_GENERATION_SCRIPT
 
-
 # The paths section describes paths that are used within the ocean core test
 # cases.
 [paths]
@@ -47,4 +46,5 @@ mesh_generator = FULL_PATH_TO_EXECUTABLE_MESH_GENERATION_SCRIPT
 mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
 initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE
 geometric_features = FULL_PATH_TO_LOCAL_CHECKOUT_OF_GEOMETRIC_FEATURES_DATABASE
+mpas_tools = FULL_PATH_TO_MPAS_TOOLS_REPO
 mesh_scripts = FULL_PATH_TO_LOCAL_CHECKOUT_OF_MESH_GENERATION_SCRIPTS
