@@ -847,15 +847,7 @@ contains
                 if (par%masterproc) print *,'writing omega...'
                 allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
                 do ie=1,nelemd
-                   do k=1,nlev
-                      do j=1,np
-                         do i=1,np
-                            pfull = hvcoord%hyam(k)*hvcoord%ps0  &
-                                 + hvcoord%hybm(k)*elem(ie)%state%ps_v(i,j,n0)
-                            var3d(i,j,k,ie)=elem(ie)%derived%omega_p(i,j,k)*pfull
-                         end do
-                      end do
-                   end do
+                   call get_field(elem(ie),'omega',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
                 end do
                 call make_C0(var3d,elem,par)
                 st=1

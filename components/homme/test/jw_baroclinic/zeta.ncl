@@ -103,7 +103,7 @@ begin
       ps=ps*100
       ps@units="Pa"
     end if
-    
+    print ("ps min/max = "+min(ps(:,:))+", "+max(ps(:,:)))
     hyam = f->hyam
     hybm = f->hybm
     pnew = (/ 850 /)

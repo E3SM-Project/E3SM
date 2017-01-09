@@ -68,7 +68,10 @@ module prim_advection_mod_base
   private
   save
 
+  public :: Prim_Advec_Init2
+  public :: Prim_Advec_Init1
   public :: Prim_Advec_Init1_rk2
+  public :: Prim_Advec_Tracers_remap
   public :: Prim_Advec_Tracers_remap_rk2   
 
 
@@ -136,6 +139,15 @@ contains
 
 !=================================================================================================!
 
+  subroutine Prim_Advec_Init2(elem,hvcoord,hybrid)
+    use element_mod   , only : element_t
+    use hybvcoord_mod , only : hvcoord_t
+    implicit none
+    type(element_t)   , intent(in) :: elem(:)
+    type(hvcoord_t)   , intent(in) :: hvcoord
+    type (hybrid_t)   , intent(in) :: hybrid
+    !dummy routine does nothing.  some models override this routine
+  end subroutine Prim_Advec_Init2
 
 
 

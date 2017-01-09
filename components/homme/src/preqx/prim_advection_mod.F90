@@ -14,7 +14,8 @@ module prim_advection_mod
   use hybrid_mod, only      : hybrid_t
   use control_mod, only     : use_semi_lagrange_transport
   use sl_advection, only    : prim_advec_tracers_remap_ALE, sl_init1
-  use prim_advection_mod_base, only: prim_advec_init1_rk2, prim_advec_tracers_remap_rk2
+  use prim_advection_mod_base, only: prim_advec_init1_rk2, prim_advec_tracers_remap_rk2,&
+       prim_advec_init2
 
   implicit none
 
@@ -38,19 +39,6 @@ contains
     call sl_init1(par,elem, n_domains)
 
   end subroutine Prim_Advec_Init1
-
-
-  subroutine Prim_Advec_Init2(elem,hvcoord,hybrid)
-    use element_mod   , only : element_t
-    use hybvcoord_mod , only : hvcoord_t
-    implicit none
-    type(element_t)   , intent(in) :: elem(:)
-    type(hvcoord_t)   , intent(in) :: hvcoord
-    type (hybrid_t)   , intent(in) :: hybrid
-    !Nothing to do but every model must provide this interface
-  end subroutine Prim_Advec_Init2
-
-
 
 
  subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord ,  hybrid , dt , tl , nets , nete )

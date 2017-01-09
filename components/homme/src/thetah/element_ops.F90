@@ -54,6 +54,12 @@ contains
      !field = elem%derived%phi(:,:,:)
   case ('dpnh_dp')
      call get_dpnh_dp(elem,field,hvcoord,nt,ntQ)
+  case ('omega')
+!     do k=1,nlev
+!        field(:,:,k)=elem%derived%omega_p(:,:,k)*&
+!             (hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt))
+!     end do
+     field(:,:,:)=elem%state%w(:,:,:,nt)
   case default
      print *,'name = ',trim(name)
      call abortmp('ERROR: get_field name not supported in this model')
@@ -305,6 +311,7 @@ contains
   pnh_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)
 
 
+
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
@@ -491,6 +498,8 @@ contains
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phi(i,j,k,n0:n1)      = g*zm
   elem%state%phis(i,j)           = phis
+
+  call abortmp('w not set')
 
   if (use_moisture) then
      call abortmp('ERROR: thetah set_state not yet coded for moisture')

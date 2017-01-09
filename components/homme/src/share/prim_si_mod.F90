@@ -164,6 +164,101 @@ contains
 
 
 
+  subroutine preq_vertadv_upwind(v,T,nfields,eta_dot_dp_deta, dp,v_vadv,T_vadv)
+    use kinds,              only : real_kind
+    use dimensions_mod,     only : nlev, np, nlevp
+    implicit none
+
+    integer, intent(in) :: nfields
+    real (kind=real_kind), intent(in) :: v(np,np,2,nlev)
+    real (kind=real_kind), intent(in) :: T(np,np,nlev,nfields)
+    real (kind=real_kind), intent(in) :: eta_dot_dp_deta(np,np,nlevp)
+    real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+    real (kind=real_kind), intent(out) :: v_vadv(np,np,2,nlev)
+    real (kind=real_kind), intent(out) :: T_vadv(np,np,nlev,nfields)
+
+    ! ========================
+    ! Local Variables
+    ! ========================
+
+    integer :: i,j,k,nf
+    real (kind=real_kind) :: deta_m(np,np)
+
+    real (kind=real_kind) :: v_i(np,np,2,nlevp)
+    real (kind=real_kind) :: T_i(np,np,nlevp,nfields)
+
+    ! old mass:  T*dp
+    ! new mass:  T*dp + [eta_i(k+1)*dp*T_i(k+1) - eta_i(k)*dp*T_i(k) ]
+    ! Tnew = 1/dp [eta_i(k+1)*dp*T_i(k+1) - eta_i(k)*dp*T_i(k) ]
+
+    ! Compute upwind values on interfaces
+    ! at top and bottom, eta_dot = 0 so values dont matter
+    v_i(:,:,:,1)=0
+    T_i(:,:,1,:)=0
+    v_i(:,:,:,nlevp)=0
+    T_i(:,:,nlevp,:)=0
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,j,i)
+#endif
+    do k=2,nlev
+    do j=1,np; do i=1,np
+#if 0
+       ! centered version, for debugging. identical to preq_vertadv_v() above
+       do nf=1,nfields
+          T_i(:,:,k,nf) = (T(:,:,k,nf) + T(:,:,k-1,nf) ) /2
+       enddo
+       v_i(:,:,:,k)  = (v(:,:,:,k) + v(:,:,:,k-1) ) /2
+#else
+       if (eta_dot_dp_deta(i,j,k) > 0 ) then
+          do nf=1,nfields
+             T_i(:,:,k,nf) = T(:,:,k-1,nf)
+          enddo
+          v_i(:,:,:,k)  = v(:,:,:,k-1)
+       else
+          do nf=1,nfields
+             T_i(:,:,k,nf) = T(:,:,k,nf)
+          enddo
+          v_i(:,:,:,k)  = v(:,:,:,k)
+       endif
+#endif
+    enddo ; enddo 
+    enddo
+
+    ! finite difference
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,deta_m)
+#endif
+    do k=1,nlev
+       deta_m(:,:) = eta_dot_dp_deta(:,:,k+1)-eta_dot_dp_deta(:,:,k)
+       v_vadv(:,:,1,k) = (&
+            eta_dot_dp_deta(:,:,k+1)*v_i(:,:,1,k+1) &
+            -eta_dot_dp_deta(:,:,k)*v_i(:,:,1,k) &
+            -v(:,:,1,k)*deta_m(:,:)  &
+            ) / dp(:,:,k)
+
+       v_vadv(:,:,2,k) = (&
+            eta_dot_dp_deta(:,:,k+1)*v_i(:,:,2,k+1) &
+            -eta_dot_dp_deta(:,:,k)*v_i(:,:,2,k) &
+            -v(:,:,2,k)*deta_m(:,:) &
+            ) / dp(:,:,k)
+
+       do nf=1,nfields
+          T_vadv(:,:,k,nf) = (&
+                eta_dot_dp_deta(:,:,k+1)*T_i(:,:,k+1,nf)  &
+                -eta_dot_dp_deta(:,:,k)*T_i(:,:,k,nf) &
+                -T(:,:,k,nf)*deta_m(:,:) &
+                ) / dp(:,:,k)
+       enddo
+    enddo
+    
+
+    end subroutine 
+
+
+
+
+
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 !

@@ -55,6 +55,11 @@ contains
      call get_pottemp(elem,field,hvcoord,nt,ntQ)
   case ('phi')
      field = elem%derived%phi(:,:,:)
+  case ('omega')
+     do k=1,nlev
+        field(:,:,k)=elem%derived%omega_p(:,:,k)*&
+             (hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt))
+     end do
   case default
      print *,'name = ',trim(name)
      call abortmp('ERROR: get_field name not supported in this model')

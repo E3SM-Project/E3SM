@@ -540,6 +540,14 @@ contains
 !                IE dissipation from continuity equation
 !                (1 deg: to about 0.1 W/m^2)
 !
+  do ie=nets,nete
+     do k=1,nlev
+        elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)-&
+             elem(ie)%state%phis(:,:)
+     enddo
+  enddo
+  
+
   if (hypervis_order == 2) then
      do ic=1,hypervis_subcycle
         call biharmonic_wk_theta(elem,stens,vtens,deriv,edge6,hybrid,nt,nets,nete)
@@ -673,6 +681,15 @@ contains
      enddo
   endif
 
+
+  do ie=nets,nete
+     do k=1,nlev
+        elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)+&
+             elem(ie)%state%phis(:,:)
+     enddo
+  enddo
+
+
   call t_stopf('advance_hypervis')
 
   end subroutine advance_hypervis
@@ -708,7 +725,7 @@ contains
 
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa, Rwater_vapor,p0, g
   use physics_mod, only : virtual_specific_heat, virtual_temperature
-  use prim_si_mod, only : preq_vertadv_v, preq_omega_ps, preq_hydrostatic, preq_hydrostatic_v2
+  use prim_si_mod, only : preq_vertadv_v, preq_vertadv_upwind, preq_omega_ps, preq_hydrostatic_v2
 
   use time_mod, only : tevolve
 
@@ -880,6 +897,7 @@ contains
         s_state(:,:,:,3)=elem(ie)%state%phi(:,:,:,n0)
 
         call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
+        !call preq_vertadv_upwind(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
      endif
 
 
