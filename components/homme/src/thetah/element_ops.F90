@@ -272,7 +272,6 @@ contains
   real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)   
 
   !   local
-  real (kind=real_kind) :: ptop
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: kappa_star_i(np,np,nlev)
   real (kind=real_kind) :: R_star(np,np,nlev)
@@ -285,7 +284,6 @@ contains
   integer :: k
 
 
-  ptop = hvcoord%hyai(1)*hvcoord%ps0
 
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
@@ -307,8 +305,6 @@ contains
      endif
   enddo
 
-  pnh_i(:,:,1) = ptop
-  pnh_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)
 
 
 
@@ -347,6 +343,16 @@ contains
           ( kappa_star_i(:,:,k)/ ( 1-kappa_star_i(:,:,k)))
      pnh_i(:,:,k) = rho_R_theta(:,:,k)*exner_i(:,:,k)
   enddo
+
+!  pnh = p  boundary condition
+!  pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0   ! hydrostatic ptop
+!  pnh_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)  ! hydrostatic psurf
+
+!  d(pnh) = dp  boundary condition
+!  dp3d(k) = pnh(k+1)-pnh(k)
+   pnh_i(:,:,1)      = pnh_i(:,:,2)    - dp3d(:,:,1) 
+   pnh_i(:,:,nlev+1) = pnh_i(:,:,nlev) + dp3d(:,:,nlev)   
+
 
 
 #if (defined COLUMN_OPENMP)

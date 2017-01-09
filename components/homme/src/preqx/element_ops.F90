@@ -48,6 +48,8 @@ contains
   integer, intent(in) :: nt
   integer, intent(in) :: ntQ
 
+  integer :: k
+
   select case(name)
   case ('temperature')
      call get_temperature(elem,field,hvcoord,nt,ntQ)

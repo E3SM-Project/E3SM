@@ -14,13 +14,14 @@
 #
 #SBATCH --job-name baro
 #SBATCH --account=FY150001
-#SBATCH -N 20
+#SBATCH -N 12
 #SBATCH --time=0:30:00
+#SBATCH -p ec
 #
 #  set paths to source code, build directory and run directory
 #
 set wdir =  ~/scratch1/preqx             # run directory
-set HOMME = ~/codes/acme/components/homme                # HOMME svn checkout     
+set HOMME = `pwd`/../..                  # HOMME svn checkout     
 set input = $HOMME/test/jw_baroclinic    # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
@@ -37,8 +38,8 @@ setenv CRAY_CUDA_PROXY 1
 #  mpi run command
 #
 set NCPU = 1
-setenv OMP_NUM_THREADS 4
-#setenv OMP_NUM_THREADS 1
+#setenv OMP_NUM_THREADS 4
+setenv OMP_NUM_THREADS 1
 
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
@@ -67,7 +68,7 @@ set u_perturb = 1
 set rotate = 0
 
                   # number of elemnets:  6*ne*ne
-set ne = 4        # horizontal resolution   4,16,30,60,120,240
+set ne = 16        # horizontal resolution   4,16,30,60,120,240
 set qsize = 4     # use 4 tracers for testing
 
 # CAM4

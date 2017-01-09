@@ -787,19 +787,14 @@ contains
         call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,&
              dp3d,elem(ie)%state%Qdp(:,:,:,1,qn0))
         
-        ! Compute Hydrostatic equation, modeld after CCM-3
+        ! Compute Hydrostatic equation
         do k=1,nlev
-           !temp(:,:,k) = Cp*theta(:,:,k)*&
-           !  ( (pnh_i(:,:,k+1)/p0)**kappa - (pnh_i(:,:,k)/p0)**kappa )
-           temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
+           temp(:,:,k) = Cp*theta(:,:,k)*&
+             ( (pnh_i(:,:,k+1)/p0)**kappa - (pnh_i(:,:,k)/p0)**kappa )
+           !temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
         enddo
         call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
         dpnh_dp(:,:,:) = 1
-        
-        !    as a debug step, use nonhydrostatic formulas to compute exner pressure:
-        !    needs 2x smaller timestep, results are ok, maybe noisy
-        !call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,&
-        !     phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0))
      else
         phi => elem(ie)%state%phi(:,:,:,n0)
         call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,&
@@ -807,17 +802,6 @@ contains
         
         ! d(p-nh) / d(p-hyrdostatic)
         dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
-#if 0
-        if (hybrid%masterthread) then
-           if (ie==1) then
-              do k=2,nlev,4
-                 write(*,"(i3,4f15.5)") k,(elem(ie)%state%phi(1,1,k,n0)),&
-                      (elem(ie)%state%phi(:,:,k-1,n0)),&
-                      minval(dpnh_dp(:,:,k)),maxval(dpnh_dp(:,:,k))
-              enddo
-           endif
-        endif
-#endif
      endif
 
 
