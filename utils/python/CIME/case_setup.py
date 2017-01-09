@@ -270,10 +270,10 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                          env >> software_environment.txt")
 
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False):
+def case_setup(case, clean=False, test_mode=False, reset=False, no_status=False):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
-    if case.get_value("TEST"):
+    if case.get_value("TEST") and not no_status:
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
