@@ -185,7 +185,7 @@ ifndef AR
    AR := ar
 endif
 
-ifdef NETCDF_C_PATH 
+ifdef NETCDF_C_PATH
   ifndef NETCDF_FORTRAN_PATH
     $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
   endif
@@ -217,7 +217,7 @@ else
   ifneq ($(MAKECMDGOALS), db_files)
   ifneq ($(MAKECMDGOALS), db_flags)
   ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-      $(error No NetCDF Specified, required for PIO and CESM)
+      $(error NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH)
   endif
   endif
   endif
