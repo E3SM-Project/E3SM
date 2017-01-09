@@ -92,7 +92,17 @@ template_2.title.priority=1
 
 # model and observation graph
 isofill = x.createisofill()
-isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+isofill.levels=[0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+# NOTE: because of the obs and model data files used,
+# there is no 360 degree value, so we use 358 as 0.
+# Same for 0 where we use 2 instead.
+isofill.xticlabels1 = {2: '0', 30: '30E', 60: '60E', 90: '90E',
+                       120: '120E', 150: '150E', 180: '180W', 210: '150W',
+                       240: '120W', 270: '90W', 300: '60W', 330: '30W', 358: '0'}
+isofill.yticlabels1 = {-88: '90S', -80: '80S', -60: '60S', -40: '40S',
+                       -20:'20S', 0: 'Eq', 20: '20N', 40: '40N', 60: '60N',
+                       80: '80N', 88: '90N'}
+
 #ext_1 and ext_2 are arrows
 isofill.ext_1 = True
 isofill.ext_2 = True
@@ -101,7 +111,7 @@ x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
 # difference graph
-isofill.levels=[-6, -5, -4, -3, -2, -1,-0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
 # After you set arrows, need to enable arrows again
 isofill.ext_1 = True
 isofill.ext_2 = True
