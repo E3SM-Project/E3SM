@@ -41,7 +41,10 @@ class Machines(GenericXML):
             GenericXML.read(self, local_infile)
 
         if machine is None:
-            machine = self.probe_machine_name()
+            if "CIME_MACHINE" in os.environ:
+                machine = os.environ["CIME_MACHINE"]
+            else:
+                machine = self.probe_machine_name()
 
         expect(machine is not None, "Could not initialize machine object from %s or %s" % (infile, local_infile))
         self.set_machine(machine)

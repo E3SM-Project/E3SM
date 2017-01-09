@@ -28,7 +28,7 @@ MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
-TEST_ROOT = None
+TEST_ROOT   = None
 
 os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
@@ -1901,9 +1901,12 @@ def write_provenance_info():
     curr_commit = get_current_commit(repo=LIB_DIR)
     logging.info("\nTesting commit %s" % curr_commit)
     cime_model = CIME.utils.get_model()
-    logging.info("Using cime_model = %s\n" % cime_model)
+    logging.info("Using cime_model = %s" % cime_model)
+    logging.info("Testing machine = %s" % MACHINE.get_machine_name())
+    logging.info("Test root: %s\n" % TEST_ROOT)
 
 def _main_func():
+    global MACHINE
 
     if "--fast" in sys.argv:
         sys.argv.remove("--fast")
@@ -1920,6 +1923,14 @@ def _main_func():
         global NO_CMAKE
         NO_CMAKE = True
 
+    if "--machine" in sys.argv:
+        midx = sys.argv.index("--machine")
+        mach_name = sys.argv[midx + 1]
+        MACHINE = Machines(machine=mach_name)
+        os.environ["CIME_MACHINE"] = mach_name
+        del sys.argv[midx + 1]
+        del sys.argv[midx]
+
     if "--test-root" in sys.argv:
         global TEST_ROOT
         trindex = sys.argv.index("--test-root")
@@ -1929,6 +1940,7 @@ def _main_func():
     else:
         TEST_ROOT = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
                                  "scripts_regression_test.%s"% CIME.utils.get_timestamp())
+
 
     args = lambda: None # just something to set attrs on
     for log_param in ["debug", "silent", "verbose"]:
