@@ -25,10 +25,10 @@ def compute_corr(model, obs):
         print err
     return corr
 
-#reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
-#test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
-reference_data_path='../'
-test_data_path='../'
+reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
+test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
+#reference_data_path='../'
+#test_data_path='../'
 
 #Read in data
 reference_data_set='GPCP_v2.2_ANN_climo.nc'  # observation
@@ -90,15 +90,23 @@ template_0.title.priority=1
 template_1.title.priority=1
 template_2.title.priority=1
 
+# model and observation graph
 isofill = x.createisofill()
 isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
-#x.setcolormap('rainbow')
+#ext_1 and ext_2 are arrows
+isofill.ext_1 = True
+isofill.ext_2 = True
+
 x.plot(mod_pr, template_0, isofill)
-
-isofill = x.createisofill()
-isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
-
 x.plot(obs_pr, template_1, isofill)
+
+# difference graph
+isofill.levels=[-6, -5, -4, -3, -2, -1,-0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+# After you set arrows, need to enable arrows again
+isofill.ext_1 = True
+isofill.ext_2 = True
+isofill.colormap = x.getcolormap('bl_to_darkred')
+x.plot(dif_pr, template_2, isofill)
 
 #output rmse and corr
 out_1=vcs.createtext()
@@ -111,12 +119,5 @@ x.plot(out_1)
 out_1.y=0.06
 out_1.string=corr
 x.plot(out_1)
-
-
-isofill = x.createisofill()
-isofill.levels=[-6, -5, -4, -3, -2, -1,-0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
-colormap = x.getcolormap('bl_to_darkred')
-isofill.colormap = colormap
-x.plot(dif_pr, template_2, isofill)
 
 x.png('test.png')
