@@ -157,7 +157,8 @@ class SystemTestsCommon(object):
         with self._test_status:
             self._test_status.set_status(RUN_PHASE, status, comments=("time=%d" % int(time_taken)))
 
-        # We only return success if every phase, build and later, passed
+        # We return success if the run phase worked; memleaks, diffs will not be taken into account
+        # with this return value.
         return success
 
     def run_phase(self):
