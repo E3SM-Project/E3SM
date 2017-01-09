@@ -99,7 +99,6 @@ isofill = x.createisofill()
 isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 
 x.plot(obs_pr, template_1, isofill)
-#x.setcolormap('bl_to_darkred')
 
 #output rmse and corr
 out_1=vcs.createtext()
@@ -115,7 +114,9 @@ x.plot(out_1)
 
 
 isofill = x.createisofill()
-isofill.levels=[-10,-8, -6, -4, -3, -2, -1,-0.5, 0, 0.5, 1, 2, 3, 4, 6, 8,10]
+isofill.levels=[-6, -5, -4, -3, -2, -1,-0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+colormap = x.getcolormap('bl_to_darkred')
+isofill.colormap = colormap
 x.plot(dif_pr, template_2, isofill)
 
 x.png('test.png')
