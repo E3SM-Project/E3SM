@@ -119,6 +119,15 @@ class EnvMachSpecific(EnvBase):
         else:
             expect(False, "Unhandled module system '%s'" % module_system)
 
+    def save_all_env_info(self, filename):
+        """
+        Get a string representation of all current environment info and
+        save it to file.
+        """
+        with open(filename, "w") as f:
+            f.write(self.list_modules())
+        run_cmd_no_fail("echo -e '\n' >> %s && env >> %s" % (filename, filename))
+
     def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
         modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
         envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
