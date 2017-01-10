@@ -121,7 +121,7 @@ contains
      call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,dp,elem%state%Qdp(:,:,:,1,ntQ))
   else
      call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,elem%state%theta(:,:,:,nt),&
-          dp,elem%state%phi(:,:,:,nt),elem%state%phis,elem%state%Qdp(:,:,:,1,ntQ))
+          dp,elem%state%phi(:,:,:,nt),elem%state%Qdp(:,:,:,1,ntQ))
   endif
 
 
@@ -166,7 +166,7 @@ contains
      !call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,dp,elem%state%Qdp(:,:,:,1,ntQ))
   else
      call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,elem%state%theta(:,:,:,nt),&
-          dp,elem%state%phi(:,:,:,nt),elem%state%phis,elem%state%Qdp(:,:,:,1,ntQ))
+          dp,elem%state%phi(:,:,:,nt),elem%state%Qdp(:,:,:,1,ntQ))
      dpnh_dp = dpnh/dp
   endif
   end subroutine 
@@ -244,7 +244,7 @@ contains
 
 
 
-  subroutine get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,phi,phis,Qdp)
+  subroutine get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,phi,Qdp)
   implicit none
 !
 ! compute exner pressure, nh presure
@@ -253,7 +253,7 @@ contains
 !         call this routine with phi computed from hydrostatic exner
 !         
 ! nonhydro case:
-! input:  dp3d, Qdp (if use_moisture), phi, phis, theta
+! input:  dp3d, Qdp (if use_moisture), phi, theta
 ! output:  
 !       for k=2..nlev, use the equation of state:  pnh/e = rho*Rstar*theta
 !                                                    rho   = -dp3d/dphi 
@@ -267,7 +267,6 @@ contains
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: theta(np,np,nlev)   
   real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: phis(np,np)
   real (kind=real_kind), intent(in) :: phi(np,np,nlev)
   real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)   
 

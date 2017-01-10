@@ -75,9 +75,11 @@ begin
 
 ; lfrk vs lf tests
 if (True) then
-labelnames = (/"LF96","LF90","LF80","LF5RK90","LF5RK80","LF4RK90","LF4RK80"/)
+labelnames = (/"preqx","theta-h","nh"/)
 fnames =  systemfunc(\
-"ls ~/scratch1/preqx/jw-ne11-4t240l26-hnu2.5e16-1/movies/jw_baroclinic1.nc; " +\
+"ls ~/scratch1/preqx/jw-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
+"ls ~/scratch1/preqx/jwthetah-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
+"ls ~/scratch1/preqx/jwtheta-ne16-nlev26-qsize?/movies/jw_baroclinic1.nc; " +\
 "")
 end if
 
@@ -139,7 +141,7 @@ nlon=sizevar(2)
 
 
 
-if ( True ) then
+if ( False ) then
   fnames =  systemfunc("ls ~/scratch1/preqx/jw-ne120-4t20l26-hnu1e13-1/movies/jw_baroclinic1.nc ")
   fref    = addfile(fnames,"r")       ; Open netCDF files.	
   PSref2048=fref->ps
@@ -159,6 +161,7 @@ if ( True ) then
 ;  fcnt=fcnt-1
 else
   fnames =  systemfunc("ls ~/scratch1/preqx/eaT340.ps.nc")
+  ;fnames =  systemfunc("ls ~/scratch1/preqx/T340ref.nc")
   fref    = addfiles(fnames,"r")       ; Open netCDF files.	
   PSref=fref[0]->PS
   refname = "T340"
@@ -172,9 +175,8 @@ plotl2 = 1
 
 firsttime=0
 ;lasttime=30
-lasttime=15
+lasttime=9
 timeinc=1
-
 
 
 
@@ -209,11 +211,13 @@ end if
 
   var = new((/nlat,nlon/),"double")
   diffl2 = new((/fcnt,lasttime+1/),"double")
-  diffl2=0
+  diffl2=diffl2@missing_value
+  timesl2 = new((/lasttime+1/),"double")
+  timesl2 = timesl2@missing_value
+
 
    print ("ntimes="+ntimes+" nlat x nlon "+nlat+"x"+nlon)
 
-  time = f[0]->time
   wks = gsn_open_wks(output_format,"psl2")
   print ("Writing file psl2."+output_format)
 
@@ -225,6 +229,13 @@ end do
 do n=firsttime,lasttime,timeinc
 do kf = 0,fcnt-1
 
+  nref = closest_val(n,fref[0]->time)
+  nkf  = closest_val(n,f[kf]->time)
+  if ( fref[0]->time(nref) .ne. f[kf]->time(nkf) ) 
+     print("missing data - skipping time="+n)
+     continue
+  end if
+  time = f[kf]->time
 
 ;
 ; The first call below selects a colormap, and the second reverses it.
@@ -276,15 +287,14 @@ do kf = 0,fcnt-1
 
   varmin = 1.e9
   varmax = -1.
-  var(:,:)= f[kf]->$field$(n,:,:)
-  copyatt( var, f[kf]->$field$(n,:,:) )
+  var(:,:)= f[kf]->$field$(nkf,:,:)
+  copyatt( var, f[kf]->$field$(nkf,:,:) )
 
   if ( "Pa" .eq. var@units) then
      var=var/100
      var@units="mb"
   end if
-
-  if ( time(n) .ge. 7  ) then
+  if ( time(nkf) .ge. 7  ) then
      res@cnMinLevelValF = 940.
      res@cnMaxLevelValF = 1020.
      res@cnLevelSpacingF = 10.0
@@ -303,39 +313,51 @@ do kf = 0,fcnt-1
   ;gsn_define_colormap(wks,"WhViBlGrYeOrRe")
   gsn_define_colormap(wks,"cosam")
   if (plotsol .eq. 1) then
-     print ("min/max = "+min(var(:,:))+", "+max(var(:,:)) + "  time="+time(n) )
+     print ("min/max = "+min(var(:,:))+", "+max(var(:,:)) + "  time="+time(nkf) )
      contour = gsn_csm_contour_map(wks,var(:,:),res)     ; Draw a contour plot.  ;
      print("Contour complete: "+res@tiMainString)
    end if
 
   ; now plot the CAM contour plot:
   res@tiMainString        = "CAM T340"
-  var2= PSref(n,:,:)
-  copyatt( var2, PSref(n,:,:) )
+  var2= PSref(nref,:,:)
+  copyatt( var2, PSref(nref,:,:) )
   if ( "Pa" .eq. var2@units) then
      var2=var2/100
      var2@units="mb"
   end if
   if (plotref .eq. 1) then
-    print ("min/max = "+min(var2(:,:))+", "+max(var2(:,:)) + "  time="+time(n) )
+    print ("min/max = "+min(var2(:,:))+", "+max(var2(:,:)) + "  time="+time(nkf) )
     contour = gsn_csm_contour_map(wks,var2(:,:),res)     ; Draw a contour plot.  ;
     print("Contour complete: "+res@tiMainString)
   end if
 
-  var=var-var2
+  ; interpolate ref solution 
+  nlatref=dimsizes(f[kf]->lat)
+  nlonref=dimsizes(f[kf]->lon)
+  print("Interpolating ref solution to "+nlatref+" x "+nlonref)
+  var3 = g2gsh_Wrap(var2,(/nlatref,nlonref/),nlat-1)
+
+
+
+
+
+  var=var-var3
   res@tiMainString        = "DIFF"
   res@cnMinLevelValF = -12.0
   res@cnMaxLevelValF = 12.0
   res@cnLevelSpacingF = 2.0
   res@mpGridAndLimbOn  = False
   if (plotdiff .eq. 1) then
-    print ("min/max = "+min(var(:,:))+", "+max(var(:,:)) + "  time="+time(n) )
+    print ("min/max = "+min(var(:,:))+", "+max(var(:,:)) + "  time="+time(nkf) )
     contour = gsn_csm_contour_map(wks,var(:,:),res)     ; Draw a contour plot.  ;
     print("Contour complete: "+res@tiMainString)
   end if
 
   diffl2(kf,n) = norml2(var,gw)
-  print ( kf + " time="+time(n) + "  || HOMME-REF || = " + diffl2(kf,n)  )
+  timesl2(n) = time(nkf)
+  print ( kf + " time="+time(nkf) + "  || HOMME-REF || = " + diffl2(kf,n)  )
+  delete(time)
 end do  ; loop over file names
 end do  ; loop over time level
 
@@ -361,7 +383,7 @@ if (plotl2 .eq. 1 ) then
 
   resxy@gsnFrame = False
   resxy@trXMaxF   = lasttime
-;  resxy@trXMaxF   = 10
+  resxy@trXMaxF   = 10
   resxy@trXMinF   = 0
   resxy@trYMaxF   = 1000
   resxy@trYMinF   = .001
@@ -433,7 +455,7 @@ if (plotl2 .eq. 1 ) then
        dlabel = dlabel+":F34:0:F21:"
     end if
     delete(tmp)
-    gsn_polyline(wks,plot,time(0:lasttime),diffl2(kf,:),polyres) 
+    gsn_polyline(wks,plot,timesl2(0:lasttime),diffl2(kf,:),polyres) 
 
     xx = (/2,4/)
     yy = (/ypos,ypos/)
