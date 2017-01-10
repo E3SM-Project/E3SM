@@ -42,7 +42,6 @@ obs_pr=f_obs('PRECT')
 mod_pr=(f_mod('PRECC')+f_mod('PRECL'))*3600.0*24.0*1000.0
 print mod_pr.getLongitude()
 print mod_pr.getLatitude()
-#quit()
 
 #For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
 axes1=mod_pr.getAxisList()
@@ -115,5 +114,4 @@ isofill.ext_1 = True
 isofill.ext_2 = True
 #isofill.colormap = x.getcolormap('bl_to_darkred')
 x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
-
 x.png('test.png')
