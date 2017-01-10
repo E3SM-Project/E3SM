@@ -101,10 +101,10 @@ module element_state
     ! PEvert1  = -phi d(edtadot dpi/deta)deta -etadot dpi/deta dphi/deta
     !
     ! Transfer terms:
-    ! T1 = -< theta grad_exner,u >             (KE<->IE)_1: T1 = S1
-    ! T2 = -< grad_phi, u theta  (dphi/deta)^-1 dexner/deta  > - g w theta * (dphi/deta)^-1 dexner/deta  (KE<->IE)_2: T2 = S2
+    ! T1 = -< theta grad_exner,u >             (KE<->IE)_1: T1 + S1 = 0
+    ! T2 = gw dp/ds - dp/ds < u,grad(phi)>     (KE<->IE)_2: T2 + S2 = 0
     ! S1 = - exner div(theta u)
-    ! S2 = -T2 (the terms are exactly opposite)
+    ! S2 = -T2 (the terms are exactly opposite without integration by parts)
     !
 
     real (kind=real_kind) :: KEvert1(np,np)

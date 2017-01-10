@@ -1023,7 +1023,7 @@ contains
               do i=1,np
                   v1 = elem(ie)%state%v(i,j,1,k,n0)
                   v2 = elem(ie)%state%v(i,j,2,k,n0)
-                  w = elem(ie)%state%w(i,j,k,n0)
+                  w = elem(ie)%state%w(i,j,k,n0)                 
                !  Form KEhoriz1
                   elem(ie)%accum%KEhoriz1(i,j) = -(v1*vtemp(i,j,1)+v2*vtemp(i,j,2))*dp3d(i,j,k) &
                   -Ephi(i,j)*divdp(i,j,k)
@@ -1033,16 +1033,23 @@ contains
                !  Form KEvert1
                   elem(ie)%accum%KEvert1(i,j) = 0.5*w*w * divdp(i,j,k)+dp3d(i,j,k)*w*(v1*       &
                   vtemp2(i,j,1)+v2*vtemp2(i,j,2))
+               !  Form KEvert2
+               !  elem(ie)%accum%KEvert2(i,j) = eta_dot_dpdn(i,j,k)/dpnh_dp(i,j,k) * w * (dw/ds) 
+               !  -0.5*w^*2 d(eta_dot_dpdn(i,j,k)/dpnh_dp(i,j,k))/ds
+               !  Form IEvert1
+               !  elem(ie)%accum%IEvert1(i,j) = exner(i,j,k)*d(theta etadot)/ds - theta dexner/ds etadot
                !  Form PEhoriz1
                   elem(ie)accum%PEhorz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-dp3d(i,j,k)*              &
                   (vtemp(i,j,1)*v1+vtemp(i,j,2)*v2)
+               !  Form PEvert1, how to form d(theta etadot)/ds
+               !   elem(ie)%accum%PEvert1(i,j)=-phi(i,j,k)*d(etadot dpi/deta)/ds - etado dpi/deta dphi/deta
                !  Form T1
                   elem(ie)%accum%T1(i,j)=-theta(i,j,k)*(grad_exner(i,j,1,k)*v1+                 &
                   grad_exner(i,j,2,k)*v2)
                !  Form S1 
                   elem(ie)%accum%S1(i,j)=-exner(i,j,k)*divtemp
                !  Form T2 
-               !   elem(ie)%accum%T2(i,j)=-g*w*theta(i,j,k)*(dphi/deta)^-1 dexner/ds + theta * (dphi/deta)^-1 dexner/dx gradphi^T u
+                  elem(ie)%accum%T2(i,j)=(g*w-v1*vtemp3(i,j,1,k)+v2*vtemp3(i,j,2,k))*dpnh(i,j,k)
                !  Form S2
                !   elem(ie)%accum%S2(i,j)=-elem(ie)%accum%accum%T2(i,j)
               enddo
