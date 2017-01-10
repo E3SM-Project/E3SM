@@ -43,19 +43,24 @@
 
   <compset>
     <alias>CMPASO-NYF</alias>
-    <lname>2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_SGLC_SWAV</lname>
+    <lname>2000_DATM%NYF_SLND_DICE%SSMI_MPASO_DROF%NYF_SGLC_SWAV</lname>
     <support_level>"Experimental, under development"</support_level>
   </compset>
 
   <compset>
     <alias>CMPASO-IAF</alias>
-    <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO_DROF%IAF_SGLC_SWAV</lname>
+    <lname>2000_DATM%IAF_SLND_DICE%SIAF_MPASO_DROF%IAF_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
-    <alias>GMPAS</alias>
+    <alias>GMPAS-NYF</alias>
     <lname>2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_MPASCICE_MPASO_DROF%IAF_SGLC_SWAV</lname>
   </compset>
 
 </compsets>
