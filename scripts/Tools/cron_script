@@ -11,4 +11,4 @@ SCRIPT_DIR=$( cd "$( dirname "$0" )" && pwd )
 DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
 export JENKINS_START_TIME=$(date "+%s")
 
-$SCRIPT_DIR/jenkins_generic_job "$@" >& JENKINS_$DATE_STAMP
+$SCRIPT_DIR/jenkins_generic_job --submit-to-cdash "$@" >& JENKINS_$DATE_STAMP
