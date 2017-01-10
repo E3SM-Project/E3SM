@@ -770,14 +770,14 @@
     "y2": 0
    },
    "comment1": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_comment1",
     "texttable": "default",
     "x": 0.873,
     "y": 0.07499999999999993
    },
    "comment2": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_comment1",
     "texttable": "default",
     "x": 0.873,

@@ -54,24 +54,9 @@ else:
     mod_pr_reg=mod_pr.regrid(obs_grid,regridTool='esmf',regridMethod='linear')
 dif_pr=mod_pr_reg-obs_pr_reg
 
-#calculate metrics and pass in as mv attribute,failed
-#obs_pr.mean=round(cdutil.averager(obs_pr, axis='xy', weights='generate'),2) #area-weighting
-#mod_pr.mean=round(cdutil.averager(mod_pr, axis='xy', weights='generate'),2) #area-weighting
-#dif_pr.mean=round(cdutil.averager(dif_pr, axis='xy', weights='generate'),2) #area-weighting
-#
-#obs_pr.max=round(mod_pr.max(),2)
-#mod_pr.max=round(mod_pr.max(),2)
-#dif_pr.max=round(dif_pr.max(),2)
-#
-#obs_pr.min=round(mod_pr.min(),2)
-#mod_pr.min=round(mod_pr.min(),2)
-#dif_pr.min=round(dif_pr.min(),2)
-
-
 #CORR and RMSE need to be calculated after reduction to ensure same array shapes.
 rmse= 'RMSE:'+'%.2f' %round(compute_rmse(obs_pr_reg, mod_pr_reg),2)
 corr= 'CORR:'+'%.2f' %round(compute_corr(obs_pr_reg, mod_pr_reg),2)
-print rmse, corr
 
 #Plotting
 x = vcs.init(bg=True, geometry=(1212,1628))
@@ -116,18 +101,6 @@ isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
 isofill.ext_1 = True
 isofill.ext_2 = True
 isofill.colormap = x.getcolormap('bl_to_darkred')
-x.plot(dif_pr, template_2, isofill)
-
-#output rmse and corr
-out_1=vcs.createtext()
-out_1.x=0.87
-out_1.y=0.08
-out_1.height=12
-out_1.color='red'
-out_1.string=rmse
-x.plot(out_1)
-out_1.y=0.06
-out_1.string=corr
-x.plot(out_1)
+x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
 
 x.png('test.png')
