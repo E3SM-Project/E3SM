@@ -193,6 +193,10 @@ def save_prerun_provenance_cesm(case, lid=None): # pylint: disable=unused-argume
 
 def save_prerun_provenance(case, lid=None):
     with SharedArea():
+        # Always save env
+        lid = os.environ["LID"] if lid is None else lid
+        env_module = case.get_env("mach_specific")
+        env_module.save_all_env_info(os.path.join(case.get_value("CASEROOT"), "logs", "run_environment.txt.%s" % lid))
         model = case.get_value("MODEL")
         if model == "acme":
             save_prerun_provenance_acme(case, lid=lid)
@@ -253,6 +257,7 @@ def save_postrun_provenance_acme(case, lid):
     elif mach in ["edison", "cori-haswell", "cori-knl"]:
         globs_to_copy.append("%s" % case.get_value("CASE"))
 
+    globs_to_copy.append("logs/run_environment.txt.%s" % lid)
     globs_to_copy.append("logs/acme.log.%s.gz" % lid)
     globs_to_copy.append("logs/cpl.log.%s.gz" % lid)
     globs_to_copy.append("timing/*.%s" % lid)

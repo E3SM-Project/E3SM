@@ -264,10 +264,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module = case.get_env("mach_specific")
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
-        with open("software_environment.txt", "w") as f:
-            f.write(env_module.list_modules())
-        run_cmd_no_fail("echo -e '\n' >> software_environment.txt && \
-                         env >> software_environment.txt")
+        env_module.save_all_env_info("software_environment.txt")
 
 ###############################################################################
 def case_setup(case, clean=False, test_mode=False, reset=False, no_status=False):
