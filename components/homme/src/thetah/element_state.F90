@@ -76,46 +76,49 @@ module element_state
 #ifdef ENERGY_DIAGNOSTICS
 
     ! Energy equation:
-    ! KE_t  = T1 + T2  + D1   + Err   +  vertical & horizontal advection terms
-    ! IE_t  = S1 + D2                 +  vertical & horizontal advection terms
-    ! PE_t  = S2
+    ! KE_t  = KEhoriz1 + KEvert1 + KEvert2 - (dpi/deta)gw +  T1 + T2 + D1 + Err
+    ! IE_t  = S1 + S2 + IEvert1 + d(p dphi/dt)/deta + ptop dphitop/dt + D2
+    ! PE_t  = PEhoriz1 + PEvert1 + (dpi/deta)gw
+    !
+    ! d(p dphi/dt)/deta + ptop dphitop/dt should vertically integrate to zero
     !
     ! KEvert*  =  KE net vertical advection    (should be zero)
-    ! KEhoriz* =  KE net horizonatl advection  (should be zero)
+    ! KEhoriz* =  KE net horizontal advection  (* = 2 might be zero due to horizontal gradient of vertical velocity)
     ! IEvert*  =  IE net vertical advection    (should be zero)
-    ! IEhoriz* =  IE net horizonatl advection  (should be zero)
+    ! IEhoriz* =  IE net horizontal advection  (should be zero)
+    ! PEhoriz* =  PE net horizontal advection  (should be zero)
     !
     ! With leapfrog, energy equations are all exact except KE
     ! (has an Err term that goes to zero as dt**2)
     !
-    ! Transfer terms: 
+    ! non-transfer terms
+    ! KEhoriz1 = -0.5*(dpi/deta)*u*grad(u^2)-0.5*u^2 * div( u dpi/deta)
+    ! KEhoriz2 = dpi/deta w grad(w)^2 u -0.5 w^2 div(dpi/deta u)
+    ! PEhoriz1 = -phi div(u dpi/deta) - grad(phi)^T u dpi/deta
+    ! KEvert1  = etadot u du/deta dpi/deta - 0.5*u^2 d(etadot dpi/deta )/deta
+    ! KEvert2  = -etadot w dw/deta dpi/deta - 0.5 w^2 d(etadot dpi/deta)/deta
+    ! IEvert1  = -p^kappa d(theta etadot)/deta - theta etadot d p^kappa / deta
+    ! PEvert1  = -phi d(edtadot dpi/deta)deta -etadot dpi/deta dphi/deta
+    !
+    ! Transfer terms:
     ! T1 = -< theta grad_exner,u >             (KE<->IE)_1: T1 = S1
-    ! T2 = -< grad_phi, u dp/dn > + g w dp/dn  (KE<->IE)_2: T2 = S2
-    ! S1 = -< exner, div(theta u) > 
-    ! S2 = < grad_phi , u dp/dn > - g w dp/dn
+    ! T2 = -< grad_phi, u theta  (dphi/deta)^-1 dexner/deta  > - g w theta * (dphi/deta)^-1 dexner/deta  (KE<->IE)_2: T2 = S2
+    ! S1 = - exner div(theta u)
+    ! S2 = -T2 (the terms are exactly opposite)
     !
 
-    real (kind=real_kind) :: KEvert1(np,np)                           ! term from continuity equ
-    real (kind=real_kind) :: KEvert2(np,np)                           ! term from momentum equ
-    real (kind=real_kind) :: IEvert1(np,np)                           ! term from continuity equ
-    real (kind=real_kind) :: IEvert2(np,np)                           ! term from T equ
-    real (kind=real_kind) :: IEvert1_wet(np,np)                       ! wet term from continuity equ
-    real (kind=real_kind) :: IEvert2_wet(np,np)                       ! wet term from T equ
+    real (kind=real_kind) :: KEvert1(np,np)
+    real (kind=real_kind) :: KEvert2(np,np)
+    real (kind=real_kind) :: IEvert1(np,np)
+    real (kind=real_kind) :: PEvert2(np,np)
 
-    real (kind=real_kind) :: KEhorz1(np,np)                           ! at time t
-    real (kind=real_kind) :: KEhorz2(np,np)                           ! after calling time_advance, these will be at time t-1
-    real (kind=real_kind) :: IEhorz1(np,np)
-    real (kind=real_kind) :: IEhorz2(np,np)
-    real (kind=real_kind) :: PEhorz1(np,np)
-    real (kind=real_kind) :: PEhorz2(np,np)
-    real (kind=real_kind) :: IEhorz1_wet(np,np)
-    real (kind=real_kind) :: IEhorz2_wet(np,np)
+    real (kind=real_kind) :: KEhoriz1(np,np)
+    real (kind=real_kind) :: KEhoriz2(np,np)
+    real (kind=real_kind) :: PEhoriz1(np,np)
 
     real (kind=real_kind) :: T1(np,np)
     real (kind=real_kind) :: T2(np,np)
-    real (kind=real_kind) :: T2_s(np,np)
     real (kind=real_kind) :: S1(np,np)
-    real (kind=real_kind) :: S1_wet(np,np)
     real (kind=real_kind) :: S2(np,np)
 
     ! the KE conversion term and diffusion term
