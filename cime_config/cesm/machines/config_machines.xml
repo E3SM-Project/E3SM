@@ -46,7 +46,7 @@
 
 -->
 
-<config_machines>
+<config_machines version="2.0">
 
   <machine MACH="bluewaters">
     <DESC>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</DESC>
@@ -953,7 +953,6 @@
       <env name="MPI_TYPE_DEPTH">16</env>
     </environment_variables>
   </machine>
-
 
   <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>

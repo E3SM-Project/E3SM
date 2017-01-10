@@ -22,23 +22,25 @@ class Machines(GenericXML):
         self.machine_node = None
         self.machine = None
         self.machines_dir = None
-
+        schema = None
         if infile is None:
             if files is None:
                 files = Files()
             infile = files.get_value("MACHINES_SPEC_FILE", resolved=False)
+            schema = files.get_schema("MACHINES_SPEC_FILE")
+            logger.warn("Verifying using schema %s"%schema)
             infile = files.get_resolved_value(infile)
 
         self.machines_dir = os.path.dirname(infile)
 
-        GenericXML.__init__(self, infile)
+        GenericXML.__init__(self, infile, schema)
 
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
         # This could cause problems if node matchs are repeated when only one is expected
         local_infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
         logger.debug("Infile: %s" , local_infile)
         if os.path.exists(local_infile):
-            GenericXML.read(self, local_infile)
+            GenericXML.read(self, local_infile, schema)
 
         if machine is None:
             if "CIME_MACHINE" in os.environ:
