@@ -1,32 +1,44 @@
 ======================================================================
 
 Originator: Jim Edwards
-Date: 01-07-2017
+Date: 01-10-2017
 Tag: cime5.2.0-alpha.16
 Answer Changes: None
-Tests: scripts_regression_tests.py,
+Tests: scripts_regression_tests
 Dependencies:
 
-Brief Summary: Add support for NETCDF C and Fortran libraries in seperate locations
-	Test modifications for CESM allactive cases, refactor code_checker, improve
-	compare_namelists tool.
+Brief Summary: Fix issue with netcdf flags in Makefile, update nersc systems
+	add runtime env to provenance output
 
-
-User interface changes:
+User interface changes: 
 
 Modified files: git diff --name-status
 M       cime_config/acme/machines/Makefile
 M       cime_config/acme/machines/config_compilers.xml
 M       cime_config/cesm/allactive/config_compsets.xml
 M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/config_grids.xml
 M       cime_config/cesm/machines/Makefile
 M       cime_config/cesm/machines/config_compilers.xml
 M       cime_config/cesm/machines/config_machines.xml
 M       cime_config/xml_schemas/config_compilers_v2.xsd
+M       driver_cpl/bld/testdir/env_run.xml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/cime_config/namelist_definition_drv.xml
+M       driver_cpl/shr/seq_infodata_mod.F90
 M       scripts/Tools/case_diff
 M       scripts/Tools/code_checker
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/env_mach_specific.py
+M       utils/python/CIME/XML/machines.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_cmpgen_namelists.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/case_test.py
 A       utils/python/CIME/code_checker.py
 M       utils/python/CIME/compare_namelists.py
+M       utils/python/CIME/provenance.py
+M       utils/python/CIME/test_scheduler.py
 M       utils/python/CIME/utils.py
 M       utils/python/tests/scripts_regression_tests.py
 
@@ -38,12 +50,12 @@ Originator: Jim Edwards
 Date: 01-04-2017
 Tag: cime5.2.0-alpha.15
 Answer Changes: None
-Tests: scripts_regression_tests, cesm development
+Tests: scripts_regression_tests, cesm development 
 Dependencies:
 
-Brief Summary: fix issues with clm 1pt configurations, issues with pio namelist settings, data assimilation script arguments, sharedarea context manager,
+Brief Summary: fix issues with clm 1pt configurations, issues with pio namelist settings, data assimilation script arguments, sharedarea context manager, 
 
-User interface changes:
+User interface changes: 
 
 Modified files: git diff --name-status
 M       cime_config/cesm/allactive/config_compsets.xml
