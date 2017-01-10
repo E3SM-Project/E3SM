@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <!-- attributes -->
+  <xs:attribute name="MACH" type="xs:NCName"/>
+  <xs:attribute name="compiler" type="xs:NCName"/>
+  <xs:attribute name="mpilib" type="xs:NCName"/>
+  <xs:attribute name="debug" type="xs:boolean"/>
+  <xs:attribute name="threaded" type="xs:boolean"/>
+  <xs:attribute name="type" type="xs:NCName"/>
+  <xs:attribute name="lang" type="xs:NCName"/>
+  <xs:attribute name="name" type="xs:NCName"/>
+
+  <!-- simple elements -->
+  <xs:element name="DESC" type="xs:string"/>
+  <xs:element name="NODENAME_REGEX" type="xs:string"/>
+  <xs:element name="OS" type="xs:NCName"/>
+  <xs:element name="COMPILERS" type="xs:string"/>
+  <xs:element name="MPILIBS" type="xs:string"/>
+  <xs:element name="CIME_OUTPUT_ROOT" type="xs:string"/>
+  <xs:element name="DIN_LOC_ROOT" type="xs:string"/>
+  <xs:element name="DIN_LOC_ROOT_CLMFORC" type="xs:string"/>
+  <xs:element name="DOUT_S_ROOT" type="xs:string"/>
+  <xs:element name="DOUT_L_MSROOT" type="xs:string"/>
+  <xs:element name="BASELINE_ROOT" type="xs:string"/>
+  <xs:element name="CCSM_CPRNC" type="xs:string"/>
+  <xs:element name="PERL5LIB" type="xs:string"/>
+  <xs:element name="BATCH_SYSTEM" type="xs:NCName"/>
+  <xs:element name="SUPPORTED_BY" type="xs:NCName"/>
+  <xs:element name="GMAKE_J" type="xs:integer"/>
+  <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
+  <xs:element name="PES_PER_NODE" type="xs:integer"/>
+  <xs:element name="PROJECT_REQUIRED" type="xs:NCName"/>
+
+  <!-- complex elements -->
+
+  <xs:element name="config_machines">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="machine"/>
+        <xs:element ref="default_run_suffix"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="machine">
+    <xs:complexType>
+      <xs:group>
+        <xs:element ref="DESC"/>
+        <xs:element ref="NODENAME_REGEX"/>
+        <xs:element ref="OS"/>
+        <xs:element ref="COMPILERS"/>
+        <xs:element ref="MPILIBS"/>
+        <xs:element ref="CIME_OUTPUT_ROOT"/>
+        <xs:element ref="DIN_LOC_ROOT"/>
+        <xs:element ref="DIN_LOC_ROOT_CLMFORC"/>
+        <xs:element ref="DOUT_S_ROOT"/>
+        <xs:element ref="DOUT_L_MSROOT"/>
+        <xs:element ref="BASELINE_ROOT"/>
+        <xs:element ref="CCSM_CPRNC"/>
+        <xs:element ref="PERL5LIB"/>
+        <xs:element ref="BATCH_SYSTEM"/>
+        <xs:element ref="SUPPORTED_BY"/>
+        <xs:element ref="GMAKE_J"/>
+        <xs:element ref="MAX_TASKS_PER_NODE"/>
+        <xs:element ref="PES_PER_NODE"/>
+        <xs:element ref="PROJECT_REQUIRED"/>
+        <xs:element maxOccurs="unbounded" ref="mpirun"/>
+        <xs:element ref="module_system"/>
+        <xs:element maxOccurs="unbounded" ref="environment_variables"/>
+      </xs:group>
+      <xs:attribute ref="MACH" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="mpirun">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="executable"/>
+      </xs:sequence>
+      <xs:attribute ref="compiler"/>
+      <xs:attribute ref="mpilib"/>
+      <xs:attribute ref="threaded"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="executable" type="xs:string"/>
+  <xs:element name="module_system">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="init_path"/>
+        <xs:element maxOccurs="unbounded" ref="cmd_path"/>
+        <xs:element maxOccurs="unbounded" ref="modules"/>
+      </xs:sequence>
+      <xs:attribute ref="type" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="init_path">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="cmd_path">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="modules">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="command"/>
+      </xs:sequence>
+      <xs:attribute ref="compiler" />
+      <xs:attribute ref="debug" />
+      <xs:attribute ref="mpilib"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="command">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="environment_variables">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="env"/>
+      </xs:sequence>
+      <xs:attribute ref="debug"/>
+      <xs:attribute ref="mpilib"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="env">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="default_run_suffix">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="default_run_exe"/>
+        <xs:element ref="default_run_misc_suffix"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="default_run_exe" type="xs:string"/>
+  <xs:element name="default_run_misc_suffix" type="xs:string"/>
+</xs:schema>
