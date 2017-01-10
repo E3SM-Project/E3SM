@@ -25,24 +25,19 @@ def compute_corr(model, obs):
         print err
     return corr
 
-#reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
-#test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
-reference_data_path='../'
-test_data_path='../'
+reference_data_path='./'
+test_data_path='./'
 
 #Read in data
-reference_data_set='GPCP_v2.2_ANN_climo.nc'  # observation
-#reference_data_set='GPCP_ANN_climo.nc'  # observation
-test_data_set='20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'  # model
+reference_data_set='figure-set5_Global_ANN_T_plot--obs.nc'  # observation
+test_data_set='figure-set5_Global_ANN_T_plot--model.nc'  # model
 
 f_obs=cdms2.open(reference_data_path + reference_data_set)
 f_mod=cdms2.open(test_data_path + test_data_set)
 
-obs_pr=f_obs('PRECT')
-mod_pr=(f_mod('PRECC')+f_mod('PRECL'))*3600.0*24.0*1000.0
-print mod_pr.getLongitude()
-print mod_pr.getLatitude()
-#quit()
+obs_pr=f_obs('rv_T_ANN_NCEP')
+mod_pr=f_mod('rv_T_ANN_cam_output')
+
 
 #For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
 axes1=mod_pr.getAxisList()
@@ -84,7 +79,8 @@ isofill.datawc_x1=0
 isofill.datawc_x2=360
 isofill.datawc_y1=-90
 isofill.datawc_y2=90
-isofill.levels=[0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+
+isofill.levels=[212, 216, 220, 224, 228, 232, 236, 240, 244, 248, 252, 256, 260, 264]#[x+4 for x in range(208, 264, 4)]
 # NOTE: because of the obs and model data files used,
 # there is no 360 degree value, so we use 358 as 0.
 # Same for 0 where we use 2 instead.
@@ -101,19 +97,18 @@ isofill.ext_2 = True
 
 x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
+isofill = x.createisofill()
+isofill.datawc_x1=0
+isofill.datawc_x2=360
+isofill.datawc_y1=-90
+isofill.datawc_y2=90
 
 # difference graph
-#isofill = x.createisofill()
-#isofill.datawc_x1=0
-#isofill.datawc_x2=360
-#isofill.datawc_y1=-90
-#isofill.datawc_y2=90
-
-isofill.levels=[-1e20, -6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6, 1e20]
+#isofill.levels=[-1e20, -6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6, 1e20]
 # After you set arrows, need to enable arrows again
 isofill.ext_1 = True
 isofill.ext_2 = True
-#isofill.colormap = x.getcolormap('bl_to_darkred')
+isofill.colormap = x.getcolormap('ltbl_to_drkbl')
 x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
 
 x.png('test.png')

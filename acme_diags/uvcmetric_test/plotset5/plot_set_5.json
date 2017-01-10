@@ -84,7 +84,7 @@
     "y2": 0.95
    },
    "dataname": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_112930675296446",
     "texttable": "default",
     "x": 0.12300000000000001,
@@ -157,7 +157,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -165,7 +165,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -173,7 +173,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
@@ -187,7 +187,7 @@
     "y": 0.9565555391090741
    },
    "title": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_675849204359008",
     "texttable": "default",
     "x": 0.4915,
@@ -216,7 +216,7 @@
    },
    "tvalue": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_782854384406963",
     "texttable": "default",
     "x": 0.7371666844619278,
@@ -346,14 +346,14 @@
     "y": 0.9760749839645337
    },
    "zname": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_170501124996227",
     "texttable": "default",
     "x": 0.08205555436917207,
     "y": 1
    },
    "zunits": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_859294926264171",
     "texttable": "default",
     "x": 0.08205555436917207,
@@ -361,7 +361,7 @@
    },
    "zvalue": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_972703188910046",
     "texttable": "default",
     "x": 0.7371666844619278,
@@ -452,7 +452,7 @@
     "y2": 0.6366666666666666
    },
    "dataname": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_732683257747507",
     "texttable": "default",
     "x": 0.12300000000000001,
@@ -525,7 +525,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -533,7 +533,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -541,7 +541,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
@@ -555,7 +555,7 @@
     "y": 0.6432222057757409
    },
    "title": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_428791170453960",
     "texttable": "default",
     "x": 0.4915,
@@ -584,7 +584,7 @@
    },
    "tvalue": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_418697761723079",
     "texttable": "default",
     "x": 0.7371666844619278,
@@ -714,14 +714,14 @@
     "y": 0.6627416506312003
    },
    "zname": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_311553778529739",
     "texttable": "default",
     "x": 0.08205555436917207,
     "y": 0.6925416604991221
    },
    "zunits": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_995398237322083",
     "texttable": "default",
     "x": 0.08205555436917207,
@@ -729,7 +729,7 @@
    },
    "zvalue": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_383124927004085",
     "texttable": "default",
     "x": 0.7371666844619278,
@@ -770,14 +770,14 @@
     "y2": 0
    },
    "comment1": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_comment1",
     "texttable": "default",
     "x": 0.873,
     "y": 0.07499999999999993
    },
    "comment2": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_comment1",
     "texttable": "default",
     "x": 0.873,
@@ -820,7 +820,7 @@
     "y2": 0.32333333333333325
    },
    "dataname": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_937211945085079",
     "texttable": "default",
     "x": 0.12300000000000001,
@@ -893,7 +893,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -901,7 +901,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -909,7 +909,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
@@ -923,7 +923,7 @@
     "y": 0.3298888724424074
    },
    "title": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_916780501350462",
     "texttable": "default",
     "x": 0.4915,
@@ -952,7 +952,7 @@
    },
    "tvalue": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_470033425852913",
     "texttable": "default",
     "x": 0.7371666844619278,
@@ -1082,14 +1082,14 @@
     "y": 0.34940831729786703
    },
    "zname": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_583445224754011",
     "texttable": "default",
     "x": 0.08205555436917207,
     "y": 0.3792083271657889
    },
    "zunits": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_354191416634788",
     "texttable": "default",
     "x": 0.08205555436917207,
@@ -1097,7 +1097,7 @@
    },
    "zvalue": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "__textorientation_182714115227410",
     "texttable": "default",
     "x": 0.7371666844619278,
