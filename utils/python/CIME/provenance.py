@@ -196,7 +196,10 @@ def save_prerun_provenance(case, lid=None):
         # Always save env
         lid = os.environ["LID"] if lid is None else lid
         env_module = case.get_env("mach_specific")
-        env_module.save_all_env_info(os.path.join(case.get_value("CASEROOT"), "logs", "run_environment.txt.%s" % lid))
+        logdir = os.path.join(case.get_value("CASEROOT"), "logs") 
+        if not os.path.isdir(logdir):
+            os.makedirs(logdir)
+        env_module.save_all_env_info(os.path.join(logdir, "run_environment.txt.%s" % lid))
         model = case.get_value("MODEL")
         if model == "acme":
             save_prerun_provenance_acme(case, lid=lid)
