@@ -546,7 +546,7 @@ using a fortran linker.
     <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <LDFLAGS>
-    <append>-mkl -lmemkind -ljemalloc -zmuldefs</append>
+    <append>-mkl </append>
   </LDFLAGS>
 </compiler>
 
