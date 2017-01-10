@@ -74,7 +74,8 @@ ind = np.nonzero(yCell[:] == centerY)
 x = xCell[ind]/1000.0
 
 # calculate mean,min,max for all x values for needed variables
-allx=np.unique(xCell[:])
+allx=np.unique(xCell[:])  # list of all unique x values
+middley = np.unique(yCell[:])[1:-1]  # list of all unique y values, excluding the values on the north and south edges
 N_mean = np.zeros(allx.shape)
 N_min = np.zeros(allx.shape)
 N_max = np.zeros(allx.shape)
@@ -85,9 +86,12 @@ for i in range(len(allx)):
     N_mean[i] = N[ xCell == allx[i] ].mean()
     N_min[i] = N[ xCell == allx[i] ].min()
     N_max[i] = N[ xCell == allx[i] ].max()
-    q_mean[i] = q[ xCell == allx[i] ].mean()
-    q_min[i] = q[ xCell == allx[i] ].min()
-    q_max[i] = q[ xCell == allx[i] ].max()
+    # Note: the second logical condition excludes the north and south rows.
+    # They have unrealistic values after interpolation to cell centers
+    # because of the no flow lateral b.c.
+    q_mean[i] = q[ np.logical_and(xCell == allx[i], np.in1d(yCell, middley) ) ].mean()
+    q_min[i] = q[ np.logical_and(xCell == allx[i], np.in1d(yCell, middley) ) ].min()
+    q_max[i] = q[ np.logical_and(xCell == allx[i], np.in1d(yCell, middley) ) ].max()
 
 print "start plotting."
 
