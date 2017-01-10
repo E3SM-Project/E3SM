@@ -61,7 +61,7 @@ def case_test(case, testname=None):
         caseroot = case.get_value("CASEROOT")
         with TestStatus(test_dir=caseroot) as ts:
             ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="failed to initialize")
-        append_status(sys.exc_info()[1], sfile="TestStatus.log")
+        append_status(str(sys.exc_info()[1]), sfile="TestStatus.log")
         raise
 
     success = test.run()
