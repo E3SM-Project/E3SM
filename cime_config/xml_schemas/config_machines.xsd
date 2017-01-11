@@ -54,32 +54,70 @@
   <xs:element name="machine">
     <xs:complexType>
       <xs:sequence>
+	<!-- DESC: a text description of the machine, this field is current not used-->
         <xs:element ref="DESC" minOccurs="1" maxOccurs="1"/>
+	<!-- NODENAME_REGEX: a regular expression used to identify this machine
+	  it must work on compute nodes as well as login nodes, use machine option
+	  to create_test or create_newcase if this flag is not available -->
         <xs:element ref="NODENAME_REGEX" minOccurs="0" maxOccurs="1"/>
+	<!-- OS: the operating system of this machine. -->
         <xs:element ref="OS" minOccurs="1" maxOccurs="1"/>
+	<!-- PROXY: -->
         <xs:element ref="PROXY" minOccurs="0" maxOccurs="1"/>
+	<!-- COMPILERS: compilers supported on this machine, comma seperated list, first is default -->
         <xs:element ref="COMPILERS" minOccurs="1" maxOccurs="1"/>
+	<!-- MPILIBS: mpilibs supported on this machine, comma seperated list, first is default -->
         <xs:element ref="MPILIBS" minOccurs="1" maxOccurs="1"/>
+	<!-- PROJECT: A project or account number used for batch jobs
+	  can be overridden in environment or $HOME/.cime/config -->
 	<xs:element ref="PROJECT" minOccurs="0" maxOccurs="1"/>
+	<!-- SAVE_TIMING_DIR: (Acme only) directory to write timing output to -->
 	<xs:element ref="SAVE_TIMING_DIR" minOccurs="0" maxOccurs="1"/>
+	<!-- CIME_OUTPUT_ROOT: Base directory for case output,
+	     the bld and run directories are written below here -->
         <xs:element ref="CIME_OUTPUT_ROOT" minOccurs="1" maxOccurs="1"/>
+	<!-- DIN_LOC_ROOT: location of the inputdata directory -->
         <xs:element ref="DIN_LOC_ROOT" minOccurs="1" maxOccurs="1"/>
+	<!-- DIN_LOC_ROOT_CLMFORC: optional input location for clm forcing data  -->
         <xs:element ref="DIN_LOC_ROOT_CLMFORC" minOccurs="0" maxOccurs="1"/>
+	<!-- DOUT_S_ROOT: root directory of short term archive files -->
         <xs:element ref="DOUT_S_ROOT" minOccurs="1" maxOccurs="1"/>
+	<!-- DOUT_L_MSROOT: root directory on mass store system of
+	     long term archive files-->
         <xs:element ref="DOUT_L_MSROOT" minOccurs="0" maxOccurs="1"/>
+	<!-- BASELINE_ROOT:  Root directory for system test baseline files -->
         <xs:element ref="BASELINE_ROOT" minOccurs="0" maxOccurs="1"/>
+	<!-- CCSM_CPRNC: location of the cprnc tool, compares model output in testing-->
         <xs:element ref="CCSM_CPRNC" minOccurs="0" maxOccurs="1"/>
+	<!-- PERL5LIB: location of external PERL modules (this variable is depreciated) -->
         <xs:element ref="PERL5LIB" minOccurs="0" maxOccurs="1"/>
+	<!-- GMAKE: gnu compatible make tool, default is 'gmake' -->
         <xs:element ref="GMAKE" minOccurs="0" maxOccurs="1"/>
+	<!-- GMAKE_J: optional number of threads to pass to the gmake flag -->
         <xs:element ref="GMAKE_J" minOccurs="0" maxOccurs="1"/>
+	<!-- TESTS: (acme only) list of tests to run on this machine -->
         <xs:element ref="TESTS" minOccurs="0" maxOccurs="1"/>
+	<!-- BATCH_SYSTEM: batch system used on this machine (none is okay) -->
         <xs:element ref="BATCH_SYSTEM" minOccurs="1" maxOccurs="1"/>
+	<!-- SUPPORTED_BY: contact information for support for this system -->
         <xs:element ref="SUPPORTED_BY" minOccurs="1" maxOccurs="1"/>
+	<!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per
+	     shared memory node on this machine-->
         <xs:element ref="MAX_TASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
+	<!-- PES_PER_NODE: number of physical PES per shared node on
+	     this machine, in practice the MPI tasks per node will not exceed this value -->
         <xs:element ref="PES_PER_NODE" minOccurs="1" maxOccurs="1"/>
+	<!-- PROJECT_REQUIRED: Does this machine require a project to be specified to
+	     the batch system?  See PROJECT above -->
         <xs:element ref="PROJECT_REQUIRED" minOccurs="0" maxOccurs="1"/>
+	<!-- mpirun: The mpi exec to start a job on this machine
+	     see detail below-->
 	<xs:element minOccurs="0" maxOccurs="unbounded" ref="mpirun"/>
+	<!-- module_system: how and what modules to load on this system ,
+	     see detail below -->
         <xs:element ref="module_system" minOccurs="0" maxOccurs="1"/>
+	<!-- environment_variables: environment_variables to set on this system,
+	  see detail below-->
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
       </xs:sequence>
       <xs:attribute ref="MACH" use="required"/>
