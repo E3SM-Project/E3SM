@@ -102,16 +102,16 @@ x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
 # difference graph
-#isofill = x.createisofill()
-#isofill.datawc_x1=0
-#isofill.datawc_x2=360
-#isofill.datawc_y1=-90
-#isofill.datawc_y2=90
+isofill = x.createisofill()
+isofill.datawc_x1=0
+isofill.datawc_x2=360
+isofill.datawc_y1=-90
+isofill.datawc_y2=90
 
-isofill.levels=[-1e20, -6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6, 1e20]
+isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
 # After you set arrows, need to enable arrows again
-isofill.ext_1 = True
-isofill.ext_2 = True
-#isofill.colormap = x.getcolormap('bl_to_darkred')
+###isofill.ext_1 = True
+###isofill.ext_2 = True
+isofill.colormap = x.getcolormap('bl_to_darkred')
 x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
 x.png('test.png')

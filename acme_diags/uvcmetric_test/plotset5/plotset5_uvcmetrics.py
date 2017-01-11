@@ -37,8 +37,9 @@ test_data_set='figure-set5_Global_ANN_T_plot--model.nc'  # model
 f_obs=cdms2.open(reference_data_path + reference_data_set)
 f_mod=cdms2.open(test_data_path + test_data_set)
 
-obs_pr=f_obs('rv_T_ANN_NCEP')
-mod_pr=f_mod('rv_T_ANN_cam_output')
+#obs_pr=f_obs('rv_T_ANN_NCEP')
+obs_pr=f_obs('rv_T_ANN_NCEP', longitude=(-180, 540))
+mod_pr=f_mod('rv_T_ANN_cam_output', longitude=(-180, 540))
 
 #For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
 axes1=mod_pr.getAxisList()
@@ -94,8 +95,8 @@ isofill.yticlabels1 = {-90: '90S', -80: '80S', -60: '60S', -40: '40S',
                        80: '80N', 90: '90N'}
 
 #ext_1 and ext_2 are arrows
-isofill.ext_1 = True
-isofill.ext_2 = True
+#isofill.ext_1 = True
+#isofill.ext_2 = True
 x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
@@ -106,11 +107,13 @@ isofill.datawc_y1=-90
 isofill.datawc_y2=90
 
 # difference graph
-#isofill.levels=[-1e20, -6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6, 1e20]
+###isofill.levels=[-18, -16, -14, -12, -10, -8, -6, -4, -2, 0, 2]
 # After you set arrows, need to enable arrows again
-isofill.ext_1 = True
-isofill.ext_2 = True
+###isofill.ext_1 = True
+###isofill.ext_2 = True
 isofill.colormap = x.getcolormap('ltbl_to_drkbl')
+#x.setcolormap('bl_to_darkred')
+
 x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
 
 x.png('test.png')
