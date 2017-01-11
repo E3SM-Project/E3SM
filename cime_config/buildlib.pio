@@ -67,7 +67,7 @@ def _main_func(description):
         gmake_opts = "%s/Makefile CASEROOT=%s MODEL=%s USER_CMAKE_OPTS=%s "\
             "PIO_LIBDIR=%s CASETOOLS=%s PIO_VERSION=%s MPILIB=%s "\
             "SHAREDLIBROOT=%s EXEROOT=%s COMPILER=%s BUILD_THREADED=%s "\
-            "-f %s/Makefile"\
+            "USER_CPPDEFS=-DTIMING -f %s/Makefile"\
             %(pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
               pio_version, mpilib, bldroot, exeroot, compiler, build_threaded,
               casetools)
