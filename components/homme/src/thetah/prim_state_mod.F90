@@ -76,7 +76,7 @@ contains
     integer,parameter  :: type=ORDERED
 
     real (kind=real_kind)  :: Mass2,Mass
-    real (kind=real_kind)  :: TOTE(4),KEner(4),PEner(4),IEner(4),IEner_wet(4)
+    real (kind=real_kind)  :: TOTE(4),KEner(4),PEner(4),IEner(4)
     real (kind=real_kind)  :: Qvar(qsize_d,4),Qmass(qsize_d,4),Q1mass(qsize_d)
     real (kind=real_kind),save  :: time0
     real (kind=real_kind),save  :: TOTE0=0,Qmass0(qsize_d)=0
@@ -126,8 +126,8 @@ contains
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
-    real (kind=real_kind) :: KEvert,IEvert,T1,T2,T2_s,T2_m,S1,S2,S1_wet
-    real (kind=real_kind) :: KEhorz,IEhorz,IEhorz_wet,IEvert_wet
+    real (kind=real_kind) :: KEvert,IEvert,PEvert,T1,T2,S1,S2
+    real (kind=real_kind) :: KEhorz,PEhorz
     real (kind=real_kind) :: ddt_tot,ddt_diss
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
@@ -141,7 +141,6 @@ contains
     KEner    = 0
     PEner    = 0
     IEner    = 0
-    IEner_wet = 0
     ! dynamics timelevels
     n0=tl%n0
     nm1=tl%nm1
@@ -427,12 +426,6 @@ contains
        IEner(n) = IEner(n)*scale
        
        do ie=nets,nete
-          tmp(:,:,ie)=elem(ie)%accum%IEner_wet(:,:,n)
-       enddo
-       IEner_wet(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-       IEner_wet(n) = IEner_wet(n)*scale
-       
-       do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%KEner(:,:,n)
        enddo
        KEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
@@ -477,40 +470,36 @@ contains
     !   Vertical transport terms
 #ifdef ENERGY_DIAGNOSTICS
     do ie=nets,nete
+      tmp(:,:,ie) = elem(ie)%accum%KEhoriz1 + elem(ie)%accum%KEhoriz2
+    enddo
+    KEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEhorz = KEhorz*scale
+
+    do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEvert1 + elem(ie)%accum%KEvert2
     enddo
     KEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEvert = KEvert*scale
+
     do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%IEvert1 + elem(ie)%accum%IEvert2
+       tmp(:,:,ie) = elem(ie)%accum%IEvert1 
     enddo
     IEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     IEvert = IEvert*scale
 
     do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%KEhorz1 + elem(ie)%accum%KEhorz2
+       tmp(:,:,ie) = elem(ie)%accum%PEhoriz1 
     enddo
-    KEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    KEhorz = KEhorz*scale
-    do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%IEhorz1 + elem(ie)%accum%IEhorz2
-    enddo
-    IEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    IEhorz = IEhorz*scale
+    PEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    PEhorz = PEhorz*scale
 
     do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%IEhorz1_wet + elem(ie)%accum%IEhorz2_wet
+       tmp(:,:,ie) = elem(ie)%accum%PEvert1
     enddo
-    IEhorz_wet = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    IEhorz_wet = IEhorz_wet*scale
+    PEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    PEvert = PEvert*scale
 
-    do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%IEvert1_wet + elem(ie)%accum%IEvert2_wet
-    enddo
-    IEvert_wet = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    IEvert_wet = IEvert_wet*scale
-
-    !   KE->PE
+    !   KE->IE
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T1
     enddo
@@ -524,23 +513,10 @@ contains
     T2 = T2*scale
 
     do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%T2_s
-    enddo
-    T2_s = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    T2_s = T2_s*scale
-    T2_m = T2 - T2_s
-
-    do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S1
     enddo
     S1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     S1 = S1*scale
-
-    do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%S1_wet
-    enddo
-    S1_wet = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    S1_wet = S1_wet*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%S2
@@ -550,7 +526,7 @@ contains
 
 
 #else
-    T1=0; T2=0; T2_s=0; T2_m=0; S1_wet = 0; S1=0; S2=0; KEvert=0; IEvert=0; KEhorz=0; IEhorz=0
+    T1=0; T2=0; T2_s=0; T2_m=0; S1=0; S2=0; KEvert=0; IEvert=0; KEhorz=0; IEhorz=0
 #endif
 
 
@@ -568,11 +544,12 @@ contains
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
           write(iulog,'(a,2e22.14)')'Tot KE advection horiz, vert: ',-KEhorz,-KEvert
-          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',-IEhorz,-IEvert
+          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',0,-IEvert
+          write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert: ',-PEhorz,-PEvert
           
-          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE, KE->PE:   ',-(T1+T2_m), -T2_s
-          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE, PE->KE:   ',-S1,-S2
-
+          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE:   ', -T1-T2
+          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE:   ', -S1-S2
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EDIT GOOD TO HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           
           ddt_tot =  (KEner(2)-KEner(1))/(dt)
           ddt_diss = ddt_tot -(T1+T2) 
@@ -747,7 +724,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           suml2(:,:) = suml2(:,:) + suml2k(:,:,k)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:)
-       elem(ie)%accum%IEner_wet(:,:,n)=suml2(:,:)
 
     
     !   KE   .5 dp/dn U^2
