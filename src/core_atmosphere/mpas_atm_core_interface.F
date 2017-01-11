@@ -53,6 +53,14 @@ module atm_core_interface
 
 #include "inc/core_variables.inc"
 
+write(0,*) ''
+#ifdef SINGLE_PRECISION
+write(0,'(a)') 'Using default single-precision reals'
+#else
+write(0,'(a)') 'Using default double-precision reals'
+#endif
+write(0,*) ''
+
    end subroutine atm_setup_core
 
 
@@ -114,7 +122,7 @@ module atm_core_interface
       integer :: ierr
 
       logical, pointer :: iauActive
-      integer, pointer :: config_iau_option
+      character(len=StrKIND), pointer :: config_iau_option
 
       ierr = 0
 
@@ -124,7 +132,7 @@ module atm_core_interface
       nullify(iauActive)
       call mpas_pool_get_package(packages, 'iauActive', iauActive)
 
-      if (config_iau_option > 0) then
+      if (trim(config_iau_option) /= 'off') then
          iauActive = .true.
       else
          iauActive = .false.

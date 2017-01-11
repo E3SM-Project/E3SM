@@ -216,7 +216,7 @@
 
 !=================================================================================================================
  subroutine physics_get_tend( block, mesh, state, diag, tend, tend_physics, configs, rk_step, dynamics_substep, &
-                              tend_ru_physics, tend_rtheta_physics )
+                              tend_ru_physics, tend_rtheta_physics, tend_rho_physics )
 !=================================================================================================================
    
  use mpas_atm_dimensions
@@ -234,7 +234,7 @@
  type(mpas_pool_type),intent(inout):: tend
  type(mpas_pool_type),intent(inout):: tend_physics
 
- real(kind=RKIND),dimension(:,:) :: tend_ru_physics, tend_rtheta_physics
+ real(kind=RKIND),dimension(:,:) :: tend_ru_physics, tend_rtheta_physics, tend_rho_physics
 
 !local variables:
  character(len=StrKIND), pointer :: config_pbl_scheme, config_convection_scheme, &
@@ -338,6 +338,8 @@
 
  tend_ru_physics(:,:) = 0._RKIND
  tend_rtheta_physics(:,:) = 0._RKIND
+ tend_rho_physics(:,:) = 0._RKIND       ! NB: rho tendency is not currently supplied by physics, but this
+                                        !     field may be later filled with IAU or other tendencies
 
  !
  ! In case some variables are not allocated due to their associated packages,

@@ -78,15 +78,15 @@ module mpas_abort
 #ifdef _MPI
       call MPI_Comm_rank(MPI_COMM_WORLD, my_proc_id, mpi_ierr)
       call MPI_Comm_size(MPI_COMM_WORLD, nprocs, mpi_ierr)
-      if (nprocs < 1E5) then
+      if (nprocs < 1E4) then
          write(errorFile,fmt='(a,i4.4,a)') 'log.', my_proc_id, '.abort'
-      else if (nprocs < 1E6) then
+      else if (nprocs < 1E5) then
          write(errorFile,fmt='(a,i5.5,a)') 'log.', my_proc_id, '.abort'
-      else if (nprocs < 1E7) then
+      else if (nprocs < 1E6) then
          write(errorFile,fmt='(a,i6.6,a)') 'log.', my_proc_id, '.abort'
-      else if (nprocs < 1E8) then
+      else if (nprocs < 1E7) then
          write(errorFile,fmt='(a,i7.7,a)') 'log.', my_proc_id, '.abort'
-      else if (nprocs < 1E9) then
+      else if (nprocs < 1E8) then
          write(errorFile,fmt='(a,i8.8,a)') 'log.', my_proc_id, '.abort'
       else
          write(errorFile,fmt='(a,i9.9,a)') 'log.', my_proc_id, '.abort'

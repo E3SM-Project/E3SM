@@ -110,7 +110,7 @@
  write(0,*)
  write(0,*) '*******************************************************************************'
  write(0,*) 'To preserve these tables when running ''make clean'', please copy the following'
- write(0,*) 'files to the src/core_atmosphere/physics/physics_wrf/files/ '
+ write(0,*) 'files to the src/core_atmosphere/physics/physics_wrf/files/ directory:'
  write(0,*)
  write(0,*) '  MP_THOMPSON_QRacrQG_DATA.DBL'
  write(0,*) '  MP_THOMPSON_QRacrQS_DATA.DBL'

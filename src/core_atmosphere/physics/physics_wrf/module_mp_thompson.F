@@ -9,6 +9,9 @@
 !     Laura D. Fowler (laura@ucar.edu) / 2016-06-04.
 !   * in subroutine mp_thompson, added corrections made by Greg for WRF version 3.8.1.
 !     Laura D. Fowler (laura@ucar.edu) / 2016-10-29.
+!   * in subroutine mp_gt_driver, moved the initialization of variables Nt_c and mu_c
+!     before initialization of local mixing ratios and number concentrations.
+!     Laura D. Fowler (lara@ucar.edu) / 2916-12-30.
 
 
 !+---+-----------------------------------------------------------------+
@@ -1111,6 +1114,10 @@
          ENDIF
          SR(i,j) = 0.
 
+#if defined(mpas)
+         Nt_c = ntc(i,j)
+         mu_c = muc(i,j)
+#endif
          do k = kts, kte
             t1d(k) = th(i,k,j)*pii(i,k,j)
             p1d(k) = p(i,k,j)
@@ -1141,10 +1148,7 @@
             enddo
             nwfa1 = 11.1E6
          endif
-#if defined(mpas)
-         Nt_c = ntc(i,j)
-         mu_c = muc(i,j)
-#endif
+
          call mp_thompson(qv1d, qc1d, qi1d, qr1d, qs1d, qg1d, ni1d,     &
                       nr1d, nc1d, nwfa1d, nifa1d, t1d, p1d, w1d, dz1d,  &
                       pptrain, pptsnow, pptgraul, pptice, &

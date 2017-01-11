@@ -121,7 +121,7 @@ module atm_core
       end if
 
       !
-      ! Read a new data stream for Incremental Analysis Update (IAU), if config_IAU_option > 0    : HA (June-15-2016)
+      ! Read a new data stream for Incremental Analysis Update (IAU), if config_IAU_option /= 'off'    : HA (June-15-2016)
       ! FIXME: should I check xtime for the IAU fields? Maybe not.
       ! Note: Because the 'iau' stream has the 'iau' package attached to it, the MPAS_stream_mgr_read( )
       !       call here will actually try to read the stream only if IAU is being used in the run.
@@ -880,6 +880,7 @@ module atm_core
       use mpas_timekeeping
       use mpas_atm_diagnostics_manager, only : mpas_atm_diag_cleanup
       use mpas_atm_threading, only : mpas_atm_threading_finalize
+      use mpas_io_units, only : stderrUnit
    
 #ifdef DO_PHYSICS
       use mpas_atmphys_finalize
@@ -911,6 +912,11 @@ module atm_core
       ! Finalize threading
       !
       call mpas_atm_threading_finalize(domain % blocklist)
+
+      write(stderrUnit,'(a)') ''
+      write(stderrUnit,'(a)') '********************************************************'
+      write(stderrUnit,'(a)') '   Finished running the atmosphere core'
+      write(stderrUnit,'(a)') '********************************************************'
    
    end function atm_core_finalize
 

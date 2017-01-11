@@ -66,6 +66,12 @@
 ! * added the subroutine physics_tables_init which checks if the files containing the lokk-up tables for the
 !   Thompson cloud microphysics are available or not.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-11-01.
+! * modified checking the config_gwdo_scheme option to allow bl_ysu_gwdo to be run when the MYNN pbl and surface
+!   layer scheme options are chosen.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-12-22.
+! * modified logic in subroutine physics_tables_init so that the Thompson microphysics tables are read in each
+!   MPI task.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-12-30.
 
 
  contains
@@ -114,7 +120,7 @@
  if (trim(config_physics_suite) == 'mesoscale_reference') then
 
     if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'mp_wsm6'
-    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_tiedtke'
+    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_ntiedtke'
     if (trim(config_pbl_scheme)        == 'suite') config_pbl_scheme        = 'bl_ysu'
     if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'bl_ysu_gwdo'
     if (trim(config_radt_lw_scheme)    == 'suite') config_radt_lw_scheme    = 'rrtmg_lw'
@@ -123,12 +129,12 @@
     if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'sf_monin_obukhov'
     if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'noah'
 
- else if (trim(config_physics_suite) == 'convection_scale_aware') then
+ else if (trim(config_physics_suite) == 'convection_permitting') then
 
     if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'mp_thompson'
     if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_grell_freitas'
     if (trim(config_pbl_scheme)        == 'suite') config_pbl_scheme        = 'bl_mynn'
-    if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'off'
+    if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'bl_ysu_gwdo'
     if (trim(config_radt_lw_scheme)    == 'suite') config_radt_lw_scheme    = 'rrtmg_lw'
     if (trim(config_radt_sw_scheme)    == 'suite') config_radt_sw_scheme    = 'rrtmg_sw'
     if (trim(config_radt_cld_scheme)   == 'suite') config_radt_cld_scheme   = 'cld_fraction'
@@ -196,12 +202,6 @@
            config_gwdo_scheme .eq. 'bl_ysu_gwdo')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for gwdo_scheme: ', &
-          trim(config_gwdo_scheme)
-    call physics_error_fatal(mpas_err_message)
-
- elseif(config_gwdo_scheme .eq. 'bl_ysu_gwdo' .and. config_pbl_scheme .ne. 'bl_ysu') then
-
-    write(mpas_err_message,'(A,A10)') 'turn YSU PBL scheme on with config_gwdo = bl_ysu_gwdo:', &
           trim(config_gwdo_scheme)
     call physics_error_fatal(mpas_err_message)
 
@@ -352,12 +352,10 @@
        case("noah")
        !initialize the thickness of the soil layers for the Noah scheme:
           do iCell = 1, nCells
-             if(landmask(iCell) == 1) then  
-                dzs(1,iCell) = 0.10_RKIND
-                dzs(2,iCell) = 0.30_RKIND
-                dzs(3,iCell) = 0.60_RKIND
-                dzs(4,iCell) = 1.00_RKIND
-             endif
+             dzs(1,iCell) = 0.10_RKIND
+             dzs(2,iCell) = 0.30_RKIND
+             dzs(3,iCell) = 0.60_RKIND
+             dzs(4,iCell) = 1.00_RKIND
           enddo
 
        case default
@@ -385,6 +383,8 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
+ l_mp_tables = .true.
+
  if(dminfo % my_proc_id == IO_NODE) then
 
     call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
@@ -394,7 +394,6 @@
     l_qr_acr_qs = .false.
     l_qi_aut_qs = .false.
     l_freezeH2O = .false.
-    l_mp_tables = .false.
 
     inquire(file='MP_THOMPSON_QRacrQG_DATA.DBL'  ,exist=l_qr_acr_qg)
     inquire(file='MP_THOMPSON_QRacrQS_DATA.DBL'  ,exist=l_qr_acr_qs)
@@ -412,8 +411,6 @@
        write(mpas_err_message,'(A)') &
           '--- tables to run the Thompson cloud microphysics scheme do not exist: run build_tables first.'
        call physics_error_fatal(mpas_err_message)
-    else
-       l_mp_tables = .true.
     endif
 !   write(0,*) 'l_mp_tables = ',l_mp_tables
 
