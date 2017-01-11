@@ -35,6 +35,7 @@
   <xs:element name="PES_PER_NODE" type="xs:integer"/>
   <xs:element name="PROJECT_REQUIRED" type="xs:NCName"/>
   <xs:element name="PIO_CONFIG_OPTS" type="xs:string"/>
+  <xs:element name="PIO_BUFFER_SIZE_LIMIT" type="xs:string"/>
   <xs:element name="GMAKE" type="xs:string"/>
   <xs:element name="TESTS" type="xs:string"/>
   <xs:element name="executable" type="xs:string"/>
@@ -79,9 +80,10 @@
         <xs:element ref="MAX_TASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
         <xs:element ref="PES_PER_NODE" minOccurs="1" maxOccurs="1"/>
         <xs:element ref="PIO_CONFIG_OPTS"  minOccurs="0" maxOccurs="1"/>
+        <xs:element ref="PIO_BUFFER_SIZE_LIMIT"  minOccurs="0" maxOccurs="1"/>
         <xs:element ref="PROJECT_REQUIRED" minOccurs="0" maxOccurs="1"/>
-	<xs:element minOccurs="1" maxOccurs="unbounded" ref="mpirun"/>
-        <xs:element ref="module_system" minOccurs="1" maxOccurs="1"/>
+	<xs:element minOccurs="0" maxOccurs="unbounded" ref="mpirun"/>
+        <xs:element ref="module_system" minOccurs="0" maxOccurs="1"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="environment_variables"/>
       </xs:sequence>
       <xs:attribute ref="MACH" use="required"/>
