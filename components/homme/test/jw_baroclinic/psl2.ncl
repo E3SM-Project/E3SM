@@ -73,13 +73,22 @@ begin
 
   field = "ps"
 
-; lfrk vs lf tests
 if (True) then
 labelnames = (/"preqx","theta-h","nh"/)
 fnames =  systemfunc(\
 "ls ~/scratch1/preqx/jw-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
 "ls ~/scratch1/preqx/jwthetah-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
 "ls ~/scratch1/preqx/jwtheta-ne16-nlev26-qsize?/movies/jw_baroclinic1.nc; " +\
+"")
+end if
+if (False) then
+labelnames = (/"preqx","theta-h","theta-h-eul","nh","nh-eul"/)
+fnames =  systemfunc(\
+"ls ~/scratch1/preqx/jw-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
+"ls ~/scratch1/preqx/jwthetah-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
+"ls ~/scratch1/preqx/jwthetah-eul-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
+"ls ~/scratch1/preqx/jwtheta-ne16-nlev26-qsize?/movies/jw_baroclinic1.nc; " +\
+"ls ~/scratch1/preqx/jwtheta-eul-ne16-nlev26-qsize?/movies/jw_baroclinic1.nc; " +\
 "")
 end if
 
