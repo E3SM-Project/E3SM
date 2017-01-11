@@ -1,6 +1,38 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-11-2017
+Tag: cime5.2.0-alpha.18
+Answer Changes: Climate Changing
+Tests: scripts_regression_tests cesm2_0_alpha05d
+Dependencies: (cesm requires pop version 20161219 or older
+
+Brief Summary:  Needed to back out changes that require a new pop version
+                           Add schema definition for config_machines.xml
+
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/acme/machines/config_pio.xml
+M       cime_config/buildlib.pio
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/config_grids.xml
+M       cime_config/cesm/machines/config_machines.xml
+A       cime_config/xml_schemas/config_machines.xsd
+M       driver_cpl/bld/testdir/env_run.xml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/cime_config/namelist_definition_drv.xml
+M       driver_cpl/shr/seq_infodata_mod.F90
+M       utils/python/CIME/XML/generic_xml.py
+M       utils/python/CIME/XML/machines.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 01-10-2017
 Tag: cime5.2.0-alpha.17
 Answer Changes: None
@@ -10,7 +42,7 @@ Dependencies:
 Brief Summary: Fix issue with netcdf flags in Makefile, update nersc systems
 	add runtime env to provenance output
 
-User interface changes: 
+User interface changes:
 
 Modified files: git diff --name-status
 M       cime_config/acme/machines/Makefile
@@ -50,12 +82,12 @@ Originator: Jim Edwards
 Date: 01-04-2017
 Tag: cime5.2.0-alpha.15
 Answer Changes: None
-Tests: scripts_regression_tests, cesm development 
+Tests: scripts_regression_tests, cesm development
 Dependencies:
 
-Brief Summary: fix issues with clm 1pt configurations, issues with pio namelist settings, data assimilation script arguments, sharedarea context manager, 
+Brief Summary: fix issues with clm 1pt configurations, issues with pio namelist settings, data assimilation script arguments, sharedarea context manager,
 
-User interface changes: 
+User interface changes:
 
 Modified files: git diff --name-status
 M       cime_config/cesm/allactive/config_compsets.xml
