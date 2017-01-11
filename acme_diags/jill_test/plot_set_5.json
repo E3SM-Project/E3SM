@@ -84,7 +84,7 @@
     "y2": 0.95
    },
    "dataname": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "__textorientation_112930675296446",
     "texttable": "default",
     "x": 0.12300000000000001,
@@ -452,7 +452,7 @@
     "y2": 0.6366666666666666
    },
    "dataname": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "__textorientation_732683257747507",
     "texttable": "default",
     "x": 0.12300000000000001,
@@ -770,14 +770,14 @@
     "y2": 0
    },
    "comment1": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_comment1",
     "texttable": "default",
     "x": 0.873,
     "y": 0.07499999999999993
    },
    "comment2": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_comment1",
     "texttable": "default",
     "x": 0.873,

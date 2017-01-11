@@ -35,6 +35,9 @@ test_data_path='../'
 #Pre defined variables
 var='PRECT'
 season='ANN'
+#Below should be read from metadata
+mod_name='1850_alpha6_01 (yrs0070-0099)'
+obs_name='GPCP (yrs1979-2009)'
 
 #Read in data
 reference_data_set='GPCP_ANN_climo.nc'  # observation
@@ -45,8 +48,8 @@ f_mod=cdms2.open(test_data_path + test_data_set)
 
 obs_pr=f_obs('PRECT')
 mod_pr=(f_mod('PRECC')+f_mod('PRECL'))*3600.0*24.0*1000.0 #this is derived variable convert m/s to mm/d
-mod_pr.units='mm/d'
-
+mod_pr.units='mm/day'
+#print dir(mod_pr)
 
 #For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
 axes1=mod_pr.getAxisList() 
@@ -111,12 +114,12 @@ template_1.units.priority=1
 template_2.units.priority=1
 
 #The dataname part should pass in basic model info: model_version...and basic obs info:obsname_version_years
-#Those information will be provided by metadata.
+#Change the dataname via var.id. Ideally variable attribute should match vcs attribute.
+
+mod_pr.id=mod_name
+obs_pr.id=obs_name
 template_0.dataname.priority=1
 template_1.dataname.priority=1
-
-mod_pr.dataname='test'
-
 
 isofill = x.createisofill()
 isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
@@ -130,22 +133,9 @@ isofill.levels=[0,0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 x.plot(obs_pr, template_1, isofill)
 #x.setcolormap('bl_to_darkred')
 
-#output rmse and corr
-out_1=vcs.createtext()
-out_1.x=0.87
-out_1.y=0.08
-out_1.height=12
-out_1.color='red'
-out_1.string=rmse
-x.plot(out_1)
-out_1.y=0.06
-out_1.string=corr
-x.plot(out_1)
-
-
 isofill = x.createisofill()
 isofill.levels=[-10,-8, -6, -4, -3, -2, -1,-0.5, 0, 0.5, 1, 2, 3, 4, 6, 8,10]
-x.plot(dif_pr, template_2, isofill)
+x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
 
 #Create main title for the 3 plots 
 main_title=vcs.createtext()
