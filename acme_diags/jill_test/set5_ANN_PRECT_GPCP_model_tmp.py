@@ -10,8 +10,9 @@ import cdutil
 def compute_rmse(model, obs):
     rmse = -numpy.infty
     try:
-        weights = cdutil.area_weights(model)
-        rmse = float(genutil.statistics.rms(model, obs, axis='xy', weights=weights))
+        #weights = cdutil.area_weights(model)
+        #rmse = float(genutil.statistics.rms(model, obs, axis='xy', weights=weights))
+        rmse = float(genutil.statistics.rms(model, obs, axis='xy', weights='generate'))#area-weighted
     except Exception, err:
         print err
     return rmse
@@ -19,8 +20,9 @@ def compute_rmse(model, obs):
 def compute_corr(model, obs):
     corr = -numpy.infty
     try:
-        weights = cdutil.area_weights(model)
-        corr = float(genutil.statistics.correlation(model, obs, axis='xy', weights=weights))
+        #weights = cdutil.area_weights(model)
+        #corr = float(genutil.statistics.correlation(model, obs, axis='xy', weights=weights))
+        corr = float(genutil.statistics.correlation(model, obs, axis='xy', weights='generate'))#area-weighted
     except Exception, err:
         print err
     return corr
@@ -35,7 +37,7 @@ var='PRECT'
 season='ANN'
 
 #Read in data
-reference_data_set='GPCP_v2.2_ANN_climo.nc'  # observation
+reference_data_set='GPCP_ANN_climo.nc'  # observation
 test_data_set='20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'  # model
 
 f_obs=cdms2.open(reference_data_path + reference_data_set)
