@@ -25,6 +25,58 @@ def compute_corr(model, obs):
         print err
     return corr
 
+def plot_min_max_mean(canvas, template, variable):
+    """canvas is a vcs.Canvas, template is a vcs.Template,
+    variable is a cdms2.tvariable.TransientVariable"""
+
+    var_min = str(round(float(variable.min()), 2))
+    var_max = str(round(float(variable.max()), 2))
+    var_mean = str(round(float(variable.mean), 2))
+
+    # Todo: Just have a textorientation object in the script titled 'min_max_mean'
+    # which will have the height and everything
+    # EX: text_orientation = canvas.gettextorientation("min_max_mean")
+    text_orientation = canvas.gettextorientation(template.mean.textorientation)
+    height = text_orientation.height
+
+    # Draw the "Max", "Mean", and "Min" labels
+    plot_text(canvas, 'Min', template.min.x, template.min.y, height, "left")
+    plot_text(canvas, 'Max', template.max.x, template.max.y, height, "left")
+    plot_text(canvas, 'Mean', template.mean.x, template.mean.y, height, "left")
+
+    # Draw the actual mean, max, min labels
+    plot_text(canvas, var_min, template.min.x+0.12, template.min.y, height, "right")
+    plot_text(canvas, var_max, template.max.x+0.12, template.max.y, height, "right")
+    plot_text(canvas, var_mean, template.mean.x+0.12, template.mean.y, height, "right")
+
+def plot_rmse_and_corr(canvas, template, model, obs):
+    """canvas is a vcs.Canvas, template is a vcs.Template,
+    model and obs are a cdms2.tvariable.TransientVariable"""
+
+    rmse = str(round(compute_rmse(obs, model), 2))
+    corr = str(round(compute_corr(obs, model), 2))
+
+    text_orientation = canvas.gettextorientation(template.mean.textorientation)
+    height = text_orientation.height
+
+    plot_text(canvas, "RMSE", template.comment1.x, template.comment1.y, height, "left")
+    plot_text(canvas, "CORR", template.comment2.x, template.comment2.y, height, "left")
+
+    plot_text(canvas, rmse, template.comment1.x+0.12, template.comment1.y, height, "right")
+    plot_text(canvas, corr, template.comment2.x+0.12, template.comment2.y, height, "right")
+
+
+def plot_text(canvas, label_string, x, y, height, align):
+    label = vcs.createtextcombined()
+    label.x = x
+    label.y = y
+    label.string = label_string
+    label.height = height
+    label.halign = align
+    canvas.plot(label)
+
+
+
 #reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
 #test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
 reference_data_path='./'
@@ -54,11 +106,6 @@ else:
     mod_pr_reg=mod_pr.regrid(obs_grid,regridTool='esmf',regridMethod='linear')
 dif_pr=mod_pr_reg-obs_pr_reg
 
-
-#CORR and RMSE need to be calculated after reduction to ensure same array shapes.
-rmse= 'RMSE:'+'%.2f' %compute_rmse(obs_pr_reg, mod_pr_reg)
-corr= 'CORR:'+'%.2f' %compute_corr(obs_pr_reg, mod_pr_reg)
-
 #Plotting
 x = vcs.init(bg=True, geometry=(1212,1628))
 x.portrait()
@@ -67,6 +114,8 @@ x.scriptrun('plot_set_5.json')
 template_0 = x.gettemplate('plotset5_0_x_0')
 template_1 = x.gettemplate('plotset5_0_x_1')
 template_2 = x.gettemplate('plotset5_0_x_2')
+
+plot_rmse_and_corr(x, template_2, mod_pr_reg, obs_pr_reg)
 
 #It turns out the long_name attribute of the mv appears as title in .json.
 mod_pr.long_name='model'
@@ -97,12 +146,13 @@ isofill.yticlabels1 = {-90: '90S', -80: '80S', -60: '60S', -40: '40S',
 #ext_1 and ext_2 are arrows
 #isofill.ext_1 = True
 #isofill.ext_2 = True
+plot_min_max_mean(x, template_0, mod_pr)
+plot_min_max_mean(x, template_1, obs_pr)
 x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
 isofill = x.createisofill()
 isofill.colormap = x.getcolormap('lightblue2darkblue')
-
 if isofill.colormap in ['AMIP',
             'NCAR',
             'bl_to_darkred',
@@ -154,11 +204,11 @@ isofill.datawc_y2=90
 # difference graph
 ###isofill.levels=[-18, -16, -14, -12, -10, -8, -6, -4, -2, 0, 2]
 # After you set arrows, need to enable arrows again
-###isofill.ext_1 = True
-###isofill.ext_2 = True
+#isofill.ext_1 = True
+#isofill.ext_2 = True
 #isofill.fillareacolors=vcs.getcolors(range(16,240))
 #x.setcolormap('bl_to_darkred')
-
-x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
+plot_min_max_mean(x, template_2, dif_pr)
+x.plot(dif_pr, template_2, isofill)
 
 x.png('test.png')

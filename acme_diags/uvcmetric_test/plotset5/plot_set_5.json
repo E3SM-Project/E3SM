@@ -157,7 +157,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -165,7 +165,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -173,7 +173,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
@@ -525,7 +525,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -533,7 +533,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -541,7 +541,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
@@ -770,14 +770,14 @@
     "y2": 0
    },
    "comment1": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_comment1",
     "texttable": "default",
     "x": 0.873,
     "y": 0.07499999999999993
    },
    "comment2": {
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_comment1",
     "texttable": "default",
     "x": 0.873,
@@ -893,7 +893,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -901,7 +901,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -909,7 +909,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
