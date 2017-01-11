@@ -27,10 +27,7 @@ class GenericXML(object):
         if os.path.isfile(infile) and os.access(infile, os.R_OK):
             # If file is defined and exists, read it
             self.filename = infile
-            self.read(infile)
-
-            if schema is not None and self.get_version() != "1.0":
-                self.validate_xml_file(infile, schema)
+            self.read(infile, schema)
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
@@ -44,7 +41,7 @@ class GenericXML(object):
             self.root.set("id", os.path.basename(infile))
             self.tree = ET.ElementTree(root)
 
-    def read(self, infile):
+    def read(self, infile, schema=None):
         """
         Read and parse an xml file into the object
         """
@@ -54,6 +51,9 @@ class GenericXML(object):
         else:
             self.tree = ET.parse(infile)
             self.root = self.tree.getroot()
+
+        if schema is not None and self.get_version() != "1.0":
+            self.validate_xml_file(infile, schema)
 
         logger.debug("File version is "+self.get_version())
 

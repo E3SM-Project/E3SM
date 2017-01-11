@@ -78,13 +78,14 @@
   </entry>
   -->
 
-  <!--- uncomment and fill in relevant sections
+
   <entry id="PIO_BUFFER_SIZE_LIMIT">
     <values>
-      <value></value>
+      <value MACH="skybridge">1</value>
+      <value MACH="redsky">1</value>
     </values>
   </entry>
-  -->
+
 
   <!--- uncomment and fill in relevant sections
   <entry id="OCN_PIO_STRIDE">
