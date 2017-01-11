@@ -13,7 +13,7 @@ module prim_advance_mod
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
-  use element_ops,    only: get_p_hydrostatic, get_p_nonhydrostatic
+  use element_ops,    only: get_pnh_and_exner
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -449,14 +449,11 @@ contains
         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
      enddo
-     if (theta_hydrostatic_mode) then
-        call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,&
-          dp,elem(ie)%state%Qdp(:,:,:,1,np1_qdp))
-     else
-        call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,&
-             elem(ie)%state%theta(:,:,:,np1),dp,elem(ie)%state%phi(:,:,:,np1),&
-             elem(ie)%state%Qdp(:,:,:,1,np1_qdp))
-     endif
+     
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%theta(:,:,:,np1),dp,&
+          elem(ie)%state%phi(:,:,:,np1),elem(ie)%state%phis(:,:),&
+          elem(ie)%state%Qdp(:,:,:,1,np1_qdp),pnh,dpnh,exner)
+
 
      elem(ie)%state%theta(:,:,:,np1) = elem(ie)%state%theta(:,:,:,np1) + &
           dt*elem(ie)%derived%FT(:,:,:) / exner(:,:,:)
@@ -752,6 +749,7 @@ contains
   real (kind=real_kind) :: dpnh(np,np,nlev)    ! 
   real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! nh pressu re on interfaces
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
+  real (kind=real_kind) :: exner_i(np,np,nlevp)  ! exner on interfaces
   real (kind=real_kind) :: dpnh_dp(np,np,nlev)   ! dpnh / dp3d  
   real (kind=real_kind) :: grad_exner(np,np,2,nlev)     
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
@@ -785,25 +783,24 @@ contains
      if (theta_hydrostatic_mode) then
         phi => elem(ie)%derived%phi(:,:,:)
 
-        call get_p_hydrostatic(pnh,pnh_i,exner,hvcoord,&
-             dp3d,elem(ie)%state%Qdp(:,:,:,1,qn0))
+        call get_pnh_and_exner(hvcoord,theta,dp3d,&
+             phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0),pnh,dpnh,exner,exner_i)
         
         ! Compute Hydrostatic equation
         do k=1,nlev
-           temp(:,:,k) = Cp*theta(:,:,k)*&
-             ( (pnh_i(:,:,k+1)/p0)**kappa - (pnh_i(:,:,k)/p0)**kappa )
+           temp(:,:,k) = Cp*theta(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))
            !temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
         enddo
         call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
         dpnh_dp(:,:,:) = 1
      else
         phi => elem(ie)%state%phi(:,:,:,n0)
-        call get_p_nonhydrostatic(pnh,dpnh,exner,hvcoord,theta,dp3d,&
-             phi,elem(ie)%state%Qdp(:,:,:,1,qn0))
-        
+        call get_pnh_and_exner(hvcoord,theta,dp3d,&
+             phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0),pnh,dpnh,exner)
         ! d(p-nh) / d(p-hyrdostatic)
         dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
      endif
+
 
 
 

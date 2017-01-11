@@ -112,6 +112,7 @@ module element_state
     real (kind=real_kind) :: KEvert1(np,np)
     real (kind=real_kind) :: KEvert2(np,np)
     real (kind=real_kind) :: IEvert1(np,np)
+    real (kind=real_kind) :: PEvert1(np,np)
     real (kind=real_kind) :: PEvert2(np,np)
 
     real (kind=real_kind) :: KEhoriz1(np,np)
