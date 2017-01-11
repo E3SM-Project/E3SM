@@ -62,7 +62,7 @@
         <xs:element ref="NODENAME_REGEX" minOccurs="0" maxOccurs="1"/>
 	<!-- OS: the operating system of this machine. -->
         <xs:element ref="OS" minOccurs="1" maxOccurs="1"/>
-	<!-- PROXY: -->
+	<!-- PROXY: optional http proxy for access to the internet-->
         <xs:element ref="PROXY" minOccurs="0" maxOccurs="1"/>
 	<!-- COMPILERS: compilers supported on this machine, comma seperated list, first is default -->
         <xs:element ref="COMPILERS" minOccurs="1" maxOccurs="1"/>
