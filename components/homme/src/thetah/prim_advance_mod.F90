@@ -1052,7 +1052,7 @@ contains
                !  Form S2
                !   elem(ie)%accum%S2(i,j)=-elem(ie)%accum%accum%T2(i,j)
                !  Form P1
-                  elem(ie)%accum%P1(i,j)= - g*w*eta_dot_dpdn(i,j,k)/dpdn(i,j,k)
+                  elem(ie)%accum%P1(i,j)= - g*w*dp3d(i,j,k)
                !  Form P2
                   elem(ie)%accum%P2(i,j)=-elem(ie)%accum%P1(i,j) 
               enddo

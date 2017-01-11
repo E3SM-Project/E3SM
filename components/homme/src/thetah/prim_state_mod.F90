@@ -683,8 +683,13 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
-    real (kind=real_kind), dimension(np,np,nlev)  :: temperature
     real (kind=real_kind) :: cp_star1,qval_t1,qval_t2
+    real (kind=real_kind), intent(out) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
+    real (kind=real_kind), intent(out) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
+    real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner nh pressure
+    real (kind=real_kind), intent(out), optional :: exner_i_out(np,np,nlevp)  ! exner nh pressure interfac\
+es
+
 
 
     integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
@@ -696,12 +701,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        t1=tl%np1
        call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp
     endif
-
-    !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
-    !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
-    !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
     do ie=nets,nete
-       call get_temperature(elem(ie),temperature,hvcoord,t1,t1_qdp)
+       call get_pnh_and_exner(hvcoord,elem(ie)%state%theta,elem(ie)%state%dp3d,elem(ie)%state%phi, &
+       elem(ie)%state%phi,elem(ie)%state%Qdp,pnh,dpnh,exner,exner_i_out)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -709,44 +711,12 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,cp_star1,qval_t1)
-#endif
-
-! I think that this is used for the wet/dry separation 
-!
-!      do k=1,nlev
-!          sumlk(:,:,k)=0
-!          suml2k(:,:,k)=0
-!          do i=1,np
-!          do j=1,np
-!             if(use_cpstar == 1)  then
-!                ! Cp_star = cp + (Cpwater_vapor - cp)*qval
-!                qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
-!                cp_star1= Virtual_Specific_Heat(qval_t1)
-!             else
-!                cp_star1=cp
-!             endif
-!         !    sumlk(i,j,k) = sumlk(i,j,k) + Cp_star1*temperature(i,j,k) *dpt1(i,j,k)
-!         !    suml2k(i,j,k) = suml2k(i,j,k) + (cp_star1-cp)*temperature(i,j,k) *dpt1(i,j,k)
-!              sumlk(i,j,k) = sumlk(i,j,k) + temperature(i,j,k)*(cp_star1-Rgas)*dpt1(i,j,k) ! + ptop phitop
-!          enddo
-!          enddo
-!       enddo
-!       suml=0
-!       suml2=0
-!       do k=1,nlev
-!          suml(:,:) = suml(:,:) + sumlk(:,:,k)
-!          suml2(:,:) = suml2(:,:) + suml2k(:,:,k)
-!       enddo
-!       elem(ie)%accum%IEner(:,:,n)=suml(:,:)
-
-    
-    !   KE   .5 dp/dn U^2
+   
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,E)
 #endif
+ !   KE   .5 dp/dn U^2
+
        do k=1,nlev
           E = ( elem(ie)%state%v(:,:,1,k,t1)**2 +  &
                 elem(ie)%state%v(:,:,2,k,t1)**2 + &
@@ -764,16 +734,19 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !   PE   dp/dn PHIs
        suml=0
        do k=1,nlev
-          suml = suml + elem(ie)%state%phi(:,:,k)*dpt1(:,:,k)
+          suml = suml + elem(ie)%state%phi(:,:,k,t1)*dpt1(:,:,k)
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
        
        suml=0
 
-    !  IE = c_p^* dp/deta T + p dphi/ds + ptop phitop 
+    !  IE = c_p^* dp/deta T - dp/ds phi  + psurf phisurf 
        suml=0
        do k=1,nlev
-      
+            suml(:,:,k)=suml(:,:,k)+(Cp * elem(ie)%state%dp3d(:,:,k,t1) *         &
+            elem(ie)%state%theta(:,:,k,t1)*exner(:,:,k) + &
+            -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k)+elem(ie)%state%ps_v(:,:,t1) *  &
+            elem(ie)%state%phis(:,:))*dpt1(:,:,k)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:)
     enddo
