@@ -477,7 +477,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        wv_sat_transition_start = 20.0
        wv_sat_use_tables     = .false.
        wv_sat_table_spacing  = 1.0
-       tfreeze_option        = 'mushy'
+       tfreeze_option        = 'minus1p8'
        flux_epbal            = 'off'
        flux_albav            = .false.
        flux_diurnal          = .false.

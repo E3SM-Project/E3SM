@@ -994,7 +994,7 @@
     This is used to set the driver namelist ice_cpl_dt, equal to basedt/ICE_NCPL
     where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
     </entry>
-    <entry id="OCN_NCPL" value="24">
+    <entry id="OCN_NCPL" value="1">
       <type>integer</type>
       <desc>Number of ocn coupling intervals per NCPL_BASE_PERIOD.
     Thisn is used to set the driver namelist ocn_cpl_dt, equal to basedt/OCN_NCPL
