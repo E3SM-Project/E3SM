@@ -54,8 +54,8 @@ if yVertex[:].min() != 0.0:
    yEdge[:] = yEdge[:] - yShift
    yVertex[:] = yVertex[:] - yShift
 print "Min/Max yVertex:", yVertex[:].min(), yVertex[:].max()
-if abs(yVertex[:].max() - 20000.0) > gridfile.variables['dcEdge'][:].min() * 0.866:
-   sys.exit('Error: yVertex is too far from 20000.0! Adjust ny in periodic_hex namelist and/or --remove_extra_y argument to mark_periodic_boundaries_for_culling.py')
+if np.absolute(np.unique(yVertex[:])[-2] - np.unique(yVertex[:])[1] - 20000.0) > gridfile.variables['dcEdge'][:].min() * 0.866:
+   sys.exit('Error: Domain width is too far from 20000.0! Adjust ny in periodic_hex namelist and/or --remove_extra_y argument to mark_periodic_boundaries_for_culling.py.  Target is the difference between the second to last vertices in north and south to be within 0.866*dcEdge of 20000.0.')
 
 # thickness
 x = 100.0e3 - np.absolute(xCell[:] - 100.0e3)
@@ -81,7 +81,14 @@ print "Setting up test number:", options.number
 layerThicknessFractions[:] = 1.0 / nVertLevels
 
 print "Using water input value (m/s) of:", a_params[options.number]
-gridfile.variables['externalWaterInput'][:] = a_params[options.number] * 1000.0  # Convert from m/s to kg/m2/s
+waterInput = gridfile.variables['externalWaterInput'][0,:]
+waterInput[:] = a_params[options.number] * 1000.0  # Convert from m/s to kg/m2/s
+#scale down the source term in the 'tents' in the N and S rows - there is no x-dir throughflow here so excess water is introduced
+scaleFactor = 2.0/3.0 # for perfect hexagon
+waterInput[np.nonzero(yCell[:]==np.unique(yCell[:])[0])] = a_params[options.number] * 1000.0 * scaleFactor
+waterInput[np.nonzero(yCell[:]==np.unique(yCell[:])[-1])] = a_params[options.number] * 1000.0 * scaleFactor
+gridfile.variables['externalWaterInput'][0,:] = waterInput
+
 
 # melt
 gridfile.variables['basalMeltInput'][:] = 0.0 * 1000.0 # no basal melting
