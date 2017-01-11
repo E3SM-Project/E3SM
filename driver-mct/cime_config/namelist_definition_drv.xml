@@ -568,10 +568,10 @@
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
     <desc>
       Freezing point calculation for salt water.
-      Default: mushy
+      Default: minus1p8
     </desc>
     <values>
-      <value>mushy</value>
+      <value>minus1p8</value>
     </values>
   </entry>
 
