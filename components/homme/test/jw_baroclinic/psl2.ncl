@@ -78,7 +78,7 @@ labelnames = (/"preqx","theta-h","nh"/)
 fnames =  systemfunc(\
 "ls ~/scratch1/preqx/jw-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
 "ls ~/scratch1/preqx/jwthetah-ne16-nlev26-qsize4/movies/jw_baroclinic1.nc; " +\
-"ls ~/scratch1/preqx/jwtheta-ne16-nlev26-qsize?/movies/jw_baroclinic1.nc; " +\
+"ls ~/scratch1/preqx/jwtheta-test-ne16-nlev26-qsize0/movies/jw_baroclinic1.nc; " +\
 "")
 end if
 if (False) then
