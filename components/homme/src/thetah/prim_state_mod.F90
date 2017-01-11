@@ -21,7 +21,7 @@ module prim_state_mod
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin
   use perf_mod,         only: t_startf, t_stopf
-  use physical_constants, only : p0,Cp,g
+  use physical_constants, only : p0,Cp,g,Rgas
 
 implicit none
 private
@@ -524,9 +524,22 @@ contains
     S2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     S2 = S2*scale
 
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%P1
+    enddo
+    P1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    P1 = P1*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%P2
+    enddo
+    P2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    P2 = P2*scale
+
+
 
 #else
-    T1=0; T2=0; T2_s=0; T2_m=0; S1=0; S2=0; KEvert=0; IEvert=0; KEhorz=0; IEhorz=0
+    T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; KEvert=0; IEvert=0; KEhorz=0; IEhorz=0
 #endif
 
 
@@ -547,20 +560,20 @@ contains
           write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',0,-IEvert
           write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert: ',-PEhorz,-PEvert
           
-          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE:   ', -T1-T2
-          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE:   ', -S1-S2
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EDIT GOOD TO HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE:          ', -T1-T2
+          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE:          ', -S1-S2
+          write(iulog,'(a,2e22.14)')'Transfer:   KE->PE, PE->KE:  ', P1,P2
           
           ddt_tot =  (KEner(2)-KEner(1))/(dt)
-          ddt_diss = ddt_tot -(T1+T2) 
+          ddt_diss = ddt_tot -(T1+T2+P1) 
           write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
           
           ddt_tot =  (IEner(2)-IEner(1))/(dt)
-          ddt_diss = ddt_tot - S1 
+          ddt_diss = ddt_tot - (S1+S2)
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           
           ddt_tot = (PEner(2)-PEner(1))/(dt)
-          ddt_diss = ddt_tot - S2
+          ddt_diss = ddt_tot - P2
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
 #else
           write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/(dt)
@@ -649,8 +662,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !  KE cannot be exactly conserved with Leapfrog.  but we still use:
 !  
 !   KE(n+.5) = .5*(  .5 u(n+1)^2 dp(n) +  .5 u(n)^2 dp(n+1) )
-!
-!
+!  
+
     use kinds, only : real_kind
     use dimensions_mod, only : np, np, nlev
     use hybvcoord_mod, only : hvcoord_t
@@ -688,7 +701,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
     !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
     do ie=nets,nete
-       call get_field(elem(ie),'temperature',temperature,hvcoord,t1,t1_qdp)
+       call get_temperature(elem(ie),temperature,hvcoord,t1,t1_qdp)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -700,30 +713,34 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,cp_star1,qval_t1)
 #endif
-       do k=1,nlev
-          sumlk(:,:,k)=0
-          suml2k(:,:,k)=0
-          do i=1,np
-          do j=1,np
-             if(use_cpstar == 1)  then
-                ! Cp_star = cp + (Cpwater_vapor - cp)*qval
-                qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
-                cp_star1= Virtual_Specific_Heat(qval_t1)
-             else
-                cp_star1=cp
-             endif
-             sumlk(i,j,k) = sumlk(i,j,k) + Cp_star1*temperature(i,j,k) *dpt1(i,j,k)
-             suml2k(i,j,k) = suml2k(i,j,k) + (cp_star1-cp)*temperature(i,j,k) *dpt1(i,j,k)
-          enddo
-          enddo
-       enddo
-       suml=0
-       suml2=0
-       do k=1,nlev
-          suml(:,:) = suml(:,:) + sumlk(:,:,k)
-          suml2(:,:) = suml2(:,:) + suml2k(:,:,k)
-       enddo
-       elem(ie)%accum%IEner(:,:,n)=suml(:,:)
+
+! I think that this is used for the wet/dry separation 
+!
+!      do k=1,nlev
+!          sumlk(:,:,k)=0
+!          suml2k(:,:,k)=0
+!          do i=1,np
+!          do j=1,np
+!             if(use_cpstar == 1)  then
+!                ! Cp_star = cp + (Cpwater_vapor - cp)*qval
+!                qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
+!                cp_star1= Virtual_Specific_Heat(qval_t1)
+!             else
+!                cp_star1=cp
+!             endif
+!         !    sumlk(i,j,k) = sumlk(i,j,k) + Cp_star1*temperature(i,j,k) *dpt1(i,j,k)
+!         !    suml2k(i,j,k) = suml2k(i,j,k) + (cp_star1-cp)*temperature(i,j,k) *dpt1(i,j,k)
+!              sumlk(i,j,k) = sumlk(i,j,k) + temperature(i,j,k)*(cp_star1-Rgas)*dpt1(i,j,k) ! + ptop phitop
+!          enddo
+!          enddo
+!       enddo
+!       suml=0
+!       suml2=0
+!       do k=1,nlev
+!          suml(:,:) = suml(:,:) + sumlk(:,:,k)
+!          suml2(:,:) = suml2(:,:) + suml2k(:,:,k)
+!       enddo
+!       elem(ie)%accum%IEner(:,:,n)=suml(:,:)
 
     
     !   KE   .5 dp/dn U^2
@@ -733,7 +750,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        do k=1,nlev
           E = ( elem(ie)%state%v(:,:,1,k,t1)**2 +  &
                 elem(ie)%state%v(:,:,2,k,t1)**2 + &
-                elem(ie)%state%w(:,:,k,t1)**2 ) / 2 
+                elem(ie)%state%w(:,:,k,t1)**2 ) *0.5 
           sumlk(:,:,k) = E*dpt1(:,:,k)
        enddo
        suml=0
@@ -747,12 +764,18 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !   PE   dp/dn PHIs
        suml=0
        do k=1,nlev
-          suml = suml + elem(ie)%state%phis(:,:)*dpt1(:,:,k)
+          suml = suml + elem(ie)%state%phi(:,:,k)*dpt1(:,:,k)
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
+       
+       suml=0
 
-
-
+    !  IE = c_p^* dp/deta T + p dphi/ds + ptop phitop 
+       suml=0
+       do k=1,nlev
+      
+       enddo
+       elem(ie)%accum%IEner(:,:,n)=suml(:,:)
     enddo
     
 end subroutine prim_energy_halftimes

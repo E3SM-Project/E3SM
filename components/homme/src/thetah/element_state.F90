@@ -76,9 +76,9 @@ module element_state
 #ifdef ENERGY_DIAGNOSTICS
 
     ! Energy equation:
-    ! KE_t  = KEhoriz1 + KEvert1 + KEvert2 - (dpi/deta)gw +  T1 + T2 + D1 + Err
+    ! KE_t  = KEhoriz1 + KEvert1 + KEvert2 + P1 +  T1 + T2 + D1 + Err
     ! IE_t  = S1 + S2 + IEvert1 + d(p dphi/dt)/deta + ptop dphitop/dt + D2
-    ! PE_t  = PEhoriz1 + PEvert1 + (dpi/deta)gw
+    ! PE_t  = PEhoriz1 + PEvert1 + P1
     !
     ! d(p dphi/dt)/deta + ptop dphitop/dt should vertically integrate to zero
     !
@@ -105,6 +105,8 @@ module element_state
     ! T2 = gw dp/ds - dp/ds < u,grad(phi)>     (KE<->IE)_2: T2 + S2 = 0
     ! S1 = - exner div(theta u)
     ! S2 = -T2 (the terms are exactly opposite without integration by parts)
+    ! P1 = -gw dp/deta 
+    ! P2 =  gw dp/deta
     !
 
     real (kind=real_kind) :: KEvert1(np,np)
@@ -120,6 +122,8 @@ module element_state
     real (kind=real_kind) :: T2(np,np)
     real (kind=real_kind) :: S1(np,np)
     real (kind=real_kind) :: S2(np,np)
+    real (kind=real_kind) :: P1(np,np)
+    real (kind=real_kind) :: P2(np,np)
 
     ! the KE conversion term and diffusion term
     real (kind=real_kind) :: DIFF(np,np,2,nlev)                       ! net hypervis term

@@ -995,6 +995,8 @@ contains
         elem(ie)%accum%T2=0
         elem(ie)%accum%S1=0
         elem(ie)%accum%S2=0
+        elem(ie)%accum%P1=0
+        elem(ie)%accum%P2=0
         ! See element_state.F90 for an account of what these variables are defined as
 
         do j=1,np
@@ -1041,7 +1043,7 @@ contains
                !  Form PEhoriz1
                   elem(ie)accum%PEhorz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-dp3d(i,j,k)*              &
                   (vtemp(i,j,1)*v1+vtemp(i,j,2)*v2)
-               !  Form PEvert1, how to form d(theta etadot)/ds
+               !  Form PEvert1, how to form d(theta etadot)/ds ?
                !   elem(ie)%accum%PEvert1(i,j)=-phi(i,j,k)*d(etadot dpi/deta)/ds - etado dpi/deta dphi/deta
                !  Form T1
                   elem(ie)%accum%T1(i,j)=-theta(i,j,k)*(grad_exner(i,j,1,k)*v1+                 &
@@ -1052,6 +1054,10 @@ contains
                   elem(ie)%accum%T2(i,j)=(g*w-v1*vtemp3(i,j,1,k)+v2*vtemp3(i,j,2,k))*dpnh(i,j,k)
                !  Form S2
                !   elem(ie)%accum%S2(i,j)=-elem(ie)%accum%accum%T2(i,j)
+               !  Form P1
+                  elem(ie)%accum%P1(i,j)= - g*w*eta_dot_dpdn(i,j,k)/dpdn(i,j,k)
+               !  Form P2
+                  elem(ie)%accum%P2(i,j)=-elem(ie)%accum%P1(i,j) 
               enddo
             enddo
         enddo
