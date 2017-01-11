@@ -38,8 +38,8 @@ test_data_set='20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'  # m
 f_obs=cdms2.open(reference_data_path + reference_data_set)
 f_mod=cdms2.open(test_data_path + test_data_set)
 
-obs_pr=f_obs('PRECT')
-mod_pr=(f_mod('PRECC')+f_mod('PRECL'))*3600.0*24.0*1000.0
+obs_pr=f_obs('PRECT',longitude=(-180, 540))
+mod_pr=(f_mod('PRECC',longitude=(-180, 540))+f_mod('PRECL', longitude=(-180, 540)))*3600.0*24.0*1000.0
 print mod_pr.getLongitude()
 print mod_pr.getLatitude()
 
@@ -112,6 +112,6 @@ isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
 # After you set arrows, need to enable arrows again
 ###isofill.ext_1 = True
 ###isofill.ext_2 = True
-isofill.colormap = x.getcolormap('bl_to_darkred')
+###isofill.colormap = x.getcolormap('bl_to_darkred')
 x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
 x.png('test.png')
