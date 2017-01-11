@@ -521,7 +521,6 @@
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>aprun</executable>

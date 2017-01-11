@@ -180,7 +180,6 @@
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>32</PES_PER_NODE>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
@@ -293,7 +292,6 @@
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
@@ -405,7 +403,6 @@
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>aprun</executable>
@@ -703,7 +700,6 @@
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>16</PES_PER_NODE>
-    <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec</executable>
@@ -775,7 +771,6 @@
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>8</PES_PER_NODE>
-    <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec</executable>
@@ -1023,7 +1018,6 @@
     <SUPPORTED_BY>   jayesh -at- mcs.anl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>4</PES_PER_NODE>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>runjob</executable>
@@ -1104,7 +1098,6 @@
     <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>4</PES_PER_NODE>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>/usr/bin/runjob</executable>
@@ -1409,7 +1402,6 @@
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>16</PES_PER_NODE>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>aprun</executable>
@@ -1541,7 +1533,6 @@
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>16</PES_PER_NODE>
-    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpich">
       <executable>aprun</executable>
