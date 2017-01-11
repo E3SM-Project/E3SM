@@ -1762,14 +1762,14 @@
    "halign": 0,
    "height": 10.490567316175754,
    "path": 0,
-   "valign": 2
+   "valign": "half"
   },
   "plotset5_min": {
    "angle": 0,
-   "halign": 0,
+   "halign": "left",
    "height": 10.490567316175754,
    "path": 0,
-   "valign": 2
+   "valign": "half"
   },
   "plotset5_units": {
    "angle": 0,

@@ -101,6 +101,51 @@ x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
 isofill = x.createisofill()
+isofill.colormap = x.getcolormap('lightblue2darkblue')
+
+if isofill.colormap in ['AMIP',
+            'NCAR',
+            'bl_to_darkred',
+            'bl_to_drkorang',
+            'blends',
+            'blue2darkorange',
+            'blue2darkred',
+            'blue2green',
+            'blue2grey',
+            'blue2orange',
+            'blue2orange2red',
+            'blue_to_grey',
+            'blue_to_grn',
+            'blue_to_orange',
+            'blue_to_orgred',
+            'brown2blue',
+            'brown_to_blue',
+            'categorical',
+            'classic',
+            'green2magenta',
+            'grn_to_magenta',
+            'inferno',
+            'lightblue2darkblue',
+            'ltbl_to_drkbl',
+            'rainbow',
+            'rainbow_no_grn',
+            'rainbownogreen',
+            'sequential',
+            'white2blue',
+            'white2green',
+            'white2magenta',
+            'white2red',
+            'white2yellow',
+            'white_to_blue',
+            'white_to_green',
+            'white_to_magenta',
+            'white_to_red',
+            'white_to_yellow']:
+        # Restore old behaviour of default colors for old colormaps
+        vcs.utils.defaultColorsRange = range(239,15,-1)
+else:
+    vcs.utils.defaultColorsRange = range(256)
+
 isofill.datawc_x1=0
 isofill.datawc_x2=360
 isofill.datawc_y1=-90
@@ -111,7 +156,7 @@ isofill.datawc_y2=90
 # After you set arrows, need to enable arrows again
 ###isofill.ext_1 = True
 ###isofill.ext_2 = True
-isofill.colormap = x.getcolormap('ltbl_to_drkbl')
+#isofill.fillareacolors=vcs.getcolors(range(16,240))
 #x.setcolormap('bl_to_darkred')
 
 x.plot(dif_pr, template_2, isofill, comment1=rmse, comment2=corr)
