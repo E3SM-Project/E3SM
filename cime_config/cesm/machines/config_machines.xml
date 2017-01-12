@@ -194,6 +194,75 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="cheyenne">
+    <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <!-- have not seen any performance benefit in smt -->
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>36</PES_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpiexec_mpt</executable>
+      <arguments>
+	<arg name="labelstdout">-p "%g:"</arg>
+	<arg name="threadplacement"> omplace </arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">ncarenv/1.0</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">intel/16.0.1</command>
+	<command name="load">mkl</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">gnu/6.3.0</command>
+      </modules>
+      <modules>
+	<command name="load">mpt/2.15</command>
+	<command name="load">ncarcompilers/0.3.5</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.1</command>
+      </modules>
+      <modules mpilib="mpt">
+	<command name="load">netcdf/4.4.1</command>
+<!--	<command name="load">netcdf-mpi/4.4.1</command> -->
+	<command name="load">pnetcdf/1.8.0</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="constance">
     <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
     <OS>LINUX</OS>

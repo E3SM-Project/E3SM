@@ -1155,11 +1155,11 @@ class K_TestCimeCase(TestCreateTestCommon):
                             msg="Build complete had wrong value '%s'" %
                             build_complete)
 
-            model_specific_val = case.get_value("CPL_SEQ_OPTION")
-            if CIME.utils.get_model() == 'cesm':
-                self.assertEqual(model_specific_val, "RASM_OPTION1")
-            else:
-                self.assertEqual(model_specific_val, "CESM1_MOD")
+#            model_specific_val = case.get_value("CPL_SEQ_OPTION")
+#            if CIME.utils.get_model() == 'cesm':
+#                self.assertEqual(model_specific_val, "RASM_OPTION1")
+#            else:
+#                self.assertEqual(model_specific_val, "CESM1_MOD")
 
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
