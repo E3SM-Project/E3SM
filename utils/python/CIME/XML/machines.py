@@ -28,7 +28,7 @@ class Machines(GenericXML):
                 files = Files()
             infile = files.get_value("MACHINES_SPEC_FILE", resolved=False)
             schema = files.get_schema("MACHINES_SPEC_FILE")
-            logger.warn("Verifying using schema %s"%schema)
+            logger.debug("Verifying using schema %s"%schema)
             infile = files.get_resolved_value(infile)
 
         self.machines_dir = os.path.dirname(infile)

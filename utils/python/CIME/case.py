@@ -486,7 +486,7 @@ class Case(object):
             env_file.set_components(comp_classes)
 
     def _get_component_config_data(self):
-        # attributes used for multi valued defaults 
+        # attributes used for multi valued defaults
         # attlist is a dictionary used to determine the value element that has the most matches
         attlist = {"compset":self._compsetname, "grid":self._gridname, "cime_model":self._cime_model}
 
@@ -669,13 +669,11 @@ class Case(object):
 
             pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount, mpilib=mpilib)
-
         mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
-        # Since other items may include PES_PER_NODE we need to do this first
-        # we can get rid of this code when all of the perl is removed
-        for key, value in other.items():
-            self.set_value(key, value)
+        if other is not None:
+            for key, value in other.items():
+                self.set_value(key, value)
         for key, value in pes_ntasks.items():
             totaltasks[key[-3:]] = int(value)
             mach_pes_obj.set_value(key,int(value))
