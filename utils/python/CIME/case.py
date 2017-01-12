@@ -97,7 +97,6 @@ class Case(object):
         self.num_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
-
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
@@ -121,6 +120,7 @@ class Case(object):
         env_mach_pes = self.get_env("mach_pes")
         comp_classes = self.get_values("COMP_CLASSES")
         total_tasks = env_mach_pes.get_total_tasks(comp_classes)
+
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
         logger.debug("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
@@ -686,12 +686,11 @@ class Case(object):
 
         maxval = 1
         pes_per_node = self.get_value("PES_PER_NODE")
-        if mpilib != "mpi-serial":
-            for key, val in totaltasks.items():
-                if val < 0:
-                    val = -1*val*pes_per_node
-                if val > maxval:
-                    maxval = val
+        for key, val in totaltasks.items():
+            if val < 0:
+                val = -1*val*pes_per_node
+            if val > maxval:
+                maxval = val
 
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
@@ -707,11 +706,7 @@ class Case(object):
             if compclass not in pes_nthrds.keys():
                 mach_pes_obj.set_value(compclass,1)
 
-        # FIXME - this is a short term fix for dealing with the restriction that
-        # CISM1 cannot run on multiple cores
-        if "CISM1" in self._compsetname:
-            mach_pes_obj.set_value("NTASKS_GLC",1)
-            mach_pes_obj.set_value("NTHRDS_GLC",1)
+
 
         #--------------------------------------------
         # batch system

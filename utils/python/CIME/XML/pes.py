@@ -17,11 +17,6 @@ class Pes(GenericXML):
         GenericXML.__init__(self, infile)
 
     def find_pes_layout(self, grid, compset, machine, pesize_opts='M', mpilib=None):
-        pe_select = None
-        grid_match = None
-        mach_match = None
-        compset_match = None
-        pesize_match = None
         opes_ntasks = {}
         opes_nthrds = {}
         opes_rootpe = {}
@@ -32,7 +27,7 @@ class Pes(GenericXML):
         overrides = self.get_optional_node("overrides")
         if overrides is not None:
             o_grid_nodes = self.get_nodes("grid", root = overrides)
-            opes_ntasks, opes_nthrds, opes_rootpe, oother_settings = self._find_matches(o_grid_nodes, grid, compset, machine, pesize_opts, mpilib, True)
+            opes_ntasks, opes_nthrds, opes_rootpe, oother_settings = self._find_matches(o_grid_nodes, grid, compset, machine, pesize_opts, True)
         # Get all the nodes
         grid_nodes = self.get_nodes("grid")
         if o_grid_nodes:
@@ -42,23 +37,25 @@ class Pes(GenericXML):
             grid_nodes = list(gn_set)
 
 
-        pes_ntasks, pes_nthrds, pes_rootpe, other_settings = self._find_matches(grid_nodes, grid, compset, machine, pesize_opts, mpilib, False)
+        pes_ntasks, pes_nthrds, pes_rootpe, other_settings = self._find_matches(grid_nodes, grid, compset, machine, pesize_opts, False)
         pes_ntasks.update(opes_ntasks)
         pes_nthrds.update(opes_nthrds)
         pes_rootpe.update(opes_rootpe)
-        other_settings.update(other_settings)
+        other_settings.update(oother_settings)
 
         if mpilib == "mpi-serial":
             for i in iter(pes_ntasks):
                 pes_ntasks[i] = 1
+            for i in iter(pes_rootpe):
                 pes_rootpe[i] = 0
 
         logger.info("Pes setting: grid          is %s " %grid)
         logger.info("Pes setting: compset       is %s " %compset)
+        logger.info("Pes setting: tasks       is %s " %pes_ntasks)
         logger.info("Pes other settings: %s"%other_settings)
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings
 
-    def _find_matches(self, grid_nodes, grid, compset, machine, pesize_opts, mpilib, override=False):
+    def _find_matches(self, grid_nodes, grid, compset, machine, pesize_opts, override=False):
         grid_choice = None
         mach_choice = None
         compset_choice = None
