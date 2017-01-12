@@ -2786,6 +2786,9 @@ sub write_filepath
       elsif($opts{'dyn_target'} eq 'preqx_acc') {
 	      print $fh "$camsrcdir/homme/src/preqx_acc\n";
       }
+      elsif($opts{'dyn_target'} eq 'pese') {
+	      print $fh "$camsrcdir/homme/src/pese\n";
+      }
     }
 
     # Parallelization utilies
