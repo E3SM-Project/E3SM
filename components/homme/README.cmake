@@ -6,7 +6,7 @@ Please see the HOMME wiki for information on how to build HOMME using the CMake 
 https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
 
 The CMAKE build system supports a number of user-configurable targets:
-sweqx, preqx, preqx_acc, swim, prim
+sweqx, preqx, preqx_acc, pese, swim, prim
 
 Scripts which will CMake configure, build, construct namelists and run a simulation using these
 targets, see:
