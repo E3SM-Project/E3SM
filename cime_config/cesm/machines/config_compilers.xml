@@ -962,6 +962,27 @@ using a fortran linker.
   <PNETCDF_PATH><env>PNETCDF</env></PNETCDF_PATH>
 </compiler>
 
+<compiler MACH="cheyenne">
+  <CPPDEFS>
+    <!-- these flags enable nano timers -->
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <NETCDF_PATH><env>NETCDF</env></NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH><env>PNETCDF</env></PNETCDF_PATH>
+</compiler>
+<compiler MACH="cheyenne" COMPILER="intel">
+  <CFLAGS>
+    <append> -qopt-report </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -qopt-report </append>
+  </FFLAGS>
+  <CMAKE_OPTS>
+    <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
+  </CMAKE_OPTS>
+</compiler>
+
 <compiler MACH="laramie">
   <CPPDEFS>
     <!-- these flags enable nano timers -->
