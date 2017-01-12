@@ -33,8 +33,8 @@ def plot_min_max_mean(canvas, template, variable):
     #var_max = str(round(float(variable.max()), 2))
     #var_mean = str(round(float(variable.mean), 2))
     #The reason why I think '%.2f' is better than round is because round somehow ignore zeros at the end of the number.
-    var_min =  '%.2f' %variable.min
-    var_max =  '%.2f' %variable.max
+    var_min =  '%.2f' %variable.minimum
+    var_max =  '%.2f' %variable.maximum
     var_mean = '%.2f' %variable.mean
 
 
@@ -121,13 +121,13 @@ obs_pr.mean=round(cdutil.averager(obs_pr, axis='xy', weights='generate'),2) #are
 mod_pr.mean=round(cdutil.averager(mod_pr, axis='xy', weights='generate'),2) #area-weighting
 dif_pr.mean=round(cdutil.averager(dif_pr, axis='xy', weights='generate'),2) #area-weighting
 
-obs_pr.max=round(mod_pr.max(),2)
-mod_pr.max=round(mod_pr.max(),2)
-dif_pr.max=round(dif_pr.max(),2)
+obs_pr.maximum=mod_pr.max()
+mod_pr.maximum=mod_pr.max()
+dif_pr.maximum=dif_pr.max()
 
-obs_pr.min=round(mod_pr.min(),2)
-mod_pr.min=round(mod_pr.min(),2)
-dif_pr.min=round(dif_pr.min(),2)
+obs_pr.minimum=mod_pr.min()
+mod_pr.minimum=mod_pr.min()
+dif_pr.minimum=dif_pr.min()
 
 
 
