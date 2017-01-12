@@ -291,33 +291,27 @@ contains
      pnh_i(:,:,k) = rho_R_theta(:,:,k)*exner_i(:,:,k)
   enddo
 
-#if 0
-!  pnh = p  boundary condition (UNSTABLE)
-   pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0   ! hydrostatic ptop
-   pnh_i(:,:,nlev+1) = ptop + sum(dp3d(:,:,:),3)  ! hydrostatic psurf
-#endif
-
-#if 0
-!  d(pnh) = dp  boundary condition (WORKS)
-!  dp3d(k) = pnh(k+1)-pnh(k)
-   pnh_i(:,:,1)      = pnh_i(:,:,2)    - dp3d(:,:,1) 
-   pnh_i(:,:,nlev+1) = pnh_i(:,:,nlev) + dp3d(:,:,nlev)   
-#endif
-
-#if 1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! boundary terms
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  compute pnh at midpoint, then extrapolate to surface:
 !   rho_R_theta(:,:,nlev) = dp3d(:,:,nlev)*theta(:,:,nlev)*R_star(:,:,nlev) / &
 !        (  (phi(:,:,nlev)+phi(:,:,nlev-1))/2 - phis(:,:)  )
    rho_R_theta(:,:,nlev) = dp3d(:,:,nlev)*theta(:,:,nlev)*R_star(:,:,nlev) / &
         (  (phi(:,:,nlev) - phis(:,:))*2  )
 
-   exner(:,:,nlev) = (rho_R_theta(:,:,nlev)/p0)**kappa_star(:,:,nlev)
+   exner(:,:,nlev) = (rho_R_theta(:,:,nlev)/p0)**&
+        ( kappa_star(:,:,nlev)/ ( 1-kappa_star(:,:,nlev)))
    pnh(:,:,nlev) = rho_R_theta(:,:,nlev)*exner(:,:,nlev)
 !  invert  pnh(:,:,k)=(pnh_i(:,:,k)+pnh_i(:,:,k+1))/2
    pnh_i(:,:,nlev+1) = 2*pnh(:,:,nlev) - pnh_i(:,:,nlev)
 
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0   ! hydrostatic ptop
-#endif
+!   pnh_i(:,:,1)      = pnh_i(:,:,2)    - dp3d(:,:,1) 
+
+
+
+
 
 
 #if (defined COLUMN_OPENMP)
@@ -378,114 +372,95 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: dexner(np,np,nlev)
-  real (kind=real_kind) :: integrand(np,np,nlev)
-  real (kind=real_kind) :: p_i(np,np,nlev+1)
-  real (kind=real_kind) :: phi_i(np,np,nlev+1)
-
-  real (kind=real_kind) :: rho(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dphi(np,np,nlev)
-  real (kind=real_kind) :: theta(np,np,nlev)
-  real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: dp_theta_R(np,np,nlev)
   integer :: k,nt,ntQ
 
-  p_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,nt)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
-     p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
 
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
   do k=1,nlev
      elem%state%theta(:,:,k,nt)=temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
   enddo
 
+  call set_hydrostatic_phi(elem,hvcoord,elem%state%theta(:,:,:,nt),dp,&
+       elem%state%phi(:,:,:,nt))
 
-! use dry formula for exner to initialize model:
-  integrand(:,:,:) = dp(:,:,:)*Rgas*temperature(:,:,:)/p(:,:,:)
-  phi_i(:,:,nlev+1) = elem%state%phis(:,:)
-  do k=nlev,1,-1
-     phi_i(:,:,k)=phi_i(:,:,k+1) + integrand(:,:,k)
-  enddo
-
-#if 0
-!  call preq_hydrostatic_v2(elem%state%phi(:,:,:,nt),elem%state%phis,integrand)
-! another version (should be the same as calling preq_hydrostatic)
-  do k=1,nlev
-     elem%state%phi(:,:,k,nt) = (phi_i(:,:,k+1)+phi_i(:,:,k))/2
-  enddo
-! if we use this version, we need to define 
-! dphi = phi_i(k+1)-phi_i(k)
-! phi_i(k) =  2*phi(k) - phi_i(k+1)
-! which only needs phi_i at the surface, not the model top
-#endif
-
-#if 0
-! another version, inverse of phi_i(k) = (phi(k-1)+phi(k)/2
-! with b.c. at phi_s
-! use this version if we define dphi by averaging phi to interfaces and
-! then differencing
-  elem%state%phi(:,:,nlev,nt) = phi_i(:,:,nlev+1) + integrand(:,:,nlev)/2
-  do k=nlev-1,1,-1
-     elem%state%phi(:,:,k,nt) = 2*phi_i(:,:,k+1) - elem%state%phi(:,:,k+1,nt)
-  enddo
-#endif
-
-
-#if 1
-  ! inverse of get_p_and_exer():
-  elem%state%phi(:,:,nlev,nt) = elem%state%phis(:,:) + integrand(:,:,nlev)/2
-  do k=nlev,2,-1
-     !  invert this equation at interfaces:
-     !  p/exner = dp_theta_R / d(phi)    
-     ! d(phi) = dp_theta_R*exer/p
-     dp_theta_R(:,:,k) = &
-          (dp(:,:,k)  *elem%state%theta(:,:,k,nt)  *Rgas +&
-           dp(:,:,k-1)*elem%state%theta(:,:,k-1,nt)*Rgas)/2
-     ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
-     elem%state%phi(:,:,k-1,nt) = elem%state%phi(:,:,k,nt) +&
-          dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
-  enddo
-#endif
-
-
-#if 0
-! dpnh = get_pnh_and_exer(phi)
-! dpnh = A*phi + B
-! 1) call with phi=0 to get B
-! 2) call with phi=delta_function to get D = diag(A)
-! 3) dpnh = A*phi + A*delta + B
-! Iterate on phi until dpnh = dp
-! compute diagonal preconditioner
-  do k2=1,nlev
-     do k=1,nlev
-        phi(:,:,k)=0
-        if (k==k2) phi(:,:,k)=1
-     enddo
-  enddo
-
-  do iter=1,5000
-     call get_pnh_and_exner(hvcoord,elem%state%theta(:,:,:,nt),&
-          dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),elem%state%Qdp(:,:,:,1,ntQ),&
-          pnh,dpnh,exner)
-
-
-#endif
 
   end subroutine set_thermostate
 
 
 
 
+
+
+  subroutine set_hydrostatic_phi(elem,hvcoord,theta,dp,phi)
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! inverse of get_p_and_exer():
+  ! for dry hydrostatic case
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  implicit none
+  
+  type (element_t), intent(inout)   :: elem
+  type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
+  real (kind=real_kind) :: theta(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: phi(np,np,nlev)
+  
+  !   local
+  real (kind=real_kind) :: p(np,np,nlev)
+  real (kind=real_kind) :: p_i(np,np,nlev+1)
+
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: Qdp(np,np,nlev)
+  real (kind=real_kind) :: dp_theta_R(np,np,nlev)
+  integer :: k
+
+  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
+  do k=1,nlev
+     p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
+  enddo
+  do k=1,nlev
+     p(:,:,k) = (p_i(:,:,k) + p_i(:,:,k+1))/2
+  enddo
+
+!  integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
+  phi(:,:,nlev) = elem%state%phis(:,:) + (&
+    dp(:,:,nlev)*Rgas*theta(:,:,nlev)*p(:,:,nlev)**(kappa-1)*p0**(-kappa) )/2
+
+  do k=nlev,2,-1
+     !  invert this equation at interfaces:
+     !  p/exner = dp_theta_R / d(phi)    
+     ! d(phi) = dp_theta_R*exer/p
+     dp_theta_R(:,:,k) = &
+          (dp(:,:,k)  *theta(:,:,k)  *Rgas +&
+           dp(:,:,k-1)*theta(:,:,k-1)*Rgas)/2
+     ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
+     phi(:,:,k-1) = phi(:,:,k) +&
+          dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
+  enddo
+
+
+  ! debug
+  Qdp=0
+  call get_pnh_and_exner(hvcoord,theta(:,:,:),dp,phi(:,:,:),&
+       elem%state%phis(:,:),Qdp,pnh,dpnh,exner)
+  do k=1,nlev
+     if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
+        print *,'WARNING: hydrostatic inverse FAILED!'
+        print *,k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
+     endif
+  enddo
+  end subroutine
+
+
+
+
+
+ 
   subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
 !
 ! set state variables at node(i,j,k) at layer midpoints

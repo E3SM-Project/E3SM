@@ -17,7 +17,7 @@ module prim_state_mod
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
-  use element_ops,      only: get_field
+  use element_ops,      only: get_field, get_pnh_and_exner
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin
   use perf_mod,         only: t_startf, t_stopf
@@ -126,7 +126,7 @@ contains
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
-    real (kind=real_kind) :: KEvert,IEvert,PEvert,T1,T2,S1,S2
+    real (kind=real_kind) :: KEvert,IEvert,PEvert,T1,T2,S1,S2,P1,P2
     real (kind=real_kind) :: KEhorz,PEhorz
     real (kind=real_kind) :: ddt_tot,ddt_diss
     integer               :: n0, nm1, np1, n0q
@@ -684,12 +684,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
     real (kind=real_kind) :: cp_star1,qval_t1,qval_t2
-    real (kind=real_kind), intent(out) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
-    real (kind=real_kind), intent(out) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
-    real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner nh pressure
-    real (kind=real_kind), intent(out), optional :: exner_i_out(np,np,nlevp)  ! exner nh pressure interfac\
-es
-
+    real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
+    real (kind=real_kind) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
+    real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
 
 
     integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
@@ -703,7 +700,7 @@ es
     endif
     do ie=nets,nete
        call get_pnh_and_exner(hvcoord,elem(ie)%state%theta,elem(ie)%state%dp3d,elem(ie)%state%phi, &
-       elem(ie)%state%phi,elem(ie)%state%Qdp,pnh,dpnh,exner,exner_i_out)
+       elem(ie)%state%phi,elem(ie)%state%Qdp,pnh,dpnh,exner)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -743,9 +740,9 @@ es
     !  IE = c_p^* dp/deta T - dp/ds phi  + psurf phisurf 
        suml=0
        do k=1,nlev
-            suml(:,:,k)=suml(:,:,k)+(Cp * elem(ie)%state%dp3d(:,:,k,t1) *         &
+            suml(:,:)=suml(:,:)+(Cp * dpt1(:,:,k) *         &
             elem(ie)%state%theta(:,:,k,t1)*exner(:,:,k) + &
-            -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k)+elem(ie)%state%ps_v(:,:,t1) *  &
+            -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)+elem(ie)%state%ps_v(:,:,t1) *  &
             elem(ie)%state%phis(:,:))*dpt1(:,:,k)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:)
