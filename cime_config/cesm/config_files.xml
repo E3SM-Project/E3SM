@@ -204,6 +204,15 @@
     <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
+  <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
+    <type>char</type>
+    <default_value>$CIMEROOT/cime_config/$MODEL/config_component_drv.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing all component specific driver configuration variables (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
+  </entry>
+
   <entry id="CONFIG_ATM_FILE">
     <type>char</type>
     <default_value>unset</default_value>
