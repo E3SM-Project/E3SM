@@ -127,7 +127,7 @@ contains
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
     real (kind=real_kind) :: KEvert,IEvert,PEvert,T1,T2,S1,S2,P1,P2
-    real (kind=real_kind) :: KEhorz,PEhorz
+    real (kind=real_kind) :: KEhorz,PEhorz,IEhorz
     real (kind=real_kind) :: ddt_tot,ddt_diss
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
