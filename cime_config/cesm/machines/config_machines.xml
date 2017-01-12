@@ -195,7 +195,7 @@
   </machine>
 
   <machine MACH="cheyenne">
-    <DESC>NCAR SGI test platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
+    <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
