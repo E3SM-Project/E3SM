@@ -1,6 +1,23 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-12-2017
+Tag: cime5.2.0-alpha.19
+Answer Changes: None
+Tests: scripts_regression_tests.py (on cheyenne)
+Dependencies:
+
+Brief Summary:  Add support for new NCAR HPC system Cheyenne
+
+User interface changes: none
+
+Modified files: git diff --name-status
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 01-11-2017
 Tag: cime5.2.0-alpha.18
 Answer Changes: Climate Changing
