@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<config_pes>
+<config_pes version="2.0">
 
   <grid name="any">
     <mach name="any">
