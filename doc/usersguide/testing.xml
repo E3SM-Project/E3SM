@@ -1,0 +1,432 @@
+<chapter id="ccsm_tests">
+<title>CESM Testing</title>
+
+<!-- ======================================================================= -->
+<sect1 id="ccsm_tests_summary">
+<title>Testing overview</title>
+
+<para>
+CESM1.2 is accompanied by updated utilities that support automated testing of
+the model.  In general, these should be used only after the model has
+been ported to the target machine (see <xref linkend="port"/>).  The
+tools
+are <command>create_production_test</command> and $&create_test;.
+</para>
+<para>
+The <command>create_production_test</command>
+tool is executed from your $&CASEROOT;, and tests your case's ability to be restarted in a
+bit-for-bit fashion in a separate directory.
+</para>
+<para>
+New perl-based $&create_test; and $&query_tests; utilities are
+executed from $&IMEMROOT;/scripts and allow you to quickly determine
+what tests are available as well as set up and run one of numerous
+supported tests or create any one of numerous test suites that are
+used by the CESM developers for testing the model.
+</para>
+
+</sect1>
+
+<sect1 id="create_production_test">
+<title>Using <command>create_production_test</command></title>
+
+<para> In general, after configuring and testing a case and before
+starting a long production job based on that case, it's important
+to verify that the model restarts exactly.  This is a standard
+requirement of the system and will help demonstrate stability
+of the configuration technically.  The tool
+create_production_test is located in the case directory,
+and it sets up an ERT two month exact restart test in the same directory
+as the current case.  To use it, do the following
+</para>
+
+<screen>
+> cd $CASEROOT
+> ./create_production_test
+> cd ../$CASE_ERT
+> ./$CASE_ERT.test_build
+> ./$CASE_ERT.submit
+
+Check your test results. A successful test produces "PASS" as
+the first word in the file, $CASE_ERT/TestStatus
+</screen>
+
+<para>If the test fails, see <xref linkend="failed_tests"/> for
+test debugging guidance.
+</para>
+
+</sect1>
+
+<sect1 id="query_tests">
+<title>Using <command>query_tests</command></title>
+
+<para>
+In CESM1.2, automated regression and system tests are now found in a
+single xml-based file in
+$&CIMEROOT&/scripts/Testing/Testlistxml/testlist_allactive.xml.  The new
+utility &query_tests; allows you to quickly and easily query the
+different CESM test categories that are supported as well as what
+tests are available for different grids, compsets, machines and
+compilers. You should use this command to become familiar with the
+latest CESM testing capabilities before you utilize &create_test;.
+You should first use the -h option in calling &query_tests; to
+document its input options.  &query_tests; can be called with the
+following arguments:
+</para>
+<para><screen>
+query_tests \
+   -list <emphasis>name</emphasis>
+        name can be [compsets,grids,compilers,machines,categories,tests] \
+   -compset <emphasis>name</emphasis>
+       limit selection to target compset name \
+   -category <emphasis>name</emphasis>
+       limit selection to target category name \
+   -machine <emphasis>name</emphasis>
+       limit selection to target machine name \
+   -compiler <emphasis>name</emphasis>
+       limit selection to target compiler name \
+   -grid <emphasis>name</emphasis>
+       limit selection to target grid name match \
+   -outputlist
+       outputs the found tests to the old-style text test lists. \
+   -outputxml
+       outputs the found tests to an xml test list.
+</screen></para>
+<para>
+As an example to see all the tests that are supported for the compset B1850C5CN,
+call $&query_tests; as follows
+</para>
+<para><screen>
+./query_tests -compset B1850C5CN
+</screen></para>
+
+<para>
+And the following output will appear
+<screen>
+Compset                      TestName  Grid       Machine_compiler      Category
+==================================================================================
+B1850C5CN (B_1850_CAM5_CN)   ERI       f19_g16    hopper_pgi            prerelease
+B1850C5CN (B_1850_CAM5_CN)   ERI       f19_g16    intrepid_ibm          prerelease
+B1850C5CN (B_1850_CAM5_CN)   ERI       ne30_g16   hopper_pgi            prebeta
+B1850C5CN (B_1850_CAM5_CN)   ERI       ne30_g16   intrepid_ibm          prebeta
+B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_pgi       prebeta
+B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_gnu       prebeta
+B1850C5CN (B_1850_CAM5_CN)   ERS       ne30_g16   yellowstone_intel     prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   edison_intel          prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   mira_ibm              prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   titan_pgi             prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_gnu       prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_pgi       prebeta
+B1850C5CN (B_1850_CAM5_CN)   PFS       ne30_g16   yellowstone_intel     prebeta
+</screen></para>
+<para>
+To find all the tests that are configured to run on Yellowstone, run:
+<screen>
+> ./query_tests -mach yellowstone
+</screen>
+</para>
+<para>
+The output will show the compset, test name, grid, machine / compiler combinaton, test category, and and optional namelist directory.
+(used for specifying custom namelists for tests)
+</para>
+<para>
+To find all the tests configured to run on titan, using the PGI compiler, and using the 'prebeta' category, run:
+</para>
+<screen>
+> ./query_tests -mach titan -compiler pgi -category prebeta
+</screen>
+<para>
+To find all the tests using the B1850 compset, run:
+</para>
+<screen>
+> ./query_tests -compset B1850
+</screen>
+<para>
+If one wanted a new test list based on a particular query, one can use the -outputxml option to get the query output in XML format:
+</para>
+<screen>
+> ./query_tests -category aux_clm -outputxml > aux_clm.xml
+</screen>
+<para>
+The above command will give one all of the 'aux_clm' tests in the file 'aux_clm.xml'.  Then, this test list can be used
+by create_test to run the aux_clm tests using the -xml_list option.
+</para>
+
+</sect1>
+
+<sect1 id="create_test">
+<title>Using <command>create_test</command></title>
+
+<para>
+The new $&create_test; tool is located in the
+<filename>$CIMEROOT/scripts/</filename> directory and can be used to
+set up entire CESM test suites, as well as single standalone test cases.
+To see the list of test cases, and to view the available script options,
+execute create_test -help or create_test without any arguments.
+Creating a single test looks like:
+</para>
+
+<screen>
+> cd $CIMEROOT/scripts
+> ./create_test -testname ERS.f19_g16.X.yellowstone_intel -testid t01
+> cd ERS.f19_g16.X.yellowstone_intel.t01
+> ERS.f19_g16.X.yellowstone_intel.t01.test_build
+./ERS.f19_g16.X.yellowstone_intel.t01.submit
+Check your test results. A successful test produces "PASS" as
+  the first word in the file TestStatus
+</screen>
+
+<para>
+The above commands set up an exact restart test (ERS) at the 1.9x2.5_gx1v6
+resolution using a dead model component set (X) for the machine yellowstone.
+The testid provides a unique tag for the test in case it needs to
+be rerun (i.e. using -testid t02).
+</para>
+
+<para>
+As an example, to create an entire suite of tests on yellowstone for
+the 'prebeta' test category, do the following:
+</para>
+
+<screen>
+> cd $CIMEROOT/scripts
+> ./create_test \
+     -xml_mach yellowstone \
+     -xml_compiler intel \
+     -xml_category prebeta \
+     -testid alpha01a \
+     -testroot /glade/scratch/$USER/alpha01a
+</screen>
+
+<para>
+The above command will run all of the 'prebeta' tests in the
+ccsm_utils/Testlistxml/testlist.xml file that are configured for the
+category prebeta using the Intel compiler on yellowstone.  This is
+almost identical to the development testing that CSEG carries out on
+various machines.  In addition to creating the suite of tests in your
+chosen test root, $&create_test; will also copy several helper scripts into
+the testroot directory. The first will be named cs.status.$testid.$machine.
+When run, this script will output the current status of all the tests.
+The second will be named cs.submit.$testid.$machine.  This script is
+automatically run when all the test cases are created, and it builds
+and submits the suite of tests for you.
+</para>
+<para>
+Some things to note about CESM tests:
+</para>
+
+<itemizedlist>
+<listitem>
+<para>For usage information about the create_test tool, run "create_test -help".</para>
+</listitem>
+<listitem>
+<para>Test results are output in the TestStatus file.  The
+TestStatus.out file provides additional details of the test run, which
+may aid in debugging failed tests.</para>
+</listitem>
+<listitem>
+<para>At this time, tests are not always easily re-runnable from an
+existing test directory.  Rather than rerun a previous test case, it's
+recommended to set up a clean test case, (i.e. create one with a new
+testid)
+</para>
+</listitem>
+<listitem>
+<para>Tests are built using the .test_build script.  This is different
+from regular production cases which are built using the .build script.
+Some tests require more than one executable, thus the .test_build
+script builds all required executables upfront interactively.</para>
+</listitem>
+<listitem>
+<para>The costs of tests vary widely.  Some are short and some are long.</para>
+</listitem>
+<listitem>
+<para>If a test fails, see <xref linkend="failed_tests"/>for debugging assistance.</para>
+</listitem>
+<listitem>
+<para>There are -compare, -generate, and -baselineroot options for the
+create_test tool that support regression testing. These tools allow
+one to accomplish several goals: </para>
+</listitem>
+  <listitem>
+  <para> -generate will save log files as well as coupler history
+  NetCDF files in the baselineroot under the current case name. Later
+  tests will compare their coupler history files against these
+  baselines to check for numerical differences. </para>
+  </listitem>
+  <listitem>
+  <para> -compare will compare the current tag's tests against a
+  previous tag's results, again for numerical accuracy.</para>
+  </listitem>
+  <listitem>
+  <para> -baselineroot simply specifies where you would like your
+  baseline files to be stored. By default, the test system will choose
+  the configured baseline root for your machine.</para>
+  </listitem>
+<listitem>
+<para>There are extra test options that can be added to the test such
+as _D, _E, or _P*.  These are described in more detail in the
+create_test -help output.</para>
+</listitem>
+<listitem>
+  <para> There is also a new option to create_test, -nlcompareonly.
+  This allows one to create a suite of Smoke Build Namelist tests.
+  These tests aren't compiled or run, the test cases are simply
+  generated. These are useful in that you can create a suite for a
+  previous CESM tag, then compare the current CESM tag's generated
+  namelists against the previous tag.  This can potentially spot
+  hard-to-find answer-changing errors, and/or unintended changes in
+  development.
+  </para>
+</listitem>
+</itemizedlist>
+
+<para>The test status results have the following meaning
+</para>
+
+<informaltable>
+<tgroup cols="2">
+<thead>
+<row><entry>Test Result</entry><entry>Description</entry></row>
+</thead>
+<tbody>
+<row><entry> BFAIL </entry><entry>  compare test couldn't find the baseline directory for the testcase</entry></row>
+<row><entry> BUILD </entry><entry>  build succeeded, test not submitted</entry></row>
+<row><entry> CFAIL </entry><entry>  env variable or build error</entry></row>
+<row><entry> CHECK </entry><entry>  manual review of data is required</entry></row>
+<row><entry> ERROR </entry><entry>  test checker failed, test may or may not have passed</entry></row>
+<row><entry> FAIL  </entry><entry>  test failed</entry></row>
+<row><entry> GEN   </entry><entry>  test has been generated</entry></row>
+<row><entry> PASS  </entry><entry>  test passed</entry></row>
+<row><entry> PEND  </entry><entry>  test has been submitted</entry></row>
+<row><entry> RUN   </entry><entry>  test is currently running OR it hung, timed out, exceeded its allotted walltime, or exited abnormally </entry></row>
+<row><entry> SFAIL </entry><entry>  generation of test failed in scripts</entry></row>
+<row><entry> TFAIL </entry><entry>  test setup error</entry></row>
+<row><entry> UNDEF </entry><entry>  undefined result</entry></row>
+</tbody>
+</tgroup>
+</informaltable>
+
+<para>
+The following tests are available at the time of writing:
+</para>
+
+<informaltable>
+<tgroup cols="2">
+<thead>
+<row><entry>Test</entry><entry>Description</entry></row>
+</thead>
+<tbody>
+<row><entry>SMS </entry><entry> smoke test </entry></row>
+<row><entry>ERS </entry><entry> exact restart from startup, default 6 days initial + 5 days restart</entry></row>
+<row><entry>ERB </entry><entry> branch/exact restart test </entry></row>
+<row><entry>ERH </entry><entry> hybrid/exact restart test </entry></row>
+<row><entry>ERI </entry><entry> hybrid/branch/exact restart test</entry></row>
+<row><entry>ERT </entry><entry> exact restart from startup, default 2 months + 1 month </entry></row>
+<row><entry>SEQ </entry><entry> sequencing bit-for-bit test </entry></row>
+<row><entry>PEA </entry><entry> single processor testing with mpi and mpi-serial</entry></row>
+<row><entry>PEM </entry><entry> pe counts mpi bit-for-bit test </entry></row>
+<row><entry>PET </entry><entry> pe counts mpi/openmp bit-for-bit test</entry></row>
+<row><entry>CME </entry><entry> compare mct and esmf interfaces test</entry></row>
+<row><entry>NCK </entry><entry> single vs multi instance validation test</entry></row>
+<row><entry>SBN </entry><entry> smoke build namelist test </entry></row>
+</tbody>
+</tgroup>
+</informaltable>
+
+</sect1>
+
+<sect1 id="failed_tests">
+<title>Debugging Tests That Fail</title>
+
+<para>
+This section describes what steps can be taken to try to identify
+why a test failed.  The primary information associated with reviewing
+and debugging a run can be found in <xref linkend="troubleshooting_run_time"/>.
+</para>
+
+<para>
+First, verify that a test case is no longer in the batch queue.  If
+that's the case, then review the <link linkend="create_test">possible
+test results</link> and compare that to the result in the TestStatus
+file.  Next, review the TestStatus.out file to see if there is any
+additional information about what the test did.  Finally, go to the
+<link linkend="troubleshooting_run_time"> troubleshooting</link>
+section and work through the various log files.
+</para>
+
+<para>
+Finally, there are a couple other things to mention.  If the
+TestStatus file contains "RUN" but the job is no longer in the queue,
+it's likely that the job either timed out because it exceeded its
+specified wall clock time, or the job hung or exited abnormally due to
+some run-time error.  Check the batch log files to see if the job was
+killed due to a time limit, and if it was, increase the time limit and
+either resubmit the job, or generate a new test case and update the
+time limit before submitting it.  </para>
+
+<para>Also, a test case can fail
+because either the job didn't run properly or because the test conditions
+(i.e. exact restart) weren't met.  Try to determine whether the test failed
+because the run failed, or because the test did not meet the test conditions.
+If a test is failing early in a run, it's usually best to set up a
+standalone case with the same configuration in order to debug problems.
+If the test is running fine, but the test conditions are not being met
+(i.e. exact restart), then that requires debugging of the model in the
+context of the test conditions.
+</para>
+
+<para>
+Not all tests will pass for all model configurations.  For more information,
+please check the known problems page for this release to find out which machines
+have problems with which compsets and/or resolutions.
+</para>
+
+<itemizedlist>
+<listitem>
+<para>All models are bit-for-bit reproducible on different processor
+counts EXCEPT for POP2 and CICE diagnostics. The coupler is not
+bit-for-bit reproducible out of the box. The BFBFLAG must be set to
+TRUE in the &env_run.xml; file for the coupler to be bit-for-bit
+reproducible. If you have a configuration where you expect bit-for-bit
+reproducibility when you change the processor count AND you want to
+validate this, then the BFBFLAG must be set to TRUE in the env_run.xml
+file if the coupler is to meet this condition. The main purpose of the
+BFBFLAG is to enforce a specific order of operations in the mapping
+implementation. This constraint can impact mapping performance so it
+is recommended that the BFBFLAG be set to FALSE in production. Also
+note that the CESM system is fully bit-for-bit reproducible when
+rerunning the same configuration on the same processor count. The
+BFBFLAG is only required when trying to reproduce answers when
+changing processor counts.
+</para>
+</listitem>
+<listitem>
+<para>Some of the active components cannot run with the mpi serial
+library.  This library takes the place of mpi calls when the model is
+running on one processors and MPI is not available or not desirable.
+The mpi serial library is invoked by setting the xml variable MPILIB
+to mpi-serial in &env_build.xml;.  An effort is underway to extend the
+mpi serial library to support all components' usage of the mpi library
+with this standalone implementation. Also NOT all machines/platforms
+are set up to enable setting MPILIB to mpi-serial.  See the summary of
+<ulink url="../modelnl/machines.html">supported machines</ulink> for
+details.  To use the mpi serial feature on your machine, you also need
+to make changes in the config_compilers.xml  and config_machines.xml  files for that
+machine. The best way to do this is to use a machine where MPILIB can
+be set to mpi-serial and look at the type of
+changes needed to make it work. Those same changes will need to be
+introduced for your machine. For the Macros file this includes the
+name of the compiler, possibly options to the compiler, and the
+settings of the MPI library and include path. For the config_machines.xml
+file you may want/need to modify the setting of MPICH_PATH. There also
+maybe many settings of MPI specific environment variables that don't
+matter when the mpi-serial setting is used.</para>
+</listitem>
+</itemizedlist>
+
+</sect1>
+
+</chapter>
+
+

@@ -1,0 +1,433 @@
+<?xml version="1.0"?>
+<config_batch version="1.0.0">
+  <!--
+     File:    config_batch.xml
+     Purpose: abstract out the parts of run scripts that are different, and use this configuration to
+     create acme run scripts from a single template.
+
+     batch_system:     the batch system type and version
+     batch_query:      the batch query command for each batch system.
+     batch_redirect:   Whether a redirect character is needed to submit jobs.
+     batch_directive:  The string that prepends a batch directive for the batch system.
+     jobid_pattern:    A perl regular expression used to filter out the returned job id from a
+                       queue submission.
+     depend_pattern:
+    -->
+  <batch_system type="template" version="x.y">
+    <batch_query args=""></batch_query>
+    <batch_submit></batch_submit>
+    <batch_redirect></batch_redirect>
+    <batch_directive></batch_directive>
+    <directives>
+      <directive name=""></directive>
+    </directives>
+  </batch_system>
+
+  <batch_system type="none" version="x.y">
+    <batch_query args=""></batch_query>
+    <batch_submit></batch_submit>
+    <batch_redirect></batch_redirect>
+    <batch_directive></batch_directive>
+    <directives>
+      <directive name=""></directive>
+    </directives>
+  </batch_system>
+
+   <batch_system type="cobalt" version="x.y">
+     <batch_query>qstat</batch_query>
+     <batch_submit>qsub</batch_submit>
+     <batch_directive></batch_directive>
+     <jobid_pattern>(\d+)</jobid_pattern>
+     <depend_string> --dependencies</depend_string>
+     <walltime_format>%H:%M:%S</walltime_format>
+     <submit_args>
+       <arg flag="--cwd" name="CASEROOT"/>
+       <arg flag="-A" name="PROJECT"/>
+       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
+       <!-- space is required here so that variable is resolved correctly -->
+       <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+       <arg flag="-q" name="JOB_QUEUE"/>
+       <arg flag="--mode script"/>
+       <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
+     </submit_args>
+   </batch_system>
+
+  <batch_system type="lsf" version="9.1">
+    <batch_query args=" -w" >bjobs</batch_query>
+    <batch_submit>bsub</batch_submit>
+    <batch_redirect>&lt;</batch_redirect>
+    <batch_directive>#BSUB</batch_directive>
+    <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
+    <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
+    <depend_string> -w "done(jobid)"</depend_string>
+    <walltime_format>%H:%M</walltime_format>
+    <directives>
+      <directive                       > -n {{ totaltasks }} </directive>
+      <directive                       > -R "span[ptile={{ ptile }}]"</directive>
+      <directive                       > -q {{ job_queue }} </directive>
+      <directive                       > -N  </directive>
+      <directive default="poe"         > -a {{ poe }} </directive>
+      <directive                       > -x {{ queue_exclusive }} </directive>
+      <directive default="acme.stdout" > -o {{ acme_stdout }}.%J  </directive>
+      <directive default="acme.stderr" > -e {{ acme_stderr }}.%J  </directive>
+      <directive                       > -J {{ job_id }} </directive>
+      <directive                       > -W {{ job_wallclock_time }} </directive>
+      <directive                       > -P {{ account }}  </directive>
+    </directives>
+  </batch_system>
+
+  <batch_system type="pbs" version="x.y">
+    <batch_query args="-u $USER" >qselect</batch_query>
+    <batch_submit>qsub </batch_submit>
+    <batch_directive>#PBS</batch_directive>
+    <jobid_pattern>^(\d+)</jobid_pattern>
+    <depend_string> -W depend=afterok:jobid</depend_string>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <submit_args>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="-l walltime=" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-A" name="PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive> -V </directive>
+      <directive> -N {{ job_id }}</directive>
+      <directive default="n"> -r {{ rerunnable }} </directive>
+      <!-- <directive> -j oe {{ output_error_path }} </directive> -->
+      <directive> -j oe </directive>
+      <directive default="ae"  > -m {{ mail_options }} </directive>
+      <directive default="/bin/bash" > -S {{ shell }} </directive>
+    </directives>
+  </batch_system>
+
+  <batch_system type="moab" version="x.y">
+    <batch_query>showq</batch_query>
+    <batch_submit>msub </batch_submit>
+    <batch_directive>#MSUB</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_string> -W depend=afterok:jobid</depend_string>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <directives>
+      <directive> -N {{ job_id }}</directive>
+      <directive> -l walltime={{ job_wallclock_time }}</directive>
+      <directive> -j oe </directive>
+      <directive> -A {{ project }} </directive>
+      <directive default="n"> -r {{ rerunnable }} </directive>
+      <directive default="ae"  > -m {{ mail_options }} </directive>
+      <directive default="/bin/bash" > -S {{ shell }}</directive>
+    </directives>
+  </batch_system>
+
+   <batch_system type="slurm" version="x.y">
+     <batch_query args="-o '%i' -h -u $USER">squeue </batch_query>
+     <batch_submit>sbatch</batch_submit>
+     <batch_directive>#SBATCH</batch_directive>
+     <jobid_pattern>(\d+)$</jobid_pattern>
+     <depend_string> --dependency=afterok:jobid</depend_string>
+    <walltime_format>%H:%M:%S</walltime_format>
+     <directives>
+       <directive> --job-name={{ job_id }}</directive>
+       <directive> --nodes={{ num_nodes }}</directive>
+       <directive> --output={{ output_error_path }}   </directive>
+       <directive> --exclusive                        </directive>
+       <directive> --time={{ job_wallclock_time }}</directive>
+       <directive> --partition={{ job_queue }}</directive>
+       <directive> --account={{ project }}</directive>
+     </directives>
+   </batch_system>
+
+    <!-- blues is PBS -->
+    <batch_system MACH="blues" type="pbs" version="x.y">
+      <directives>
+        <directive>-A {{ PROJECT }}</directive>
+        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      </directives>
+      <queues>
+	<queue>shared</queue>
+      </queues>
+      <walltimes>
+	<walltime default="true">01:00:00</walltime>
+      </walltimes>
+    </batch_system>
+
+    <!-- anvil is PBS -->
+    <batch_system MACH="anvil" type="pbs" version="x.y">
+      <directives>
+        <directive>-A {{ PROJECT }}</directive>
+        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      </directives>
+      <queues>
+	<queue walltimemax="01:00:00" jobmin="1" jobmax="4320" default="true">acme</queue>
+      </queues>
+    </batch_system>
+
+    <!-- edison is SLURM as of Jan-4-2016 -->
+    <batch_system MACH="edison" type="slurm" version="x.y">
+      <queues>
+        <queue walltimemax="01:30:00" jobmin="1" jobmax="150000" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288">debug</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">01:15:00</walltime>
+        <walltime ccsm_estcost="1">01:50:00</walltime>
+        <walltime ccsm_estcost="3">05:00:00</walltime>
+      </walltimes>
+    </batch_system>
+
+    <!-- eos is PBS -->
+    <batch_system MACH="eos" type="pbs" version="x.y">
+    <directives>
+      <directive>-A {{ project }}</directive>
+      <directive>-l  nodes={{ num_nodes }}</directive>
+    </directives>
+    <queues>
+      <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">01:15:00</walltime>
+      <walltime ccsm_estcost="1">01:50:00</walltime>
+      <walltime ccsm_estcost="3">05:00:00</walltime>
+    </walltimes>
+   </batch_system>
+
+    <batch_system MACH="cori-haswell" type="slurm" version="x.y">
+      <directives>
+        <directive> --constraint=haswell</directive>
+      </directives>
+      <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="10000" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096">debug</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="cori-knl" type="slurm" version="x.y">
+      <directives>
+        <directive> --constraint=knl,quad,cache</directive>
+        <directive> --ntasks-per-core=4</directive>
+      </directives>
+      <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="3000000" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="100000">debug</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="mira" type="cobalt">
+      <queues>
+        <queue walltimemax="06:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">03:00:00</walltime>
+      </walltimes>
+    </batch_system>
+
+    <batch_system MACH="cetus" type="cobalt">
+      <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="4096" default="true">default</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">01:00:00</walltime>
+      </walltimes>
+    </batch_system>
+
+   <batch_system MACH="constance" type="slurm" version="x.y">
+    <directives>
+       <directive>-A  climate</directive>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive>--mail-type=END</directive>
+       <directive>--mail-user=email@pnnl.gov</directive>
+       <directive>--output=slurm.out</directive>
+       <directive>--error=slurm.err</directive>
+    </directives>
+    <queues>
+      <queue jobmin="1" jobmax="9999" default="true">slurm</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">0:30:00</walltime>
+    </walltimes>
+   </batch_system>
+
+  <batch_system MACH="skybridge" type="slurm" version="x.y">
+    <directives>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue jobmin="1" jobmax="512" default="true">ec</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">2:00:00</walltime>
+      <walltime ccsm_estcost="0">1:50:00</walltime>
+      <walltime ccsm_estcost="1">5:00:00</walltime>
+    </walltimes>
+  </batch_system>
+
+  <batch_system MACH="redsky" type="slurm" version="x.y">
+    <directives>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+    </directives>
+    <queues>
+      <queue jobmin="1" jobmax="512" default="true">ec</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">4:00:00</walltime>
+      <walltime ccsm_estcost="0">1:50:00</walltime>
+      <walltime ccsm_estcost="1">6:00:00</walltime>
+    </walltimes>
+  </batch_system>
+
+  <batch_system MACH="grizzly" type="moab" version="x.y">
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+	<walltimes>
+	  <walltime default="true">00:30:00</walltime>
+	  <walltime ccsm_estcost="1">02:00:00</walltime>
+	  <walltime ccsm_estcost="3">16:00:00</walltime>
+	</walltimes>
+	<queues>
+	   <queue walltimemax="10:00:00" default="true">moab</queue>
+	</queues>
+  </batch_system>
+
+   <batch_system MACH="wolf" type="moab" version="x.y">
+	<directives>
+		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+	</directives>
+	<walltimes>
+	  <walltime default="true">00:30:00</walltime>
+	  <walltime ccsm_estcost="1">02:00:00</walltime>
+	  <walltime ccsm_estcost="3">16:00:00</walltime>
+	</walltimes>
+	<queues>
+	   <queue walltimemax="16:00:00" default="true">moab</queue>
+	</queues>
+    </batch_system>
+
+    <batch_system MACH="mesabi" type="pbs">
+      <queues>
+        <queue walltimemax="24:00" default="true">mesabi</queue>
+        <queue walltimemax="24:00">debug</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">00:45:00</walltime>
+        <walltime ccsm_estcost="1">02:00:00</walltime>
+      </walltimes>
+    </batch_system>
+
+   <batch_system MACH="oic2" type="pbs" version="x.y">
+         <directives>
+                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+		 <directive>-q esd08q</directive>
+         </directives>
+         <queues>
+           <queue default="true">esd08q</queue>
+         </queues>
+         <walltimes>
+           <walltime default="true">24:00:00</walltime>
+         </walltimes>
+   </batch_system>
+
+   <batch_system MACH="oic5" type="pbs" version="x.y">
+         <directives>
+                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+		 <directive>-q esd13q</directive>
+         </directives>
+         <queues>
+           <queue default="true">esd13q</queue>
+           <queue walltimemax="1:00">esddbg13q</queue>
+         </queues>
+         <walltimes>
+           <walltime default="true">24:00:00</walltime>
+         </walltimes>
+   </batch_system>
+
+   <batch_system MACH="cades" type="pbs" version="x.y">
+         <directives>
+                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+                 <directive>-W group_list=cades-ccsi</directive>
+         </directives>
+         <queues>
+           <queue default="true">batch</queue>
+         </queues>
+         <walltimes>
+           <walltime default="true">24:00:00</walltime>
+         </walltimes>
+   </batch_system>
+
+   <batch_system MACH="itasca" type="pbs">
+     <queues>
+       <queue walltimemax="24:00" default="true">batch</queue>
+       <queue walltimemax="24:00">debug</queue>
+     </queues>
+     <walltimes>
+       <walltime default="true">00:45:00</walltime>
+       <walltime ccsm_estcost="1">02:00:00</walltime>
+     </walltimes>
+   </batch_system>
+
+   <batch_system MACH="titan" type="pbs" version="x.y">
+     <directives>
+       <directive>-A {{ project }}</directive>
+       <directive>-l nodes={{ num_nodes }}</directive>
+     </directives>
+     <queues>
+       <queue walltimemax="24:00" default="true">batch</queue>
+       <queue walltimemax="24:00">debug</queue>
+     </queues>
+     <walltimes>
+       <walltime default="true">00:45:00</walltime>
+       <walltime ccsm_estcost="1">02:00:00</walltime>
+     </walltimes>
+   </batch_system>
+
+   <batch_system MACH="lawrencium-lr2" type="slurm" version="x.y">
+     <directives>
+       <directive>--partition=lr2</directive>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive>--account={{ project }}</directive>
+       <directive>--exclusive</directive>
+     </directives>
+    <queues>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+    </queues>
+   </batch_system>
+
+   <batch_system MACH="lawrencium-lr3" type="slurm" version="x.y">
+     <directives>
+       <directive>--partition=lr3</directive>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive>--account={{ project }}</directive>
+       <directive>--exclusive</directive>
+     </directives>
+    <queues>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+    </queues>
+   </batch_system>
+
+  <batch_jobs>
+    <!-- order matters, with no-batch jobs will be run in the order listed here -->
+    <job name="case.run">
+      <template>template.case.run</template>
+      <task_count>default</task_count>
+      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
+    </job>
+   <job name="case.test">
+      <template>template.case.test</template>
+      <task_count>default</task_count>
+      <prereq>$BUILD_COMPLETE and $TEST</prereq>
+    </job>
+    <job name="case.st_archive">
+      <template>template.st_archive</template>
+      <task_count>1</task_count>
+      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
+      <dependency>case.run or case.test</dependency>
+      <prereq>$DOUT_S</prereq>
+    </job>
+    <job name="case.lt_archive">
+      <template>template.lt_archive</template>
+      <task_count>1</task_count>
+      <dependency>case.st_archive</dependency>
+      <prereq>$DOUT_L_MS</prereq>
+    </job>
+  </batch_jobs>
+
+</config_batch>
+
