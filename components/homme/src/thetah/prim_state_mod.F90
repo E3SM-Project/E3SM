@@ -557,7 +557,7 @@ contains
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
           write(iulog,'(a,2e22.14)')'Tot KE advection horiz, vert: ',-KEhorz,-KEvert
-          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',0,-IEvert
+          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',0d0,-IEvert
           write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert: ',-PEhorz,-PEvert
           
           write(iulog,'(a,2e22.14)')'Transfer:   KE->IE:          ', -T1-T2
@@ -699,21 +699,16 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp
     endif
     do ie=nets,nete
-       call get_pnh_and_exner(hvcoord,elem(ie)%state%theta,elem(ie)%state%dp3d,elem(ie)%state%phi, &
-       elem(ie)%state%phi,elem(ie)%state%Qdp,pnh,dpnh,exner)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
        do k=1,nlev
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
-   
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,E)
-#endif
- !   KE   .5 dp/dn U^2
 
+       call get_pnh_and_exner(hvcoord,elem(ie)%state%theta(:,:,:,t1),dpt1,&
+            elem(ie)%state%phi(:,:,:,t1), &
+            elem(ie)%state%phis(:,:),elem(ie)%state%Qdp(:,:,:,1,t1_qdp),pnh,dpnh,exner)
+   
+ !   KE   .5 dp/dn U^2
        do k=1,nlev
           E = ( elem(ie)%state%v(:,:,1,k,t1)**2 +  &
                 elem(ie)%state%v(:,:,2,k,t1)**2 + &
@@ -729,24 +724,32 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
     
     !   PE   dp/dn PHIs
-       suml=0
-       do k=1,nlev
-          suml = suml + elem(ie)%state%phi(:,:,k,t1)*dpt1(:,:,k)
-       enddo
-       elem(ie)%accum%PEner(:,:,n)=suml(:,:)
+       if (theta_hydrostatic_mode) then
+          elem(ie)%accum%PEner(:,:,n)=elem(ie)%state%phis(:,:)*elem(ie)%state%ps_v(:,:,t1)
+       else
+          suml=0
+          do k=1,nlev
+             suml = suml + elem(ie)%state%phi(:,:,k,t1)*dpt1(:,:,k)
+          enddo
+          elem(ie)%accum%PEner(:,:,n)=suml(:,:)
+       endif
        
-       suml=0
 
     !  IE = c_p^* dp/deta T - dp/ds phi  + psurf phisurf 
        suml=0
+       suml2=0
        do k=1,nlev
-            suml(:,:)=suml(:,:)+(Cp * dpt1(:,:,k) *         &
-            elem(ie)%state%theta(:,:,k,t1)*exner(:,:,k) + &
-            -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)+elem(ie)%state%ps_v(:,:,t1) *  &
-            elem(ie)%state%phis(:,:))*dpt1(:,:,k)
+          suml(:,:)=suml(:,:)+&
+               Cp * dpt1(:,:,k) * elem(ie)%state%theta(:,:,k,t1)*exner(:,:,k) 
+          suml2(:,:) = suml2(:,:)  -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)
        enddo
-       elem(ie)%accum%IEner(:,:,n)=suml(:,:)
-    enddo
+       if (theta_hydrostatic_mode) then
+             elem(ie)%accum%IEner(:,:,n)=suml(:,:)  
+          else
+             elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
+                  elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
+          endif
+       enddo
     
 end subroutine prim_energy_halftimes
     
