@@ -204,7 +204,7 @@
 
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
     <type>char</type>
-    <default_value>$CIMEROOT/cime_config/$MODEL/config_component_drv.xml</default_value>
+    <default_value>$CIMEROOT/driver_cpl/cime_config/config_component_$MODEL.xml</default_value>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all component specific driver configuration variables (for documentation only - DO NOT EDIT)</desc>
