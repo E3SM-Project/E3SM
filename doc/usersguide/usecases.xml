@@ -1,0 +1,2909 @@
+<chapter id="use_case_intro">
+<title>Use Cases and FAQs</title>
+
+<!-- ======================================================================= -->
+<sect1 id="use_case_basic">
+<title>BASICS: A basic example</title>
+
+<para> This specifies all the steps necessary to create, set up, build,
+and run a case. The following assumes that $CIMEROOT is /user/cimeroot.
+</para>
+
+<orderedlist>
+
+<listitem>
+<para> Create a new case  named EXAMPLE_CASE in the ~/cesm directory. Use
+an 1850 control compset at 1-degree resolution on yellowstone. </para>
+<screen>
+> cd /user/cimeroot/scripts
+> ./create_newcase -case ~/cesm/EXAMPLE_CASE \
+                 -compset B_1850_CN \
+                 -res 0.9x1.25_gx1v6 \
+                 -mach yellowstone
+</screen>
+</listitem>
+
+<listitem>
+<para> Go to the $&CASEROOT; directory.  Edit &env_mach_pes.xml; if a
+different pe-layout is desired first. Then set up and build the
+case. </para>
+<screen>
+> cd ~/cesm/EXAMPLE_CASE
+> ./cesm_setup
+> ./EXAMPLE_CASE.build
+</screen>
+</listitem>
+
+<listitem>
+<para>Create a production test.  Go to the test directory. Build the
+test first, then run the test and check the TestStatus (the first word
+should be PASS).</para>
+<screen>
+> cd ~/cesm/EXAMPLE_CASE
+> ./create_production_test
+> cd ../EXAMPLE_CASE_ERT
+> ./EXAMPLE_CASE_ERT.test_build
+> ./EXAMPLE_CASE_ERT.submit
+Wait for test to finish.....
+> cat TestStatus
+</screen>
+</listitem>
+
+<listitem>
+<para>Go back to the case directory, set the job to run 12 model
+months, use an editor to change the time limit in the run file to
+accommodate a 12-month run, and submit the job.</para>
+<screen>
+> cd ../EXAMPLE_CASE
+> xmlchange STOP_OPTION=nmonths
+> xmlchange STOP_N=12
+> # use an editor to change EXAMPLE_CASE.run "#BSUB -W 4:00" to "#BSUB -W 6:00"
+> ./EXAMPLE_CASE.submit
+</screen>
+</listitem>
+
+<listitem>
+<para>
+Make sure the run succeeded.  Look for the following line at the end
+of the cpl.log file in your run directory.
+</para>
+<screen>
+(seq_mct_drv): ===============       SUCCESSFUL TERMINATION OF CPL7-CCSM ===============
+</screen>
+</listitem>
+
+<listitem>
+<para>
+Set it to resubmit itself 10 times so that it will run a total of 11
+years (including the initial year), and resubmit the case. (Note that
+a resubmit will automatically change the run to be a continuation run).
+</para>
+<screen>
+> xmlchange RESUBMIT=10
+> ./EXAMPLE_CASE.submit
+
+</screen>
+</listitem>
+
+</orderedlist>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="use_case_branch">
+<title>BASICS: How do I set up a branch or hybrid run?</title>
+
+<para>
+The section <link linkend="run_start_stop">setting the case
+initialization</link> discussed starting a new case as a branch run or
+hybrid run by using data from a previous run. First you need to create
+a new case. Assume that $&CIMEROOT; is set to /user/cimeroot and that
+$&EXEROOT; is <filename>/glade/scratch/$user/EXAMPLE_CASEp</filename>. Finally,
+assume that the branch or hybrid run is being carried out on NCAR's
+IBM system, yellowstone.
+</para>
+
+<screen>
+> cd /user/cimeroot/scripts
+> create_newcase -case ~/cesm/EXAMPLE_CASEp \
+                 -compset B_2000 \
+                 -res 0.9x1.25_gx1v6 \
+                 -mach yellowstone
+> cd ~/cesm/EXAMPLE_CASEp
+</screen>
+
+<para> For a branch run, modify &env_run.xml; to branch from
+EXAMPLE_CASE at year 0001-02-01.  </para>
+<screen>
+> xmlchange RUN_TYPE=branch
+> xmlchange RUN_REFCASE=EXAMPLE_CASE
+> xmlchange RUN_REFDATE=0001-02-01
+</screen>
+
+<para> For a hybrid run, modify &env_run.xml; to start up from
+EXAMPLE_CASE at year 0001-02-01.  </para>
+<screen>
+> xmlchange RUN_TYPE=hybrid
+> xmlchange RUN_REFCASE=EXAMPLE_CASE
+> xmlchange RUN_REFDATE=0001-02-01
+</screen>
+
+<para> For a branch run, &env_run.xml; for EXAMPLE_CASEp should be
+identical to EXAMPLE_CASE, except for the $RUN_TYPE setting. In
+addition, any modifications introduced into any of the
+
+<filename>~/cesm/EXAMPLE_CASE/user_nl_*</filename> files,
+should be re-introduced into the corresponding files in EXAMPLE_CASEp.</para>
+
+<para> Set up and build the case executable.</para>
+<screen>
+> ./cesm_setup
+> ./EXAMPLE_CASEp.build
+</screen>
+
+<para> Prestage the necessary restart/initial data in $RUNDIR
+(assumed to be <filename>/glade/scratch/$user/EXAMPLE_CASEp/run</filename>). Note
+that <filename>/glade/scratch/$user/EXAMPLE_CASEp/run</filename> was created
+during the build. Assume that the restart/initial data is on the NCAR
+HPSS.</para>
+<screen>
+> cd /glade/scratch/$user/EXAMPLE_CASEp/run
+> hsi -q "cget /CCSM/csm/EXAMPLE_CASE/rest/0001-02-01-00000/*"
+</screen>
+
+<para>It is assumed that you already have a valid load-balanced scenario.
+Go back to the case directory, set the job to run 12 model months, use an
+editor to change the time limit in the run file to accommodate a 12-month
+run, then submit the job.</para>
+<screen>
+> cd ~/cesm/EXAMPLE_CASEp
+> xmlchange STOP_OPTION=nmonths
+> xmlchange STOP_N=12
+> # use an editor to change EXAMPLE_CASE.run "#BSUB -W 1:30" to "#BSUB -W 6:00"
+> ./EXAMPLE_CASEp.submit
+</screen>
+
+<para>
+Make sure the run succeeded.  Look for the following line at the end
+of the cpl.log file in your run directory.
+</para>
+<screen>
+(seq_mct_drv): ===============       SUCCESSFUL TERMINATION OF CPL7-CCSM ===============
+</screen>
+
+<para> Change the run to a continuation run. Set it to resubmit itself
+10 times so that it will run a total of 11 years (including the
+initial year), then resubmit the case.
+</para>
+<screen>
+> xmlchange CONTINUE_RUN=TRUE
+> xmlchange RESUMIT=10
+> ./EXAMPLE_CASEp.submit
+</screen>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_calendars">
+<title>BASICS: What calendars are supported in CESM? </title>
+
+<para>
+CESM supports a 365 day (or no-leap) calendar as well as a gregorial calendar.
+The calendar is set by the xml variable, CALENDAR, in
+<ulink url="../modelnl/env_build.html#build_def">env_build.xml</ulink>.
+The no-leap calendar has the standard
+12 months, but it has 365 days every year and 28 days in every February.
+Monthly averages in CESM are truly computed over varying number of days
+depending on the month of the year.
+In CESM1.0.x, a gregorian calendar was only possible if the ESMF library was used.
+This is no longer the case in CESM1.1.x and CESM1.2.x.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="use_case_pelayout">
+<title>BASICS: How do I change processor counts and component layouts on processors? </title>
+
+<para>
+This example modifies the PE layout for our original run, EXAMPLE_CASE. We
+now target the model to run on the yellowstone supercomputer and modify our
+PE layout to use a common load balanced configuration for CESM on large
+IBM machines. Also see <xref linkend="case_conf_setting_pes"/>.
+</para>
+
+<para>
+In our original example, EXAMPLE_CASE, we used 128 pes with each
+component running sequentially over the entire set of processors.
+</para>
+
+<screenshot>
+<screeninfo>Original layout of EXAMPLE_CASE</screeninfo>
+<mediaobject>
+<imageobject><imagedata fileref="128pe_layout.jpg" format="JPEG"/></imageobject>
+<caption>
+<para>128-pes/128-tasks layout</para>
+</caption>
+</mediaobject>
+</screenshot>
+
+<para>
+Now we change the layout to use 1728 processors and run the ice, lnd,
+and cpl models concurrently on the same processors as the atm model
+while the ocean model will run on its own set of processors.  The atm
+model will be run on 1664 pes using 832 MPI tasks each threaded 2 ways
+and starting on global MPI task 0.  The ice model is run using 320 MPI
+tasks starting on global MPI task 0, but not threaded.   The lnd model
+is run on 384 processors using 192 MPI tasks each threaded 2 ways
+ starting at global MPI task 320 and the coupler is run on 320 processors
+using 320 MPI tasks starting at global MPI task 512.  The ocn model uses
+64 MPI tasks starting at global MPI task 832.
+</para>
+
+<screenshot>
+<screeninfo>New layout of EXAMPLE_CASE</screeninfo>
+<mediaobject>
+<imageobject><imagedata fileref="896pe_layout.jpg" format="JPEG"/></imageobject>
+<caption>
+<para>1728-pes/896-tasks layout</para>
+</caption>
+</mediaobject>
+</screenshot>
+
+<para>
+Since we will be modifying &env_mach_pes.xml; after
+<command>cesm_setup</command> was called, the following
+needs to be invoked:
+</para>
+
+<screen>
+> ./cesm_setup -clean
+> xmlchange NTASKS_ATM=832
+> xmlchange NTHRDS_ATM=2
+> xmlchange ROOTPE_ATM=0
+> xmlchange NTASKS_CPL=320
+> xmlchange NTHRDS_CPL=1
+> xmlchange ROOTPE_CPL=512
+> xmlchange NTASKS_GLC=320
+> xmlchange NTHRDS_GLC=1
+> xmlchange ROOTPE_GLC=0
+> xmlchange NTASKS_ICE=320
+> xmlchange NTHRDS_ICE=1
+> xmlchange ROOTPE_ICE=0
+> xmlchange NTASKS_LND=192
+> xmlchange NTHRDS_LND=2
+> xmlchange ROOTPE_LND=320
+> xmlchange NTASKS_OCN=64
+> xmlchange NTHRDS_OCN=1
+> xmlchange ROOTPE_OCN=832
+> xmlchange NTASKS_ROF=192
+> xmlchange NTHRDS_ROF=2
+> xmlchange ROOTPE_ROF=320
+> ./cesm_setup
+</screen>
+
+<para> It is interesting to compare the timings from the 128- and
+1728-processor runs. The timing output below shows that the original model
+run on 128 pes cost 851 pe-hours/simulated_year. Running on 1728 pes,
+the model cost more than 5 times as much, but it runs more than two and
+a half times faster.
+</para>
+
+<screen>
+128-processor case:
+Overall Metrics:
+Model Cost: 851.05 pe-hrs/simulated_year (scale= 1.00)
+Model Throughput: 3.61 simulated_years/day
+
+1728-processor case:
+Overall Metrics:
+Model Cost: 4439.16 pe-hrs/simulated_year (scale= 1.00)
+Model Throughput: 9.34 simulated_years/day
+</screen>
+
+<para>
+See <link linkend="running_ccsm_loadbalance">understanding load
+balancing CESM</link> for detailed information on understanding timing
+files.
+</para>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_getenv">
+<title>BASICS: What are CESM xml variables and CESM environment variables?</title>
+
+<para>
+Like in CESM1.0 and CESM1.1, CESM1.2 cases are customized, built and run largely
+through setting what CESM calls "environment variables".  These
+actually appear to the user as variables defined in xml files.  Those
+files appear in the case directory once a case is created and are
+named something like env_*.xml.  They are converted to actual
+environment variables via a csh script called ccsm_getenv.  That
+script calls a perl script called xml2env that converts the xml files
+to shell files that are then sourced and removed.  The ccsm_getenv and
+xml2env exist in the $CASEROOT/Tools directory.  The environment
+variables are specified in xml files to support extra automated error
+checking and automatic generation of env variable documentation.  If
+you want to have the cesm environment variables in your local shell
+environment, do the following
+</para>
+
+<screen>
+> cd $CASEROOT
+> source ./Tools/ccsm_getenv
+</screen>
+
+<para>
+You must run the ccsm_getenv from the CASEROOT directory exactly as
+shown above.  There are multiple env_*.xml files including
+env_case.xml, env_mach_pes.xml, env_build.xml, and env_run.xml.  To a
+large degree, the different env files exist so variables can be locked
+in different phases of the case setup, build, and run process.  For
+more info on locking files, see <xref linkend="faq_lockedfiles"/>.
+The important point is that env_case.xml variables cannot be changed
+after create_newcase is invoked.  env_mach_pes cannot be changed after
+<command>cesm_setup</command> is invoked unless you plan to invoke the
+commands <command>cesm_setup -clean</command>, and
+<command>cesm_setup</command> again. env_build variables cannot be changed after
+the model is built unless you plan to clean and rebuild.  <ulink
+url="../modelnl/env_run.html">env_run.xml</ulink> variables can be
+changed at any time.  The CESM scripting software checks that xml files
+are not changed when they shouldn't be.
+</para>
+
+<para>
+CESM recommends using the xmlchange tool to modify env variables.  This
+will decrease the chance that typographical errors will creep into the
+xml files.  Conversion of the xml files to environment variables can fail
+silently with certain xml format errors.  To use xmlchange, do, for instance,
+</para>
+
+<screen>
+> cd $CASEROOT
+> ./xmlchange STOP_OPTION=nmonths
+> ./xmlchange STOP_N=6
+</screen>
+
+<para>
+which will change the variables STOP_OPTION and STOP_N in the file
+env_run.xml to the specified values.  The xml files can be edited
+manually, but users should take care not to introduce any formatting
+errors that could lead to incomplete env settings.  If there appear to
+be problems with the env variables (i.e. if the model doesn't seem to
+have consistent values compared to what's set in the xml files), then
+confirm that the env variables are being set properly.  There are a
+couple of ways to do that.  First, run the ccsm_getenv script as
+indicated above and review the output generated by the command "env|sort".
+The env variables should match the xml settings.  Another option is to
+edit the $CASEROOT/Tools/ccsm_getenv script and comment out the line
+"rm $i:r".  That should leave the shell env files around, and they can
+then be reviewed.  The latter approach should be undone as soon as
+possible to avoid problems running ccsm_getenv later.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_xmlchange">
+<title>BASICS: How do I modify the value of CESM xml variables?</title>
+
+<para>
+CESM recommends using the xmlchange tool to modify env variables.  xmlchange
+supports error checking as part of the implementation.  Also, using xmlchange
+will decrease the chance that typographical errors will creep into the
+xml files.  Conversion of the xml files to environment variables can fail
+silently with certain xml format errors.  To use xmlchange, do, for instance,
+</para>
+
+<screen>
+> cd $CASEROOT
+> ./xmlchange STOP_OPTION=nmonths
+> ./xmlchange STOP_N=6
+</screen>
+
+<para>
+which will change the variables STOP_OPTION and STOP_N in the file env_run.xml
+to the specified values.
+The xml files can be edited manually, but users should take care not to
+introduce any formatting errors that could lead to incomplete env settings.
+See also <link linkend="modifying_xml">.</link>
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_badenvars">
+<title>BASICS: Why aren't my $CASEROOT xml variable changes working?</title>
+
+<para>
+It's possible that a formatting error has been introduced in the
+env xml files.  This would lead to problems in setting the env variables.
+If there appear to be problems with the env variables (i.e. if the
+model doesn't seem to have consistent values compared to what's set in the xml files),
+then confirm that the env variables are being set properly.  There are a couple
+of ways to do that.  First, run the ccsm_getenv script via
+</para>
+<screen>
+> cd $CASEROOT
+> source ./Tools/ccsm_getenv
+> env
+</screen>
+<para>
+and review the output generated by the command "env".  The env
+variables should match the xml settings.  Another option is to edit
+the $CASEROOT/Tools/ccsm_getenv script and comment out the line "rm
+$i:r".  That should leave the shell env files around, and they can
+then be reviewed.  The latter approach should be undone as soon as
+possible to avoid problems running ccsm_getenv later.
+</para>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="ncases_oneexe">
+<title>BASICS: How do I run multiple cases all using a single executable?</title>
+
+<para>
+In CESM, the directory containing the model executable is cleanly
+separated from the directory where the model is run. As a result, it
+is now straightforward to run multiple cases <emphasis>where the
+env_build.xml for each case is identical</emphasis> all using a
+pre-built executable. As an example, this type of flexibility greatly
+simplifies carrying out UQ analysis.
+</para>
+
+<para>
+The following outlines the steps involved to do this.
+<orderedlist>
+<listitem><para>
+Create the executable that all runs will use. Call this case RefExe.
+The following would be a sample <command>create_newcase</command> command:
+<screen>
+> cd $CIMEROOT/scripts
+> create_newcase -case RefExe -compset B1850CN -res ne30_g16 -mach hopper
+> cd RefExe
+> ./cesm_setup
+> ./RefExe.build
+</screen>
+Verify that the model has build successfully.
+For reference below - the $EXEROOT for the RefExe case will be
+<filename>/scratch/scratchdirs/$CCSMUSER/RefExe/bld</filename>.
+</para></listitem>
+
+<listitem><para>
+All subsequent calls to create_newcase that will use the RefExe executable
+must have identical arguments for -compset, -res and -mach.
+Lets say that you want to run 2 separate cases, RefExe_Case1 and RefExe_Case2
+that both use the executable RefExe. You would then do the following:
+<screen>
+> cd $CIMEROOT/scripts
+> create_newcase -case RefExe_Case1 -compset B1850CN -res ne30_g16 -mach hopper
+> cd RefExe_Case1
+> ./cesm_setup
+> xmlchange EXEROOT=/scratch/scratchdirs/$CCSMUSER/RefExe/bld.
+> xmlchange BUILD_COMPLETE=TRUE
+> qsub RefExe_Case1.run
+</screen>
+<screen>
+> cd $CIMEROOT/scripts
+> create_newcase -case RefExe_Case2 -compset B1850CN -res ne30_g16 -mach hopper
+> cd RefExe_Case1
+> ./cesm_setup
+> xmlchange EXEROOT=/scratch/scratchdirs/$CCSMUSER/RefExe/bld.
+> xmlchange BUILD_COMPLETE=TRUE
+> qsub RefExe_Case2.run
+</screen>
+</para></listitem>
+</orderedlist>
+</para>
+
+<para>
+Note that by setting BUILD_COMPLETE in &env_build.xml; to TRUE, the
+scripts assume that the model has already been built for the
+case. Normally, the $CASE.build script fills this in when the build is
+successful. However, since you will not invoke the build for
+RefExe_Case1 and RefExe_Case2, you must then manually tell the script
+where the build is - and that it has been successful. This option is
+FOR EXPERTS ONLY and should only be used by those users that are
+completely familiar with the CESM scripts.
+</para>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="use_case_esmfint">
+<title>BASICS: How do I use the ESMF library and ESMF interfaces?</title>
+
+<para>
+CESM supports use of either the CESM designed component interfaces
+which are based on MCT datatypes and are used by default in CESM
+or ESMF compliant component interfaces.  In both cases, the driver and
+component models remain fundamentally the same.  The ESMF interface
+implementation exists in CESM to support further development and testing of
+an ESMF driver or ESMF couplers and to allow CESM model components to interact
+with other coupled systems using ESMF coupling standards.
+</para>
+
+<para>
+ESMF is NOT required or provided by CESM.  It must be <ulink
+url="http://www.earthsystemmodeling.org/download/index.shtml">downloaded</ulink>
+and installed separately.  It is safest to compile ESMF and CESM with
+identical compilers and mpi versions. It may be possible to use
+versions that are different but compatible; however, it is hard to
+predict which versions will be compatible and using different versions
+can result in problems that are difficult to track down.
+</para>
+
+<para>
+There are three possible modes of interaction between CESM and ESMF.
+<orderedlist>
+<listitem><para> No linking to an external ESMF library. CESM uses a native implementation
+of ESMF timekeeping interfaces (default).
+</para>
+<para>
+To run with the MCT interfaces and the native time manager, set the following env variables
+<screen>
+- cd to your case directory
+- edit env_build.xml
+  - set COMP_INTERFACE to "MCT"
+  - set USE_ESMF_LIB to "FALSE"
+</screen>
+</para>
+</listitem>
+
+<listitem><para> Linking with an ESMF library to use the ESMF time manager but continued
+use of the native CESM component interfaces.
+</para>
+<para>
+To run with the native interfaces and ESMF time manager, set the following env variables
+<screen>
+- cd to your case directory
+- edit env_build.xml
+  - set COMP_INTERFACE to "MCT"
+  - set USE_ESMF_LIB to "TRUE"
+  - set ESMF_LIBDIR to a valid installation directory of ESMF version 5.3.0
+</screen>
+</para>
+</listitem>
+
+<listitem><para> Linking with an ESMF library in order to use ESMF component interfaces.
+In this mode ESMF timekeeping is also activated.</para>
+<para>
+To run with the ESMF interfaces and ESMF time manager, set the following env variables
+<screen>
+- cd to your case directory
+- edit env_build.xml
+  - set COMP_INTERFACE to "ESMF"
+  - set USE_ESMF_LIB to "TRUE"
+  - set ESMF_LIBDIR to a valid installation directory of ESMF version 5.3.0
+</screen>
+</para>
+</listitem>
+</orderedlist>
+</para>
+
+<para>
+The ESMF library can be activated in two ways in CESM.  The primary way is
+via the ESMF_LIBDIR env variable in the env_build.xml file described above.
+The secondary way is via a system environment variable called ESMFMKFILE.
+If this environment variable is set either through a system or module command,
+then the ESMF library will be picked up by the CESM scripts, but the
+local CESM variable, ESMF_LIBDIR, will always have precedence.
+</para>
+
+<para>
+To verify the correctness of the ESMF component interfaces in CESM, compute and compare CESM
+global integrals with identical runs differing only in the use of the MCT and ESMF interfaces.
+In both cases, the ESMF library should be active to guarantee identical time manager values.
+In both runs, the 'INFO_DBUG' parameter in env_run.xml should be set to 2 which activates the
+global integral diagnostics.  A valid comparison would be a 10 day test from the same initial
+conditions.  The global integrals produced in the cpl log file should be identical in both cases.
+This test can be set up manually as described above or a CME test can be carried out which
+is designed to test this exact capability.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_lockedfiles">
+<title>BASICS: Why is there file locking and how does it work?</title>
+
+<para>
+In CESM, there are several different $CASEROOT xml files.  These
+include env_case.xml, env_mach_pes.xml, env_build.xml, and env_run.xml.
+These files are organized so that variables can be locked during different
+phases of the case setup, build, and run.  Locking variables is a
+feature of CESM that prevents users from changing variables after they
+have been resolved (used) in other parts of the scripts system.  The
+variables in env_case are locked when create_newcase is called.  The
+env_mach_pes variables are locked when &cesm_setup; is called.  The env_build
+variables are locked when CESM is built, and the env_run variables are
+never locked and can be changed anytime.  In addition, the Macros file
+is locked as part of the build step.  The $CASEROOT/LockedFiles
+directory saves copies of the xml files to facilitate the locking
+feature.  In summary:
+</para>
+
+<itemizedlist spacing="compact">
+<listitem> <para>
+&env_case.xml; is locked upon invoking &create_newcase; and
+cannot be unlocked.  To change settings in env_case, a new case
+has to be generated with <link linkend="creating_a_case">create_newcase</link>.
+</para></listitem>
+<listitem> <para>
+&env_mach_pes.xml; is locked after running <command>cesm_setup</command>.
+After changing variable values in this file, you need to invoke
+<command>cesm_setup -clean</command>
+and then <command>cesm_setup</command>.
+</para></listitem>
+<listitem> <para>
+<filename>Macros</filename> and &env_build.xml; are locked upon the
+<emphasis>successful</emphasis> completion of
+<command>$CASE.build</command>. Both <filename>Macros</filename>
+and &env_build.xml; can be unlocked by invoking
+<command>$CASE.cleanbuild</command> and then the model should be
+<link linkend="rebuild_executable">rebuilt</link>.
+</para></listitem>
+</itemizedlist>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_casestuff">
+<title>BASICS:  What are the directories and files in my case directory?</title>
+<para>
+The following describes many of the files and directories in the $CASEROOT directory.
+</para>
+
+<variablelist>
+
+<varlistentry><term>Buildconf/</term>
+<listitem><para>
+is the directory where the buildnml and buildexe component scripts reside and
+where the input_data_list files are generated by the buildnml scripts.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>CaseDocs/</term>
+<listitem><para>
+is the directory where copies of the latest namelist/text input files from invoking
+<command>preview_namelists</command> are placed.
+These files should not be edited and exist only to help document the case setup and run.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>SourceMods/</term>
+<listitem><para>
+contains directories for each component where case specific source
+code modifications can be included.  The source files in these directories
+will always be used in preference to the source code in $CIMEROOT.
+This feature allows users to modify CESM source code on a case
+by case basis if that is preferable to making modifications in the
+$CIMEROOT sandbox.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>LockedFiles/</term>
+<listitem><para>
+is the directory that holds copies of the locked files.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>Macros</term>
+<listitem><para>
+is the Makefile Macros file for the current configuration.  The Makefile
+is located in the Tools directory and is identical on all machines.
+The Macros file is a machine and compiler dependent file.  This file is
+locked during the build step.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>README.case</term>
+<listitem><para>
+provides a summary of the commands used to generate this case.
+</para></listitem>
+</varlistentry>
+
+
+<varlistentry><term>$CASE.build</term>
+<listitem><para>
+is the script that is run interactively to build the CESM model.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>$CASE.clean_build</term>
+<listitem><para>
+is the script that cleans the CESM build.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>$CASE.l_archive</term>
+<listitem><para>
+is the script that is submitted to the batch queue to archive CESM data
+to the long-term archive storage system, like an hpss or mass storage system.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>$CASE.run</term>
+<listitem><para>
+is the script that is submitted to the batch queue to run a CESM job.  This
+script could also be run interactively if resources allow.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>$CASE.submit</term>
+<listitem><para>
+is the script that will submit the job to the system's particular batch
+queuing system.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>check_input_data</term>
+<listitem><para>
+is a tool that checks for missing input datasets and provides a capability
+for exporting them to local disk.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>cesm_setup</term>
+<listitem><para>
+is the script that is run to generate the $CASE.run script for the target
+env_mach_pes.xml file and if they have not already been created, the user_nl_xxx files for the target components.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>create_production_test</term>
+<listitem><para>
+is a tool that generates an exact restart test in a separate directory
+based on the current case.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>env_*.xml files</term>
+<listitem><para>
+contain variables used to set up, build, and run CESM.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>logs/</term>
+<listitem><para>
+is the directory that contains a copy of the component log files from
+successful case runs.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>timing/</term>
+<listitem><para>
+is the directory that contains timing output from each successful case
+run.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>xmlchange</term>
+<listitem><para>
+is a utility that supports changing xml variables in the $CASEROOT xml files.
+</para></listitem>
+</varlistentry>
+
+<varlistentry><term>$CASEROOT/Tools/</term>
+<listitem><para>
+a directory containing many scripts that are used to set up the CESM
+model as well as run it.  Some of particular note are
+</para>
+</listitem>
+</varlistentry>
+</variablelist>
+
+<itemizedlist spacing="compact">
+<listitem><para>
+Makefile is the Makefile that will be used for the build.
+</para></listitem>
+
+<listitem><para>
+cesm_buildexe
+is invoked by $CASEROOT/$CASE.build to generate the model executable.
+This script calls the component buildexe scripts in Buildconf.
+</para></listitem>
+
+<listitem><para>
+cesm_buildnml is invoked by
+$CASEROOT/$CASE.build to generate the component namelists in $RUNDIR.
+This script calls the component buildnml scripts in Buildconf.
+</para></listitem>
+
+<listitem><para>
+ccsm_check_lockedfiles
+checks that any files in the $CASEROOT/LockedFiles/ directory match
+those in the $CASEROOT directory. This helps protect users from
+overwriting variables that should not be changed.
+</para></listitem>
+
+<listitem><para>
+ccsm_getenv
+converts the xml variables in $CASEROOT to csh environmental variables.
+</para></listitem>
+
+<listitem><para>
+getTiming.csh generates the timing information.
+</para></listitem>
+
+<listitem><para>
+getTiming2.pl generates timing
+information and is used by getTiming.csh.
+</para></listitem>
+
+<listitem><para>
+mkDepends
+generates Makefile dependencies in a form suitable for inclusion into a Makefile.
+</para></listitem>
+
+
+<listitem><para>
+st_archive.sh
+is the short-term archive script.  It moves model output out of run directory to
+the short-term archive directory.  Associated with DOUT_S and DOUT_S_ROOT env
+variables in env_run.xml.
+</para></listitem>
+
+<listitem><para>
+taskmaker.pl derives pe counts and  task and thread geometry
+info based on env var values set in the env_mach_pes file.
+</para></listitem>
+
+<listitem><para>
+xml2env
+converts env_*xml files to shell environment variable files that are
+then sourced for inclusion in the model environment.  Used by the
+ccsm_getenv script.
+</para></listitem>
+
+</itemizedlist>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_pio">
+<title>IO: What is pio? </title>
+
+<para>
+The parallel IO (PIO) library is included with CESM and is automatically built
+as part of the CESM build.  CESM components
+use the PIO library to read and/or write data.  The PIO library is
+a set of interfaces that support serial netcdf, parallel
+netcdf, or binary IO transparently.  The implementation allows
+users to easily modify the pio setup on the fly to change
+the method (serial netcdf, parallel netcdf, or binary data) as well as various
+parameters associated with PIO to optimize IO performance.
+</para>
+
+<para>
+CESM prefers that data be written in CF compliant netcdf format
+to a single file that is independent of all parallel decomposition
+information.  Historically, data was written by gathering global
+arrays on a root processor and then writing the data from the root
+processor to an external file using serial netcdf. The reverse process
+(read and scatter) was done for reading data.  This method is relatively
+robust but is not memory scalable, performance scalable, or performance
+flexible.
+</para>
+<para>
+PIO works as follows.  The PIO library is initialized and information
+is provided about the method (serial netcdf, parallel netcdf, or
+binary data), and the number of desired IO processors and their layout.
+The IO parameters define the set of processors that are involved in
+the IO.  This can be as few as one and as many as all available processors.
+The data, data name and data decomposition are also provided to PIO.
+Data is written through the PIO interface in the model specific
+decomposition.  Inside PIO, the data is rearranged into a block
+decomposition on the IO processors and the data is then written
+serially using netcdf or in parallel using pnetcdf. There are several
+namelist options to control PIO functionality. Refer to the
+<ulink url="http://www.cesm.ucar.edu/models/cesm1.2/cesm/doc/modelnl/env_run.html#run_pio">Parallel I/O (PIO) control variables</ulink> in the env_run namelist documentation for
+details.
+</para>
+<para>
+There are several benefits associated with using PIO.  First,
+even with serial netcdf, the memory use can be significantly decreased
+because the global arrays are decomposed across the IO processors
+and written in chunks serially.  This is critical as CESM runs at higher
+resolutions where global arrays need to be minimized due to memory
+availability.  Second, pnetcdf can be turned on transparently
+potentially improving the IO performance.  Third, PIO parameters
+such as the number of IO tasks and their layout can be tuned to
+reduce memory and optimize performance on a machine by machine basis.
+Fourth, the standard global gather and write or read and global
+scatter can be recovered by setting the number of io tasks to 1
+and using serial netcdf.
+</para>
+<para>
+CESM uses the serial netcdf implementation of PIO and
+pnetcdf is turned off in PIO by default.  Several
+components provide namelist inputs that allow use of pnetcdf in PIO.
+To use pnetcdf, a pnetcdf library (like netcdf) must be available
+on the local machine and PIO pnetcdf support must be turned on
+when PIO is built.  This is done as follows
+</para>
+<procedure>
+<step>
+<para>
+Locate the local copy of pnetcdf.  We recommend version 1.3.1 (1.2.0 or newer is required)
+</para>
+</step>
+
+<step>
+<para>
+Set PNETCDF_PATH in the Macros file to the directory of the pnetcdf
+install (ie. /contrib/pnetcdf1.3.1/).
+</para>
+</step>
+
+<step>
+<para>
+Run the clean_build script if the model has already been built.
+</para>
+</step>
+
+
+<step>
+<para>
+Run the build script to rebuilt pio and the full CESM system.
+</para>
+</step>
+
+
+<step>
+<para>
+Change component IO namelist settings to pnetcdf and set appropriate
+IO tasks and layout.
+</para>
+</step>
+
+</procedure>
+
+<para>
+There is an ongoing effort between CESM, pio developers, pnetcdf
+developers and hardware vendors to understand and improve the IO
+performance in the various library layers.  To learn more about pio, see
+<ulink url="http://www.cesm.ucar.edu/models/pio/"> the pio documentation.</ulink>
+</para>
+
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_pnetcdf">
+<title>IO: How do I use pnetcdf? </title>
+
+<para>
+See <xref linkend="faq_pio"/>
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="use_case_camout">
+<title>CAM: How do I customize  CAM output fields? </title>
+
+<para>
+In this example, we further modify our EXAMPLE_CASEp code to set various
+CAM output fields. The variables that we set are listed below. See
+<ulink url="../modelnl/nl_cam.html">CAM Namelist Variables</ulink> for
+a complete list of CAM namelist variables.
+</para>
+
+<variablelist>
+<varlistentry><term><option>avgflag_pertape</option></term>
+<listitem>
+<para>
+Sets the averaging flag for all variables on a particular history
+file series. Default is to use default averaging flags for each
+variable. Average (A), Instantaneous (I), Maximum (X), and Minimum (M).
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>nhtfrq</option></term>
+<listitem>
+<para>
+Array of write frequencies for each history files series.
+</para><para>
+When NHTFRQ(1) = 0, the file will be a monthly average. Only the first
+file series may be a monthly average.
+</para><para>
+When NHTFRQ(i) > 0, frequency is input as number of timesteps.
+</para><para>
+When NHTFRQ(i) < 0, frequency is input as number of hours.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>mfilt</option></term>
+<listitem>
+<para>
+Array of number of time samples to write to each history file series
+(a time sample is the history output from a given timestep).
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>ndens</option></term>
+<listitem>
+<para>
+Array specifying output format for each history file series.  Valid
+values are 1 or 2. '1' implies output real values are 8-byte and '2'
+implies output real values are 4-byte. Default: 2,2,2,2,2,2
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>fincl1 = 'field1', 'field2', ...</option></term>
+<listitem>
+<para>
+List of fields to add to the primary history file.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>fincl[2..6] = 'field1', 'field2', ...</option></term>
+<listitem>
+<para>
+List of fields to add to the auxiliary history file.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>fexcl1 = 'field1', 'field2', ...</option></term>
+<listitem>
+<para>
+List of field names to exclude from the default primary history file (default fields on the Master Field List).
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>fexcl[2..6] = 'field1', 'field2',... </option></term>
+<listitem>
+<para>
+List of the field names to exclude from the auxiliary history files.
+</para>
+</listitem>
+</varlistentry>
+</variablelist>
+
+<para>Edit <filename>user_nl_cam</filename> and add the following
+lines at the end of the file:</para>
+
+<screen>
+avgflag_pertape = 'A','I'
+nhtfrq = 0 ,-6
+mfilt  = 1 , 30
+ndens  = 2 , 2
+fincl1 = 'FSN200','FSN200C','FLN200',
+         'FLN200C','QFLX','PRECTMX:X','TREFMXAV:X','TREFMNAV:M',
+         'TSMN:M','TSMX:X'
+fincl2 = 'T','Z3','U','V','PSL','PS','TS','PHIS'
+</screen>
+
+<para><emphasis>avgflag_pertape</emphasis> specifies how the output data
+will be averaged.  In the first output file,
+<filename>b40.2000p.cam2.h0.yyyy-mm.nc</filename>, data will be
+averaged monthly. In the second output file,
+<filename>b40.2000p.cam2.h1.yyyy-mm-dd.nc</filename>, data will be
+instantaneous.</para>
+
+<para><emphasis>nhtfrq</emphasis> sets the frequency of data writes,
+so <filename>b40.2000p.cam2.h0.yyyy-mm.nc</filename> will be written
+as a monthly average, while
+<filename>b40.2000p.cam2.h1.yyyy-mm-dd.nc</filename> will contain time
+slices that are written every 6 hours.</para>
+
+<para><emphasis>mfilt</emphasis> sets the model to write one time sample in
+<filename>b40.2000p.cam2.h0.yyyy-mm.nc</filename> and 30 time samples in
+<filename>b40.2000p.cam2.h1.yyyy-mm-dd.nc</filename>.</para>
+
+<para><emphasis>ndens</emphasis> sets both files to have 32-bit netCDF
+format output files.</para>
+
+<para>
+<emphasis>fincl1</emphasis> sets the output fields for
+b40.2000p.cam2.h0.yyyy-mm.nc. A complete list of the CAM output fields
+appears here. In this example, we've asked for more variables
+than will fit on a Fortran line. As you can see, it is all right to
+split variable lists across lines. Also in this example, we've asked
+for maximum values of TREFMXAV and TSM, and minimum values of TREFMNAV
+and TSMN.</para>
+
+<para><emphasis>fincl2</emphasis> sets the output fields for
+b40.2000p.cam2.h1.yyyy-mm-dd.nc, much the same as fincl1 sets output
+fields for b40.2000p.cam2.h0.yyyy-mm.nc, only in this case, we are
+asking for instantaneous values rather than averaged values, and
+choosing different output fields.</para>
+</sect1>
+
+<!-- ======================================================================= -->
+
+<sect1 id="use_case_camforc">
+<title>CAM: How do I customize CAM forcings? </title>
+
+<para>
+To set the greenhouse gas forcings, you must first understand the
+namelist variables associated with them.  See <ulink
+url="../modelnl/nl_cam.html">CAM Namelist Variables</ulink> for a
+complete list of CAM namelist variables.
+</para>
+
+<variablelist>
+<varlistentry><term><option>scenario_ghg </option></term>
+<listitem>
+<para>
+Controls treatment of prescribed co2, ch4, n2o, cfc11, cfc12 volume mixing
+ratios.  May be set to 'FIXED' or 'RAMPED' or 'RAMP_CO2_ONLY'.
+</para><para>
+FIXED => volume mixing ratios are fixed and have either default or namelist
+         input values.
+</para><para>
+RAMPED => volume mixing ratios are time interpolated from the dataset
+          specified by bndtvghg.
+</para><para>
+RAMP_CO2_ONLY => only co2 mixing ratios are ramped at a rate determined by
+                 the variables ramp_co2_annual_rate, ramp_co2_cap,
+                 and ramp_co2_start_ymd.
+</para><para>
+Default: FIXED
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>bndtvghg </option></term>
+<listitem>
+<para>
+Full pathname of time-variant boundary dataset for greenhouse gas surface
+values.
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term><option>rampyear_ghg </option></term>
+<listitem>
+<para>
+If scenario_ghg is set to "RAMPED" then the greenhouse gas surface
+values are interpolated between the annual average values read from
+the file specified by bndtvghg.  In that case, the value of this
+variable (> 0) fixes the year of the lower bounding value (i.e., the
+value for calendar day 1.0) used in the interpolation.  For example,
+if rampyear_ghg = 1950, then the GHG surface values will be the result
+of interpolating between the values for 1950 and 1951 from the
+dataset.  Default: 0
+</para>
+</listitem>
+</varlistentry>
+
+</variablelist>
+
+<para>
+Edit <filename>user_nl_cam</filename> and add the following lines at the end
+of the file. The following assumes that "my_inputdata_path" is identical to
+$DIN_LOC_ROOT.
+</para>
+<screen>
+scenario_ghg = 'RAMPED'
+bndtvghg = 'my_inputdata_path/atm/cam/ggas/ghg_hist_1765-2005_c091218.nc'
+rampyear_ghg = 2000
+</screen>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_history_file_output_frequency">
+
+<title>CAM/CLM: How do I change history file output frequency and content for
+CAM and CLM during a run? </title>
+
+<para>
+If you want to change the frequency of output for CAM or CLM
+(i.e. generate output every 6 model hours instead of once a model day)
+in the middle of a run, or if you want to change the fields that are
+output, in the middle of a run, you need to stop the run, rebuild and
+rerun it with the same casename and branch from the same casename.
+See the steps below for doing a branch run while retaining the
+casename. </para>
+
+<para> Rebuilding the case and restarting it where you left off, are
+necessary because CAM and CLM only read namelist variables once, at
+the beginning of a run.  This is not the case for POP and CICE, they
+read the namelist input on every restart, and therefore for POP and
+CICE, you can change output fields and frequency by modifying the
+appropriate namelist variables and then doing a restart.  </para>
+
+<para> The following example shows case B40.20th.1deg which runs from
+1850 to 2005, and will generate high frequency output for years 1950
+through 2005.  CAM will output data every six hours instead of once a
+day.  Also starting at year 1950 additional fields will be output by
+the model.</para>
+
+<orderedlist>
+<listitem>
+<para>
+The first step is to create case b40.20th.1deg and run the case for
+years 1850 through 1949 with your initial settings for output.
+</para>
+</listitem>
+
+<listitem>
+<para>
+Next move your entire case directory, $CASEDIR, somewhere else,
+because you need to rebuild and rerun the case using the same name.
+</para>
+<screen>
+> cd $CASEDIR
+> mv b40.20th.1deg b40.20th.1deg.1850-1949
+</screen>
+</listitem>
+
+<listitem>
+<para>
+Now move your run directory, $RUNDIR, somewhere else as well.
+</para>
+<screen>
+> cd $RUNDIR
+> mv b40.20th.1deg b40.20th.1deg.1850-1949
+</screen>
+</listitem>
+
+<listitem>
+<para>
+Next create a new case in your case directory with the same name, b40.20th.1deg.
+</para>
+<screen>
+> cd $CASEDIR/scripts
+> create_newcase -mach yellowstone -compset B_1850-2000_CN -res f09_g16 -case b40.20th.1deg
+cd $RUNDIR
+</screen>
+</listitem>
+
+<listitem>
+<para>
+Next invoke the following commands
+</para>
+<screen>
+> cd $CASEROOT
+> xmlchange RUN_TYPE='branch'
+> xmlchange RUN_REFCASE='b40.20th.1deg'
+> xmlchange RUN_REFDATE='1948-01-01'
+> xmlchange CAM_NML_USE_CASE='1850-2005_cam4'
+> xmlchange BRNCH_RETAIN_CASENAME='TRUE'
+> xmlchange GET_REFCASE='FALSE'
+</screen>
+</listitem>
+
+<listitem>
+<para>
+Next set up the case and edit the coupler and CAM and CLM namelists.
+
+<orderedlist numeration="loweralpha" >
+
+  <listitem>
+  <para> Set up the case.</para>
+  <screen>
+  > ./cesm_setup
+  </screen>
+  </listitem>
+
+  <listitem>
+  <para>
+   Edit user_nl_cpl.  Add the following to the end of the file.
+   brnch_retain_casename = .true.
+  </para>
+  </listitem>
+
+  <listitem>
+  <para>  Edit user_nl_cam.  Check that bndtvghg = '$DIN_LOC_ROOT' and add the following to the end of the file</para>
+
+  <screen>
+       doisccp = .true.
+       isccpdata = '/fis/cgd/cseg/csm/inputdata/atm/cam/rad/isccp.tautab_invtau.nc'
+       mfilt   = 1,365,30,120,240
+       nhtfrq  = 0,-24,-24,-6,-3
+       fincl2  = 'TREFHTMN','TREFHTMX','TREFHT','PRECC','PRECL','PSL'
+       fincl3  = 'CLDICE','CLDLIQ','CLDTOT','CLOUD','CMFMC','CMFMCDZM','FISCCP1',
+                 'FLDS','FLDSC','FLNS','FLUT','FLUTC','FSDS','FSDSC','FSNS',
+                 'FSNSC','FSNTOA','FSNTOAC','LHFLX','OMEGA','OMEGA500',
+                 'PRECSC','PRECSL','PS','Q','QREFHT','RELHUM','RHREFHT','SHFLX',
+                 'SOLIN','T','TGCLDIWP','TGCLDLWP','U','V','Z3'
+       fincl4  = 'PS:I','PSL:I','Q:I','T:I','U:I','V:I','Z3:I'
+       fincl5  = 'CLDTOT','FLDS','FLDSC','FLNS','FLNSC','FSDS','FSDSC','FSNS',
+                 'LHFLX','PRECC','PRECL','PRECSC','PRECSL','SHFLX',
+                 'PS:I','QREFHT:I','TREFHT:I','TS:I'
+                  /
+   </screen>
+  </listitem>
+
+  <listitem>
+    <para>  Edit user_nl_clm. This adds four auxilary history files in addition to the
+      standard monthly files. The first two are daily, and the last two are six and
+      three hourly.
+    </para>
+
+    <screen>
+      hist_mfilt   = 1,365,30,120,240
+      hist_nhtfrq  = 0,-24,-24,-6,-3
+      hist_fincl2  = 'TSOI', 'TG',   'TV',   'FIRE',   'FSR', 'FSH', 'EFLX_LH_TOT', 'WT'
+      hist_fincl3  = 'FSA'
+      hist_fincl4  = 'TSOI', 'TG',   'TV',   'FIRE',   'FSR', 'FSH', 'EFLX_LH_TOT', 'WT'
+      hist_fincl5  = 'TSOI', 'TG',   'TV',   'FIRE',   'FSR', 'FSH', 'EFLX_LH_TOT', 'WT'
+    </screen>
+  </listitem>
+
+</orderedlist>
+</para>
+</listitem>
+</orderedlist>
+<orderedlist numeration="arabic" continuation="continues">
+
+<listitem>
+<para>
+Now build and run the case.
+</para>
+<screen>
+> b40.20th.1deg.build
+> bsub < b40.20th.1deg.run
+</screen>
+</listitem>
+
+</orderedlist>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="sstice_file">
+<title>CAM: How do I use B compset history output to create SST/ICE data files to drive an F compset?</title>
+
+<para>The following was contributed by Art Mirin and outlines the
+procedure you would use if you want to run an F-configuration case
+forced by monthly averages of SST and ice coverage from a
+B-configuration case.  As an example, the following uses an f09_g16
+CESM B-configuration simulation using CAM5 physics and with cosp
+enabled.  The procedure to create the SST/ICE file is as
+follows:</para>
+
+<orderedlist>
+<listitem><para>
+Save monthly averaged 'aice' information from cice code (this is the default).
+</para></listitem>
+
+<listitem><para>
+Save monthly averaged SST information from pop2. To do this, copy
+$CIMEROOT/../components/pop2/input_templates/gx1v6_tavg_contents, to
+$CASEROOT/SourceMods/src.pop2 and change the 2 in front of SST to
+1 for monthly frequency.
+</para></listitem>
+
+<listitem><para>
+Extract (using ncrcat) SST from monthly pop2 history files and form a
+single netcdf file containing just SST; change SST to SST_cpl.
+<screen>
+> ncrcat -v SST case.pop.h.*.nc temp.nc
+> ncrename -v SST,SST_cpl temp.nc sst_cpl.nc
+</screen>
+</para></listitem>
+
+<listitem><para>
+Extract aice from monthly cice history files and form a single netcdf
+file containing aice; change aice to ice_cov; divide values by 100 (to
+convert from percent to fraction).
+<screen>
+> ncrcat -v aice case.cice.h.*.nc temp.nc
+> ncrename -v aice,ice_cov temp.nc temp2.nc
+> ncap2 -s 'ice_cov=ice_cov/100.' temp2.nc ice_cov.nc
+</screen>
+</para></listitem>
+
+<listitem><para> Modify fill values in the sst_cpl file (which are
+over land points) to have value -1.8 and remove fill and missing value
+designators; change coordinate lengths and names: to accomplish this,
+first run ncdump, then replace <emphasis>_</emphasis> with
+<emphasis>-1.8</emphasis> in SST_cpl, then remove lines with
+_FillValue and missing_value. (Note: although it might be possible to
+merely change the fill value to -1.8, this is conforming to other
+SST/ICE files, which have SST_cpl explicitly set to -1.8 over land.)
+To change coordinate lengths and names, replace nlon by lon, nlat by
+lat, TLONG by lon, TLAT by lat. The last step is to run ncgen. Note:
+when using ncdump followed by ncgen, precision will be lost; however,
+one can specify -d 9,17 to maximize precision - as in the following
+example:
+<screen>
+> ncdump -d 9,17 old.nc > old
+> ncgen -o new.nc new
+</screen>
+</para></listitem>
+
+<listitem><para> Modify fill values in the ice_cov file (which are
+over land points) to have value 1 and remove fill and missing value
+designators; change coordinate lengths and names; patch longitude and
+latitude to replace missing values: to accomplish this, first run
+ncdump, then replace <emphasis>_</emphasis> with
+<emphasis>1</emphasis> in ice_cov, then remove lines with _FillValue
+and missing_value. To change coordinate lengths and names, replace ni
+by lon, nj by lat, TLON by lon, TLAT by lat. To patch longitude and
+latitude arrays, replace values of those arrays with those in sst_cpl
+file. The last step is to run ncgen. (Note: the replacement of
+longitude and latitude missing values by actual values should not be
+necessary but is safer.)  </para></listitem>
+
+<listitem><para>
+Combine (using ncks) the two netcdf files.
+<screen>
+> ncks -v ice_cov ice_cov.nc sst_cpl.nc
+</screen>
+Rename the file to ssticetemp.nc. The time variable will refer to
+the number of days at the end of each month, counting from year 0,
+whereas the actual simulation began at year 1 (CESM default);
+however, we want time values to be in the middle of each month,
+referenced to the first year of the simulation (first time value
+equals 15.5); extract (using ncks) time variable from existing amip
+sst file (for correct number of months - 132 in this example) into
+working netcdf file.
+<screen>
+> ncks -d time,0,131 -v time amipsst.nc ssticetemp.nc
+</screen>
+Add date variable: ncdump date variable from existing amip sst file;
+modify first year to be year 0 instead of 1949 (do not including
+leading zeroes or it will interpret as octal) and use correct number
+of months; ncgen to new netcdf file; extract date (using ncks) and
+place in working netcdf file.
+<screen>
+> ncks -v date datefile.nc ssticetemp.nc
+</screen>
+Add datesec variable: extract (using ncks) datesec (correct number
+of months) from existing amip sst file and place in working netcdf file.
+<screen>
+> ncks -d time,0,131 -v datesec amipsst.nc ssticetemp.nc
+</screen>
+</para></listitem>
+<listitem><para> At this point, you have an SST/ICE file in the
+correct format. However, due to CAM's linear interpolation between
+mid-month values, you need to apply a procedure to assure that the
+computed monthly means are consistent with the input data. To do this,
+you can invoke the bcgen code in models/atm/cam/tools/icesst and
+following the following steps:
+<orderedlist>
+<listitem><para>
+Rename SST_cpl to SST, and ice_cov to ICEFRAC in the current SST/ICE file:
+<screen>
+> ncrename -v SST_cpl,SST -v ice_cov,ICEFRAC ssticetemp.nc
+</screen>
+</para></listitem>
+<listitem><para>
+In driver.f90, sufficiently expand the lengths of variables
+prev_history and history (16384 should be sufficient); also comment
+out the test that the climate year be between 1982 and 2001 (lines
+152-158).
+</para></listitem>
+<listitem><para>
+In bcgen.f90 and setup_outfile.f90, change the dimensions of xlon and ???TODO
+xlat to (nlon,nlat); this is to accommodate use of non-cartesian ocean
+grid.
+</para></listitem>
+<listitem><para> In setup_outfile.f90, modify the 4th and 5th ???TODO
+arguments in the calls to wrap_nf_def_var for <emphasis>lon</emphasis>
+and <emphasis>lat</emphasis> to be <emphasis>2</emphasis> and
+<emphasis>dimids</emphasis>; this is to accommodate use of
+non-cartesian ocean grid.  </para></listitem>
+<listitem><para>
+Adjust Makefile to have proper path for LIB_NETCDF and INC_NETCDF.
+</para></listitem>
+<listitem><para>
+Modify namelist accordingly.
+</para></listitem>
+<listitem><para>
+Make bcgen and execute per instructions. The resulting sstice_ts.nc
+file is the desired ICE/SST file.
+</para></listitem>
+</orderedlist>
+</para></listitem>
+
+<listitem><para>
+Place new SST/ICE file in desired location.
+In the $CASEROOT for the F compset you create, modify env_run.xml to have :
+<orderedlist>
+<listitem><para>
+SSTICE_DATA_FILENAME point to the  complete path of your SST/ICE file.
+</para></listitem>
+<listitem><para>
+SSTICE_GRID_FILENAME correspond to full path of (in this case) gx1v6 grid file.
+</para></listitem>
+<listitem><para>
+SSTICE_YEAR_START set to 0, and SSTICE_YEAR_END to one less than the
+total number of years; set SSTICE_YEAR_ALIGN to 1 (since CESM starts
+counting at year 1).
+</para></listitem>
+</orderedlist>
+</para></listitem>
+
+</orderedlist>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_cice_and_pop_decomps">
+<title>POP/CICE: How are CICE and POP decompositions set and how do I override them? </title>
+
+<para>
+The pop and cice models both have similar decompositions
+and strategies for specifying the decomposition.  Both
+models support decomposition of the horizontal grid into
+two-dimensional blocks, and these blocks are then allocated
+to individual processors inside each component.  The
+decomposition must be specified when the models are built.
+There are four environment variables in env_build.xml for each model that specify the
+decomposition used.  These variables are POP or CICE followed
+by _BLCKX, _BLCKY, _MXBLCKS, and _DECOMP.  BLCKX and BLCKY
+specify the size of the local block in grid cells in the
+"x" and "y" direction.  MXBLCKS specifies the maximum
+number of blocks that might be on any given processor,
+and DECOMP specifies the strategy for laying out the blocks
+on processors.
+</para>
+
+<para>
+The values for these environment variables are set automatically by
+the scripts in the $CASEROOT/Buildconf directory whenever the model is
+built or run is run.  The scripts that generate the decompositions are
+CASEROOT/Buildconf/generate_pop_decomp.pl and
+$CASEROOT/Buildconf/generate_cice_decomp.pl.  Those tools leverage
+decompositions stored in xml files,
+$CIMEROOT/../components/pop2/bld/pop_decomp.xml and
+$CIMEROOT/../components/cice/bld/cice_decomp.xml, respectively.  These
+utilities set the decomposition for a given resolution and total
+processor count.  The decomposition used can have a significant effect
+on the model performance, and the decompositions specified by the
+tools above generally provide optimum or near optimum values for the
+given resolution and processor count.  More information about cice and
+pop decompositions can be found in each of those user guides.  </para>
+
+<para>
+The decompositions can be specified manually by setting the
+environment variable POP_AUTO_DECOMP or CICE_AUTO_DECOMP to
+false in env_build.xml (which turns off use of the
+scripts above) and then setting the four BLCKX,
+BLCKY, MXBLCKS, and DECOMP environment variables in env_build.xml.
+</para>
+
+<para>
+In general, relatively square and evenly divided
+Cartesian decompositions work well for pop at low to
+moderate resolution.  Cice performs best with "tall
+and narrow" blocks because of the load imbalance
+for most global grids between the low and high
+latitudes.  At high resolutions, more than one block
+per processor can result in land block elimination
+and non-Cartesian decompositions sometimes perform better.
+Testing of several decompositions is always
+recommended for performance and validation before a long
+run is started.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="use_case_popinit">
+<title>POP: How do I initialize POP2 with a spun-up initial condition?</title>
+
+<para>
+The startup/spunup initialization option is a specialized active-ocean model suboption
+available in the CESM1.1 POP2 model which can be used only in conjunction with a
+CESM "startup" case; it is not designed to work with "hybrid" or "branch" cases.
+</para>
+<para>
+The recommended method for initializing the CESM active ocean model (POP2)
+in a CESM startup case is to use the default settings; these initialize the
+ocean model from Levitus initial conditions and a state of rest.
+Occasionally, however, researchers are interested in a startup run in which
+only the ocean model is initialized from a "spun up" ocean condition generated
+from a previous CESM run. To accommodate their request, a nonstandard method
+of initializing POP2 in a startup case was developed.
+It is called the startup_spunup option.
+It is a research option that is designed for use by expert users only.
+</para>
+<para>
+Because of the complex interactions between the ocean-model parameterizations
+used to generate the spun-up case and those used in the new startup case,
+it is impossible to provide a single recommended spun-up ocean initial
+condition for all circumstances. Instead, researchers must carefully
+select an existing solution whose case conditions closely match those in the new case.
+A mismatch of options between the spun-up case and the new case can result in
+scientifically invalid solutions.
+</para>
+
+<para>
+When a startup_spunup case is necessary, use this procedure:
+</para>
+
+<orderedlist>
+
+<listitem>
+<para>
+Currently, the default RUN_TYPE XML variable is set to "hybrid". User's will
+need to change the RUN_TYPE to "startup" after running create_newcase
+using the xmlchange command as follows:
+</para>
+<screen>
+> create_newcase -case ~/cesm/EXAMPLE_CASEocn \
+                 -mach yellowstone \
+                 -compset B20TR \
+                 -res 0.9x1.25_gx1v6
+> cd ~/cesm/EXAMPLE_CASEocn
+> xmlchange -file env_run.xml -id RUN_TYPE -val startup
+> ./cesm_setup
+</screen>
+</listitem>
+
+<listitem>
+<para>The ocean restart filename is of the form ${CASE_SP}.pop.r.$date,
+where $date is the model date of your spun-up dataset. If the ocean
+restart files were written in binary format, a companion
+ascii-formatted restart "header" file will also exist. The companion
+header file will have the same name as the restart file, except that it
+will have the suffix ".hdr" appended at the end of the filename.  You must copy
+both the binary restart file and the header file to your data
+directory.</para>
+</listitem>
+
+<listitem>
+<para>The spun-up ocean restart and restart header files must be available
+to your new case.  Copy them directly into $RUNDIR. It is critically
+important to copy both the binary restart file and its companion header
+file to the $RUNDIR.</para>
+<screen>
+> cp ${CASE_SP}.pop.r.$date       $RUNDIR
+> cp ${CASE_SP}.pop.r.${date}.hdr $RUNDIR
+</screen>
+</listitem>
+
+<listitem>
+<para> Redefine the ocean-model initial-condition dataset by editing
+<filename>user_nl_pop2</filename> and add the following lines at the
+end of the file (enter the resolved string for ${CASE_SP}).
+<screen>
+set init_ts_suboption = 'spunup'
+init_ts_file = '${CASE_SP}.pop.r.$date
+</screen>
+Note that the model will automatically look for the ${CASE_SP}.pop.r.${date}.hdr file in
+$RUNDIR.
+</para>
+</listitem>
+
+<listitem>
+<para>Build and run as usual.</para>
+</listitem>
+
+</orderedlist>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_morecoupler">
+<title>DRIVER: Is there more information about the coupler/driver implementation? </title>
+
+<para>
+Additional implementation details are provided in the
+the <ulink url="../../../cpl7/doc/book1.html">CESM coupler user guide</ulink>
+about sequencing, parallel IO, performance, grids, threading, budgets, and other
+items.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+
+<sect1 id="clflds_faq">
+
+<title>DRIVER: How do I pass in new fields between components? </title>
+<para> In CESM, coupler code has been improved in order to remove the need to
+change any coupler code when adding the exchange of new fields between model components.
+To accomplish this, a new standardized naming convention has been introduced for
+field names that are exchanged between model components. This is summarized below.
+<screen>
+====================================================================
+   New standardized naming convention
+====================================================================
+
+  ---------
+  definitions:
+  ---------
+  state-prefix
+    first 3 characters: Sx_, Sa_, Si_, Sl_, So_
+    one letter indices: x,a,l,i,o,s,g,r
+    x => coupler (mapping, merging, atm/ocn flux calc done on coupler procs)
+    a => atm
+    l => lnd
+    i => ice
+    o => ocn
+    g => glc
+    s => snow (from clm to glc)
+    r => rof
+
+  state-name
+    what follows state prefix
+
+  flux-prefix
+    first 5 characters: Flmn__
+    lm => between components l and m
+    n  => computed by component n
+    example: Fioi => ice/ocn flux computed by ice
+    example: Fall => atm/lnd flux computed by lnd
+    If flux prefix has first letter of P (so first five characters are PFlmn_)
+    then flux is passed straight through without scaling by the corresponding fraction)
+
+  flux-name
+    what follows flux-prefix
+
+  ---------
+  rules:
+  ---------
+  1) states:
+     a) atm attributes fields that HAVE a state-prefix of Sx_ in seq_flds_x2a_states
+        rule: will merge all identical values of the state-names from
+           seq_flds_i2x_states
+           seq_flds_l2x_states
+           seq_flds_o2x_states
+           seq_flds_xao_states
+         to obtain output state-name in seq_flds_x2a_states
+
+        rule: to merge input states that originate in the
+           lnd (l2x_a) will be scaled by the lndfrac
+           ice (i2x_a) will be scaled by the icefrac
+           cpl (xao_a) will be scaled by the ocnfrac
+           ocn (o2x_a) will be scaled by the ocnfrac
+
+        example:
+           seq_flds_l2x_states = "Sl_t"
+           seq_flds_i2x_states = "Si_t"
+           seq_flds_o2x_states = "So_t"
+           seq_flds_x2a_states = "Sx_t"
+           attribute fields Sl_t, Si_t, So_t, in
+           attribute vectors l2x_a, i2x_a, o2x_a will be
+           merged to obtain attribute Sx_t in attribute vector x2a_a
+
+     b) atm attribute fields that DO NOT HAVE a state-prefix of Sx_ in seq_flds_x2a_states
+        rule: copy directly all variables that identical state-prefix
+               AND state-name in
+           seq_flds_i2x_states and seq_flds_x2a_states
+           seq_flds_l2x_states and seq_flds_x2a_states
+           seq_flds_o2x_states and seq_flds_x2a_states
+           seq_flds_xao_states and seq_flds_x2a_states
+
+        example
+           seq_flds_i2x_states = ":Si_snowh"
+           seq_flds_x2a_states = ":Si_snowh"
+           attribute field of Si_snowh in i2x_a will be copied to
+           attribute field Si_snowh in x2a_a
+
+  2) fluxes:
+     rule: will merge all identical values of the flux-names from
+         seq_flds_i2x_states
+         seq_flds_l2x_states
+         seq_flds_o2x_states
+         seq_flds_xao_states
+       to obtain output state-name in seq_flds_x2a_states
+
+     rule: input flux fields that originate in the
+         lnd (l2x_a) will be scaled by the lndfrac
+         ice (i2x_a) will be scaled by the icefrac
+            - ignore all fluxes that are ice/ocn fluxes (e.g. Fioi_)
+         cpl (xao_a) will be scaled by the ocnfrac
+         ocn (o2x_a) will be scaled by the ocnfrac+icefrac
+
+====================================================================
+
+   New user specified fields
+
+====================================================================
+ New fields that are user specidied can be added as namelist variables
+ by the user in the cpl namelist seq_flds_user using the namelist variable
+ array cplflds_customs. The user specified new fields must follow the
+ above naming convention.
+ As an example, say you want to add a new state 'foo' that is passed
+ from the land to the atm - you would do this as follows
+    apos;seq_flds_user
+       cplflds_custom = 'Sa_foo->a2x', 'Sa_foo->x2a'
+    /
+ This would add the field 'Sa_foo' to the character strings defining the
+ attribute vectors a2x and x2a. It is assumed that code would need to be
+ introduced in the atm and land components to deal with this new attribute
+ vector field.
+ Currently, the only way to add this is to edit $CASEROOT/user_nl_cpl
+====================================================================
+
+   Coupler fields use cases
+
+====================================================================
+ Previously, new fields that were needed to be passed between components
+ for certain compsets were specified by cpp-variables. This has been
+ modified to now be use cases. The use cases are specified in the
+ namelist cpl_flds_inparm and are currently triggered by the xml
+ variables CCSM_VOC, CCSM_BGC and GLC_NEC.
+====================================================================
+</screen>
+
+</para>
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_createowncompset">
+<title>EXPERTS: How do I add a new user-defined component set? </title>
+
+<para>
+Numerous <ulink url="../modelnl/compsets.html">component sets
+(i.e. compsets)</ulink> are provided "out-of-the-box" with CESM
+release.  You can also call <command>create_newcase</command> giving
+it the -user_compset argument to point to your own customized
+component set name.
+</para>
+
+<para>
+In CESM1.2, the component set definition file,
+<filename>$CIMEROOT/scripts/ccsm_utils/Case.template/config_compsets.xml</filename>
+has been redefined to be hierarchical. The following documents the
+rules involved for generating a compset from the hierarchy. The compononent set longname
+is given by the following notation:
+</para>
+
+<screen>
+TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_BGC%phys]
+
+TIME = Time period (e.g. 2000, 20TR, RCP8...)
+ATM  = [CAM4, CAM5, DATM, SATM, XATM]
+LND  = [CLM40, CLM45, DLND, SLND, XLND]
+ICE  = [CICE, DICE, SICE, SICE]
+OCN  = [POP2, DOCN, SOCN, XOCN,AQUAP]
+ROF  = [RTM, DROF, SROF, XROF]
+GLC  = [CISM1, SGLC, XGLC]
+WAV  = [SWAV, XWAV]
+BGC  = optional BGC scenario
+</screen>
+
+<para>
+The optional %phys attributes specify submodes of the given system
+ALL the possible %phys choices for each component are listed
+with the -list command for create_newcase and also summarized below.
+</para>
+
+<screen>
+=========================================
+Time period (first four characters)
+=========================================
+1850 => pre-industrial
+2000 => present day
+20TR => transient 1850 to 2000
+5505 => transient 1955 to 2005
+9205 => transient 1992 to 2005
+RCP8 => transient RCP8.5 future scenario
+RCP6 => transient RCP6.0 future scenario
+RCP4 => transient RCP4.5 future scenario
+RCP2 => transient RCP2.6 future scenario
+NUKE => Nuclear winter hypothetical scenario (based on RCP4.5)
+1996 => present day with conditions for solar minimum in 1996
+AMIP => transient for "stand-alone" CAM (1979 startdate)
+GEOS => GEOS5 metereology for "stand-alone" CAM
+
+=========================================
+CAM
+=========================================
+CAM4% => cam4 physics
+CAM5% => cam5 physics
+CAM[45]%WCCM => CAM WACCM with daily solar data and SPEs:
+CAM[45]%WCMX => CAM WACCM-X:
+CAM[45]%WCSC => CAM WACCM specified chemistry:
+CAM[45]%WCBC => CAM WACCM with the stratospheric black carbon CARMA model:
+CAM[45]%WCSF => CAM WACCM with sulfur chemistry and the sulfate CARMA model:
+CAM[45]%FCHM => CAM super_fast_llnl chemistry:
+CAM[45]%TMOZ => CAM trop_mozart chemistry:
+CAM[45]%MOZM => CAM trop_mozart_mam3 chemistry:
+CAM[45]%MOZS => CAM trop_mozart_soa chemistry:
+CAM[45]%SMA3 => CAM trop_strat_mam3 chemistry:
+CAM[45]%SMA7 => CAM trop_strat_mam7 chemistry:
+CAM[45]%SSOA => CAM trop_strat_soa chemistry:
+CAM[45]%RCO2 => CAM CO2 ramp:
+
+=========================================
+CLM
+=========================================
+note: [^_]* means match zero or more of any character BUT an underbar.
+(in other words make sure there is NOT a underbar before the string afterwards)
+
+CLM40            => clm4.0 Physics
+CLM40%[^_]*SP    => clm4.0 Satellite phenology
+CLM40%[^_]*CN    => clm4.0 Carbon Nitrogen
+CLM40%[^_]*CNDV  => clm4.0 Carbon Nitrogen Dynamic Vegetation
+CLM40%[^_]*CROP  => clm4.0 Prognostic crop
+CLM40%[^_]*SNCR  => clm4.0 SNICAR radiative forcing calculation on
+
+CLM45            => clm4.5 Physics
+CLM45%[^_]*SP    => clm4.5 Satellite phenology
+CLM45%[^_]*CN    => clm4.5 Carbon Nitrogen Biogeochemistry (BGC) (as in CLM4.0)
+CLM45%[^_]*CNDV  => clm4.5 Carbon Nitrogen BGC with Dynamic Vegetation
+CLM45%[^_]*BGC   => clm4.5 BGC (CN with vertically resolved soil BGC, based on Century with Methane)
+CLM45%[^_]*CROP  => clm4.5 Prognostic crop
+CLM45%[^_]*VIC   => clm4.5 VIC hydrology
+CLM40%[^_]*SNCR  => clm4.0 SNICAR radiative forcing calculation on
+CLM45%[^_]*BGCDV => clm4.5 BGC (CN with vertically resolved soil BGC, based on Century with Methane) with dynamic veg
+
+=========================================
+CICE
+=========================================
+CICE      => prognostic cice
+CICE%PRES => prescribed cice
+
+=========================================
+POP2
+=========================================
+POP2     => POP2 default
+POP2%ECO => POP2/Ecosystem
+POP2%DAR => Darwin marine ecosystem (not supported in community releases)
+
+=========================================
+RTM
+=========================================
+RTM       => default RTM model
+RTM%FLOOD => RTM model with flood
+
+=========================================
+CISM
+=========================================
+CISM1  => cism1 (default, serial only)
+
+=========================================
+DATM
+=========================================
+DATM%QIA   => QIAN atm input data (1948-1972)
+DATM%CRU   => CRUNCEP atm input data for (1901-2010)
+DATM%S1850 => CPL history atm input data
+DATM%1PT   => single point tower site atm input data
+DATM%NYF   => COREv2 datm normal year forcing
+DATM%IAF   => COREv2 datm interannual year forcing
+
+=========================================
+DLND
+=========================================
+DLND%NULL => dlnd_mode is NULL   , dlnd_sno_mode is NULL
+DLND%SCPL => dlnd_mode is NULL   , dlnd_sno_mode is CPLHIST (used for TG)
+DLND%LCPL => dlnd_mode is CPLHIST, dlnd_sno_mode is NULL
+
+=========================================
+DROF
+=========================================
+DROF%NYF  => COREv2 drof normal year forcing
+DROF%IAF  => COREv2 drof interannual year forcing
+DROF%NULL => null mode
+
+=========================================
+DICE
+=========================================
+DICE%SSMI => dice mode is ssmi
+DICE%SIAF => dice mode is ssmi_iaf
+DICE%PRES => dice mode is prescribed
+DICE%COPY => dice mode is copy
+DICE%NULL => dice mode is null
+
+=========================================
+DOCN
+=========================================
+DOCN%NULL => docn null mode
+DOCN%SOM  => docn slab ocean mode
+DOCN%DOM  => docn data mode
+DOCN%US20 => docn us20 mode
+DOCN%COPY => docn copy mode
+</screen>
+
+<para>
+There are two ways to create a customized user-defined component set.
+If the component set you want is not listed in the
+<ulink url="../modelnl/compsets.html">supported component sets</ulink>, and
+you have no new optional %phys definitions for any of the components, then
+using the above definitions you can create your own component set on the
+fly by using your own longname definition to create_newcase.
+As an example, the following will create a compset that is not currently supported out-of-the-box in CESM1.2.
+</para>
+<para><screen>
+> ./create_newcase -case mycompset \
+  -user_compset 1850_CAM5_CLM45%CN_CICE_POP2_RTM_SGLC_SWAV \
+  -res ne30_g16 \
+  -mach yellowstone
+</screen></para>
+
+<para>
+If you want to create a component set that has new physics
+definitions, then the process is a bit more complicated. You will need
+to first edit
+<filename>$CIMEROOT/scripts/ccsm_utils/Case.template/config_compset.xml</filename>
+and fill in the appropriate sections specified by the string
+"USER_DEFINED section" as necessary.  At that point, you can then call
+./create_newcase as above with the -user_compset argument that is now
+customized to our requirements.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="newgrid">
+<title>EXPERTS: How do I add a new user-defined grid? </title>
+
+<para> Support for numerous out-of-the box <ulink
+url="../modelnl/grid.html">model resolutions</ulink> accompany the CESM
+release. (In addition to the link above, you can also view a listing of
+supported "out-of-the-box" resolutions by running <command>create_newcase
+-l</command>.) In general, CESM grids are associated with a specific
+combination of atmosphere, land, land-ice, river-runoff and ocean/ice grids.
+The naming convention for these grids still only involves atmosphere, land,
+and ocean/ice grid specifications.
+</para>
+<para>
+The most common resolutions have the atmosphere and land components on one grid
+and the ocean and ice on a second grid. The naming convention looks like
+<emphasis>f19_g16</emphasis>, where the f19 indicates that the atmosphere and
+land are on the 1.9x2.5 (finite volume dycore) grid while the g16 means the
+ocean and ice are on the gx1v6 one-degree displaced pole grid. While it is not
+supported, as of CESM1.1.1 does have the ability to run with the atmosphere and land
+also separated. The naming convention for these trigrid cases looks like
+<emphasis>ne30_f19_g16</emphasis>, where the ne30 means that the atmosphere is
+on the 30-element (spectral-element dycore) grid while the land is still on the
+finite volume grid and the ocean / ice are still on the gx1v6 grid. This
+document will outline how to set up the more complicated trigrid case, but
+will also highlight what steps can be skipped if the atmosphere and land do not
+need to be separated.
+</para>
+<para>
+Note: This will be generalized in CESM1.2. TO DO
+</para>
+
+<para>CESM provides completely <emphasis>new support</emphasis> for you to
+add your own specific component grid combinations. To achieve this, CESM
+has a new top level directory <filename>$CIMEROOT/tools/mapping/</filename>. A brief
+list of the steps needed to add a new component grid to the model system
+follows. Again, this process can be simplified if the atmosphere and land are
+running on the same grid.
+</para>
+
+<orderedlist>
+
+<listitem>
+<para>
+<command>Start with SCRIP grid files for atmosphere, land, and ocean.</command>
+</para>
+<para>
+You must first create or obtain SCRIP format grid files for the atmosphere,
+land and ocean grids. At present there is no supported functionality for
+creating the SCRIP format file, although that is planned for CESM1.2. (check)
+</para>
+</listitem>
+
+<listitem>
+<para>
+<command>Build the <filename>check_map</filename> utility.</command>
+</para>
+<para>
+When you add new user-defined grid files, you will also need to generate a set
+of mapping files so the coupler can send data from a component on one grid to
+a component on another grid. There is an ESMF tool that tests the mapping file
+by comparing a mapping of a smooth function to its true value on the destination
+grid. We have tweaked this utility to test a suite of of smooth functions, as
+well as ensure conservation (when the map is conservative). Before generating
+mapping functions it is <emphasis>highly recommended</emphasis> that you build
+this utility.
+</para>
+<para>
+To build this tool, follow the instructions in
+<filename>$CIMEROOT/tools/mapping/check_maps/INSTALL</filename>. As with many of the
+steps in this document, you will need to have the
+<ulink url="http://www.earthsystemmodeling.org">ESMF</ulink> toolkit installed.
+It is installed by default on most NCAR computers.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<command>Generate atm&lt;-&gt;ocn, atm&lt;-&gt;lnd, lnd&lt;-&gt;rtm, and
+ocn-&gt;lnd mapping files.</command>
+</para>
+<para>
+Using the SCRIP grid files from step one, you must generate a set of
+conservative (area-averaged) and non-conservative (patch and bilinear) mapping
+files. You can do this by calling <command>gen_cesm_maps.sh</command> in
+<filename>$CIMEROOT/tools/mapping/gen_mapping_files/</filename>. This shell script
+generates all the mapping files needed by CESM (except rtm-&gt;ocn, which is
+discussed below). This script uses the
+<ulink url="http://www.earthsystemmodeling.org">ESMF offline weight generation
+utility</ulink>, which you must build <emphasis>prior</emphasis> to running
+<command>gen_cesm_maps.sh</command>.
+</para>
+<para>
+The <filename>README</filename> file in the <filename>gen_mapping_files/
+</filename> directory contains details on how to run <command>gen_cesm_maps.sh
+</command>. The basic usage is
+</para>
+<para>
+<screen>
+$ cd $CIMEROOT/tools/mapping/gen_mapping_files
+$ ./gen_cesm_maps.sh \
+    --fileocn  &lt;input SCRIP ocn_grid full pathname&gt;  \
+    --fileatm  &lt;input SCRIP atm grid full pathname&gt;  \
+    --filelnd  &lt;input SCRIP lnd grid full pathname&gt;  \
+    --filertm  &lt;input SCRIP rtm grid full pathname&gt;  \
+    --nameocn  &lt;ocnname in output mapping file&gt; \
+    --nameatm  &lt;atmname in output mapping file&gt; \
+    --namelnd  &lt;lndname in output mapping file&gt; \
+    --namertm  &lt;rtmname in output mapping file&gt;
+</screen>
+</para>
+<para>
+This command will generate the following mapping files:
+</para>
+<para>
+<screen>
+map_atmname_TO_ocnname_aave.yymmdd.nc
+map_atmname_TO_ocnname_blin.yymmdd.nc
+map_atmname_TO_ocnname_patc.yymmdd.nc
+map_ocnname_TO_atmname_aave.yymmdd.nc
+map_ocnname_TO_atmname_blin.yymmdd.nc
+map_atmname_TO_lndname_aave.yymmdd.nc
+map_atmname_TO_lndname_blin.yymmdd.nc
+map_lndname_TO_atmname_aave.yymmdd.nc
+map_ocnname_TO_lndname_aave.yymmdd.nc
+map_lndname_TO_rtmname_aave.yymmdd.nc
+map_rtmname_TO_lndname_aave.yymmdd.nc
+</screen>
+</para>
+<para>
+Notes:
+</para>
+
+<orderedlist>
+
+<listitem>
+<para>
+You do not need to specify all four grids. For example, if you are running with
+the atmosphere and land on the same grid, then you do not need to specify the
+land grid (and atm&lt;-&gt;rtm maps will be generated). If you also omit the
+runoff grid, then only the 5 atm&lt;-&gt;ocn maps will be generated.
+</para>
+</listitem>
+
+<listitem>
+<para>
+ESMF_RegridWeightGen runs in parallel, and the <filename>gen_cesm_maps.sh
+</filename> script has been written to run on
+yellowstone. To run on any other machine, you may need to add some environment
+variables to
+<filename>$CIMEROOT/tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh</filename>
+-- search for <emphasis>hostname</emphasis> to see where to edit the file.
+</para>
+</listitem>
+
+</orderedlist>
+
+<para>
+Example (run on Nov 5, 2012):
+</para>
+<para>
+<screen>
+$ ./gen_cesm_maps.sh \
+     -focn /CESM/cseg/mapping/grids/gx3v7_120309.nc -nocn g37 \
+     -fatm /CESM/cseg/mapping/grids/ne16np4_110512_pentagons.nc -natm ne16np4 \
+     -frtm /CESM/cseg/mapping/grids/r05_nomask_070925.nc -nrtm r05
+</screen>
+</para>
+<para>
+Results in the following files
+</para>
+<para>
+<screen>
+$ ls -1 map*
+map_g37_TO_ne16np4_aave.121105.nc
+map_g37_TO_ne16np4_blin.121105.nc
+map_ne16np4_TO_g37_aave.121105.nc
+map_ne16np4_TO_g37_blin.121105.nc
+map_ne16np4_TO_g37_patc.121105.nc
+map_ne16np4_TO_r05_aave.121105.nc
+map_r05_TO_ne16np4_aave.121105.nc
+</screen>
+</para>
+</listitem>
+
+<listitem>
+<para>
+<command>Generate atmosphere, land and ocean / ice domain files.</command>
+</para>
+<para>
+Using the conservative ocean to land and ocean to atmosphere mapping files
+created in the previous step, you can create domain files for the atmosphere,
+land, and ocean; these are basically grid files with consistent masks and
+fractions. You make these files by calling <command>gen_domain</command> in
+<filename>$CIMEROOT/tools/mapping/gen_domain_files</filename>.
+</para>
+<para>
+The <filename>INSTALL</filename> file in the <filename>gen_domain_files/
+</filename> directory contains details on how to build the <command>gen_domain
+</command> executable. After you have built it, the <filename>README</filename>
+in the same directory contains details on how to use the tool. The basic usage
+is:
+</para>
+<para>
+<screen>
+$ ./gen_domain -m ../gen_mapping_files/map_ocnname_TO_lndname_aave.yymmdd.nc \
+               -o ocnname -l lndname
+$ ./gen_domain -m ../gen_mapping_files/map_ocnname_TO_atmname_aave.yymmdd.nc \
+               -o ocnname -l atmname
+</screen>
+</para>
+<para>
+These commands will generate the following domain files:
+</para>
+<para>
+<screen>
+domain.lnd.lndname_ocnname.yymmdd.nc
+domain.ocn.lndname_ocnname.yymmdd.nc
+domain.lnd.atmname_ocnname.yymmdd.nc
+domain.ocn.atmname_ocnname.yymmdd.nc
+domain.ocn.ocnname.yymmdd.nc
+</screen>
+</para>
+<para>
+Notes:
+</para>
+
+<orderedlist>
+
+<listitem>
+<para>
+If you are running with the atmosphere and land components on the same grid,
+you only need to execute <command>gen_domain</command> once.
+</para>
+</listitem>
+
+<listitem>
+<para>
+The input atmosphere grid is assumed to be unmasked (global). Land cells whose
+fraction is zero will have land mask = 0.
+</para>
+</listitem>
+
+<listitem>
+<para>
+If the ocean and land grids <emphasis>are identical</emphasis> then the mapping
+file will simply be unity and the land fraction will be one minus the ocean
+fraction.
+</para>
+</listitem>
+
+</orderedlist>
+
+</listitem>
+
+<listitem>
+<para>
+<command>If you are adding a new ocn or rtm grid, create a new rtm->ocn mapping
+file.</command> (Otherwise you can skip this step.)
+</para>
+<para>
+The process for mapping from the runoff grid to the ocean grid is currently
+undergoing many changes. At this time, if you are running with a new ocean or
+runoff grid, please contact Michael Levy (mlevy_AT_ucar_DOT_edu) for
+assistance. If you are running with standard ocean and runoff grids, the
+mapping file should already exist and you do not need to generate it.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<command>If you are adding a new new lnd grid, create a new CLM surface
+dataset.</command> (Otherwise you can skip this step.)
+</para>
+<para>
+
+<orderedlist>
+
+<listitem>
+<para>
+Generate mapping files for CLM surface dataset (since this is a non-standard
+grid).
+<screen>
+$ cd $CIMEROOT/../components/clm/tools/mkmapdata
+$ ./mkmapdata.sh --gridfile &lt;lnd SCRIP grid file&gt; \
+                 --res &lt;atm resolution name&gt; \
+                 --gridtype global
+</screen>
+</para>
+</listitem>
+<listitem>
+<para>
+Generate CLM surface dataset. Below is an example for a current day surface
+dataset (model year 2000).
+<screen>
+$ cd  $CIMEROOT/../components/clm/tools/mksurfdata_map
+$ ./mksurfdata.pl -res usrspec -usr_gname &lt;atm resolution name&gt; \
+                  -usr_gdate yymmdd -y 2000
+</screen>
+</para>
+</listitem>
+
+</orderedlist>
+
+</para>
+</listitem>
+
+<listitem>
+<para>
+<command>Create grid file needed for create_newcase.</command>
+</para>
+<para>
+The next step is to create a file - call it <filename>mygrid.xml</filename> -
+with all the grid and domain information. Assuming the domain files that were
+generated earlier are in <filename>$DOMAIN_FILE_LOC</filename>, the contents
+of this file should be
+</para>
+<para>
+<screen>
+&lt;?xml version="1.0"?&gt;
+&lt;config_horiz_grid&gt;
+&lt;horiz_grid GLOB_GRID="atmgrid" nx="[size of atmgrid]" ny="[size of atmgrid]" /&gt;
+&lt;horiz_grid GLOB_GRID="lndgrid" nx="[size of lndgrid]" ny="[size of lndgrid]" /&gt;
+&lt;horiz_grid GLOB_GRID="ocngrid" nx="[size of ocngrid]" ny="[size of ocngrid]" /&gt;
+&lt;horiz_grid GRID="atmgrid_lndgrid_ocngrid" SHORTNAME="atm_lnd_ocn"
+            ATM_GRID="atmgrid" LND_GRID="lndgrid" OCN_GRID="ocngrid" ICE_GRID="ocngrid"
+            ATM_NCPL="48" OCN_NCPL="1"
+            ATM_DOMAIN_FILE="domain.lnd.atmgrid_ocngrid.$YYYYMMDD.nc"
+            LND_DOMAIN_FILE="domain.lnd.lndgrid_ocngrid.$YYYYMMDD.nc"
+            ICE_DOMAIN_FILE="domain.ocn.ocngrid.$YYYYMMDD.nc"
+            OCN_DOMAIN_FILE="domain.ocn.ocngrid.$YYYYMMDD.nc"
+            ATM_DOMAIN_PATH="$DOMAIN_FILE_LOC"
+            LND_DOMAIN_PATH="$DOMAIN_FILE_LOC"
+            ICE_DOMAIN_PATH="$DOMAIN_FILE_LOC"
+            OCN_DOMAIN_PATH="$DOMAIN_FILE_LOC"
+            DESC="Some new trigrid setup"
+/&gt;
+&lt;/config_horiz_grid&gt;
+</screen>
+</para>
+<para>
+Where you only need the <filename>GLOB_GRID</filename> information for grids
+that are not already included in the model. For unstructured grids, <filename>
+nx</filename> should be the number of grid cells and <filename>ny</filename>
+should be 1; for structured grids, they should be the dimensions of the grid.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<command>Create user_nl_cpl contents for new mapping files.</command>
+</para>
+<para>
+One of the many input files generated for the coupler is
+<filename>$RUNDIR/seq_maps.rc</filename>, which contains a list of mapping
+files. Using an f09_g16 run on yellowstone as an example, the file will contain
+the following (for brevity, some lines have been cut):
+</para>
+<para>
+<screen>
+ atm2ocnFmapname: '/glade/proj3/cseg/inputdata/cpl/cpl6/map_fv0.9x1.25_to_gx1v6_aave_da_090309.nc'
+ atm2ocnSmapname: '/glade/proj3/cseg/inputdata/cpl/cpl6/map_fv0.9x1.25_to_gx1v6_bilin_da_090309.nc'
+ atm2ocnVmapname: '/glade/proj3/cseg/inputdata/cpl/cpl6/map_fv0.9x1.25_to_gx1v6_bilin_da_090309.nc'
+ lnd2atmFmapname: 'idmap'
+ lnd2atmSmapname: 'idmap'
+ lnd2rofFmapname: '/glade/proj3/cseg/inputdata/lnd/clm2/mappingdata/maps/0.9x1.25/map_0.9x1.25_nomask_to_0.5x0.5_nomask_aave_da_c120522.nc'
+ lnd2rofFmaptype: 'X'
+ ocn2atmFmapname: '/glade/proj3/cseg/inputdata/cpl/cpl6/map_gx1v6_to_fv0.9x1.25_aave_da_090309.nc'
+ ocn2atmSmapname: '/glade/proj3/cseg/inputdata/cpl/cpl6/map_gx1v6_to_fv0.9x1.25_aave_da_090309.nc'
+</screen>
+</para>
+<para>
+This file is created when you build the model namelists, and the default values
+are based on the grids specified when you created the case. The model only
+knows what default values to use for the out-of-the-box resolutions, so you
+must specify what maps you have created by appending them to <filename>
+$CASE/user_nl_cpl</filename>. If, for example, we've introduced a new
+atmosphere / land grid with a shortname newatm and created all the necessary
+mapping files in <filename>$MAPPING_FILE_LOC</filename>, then to create a
+newatm_g16 run we would need to add the following to <filename>
+$CASE/user_nl_cpl</filename>:
+</para>
+<para>
+<screen>
+atm2ocnFmapname='$MAPPING_FILE_LOC/map_newatm_TO_gx1v6_aave.121105.nc'
+atm2ocnSmapname='$MAPPING_FILE_LOC/map_newatm_TO_gx1v6_blin.121105.nc'
+atm2ocnVmapname='$MAPPING_FILE_LOC/map_newatm_TO_gx1v6_patc.121105.nc'
+ocn2atmFmapname='$MAPPING_FILE_LOC/map_gx1v6_TO_newatm_aave.121105.nc'
+ocn2atmSmapname='$MAPPING_FILE_LOC/map_gx1v6_TO_newatm_aave.121105.nc'
+lnd2rofFmapname='$MAPPING_FILE_LOC/map_newatm_TO_r05_aave.121105.nc'
+rof2lndFmapname='$MAPPING_FILE_LOC/map_r05_TO_newatm_aave.121105.nc'
+</screen>
+</para>
+<para>
+After running <filename>$CASE/preview_namelists</filename> these changes will
+be reflected in <filename>$RUNDIR/seq_maps.rc</filename>.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<command>Test new grid.</command>
+</para>
+<para>
+Below assume that the new grid is an atmosphere grid.
+</para>
+<para>
+<screen>
+Test the new grid with all data components.
+(write an example)
+Test the new grid with CAM(newgrid), CLM(newgrid), DOCN(gx1v6), DICE(gx1v6)
+(write an example)
+</screen>
+</para>
+</listitem>
+
+</orderedlist>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="faq_dart">
+<title>EXPERTS: How do I carry out data assimilation using CAM and DART? </title>
+
+<para>
+Ensemble Kalman filter data assimilation (DA) can now be conducted
+within the software framework of CESM. This form of DA uses the
+multi-instance capability of CESM in which CESM advances an ensemble
+of model states of one or more CESM components forward to the same
+forecast time, when observations are available. Then the ensemble of
+forecast model states is passed to the Data Assimilation Research
+Testbed (DART), where each state is adjusted toward the observations
+which are available at that time. For details of this process see an
+<ulink url="http://journals.ametsoc.org/doi/abs/10.1175/2009BAMS2618.1">
+introduction in BAMS (2009)</ulink>
+and/or <ulink url="http://www.image.ucar.edu/DAReS/DART/">the DART
+home page</ulink>. DART then passes the ensemble of adjusted model
+states back to CESM to be used as initial conditions for the next
+forecast.
+</para>
+
+<para>
+The references above describe the many uses of ensemble data assimilation, which include:
+<itemizedlist>
+<listitem><para>
+generation of analyses (blends of model forecast and observations
+which are a better description of the physical system than either by
+itself),
+</para></listitem>
+<listitem><para>
+model development testing against actual observations (as opposed to other analyses),
+</para></listitem>
+<listitem><para>
+sensitivity analysis between model variables of interest in a particular synoptic situation,
+</para></listitem>
+<listitem><para>
+variability studies using the ensemble of equally valid model states,
+observation system simulation experiments (OSSEs).
+</para></listitem>
+</itemizedlist>
+</para>
+
+<para>
+This use case outlines assimilation for a CAM (F comp set) build
+only. Assimilation is possible with the ocean component (B comp sets),
+and experimental assimilations with the land component (I comp sets)
+have been conducted. Additional use case descriptions will be added to
+cover those and any future evolution of the CESM+DART software. This
+use case assumes that the user is familiar with setting up and using
+CESM, and is willing to learn how to set up and use DART in the CESM
+context. There is no simple example which users can grab and run,
+because understanding what is being run is crucial to success and
+there are many choices to be made.
+</para>
+
+<para>
+The major steps of assimilating observations into CAM follow.
+
+<orderedlist numeration="arabic">
+
+<listitem><para>
+<ulink url="http://www.image.ucar.edu/DAReS/DART">Download DART</ulink>.
+DART relieves researchers of the need
+to develop data assimilation capabilities, but familiarity with data
+assimilation and the DART facility is required in order to use it
+productively. This can be gained through the
+<ulink url="http://www.image.ucar.edu/DAReS/DART">DART tutorial</ulink>.
+</para></listitem>
+
+<listitem><para>
+<ulink url="http://www.image.ucar.edu/DAReS/DART">Build the DART executables
+</ulink> for a simple model to check that DART has
+been installed correctly.
+</para></listitem>
+
+<listitem><para>
+Build the DART executables for CAM, following a similar procedure to 2.
+</para></listitem>
+
+<listitem><para>
+The script .../DART/models/cam/CESM_setup.csh builds a CAM which
+combines the user's desired features and DART's required features. The
+characteristics of the CAM and assimilation set in CESM_setup.csh are:
+
+<itemizedlist>
+<listitem><para>
+locations of the build, run, and archive directories,
+</para></listitem>
+
+<listitem><para>
+features of the $CASE to be built,
+</para></listitem>
+<listitem><para>
+locations of input files, including the initial ensemble of CAM (and CLM and CICE) states
+</para></listitem>
+<listitem><para>
+date and timing characteristics of the assimilation,
+</para></listitem>
+<listitem><para>
+machine and resource characteristics.
+<screen>
+- Copy CESM_setup.csh to the directory where the user wants to build CAM.
+- Edit that CESM_setup.csh to set most of the assimilation parameters.
+- Run CESM_setup.csh.
+</screen>
+</para></listitem>
+</itemizedlist>
+</para></listitem>
+
+<listitem><para>
+Set the rest of the assimilation parameters:
+<screen>
+  - cd to $CASE
+  - Edit input.nml to set other characteristics of the assimilation.
+    For details see the <ulink url="https://proxy.subversion.ucar.edu/DAReS/DART/trunk/filter/filter.html#GettingStarted">online help pages</ulink> or the html in the user's $DART/filter/filter.html#GettingStarted.
+  - Edit assimilate.csh to set the location of the observations to be assimilated.
+    Sets of real observations are available for use, or <ulink url="http://www.image.ucar.edu/DAReS/DART/DART_Observations.php#obs_synthetic">synthetic observations</ulink>
+    can be created using the user's model.
+</screen>
+</para></listitem>
+
+<listitem><para>
+Submit the job using $CASE.submit in the $CASEROOT directory.
+</para></listitem>
+
+<listitem><para>
+
+Output from the assimilation is handled by the CESM archiver(s), which
+has been modified to handle DART output. Output appears in a new
+short-term archive directory .../archive/.../dart/hist. The 3 files
+created at each assimilation time are
+
+<itemizedlist>
+<listitem><para>
+Prior_Diag.YYYY-MM-DD-SSSSS.nc: the ensemble mean, spread, members (optionally), and 'inflation' fields from before the assimilation (at the end of the forecast).
+</para></listitem>
+<listitem><para>
+Posterior_Diag.YYYY-MM-DD-SSSSS.nc: same as Prior, but from after the assimilation.
+</para></listitem>
+<listitem><para>
+obs_seq.YYYY-MM-DD-SSSSS.final: the actual observations assimilated and the ensemble members estimates of those observations.
+</para></listitem>
+</itemizedlist>
+
+<screen>
+The obs_seq.final files are usually processed by the <ulink url="http://subversion.ucar.edu/DAReS/DART/trunk/diagnostics/threed_sphere/obs_diag.html">obs_diag</ulink>
+program in DART (.../DART/diagnostics/threed_sphere/obs_diag.f90),
+and the resulting NetCDF files are usually processed with Matlab scripts
+included in DART (or similar).  Little knowledge of Matlab is needed to use them.
+The Prior and Posterior files can be examined with any NetCDF viewing tool.
+</screen>
+
+</para></listitem>
+
+</orderedlist>
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="adding_newcomp">
+<title>EXPERTS: How do I add a new CESM model component? </title>
+
+<para>
+The following provides a very general overview of what you need to do
+to add a new atm, lnd, ocn, ice, glc or rof component to CESM.</para>
+
+<orderedlist>
+<listitem><para>
+You must support init, run, and final top level interfaces.
+</para></listitem>
+
+<listitem><para>
+You must "send" the component grid and decomposition at initialization.
+</para></listitem>
+
+<listitem><para>
+You must pack and unpack coupling fields to/from interface datatypes.
+</para></listitem>
+
+<listitem><para> You must integrate forward a fixed amount of time and
+confirm that your model is in sync with the driver clock.
+</para></listitem>
+
+<listitem><para>
+You must provide/use "expected" scalar information as needed.
+   - provide present/prognostic flags at initialization
+   - provide "nextsw_cday" if atm component, use nextsw_cday if surface model
+   - use mpicom
+   - use stop and restart information
+   - use inst_name, inst_index, inst_suffix (for cesm[version])
+   - use other infodata information as needed (ie. starttype, case_name,
+     configuration settings like aqua_planet, orbital settings)
+</para></listitem>
+
+<listitem><para>
+Use I/O unit manager in CESM
+</para></listitem>
+
+<listitem><para>
+You must meet filename conventions for history, restart, and log files
+</para></listitem>
+</orderedlist>
+
+<para>
+There are some component to component variations in the interfaces
+and in the provide/use of scalar data, so it's best to follow another
+component of the same flavor.  The top level interface will be a
+fortran file called ***_comp_mct.F90 where *** is atm, ocn, ice, or lnd.
+That file exists in all components.  Below is a generic summary
+of what is going on using the atm component as an example.  Other
+components are very close.</para>
+
+<orderedlist>
+<listitem><para>
+You must support init, run, and final top level interfaces.
+The interfaces must follow the naming convention and argument
+types exactly.  These interfaces must be in a file called
+atm_comp_mct.F90 and the module must be called atm_comp_mod.
+The driver will access the component model only through the
+init, run, and final interfaces.
+<screen>
+      module atm_comp_mct
+
+      public :: atm_init_mct
+      public :: atm_run_mct
+      public :: atm_final_mct
+
+      subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
+      type(ESMF_Clock),intent(in)                 :: EClock
+      type(seq_cdata), intent(inout)              :: cdata_a
+      type(mct_aVect), intent(inout)              :: x2a_a
+      type(mct_aVect), intent(inout)              :: a2x_a
+      character(len=*), optional,   intent(IN)    :: NLFilename ! Namelist filename
+
+      subroutine atm_run_mct( EClock, cdata_a, x2a_a, a2x_a)
+      type(ESMF_Clock)            ,intent(in)    :: EClock
+      type(seq_cdata)             ,intent(inout) :: cdata_a
+      type(mct_aVect)             ,intent(inout) :: x2a_a
+      type(mct_aVect)             ,intent(inout) :: a2x_a
+
+      subroutine atm_final_mct( )
+</screen>
+</para></listitem>
+
+<listitem><para>
+You must "send" the component grid and decomp at initialization
+The cdata datatype contains data for a grid and decomp.  The
+decomp is an mct gsmap and the grid is an general grid.  To
+access these data type from the init method, do the following.
+</para><para>
+<screen>
+      type(mct_gsMap), pointer   :: gsMap_atm
+      type(mct_gGrid), pointer   :: dom_a
+
+      call seq_cdata_setptrs(cdata_a, gsMap=gsMap_atm, dom=dom_a)
+
+      ! call an mct_gsmap_init method and specify the global index
+      !   of each local gridcell
+      ! call an mct_gGrid_init method and fill the lon/lat/area/mask/frac
+      !   arrays
+</screen>
+</para></listitem>
+
+<listitem><para>
+You must pack and unpack coupling fields to/from interface datatypes
+The fields coupling datatypes are mct attribute vectors.   x2a
+contains the coupler->atm fields.  a2x contains the atm->coupler
+fields.  This datatype must be initialized by the component in
+the init method.  To do that use the fields list provided by
+seq_flds_mod and initialize the gsmap first.  lsize below is the
+local number of gridcells on the processor.  the mct_aVect_init
+calls below allocate arrays in the attribute vector to store the
+appropriate number of fields of appropriate local size.
+</para><para>
+<screen>
+      use seq_flds_mod
+
+      lsize = mct_gsMap_lsize(gsMap_atm, mpicom_atm)
+      call mct_aVect_init(a2x_a, rList=seq_flds_a2x_fields, lsize=lsize)
+      call mct_aVect_zero(a2x_a)
+      call mct_aVect_init(x2a_a, rList=seq_flds_x2a_fields, lsize=lsize)
+      call mct_aVect_zero(x2a_a)
+</screen>
+To pack the data, it's easiest just to write directly into the
+arrays inside the attribute vector in the following manner,
+<screen>
+      integer :: index_a2x_Sa_pslv         ! sea level atm pressure
+
+      index_a2x_Sa_pslv  = mct_avect_indexra(a2x_a,'Sa_pslv')
+
+      do i=is,ie
+         a2x_a%rAttr(index_a2x_Sa_pslv ,i) = psl(i)
+         a2x_a%rAttr(index_a2x_Sa_z    ,i) = zbot(i)
+         a2x_a%rAttr(index_a2x_Sa_u    ,i) = ubot(i)
+         a2x_a%rAttr(index_a2x_Sa_v    ,i) = vbot(i)
+      enddo
+</screen>
+To unpack, basically do the same thing in the opposite direction.
+<screen>
+      integer :: index_x2a_Sx_t            ! surface temperature
+
+      index_x2a_Sx_t  = mct_avect_indexra(x2a_a,'Sx_t')
+
+      do i=is,ie
+         ts(i) = x2a_a%rAttr(index_x2a_Sx_t ,i)
+      enddo
+</screen>
+</para><para> The attribute vectors store only the "local" data and
+you basically just need to copy data from the model datatype to the
+coupling MCT (or ESMF) datatype.
+</para></listitem>
+
+<listitem><para>
+You must integrate forward a fixed amount of time and confirm
+that your model is in sync with the driver clock.
+You can access clock information from the EClock passed through
+the coupling interfaces and the EClockGetData method.  The approach
+to sync the model and driver clock is very model specific.  In
+some cases, a model may just get the current time from the EClock
+and use it.  That probably only happens for models that don't
+advance in time (like maybe a data model).  In other cases, model
+clocks may be initialized based on the EClock data at initialization
+and then the model time and driver time are regularly compared for
+consistency.  Another approach is to use the "dt" provided by the
+EClock to advance a model "dt" seconds.  Some examples are provided.
+<screen>
+      type(ESMF_Clock)            ,intent(in)    :: EClock
+
+      ! EClock initialization data
+      call seq_timemgr_EClockGetData(EClock, &
+         start_ymd=start_ymd, start_tod=start_tod, &
+         ref_ymd=ref_ymd, ref_tod=ref_tod,         &
+         stop_ymd=stop_ymd, stop_tod=stop_tod,     &
+         calendar=calendar )
+
+      ! EClock dt
+      call seq_timemgr_EClockGetData(Eclock,dtime=atm_cpl_dt)
+
+      ! EClock current time
+      call seq_timemgr_EClockGetData(EClock,curr_ymd=ymd_sync,curr_tod=tod_sync, &
+         curr_yr=yr_sync,curr_mon=mon_sync,curr_day=day_sync)
+
+      ! Check synchronization
+      ymd=model_ymd
+      tod=model_tod
+      if (.not. seq_timemgr_EClockDateInSync( EClock, ymd, tod)) then
+         write(*,*) "Clocks not in sync"
+         call shr_sys_abort()
+      endif
+</screen>
+
+</para></listitem>
+<listitem><para>
+You must provide/use "expected" scalar information as needed.
+Each component varies a bit wrt what's provided and used.
+<itemizedlist>
+<listitem><para> Provide present/prognostic flags at initialization.
+The logical flag present means the component provides data. The
+logical flag prognostic means the component uses data.  Stub models
+set both to false.  Data models generally set present to true and
+prognostic to false, except in cases where a data model needs some
+coupling data for some internal computations (e.g. DOCN-SOM).  Active
+models generally set both flags to true.
+<screen>
+        call seq_infodata_PutData(infodata, atm_present=.true.)
+        call seq_infodata_PutData(infodata, atm_prognostic=.true.)
+</screen>
+
+</para></listitem>
+<listitem><para> Provide "nextsw_cday" if you are adding an atm
+component. Use nextsw_cday if you are adding a surface model.  The
+real variable nextsw_cday is the time of the next atm radiation
+calculation if it occurs at the next coupling period.  If there is no
+radiation calculation on the next timestep, this should be set to -1.
+This allows surface albedos and the atm radiation calculation to stay
+synced up.  The surface models use the nextsw_day field and compute
+albedos based on that time.
+<screen>
+        call seq_infodata_PutData( infodata, nextsw_cday=nextsw_cday )
+</screen>
+</para></listitem>
+<listitem><para> Use the mpi communicator, mpicom, which is provided
+by the driver to the component.  This must be used for all internal
+model communication.  The data is provided in the cdata datatype.
+<screen>
+        call seq_cdata_setptrs(cdata_a, mpicom=mpicom_atm)
+</screen>
+</para></listitem>
+<listitem><para> Use stop and restart information provided by the
+driver.  The driver will tell the component if this is the last
+coupling period and/or if a restart is required at the end of this
+coupling period.  The component should listen to both these flags.
+<screen>
+        stop_now = seq_timemgr_StopAlarmIsOn(EClock)
+        restart_now = seq_timemgr_RestartAlarmIsOn(EClock)
+</screen>
+</para></listitem>
+<listitem><para> Use inst_name, inst_index, inst_suffix needed for for
+the multiple instance capability.  As a starting point, the following
+provides standard code that can be added:
+</para></listitem>
+<listitem><para>
+<screen>
+        integer(IN)   :: COMPID                ! mct comp id
+        integer       :: inst_index            ! number of current instance (ie. 1)
+        character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
+        character(len=16) :: inst_suffix       ! char string associated with instance
+
+        call seq_cdata_setptrs(cdata, ID=COMPID)
+        inst_name   = seq_comm_name(COMPID)
+        inst_index  = seq_comm_inst(COMPID)
+        inst_suffix = seq_comm_suffix(COMPID)
+</screen>
+</para></listitem>
+<listitem><para>
+Use other infodata information as needed (ie. starttype, case_name,
+configuration settings like aqua_planet, orbital settings)
+</para></listitem>
+</itemizedlist>
+</para></listitem>
+<listitem><para> Use the I/O unit manager in CESM.  To avoid conflicts in
+I/O unit numbers between components, models should call the
+shr_file_getUnit and shr_file_freeUnit methods to acquire and release
+available unit numbers.
+<screen>
+       nunit = shr_file_getUnit()
+       open(nunit,file='xyz')
+       read(nunit,*) xyz
+       close(nunit)
+       call shr_file_freeUnit(nunit)
+</screen>
+</para></listitem>
+
+<listitem><para>
+Meet filename conventions for history, restart, and log files.
+There are specific filename conventions for CESM.  In particular,
+all history files should be CF compliant netcdf.  This format is
+also recommended for restart files.  The format is something like
+<screen>
+     $CASE.atm.ha.2001-01.nc         ! history
+     $CASE.atm.r.2001-01-00000.nc    ! restart
+</screen>
+The log files are set by a shared method.  In particular, models
+should do something like
+<screen>
+      !--- open log file ---
+      if (my_task == master_task) then
+         logUnit = shr_file_getUnit()
+         call shr_file_setIO('atm_modelio.nml',logUnit)
+      else
+         logUnit = 6
+      endif
+</screen>
+That logunit value should then be used by all processors in
+the model to write "stdout" messages.  shr_file_setIO associates
+the logUnit number with a unique log filename for the case.
+unit 6 is used on non-root processors and information written
+from those processors goes to a stdout file which is machine
+dependent.
+</para></listitem>
+
+</orderedlist>
+
+</sect1>
+
+<!-- ======================================================================= -->
+</chapter>
+
