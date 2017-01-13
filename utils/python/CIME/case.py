@@ -90,13 +90,13 @@ class Case(object):
         self._components = []
         self._component_classes = []
         self._is_env_loaded = False
+        self._cime_model = get_model()
 
         self.thread_count = None
         self.tasks_per_node = None
         self.num_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
-
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
@@ -120,6 +120,7 @@ class Case(object):
         env_mach_pes = self.get_env("mach_pes")
         comp_classes = self.get_values("COMP_CLASSES")
         total_tasks = env_mach_pes.get_total_tasks(comp_classes)
+
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
         logger.debug("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
@@ -485,12 +486,14 @@ class Case(object):
             env_file.set_components(comp_classes)
 
     def _get_component_config_data(self):
-        # attributes used for multi valued defaults ($attlist is a hash reference)
-        attlist = {"compset":self._compsetname, "grid":self._gridname}
+        # attributes used for multi valued defaults
+        # attlist is a dictionary used to determine the value element that has the most matches
+        attlist = {"compset":self._compsetname, "grid":self._gridname, "cime_model":self._cime_model}
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
         files = Files()
+
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist)
@@ -498,6 +501,7 @@ class Case(object):
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
+
         # Add the group and elements for env_batch
         env_batch = self.get_env("batch")
         env_batch.add_elements_by_group(drv_comp, attributes=attlist)
@@ -665,13 +669,11 @@ class Case(object):
 
             pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount, mpilib=mpilib)
-
         mach_pes_obj = self.get_env("mach_pes")
         totaltasks = {}
-        # Since other items may include PES_PER_NODE we need to do this first
-        # we can get rid of this code when all of the perl is removed
-        for key, value in other.items():
-            self.set_value(key, value)
+        if other is not None:
+            for key, value in other.items():
+                self.set_value(key, value)
         for key, value in pes_ntasks.items():
             totaltasks[key[-3:]] = int(value)
             mach_pes_obj.set_value(key,int(value))
@@ -684,12 +686,11 @@ class Case(object):
 
         maxval = 1
         pes_per_node = self.get_value("PES_PER_NODE")
-        if mpilib != "mpi-serial":
-            for key, val in totaltasks.items():
-                if val < 0:
-                    val = -1*val*pes_per_node
-                if val > maxval:
-                    maxval = val
+        for key, val in totaltasks.items():
+            if val < 0:
+                val = -1*val*pes_per_node
+            if val > maxval:
+                maxval = val
 
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
@@ -705,11 +706,7 @@ class Case(object):
             if compclass not in pes_nthrds.keys():
                 mach_pes_obj.set_value(compclass,1)
 
-        # FIXME - this is a short term fix for dealing with the restriction that
-        # CISM1 cannot run on multiple cores
-        if "CISM1" in self._compsetname:
-            mach_pes_obj.set_value("NTASKS_GLC",1)
-            mach_pes_obj.set_value("NTHRDS_GLC",1)
+
 
         #--------------------------------------------
         # batch system
@@ -799,7 +796,7 @@ class Case(object):
         compset = self.get_value("COMPSET")
         mpilib = self.get_value("MPILIB")
         defaults = pioobj.get_defaults(grid=grid,compset=compset,mach=mach,compiler=compiler, mpilib=mpilib)
-        
+
         for vid, value in defaults.items():
             self.set_value(vid,value)
 

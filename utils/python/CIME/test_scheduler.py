@@ -462,6 +462,7 @@ class TestScheduler(object):
                            os.path.join(self._output_root,
                                         "sharedlibroot.%s"%self._test_id))
             envtest.set_initial_values(case)
+            case.set_value("TEST", True)
             if self._save_timing:
                 case.set_value("SAVE_TIMING", True)
 
@@ -746,7 +747,7 @@ class TestScheduler(object):
                     # so we need to parse test status.
                     ts = TestStatus(self._get_test_dir(test))
                     nlfail = ts.get_status(NAMELIST_PHASE) == TEST_FAIL_STATUS
-                    ts_status = ts.get_overall_test_status(ignore_namelists=True)
+                    ts_status = ts.get_overall_test_status(ignore_namelists=True, check_memory=False, check_throughput=False)
 
                     if ts_status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
                         logger.info( "%s %s (phase %s)" % (status, test, phase))

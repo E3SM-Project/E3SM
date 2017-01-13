@@ -28,7 +28,7 @@ MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
 NO_CMAKE    = False
-TEST_ROOT = None
+TEST_ROOT   = None
 
 os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
@@ -1107,6 +1107,20 @@ class Z_FullSystemTest(TestCreateTestCommon):
             self.assertIs(type(test_time), int, msg="get time did not return int for %s" % test_status)
             self.assertTrue(test_time > 0, msg="test time was zero for %s" % test_status)
 
+        # Test that re-running works
+        tests = update_acme_tests.get_test_suite("cime_developer")
+        for test in tests:
+            if test.startswith("ERI"):
+                # TODO: these need to all work in the future but currently do not support re-run
+                pass
+            else:
+                casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
+                run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
+
+        if (self._hasbatch):
+            run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
+                                  from_dir=self._testroot)
+
 ###############################################################################
 class K_TestCimeCase(TestCreateTestCommon):
 ###############################################################################
@@ -1140,6 +1154,12 @@ class K_TestCimeCase(TestCreateTestCommon):
             self.assertEqual(build_complete, "TRUE",
                             msg="Build complete had wrong value '%s'" %
                             build_complete)
+
+#            model_specific_val = case.get_value("CPL_SEQ_OPTION")
+#            if CIME.utils.get_model() == 'cesm':
+#                self.assertEqual(model_specific_val, "RASM_OPTION1")
+#            else:
+#                self.assertEqual(model_specific_val, "CESM1_MOD")
 
             # Test some test properties
             self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
@@ -1887,9 +1907,12 @@ def write_provenance_info():
     curr_commit = get_current_commit(repo=LIB_DIR)
     logging.info("\nTesting commit %s" % curr_commit)
     cime_model = CIME.utils.get_model()
-    logging.info("Using cime_model = %s\n" % cime_model)
+    logging.info("Using cime_model = %s" % cime_model)
+    logging.info("Testing machine = %s" % MACHINE.get_machine_name())
+    logging.info("Test root: %s\n" % TEST_ROOT)
 
 def _main_func():
+    global MACHINE
 
     if "--fast" in sys.argv:
         sys.argv.remove("--fast")
@@ -1906,6 +1929,14 @@ def _main_func():
         global NO_CMAKE
         NO_CMAKE = True
 
+    if "--machine" in sys.argv:
+        midx = sys.argv.index("--machine")
+        mach_name = sys.argv[midx + 1]
+        MACHINE = Machines(machine=mach_name)
+        os.environ["CIME_MACHINE"] = mach_name
+        del sys.argv[midx + 1]
+        del sys.argv[midx]
+
     if "--test-root" in sys.argv:
         global TEST_ROOT
         trindex = sys.argv.index("--test-root")
@@ -1915,6 +1946,7 @@ def _main_func():
     else:
         TEST_ROOT = os.path.join(MACHINE.get_value("CIME_OUTPUT_ROOT"),
                                  "scripts_regression_test.%s"% CIME.utils.get_timestamp())
+
 
     args = lambda: None # just something to set attrs on
     for log_param in ["debug", "silent", "verbose"]:

@@ -33,7 +33,6 @@ class SystemTestsCommon(object):
         self._test_status = TestStatus(test_dir=caseroot, test_name=self._casebaseid)
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
-        self._init_case_setup()
 
     def _init_environment(self, caseroot):
         """
@@ -59,16 +58,19 @@ class SystemTestsCommon(object):
             shutil.copy(os.path.join(caseroot,"env_run.xml"),
                         os.path.join(lockedfiles, "env_run.orig.xml"))
 
-    def _init_case_setup(self):
+    def _resetup_case(self, phase):
         """
-        Do initial case setup needed in __init__
+        Re-setup this case. This is necessary if user is re-running an already-run
+        phase.
         """
-        if self._case.get_value("IS_FIRST_RUN"):
+        # We never want to re-setup if we're doing the resubmitted run
+        phase_status = self._test_status.get_status(phase)
+        if self._case.get_value("IS_FIRST_RUN") and phase_status != TEST_PEND_STATUS:
+
+            logging.warning("Resetting case due to detected re-run of phase %s" % phase)
             self._case.set_initial_test_values()
 
-        case_setup(self._case, reset=True, test_mode=True)
-        self._case.set_value("TEST",True)
-        self._case.flush()
+            case_setup(self._case, reset=True, test_mode=True, no_status=True)
 
     def build(self, sharedlib_only=False, model_only=False):
         """
@@ -80,6 +82,7 @@ class SystemTestsCommon(object):
         for phase_name, phase_bool in [(SHAREDLIB_BUILD_PHASE, not model_only),
                                        (MODEL_BUILD_PHASE, not sharedlib_only)]:
             if phase_bool:
+                self._resetup_case(phase_name)
                 with self._test_status:
                     self._test_status.set_status(phase_name, TEST_PEND_STATUS)
 
@@ -132,6 +135,7 @@ class SystemTestsCommon(object):
         try:
             expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
                    "Model was not built!")
+            self._resetup_case(RUN_PHASE)
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
@@ -157,8 +161,9 @@ class SystemTestsCommon(object):
         with self._test_status:
             self._test_status.set_status(RUN_PHASE, status, comments=("time=%d" % int(time_taken)))
 
-        # We only return success if every phase, build and later, passed
-        return self._test_status.get_overall_test_status(ignore_namelists=True) == TEST_PASS_STATUS
+        # We return success if the run phase worked; memleaks, diffs will not be taken into account
+        # with this return value.
+        return success
 
     def run_phase(self):
         """

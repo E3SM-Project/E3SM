@@ -125,7 +125,8 @@ def get_model():
             model = 'cesm'
         else:
             model = 'acme'
-        logger.info("Guessing CIME_MODEL=%s, set environment variable if this is incorrect"%model)
+        # This message interfers with the correct operation of xmlquery
+        # logger.debug("Guessing CIME_MODEL=%s, set environment variable if this is incorrect"%model)
 
     if model is not None:
         set_model(model)

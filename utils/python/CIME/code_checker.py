@@ -106,4 +106,6 @@ def check_code(files, num_procs=10, interactive=False):
 
     pool = ThreadPool(num_procs)
     results = pool.map(lambda x : _run_pylint(x, interactive), files_to_check)
+    pool.close()
+    pool.join()
     return dict(results)

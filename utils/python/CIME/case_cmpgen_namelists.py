@@ -32,7 +32,7 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
                             and not os.path.basename(item).startswith(".")] + \
                             glob.glob("%s/*user_nl*" % test_dir)
 
-    comments = ""
+    comments = "NLCOMP\n"
     for item in all_items_to_compare:
         baseline_counterpart = os.path.join(baseline_casedocs \
                                             if os.path.dirname(item).endswith("CaseDocs") \
@@ -47,6 +47,9 @@ def _do_full_nl_comp(case, test, compare_name, baseline_root=None):
                 success, current_comments = compare_files(baseline_counterpart, item, test)
 
             all_match &= success
+            if not success:
+                comments += "Comparison failed between '%s' with '%s'\n" % (item, baseline_counterpart)
+
             comments += current_comments
 
     logging.info(comments)

@@ -386,7 +386,7 @@ class EnvBatch(EnvBase):
         logger.info("Submitting job script %s"%submitcmd)
         output = run_cmd_no_fail(submitcmd)
         jobid = self.get_job_id(output)
-        logger.debug("Submitted job id is %s"%jobid)
+        logger.info("Submitted job id is %s"%jobid)
         return jobid
 
     def get_batch_system_type(self):
