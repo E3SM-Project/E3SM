@@ -442,6 +442,8 @@
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -758,6 +760,8 @@
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -907,6 +911,8 @@
 			<var name="pin"/>
 			<var name="ozmixm"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="xland"/>
 			<var name="skintemp"/>
 			<var name="snow"/>
@@ -2814,6 +2820,12 @@
 
                 <var name="mminlu" type="text" dimensions="" units="unitless"
                      description="land use classification"/>
+
+                <var name="isice_lu" name_in_code="isice" type="integer" dimensions="" units="unitless" default_value="24"
+                     description="Index category for snow/ice"/>
+
+                <var name="iswater_lu" name_in_code="iswater" type="integer" dimensions="" units="unitless" default_value="16"
+                     description="Index category for water"/>
 
                 <var name="landmask" type="integer"  dimensions="nCells" units="unitless"
                      description="land-ocean mask (1=land ; 0=ocean)"/>

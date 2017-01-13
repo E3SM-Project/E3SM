@@ -13,7 +13,6 @@
 
  use mpas_atmphys_date_time
  use mpas_atmphys_constants,only: stbolt
- use mpas_atmphys_landuse, only : isice,iswater 
  use mpas_atmphys_vars
 
  implicit none
@@ -41,6 +40,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2013-08-24.
 ! * modified sourcecode to use pools.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * now use isice and iswater initialized in the init file instead of initialized in mpas_atmphys_landuse.F.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-01-13.
 
 
  contains
@@ -121,6 +122,7 @@
 
 
  integer,pointer:: nCellsSolve,nSoilLevels
+ integer,pointer:: isice,iswater
 
  real(kind=RKIND),dimension(:),pointer  :: sfc_albbck,sst,snow,tmn,tsk,vegfra,xice,seaice
  real(kind=RKIND),dimension(:),pointer  :: snowc,snowh
@@ -144,6 +146,8 @@
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nSoilLevels',nSoilLevels)
 
+ call mpas_pool_get_array(sfc_input,'isice'     ,isice     )
+ call mpas_pool_get_array(sfc_input,'iswater'   ,iswater   )
  call mpas_pool_get_array(sfc_input,'isltyp'    ,isltyp    )    
  call mpas_pool_get_array(sfc_input,'ivgtyp'    ,ivgtyp    )
  call mpas_pool_get_array(sfc_input,'landmask'  ,landmask  )

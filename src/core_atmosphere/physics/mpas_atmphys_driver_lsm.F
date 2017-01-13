@@ -12,7 +12,7 @@
  use mpas_timer, only : mpas_timer_start, mpas_timer_stop
 
  use mpas_atmphys_constants
- use mpas_atmphys_landuse
+ use mpas_atmphys_landuse, only: isurban
  use mpas_atmphys_lsm_noahinit
  use mpas_atmphys_vars
 
@@ -82,10 +82,11 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-05-11.
 ! * added the calculation of surface variables over seaice cells when config_frac_seaice is set to true.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-03.
+! * now use isice and iswater initialized in the init file instead of initialized in mpas_atmphys_landuse.F.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-01-13.
 ! * since we removed the local variable lsm_scheme from mpas_atmphys_vars.F, now defines lsm_scheme as a
 !   pointer to config_lsm_scheme.
-!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
-
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 !
 ! DOCUMENTATION:
@@ -726,6 +727,7 @@
  logical,pointer:: config_sfc_albedo
  character(len=StrKIND),pointer:: lsm_scheme
  character(len=StrKIND),pointer:: mminlu
+ integer,pointer:: isice
 
 !-----------------------------------------------------------------------------------------------------------------
 !call mpas_log_write('')
@@ -734,9 +736,11 @@
  call mpas_pool_get_config(configs,'config_sfc_albedo',config_sfc_albedo)
  call mpas_pool_get_config(configs,'config_lsm_scheme',lsm_scheme)
  call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
+ call mpas_pool_get_array(sfc_input,'isice' ,isice )
 
 !copy MPAS arrays to local arrays:
  call lsm_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
+!write(0,*) '--- end lsm_from_MPAS'
 
 !call to land-surface scheme:
  lsm_select: select case (trim(lsm_scheme))
