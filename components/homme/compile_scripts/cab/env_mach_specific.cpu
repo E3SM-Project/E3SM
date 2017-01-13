@@ -4,6 +4,8 @@
 # Cab machine specific settings
 #===============================================================================
 
+COMPILER="intel"
+
 #-------------------------------------------------------------------------------
 # Modules
 #-------------------------------------------------------------------------------
@@ -11,13 +13,25 @@
 source /usr/local/tools/dotkit/init.sh
 
 # intel compiler
-use ic-12.1.339
-source /usr/local/tools/icc-12.1.339/bin/compilervars.sh intel64
-source /usr/local/tools/ifort-12.1.339/bin/compilervars.sh intel64
+if [ "$COMPILER" == "intel" ]; then
 
-use openmpi-intel-1.6.5
-use hdf5-intel-parallel-1.8.10 # sets $HDF5
-use netcdf-fortran-intel-4.2   # sets $NETCDF
+    # new intel setup
+    use icc-16.0.210
+    use mvapich2-intel-2.1
+    use hdf5-intel-parallel-mvapich2-1.10.0
+    use netcdf-intel-4.1.3
+
+    # old intel setup
+    # use ic-12.1.339
+    # source /usr/local/tools/icc-12.1.339/bin/compilervars.sh intel64
+    # source /usr/local/tools/ifort-12.1.339/bin/compilervars.sh intel64    
+    # use openmpi-intel-1.6.5
+    # use hdf5-intel-parallel-1.8.10 # sets $HDF5
+    # use netcdf-fortran-intel-4.2   # sets $NETCDF
+else
+    echo "Error: unknown complier option"
+    exit -1
+fi
 
 # list loaded modules
 use

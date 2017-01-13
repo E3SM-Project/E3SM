@@ -1,17 +1,21 @@
 #!/bin/bash
 
 # Change next four lines to your paths
-export ACME_ROOT=$HOME/Climate/ACME
+export ACME_ROOT=$HOME/Climate/Implicit/ACME
 NP=4
 NLEVELS=26
 NTRACERS=0
 
 # Start Build #
 export HOMME_ROOT=$ACME_ROOT/components/homme
-export Trilinos_DIR=$HOME/SW/trilinos-11.10.2/intel
+export Trilinos_DIR=$HOME/mylibs/trilinos-11.10.2/intel-16.0.210
 
 # machine specific settings
 source $HOMME_ROOT/compile_scripts/cab/env_mach_specific.cpu
+rc=$?
+if [[ $rc != 0 ]]; then 
+    exit $rc 
+fi
 
 rm -rf $HOMME_ROOT/compile_scripts/cab/build
 mkdir -p $HOMME_ROOT/compile_scripts/cab/build || exit -1
