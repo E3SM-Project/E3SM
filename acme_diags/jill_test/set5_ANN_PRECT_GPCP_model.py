@@ -1,12 +1,8 @@
 import cdms2
 import cdutil
 import vcs
-import MV2
-import EzTemplate
-from metrics.computation.reductions import aminusb
 import genutil.statistics
 import numpy
-import cdutil
 
 def compute_rmse(model, obs):
     rmse = -numpy.infty
@@ -27,11 +23,11 @@ def compute_corr(model, obs):
 def plot_min_max_mean(canvas, template, variable):
     """canvas is a vcs.Canvas, template is a vcs.Template,
     variable is a cdms2.tvariable.TransientVariable"""
-    var_min = str(round(float(variable.min()), 2))
-    var_max = str(round(float(variable.max()), 2))
+    var_min = '%.2f' % float(variable.min())
+    var_max = '%.2f' % float(variable.max())
 
     # Doesn't work: var_mean = str(round(float(variable.mean()), 2))
-    var_mean = str(round(cdutil.averager(variable, axis='xy', weights='generate'), 2))
+    var_mean = '%.2f' % cdutil.averager(variable, axis='xy', weights='generate')
 
     # Todo: Just have a textorientation object in the script titled 'min_max_mean'
     # which will have the height and everything
@@ -53,8 +49,8 @@ def plot_rmse_and_corr(canvas, template, model, obs):
     """canvas is a vcs.Canvas, template is a vcs.Template,
     model and obs are a cdms2.tvariable.TransientVariable"""
 
-    rmse = str(round(compute_rmse(obs, model), 2))
-    corr = str(round(compute_corr(obs, model), 2))
+    rmse = '%.2f' % compute_rmse(obs, model)
+    corr = '%.2f' % compute_corr(obs, model)
 
     text_orientation = canvas.gettextorientation(template.mean.textorientation)
     height = text_orientation.height
@@ -65,7 +61,6 @@ def plot_rmse_and_corr(canvas, template, model, obs):
     plot_text(canvas, rmse, template.comment1.x+0.12, template.comment1.y, height, "right")
     plot_text(canvas, corr, template.comment2.x+0.12, template.comment2.y, height, "right")
 
-
 def plot_text(canvas, label_string, x, y, height, align):
     label = vcs.createtextcombined()
     label.x = x
@@ -75,20 +70,20 @@ def plot_text(canvas, label_string, x, y, height, align):
     label.halign = align
     canvas.plot(label)
 
-#reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
-#test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
-reference_data_path='../'
-test_data_path='../'
+reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
+test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
+#reference_data_path='../'
+#test_data_path='../'
 
-#Pre defined variables
+# Pre defined variables
 var='PRECT'
 season='ANN'
-#Below should be read from metadata
+# Below should be read from metadata
 mod_name='1850_alpha6_01 (yrs0070-0099)'
 obs_name='GPCP (yrs1979-2009)'
 
-#Read in data
-#reference_data_set='GPCP_v2.2_ANN_climo.nc'  # observation
+# Read in data
+# reference_data_set='GPCP_v2.2_ANN_climo.nc'  # observation
 reference_data_set='GPCP_ANN_climo.nc'  # observation
 test_data_set='20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'  # model
 
@@ -96,15 +91,13 @@ f_obs=cdms2.open(reference_data_path + reference_data_set)
 f_mod=cdms2.open(test_data_path + test_data_set)
 
 obs_pr=f_obs('PRECT',longitude=(-180, 540))
-#obs_pr=f_obs('PRECT')
 mod_pr=(f_mod('PRECC',longitude=(-180, 540))+f_mod('PRECL', longitude=(-180, 540)))*3600.0*24.0*1000.0
-#mod_pr=(f_mod('PRECC')+f_mod('PRECL'))*3600.0*24.0*1000.0
 mod_pr.units='mm/day'
 
-#For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
+# For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
 axes1=mod_pr.getAxisList()
 axes2=obs_pr.getAxisList()
-if len(axes1[1])<=len(axes2[1]): #use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
+if len(axes1[1])<=len(axes2[1]): # use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
     model_grid=mod_pr.getGrid()
     mod_pr_reg=mod_pr
     obs_pr_reg=obs_pr.regrid(model_grid,regridTool='esmf',regridMethod='linear')
@@ -114,7 +107,7 @@ else:
     mod_pr_reg=mod_pr.regrid(obs_grid,regridTool='esmf',regridMethod='linear')
 dif_pr=mod_pr_reg-obs_pr_reg
 
-#Plotting
+# Plotting
 x = vcs.init(bg=True, geometry=(1212,1628))
 x.portrait()
 
@@ -157,7 +150,7 @@ isofill.yticlabels1 = {-90: '90S', -80: '80S', -60: '60S', -40: '40S',
                        -20:'20S', 0: 'Eq', 20: '20N', 40: '40N', 60: '60N',
                        80: '80N', 90: '90N'}
 
-#ext_1 and ext_2 are arrows
+# ext_1 and ext_2 are arrows
 isofill.ext_1 = True
 isofill.ext_2 = True
 
@@ -166,7 +159,7 @@ plot_min_max_mean(x, template_1, obs_pr)
 x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
-#Create main title for the 3 plots
+# Create main title for the 3 plots
 plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
 
 # difference graph
