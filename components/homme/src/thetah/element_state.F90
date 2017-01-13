@@ -142,7 +142,6 @@ module element_state
     real (kind=real_kind) :: KEner(np,np,4)
     real (kind=real_kind) :: PEner(np,np,4)
     real (kind=real_kind) :: IEner(np,np,4)
-    real (kind=real_kind) :: IEner_wet(np,np,4)
     real (kind=real_kind) :: Qvar(np,np,qsize_d,4)                    ! Q variance at half time levels
     real (kind=real_kind) :: Qmass(np,np,qsize_d,4)                   ! Q mass at half time levels
     real (kind=real_kind) :: Q1mass(np,np,qsize_d)                    ! Q mass at full time levels
