@@ -27,12 +27,10 @@ def compute_corr(model, obs):
 def plot_min_max_mean(canvas, template, variable):
     """canvas is a vcs.Canvas, template is a vcs.Template,
     variable is a cdms2.tvariable.TransientVariable"""
-    #print 'type(variable.mean)'
-    #print type(variable.mean)
     var_min = str(round(float(variable.min()), 2))
     var_max = str(round(float(variable.max()), 2))
 
-    #var_mean = str(round(float(variable.mean()), 2))
+    # Doesn't work: var_mean = str(round(float(variable.mean()), 2))
     var_mean = str(round(cdutil.averager(variable, axis='xy', weights='generate'), 2))
 
     # Todo: Just have a textorientation object in the script titled 'min_max_mean'
@@ -55,16 +53,14 @@ def plot_rmse_and_corr(canvas, template, model, obs):
     """canvas is a vcs.Canvas, template is a vcs.Template,
     model and obs are a cdms2.tvariable.TransientVariable"""
 
-    #rmse = str(round(compute_rmse(obs, model), 2))
-    rmse = str(compute_rmse(obs, model))
-    #corr = str(round(compute_corr(obs, model), 2))
-    corr = str(compute_corr(obs, model))
+    rmse = str(round(compute_rmse(obs, model), 2))
+    corr = str(round(compute_corr(obs, model), 2))
 
     text_orientation = canvas.gettextorientation(template.mean.textorientation)
     height = text_orientation.height
 
-    #plot_text(canvas, "RMSE", template.comment1.x, template.comment1.y, height, "left")
-    #plot_text(canvas, "CORR", template.comment2.x, template.comment2.y, height, "left")
+    plot_text(canvas, "RMSE", template.comment1.x, template.comment1.y, height, "left")
+    plot_text(canvas, "CORR", template.comment2.x, template.comment2.y, height, "left")
 
     plot_text(canvas, rmse, template.comment1.x+0.12, template.comment1.y, height, "right")
     plot_text(canvas, corr, template.comment2.x+0.12, template.comment2.y, height, "right")
@@ -127,7 +123,6 @@ template_0 = x.gettemplate('plotset5_0_x_0')
 template_1 = x.gettemplate('plotset5_0_x_1')
 template_2 = x.gettemplate('plotset5_0_x_2')
 
-#It turns out the long_name attribute of the mv appears as title in .json.
 mod_pr.long_name='model'
 obs_pr.long_name='observation'
 dif_pr.long_name='model-observation'
@@ -172,19 +167,7 @@ x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
 #Create main title for the 3 plots
-plot_text(x, ' '.join([var, season]), 0.42, 0.98, 20, "left")
-#For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
-axes1=mod_pr.getAxisList()
-axes2=obs_pr.getAxisList()
-if len(axes1[1])<=len(axes2[1]): #use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
-    model_grid=mod_pr.getGrid()
-    mod_pr_reg=mod_pr
-    obs_pr_reg=obs_pr.regrid(model_grid,regridTool='esmf',regridMethod='linear')
-else:
-    obs_grid=obs_pr.getGrid()
-    obs_pr_reg=obs_pr
-    mod_pr_reg=mod_pr.regrid(obs_grid,regridTool='esmf',regridMethod='linear')
-dif_pr=mod_pr_reg-obs_pr_reg
+plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
 
 # difference graph
 isofill = x.createisofill()
@@ -194,12 +177,9 @@ isofill.datawc_y1=-90
 isofill.datawc_y2=90
 
 isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
-# After you set arrows, need to enable arrows again
-###isofill.ext_1 = True
-###isofill.ext_2 = True
-isofill.colormap = x.getcolormap('bl_to_darkred')
 isofill.ext_1 = True
 isofill.ext_2 = True
+isofill.colormap = x.getcolormap('bl_to_darkred')
 
 plot_min_max_mean(x, template_2, dif_pr)
 x.plot(dif_pr, template_2, isofill)
