@@ -111,7 +111,7 @@
     <batch_query args="-f" >qstat</batch_query>
     <batch_submit>qsub </batch_submit>
     <batch_directive>#PBS</batch_directive>
-    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <jobid_pattern>^(\S+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
     <submit_args>
