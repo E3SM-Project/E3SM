@@ -238,7 +238,7 @@
 	<command name="load">ncarenv/1.0</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/16.0.1</command>
+	<command name="load">intel/16.0.3</command>
 	<command name="load">mkl</command>
       </modules>
       <modules compiler="gnu">
@@ -439,6 +439,7 @@
 	<command name="switch">gcc gcc/6.2.0</command>
       </modules>
       <modules>
+	<command name="load">cray-memkind</command>
 	<command name="load">papi/5.4.3.2</command>
 	<command name="swap">craype craype/2.5.7</command>
       </modules>
@@ -525,7 +526,6 @@
 	<command name="switch">intel intel/17.0.1.132</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
-	<command name="load">memkind</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
 	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
@@ -543,6 +543,7 @@
 	<command name="switch">gcc gcc/6.2.0</command>
       </modules>
       <modules>
+	<command name="load">cray-memkind</command>
 	<command name="load">craype-mic-knl</command>
 	<command name="load">papi/5.4.3.2</command>
 	<command name="swap">craype craype/2.5.7</command>
