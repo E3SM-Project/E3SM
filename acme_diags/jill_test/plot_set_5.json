@@ -157,7 +157,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -165,7 +165,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -173,7 +173,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
@@ -223,7 +223,7 @@
     "y": 0.9595194448554595
    },
    "units": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_units",
     "texttable": "default",
     "x": 0.855,
@@ -525,7 +525,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -533,7 +533,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -541,7 +541,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
@@ -591,7 +591,7 @@
     "y": 0.6461861115221261
    },
    "units": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_units",
     "texttable": "default",
     "x": 0.855,
@@ -893,7 +893,7 @@
    },
    "max": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_max",
     "texttable": "default",
     "x": 0.873,
@@ -901,7 +901,7 @@
    },
    "mean": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_mean",
     "texttable": "default",
     "x": 0.873,
@@ -909,7 +909,7 @@
    },
    "min": {
     "format": "default",
-    "priority": 1,
+    "priority": 0,
     "textorientation": "plotset5_min",
     "texttable": "default",
     "x": 0.873,
@@ -959,7 +959,7 @@
     "y": 0.3328527781887928
    },
    "units": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "plotset5_units",
     "texttable": "default",
     "x": 0.855,
