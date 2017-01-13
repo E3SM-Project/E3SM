@@ -131,6 +131,8 @@ class Case(object):
         self.cores_per_task = ((self.get_value("MAX_TASKS_PER_NODE")/smt_factor) \
                                / self.tasks_per_node) * 2
 
+        return total_tasks
+
 
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
@@ -769,7 +771,14 @@ class Case(object):
             self.set_value("TIMER_LEVEL", 4)
         if test:
             self.set_value("TEST",True)
-        self.initialize_derived_attributes()
+        total_tasks = self.initialize_derived_attributes()
+        # Make sure that parallel IO is not specified if total_tasks==1
+        if total_tasks == 1:
+            for compclass in self._component_classes:
+                key = "PIO_TYPENAME_%s"%compclass
+                pio_typename = self.get_value(key)
+                if pio_typename in ("pnetcdf", "netcdf4p"):
+                    self.set_value(key, "netcdf")
 
 
     def get_compset_var_settings(self):
