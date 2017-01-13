@@ -162,10 +162,10 @@ contains
         call mpas_pool_get_array(meshPool, 'yCell', yCell)
         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
-        xMin = min( xMin, minval(xCell(1:nCellssolve)))
-        xMax = max( xMax, maxval(xCell(1:nCellssolve)))
-        yMin = min( yMin, minval(yCell(1:nCellssolve)))
-        yMax = max( yMax, maxval(yCell(1:nCellssolve)))
+        xMin = min( xMin, minval(xCell(1:nCellsSolve)))
+        xMax = max( xMax, maxval(xCell(1:nCellsSolve)))
+        yMin = min( yMin, minval(yCell(1:nCellsSolve)))
+        yMax = max( yMax, maxval(yCell(1:nCellsSolve)))
         dcEdgeMin = min( dcEdgeMin, minval(dcEdge(1:nEdgesSolve)))
 
         block_ptr => block_ptr % next
@@ -176,7 +176,7 @@ contains
       call mpas_dmpar_max_real(domain % dminfo, yMax, yMaxGlobal)
       call mpas_dmpar_min_real(domain % dminfo, xMin, xMinGlobal)
       call mpas_dmpar_max_real(domain % dminfo, xMax, xMaxGlobal)
-      call mpas_dmpar_min_real(domain % dminfo, dcEdgEMin, dcEdgeMinGlobal)
+      call mpas_dmpar_min_real(domain % dminfo, dcEdgeMin, dcEdgeMinGlobal)
 
       yMidGlobal = (yMinGlobal + yMaxGlobal) * 0.5_RKIND
       if(config_internal_waves_use_distances) then
@@ -212,10 +212,8 @@ contains
         call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
-        call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
-        call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal, iErr)
-        call ocn_mark_east_boundary(meshPool, xMaxGlobal, dcEdgeMinGlobal, iErr)
-        call ocn_mark_west_boundary(meshPool, xMinGlobal, dcEdgeMinGlobal, iErr)
+        call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal,iErr)
+        call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal,iErr)
 
         allocate(zTop(nVertLevels+1), refTemperature(nVertLevels), refTemperatureTop(nVertLevels+1), refZTop(nVertLevels+1))
 
