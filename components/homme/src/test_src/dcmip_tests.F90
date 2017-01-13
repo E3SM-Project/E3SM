@@ -264,7 +264,7 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
 !save temperature of the whole element to reset nonhydro model to discrete hydrostatic balance
-  real(rl):: t_local(np,np,nlev)
+!  real(rl):: t_local(np,np,nlev)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-0: steady state atmosphere with orography'
 
@@ -280,16 +280,16 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
     call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,phis,ps,rho,q(1))
     dp = pressure_thickness(ps,k,hvcoord)
-    t_local(i,j,nlev) = T
+  !  t_local(i,j,k) = T
     call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
     call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
   enddo; enddo; enddo; 
   ! reset phi and theta
   ! time index from 1 to nt, last index is for tracer(s), not used
-  call set_thermostate(elem(ie), t_local, hvcoord, 1, 0)
-  do i = 2, nt
-  call copy_state(elem(ie),1,i)
-  enddo
+  !call set_thermostate(elem(ie), t_local, hvcoord, 1, 0)
+  !do i = 2, nt
+  !call copy_state(elem(ie),1,i)
+  !enddo
   enddo
 
 end subroutine
