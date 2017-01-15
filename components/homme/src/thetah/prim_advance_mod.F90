@@ -13,7 +13,7 @@ module prim_advance_mod
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
-  use element_ops,    only: get_pnh_and_exner
+  use element_ops,    only: get_pnh_and_exner, set_hydrostatic_phi
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -480,7 +480,7 @@ contains
   use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_theta, only : biharmonic_wk_theta
-  use physical_constants, only: Cp
+  use physical_constants, only: Cp,p0,kappa,g
   implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
@@ -509,8 +509,14 @@ contains
 
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
-  real (kind=real_kind) :: v1,v2,dt,heating
-  real (kind=real_kind) :: temp(np,np,nlev)
+  real (kind=real_kind) :: v1,v2,dt,heating,T0,T1
+  real (kind=real_kind) :: ps_ref(np,np)
+  real (kind=real_kind) :: p_i(np,np,nlevp)
+  real (kind=real_kind) :: exner(np,np,nlev)
+
+  real (kind=real_kind) :: theta_ref(np,np,nlev,nets:nete)
+  real (kind=real_kind) :: phi_ref(np,np,nlev,nets:nete)
+  real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
 
 
 
@@ -526,6 +532,25 @@ contains
      call abortmp( 'ERROR: hypervis_order == 1 not coded')
   endif
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute reference states
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
+! Tref = T0+T1*exner
+! Thetaref = T0/exner + T1
+  T1 = .0065*288d0*Cp/g ! = 191
+  T0 = 288d0-T1         ! = 97
+  do ie=nets,nete
+     ps_ref(:,:) = sum(elem(ie)%state%dp3d(:,:,:,nt),3)
+     do k=1,nlev
+        dp_ref(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
+     enddo
+     p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
+  enddo
+
+
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
@@ -537,16 +562,34 @@ contains
 !                IE dissipation from continuity equation
 !                (1 deg: to about 0.1 W/m^2)
 !
-  do ie=nets,nete
-     do k=1,nlev
-        elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)-&
-             elem(ie)%state%phis(:,:)
-     enddo
-  enddo
-  
+
 
   if (hypervis_order == 2) then
      do ic=1,hypervis_subcycle
+        do ie=nets,nete
+
+           ! subtract of hydrostatic background state 
+           do k=1,nlev
+              p_i(:,:,k+1) = p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)
+           enddo
+           call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,&
+                elem(ie)%state%theta(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),&
+                phi_ref(:,:,:,ie))
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,exner)
+#endif
+           do k=1,nlev
+              exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
+              theta_ref(:,:,:,ie) = (T0/exner(:,:,:) + T1)
+              elem(ie)%state%theta(:,:,k,nt)=elem(ie)%state%theta(:,:,k,nt)-&
+                   theta_ref(:,:,k,ie)
+              elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)-&
+                   phi_ref(:,:,k,ie)
+              elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)-&
+                   dp_ref(:,:,k,ie)
+           enddo
+        enddo
+
         call biharmonic_wk_theta(elem,stens,vtens,deriv,edge6,hybrid,nt,nets,nete)
 
         do ie=nets,nete
@@ -614,8 +657,6 @@ contains
            call edgeVunpack(edgebuf, stens(:,:,:,:,ie), 4*nlev, kptr, ie)
 
 
-
-
            ! apply inverse mass matrix, accumulate tendencies
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -627,7 +668,16 @@ contains
               stens(:,:,k,2,ie)=dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)  ! theta
               stens(:,:,k,3,ie)=dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)  ! w
               stens(:,:,k,4,ie)=dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)  ! phi
+
+              !add ref state back
+              elem(ie)%state%theta(:,:,k,nt)=elem(ie)%state%theta(:,:,k,nt)+&
+                   theta_ref(:,:,k,ie)
+              elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)+&
+                   phi_ref(:,:,k,ie)
+              elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)+&
+                   dp_ref(:,:,k,ie)
            enddo
+
 
 
 #if (defined COLUMN_OPENMP)
@@ -670,21 +720,11 @@ contains
               enddo
            enddo
         enddo
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
+
      enddo
   endif
 
 
-  do ie=nets,nete
-     do k=1,nlev
-        elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)+&
-             elem(ie)%state%phis(:,:)
-     enddo
-  enddo
 
 
   call t_stopf('advance_hypervis')
@@ -783,14 +823,15 @@ contains
      if (theta_hydrostatic_mode) then
         phi => elem(ie)%derived%phi(:,:,:)
 
-        call get_pnh_and_exner(hvcoord,theta,dp3d,&
-             phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0),pnh,dpnh,exner,exner_i)
+        call get_pnh_and_exner(hvcoord,theta,dp3d,phi,elem(ie)%state%phis,&
+             elem(ie)%state%Qdp(:,:,:,1,qn0),pnh,dpnh,exner) ! ,exner_i)
         
         ! Compute Hydrostatic equation
         do k=1,nlev
-           temp(:,:,k) = Cp*theta(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))
-           !temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
+           !temp(:,:,k) = Cp*theta(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))
+           temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
         enddo
+        !call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,dp)
         call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
         dpnh_dp(:,:,:) = 1
      else
@@ -1127,11 +1168,6 @@ contains
      end do
   end do
 
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
   call t_stopf('compute_and_apply_rhs')
 
   end subroutine compute_and_apply_rhs

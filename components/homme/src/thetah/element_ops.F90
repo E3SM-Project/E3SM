@@ -372,6 +372,9 @@ contains
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
   integer :: k,nt,ntQ
 
   do k=1,nlev
@@ -384,9 +387,20 @@ contains
      elem%state%theta(:,:,k,nt)=temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
   enddo
 
-  call set_hydrostatic_phi(elem,hvcoord,elem%state%theta(:,:,:,nt),dp,&
+  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta(:,:,:,nt),dp,&
        elem%state%phi(:,:,:,nt))
 
+
+  ! debug
+  call get_pnh_and_exner(hvcoord,elem%state%theta(:,:,:,nt),dp,&
+       elem%state%phi(:,:,:,nt),&
+       elem%state%phis(:,:),elem%state%Qdp(:,:,:,1,nt),pnh,dpnh,exner)
+  do k=1,nlev
+     if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
+        print *,'WARNING: hydrostatic inverse FAILED!'
+        print *,k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
+     endif
+  enddo
 
   end subroutine set_thermostate
 
@@ -395,27 +409,23 @@ contains
 
 
 
-  subroutine set_hydrostatic_phi(elem,hvcoord,theta,dp,phi)
+  subroutine set_hydrostatic_phi(hvcoord,phis,theta,dp,phi)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! inverse of get_p_and_exer():
+  ! inverse of get_pnh_and_exner():
   ! for dry hydrostatic case
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   implicit none
   
-  type (element_t), intent(inout)   :: elem
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  real (kind=real_kind) :: theta(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: phi(np,np,nlev)
+  real (kind=real_kind), intent(in) :: theta(np,np,nlev)
+  real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+  real (kind=real_kind), intent(in) :: phis(np,np)
+  real (kind=real_kind), intent(out) :: phi(np,np,nlev)
   
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: p_i(np,np,nlev+1)
 
-  real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: dpnh(np,np,nlev)
-  real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: Qdp(np,np,nlev)
   real (kind=real_kind) :: dp_theta_R(np,np,nlev)
   integer :: k
 
@@ -428,7 +438,7 @@ contains
   enddo
 
 !  integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
-  phi(:,:,nlev) = elem%state%phis(:,:) + (&
+  phi(:,:,nlev) = phis(:,:) + (&
     dp(:,:,nlev)*Rgas*theta(:,:,nlev)*p(:,:,nlev)**(kappa-1)*p0**(-kappa) )/2
 
   do k=nlev,2,-1
@@ -444,16 +454,6 @@ contains
   enddo
 
 
-  ! debug
-  Qdp=0
-  call get_pnh_and_exner(hvcoord,theta(:,:,:),dp,phi(:,:,:),&
-       elem%state%phis(:,:),Qdp,pnh,dpnh,exner)
-  do k=1,nlev
-     if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
-        print *,'WARNING: hydrostatic inverse FAILED!'
-        print *,k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
-     endif
-  enddo
   end subroutine
 
 
