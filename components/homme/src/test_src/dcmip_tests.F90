@@ -11,7 +11,7 @@ use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_had
 use derivative_mod,       only: derivative_t, gradient_sphere
 use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
 use element_mod,          only: element_t
-use element_ops,          only: set_state
+use element_ops,          only: set_state, copy_state, set_thermostate
 use element_state,        only: nt=>timelevels
 use hybrid_mod,           only: hybrid_t
 use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
@@ -79,7 +79,7 @@ subroutine dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
       call test1_advection_deformation(time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho,q(1),q(2),q(3),q(4))
 
       dp = pressure_thickness(ps,k,hvcoord)
-      call set_state(u,v,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),n0,n1)
+      call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),n0,n1)
       if(time==0) call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
 
   enddo; enddo; enddo; enddo
@@ -146,7 +146,7 @@ subroutine dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
       p = p0 * hvcoord%etam(k)
       call test1_advection_hadley(time,lon,lat,p,z,zcoords,u,v,w,t,phis,ps,rho,q(1),q(2))
       dp = pressure_thickness(ps,k,hvcoord)
-      call set_state(u,v,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),n0,n1)
+      call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),n0,n1)
       if(time==0) call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
 
   enddo; enddo; enddo; enddo
@@ -215,7 +215,7 @@ subroutine dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,time,n0,n1,deriv)
       lon  = elem(ie)%spherep(i,j)%lon; lat  = elem(ie)%spherep(i,j)%lat
       call test1_advection_orography(lon,lat,p,z,zcoords,cfv,use_eta,hyam,hybm,gc,u,v,w,t,phis,ps,rho,q(1),q(2),q(3),q(4))
       dp = pressure_thickness(ps,k,hvcoord)
-      call set_state(u,v,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),n0,n1)
+      call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),n0,n1)
       if(time==0) call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
 
   enddo; enddo; enddo; enddo
@@ -263,6 +263,8 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
+!save temperature of the whole element to reset nonhydro model to discrete hydrostatic balance
+!  real(rl):: t_local(np,np,nlev)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-0: steady state atmosphere with orography'
 
@@ -273,13 +275,22 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
 
   ! set initial conditions
-  do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
+  do ie = nets,nete; 
+  do k=1,nlev; do j=1,np; do i=1,np
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
     call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,phis,ps,rho,q(1))
     dp = pressure_thickness(ps,k,hvcoord)
-    call set_state(u,v,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+  !  t_local(i,j,k) = T
+    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
     call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
-  enddo; enddo; enddo; enddo
+  enddo; enddo; enddo; 
+  ! reset phi and theta
+  ! time index from 1 to nt, last index is for tracer(s), not used
+  !call set_thermostate(elem(ie), t_local, hvcoord, 1, 0)
+  !do i = 2, nt
+  !call copy_state(elem(ie),1,i)
+  !enddo
+  enddo
 
 end subroutine
 
@@ -318,7 +329,7 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
     call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,shear,u,v,w,T,phis,ps,rho,q(1))
     dp = pressure_thickness(ps,k,hvcoord)
-    call set_state(u,v,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
     call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
   enddo; enddo; enddo; enddo
 
@@ -406,7 +417,7 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
     call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
     dp = pressure_thickness(ps,k,hvcoord)
-    call set_state(u,v,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
     call set_tracers(q,1, dp,i,j,k,lat,lon,elem(ie))
   enddo; enddo; enddo; enddo
 

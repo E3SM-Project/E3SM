@@ -461,22 +461,22 @@ contains
 
 
  
-  subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
+  subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
 !
 ! set state variables at node(i,j,k) at layer midpoints
 !
-  real(real_kind),  intent(in)    :: u,v,T,ps,phis,p,dp,zm,g
+  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,dp,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
   type(element_t),  intent(inout) :: elem
 
   ! set prognostic state variables at level midpoints
   elem%state%v   (i,j,1,k,n0:n1) = u
   elem%state%v   (i,j,2,k,n0:n1) = v
+  elem%state%w   (i,j,k,n0:n1)   = w
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phi(i,j,k,n0:n1)      = g*zm
   elem%state%phis(i,j)           = phis
 
-  call abortmp('w not set')
 
   if (use_moisture) then
      call abortmp('ERROR: thetah set_state not yet coded for moisture')

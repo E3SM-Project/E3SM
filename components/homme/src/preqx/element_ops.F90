@@ -148,11 +148,11 @@ contains
   end subroutine set_thermostate
 
 
-subroutine set_state(u,v,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
+subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
 
   ! set state variables at node(i,j,k) at layer midpoints
 
-  real(real_kind),  intent(in)    :: u,v,T,ps,phis,p,dp,zm,g
+  real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,dp,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
   type(element_t),  intent(inout) :: elem
 
