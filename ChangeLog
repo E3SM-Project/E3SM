@@ -1,6 +1,36 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-15-2017
+Tag: cime5.2.0-alpha.20
+Answer Changes: None
+Tests: scripts_regression_tests, cesm2_0_beta05 testing
+Dependencies:
+
+Brief Summary: Adds schema for config_pes and overrides section to that file
+               Adds support for new machine cheyenne
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/allactive/config_pes.xml
+	M       cime_config/acme/config_files.xml
+	M       cime_config/cesm/allactive/config_pes.xml
+	M       cime_config/cesm/allactive/testlist_allactive.xml
+	M       cime_config/cesm/config_files.xml
+	M       cime_config/cesm/machines/config_batch.xml
+	M       cime_config/cesm/machines/config_compilers.xml
+	M       cime_config/cesm/machines/config_machines.xml
+	A       cime_config/xml_schemas/config_pes.xsd
+	M       driver_cpl/cime_config/testdefs/testlist_drv.xml
+	M       utils/python/CIME/XML/machines.py
+	M       utils/python/CIME/XML/pes.py
+	M       utils/python/CIME/case.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 01-12-2017
 Tag: cime5.2.0-alpha.19
 Answer Changes: None
