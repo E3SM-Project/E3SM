@@ -57,4 +57,10 @@ clean:
 
 .F90.o:
 	$(RM) $@ $*.mod
+ifeq "$(GEN_F90)" "true"
+	$(CPP) $(CPPFLAGS) $< > $*.f90 $(CPPINCLUDES) $(FCINCLUDES) -I.
+	$(FC) $(FFLAGS) -c $*.f90 $(CPPINCLUDES) $(FCINCLUDES) -I.
+else
 	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F90 $(CPPINCLUDES) $(FCINCLUDES) -I.
+endif
+#	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F90 $(CPPINCLUDES) $(FCINCLUDES) -I.
