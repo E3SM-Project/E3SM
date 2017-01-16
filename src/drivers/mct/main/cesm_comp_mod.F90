@@ -91,6 +91,7 @@ module cesm_comp_mod
    use seq_timemgr_mod, only: seq_timemgr_alarm_ocnrun
    use seq_timemgr_mod, only: seq_timemgr_alarm_icerun
    use seq_timemgr_mod, only: seq_timemgr_alarm_glcrun
+   use seq_timemgr_mod, only: seq_timemgr_alarm_glcrun_avg
    use seq_timemgr_mod, only: seq_timemgr_alarm_ocnnext
    use seq_timemgr_mod, only: seq_timemgr_alarm_tprof
    use seq_timemgr_mod, only: seq_timemgr_alarm_histavg
@@ -252,6 +253,7 @@ module cesm_comp_mod
    logical  :: ocnrun_alarm           ! ocn run alarm
    logical  :: ocnnext_alarm          ! ocn run alarm on next timestep
    logical  :: glcrun_alarm           ! glc run alarm
+   logical  :: glcrun_avg_alarm       ! glc run averaging alarm
    logical  :: rofrun_alarm           ! rof run alarm
    logical  :: wavrun_alarm           ! wav run alarm
    logical  :: esprun_alarm           ! esp run alarm
@@ -2117,6 +2119,11 @@ end subroutine cesm_init
       !  (this is time that models should have before they return
       !  to the driver).  Write timestamp and run alarm status
       !----------------------------------------------------------
+      ! Note that the glcrun_avg_alarm just controls what is passed to glc in terms
+      ! of averaged fields - it does NOT control when glc is called currently -
+      ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant 
+      ! info if the time averaging period to accumulate information passed to glc is greater 
+      ! than the glcrun interval
 
       call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod )
@@ -2127,6 +2134,7 @@ end subroutine cesm_init
       rofrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_rofrun)
       icerun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_icerun)
       glcrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun)
+      glcrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun_avg)
       wavrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_wavrun)
       esprun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_esprun)
       ocnrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_ocnrun)
@@ -2198,7 +2206,7 @@ end subroutine cesm_init
       if (tod            == 0) t24hr_alarm = .true.
       if (month==1 .and. day==1 .and. tod==0) t1yr_alarm = .true.
 
-      call seq_infodata_putData(infodata, glcrun_alarm=glcrun_alarm)
+      call seq_infodata_putData(infodata, glcrun_alarm=glcrun_alarm) !??? TODO - why is this here ???
 
       if (seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_datestop)) then
          if (iamroot_CPLID) then
@@ -2915,32 +2923,42 @@ end subroutine cesm_init
       !| GLC SETUP-SEND
       !----------------------------------------------------------
 
-      if (glc_present .and. glcrun_alarm) then
+      ! NOTE - only create appropriate input to glc if the avg_alarm is on
+      if (glc_present) then
+         if (glcrun_avg_alarm) then
+            !----------------------------------------------------
+            !| glc prep-merge
+            !----------------------------------------------------
 
-         !----------------------------------------------------
-         !| glc prep-merge
-         !----------------------------------------------------
+            if (iamin_CPLID .and. glc_prognostic) then
+               call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
+               call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
+               if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+               
+               if (lnd_c2_glc) then
+                  call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+                  
+                  ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+                  call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+                  
+                  call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+                  
+                  call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+                       info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
+               endif
+               
+               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+               call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
 
-         if (iamin_CPLID .and. glc_prognostic) then
-            call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
-            call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
-            if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-
-            if (lnd_c2_glc) then
-               call prep_glc_accum_avg(timer='CPL:glcprep_avg')
-
-               ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-               call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
-
-               call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
-
-               call component_diag(infodata, glc, flow='x2c', comment='send glc', &
-                    info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
+               ! Set seq_infodata flag for valid data
+               call seq_infodata_PutData(glc_valid_input=.true.)
             endif
-
-            if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-            call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
-         endif
+         else
+            if (iamin_CPLID .and. glc_prognostic) then
+               ! Set seq_infodata flag for unvalid data
+               call seq_infodata_PutData(glc_valid_input=.false.)
+            end if
+         end if
 
          !----------------------------------------------------
          !| cpl -> glc
@@ -3410,7 +3428,7 @@ end subroutine cesm_init
       !| GLC RECV-POST
       !----------------------------------------------------------
 
-      if (glc_present .and. glcrun_alarm) then
+      if (glc_present .and. glcrun_avg_alarm) then
 
          !----------------------------------------------------------
          !| glc -> cpl
