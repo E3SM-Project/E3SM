@@ -499,10 +499,16 @@ class Case(object):
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist)
+
         drv_config_file = files.get_value("CONFIG_CPL_FILE")
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
+
+        drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
+        drv_comp_model_specific = Component(drv_config_file_model_specific)
+        for env_file in self._env_entryid_files:
+            env_file.add_elements_by_group(drv_comp_model_specific, attributes=attlist)
 
         # Add the group and elements for env_batch
         env_batch = self.get_env("batch")
@@ -529,7 +535,8 @@ class Case(object):
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=False)
             self.set_value(node_name, comp_config_file)
             comp_config_file = self.get_resolved_value(comp_config_file)
-            expect(comp_config_file is not None and os.path.isfile(comp_config_file),"Config file %s for component %s not found."%(comp_config_file, comp_name))
+            expect(comp_config_file is not None and os.path.isfile(comp_config_file),
+                   "Config file %s for component %s not found."%(comp_config_file, comp_name))
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
