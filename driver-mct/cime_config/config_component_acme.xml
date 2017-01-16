@@ -360,6 +360,17 @@
     <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
   </entry>
 
+  <entry id="GLC_AVG_NCPL">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <values>
+      <value compset="_DLND.*_CISM\d">1</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of glc coupling intervals relative to NCPL_BASE_PERIOD for averaging of GLC input.</desc>
+  </entry>
+
   <entry id="ROF_NCPL">
     <type>integer</type>
     <default_value>8</default_value>
