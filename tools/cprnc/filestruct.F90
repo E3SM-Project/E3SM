@@ -4,7 +4,7 @@ module filestruct
   type dim_t
      integer :: dimsize
      integer :: start, kount  ! used for user requested dimension subsetting
-     character(len=nf90_MAX_NAME) ::name
+     character(len=nf90_MAX_NAME) ::name = ''
   end type dim_t
 
   type var_t
@@ -13,7 +13,7 @@ module filestruct
      integer :: natts
      integer, pointer :: dimids(:)
      integer :: xtype
-     character(len=nf90_MAX_NAME) ::name
+     character(len=nf90_MAX_NAME) ::name = ''
   end type var_t
 
   type file_t
@@ -43,7 +43,6 @@ contains
 
 
     do i=1,ndims
-       file%dim(i)%name = ''
        ierr = nf90_inquire_dimension(file%fh, i, file%dim(i)%name, file%dim(i)%dimsize)
        file%dim(i)%start=1
        if(i==file%unlimdimid) then
@@ -134,6 +133,7 @@ contains
 
     do i=1,natts1
        found = .true.
+       attname = ''
        ierr = nf90_inq_attname(file1%fh, id1, i, attname)
        ierr = nf90_inquire_attribute(file1%fh, id1, trim(attname), atttype, attlen)
        select case(atttype)

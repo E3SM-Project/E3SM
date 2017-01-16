@@ -21,12 +21,6 @@ program piocprnc
   integer :: num_sizes_differ
   integer :: num_not_analyzed
 
-  n = 1
-  do while(n <= 12)
-     dimoptions(n)%name = ''
-     n = n + 1
-  end do
-
 !
 ! Parse arg list
 !
