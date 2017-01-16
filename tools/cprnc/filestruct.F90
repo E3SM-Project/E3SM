@@ -43,6 +43,7 @@ contains
 
 
     do i=1,ndims
+       file%dim(i)%name = ''
        ierr = nf90_inquire_dimension(file%fh, i, file%dim(i)%name, file%dim(i)%dimsize)
        file%dim(i)%start=1
        if(i==file%unlimdimid) then
@@ -334,7 +335,7 @@ contains
     n1 = size(f1%var(i1)%dimids)
     start = 1
     do i=1,n1
-       count(i) =  f1%dim(f1%var(i1)%dimids(i))%dimsize
+       count(i) = f1%dim(f1%var(i1)%dimids(i))%dimsize
        if(f1%var(i1)%dimids(i) == f1%unlimdimid) then
           count(i)=1
           start(i)=t1

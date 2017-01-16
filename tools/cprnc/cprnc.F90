@@ -8,7 +8,7 @@ program piocprnc
   implicit none
 
   integer :: nargs, n
-  character(len=1024) :: arg                     ! cmd-line argument
+  character(len=1024) :: arg = ''                     ! cmd-line argument
   character(len=1024) :: fname(2) = ' '          ! input filenames
   integer :: nchars
   integer :: numcases=1
@@ -20,6 +20,12 @@ program piocprnc
   integer :: nvars, ndiffs, nfilldiffs, numnotfound
   integer :: num_sizes_differ
   integer :: num_not_analyzed
+
+  n = 1
+  do while(n <= 12)
+     dimoptions(n)%name = ''
+     n = n + 1
+  end do
 
 !
 ! Parse arg list
