@@ -870,24 +870,6 @@
     <desc>logical to diagnose model timing at the end of the run</desc>
   </entry>
 
-  <entry id="SAVE_TIMING">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>logical to save timing files in rundir</desc>
-  </entry>
-
-  <entry id="SAVE_TIMING_DIR">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>timing</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>Where to auto archive timing data</desc>
-  </entry>
-
   <entry id="TIMER_LEVEL">
     <type>integer</type>
     <default_value>12</default_value>
@@ -2426,16 +2408,6 @@
     <desc>yyyymmdd format, sets coupler snapshot history date (like REST_DATE)</desc>
   </entry>
 
-  <entry id="DRV_THREADING">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>Turns on component varying thread control in the driver.
-    Used to set the driver namelist variable "drv_threading".</desc>
-  </entry>
-
   <entry id="CPL_DECOMP">
     <type>integer</type>
     <valid_values>0,1,2,3,4,5,6</valid_values>
@@ -2443,15 +2415,6 @@
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Coupler decomposition option.</desc>
-  </entry>
-
-  <entry id="BFBFLAG">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>turns on coupler bit-for-bit reproducibility with varying pe counts</desc>
   </entry>
 
   <entry id="INFO_DBUG">
