@@ -724,15 +724,11 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
     
     !   PE   dp/dn PHIs
-       if (theta_hydrostatic_mode) then
-          elem(ie)%accum%PEner(:,:,n)=elem(ie)%state%phis(:,:)*elem(ie)%state%ps_v(:,:,t1)
-       else
-          suml=0
-          do k=1,nlev
-             suml = suml + elem(ie)%state%phi(:,:,k,t1)*dpt1(:,:,k)
-          enddo
-          elem(ie)%accum%PEner(:,:,n)=suml(:,:)
-       endif
+       suml=0
+       do k=1,nlev
+          suml = suml + elem(ie)%state%phi(:,:,k,t1)*dpt1(:,:,k)
+       enddo
+       elem(ie)%accum%PEner(:,:,n)=suml(:,:)
        
 
     !  IE = c_p^* dp/deta T - dp/ds phi  + psurf phisurf 
@@ -743,12 +739,14 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                Cp * dpt1(:,:,k) * elem(ie)%state%theta(:,:,k,t1)*exner(:,:,k) 
           suml2(:,:) = suml2(:,:)  -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)
        enddo
+       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
+            elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
+
        if (theta_hydrostatic_mode) then
-             elem(ie)%accum%IEner(:,:,n)=suml(:,:)  
-          else
-             elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
-                  elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
-          endif
+          ! hydrostatic case: combine IE and PE
+          elem(ie)%accum%IEner(:,:,n)=elem(ie)%accum%IEner(:,:,n) + elem(ie)%accum%PEner(:,:,n)
+          elem(ie)%accum%PEner(:,:,n) = 0
+       endif
        enddo
     
 end subroutine prim_energy_halftimes
