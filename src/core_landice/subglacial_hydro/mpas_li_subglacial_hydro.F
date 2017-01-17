@@ -1216,6 +1216,7 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: geometryPool
       real (kind=RKIND), pointer :: Kc
       real (kind=RKIND), pointer :: alpha_c
       real (kind=RKIND), pointer :: beta_c
@@ -1240,6 +1241,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       integer, dimension(:), pointer :: waterFluxMask
+      integer, dimension(:), pointer :: edgeMask
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nVertLevels
@@ -1255,6 +1257,7 @@ module li_subglacial_hydro
 !      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_conduc_coeff', Kc)
@@ -1285,6 +1288,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
       ! Calculate terms needed for opening (melt) rate
 
@@ -1293,9 +1297,15 @@ module li_subglacial_hydro
       elsewhere
          channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * hydropotentialBaseSlopeNormal
       end where
+
       where (waterFluxMask == 2)
          channelDischarge = 0.0_RKIND
          channelArea = 0.0_RKIND
+      end where
+
+      where (.not. li_mask_is_ice(edgeMask))
+         channelArea = 0.0_RKIND
+         channelDischarge = 0.0_RKIND
       end where
 
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
