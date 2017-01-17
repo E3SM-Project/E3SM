@@ -122,11 +122,11 @@ gridfile.variables['basalMeltInput'][:] = 0.0 * 1000.0 # no basal melting
 gridfile.variables['uReconstructX'][:] = 1.0e-6 # all tests use this velocity
 
 # initial water thickness
-gridfile.variables['waterThickness'][0,:] = 0.05 * np.absolute(xCell[:] - 6.0e3)/6.0e3 # start with something to avoid weird adapative time steps initially
+gridfile.variables['waterThickness'][0,:] = 0.005 * np.absolute(xCell[:] - 6.0e3)/6.0e3 # start with something very small but nonzero to avoid weird adapative time steps initially
 
 # initial waterPressure
 #gridfile.variables['waterPressure'][:] = 0.5 * 9.81 * 910.0 * thickness[:] * (0.97 + 0.03 * np.random.rand(thickness[:].size)) # start with half of Pice.  Last factor adds some random noise to disrupt symmetry.
-gridfile.variables['waterPressure'][0,:] = 0.5 * 9.81 * 910.0 * thickness[:]
+gridfile.variables['waterPressure'][0,:] = 0.05 * 9.81 * 910.0 * thickness[:]  # start with something small to avoid unphysical gradients
 
 gridfile.close()
 
