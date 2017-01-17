@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config_batch version="1.0.0">
+<config_batch version="2.0">
   <!--
      File:    config_batch.xml
      Purpose: abstract out the parts of run scripts that are different, and use this configuration to
@@ -13,7 +13,7 @@
                        queue submission.
      depend_pattern:
     -->
-  <batch_system type="template" version="x.y">
+  <batch_system type="template" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
     <batch_redirect></batch_redirect>
@@ -23,7 +23,7 @@
     </directives>
   </batch_system>
 
-  <batch_system type="none" version="x.y">
+  <batch_system type="none" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
     <batch_redirect></batch_redirect>
@@ -33,7 +33,7 @@
     </directives>
   </batch_system>
 
-   <batch_system type="cobalt" version="x.y">
+   <batch_system type="cobalt" >
      <batch_query>qstat</batch_query>
      <batch_submit>qsub</batch_submit>
      <batch_directive></batch_directive>
@@ -51,7 +51,7 @@
      </submit_args>
    </batch_system>
 
-  <batch_system type="cobalt_theta" version="x.y">
+  <batch_system type="cobalt_theta" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
     <batch_directive>#COBALT</batch_directive>
@@ -72,7 +72,6 @@
     <batch_redirect>&lt;</batch_redirect>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
-    <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w "done(jobid)"</depend_string>
     <walltime_format>%H:%M</walltime_format>
     <directives>
@@ -90,7 +89,7 @@
     </directives>
   </batch_system>
 
-  <batch_system type="pbs" version="x.y">
+  <batch_system type="pbs" >
     <batch_query args="-u $USER" >qselect</batch_query>
     <batch_submit>qsub </batch_submit>
     <batch_directive>#PBS</batch_directive>
@@ -113,7 +112,7 @@
     </directives>
   </batch_system>
 
-  <batch_system type="moab" version="x.y">
+  <batch_system type="moab" >
     <batch_query>showq</batch_query>
     <batch_submit>msub </batch_submit>
     <batch_directive>#MSUB</batch_directive>
@@ -131,7 +130,7 @@
     </directives>
   </batch_system>
 
-   <batch_system type="slurm" version="x.y">
+   <batch_system type="slurm" >
      <batch_query args="-o '%i' -h -u $USER">squeue </batch_query>
      <batch_submit>sbatch</batch_submit>
      <batch_directive>#SBATCH</batch_directive>
@@ -150,7 +149,7 @@
    </batch_system>
 
     <!-- blues is PBS -->
-    <batch_system MACH="blues" type="pbs" version="x.y">
+    <batch_system MACH="blues" type="pbs" >
       <directives>
         <directive>-A {{ PROJECT }}</directive>
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
@@ -161,7 +160,7 @@
     </batch_system>
 
     <!-- anvil is PBS -->
-    <batch_system MACH="anvil" type="pbs" version="x.y">
+    <batch_system MACH="anvil" type="pbs" >
       <directives>
         <directive>-A {{ PROJECT }}</directive>
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
@@ -172,7 +171,7 @@
     </batch_system>
 
     <!-- edison is SLURM as of Jan-4-2016 -->
-    <batch_system MACH="edison" type="slurm" version="x.y">
+    <batch_system MACH="edison" type="slurm" >
       <queues>
         <queue walltimemax="01:30:00" jobmin="1" jobmax="100" default="true">regular</queue>
 	<queue walltimemax="00:30:00" jobmin="1" jobmax="100">debug</queue>
@@ -180,7 +179,7 @@
     </batch_system>
 
     <!-- eos is PBS -->
-    <batch_system MACH="eos" type="pbs" version="x.y">
+    <batch_system MACH="eos" type="pbs" >
     <directives>
       <directive>-A {{ project }}</directive>
       <directive>-l  nodes={{ num_nodes }}</directive>
@@ -190,7 +189,7 @@
     </queues>
    </batch_system>
 
-    <batch_system MACH="cori-haswell" type="slurm" version="x.y">
+    <batch_system MACH="cori-haswell" type="slurm" >
       <directives>
         <directive>--constraint=haswell</directive>
       </directives>
@@ -200,7 +199,7 @@
       </queues>
     </batch_system>
 
-    <batch_system MACH="cori-knl" type="slurm" version="x.y">
+    <batch_system MACH="cori-knl" type="slurm" >
       <directives>
         <directive>--constraint=knl</directive>
       </directives>
@@ -228,7 +227,7 @@
       </queues>
     </batch_system>
 
-   <batch_system MACH="constance" type="slurm" version="x.y">
+   <batch_system MACH="constance" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
        <directive>--mail-type=END</directive>
@@ -241,7 +240,7 @@
     </queues>
    </batch_system>
 
-  <batch_system MACH="skybridge" type="slurm" version="x.y">
+  <batch_system MACH="skybridge" type="slurm" >
     <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
@@ -250,7 +249,7 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="redsky" type="slurm" version="x.y">
+  <batch_system MACH="redsky" type="slurm" >
     <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
@@ -259,13 +258,13 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="mustang" type="moab" version="x.y">
+  <batch_system MACH="mustang" type="moab" >
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
     </directives>
   </batch_system>
 
-   <batch_system MACH="wolf" type="moab" version="x.y">
+   <batch_system MACH="wolf" type="moab" >
 	<directives>
 		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
 	</directives>
@@ -278,7 +277,7 @@
       </queues>
     </batch_system>
 
-   <batch_system MACH="oic2" type="pbs" version="x.y">
+   <batch_system MACH="oic2" type="pbs" >
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
 		 <directive>-q esd08q</directive>
@@ -288,7 +287,7 @@
          </queues>
    </batch_system>
 
-   <batch_system MACH="oic5" type="pbs" version="x.y">
+   <batch_system MACH="oic5" type="pbs" >
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
 		 <directive>-q esd13q</directive>
@@ -299,7 +298,7 @@
          </queues>
    </batch_system>
 
-   <batch_system MACH="cades" type="pbs" version="x.y">
+   <batch_system MACH="cades" type="pbs" >
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
                  <directive>-W group_list=cades-ccsi</directive>
@@ -316,7 +315,7 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="titan" type="pbs" version="x.y">
+   <batch_system MACH="titan" type="pbs" >
      <directives>
        <directive>-A {{ project }}</directive>
        <directive>-l nodes={{ num_nodes }}</directive>
@@ -327,7 +326,7 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="lawrencium-lr2" type="slurm" version="x.y">
+   <batch_system MACH="lawrencium-lr2" type="slurm" >
      <directives>
        <directive>--partition=lr2</directive>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
@@ -339,7 +338,7 @@
     </queues>
    </batch_system>
 
-   <batch_system MACH="lawrencium-lr3" type="slurm" version="x.y">
+   <batch_system MACH="lawrencium-lr3" type="slurm" >
      <directives>
        <directive>--partition=lr3</directive>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
