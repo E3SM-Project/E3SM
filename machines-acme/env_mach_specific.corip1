@@ -1,0 +1,117 @@
+#! /bin/csh -f
+
+#-------------------------------------------------------------------------------
+# Modules and library paths
+#-------------------------------------------------------------------------------
+
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER = `./xmlquery COMPILER -value`
+  set MPILIB   = `./xmlquery MPILIB   -value`
+  set DEBUG   = `./xmlquery DEBUG   -value`
+else
+  echo $0 using settings from environment:
+endif
+echo "COMPILER=$COMPILER"
+echo "MPILIB=$MPILIB"
+echo "DEBUG=$DEBUG"
+
+if (-e /opt/modules/default/init/csh) then
+  source /opt/modules/default/init/csh
+endif
+
+module unload modules  
+module load modules/3.2.10.4
+#module list >& ml00.txt; env >>& ml00.txt 
+
+module rm PrgEnv-cray
+module rm PrgEnv-gnu
+module rm PrgEnv-intel
+if ( $COMPILER == "intel" ) then
+    module load PrgEnv-intel/6.0.3
+    module rm intel
+    module load intel/16.0.3.210
+endif
+if ( $COMPILER == "cray" ) then
+    module load PrgEnv-cray/6.0.3
+    module rm cce
+    module load cce/8.5.0
+endif
+if ( $COMPILER == "gnu" ) then
+    module load PrgEnv-gnu/6.0.3
+    module rm gcc
+    module load gcc/5.3.0
+endif
+
+module rm cray-libsci
+if( $COMPILER != "intel" ) then
+  module load cray-libsci/16.06.1
+endif
+
+module rm craype
+module load craype/2.5.5
+
+#module rm craype-sandybridge
+#module rm craype-ivybridge
+#module rm craype-haswell
+#module load craype-haswell
+#module load craype-network-aries
+
+module rm pmi
+module load pmi/5.0.10-1.0000.11050.0.0.ari
+
+module rm cray-netcdf
+module rm cray-netcdf-hdf5parallel
+module rm cray-parallel-netcdf
+module rm cray-hdf5-parallel
+module rm cray-hdf5
+
+if ( $MPILIB == "mpi-serial") then
+  module load cray-hdf5/1.8.16
+  module load cray-netcdf/4.4.0
+else
+  module load cray-hdf5-parallel/1.8.16
+  module load cray-netcdf-hdf5parallel/4.4.0
+  module load cray-parallel-netcdf/1.7.0
+endif
+
+module rm cray-mpich2
+module rm cray-mpich
+module load cray-mpich/7.4.0
+
+module rm papi
+module load papi/5.4.3.2
+
+module rm cmake
+module load cmake/3.3.2
+
+module rm cray-petsc
+module load cray-petsc/3.7.0.0
+
+module rm esmf
+#module load perl/5.22.1
+
+module list >& software_environment.txt
+env >>&  software_environment.txt
+
+#-------------------------------------------------------------------------------
+# Runtime environment variables
+#-------------------------------------------------------------------------------
+
+limit coredumpsize unlimited
+limit stacksize unlimited
+
+# Capture logical to physics PE assignment and active environment variable settings
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_VERSION_DISPLAY 1
+setenv MPICH_CPUMASK_DISPLAY 1
+#setenv PERL5LIB $PERL_DIR/lib/5.20.0
+
+# The environment variable below increase the stack size, which is necessary for
+# CICE to run threaded on this machine.  
+# Helen He: setting OMP_STACKSIZE to 128M won't hurt
+# Mark Taylor: worse case: someone could run 32 threads per node = 4GB stack memory, and Cori Phase 1 has 128GB per node, IIRC. So 4Gb seems affordable. 
+setenv OMP_STACKSIZE 128M
+if ( $?PERL ) then
+  printenv
+endif

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<testlist>
+  <compset name="TGIS2">
+    <grid name="f09_g16_gl10">
+      <test name="PEA_P1_M_Ly2">
+        <machine compiler="intel" testtype="aux_glc" testmods="cism/no_trilinos" comment="needs to be no_trilinos because trilinos cannot build with mpi-serial">yellowstone</machine>
+      </test>
+      <test name="SMS_D_Ly1">
+        <machine compiler="intel" testtype="aux_glc">yellowstone</machine>
+        <machine compiler="intel" testtype="aux_glc" testmods="cism/trilinos">yellowstone</machine>
+      </test>
+    </grid>
+    <grid name="f09_g16_gl4">
+      <test name="SMS_Ly1">
+        <machine compiler="intel" testtype="aux_glc" testmods="cism/gradient_margin_2" comment="include one short test of the typical production resolution for CISM2">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+</testlist>

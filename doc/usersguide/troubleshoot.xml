@@ -1,0 +1,209 @@
+<chapter id="troubleshooting">
+<title>Troubleshooting</title>
+
+<!-- ======================================================================= -->
+<sect1 id="troubleshooting_newcase">
+<title>Troubleshooting create_newcase</title>
+
+<para>
+Generally, create_newcase errors are reported to the terminal and
+should provide some guidance about what caused the error.
+</para>
+
+<para>
+If create_newcase fails on a relatively generic error, first check
+carefully that the command line arguments match the interfaces
+specification.  Type
+</para>
+
+<screen>
+> create_newcase -help
+</screen>
+
+<para>
+and review usage.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="troubleshooting_run_sub">
+<title>Troubleshooting job submission problems</title>
+
+<para>
+This section addresses problems with job submission.  Most of the
+problems associated with submission or launch are very site specific.
+</para>
+<para>
+First, make sure the runscript, $CASE.$MACH.run, is submitted using the
+correct batch job submission tool, whether that's qsub, bsub, or
+something else, and for instance,  whether a redirection "<"
+character is required or not.
+</para>
+
+<para>
+Review the batch submission options being used.  These probably
+appear at the top of the $CASE.$MACH.run script but also may be set
+on the command line when submitting a job.  Confirm that the options
+are consistent with the site specific batch environment, and that the
+queue names, time limits, and hardware processor request makes sense
+and is consistent with the case running.
+</para>
+
+<para>
+Review the job launch command in the $CASE.$MACH.run script to make
+sure it's consistent with the site specific recommended tool.  This
+command is usually an mprun, mpiexec, aprun, or something similar.
+It can be found just after the string "EXECUTION BEGINS HERE" in the
+$CASE.$MACH.run script.
+</para>
+
+<para>
+The batch and run aspects of the $CASE.$MACH.run script is created by 
+the setup script and uses a machine specific mkbatch.$MACH
+script in the $CIMEROOT/machines directory.  If the
+run script is not producing correct batch scripts or job launching
+commands, the mkbatch.$MACH script probably needs to be updated.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="troubleshooting_run_time">
+<title>Troubleshooting runtime problems </title>
+
+<para>
+To check that a run completed successfully, check the last several lines of the cpl.log file
+for the string " SUCCESSFUL TERMINATION ".  A successful job also
+usually copies the log files to the directory $CASEROOT/logs.  
+</para>
+
+<note><para>The first things to check if a job fails are whether the model
+timed out, whether a disk quota limit was hit, whether a machine went down,
+or whether a file system became full.  If any of those things happened, 
+take appropriate corrective action and resubmit the job.
+</para></note>
+
+<para>
+If it's not clear any of the above caused a case to fail, then there are 
+several places to look for error messages in CESM1.
+</para>
+
+<itemizedlist spacing="compact">
+<listitem><para> Go the $RUNDIR directory.  This directory is set in
+the env_build.xml file.  This is the directory where CESM runs.  Each
+component writes its own log file, and there should be log files there
+for every component (i.e. of the form cpl.log.yymmdd-hhmmss).  Check
+each component log file for an error message, especially at the end or
+near the end of each file.  </para></listitem>
+
+<listitem><para> Check for a standard out and/or standard error file
+in the $CASEROOT directory.  The standard out/err file often captures
+a significant amount of extra CESM output and it also often contains
+significant system output when the job terminates.  Sometimes, a
+useful error message can be found well above the bottom of a large
+standard out/err file.  Backtrack from the bottom in search of an
+error message.  </para></listitem>
+
+<listitem><para>
+Go the $RUNDIR directory.  Check for core files and review them
+using an appropriate tool.
+</para></listitem>
+
+<listitem><para>
+Check any automated email from the job about why a job failed.  This is sent by
+the batch scheduler and is a site specific feature that may or may not exist.
+</para></listitem>
+
+<listitem><para>
+Check the archive directory.  If a case failed, the log files or data may
+still have been archived.  The archiver is turned on if DOUT_S is set to TRUE
+in env_run.xml.  The archive directory is set by the env variable DOUT_S_ROOT
+and the directory to check is $DOUT_S_ROOT/$CASE.
+</para></listitem>
+</itemizedlist>
+
+<para>
+A common error is for the job to time out which often produces minimal
+error messages.  By reviewing the daily model date stamps in the cpl.log file and 
+the time stamps of files in the $RUNDIR directory, there should be enough
+information to deduce the start and stop time of a run.  If the model
+was running fine, but the batch wall limit was reached, either reduce
+the run length or increase the batch time limit request.  If the model
+hangs and then times out, that's usually indicative of either a system
+problem (an MPI or file system problem) or possibly a model problem.
+If a system problem is suspected, try to resubmit the job to see if
+an intermittent problem occurred.  Also send help to local site consultants 
+to provide them with feedback about system problems and to get help.
+</para>
+
+<para>
+Another error that can cause a timeout is a slow or intermittently
+slow node.  The cpl.log file normally
+outputs the time used for every model simulation day.  To review that
+data, grep the cpl.log file for the string, tStamp
+</para>
+
+<screen>
+> grep tStamp cpl.log.* | more
+</screen>
+
+<para>
+which gives output that looks like this:
+</para>
+
+<screen>
+tStamp_write: model date = 10120 0 wall clock = 2009-09-28 09:10:46 avg dt = 58.58 dt = 58.18
+tStamp_write: model date = 10121 0 wall clock = 2009-09-28 09:12:32 avg dt = 60.10 dt = 105.90
+</screen>
+
+<para>
+and review the run times for each
+model day.  These are indicated at the end of each line.  The "avg dt = "
+is the running average time to simulate a model day in the current
+run and "dt = " is the time needed to simulate the latest model day.
+The model date is printed in YYYYMMDD format and the wall clock
+is the local date and time.  So in this
+case 10120 is Jan 20, 0001, and it took 58 seconds to run that
+day. The next day, Jan 21, took 105.90 seconds. If a wide
+variation in the simulation time is observed for typical mid-month model
+days, then that is suggestive of a system problem.  However, be
+aware that there are variations in the cost of the CESM1 model over
+time.  For instance, on the last day of every simulated month, 
+CESM1 typically write netcdf files, and this can be a significant
+intermittent cost.  Also, some models read data mid month or run
+physics intermittently at a timestep longer than one day.  In those cases, some
+run time variability would be observed and it would be caused by
+CESM1, not system variability.  With system performance variability,
+the time variation is typically quite erratic and unpredictable.
+</para>
+
+<para>
+Sometimes when a job times out, or it overflows disk space, the
+restart files will get mangled. With the exception of the CAM and CLM
+history files, all the restart files have consistent sizes. Compare
+the restart files against the sizes of a previous restart. If they
+don't match, then remove them and move the previous restart into place
+before resubmitting the job. Please see <link
+linkend="running_ccsm_restarts">restarting a run</link>.
+</para>
+
+<para>
+On HPC systems, it is not completely uncommon for nodes to fail or for access
+to large file systems to hang. Please make sure a case fails
+consistently in the same place before filing a bug report with CESM1.
+</para>
+
+</sect1>
+
+<!-- ======================================================================= -->
+<sect1 id="troubleshooting_erik">
+<title>Additional Troubleshooting Information </title>
+
+<para>
+The <ulink url="http://www.cesm.ucar.edu/models/cesm1.2/clm/models/lnd/clm/doc/UsersGuide/c12493.html">Community Land Model (CLM) documentation, Chapter 6.</ulink>, provides some additional trouble shooting tips 
+that may be useful beyond those listed here. 
+</para>
+
+</sect1>
+</chapter>

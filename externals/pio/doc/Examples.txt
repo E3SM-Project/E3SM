@@ -1,0 +1,27 @@
+/******************************************************************************
+ *
+ * 
+ *
+ * Copyright (C) 2009 
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation under the terms of the GNU General Public License is hereby 
+ * granted. No representations are made about the suitability of this software 
+ * for any purpose. It is provided "as is" without express or implied warranty.
+ * See the GNU General Public License for more details.
+ *
+ * Documents produced by Doxygen are derivative works derived from the
+ * input used in their production; they are not affected by this license.
+ *
+ */ /*! \page examp Examples
+ Examples of the usage of PIO
+
+  PIO has been implemented in several geophysical component models, including the 
+Community Atmosphere Model (CAM), the Community Land Model (CLM), the Parallel Ocean Program 
+(POP), the Community Ice CodE (CICE), and coupler for used by CCSM4.0 (CPL7).  We also provide 
+several simpler example code as well as a test code that is suitable for regression testing and 
+benchmarking.    
+
+ - \subpage CAMexample
+ - \subpage testpio_example
+*/

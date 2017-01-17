@@ -1,0 +1,133 @@
+#!/bin/csh -f
+# cesm_postrun2 with performance data archiving: 
+#  ./cesm_postrun2.perf_archive with the following argument keyword/value pairs, in any order
+#   -machine <system name>
+#   -case <case name>
+#   -cesmid <$LID in cesm-lingo>
+#   -user <should be same as $LOGNAME>
+#   -caseroot <directory from which job script was submitted>
+#   -rundir <run directory>
+#   -exedir <bld directory>
+#   -save <TRUE|true|anything else>
+#   -archive <performance archive root directory>
+
+set machine = 'unknown'
+set case = 'unknown'
+set lid = 'unknown'
+set user = 'unknown'
+set caseroot = '.'
+set run_dir = '.'
+set exe_dir = '.'
+set save_timing = 'FALSE'
+set save_timing_dir = '/UNSET'
+
+set i = 1
+while ($i < $#argv)
+  if      ("X$argv[$i]" == 'X-machine') then
+    @ i = $i + 1
+    set machine = $argv[$i]
+  else if ("X$argv[$i]" == 'X-case') then
+    @ i = $i + 1
+    set case = $argv[$i]
+  else if ("X$argv[$i]" == 'X-cesmid') then
+    @ i = $i + 1
+    set lid = $argv[$i]
+  else if ("X$argv[$i]" == 'X-user') then
+    @ i = $i + 1
+    set user = $argv[$i]
+  else if ("X$argv[$i]" == 'X-caseroot') then
+    @ i = $i + 1
+    set caseroot = $argv[$i]
+  else if ("X$argv[$i]" == 'X-rundir') then
+    @ i = $i + 1
+    set run_dir = $argv[$i]
+  else if ("X$argv[$i]" == 'X-exedir') then
+    @ i = $i + 1
+    set exe_dir = $argv[$i]
+  else if ("X$argv[$i]" == 'X-save') then
+    @ i = $i + 1
+    set save_timing = $argv[$i]
+  else if ("X$argv[$i]" == 'X-archive') then
+    @ i = $i + 1
+    set save_timing_dir = $argv[$i]
+  endif
+  @ i = $i + 1
+end
+
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "CESM postrun ended $sdate" >>& $caseroot/CaseStatus
+
+if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
+  cd $run_dir
+
+  if (-e timing) then
+    mv timing timing.$lid
+  endif
+  tar cf timing.$lid.tar timing.$lid
+  gzip timing.$lid.tar
+  rm -rf timing.$lid
+
+  if (-d $save_timing_dir) then
+    cd $save_timing_dir
+
+    if !(-d performance_archive) then
+      mkdir performance_archive
+      chmod 777 performance_archive
+      chmod +s performance_archive
+    endif
+    cd performance_archive
+
+    if !(-d $user) then
+      mkdir $user
+      chmod 775 $user
+      chmod +s $user
+    endif
+    cd $user
+
+    if !(-d $case) then
+      mkdir $case
+      chmod 775 $case
+      chmod +s $case
+    endif
+    cd $case
+
+    if !(-d $lid) then
+      mkdir $lid
+      chmod 775 $lid
+      chmod +s $lid
+    endif
+    cd $lid
+
+    cp -p $run_dir/timing.$lid.tar.gz timing.$lid.tar.gz
+    cp -p $caseroot/logs/cesm.log.$lid.gz cesm.log.$lid.gz
+    cp -p $caseroot/logs/cpl.log.$lid.gz cpl.log.$lid.gz
+    cp -p $caseroot/timing/*.$lid $caseroot/timing/*.$lid.gz .
+    cp -p $caseroot/CaseStatus CaseStatus.$lid
+
+    if (-f $exe_dir/GIT_DESCRIBE) then
+      cp -p $exe_dir/GIT_DESCRIBE GIT_DESCRIBE.$lid
+    endif
+    if (-f $exe_dir/GIT_LOGS_HEAD) then
+      cp -p $exe_dir/GIT_LOGS_HEAD GIT_LOGS_HEAD.$lid
+    endif
+    if (-f $exe_dir/SVN_INFO) then
+      cp -p $exe_dir/SVN_INFO SVN_INFO.$lid
+    endif
+    if (-f $exe_dir/SVN_WC.DB) then
+      cp -p $exe_dir/SVN_WC.DB SVN_WC.DB.$lid
+    endif
+    if (-f $exe_dir/SourceMods.tar) then
+      cp -p $exe_dir/SourceMods.tar SourceMods.$lid.tar
+    endif
+    if (-f $exe_dir/build_environment.txt) then
+      cp -p $exe_dir/build_environment.txt build_environment.$lid
+    endif
+
+    chmod -R a+rX *
+    gzip -r *
+  endif
+
+  cd $caseroot
+  touch timing/timing.$lid.saved
+
+endif
