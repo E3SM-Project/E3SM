@@ -16,6 +16,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
 from CIME.case import Case
+from CIME.XML.files import Files
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect
 from CIME.buildnml import create_namelist_infile, parse_input
@@ -74,7 +75,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     config['sstice_stream'] = sstice_stream
 
     #----------------------------------------------------
-    # Initialize namelist defaults 
+    # Initialize namelist defaults
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
 
@@ -130,7 +131,6 @@ def buildnml(case, caseroot, compname):
     if compname != "dice":
         raise AttributeError
 
-    cimeroot = case.get_value("CIMEROOT")
     rundir = case.get_value("RUNDIR")
     ninst = case.get_value("NINST_ICE")
 
@@ -140,7 +140,7 @@ def buildnml(case, caseroot, compname):
         os.makedirs(confdir)
 
     #----------------------------------------------------
-    # Construct the namelist generator 
+    # Construct the namelist generator
     #----------------------------------------------------
     # determine directory for user modified namelist_definitions.xml and namelist_defaults.xml
     user_xml_dir = os.path.join(caseroot, "SourceMods", "src." + compname)
@@ -148,8 +148,9 @@ def buildnml(case, caseroot, compname):
             "user_xml_dir %s does not exist " %user_xml_dir)
 
     # NOTE: User definition *replaces* existing definition.
-    namelist_xml_dir = os.path.join(cimeroot, "components", "data_comps", compname, "cime_config")
-    definition_file = [os.path.join(namelist_xml_dir, "namelist_definition_dice.xml")]
+    files = Files()
+    definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component":"dice"})]
+
     user_definition = os.path.join(user_xml_dir, "namelist_definition_dice.xml")
     if os.path.isfile(user_definition):
         definition_file = [user_definition]
@@ -157,8 +158,8 @@ def buildnml(case, caseroot, compname):
         expect(os.path.isfile(file_), "Namelist XML file %s not found!" % file_)
 
     # Create the namelist generator object - independent of instance
-    nmlgen = NamelistGenerator(case, definition_file)
-    
+    nmlgen = NamelistGenerator(case, definition_file, files=files)
+
     #----------------------------------------------------
     # Loop over instances
     #----------------------------------------------------
