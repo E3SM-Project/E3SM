@@ -224,7 +224,7 @@ def save_postrun_provenance_acme(case, lid):
     # Kill mach_syslog
     job_id = _get_batch_job_id_for_syslog(case)
     if job_id is not None:
-        syslog_jobid_path = os.path.join(rundir, "syslog_jobid", ".%s" % job_id)
+        syslog_jobid_path = os.path.join(rundir, "syslog_jobid.%s" % job_id)
         if os.path.exists(syslog_jobid_path):
             try:
                 with open(syslog_jobid_path, "r") as fd:
