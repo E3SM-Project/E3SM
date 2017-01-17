@@ -1,3 +1,4 @@
+#
 import cdms2
 import cdutil
 import vcs
@@ -70,10 +71,10 @@ def plot_text(canvas, label_string, x, y, height, align):
     label.halign = align
     canvas.plot(label)
 
-reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
-test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
-#reference_data_path='../'
-#test_data_path='../'
+#reference_data_path='/space1/test_data/obs_for_diagnostics/'  # observation
+#test_data_path='/space/golaz1/ACME_simulations/20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01/pp/clim_rgr/0070-0099/'  # model
+reference_data_path='../'
+test_data_path='../'
 
 # Pre defined variables
 var='PRECT'
@@ -170,9 +171,14 @@ isofill.datawc_y1=-90
 isofill.datawc_y2=90
 
 isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+#isofill.levels=vcs.mkscale(dif_pr.min(), dif_pr.max())
 isofill.ext_1 = True
 isofill.ext_2 = True
+
 isofill.colormap = x.getcolormap('bl_to_darkred')
+# do this for only old colormaps
+colors = vcs.getcolors(isofill.levels, colors=range(6, 240))
+isofill.fillareacolors = colors
 
 plot_min_max_mean(x, template_2, dif_pr)
 x.plot(dif_pr, template_2, isofill)
