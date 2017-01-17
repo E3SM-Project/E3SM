@@ -2950,13 +2950,13 @@ end subroutine cesm_init
                if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
                call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
 
-               ! Set seq_infodata flag for valid data
-               call seq_infodata_PutData(glc_valid_input=.true.)
+               ! Set seq_infodata flag for valid data 
+               call seq_infodata_PutData(infodata, glc_valid_input=.true.)
             endif
          else
             if (iamin_CPLID .and. glc_prognostic) then
-               ! Set seq_infodata flag for unvalid data
-               call seq_infodata_PutData(glc_valid_input=.false.)
+               ! Set seq_infodata flag for unvalid data 
+               call seq_infodata_PutData(infodata, glc_valid_input=.false.)
             end if
          end if
 

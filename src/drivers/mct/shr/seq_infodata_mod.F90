@@ -250,6 +250,8 @@ MODULE seq_infodata_mod
       real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
       !--- set from restart file ---
       character(SHR_KIND_CL)  :: rest_case_name  ! Short case identification
+      !--- set by driver and may be time varying
+      logical                 :: glc_valid_input  ! is valid accumulated data being sent to prognostic glc
    end type seq_infodata_type
 
    ! --- public interfaces --------------------------------------------------------
@@ -555,6 +557,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        mct_usealltoall       = .false.
        mct_usevector         = .false.
        max_cplstep_time      = 0.0
+
        !---------------------------------------------------------------------------
        ! Read in namelist
        !---------------------------------------------------------------------------
@@ -717,13 +720,13 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%atm_aero      = .false.
        infodata%glcrun_alarm  = .false.
        infodata%glc_g2lupdate = .false.
+       infodata%glc_valid_input = .true.
        if (associated(infodata%pause_resume)) then
           deallocate(infodata%pause_resume)
        end if
        nullify(infodata%pause_resume)
 
        infodata%max_cplstep_time = max_cplstep_time
-
        !---------------------------------------------------------------
        ! check orbital mode, reset unused parameters, validate settings
        !---------------------------------------------------------------
@@ -906,7 +909,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            atm_pause, lnd_pause, ocn_pause, ice_pause, glc_pause, rof_pause,  &
            wav_pause, cpl_pause, atm_resume, lnd_resume, ocn_resume,          &
            ice_resume, glc_resume, rof_resume, wav_resume, cpl_resume,        &
-           mct_usealltoall, mct_usevector, max_cplstep_time)
+           mct_usealltoall, mct_usevector, max_cplstep_time, glc_valid_input)
 
 
    implicit none
@@ -1068,6 +1071,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(OUT) :: glcrun_alarm            ! glc run alarm
    logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
    real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
+   logical,                optional, intent(OUT) :: glc_valid_input
    logical,                optional, intent(OUT) :: atm_pause ! atm write pause restart file
    logical,                optional, intent(OUT) :: lnd_pause ! lnd write pause restart file
    logical,                optional, intent(OUT) :: ice_pause ! ice write pause restart file
@@ -1370,6 +1374,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
       end if
     end if
     if ( present(max_cplstep_time) ) max_cplstep_time = infodata%max_cplstep_time
+    if ( present(glc_valid_input)) glc_valid_input = infodata%glc_valid_input
 
 END SUBROUTINE seq_infodata_GetData_explicit
 
@@ -1538,7 +1543,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
            atm_pause, lnd_pause, ocn_pause, ice_pause, glc_pause, rof_pause,  &
            wav_pause, cpl_pause, atm_resume, lnd_resume, ocn_resume,          &
            ice_resume, glc_resume, rof_resume, wav_resume, cpl_resume,        &
-           mct_usealltoall, mct_usevector )
+           mct_usealltoall, mct_usevector, glc_valid_input)
 
 
    implicit none
@@ -1698,6 +1703,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(IN) :: atm_aero              ! atm aerosols
    logical,                optional, intent(IN) :: glcrun_alarm          ! glc run alarm
    logical,                optional, intent(IN) :: glc_g2lupdate         ! update glc2lnd fields in lnd model
+   logical,                optional, intent(IN) :: glc_valid_input
    logical,                optional, intent(IN) :: atm_pause             ! atm pause
    logical,                optional, intent(IN) :: lnd_pause             ! lnd pause
    logical,                optional, intent(IN) :: ice_pause             ! ice pause
@@ -1875,6 +1881,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(atm_aero)       ) infodata%atm_aero       = atm_aero
     if ( present(glcrun_alarm)   ) infodata%glcrun_alarm   = glcrun_alarm
     if ( present(glc_g2lupdate)  ) infodata%glc_g2lupdate  = glc_g2lupdate
+    if ( present(glc_valid_input) ) infodata%glc_valid_input = glc_valid_input
     if ( present(atm_pause) ) then
       if (associated(infodata%pause_resume)) then
         infodata%pause_resume%atm_pause = atm_pause
@@ -2293,6 +2300,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%atm_aero,                mpicom)
     call shr_mpi_bcast(infodata%glcrun_alarm,            mpicom)
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
+    call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
     if (associated(infodata%pause_resume)) then
       call shr_mpi_bcast(infodata%pause_resume%atm_pause, mpicom)
       call shr_mpi_bcast(infodata%pause_resume%lnd_pause, mpicom)
@@ -2624,6 +2632,7 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
     call shr_mpi_bcast(infodata%precip_fact,      mpicom,pebcast=pebcast)
     call shr_mpi_bcast(infodata%glcrun_alarm,     mpicom,pebcast=pebcast)
     call shr_mpi_bcast(infodata%glc_g2lupdate,    mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%glc_valid_input,  mpicom,pebcast=pebcast)
   endif
 
 end subroutine seq_infodata_Exchange
