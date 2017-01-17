@@ -322,6 +322,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     integer(SHR_KIND_IN)    :: ice_cpl_dt            ! Sea-Ice coupling interval
     integer(SHR_KIND_IN)    :: ocn_cpl_dt            ! Ocean coupling interval
     integer(SHR_KIND_IN)    :: glc_cpl_dt            ! Glc coupling interval
+    integer(SHR_KIND_IN)    :: glc_avg_cpl_dt        ! Glc avering coupling interval
     integer(SHR_KIND_IN)    :: rof_cpl_dt            ! Runoff coupling interval
     integer(SHR_KIND_IN)    :: wav_cpl_dt            ! Wav coupling interval
     integer(SHR_KIND_IN)    :: esp_cpl_dt            ! Esp coupling interval
@@ -352,7 +353,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
          start_ymd, start_tod, ref_ymd, ref_tod,                 &
          atm_cpl_dt, ocn_cpl_dt, ice_cpl_dt, lnd_cpl_dt,         &
          atm_cpl_offset, lnd_cpl_offset, ocn_cpl_offset,         &
-         ice_cpl_offset, glc_cpl_dt, glc_cpl_offset,             &
+         ice_cpl_offset, glc_cpl_dt, glc_cpl_offset, glc_avg_cpl_dt, &
          wav_cpl_dt, wav_cpl_offset, esp_cpl_dt, esp_cpl_offset, &
          rof_cpl_dt, rof_cpl_offset, end_restart
 !-------------------------------------------------------------------------------
@@ -414,6 +415,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        ice_cpl_dt       = 0
        ocn_cpl_dt       = 0
        glc_cpl_dt       = 0
+       glc_avg_cpl_dt   = 0
        rof_cpl_dt       = 0
        wav_cpl_dt       = 0
        esp_cpl_dt       = 0
@@ -480,9 +482,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        if (wav_cpl_dt == 0) wav_cpl_dt = atm_cpl_dt ! Copy atm coupling time into wav
        if (esp_cpl_dt == 0) esp_cpl_dt = atm_cpl_dt ! Copy atm coupling time into esp
 
-       if (glc_cpl_avg_dt == 0) then
+       if (glc_avg_cpl_dt == 0) then
           ! set default average coupling interval 
-          glc_cpl_avg_dt = glc_cpl_dt
+          glc_avg_cpl_dt = glc_cpl_dt
        end if
 
        if ( ref_ymd == 0 ) then
@@ -559,7 +561,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0I) trim(subname),' ice_cpl_dt     = ',ice_cpl_dt
        write(logunit,F0I) trim(subname),' ocn_cpl_dt     = ',ocn_cpl_dt
        write(logunit,F0I) trim(subname),' glc_cpl_dt     = ',glc_cpl_dt
-       write(logunit,F0I) trim(subname),' glc_cpl_avg_dt = ',glc_cpl_avg_dt
+       write(logunit,F0I) trim(subname),' glc_avg_cpl_dt = ',glc_avg_cpl_dt
        write(logunit,F0I) trim(subname),' rof_cpl_dt     = ',rof_cpl_dt
        write(logunit,F0I) trim(subname),' wav_cpl_dt     = ',wav_cpl_dt
        write(logunit,F0I) trim(subname),' esp_cpl_dt     = ',esp_cpl_dt
@@ -649,7 +651,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call shr_mpi_bcast( ice_cpl_dt,           mpicom )
     call shr_mpi_bcast( ocn_cpl_dt,           mpicom )
     call shr_mpi_bcast( glc_cpl_dt,           mpicom )
-    call shr_mpi_bcast( glc_cpl_avg_dt,       mpicom )
+    call shr_mpi_bcast( glc_avg_cpl_dt,       mpicom )
     call shr_mpi_bcast( rof_cpl_dt,           mpicom )
     call shr_mpi_bcast( wav_cpl_dt,           mpicom )
     call shr_mpi_bcast( esp_cpl_dt,           mpicom )
@@ -720,7 +722,6 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     dtime(seq_timemgr_nclock_ocn     ) = ocn_cpl_dt
     dtime(seq_timemgr_nclock_ice     ) = ice_cpl_dt
     dtime(seq_timemgr_nclock_glc     ) = glc_cpl_dt
-    dtime(seq_timemgr_nclock_glc_avg ) = glc_cpl_avg_dt
     dtime(seq_timemgr_nclock_rof     ) = rof_cpl_dt
     dtime(seq_timemgr_nclock_wav     ) = wav_cpl_dt
     dtime(seq_timemgr_nclock_esp     ) = esp_cpl_dt
@@ -842,7 +843,6 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     offset(seq_timemgr_nclock_ocn)     = ocn_cpl_offset
     offset(seq_timemgr_nclock_ice)     = ice_cpl_offset
     offset(seq_timemgr_nclock_glc)     = glc_cpl_offset
-    offset(seq_timemgr_nclock_glc_avg) = glc_cpl_offset
     offset(seq_timemgr_nclock_rof)     = rof_cpl_offset
     offset(seq_timemgr_nclock_wav)     = wav_cpl_offset
     offset(seq_timemgr_nclock_esp)     = esp_cpl_offset
@@ -931,14 +931,14 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        alarmname = trim(seq_timemgr_alarm_glcrun))
 
     ! --- this is the glcrun_avg alarm (there ^) offset by a -dtime of the driver
-    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_glc_avg), rc=rc )
+    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_glc), rc=rc )
     OffsetTime = CurrTime + TimeStep
     call ESMF_TimeIntervalSet( TimeStep, s=-offset(seq_timemgr_nclock_drv), rc=rc )
     OffsetTime = OffsetTime + TimeStep
     call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
        EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun),  &
        option  = seq_timemgr_optNSeconds,       &
-       opt_n   = glc_cpl_avg_dt,                &
+       opt_n   = glc_avg_cpl_dt,                &
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_glcrun_avg))
 
