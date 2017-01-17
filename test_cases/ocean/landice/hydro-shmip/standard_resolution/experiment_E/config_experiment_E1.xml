@@ -10,6 +10,7 @@
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="shmip_template.xml" path_base="script_resolution_dir"/>
+                <option name="config_SGH_englacial_porosity">0.001</option>
         </namelist>
 
         <streams name="streams.landice" keep="immutable" mode="forward">
