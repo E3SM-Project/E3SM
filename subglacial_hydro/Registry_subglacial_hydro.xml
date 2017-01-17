@@ -209,8 +209,6 @@
 		     description="discharge through subglacial channel" />
                 <var name="channelVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
 		     description="velocity in subglacial channel" />
-                <var name="hydropotentialEdge" type="real" dimensions="nEdges Time" units="Pa"
-		     description="hydropotential on edges, used for channel" />
                 <var name="channelMelt" type="real" dimensions="nEdges Time" units="kg m^-1 s^-1"
 		     description="melt rate in subglacial channel" />
                 <var name="channelPressureFreeze" type="real" dimensions="nEdges Time" units="kg m^-1 s^-1"
