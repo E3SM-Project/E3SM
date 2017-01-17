@@ -7,7 +7,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.task_maker import TaskMaker
 from CIME.utils import convert_to_type
 from CIME.XML.env_base import EnvBase
-from CIME.utils import transform_vars, get_cime_root, get_timestamp
+from CIME.utils import transform_vars, get_cime_root
 from copy import deepcopy
 
 import re
@@ -252,7 +252,7 @@ class EnvBatch(EnvBase):
         if "pleiades" in case.get_value("MACH"):
             # pleiades jobname needs to be limited to 15 chars
             self.job_id = self.job_id[:15]
-        self.output_error_path = self.job_id + get_timestamp()
+        self.output_error_path = self.job_id
 
         self.batchdirectives = self.get_batch_directives(case, job)
 
