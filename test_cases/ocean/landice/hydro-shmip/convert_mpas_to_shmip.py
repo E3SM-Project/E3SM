@@ -25,6 +25,12 @@ if not options.icfilename:
 if not options.outfile:
    options.outfile = 'SHMIP.nc'
    print 'No output file specified.  Attempting to use '+options.outfile
+if not options.title:
+   options.title = 'hoffman_mpas'
+   print 'No title specified.  Using: '+options.title
+if not options.hash:
+   options.hash = 'NA'
+   print 'Not version specified.  Using: '+options.hash
 
 # Open the file, get needed dimensions
 infile = netCDF4.Dataset(options.filename,'r')
@@ -43,24 +49,21 @@ outfile = netCDF4.Dataset(options.outfile, 'w')
 setattr(outfile, 'title', options.title)
 setattr(outfile, 'meshtype', 'unstructured Voronoi')
 setattr(outfile, 'dimension', '2D')
-setattr(outfile, 'channels_on_edges', 'no')
+setattr(outfile, 'channels_on_edges', 'yes')
 setattr(outfile, 'institution', 'Matthew Hoffman, Los Alamos National Laboratory')
 setattr(outfile, 'source', 'MPAS: '+options.hash)
+setattr(outfile, 'references', 'http://shmip.bitbucket.io/')
 
 
 # ============================================
 # Create dimensions
 # ============================================
 outfile.createDimension('time', None)  # None=unlimited
-outfile.createDimension('cellnr', len(infile.dimensions['nCells']))
-outfile.createDimension('edgenr', len(infile.dimensions['nEdges']))
-outfile.createDimension('dim', 2) # dimension of model domain manifold
-outfile.createDimension('layernr', 1) # number of distributed layers
-outfile.createDimension('chlayernr', 1) # number of channel layers
-outfile.createDimension('maxedges',  len(infile.dimensions['maxEdges']))
-outfile.createDimension('nodesperedge',  2)
-
-
+outfile.createDimension('dim', 2) # spatial dimensions
+outfile.createDimension('n_nodes_ch', 2) # how many nodes to make a channel edge.  Fixed(?) at 2
+outfile.createDimension('index1', len(infile.dimensions['nCells']))
+outfile.createDimension('index2', len(infile.dimensions['nEdges']))
+outfile.createDimension('index_ch', len(infile.dimensions['nEdges']))
 
 
 # ============================================
@@ -68,82 +71,83 @@ outfile.createDimension('nodesperedge',  2)
 # ============================================
 
 # DIMENSION VARIABLES
-thevar = outfile.createVariable('cellnr', 'i', ('cellnr',))
-thevar[:] = infile.variables['indexToCellID'][:]
-setattr(thevar, 'description', 'List of global cell IDs.  1-based.')
-
-thevar = outfile.createVariable('edgenr', 'i', ('edgenr',))
-thevar[:] = infile.variables['indexToEdgeID'][:]
-setattr(thevar, 'description', 'List of global edge IDs.  1-based.')
-
-thevar = outfile.createVariable('dim', 'i', ('dim',))
-thevar[:] = (1,2)
 
 thevar = outfile.createVariable('time', 'd', ('time',))
 thevar[0] = infile.variables['daysSinceStart'][-1] * 3600.0 * 24.0
 setattr(thevar, 'units', 's')
+setattr(thevar, 'long_name', 'time')
 
-thevar = outfile.createVariable('layernr', 'i', ('layernr',))
-thevar[:] = (1,)
-setattr(thevar, 'layers_description', 'macroporous')
-
-thevar = outfile.createVariable('chlayernr', 'i', ('chlayernr',))
-thevar[:] = (1,)
-setattr(thevar, 'channel_layers_description', 'cross sectional area')
-
-thevar = outfile.createVariable('xy', 'd', ('dim','cellnr'))
+thevar = outfile.createVariable('coords1', 'd', ('dim','index1'))
 thevar[0,:] = infile.variables['xCell'][:]
 thevar[1,:] = infile.variables['yCell'][:]
 setattr(thevar, 'units', 'm')
-setattr(thevar, 'description', 'coordinates of cell centers')
+setattr(thevar, 'long_name', 'node coordinates')
+
+thevar = outfile.createVariable('coords2', 'd', ('dim','index2'))
+thevar[0,:] = infile.variables['xEdge'][:]
+thevar[1,:] = infile.variables['yEdge'][:]
+setattr(thevar, 'units', 'm')
+setattr(thevar, 'long_name', 'cell midpoint coordinates')
+
+thevar = outfile.createVariable('coords_ch', 'd', ('dim','index_ch'))
+thevar[0,:] = infile.variables['xEdge'][:]
+thevar[1,:] = infile.variables['yEdge'][:]
+setattr(thevar, 'units', 'm')
+setattr(thevar, 'long_name', 'channel midpoint coordinates')
+
+thevar = outfile.createVariable('connect_ch', 'i', ('n_nodes_ch', 'index_ch',))
+thevar[:] = np.transpose(infile.variables['cellsOnEdge'][:]-1)  # convert from 1-based to 0-based
+setattr(thevar, 'units', '')
+setattr(thevar, 'long_name', 'channel connectivity')
 
 
-# CONNECTIVITY
-thevar = outfile.createVariable('cellconnect', 'i', ('maxedges', 'cellnr',))
-thevar[:] = np.transpose(infile.variables['cellsOnCell'][:])
-setattr(thevar, 'description', 'List of cells that neighbor each cell.  Value of 0 indicates this cell does not have that many edges.')
 
-thevar = outfile.createVariable('edgeconnect', 'i', ('nodesperedge', 'edgenr',))
-thevar[:] = np.transpose(infile.variables['cellsOnEdge'][:])
-setattr(thevar, 'description', 'List of cells that neighbor each edge.')
+# GEOMETRY/HYDRO VARIABLES
 
-
-# HYDRO VARIABLES
-thevar = outfile.createVariable('H', 'd', ('cellnr',))
-thevar[:] = icfile.variables['thickness'][-1,0]
-setattr(thevar, 'description', 'ice thickness')
+thevar = outfile.createVariable('H', 'd', ('index1',))
+thevar[:] = icfile.variables['thickness'][-1,:]
+setattr(thevar, 'long_name', 'ice thickness')
 setattr(thevar, 'units', 'm')
 
-thevar = outfile.createVariable('B', 'd', ('cellnr',))
-thevar[:] = icfile.variables['bedTopography'][-1,0]
-setattr(thevar, 'description', 'bed elevation')
+thevar = outfile.createVariable('B', 'd', ('index1',))
+thevar[:] = icfile.variables['bedTopography'][-1,:]
+setattr(thevar, 'long_name', 'bed elevation')
 setattr(thevar, 'units', 'm')
 
-thevar = outfile.createVariable('N', 'd', ('time', 'cellnr',))
-thevar[0,:] = infile.variables['effectivePressure'][-1,0]
-setattr(thevar, 'description', 'effective pressure')
+thevar = outfile.createVariable('N', 'd', ('time', 'index1',))
+thevar[0,:] = infile.variables['effectivePressure'][-1,:]
+setattr(thevar, 'long_name', 'effective pressure')
 setattr(thevar, 'units', 'Pa')
 
-thevar = outfile.createVariable('hs', 'd', ('time', 'cellnr',))
-thevar[0,:] = infile.variables['waterThickness'][-1,0]
-setattr(thevar, 'description', 'effective layer thickness')
+# Optional additional variables
+
+thevar = outfile.createVariable('h', 'd', ('time', 'index1',))
+thevar[0,:] = infile.variables['waterThickness'][-1,:]
+setattr(thevar, 'long_name', 'water sheet thickness')
 setattr(thevar, 'units', 'm')
 
-thevar = outfile.createVariable('Cs', 'd', ('time', 'edgenr',))
-thevar[0,:] = infile.variables['channelArea'][-1,0]
-setattr(thevar, 'description', 'channel cross-sectional area')
+# not used: stored water effective layer thickness
+
+# Edge variables
+
+thevar = outfile.createVariable('q', 'd', ('time', 'index2',))
+thevar[0,:] = np.absolute(infile.variables['waterFlux'][-1,:])
+setattr(thevar, 'long_name', 'water sheet discharge')
+setattr(thevar, 'units', 'm^2/s')
+
+# Channel variables
+
+thevar = outfile.createVariable('S', 'd', ('time', 'index_ch',))
+thevar[0,:] = infile.variables['channelArea'][-1,:]
+setattr(thevar, 'long_name', 'channel cross-sectional area')
 setattr(thevar, 'units', 'm^2')
 
-thevar = outfile.createVariable('Qs', 'd', ('time', 'edgenr',))
-thevar[0,:] = np.absolute(infile.variables['channelDischarge'][-1,0])
-setattr(thevar, 'description', 'channel discharge (absolute value)')
+thevar = outfile.createVariable('Q', 'd', ('time', 'index_ch',))
+thevar[0,:] = np.absolute(infile.variables['channelDischarge'][-1,:])
+setattr(thevar, 'long_name', 'channel discharge')
 setattr(thevar, 'units', 'm^3/s')
-
-thevar = outfile.createVariable('qs', 'd', ('time', 'edgenr',))
-thevar[0,:] = infile.variables['waterFlux'][-1,0]
-setattr(thevar, 'description', 'discharge in the distributed layers (absolute value)')
-setattr(thevar, 'units', 'm^2/s')
 
 
 outfile.close()
 
+print '\nConversion complete.  Written to: '+options.outfile
