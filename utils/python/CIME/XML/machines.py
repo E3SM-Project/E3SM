@@ -23,13 +23,12 @@ class Machines(GenericXML):
         self.machine = None
         self.machines_dir = None
         schema = None
+        if files is None:
+            files = Files()
         if infile is None:
-            if files is None:
-                files = Files()
-            infile = files.get_value("MACHINES_SPEC_FILE", resolved=False)
-            schema = files.get_schema("MACHINES_SPEC_FILE")
-            logger.debug("Verifying using schema %s"%schema)
-            infile = files.get_resolved_value(infile)
+            infile = files.get_value("MACHINES_SPEC_FILE")
+        schema = files.get_schema("MACHINES_SPEC_FILE")
+        logger.debug("Verifying using schema %s"%schema)
 
         self.machines_dir = os.path.dirname(infile)
 

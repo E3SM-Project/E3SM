@@ -3,18 +3,22 @@ Interface to the config_pes.xml file.  This class inherits from GenericXML.py
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
+from CIME.XML.files import Files
 from CIME.utils import expect
 
 logger = logging.getLogger(__name__)
 
 class Pes(GenericXML):
 
-    def __init__(self, infile):
+    def __init__(self, infile, files=None):
         """
         initialize a files object given input pes specification file
         """
+        if files is None:
+            files = Files()
+        schema = files.get_schema("PES_SPEC_FILE")
         logger.debug("DEBUG: infile is %s"%infile)
-        GenericXML.__init__(self, infile)
+        GenericXML.__init__(self, infile, schema=schema)
 
     def find_pes_layout(self, grid, compset, machine, pesize_opts='M', mpilib=None):
         opes_ntasks = {}

@@ -42,6 +42,15 @@
     <schema>$CIMEROOT/cime_config/xml_schemas/config_machines.xsd</schema>
   </entry>
 
+  <entry id="BATCH_SPEC_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_batch.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing batch system details for target system  (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_batch.xsd</schema>
+  </entry>
+
   <entry id="COMPILERS_SPEC_FILE">
     <type>char</type>
     <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_compilers.xml</default_value>
