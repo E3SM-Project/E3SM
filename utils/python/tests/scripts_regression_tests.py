@@ -1110,7 +1110,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
         # Test that re-running works
         tests = update_acme_tests.get_test_suite("cime_developer")
         for test in tests:
-            if test.startswith("ERI"):
+            if test.startswith("ERI") or test.startswith("ERS") or test.startswith("ERR"):
                 # TODO: these need to all work in the future but currently do not support re-run
                 pass
             else:
