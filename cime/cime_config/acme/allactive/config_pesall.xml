@@ -112,43 +112,6 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="edison">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>12</ntasks_atm>
-          <ntasks_lnd>12</ntasks_lnd>
-          <ntasks_rof>12</ntasks_rof>
-          <ntasks_ice>12</ntasks_ice>
-          <ntasks_ocn>12</ntasks_ocn>
-          <ntasks_glc>12</ntasks_glc>
-          <ntasks_wav>12</ntasks_wav>
-          <ntasks_cpl>12</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>4</nthrds_atm>
-          <nthrds_lnd>4</nthrds_lnd>
-          <nthrds_rof>4</nthrds_rof>
-          <nthrds_ice>4</nthrds_ice>
-          <nthrds_ocn>4</nthrds_ocn>
-          <nthrds_glc>4</nthrds_glc>
-          <nthrds_wav>4</nthrds_wav>
-          <nthrds_cpl>4</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="any">
     <mach name="eos">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -595,14 +558,14 @@
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
-          <ntasks_atm>960</ntasks_atm>
-          <ntasks_lnd>960</ntasks_lnd>
-          <ntasks_rof>960</ntasks_rof>
-          <ntasks_ice>960</ntasks_ice>
-          <ntasks_ocn>960</ntasks_ocn>
-          <ntasks_glc>960</ntasks_glc>
-          <ntasks_wav>960</ntasks_wav>
-          <ntasks_cpl>960</ntasks_cpl>
+          <ntasks_atm>192</ntasks_atm>
+          <ntasks_lnd>192</ntasks_lnd>
+          <ntasks_rof>192</ntasks_rof>
+          <ntasks_ice>192</ntasks_ice>
+          <ntasks_ocn>192</ntasks_ocn>
+          <ntasks_glc>192</ntasks_glc>
+          <ntasks_wav>192</ntasks_wav>
+          <ntasks_cpl>192</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>4</nthrds_atm>
@@ -768,80 +731,6 @@
           <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="a%ne30np4">
-    <mach name="hopper">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>1200</ntasks_atm>
-          <ntasks_lnd>1200</ntasks_lnd>
-          <ntasks_rof>1200</ntasks_rof>
-          <ntasks_ice>1200</ntasks_ice>
-          <ntasks_ocn>1200</ntasks_ocn>
-          <ntasks_glc>1200</ntasks_glc>
-          <ntasks_wav>1200</ntasks_wav>
-          <ntasks_cpl>1200</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>2</nthrds_atm>
-          <nthrds_lnd>2</nthrds_lnd>
-          <nthrds_rof>2</nthrds_rof>
-          <nthrds_ice>2</nthrds_ice>
-          <nthrds_ocn>2</nthrds_ocn>
-          <nthrds_glc>2</nthrds_glc>
-          <nthrds_wav>2</nthrds_wav>
-          <nthrds_cpl>2</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="a%ne30np4_l%ne30np4_oi%gx1v6">
-    <mach name="hopper">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>1200</ntasks_atm>
-          <ntasks_lnd>600</ntasks_lnd>
-          <ntasks_rof>1200</ntasks_rof>
-          <ntasks_ice>600</ntasks_ice>
-          <ntasks_ocn>120</ntasks_ocn>
-          <ntasks_glc>1200</ntasks_glc>
-          <ntasks_wav>1200</ntasks_wav>
-          <ntasks_cpl>1320</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>2</nthrds_atm>
-          <nthrds_lnd>2</nthrds_lnd>
-          <nthrds_rof>2</nthrds_rof>
-          <nthrds_ice>2</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>2</nthrds_glc>
-          <nthrds_wav>2</nthrds_wav>
-          <nthrds_cpl>2</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>600</rootpe_ice>
-          <rootpe_ocn>1200</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
           <rootpe_cpl>0</rootpe_cpl>
@@ -1479,7 +1368,7 @@
     </mach>
   </grid>
   <grid name="a%T85">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -2038,14 +1927,14 @@
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
-          <ntasks_atm>48</ntasks_atm>
-          <ntasks_lnd>48</ntasks_lnd>
-          <ntasks_rof>48</ntasks_rof>
-          <ntasks_ice>48</ntasks_ice>
-          <ntasks_ocn>48</ntasks_ocn>
-          <ntasks_glc>48</ntasks_glc>
-          <ntasks_wav>48</ntasks_wav>
-          <ntasks_cpl>48</ntasks_cpl>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_glc>96</ntasks_glc>
+          <ntasks_wav>96</ntasks_wav>
+          <ntasks_cpl>96</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -3144,7 +3033,7 @@
     </mach>
   </grid>
   <grid name="a%1.9x2.5_l%1.9x2.5_oi%gx1">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="CAM.+CLM.+CICE.+POP" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -3358,43 +3247,6 @@
           <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>64</rootpe_ice>
           <rootpe_ocn>384</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="a%0.9x1.25_l%0.9x1.25_oi%gx1">
-    <mach name="hopper">
-      <pes compset="CAM.+CLM.+CICE.+POP" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>768</ntasks_atm>
-          <ntasks_lnd>128</ntasks_lnd>
-          <ntasks_rof>768</ntasks_rof>
-          <ntasks_ice>640</ntasks_ice>
-          <ntasks_ocn>60</ntasks_ocn>
-          <ntasks_glc>768</ntasks_glc>
-          <ntasks_wav>768</ntasks_wav>
-          <ntasks_cpl>128</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>3</nthrds_atm>
-          <nthrds_lnd>3</nthrds_lnd>
-          <nthrds_rof>3</nthrds_rof>
-          <nthrds_ice>3</nthrds_ice>
-          <nthrds_ocn>3</nthrds_ocn>
-          <nthrds_glc>3</nthrds_glc>
-          <nthrds_wav>3</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>128</rootpe_ice>
-          <rootpe_ocn>768</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
           <rootpe_cpl>0</rootpe_cpl>
@@ -3810,7 +3662,7 @@
     </mach>
   </grid>
   <grid name="a%0.47x0.63_l%0.47x0.63_oi%gx1">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="CAM.+CLM.+CICE.+POP" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -4365,7 +4217,7 @@
     </mach>
   </grid>
   <grid name="a%T341_l%T341_oi%T341">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="CAM.+CLM4.+CICE.+DOCN%DOM" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -4402,7 +4254,7 @@
     </mach>
   </grid>
   <grid name="a%0.23x0.31_l%0.23x0.31_oi%tx0.1v2">
-    <mach name="hopper|janus">
+    <mach name="janus">
       <pes compset="CAM.+CLM.+CICE.+POP" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -4476,7 +4328,7 @@
     </mach>
   </grid>
   <grid name="a%T341_l%T341_oi%tx0.1v2">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="CAM.+CLM.+CICE.+POP" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -4513,7 +4365,7 @@
     </mach>
   </grid>
   <grid name="a%T341_l%0.23x0.31_oi%tx0.1v2">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="CAM.+CLM.+CICE.+POP" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -4550,7 +4402,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4_l%0.23x0.31_oi%tx0.1v2">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="CAM.+CLM.+CICE.+POP" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -4587,7 +4439,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4_l%0.9x1.25_oi%gx1v6">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="CAM.+CLM4.+CICE.+DOCN%DOM" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -4624,7 +4476,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4_l%0.23x0.31_oi%tx0.1v2">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="CAM.+CLM4.+CICE.+DOCN%DOM" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -5216,7 +5068,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="hopper|janus">
+    <mach name="janus">
       <pes compset="DATM.+DLND.+DICE.+DOCN%DOM.+DROF" pesize="T">
         <comment>none</comment>
         <ntasks>
