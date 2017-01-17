@@ -127,7 +127,7 @@
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
-       <directive> --output={{ output_error_path }}   </directive>
+       <directive> --output={{ output_error_path }}.%j </directive>
        <directive> --exclusive                        </directive>
        <directive> --time={{ job_wallclock_time }}</directive>
        <directive> --partition={{ job_queue }}</directive>
