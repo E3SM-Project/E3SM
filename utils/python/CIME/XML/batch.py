@@ -7,7 +7,7 @@ can be defined by providing a batch_system MACH="mach" block.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.utils import expect, get_cime_root, get_model
+from CIME.utils import expect
 
 logger = logging.getLogger(__name__)
 
