@@ -190,6 +190,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                    "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
+            case.set_value("TOTAL_CORES", pestot * thread_count)
 
             # create batch files
             logger.info("Creating batch script case.run")
@@ -207,6 +208,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+
             # Make sure pio settings are consistant
             for comp in models:
                 pio_stride = case.get_value("PIO_STRIDE_%s"%comp)

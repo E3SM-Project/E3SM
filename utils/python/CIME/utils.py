@@ -289,13 +289,15 @@ def parse_test_name(test_name):
 
     return rv
 
-def get_full_test_name(partial_test, grid=None, compset=None, machine=None, compiler=None, testmod=None):
+def get_full_test_name(partial_test, caseopts=None, grid=None, compset=None, machine=None, compiler=None, testmod=None):
     """
     Given a partial CIME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
     Use the additional args to fill out the name if needed
 
     >>> get_full_test_name("ERS", grid="ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu'
+    >>> get_full_test_name("ERS", caseopts=["D", "P16"], grid="ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
+    'ERS_D_P16.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16.JGF", machine="melvin", compiler="gnu")
@@ -305,7 +307,7 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
     >>> get_full_test_name("ERS.ne16_fe16.JGF", machine="melvin", compiler="gnu", testmod="mods/test")
     'ERS.ne16_fe16.JGF.melvin_gnu.mods-test'
     """
-    _, _, partial_grid, partial_compset, partial_machine, partial_compiler, partial_testmod = parse_test_name(partial_test)
+    partial_testcase, partial_caseopts, partial_grid, partial_compset, partial_machine, partial_compiler, partial_testmod = parse_test_name(partial_test)
 
     required_fields = [
         (partial_grid, grid, "grid"),
@@ -333,8 +335,18 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
         else:
             result += ".%s" % testmod.replace("/", "-")
     elif (testmod is not None):
-        expect(arg_val == partial_val, # pylint: disable=undefined-loop-variable
+        expect(testmod == partial_testmod,
                "Mismatch in field testmod, partial string '%s' indicated it should be '%s' but you provided '%s'" % (partial_test, partial_testmod, testmod))
+
+    if (partial_caseopts is None):
+        if caseopts is None:
+            # No casemods for this test and that's OK
+            pass
+        else:
+            result = result.replace(partial_testcase, "%s_%s" % (partial_testcase, "_".join(caseopts)), 1)
+    elif caseopts is not None:
+        expect(caseopts == partial_caseopts,
+               "Mismatch in field caseopts, partial string '%s' indicated it should be '%s' but you provided '%s'" % (partial_test, partial_caseopts, caseopts))
 
     return result
 
