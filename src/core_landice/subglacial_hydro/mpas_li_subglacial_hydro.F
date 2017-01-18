@@ -1486,7 +1486,11 @@ module li_subglacial_hydro
       character (len=StrKIND), pointer :: config_SGH_shmip_forcing
       real(kind=RKIND), pointer :: daysSinceStart
       real (kind=RKIND), dimension(:), pointer :: externalWaterInput
+      real (kind=RKIND), dimension(:), pointer :: basalMeltInput
       real (kind=RKIND), dimension(:), pointer :: upperSurface
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      ! Test case specific variables
+      real(kind=RKIND) :: ra ! relative amplitude for versions of C experiment
       real(kind=RKIND) :: temperature0  ! temperature at 0m elevation for D experiment
       real(kind=RKIND) :: DT ! temperature offset for versions of D experiment
 
@@ -1507,8 +1511,38 @@ module li_subglacial_hydro
 
       select case (config_SGH_shmip_forcing(1:1))  ! Check on first character only
       case ('C')
-         write(stdErrUnit,*) "ERROR: C experiments for config_SGH_shmip_forcing not yet implemented!"
-         err = ior(err, 1)
+         ! Note: Case C assumes that moulin locations are input via externalWaterInput
+         ! and have a very small value that will not affect the sum of
+         ! externalWaterInput+basalMeltInput.
+         ! The actual forcing is stored in basalMeltInput.  Note this is the moulin
+         ! and the basal contributions combined, unlike in the other tests
+         ! where I keep those separate.
+
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(hydroPool, 'basalMeltInput', basalMeltInput)
+
+         select case (config_SGH_shmip_forcing(2:2)) ! get experiment number
+         case ('1')
+            ra = 0.25_RKIND
+         case ('2')
+            ra = 0.5_RKIND
+         case ('3')
+            ra = 1.0_RKIND
+         case ('4')
+            ra = 2.0_RKIND
+         case default
+            write(stdErrUnit,*) "ERROR: Unknown value for config_SGH_shmip_forcing!"
+            err = ior(err, 1)
+         end select
+         where (externalWaterInput > 0.0_RKIND)
+            basalMeltInput = 0.9 / areaCell * (1.0_RKIND - ra * sin(2.0_RKIND * pii * daysSinceStart))
+         elsewhere
+            basalMeltInput = 0.0_RKIND
+         end where
+         where (basalMeltInput < 0.0_RKIND)
+            basalMeltInput = 0.0_RKIND
+         end where
+         basalMeltInput = (basalMeltInput + 7.93e-11_RKIND) / 1000.0_RKIND
 
       case ('D')
          select case (config_SGH_shmip_forcing(2:2)) ! get experiment number
