@@ -134,7 +134,7 @@
     </modules>
     <modules compiler="gnu">
       <command name="load">PrgEnv-gnu</command>
-      <command name="switch">gcc gcc/6.1.0</command>
+      <command name="switch">gcc gcc/5.1.0</command>
     </modules>
     <modules compiler="!intel">
       <command name="switch">cray-libsci/16.07.1</command>
@@ -147,7 +147,7 @@
       <command name="rm">pmi</command>
       <command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 
-      <!--command name="load">cray-mpich/7.3.1</command  acme original -->
+      <!--command name="load">cray-mpich/7.3.1</command  acme original  -->
       <!--command name="load">cray-mpich/7.4.1</command  edison default -->
       <command name="load">cray-mpich/7.2.5</command>
     </modules>
