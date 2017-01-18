@@ -24,6 +24,10 @@ program prim_main
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
 
+#ifdef VERTICAL_INTERPOLATION
+  use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
+#endif
+
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
   use interpolate_driver_mod, only : interpolate_driver
@@ -178,9 +182,11 @@ program prim_main
 #endif
   
 
-#ifdef PIO_INTERP
-  ! initialize history files.  filename constructed with restart time
-  ! so we have to do this after ReadRestart in prim_init2 above
+! initialize history files.  filename constructed with restart time
+! so we have to do this after ReadRestart in prim_init2 above
+#ifdef VERTICAL_INTERPOLATION
+  call netcdf_interp_init(elem, hybrid, hvcoord)
+#elif defined PIO_INTERP
   call interp_movie_init( elem, par,  hvcoord, tl )
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
@@ -189,7 +195,10 @@ program prim_main
 
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
-#ifdef PIO_INTERP
+
+#ifdef VERTICAL_INTERPOLATION
+    call netcdf_interp_write(elem, tl, hybrid, hvcoord)
+#elif defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0, hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
@@ -219,7 +228,9 @@ program prim_main
      !$OMP END PARALLEL
 #endif
 
-#ifdef PIO_INTERP
+#ifdef VERTICAL_INTERPOLATION
+     call netcdf_interp_write(elem, tl, hybrid, hvcoord)
+#elif defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
@@ -237,7 +248,10 @@ program prim_main
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
   call prim_finalize()
   if(par%masterproc) print *,"closing history files"
-#ifdef PIO_INTERP
+
+#ifdef VERTICAL_INTERPOLATION
+  call netcdf_interp_finish
+#elif defined PIO_INTERP
   call interp_movie_finish
 #else
   call prim_movie_finish

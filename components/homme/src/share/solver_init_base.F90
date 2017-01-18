@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-module solver_init_mod_base
+module solver_init_base
   implicit none
   private
 
@@ -22,4 +22,4 @@ contains
   end subroutine solver_init2
 
 
-end module solver_init_mod_base
+end module solver_init_base

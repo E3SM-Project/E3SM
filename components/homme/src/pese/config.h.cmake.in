@@ -1,5 +1,8 @@
 /* PRIM Options */
 
+/* Vertically interpolated ouput */
+#define VERTICAL_INTERPOLATION 1
+
 /* Energy Diagnostics */
 #cmakedefine ENERGY_DIAGNOSTICS
 

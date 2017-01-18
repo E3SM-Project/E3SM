@@ -38,8 +38,9 @@ module element_state
 
     ! diagnostic variables for preqx solver
 
-    ! storage for subcycling tracers/dynamics
+    real (kind=real_kind) :: omega(np,np,nlev)                        ! velocity pressure velocity
 
+    ! storage for subcycling tracers/dynamics
     real (kind=real_kind) :: vn0  (np,np,2,nlev)                      ! velocity for SE tracer advection
     real (kind=real_kind) :: vstar(np,np,2,nlev)                      ! velocity on Lagrangian surfaces
     real (kind=real_kind) :: dpdiss_biharmonic(np,np,nlev)            ! mean dp dissipation tendency, if nu_p>0
