@@ -1006,6 +1006,8 @@ using a fortran linker.
 
 <compiler MACH="yellowstone" COMPILER="gnu">
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
+  <SCC MPILIB="mpi-serial">gcc</SCC>
+  <SFC MPILIB="mpi-serial">gfortran</SFC>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="intel">
