@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
 
-<files>
+<entry_id version="2.0">
 
   <entry id="MODEL">
     <type>char</type>
@@ -22,6 +22,15 @@
     <group>case_der</group>
     <file>env_case.xml</file>
     <desc>contains both header and group information for all the case env_*.xml files </desc>
+  </entry>
+
+  <entry id="BATCH_SPEC_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_batch.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing batch system details for target system  (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_batch.xsd</schema>
   </entry>
 
   <entry id="GRIDS_SPEC_FILE">
@@ -88,6 +97,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_compsets.xsd</schema>
   </entry>
 
   <entry id="PES_SPEC_FILE">
@@ -181,6 +191,36 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>directory containing user modifications for primary components (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="NAMELIST_DEFINITION_FILE">
+    <type>char</type>
+    <default_value>unset</default_value>
+    <values>
+      <value component="modelio"      >$CIMEROOT/driver_cpl/cime_config/namelist_definition_modelio.xml</value>
+      <value component="drv_flds"      >$CIMEROOT/driver_cpl/bld/namelist_files/namelist_definition_drv_flds.xml</value>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/namelist_definition_drv.xml</value>
+      <!-- data model components -->
+      <value component="drof">$CIMEROOT/components/data_comps/drof/cime_config/namelist_definition_drof.xml</value>
+      <value component="datm">$CIMEROOT/components/data_comps/datm/cime_config/namelist_definition_datm.xml</value>
+      <value component="dice">$CIMEROOT/components/data_comps/dice/cime_config/namelist_definition_dice.xml</value>
+      <value component="dlnd">$CIMEROOT/components/data_comps/dlnd/cime_config/namelist_definition_dlnd.xml</value>
+      <value component="docn">$CIMEROOT/components/data_comps/docn/cime_config/namelist_definition_docn.xml</value>
+      <value component="dwav">$CIMEROOT/components/data_comps/dwav/cime_config/namelist_definition_dwav.xml</value>
+      <!-- external model components -->
+      <!--  TODO
+      <value component="cam"      >$SRCROOT/components/cam/bld/namelist_files/namelist_definition.xml</value>
+      <value component="cism"     >$SRCROOT/components/cism/bld/namelist_files/namelist_definition_cism.xml</value>
+      <value component="cice"     >$SRCROOT/components/cice/cime_config/namelist_definition_cice.xml</value>
+      <value component="clm"      >$SRCROOT/components/clm/bld/namelist_files/namelist_definition_clm4_5.xml</value>
+      <value component="clm"      >$SRCROOT/components/clm/bld/namelist_files/namelist_definition_clm4_0.xml</value>
+      <value component="pop"      >$SRCROOT/components/pop/bld/namelist_files/namelist_definition_pop.xml</value>
+      -->
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing namelist_definitions for all components </desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id_namelist.xsd</schema>
   </entry>
 
   <entry id="LTARCHIVE_SPEC_FILE">
@@ -329,5 +369,5 @@
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
   </entry>
 
-</files>
+</entry_id>
 

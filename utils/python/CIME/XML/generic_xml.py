@@ -52,14 +52,14 @@ class GenericXML(object):
             self.tree = ET.parse(infile)
             self.root = self.tree.getroot()
 
-        if schema is not None and self.get_version() != "1.0":
+        if schema is not None and self.get_version() > 1.0:
             self.validate_xml_file(infile, schema)
 
-        logger.debug("File version is "+self.get_version())
+        logger.debug("File version is %s"%str(self.get_version()))
 
     def get_version(self):
         version = self.root.get("version")
-        version = "1.0" if version is None else version
+        version = 1.0 if version is None else float(version)
         return version
 
     def write(self, outfile=None):
@@ -171,7 +171,7 @@ class GenericXML(object):
         return None
 
     def get_values(self, vid, attribute=None, resolved=True, subgroup=None):# pylint: disable=unused-argument
-        logger.debug("Get Values for " + vid)        
+        logger.debug("Get Values for " + vid)
         return []
 
     def set_value(self, vid, value, subgroup=None, ignore_type=True): # pylint: disable=unused-argument

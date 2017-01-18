@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<compsets>
+<compsets version="2.0">
 
   <help>
     =========================================
@@ -60,7 +60,7 @@
     <lname>1850_CAM60%WTSM_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_WW3</lname>
   </compset>
 
-  <!-- 
+  <!--
        Other B water isotope compsets that are only relevant for clm water isotope branches
        where only clm40 is supported
   -->
@@ -111,7 +111,7 @@
     <alias>BHISTWs</alias>
     <lname>HIST_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_SWAV_BGC%BDRD</lname>
   </compset>
-  
+
   <!-- <compset> -->
   <!--   <alias>B1850C4RCO2L40CNR</alias> -->
   <!--   <lname>1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->

@@ -1,58 +1,61 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
 
-  <!-- definition of attributes -->
-  <xs:attribute name="name" type="xs:string"/>
-  <xs:attribute name="compiler" type="xs:string"/>
-  <xs:attribute name="testtype" type="xs:string"/>
-  <xs:attribute name="testmods" type="xs:string"/>
-
-  <!-- definition of complex elements -->
-  <xs:element name="machine">
+  <xs:element name="testlist">
     <xs:complexType>
-      <xs:simpleContent>
-	<xs:extension base="xs:string">
-	  <xs:attribute ref="compiler" use="required"/>
-	  <xs:attribute ref="testtype" use="required"/>
-	  <xs:attribute ref="testmods" use="required"/>
-	</xs:extension>
-      </xs:simpleContent>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="test"/>
+      </xs:sequence>
+      <xs:attribute name="version" use="required" type="xs:decimal"/>
     </xs:complexType>
   </xs:element>
 
   <xs:element name="test">
     <xs:complexType>
       <xs:sequence>
-	<xs:element ref="machine" minOccurs="1" maxOccurs="unbounded"/>
+        <xs:element ref="machines"/>
+        <xs:element minOccurs="0" ref="options"/>
       </xs:sequence>
-      <xs:attribute ref="name" use="required"/>
+      <xs:attribute name="compset" use="required" type="xs:NCName"/>
+      <xs:attribute name="grid" use="required" type="xs:NCName"/>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute name="testmods" use="required"/>
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="grid">
+  <xs:element name="machines">
     <xs:complexType>
       <xs:sequence>
-	<xs:element ref="test" minOccurs="1" maxOccurs="unbounded"/>
+        <xs:element maxOccurs="unbounded" ref="machine"/>
+        <xs:element minOccurs="0" ref="options"/>
       </xs:sequence>
-      <xs:attribute ref="name" use="required"/>
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="compset">
+  <xs:element name="machine">
     <xs:complexType>
       <xs:sequence>
-	<xs:element ref="grid" minOccurs="1" maxOccurs="unbounded"/>
+        <xs:element minOccurs="0" ref="options"/>
       </xs:sequence>
-      <xs:attribute ref="name" use="required"/>
+      <xs:attribute name="category" use="required" type="xs:NCName"/>
+      <xs:attribute name="compiler" use="required" type="xs:NCName"/>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="testlist">
+  <xs:element name="options">
     <xs:complexType>
       <xs:sequence>
-	<xs:element ref="compset" minOccurs="1" maxOccurs="unbounded"/>
+        <xs:element maxOccurs="unbounded" ref="option"/>
       </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="option">
+    <xs:complexType mixed="true">
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
     </xs:complexType>
   </xs:element>
 
 </xs:schema>
+

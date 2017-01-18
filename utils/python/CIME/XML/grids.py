@@ -26,9 +26,9 @@ class Grids(GenericXML):
 
 
     def _get_grid_names(self):
-        if self._version == "1.0":
+        if self._version == 1.0:
             gridnames = ["atm", "lnd", "ocnice", "rof", "mask", "glc", "wav"]
-        elif self._version == "2.0":
+        elif self._version >= 2.0:
             nodes = self.get_nodes("grid")
             gridnames = []
             for node in nodes:
@@ -78,9 +78,9 @@ class Grids(GenericXML):
 
 
     def _read_config_grids(self, name, compset):
-        if self._version == "1.0":
+        if self._version == 1.0:
             return self._read_config_grids_v1(name, compset)
-        elif self._version == "2.0":
+        elif self._version >= 2.0:
             return self._read_config_grids_v2(name, compset)
 
     def _read_config_grids_v1(self, name, compset):
@@ -282,9 +282,9 @@ class Grids(GenericXML):
         return component_grids
 
     def _get_domains(self, component_grids):
-        if self._version == "1.0":
+        if self._version == 1.0:
             return self._get_domains_v1(component_grids)
-        elif self._version == "2.0":
+        elif self._version >= 2.0:
             return self._get_domains_v2(component_grids)
 
     def _get_domains_v1(self, component_grids):
@@ -322,9 +322,9 @@ class Grids(GenericXML):
         return domains
 
     def _get_gridmaps(self, component_grids, atmnlev=None, lndnlev=None):
-        if self._version == "1.0":
+        if self._version == 1.0:
             return self._get_gridmaps_v1(component_grids, atmnlev, lndnlev)
-        elif self._version == "2.0":
+        elif self._version >= 2.0:
             return self._get_gridmaps_v2(component_grids)
 
     def _get_gridmaps_v1(self, component_grids, atmnlev=None, lndnlev=None):
