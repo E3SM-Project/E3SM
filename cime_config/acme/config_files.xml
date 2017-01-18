@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
 
-<files>
+<entry_id version="2.0">
 
   <entry id="MODEL">
     <type>char</type>
@@ -369,5 +369,5 @@
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
   </entry>
 
-</files>
+</entry_id>
 

@@ -398,7 +398,7 @@ class Case(object):
             self.lookups[item] = value
 
 
-    def _set_compset_and_pesfile(self, compset_name, user_compset=False, pesfile=None):
+    def _set_compset_and_pesfile(self, compset_name, files, user_compset=False, pesfile=None):
         """
         Loop through all the compset files and find the compset
         specifation file that matches either the input 'compset_name'.
@@ -406,7 +406,7 @@ class Case(object):
         either a longname or an alias.  This will also set the
         compsets and pes specfication files.
         """
-        files = Files()
+
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
 
@@ -487,14 +487,13 @@ class Case(object):
         for env_file in self._env_entryid_files:
             env_file.set_components(comp_classes)
 
-    def _get_component_config_data(self):
+    def _get_component_config_data(self, files):
         # attributes used for multi valued defaults
         # attlist is a dictionary used to determine the value element that has the most matches
         attlist = {"compset":self._compsetname, "grid":self._gridname, "cime_model":self._cime_model}
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
-        files = Files()
 
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
@@ -547,30 +546,6 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def get_components(self):
-        """
-        return dictionary of the form [component_class:component],
-        e.g. [atm:cam], for all compset components
-        """
-
-        files = Files()
-        drv_comp = Component(files.get_value("CONFIG_CPL_FILE"))
-
-        # Determine list of component classes that this coupler/driver knows how
-        # to deal with. This list follows the same order as compset longnames follow.
-        component_classes = drv_comp.get_valid_model_components()
-        components = self.get_compset_components()
-
-        # Note that component classes can have a bigger range than
-        # compents since stub esp (sesp) is an optional component - so
-        # need to take the min of the two below
-        comp_dict = {}
-        for i in xrange(0,len(components)):
-            comp_name  = components[i]
-            comp_class = component_classes[i+1]
-            comp_dict[comp_class] = comp_name
-        return comp_dict
-
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
@@ -580,7 +555,8 @@ class Case(object):
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
-        self._set_compset_and_pesfile(compset_name, user_compset=user_compset, pesfile=pesfile)
+        files = Files()
+        self._set_compset_and_pesfile(compset_name, files, user_compset=user_compset, pesfile=pesfile)
 
         self._components = self.get_compset_components()
         #FIXME - if --user-compset is True then need to determine that
@@ -603,7 +579,7 @@ class Case(object):
         #--------------------------------------------
         # component config data
         #--------------------------------------------
-        self._get_component_config_data()
+        self._get_component_config_data(files)
 
         self.get_compset_var_settings()
 
