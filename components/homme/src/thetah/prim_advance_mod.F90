@@ -509,7 +509,7 @@ contains
 
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
-  real (kind=real_kind) :: v1,v2,dt,heating,T0,T1
+  real (kind=real_kind) :: v1,v2,dt,heating,T0,T1,phi,theta
   real (kind=real_kind) :: ps_ref(np,np)
   real (kind=real_kind) :: p_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
@@ -791,12 +791,16 @@ contains
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
   real (kind=real_kind) :: dpnh_dp(np,np,nlev)   ! dpnh / dp3d  
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
-  real (kind=real_kind) :: gradexner(np,np,2,nlev)     
+  real (kind=real_kind) :: KE(np,np,nlev)           ! Kinetic energy
+  real (kind=real_kind) :: v_theta(np,np,2,nlev)      ! theta * v
+  real (kind=real_kind) :: gradexner(np,np,2,nlev)  ! grad(p^kappa)   
   real (kind=real_kind) :: gradphi(np,np,2,nlev)     
-  real (kind=real_kind) :: gradKE(np,np,2,nlev)     
+  real (kind=real_kind) :: gradKE(np,np,2,nlev)  ! grad(0.5 u^T u )
+  
   real (kind=real_kind) :: v_gradw(np,np,nlev)     
   real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
-  real (kind=real_kind) :: v_gradphi(np,np,nlev)     
+  real (kind=real_kind) :: v_gradphi(np,np,nlev)
+  real (kind=real_kind) :: v_gradKE(np,np,nlev)     
   real (kind=real_kind) :: vdp(np,np,2,nlev)
 
   real (kind=real_kind) :: vtens1(np,np,nlev)
@@ -809,10 +813,7 @@ contains
   real (kind=real_kind) ::  temp(np,np,nlev)
   real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
   real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
-  real (kind=real_kind), dimension(np,np)      :: KE
-
-  real (kind=real_kind), dimension(np,np,2)      :: thetau  !  theta*u in the diagnostics
-  real (kind=real_kind), dimension(np,np)        :: divtemp ! temp divergence in the  in the diagnostics
+  real (kind=real_kind), dimension(np,np)      :: divtemp ! temp divergence in the  in the diagnostics
   real (kind=real_kind) ::  v1,v2,w
   integer :: i,j,k,kptr,ie
 
@@ -972,16 +973,19 @@ contains
            do i=1,np
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
-              KE(i,j)=0.5D0*( v1*v1 + v2*v2 )
+              KE(i,j,k)=0.5D0*( v1*v1 + v2*v2 )
+              v_theta(i,j,1,k) = v1*theta(i,j,k)
+              v_theta(i,j,2,k) =+v2*theta(i,j,k)
            end do
         end do
-        gradKE(:,:,:,k) = gradient_sphere(KE(:,:),deriv,elem(ie)%Dinv)
+        gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
         gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)        
 
         do j=1,np
            do i=1,np
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
+              v_gradKE(i,j,k)=v1*gradKE(i,j,1,k)+v2*gradKE(i,j,2,k)
 
               vtens1(i,j,k) = -v_vadv(i,j,1,k) &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
@@ -997,8 +1001,7 @@ contains
         end do
 
      end do vertloop
-
-#ifdef ENERGY_DIAGNOSTICSXXX
+#ifdef ENERGY_DIAGNOSTICS
      ! =========================================================
      !
      ! diagnostics
@@ -1006,7 +1009,7 @@ contains
      ! uses:  sdot_sum(), eta_dot_dpdn(), grad_ps()
      ! grad_phi(), dp3d(), p(), theta_vadv(), v_vadv(), divdp()
      ! =========================================================
-
+ 
      ! =========================================================
      ! (AAM) - This section has accumulations over vertical levels.
      !   Be careful if implementing OpenMP
@@ -1035,51 +1038,42 @@ contains
         enddo
 
         do k=1,nlev
-           ! vtemp = grad_E(:,:,k)
-           do j=1,np
-              do i=1,np
-                 v1     = elem(ie)%state%v(i,j,1,k,n0)
-                 v2     = elem(ie)%state%v(i,j,2,k,n0)
-                 Ephi(i,j)=0.5D0*( v1*v1 + v2*v2 )
-                 thetau(i,j,1)=theta(i,j,k)*v1
-                 thetau(i,j,2)=theta(i,j,k)*v2
-              enddo
-           enddo
-           vtemp = gradient_sphere(Ephi,deriv,elem(ie)%Dinv)
-           vtemp2 = gradient_sphere(elem(ie)%state%w(:,:,:,n0),deriv,elem(ie)%Dinv)
-           vtemp3 = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
-           divtemp=divergence_sphere(thetau(:,:),deriv,elem(ie))
+           divtemp=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
            do j=1,np
               do i=1,np
                   v1 = elem(ie)%state%v(i,j,1,k,n0)
                   v2 = elem(ie)%state%v(i,j,2,k,n0)
                   w = elem(ie)%state%w(i,j,k,n0)                 
+                  phi = elem(ie)%state%phi(i,j,k,n0)
+                  theta = elem(ie)%state%theta(i,j,k,n0)
                !  Form KEhoriz1
-                  elem(ie)%accum%KEhoriz1(i,j) = -(v1*vtemp(i,j,1)+v2*vtemp(i,j,2))*dp3d(i,j,k) &
-                  -Ephi(i,j)*divdp(i,j,k)
+                  elem(ie)%accum%KEhoriz1(i,j) = -v_gradKE(i,j,k)*dp3d(i,j,k) &
+                  -KE(i,j,k)*divdp(i,j,k)
                !  Form KEhoriz2
-                  elem(ie)%accum%KEhoriz2(i,j)=-dp3d(i,j,k)*w *(v1*vtemp2(i,j,1)+               &
-                  v2*vtemp2(i,j,2))-0.5*w**2 * divdp(i,j,k)
+                  elem(ie)%accum%KEhoriz2(i,j)=-dp3d(i,j,k)*w *v_gradw(i,j,k) &
+                  -0.5*w**2 * divdp(i,j,k)
+               !  How is d(dpi/dn etadot)/dn formed?
                !  Form KEvert1
-                  elem(ie)%accum%KEvert1(i,j) = 0.5*w*w * divdp(i,j,k)+dp3d(i,j,k)*w*(v1*       &
-                  vtemp2(i,j,1)+v2*vtemp2(i,j,2))
+               !   elem(ie)%accum%KEvert1(i,j) = v1*v_vadv(i,j,1,k)            &
+               !   +v2*v_vadv(i,j,2,k)*dp3d(i,j,k)-0.5*(v1*v1+v2*v2)
                !  Form KEvert2
-               !  elem(ie)%accum%KEvert2(i,j) = eta_dot_dpdn(i,j,k)/dpnh_dp(i,j,k) * w * (dw/ds) 
-               !  -0.5*w^*2 d(eta_dot_dpdn(i,j,k)/dpnh_dp(i,j,k))/ds
+               !   elem(ie)%accum%KEvert2(i,j) =-v_vadv(i,j,2,k)*w*dp3d(i,j,k) &
+               !   -0.5*w*w*
                !  Form IEvert1
-               !  elem(ie)%accum%IEvert1(i,j) = exner(i,j,k)*d(theta etadot)/ds - theta dexner/ds etadot
+                  elem(ie)%accum%IEvert1(i,j) = exner(i,j,k)*s_vadv(i,j,k,2)  &
+                  -s_vadv(i,j,k,3)*dpnh(i,j,k)
                !  Form PEhoriz1
-                  elem(ie)accum%PEhorz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-dp3d(i,j,k)*              &
-                  (vtemp(i,j,1)*v1+vtemp(i,j,2)*v2)
-               !  Form PEvert1, how to form d(theta etadot)/ds ?
-               !   elem(ie)%accum%PEvert1(i,j)=-phi(i,j,k)*d(etadot dpi/deta)/ds - etado dpi/deta dphi/deta
+                  elem(ie)accum%PEhoriz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-       &
+                  dp3d(i,j,k)*v_gradphi(i,j,k)
+               !  Form PEvert1, how to form d(di/dn)/dn ?
+               !   elem(ie)%accum%PEvert1(i,j)=-phi*etadot dp/dn -      &
+               !   dp3d(i,j,k)*s_vadv(i,j,k,3)
                !  Form T1
-                  elem(ie)%accum%T1(i,j)=-theta(i,j,k)*(grad_exner(i,j,1,k)*v1+                 &
-                  grad_exner(i,j,2,k)*v2)
+                  elem(ie)%accum%T1(i,j)=-theta*(grad_exner(i,j,1,k)*v1+grad_exner(i,j,2,k)*v2)
                !  Form S1 
                   elem(ie)%accum%S1(i,j)=-exner(i,j,k)*divtemp
                !  Form T2 
-                  elem(ie)%accum%T2(i,j)=(g*w-v1*vtemp3(i,j,1,k)+v2*vtemp3(i,j,2,k))*dpnh(i,j,k)
+                  elem(ie)%accum%T2(i,j)=(g*w-v_gradphi(i,j,k))*dpnh(i,j,k)
                !  Form S2
                !   elem(ie)%accum%S2(i,j)=-elem(ie)%accum%accum%T2(i,j)
                !  Form P1
