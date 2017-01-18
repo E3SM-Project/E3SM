@@ -23,7 +23,6 @@ module li_subglacial_hydro
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_constants
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_constants, only: gravity
@@ -273,6 +272,18 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_active', config_SGH_chnl_active)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_drainage', Cd)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
+
+      ! =============
+      ! Calculate SHMIP time-varying forcing, if requested
+      ! =============
+      block => domain % blocklist
+      do while (associated(block))
+         call shmip_timevarying_forcing(block, err_tmp)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
+
 
       ! =============
       ! Update till water layer thickness
@@ -1432,6 +1443,105 @@ module li_subglacial_hydro
    !--------------------------------------------------------------------
    end subroutine evolve_channel
 
+
+!***********************************************************************
+!
+!  routine shmip_timevarying_forcing
+!
+!> \brief   Calculate time-varying forcings for SHMIP experiments
+!> \author  Matt Hoffman
+!> \date    18 January 2017
+!> \details
+!>  This routine calculates time-varying forcings for the Subglacial
+!>  Hydrology Model Intercomparison Project's Experiments C and D.
+!>  I chose to include these in model source code rather than through
+!>  a forcing module because 1) this allows the SHMIP analytic forcing
+!>  functions to be reproduced exactly and 2) with the short hydro model
+!>  time steps, using a forcing i/o module would require a lot of file
+!>  reading during each run.
+!-----------------------------------------------------------------------
+   subroutine shmip_timevarying_forcing(block, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pools pointers
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+      character (len=StrKIND), pointer :: config_SGH_shmip_forcing
+      real(kind=RKIND), pointer :: daysSinceStart
+      real (kind=RKIND), dimension(:), pointer :: externalWaterInput
+      real (kind=RKIND), dimension(:), pointer :: upperSurface
+      real(kind=RKIND) :: temperature0  ! temperature at 0m elevation for D experiment
+      real(kind=RKIND) :: DT ! temperature offset for versions of D experiment
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_SGH_shmip_forcing', config_SGH_shmip_forcing)
+
+      if (config_SGH_shmip_forcing=='none') then
+         ! Default is to do nothing and skip rest of routine
+         return
+      endif
+
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_array(meshPool, 'daysSinceStart', daysSinceStart)
+      call mpas_pool_get_array(hydroPool, 'externalWaterInput', externalWaterInput)
+
+      select case (config_SGH_shmip_forcing(1:1))  ! Check on first character only
+      case ('C')
+         write(stdErrUnit,*) "ERROR: C experiments for config_SGH_shmip_forcing not yet implemented!"
+         err = ior(err, 1)
+
+      case ('D')
+         select case (config_SGH_shmip_forcing(2:2)) ! get experiment number
+         case ('1')
+            DT = -4.0_RKIND
+         case ('2')
+            DT = -2.0_RKIND
+         case ('3')
+            DT = 0.0_RKIND
+         case ('4')
+            DT = 2.0_RKIND
+         case ('5')
+            DT = 4.0_RKIND
+         case default
+            write(stdErrUnit,*) "ERROR: Unknown value for config_SGH_shmip_forcing!"
+            err = ior(err, 1)
+         end select
+
+         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         temperature0 = -16.0_RKIND * cos(2.0_RKIND * pii / 365.0 * daysSinceStart) - 5.0_RKIND + DT
+         externalWaterInput(:) = (upperSurface(:) * (-0.0075_RKIND) + temperature0) * (0.01_RKIND / 86400.0_RKIND) * 1000.0_RKIND  ! the 1000 factor converts from m/s to kg/m2/s
+         where (externalWaterInput < 0.0_RKIND)
+            externalWaterInput = 0.0_RKIND
+         end where
+
+      case default
+         write(stdErrUnit,*) "ERROR: Unknown value for config_SGH_shmip_forcing!"
+         err = ior(err, 1)
+      end select
+
+
+   !--------------------------------------------------------------------
+   end subroutine shmip_timevarying_forcing
 
 
 end module li_subglacial_hydro
