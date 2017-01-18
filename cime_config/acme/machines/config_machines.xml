@@ -904,8 +904,8 @@
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
-         <COMPILERS>gnu,intel,pgi</COMPILERS>
-         <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
+         <COMPILERS>intel,gnu,pgi</COMPILERS>
+         <MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/group/acme/$USER/acme_scratch</CESMSCRATCHROOT>
 	 <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
 	 <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
@@ -919,7 +919,7 @@
          <OS>LINUX</OS>
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
+         <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>36</PES_PER_NODE>
          <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
@@ -928,6 +928,7 @@
            <executable>mpiexec</executable>
            <arguments>
              <arg name="num_tasks"> -n $TOTALPES </arg>
+             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE={{ thread_count }} --bind-to core --report-bindings</arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mpi-serial">
@@ -983,6 +984,21 @@
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="OMP_PROC_BIND">spread</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="OMP_MAX_ACTIVE_LEVELS">1</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="KMP_HOT_TEAMS_MODE">1</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="KMP_HOT_TEAMS_MAX_LEVEL">1</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/soft/spack/opt/spack/linux-centos6-x86_64/intel-16.0.3/netcdf-4.4.0-ds5gqquzjytf4efz3d5njsvpkfmmrwq7</env>

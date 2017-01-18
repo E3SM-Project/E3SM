@@ -1023,12 +1023,12 @@ for mct, etc.
   <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas </ADD_SLIBS>
   <ADD_SLIBS> -Wl,-rpath -Wl,$(NETCDFROOT)/lib </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
