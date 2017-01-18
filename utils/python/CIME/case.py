@@ -652,50 +652,72 @@ class Case(object):
         #--------------------------------------------
         # pe layout
         #--------------------------------------------
-        match1 = re.match('([0-9]+)x([0-9]+)', "" if pecount is None else pecount)
+        match1 = re.match('(.+)x([0-9]+)', "" if pecount is None else pecount)
         match2 = re.match('([0-9]+)', "" if pecount is None else pecount)
+
         pes_ntasks = {}
         pes_nthrds = {}
         pes_rootpe = {}
+        other      = {}
+
+        pesobj = Pes(self._pesfile)
+
+        force_tasks = None
+        force_thrds = None
+
         if match1:
             opti_tasks = match1.group(1)
-            opti_thrds = match1.group(2)
+            if opti_tasks.isdigit():
+                force_tasks = int(opti_tasks)
+            else:
+                pes_ntasks = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name,
+                                                    pesize_opts=opti_tasks, mpilib=mpilib)[0]
+            force_thrds = int(match1.group(2))
         elif match2:
-            opti_tasks = match2.group(1)
-            opti_thrds = 1
+            force_tasks = int(match2.group(1))
+            pes_nthrds = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name, mpilib=mpilib)[1]
+        else:
+            pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
+                                                                               machine_name, pesize_opts=pecount, mpilib=mpilib)
 
-        other = {}
         if match1 or match2:
             for component_class in self._component_classes:
-                string_ = "NTASKS_" + component_class
-                pes_ntasks[string_] = opti_tasks
-                string_ = "NTHRDS_" + component_class
-                pes_nthrds[string_] = opti_thrds
+                if force_tasks is not None:
+                    string_ = "NTASKS_" + component_class
+                    pes_ntasks[string_] = force_tasks
+
+                if force_thrds is not None:
+                    string_ = "NTHRDS_" + component_class
+                    pes_nthrds[string_] = force_thrds
+
+                # Always default to zero rootpe if user forced procs and or threads
                 string_ = "ROOTPE_" + component_class
                 pes_rootpe[string_] = 0
-        else:
-            pesobj = Pes(self._pesfile)
 
-            pes_ntasks, pes_nthrds, pes_rootpe, other = pesobj.find_pes_layout(self._gridname, self._compsetname,
-                                                                    machine_name, pesize_opts=pecount, mpilib=mpilib)
         mach_pes_obj = self.get_env("mach_pes")
-        totaltasks = {}
+
+
         if other is not None:
             for key, value in other.items():
                 self.set_value(key, value)
-        for key, value in pes_ntasks.items():
-            totaltasks[key[-3:]] = int(value)
-            mach_pes_obj.set_value(key,int(value))
-        for key, value in pes_rootpe.items():
-            totaltasks[key[-3:]] += int(value)
-            mach_pes_obj.set_value(key,int(value))
-        for key, value in pes_nthrds.items():
-            totaltasks[key[-3:]] *= int(value)
-            mach_pes_obj.set_value(key,int(value))
+
+        totaltasks = []
+        for comp_class in self._component_classes:
+            ntasks_str, nthrds_str, rootpe_str = "NTASKS_%s" % comp_class, "NTHRDS_%s" % comp_class, "ROOTPE_%s" % comp_class
+
+            ntasks = pes_ntasks[ntasks_str] if ntasks_str in pes_ntasks else 1
+            nthrds = pes_nthrds[nthrds_str] if nthrds_str in pes_nthrds else 1
+            rootpe = pes_rootpe[rootpe_str] if rootpe_str in pes_rootpe else 0
+
+            totaltasks.append( (ntasks + rootpe) * nthrds )
+
+            mach_pes_obj.set_value(ntasks_str, ntasks)
+            mach_pes_obj.set_value(nthrds_str, nthrds)
+            mach_pes_obj.set_value(rootpe_str, rootpe)
 
         maxval = 1
         pes_per_node = self.get_value("PES_PER_NODE")
-        for key, val in totaltasks.items():
+        for val in totaltasks:
             if val < 0:
                 val = -1*val*pes_per_node
             if val > maxval:
@@ -714,8 +736,6 @@ class Case(object):
             key = "NTHRDS_%s"%compclass
             if compclass not in pes_nthrds.keys():
                 mach_pes_obj.set_value(compclass,1)
-
-
 
         #--------------------------------------------
         # batch system

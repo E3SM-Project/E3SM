@@ -87,13 +87,13 @@ class Pes(GenericXML):
                                         logger.info("vid is %s"%vid)
                                         if "ntasks" in vid:
                                             for child in node:
-                                                pes_ntasks[child.tag.upper()] = child.text
+                                                pes_ntasks[child.tag.upper()] = int(child.text)
                                         elif "nthrds" in vid:
                                             for child in node:
-                                                pes_nthrds[child.tag.upper()] = child.text
+                                                pes_nthrds[child.tag.upper()] = int(child.text)
                                         elif "rootpe" in vid:
                                             for child in node:
-                                                pes_rootpe[child.tag.upper()] = child.text
+                                                pes_rootpe[child.tag.upper()] = int(child.text)
                                     # if the value is already upper case its something else we are trying to set
                                         elif vid == node.tag:
                                             other_settings[vid] = node.text
@@ -119,13 +119,13 @@ class Pes(GenericXML):
                 logger.debug("vid is %s"%vid)
                 if "ntasks" in vid:
                     for child in node:
-                        pes_ntasks[child.tag.upper()] = child.text
+                        pes_ntasks[child.tag.upper()] = int(child.text)
                 elif "nthrds" in vid:
                     for child in node:
-                        pes_nthrds[child.tag.upper()] = child.text
+                        pes_nthrds[child.tag.upper()] = int(child.text)
                 elif "rootpe" in vid:
                     for child in node:
-                        pes_rootpe[child.tag.upper()] = child.text
+                        pes_rootpe[child.tag.upper()] = int(child.text)
             # if the value is already upper case its something else we are trying to set
                 elif vid == node.tag:
                     other_settings[vid] = node.text

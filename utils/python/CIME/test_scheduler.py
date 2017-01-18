@@ -44,14 +44,18 @@ class TestScheduler(object):
                  project=None, parallel_jobs=None,
                  walltime=None, proc_pool=None,
                  use_existing=False, save_timing=False, queue=None,
-                 allow_baseline_overwrite=False, output_root=None):
+                 allow_baseline_overwrite=False, output_root=None,
+                 force_procs=None, force_threads=None):
     ###########################################################################
-        self._cime_root  = CIME.utils.get_cime_root()
-        self._cime_model = CIME.utils.get_model()
+        self._cime_root     = CIME.utils.get_cime_root()
+        self._cime_model    = CIME.utils.get_model()
+        self._save_timing   = save_timing
+        self._queue         = queue
+        self._test_data     = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
+        self._force_procs   = force_procs
+        self._force_threads = force_threads
+
         self._allow_baseline_overwrite  = allow_baseline_overwrite
-        self._save_timing = save_timing
-        self._queue       = queue
-        self._test_data   = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
 
         self._machobj = Machines(machine=machine_name)
 
@@ -311,6 +315,13 @@ class TestScheduler(object):
             create_newcase_cmd += " --project %s " % self._project
         if self._output_root is not None:
             create_newcase_cmd += " --output-root %s " % self._output_root
+
+        if self._force_procs or self._force_threads:
+            pecount_str = "M" if self._force_procs is None else str(self._force_procs)
+            if self._force_threads is not None:
+                pecount_str += "x%d" % self._force_threads
+
+            create_newcase_cmd += " --pecount %s" % pecount_str
 
         if test_mods is not None:
             files = Files()
