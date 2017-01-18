@@ -1182,6 +1182,21 @@ class K_TestCimeCase(TestCreateTestCommon):
             # Serial cases should be using 1 task
             self.assertEqual(case.get_value("TOTALPES"), 1)
 
+    ###########################################################################
+    def test_cime_case_force_pecount(self):
+    ###########################################################################
+        run_cmd_assert_result(self, "%s/create_test TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A -t %s --no-build --test-root %s --output-root %s --force-procs 16 --force-threads 8"
+                              % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+
+        with Case(casedir, read_only=True) as case:
+            self.assertEqual(case.get_value("NTASKS_CPL"), 16)
+
+            self.assertEqual(case.get_value("NTHRDS_CPL"), 8)
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
