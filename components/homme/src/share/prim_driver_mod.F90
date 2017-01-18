@@ -493,6 +493,7 @@ contains
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_si_ref_mod,      only: prim_si_refstate_init, prim_set_mass
+    use prim_advance_mod,     only: prim_advance_init2
     use prim_advection_mod,   only: prim_advec_init2
     use solver_init_mod,      only: solver_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
@@ -798,7 +799,8 @@ contains
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
 
     call solver_init2(elem(:), deriv1)
-    call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
+    call prim_advance_init2(elem,nets,nete,hybrid,hvcoord)
+    call prim_advec_init2(elem(:), hvcoord, hybrid)
 
   end subroutine prim_init2
 
@@ -1159,13 +1161,12 @@ contains
 
 
 
-    subroutine smooth_topo_datasets(phis,sghdyn,sgh30dyn,elem,hybrid,nets,nete)
+   subroutine smooth_topo_datasets(phis,sghdyn,sgh30dyn,elem,hybrid,nets,nete)
     use control_mod, only : smooth_phis_numcycle,smooth_sgh_numcycle
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
-    use viscosity_mod, only : biharmonic_wk
-    use prim_advance_mod, only : smooth_phis
+    use viscosity_mod, only : smooth_phis
     implicit none
 
     integer , intent(in) :: nets,nete
@@ -1192,6 +1193,7 @@ contains
     call smooth_phis(sgh30dyn,elem,hybrid,deriv1,nets,nete,minf,smooth_sgh_numcycle)
 
     end subroutine smooth_topo_datasets
+
 
 end module prim_driver_mod
 
