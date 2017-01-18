@@ -102,6 +102,10 @@
                             description="whether to include the pressure melt term in the channel opening"
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_SGH_shmip_forcing" type="character" default_value="none" units="none"
+                            description="calculate time-varying forcing specified by SHMIP experiments C or D"
+		            possible_values="'none', 'C1'-'C4', 'D1'-'D5'"
+		/>
 
 	</nml_record>
 
