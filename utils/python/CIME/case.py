@@ -927,7 +927,12 @@ class Case(object):
             self.set_value("USER_MODS_FULLPATH",user_mods_path)
             apply_user_mods(self._caseroot, user_mods_path)
 
-    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
+    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None, cime_output_root=None):
+        if cime_output_root is None:
+            cime_output_root = self.get_value("CIME_OUTPUT_ROOT")
+        expect(os.access(cime_output_root, os.W_OK), "Directory %s is not writable"
+               "by this user.  Use the --cime-output-root flag to provide a writable "
+               "scratch directory"%cime_output_root)
 
         newcaseroot = os.path.abspath(newcase)
         expect(not os.path.isdir(newcaseroot),
@@ -947,6 +952,7 @@ class Case(object):
         srcroot = os.path.join(newcase_cimeroot,"..")
         newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
         newcase.set_value("CIMEROOT", newcase_cimeroot)
+        newcase.set_value("CIME_OUTPUT_ROOT", cime_output_root)
 
         # if we are cloning to a different user modify the output directory
         olduser = self.get_value("USER")

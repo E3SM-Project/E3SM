@@ -242,9 +242,12 @@ class J_TestCreateNewcase(unittest.TestCase):
         fakeoutputroot = string.replace(cls._testroot, os.environ.get("USER"), "this_is_not_a_user")
         run_cmd_assert_result(self, "./xmlchange CIME_OUTPUT_ROOT=%s"%fakeoutputroot,
                               from_dir=prevtestdir)
-
-        run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s" %
-                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR)
+        # this test should fail
+        run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s " %
+                              (SCRIPT_DIR, prevtestdir, testdir),from_dir=SCRIPT_DIR, expected_stat=1)
+        #this test should pass
+        run_cmd_assert_result(self, "%s/create_clone --clone %s --case %s --cime-output-root %s" %
+                              (SCRIPT_DIR, prevtestdir, testdir, cls._testroot),from_dir=SCRIPT_DIR)
 
         cls._do_teardown.append(testdir)
 
