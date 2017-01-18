@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<compsets>
+<compsets version="2.0">
 
   <help>
     =========================================
@@ -38,12 +38,12 @@
   </help>
 
   <compset>
-    <alias>A</alias>           
+    <alias>A</alias>
     <lname>2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>AWAV</alias>           
+    <alias>AWAV</alias>
     <lname>2000_DATM%WW3_SLND_DICE%COPY_DOCN%COPY_SROF_SGLC_WW3</lname>
   </compset>
 
