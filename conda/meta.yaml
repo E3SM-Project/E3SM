@@ -21,8 +21,10 @@ requirements:
     - cdp
     - vcs
     - cdms2
-    - eztemplate
+    - cdutil
+    - genutil
+    - numpy
 
 about:
-    home:  https://github.com/zshaheen/acme-diags
+    home: https://github.com/zshaheen/acme-diags
     summary: This is a new version of ACME Diagnostics.
