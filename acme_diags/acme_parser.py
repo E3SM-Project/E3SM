@@ -12,16 +12,8 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         super(ACMEParser, self).load_default_args()
 
         self.add_argument(
-            '--case_id',
-            dest='case_id',
-            help='Defines a subdirectory to the metrics output, so multiple' +
-                 'cases can be compared',
-            required=False)
-
-        self.add_argument(
             '-r', '--reference_data_set',
             type=str,
-            nargs='+',
             dest='reference_data_set',
             help='List of observations or models that are used as a ' +
                  'reference against the test_data_set',
@@ -36,7 +28,6 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         self.add_argument(
             '-t', '--test_data_set',
             type=str,
-            nargs='+',
             dest='test_data_set',
             help='List of observations or models to test ' +
                  'against the reference_data_set',
@@ -61,4 +52,17 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             nargs='+',
             dest='season',
             help='Season to use',
+            required=False)
+
+        self.add_argument(
+            '--case_id',
+            dest='case_id',
+            help='Defines a subdirectory to the metrics output, so multiple' +
+                 'cases can be compared',
+            required=False)
+
+        self.add_argument(
+            '-o', '--output_file',
+            dest='output_file',
+            help='Name of the output file',
             required=False)
