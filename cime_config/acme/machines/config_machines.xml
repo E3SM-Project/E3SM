@@ -1138,7 +1138,7 @@
 
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 cores/node, batch system is cobalt</DESC>
-	 <NODENAME_REGEX>.*.fst.alcf.anl.gov</NODENAME_REGEX>
+	 <NODENAME_REGEX>mira.*</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
