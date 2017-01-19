@@ -509,7 +509,7 @@ contains
 
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
-  real (kind=real_kind) :: v1,v2,dt,heating,T0,T1,phi,theta
+  real (kind=real_kind) :: v1,v2,dt,heating,T0,T1,phitemp
   real (kind=real_kind) :: ps_ref(np,np)
   real (kind=real_kind) :: p_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
@@ -792,7 +792,6 @@ contains
   real (kind=real_kind) :: dpnh_dp(np,np,nlev)   ! dpnh / dp3d  
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
   real (kind=real_kind) :: KE(np,np,nlev)           ! Kinetic energy
-  real (kind=real_kind) :: v_theta(np,np,2,nlev)      ! theta * v
   real (kind=real_kind) :: gradexner(np,np,2,nlev)  ! grad(p^kappa)   
   real (kind=real_kind) :: gradphi(np,np,2,nlev)     
   real (kind=real_kind) :: gradKE(np,np,2,nlev)  ! grad(0.5 u^T u )
@@ -813,8 +812,7 @@ contains
   real (kind=real_kind) ::  temp(np,np,nlev)
   real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
   real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
-  real (kind=real_kind), dimension(np,np)      :: divtemp ! temp divergence in the  in the diagnostics
-  real (kind=real_kind) ::  v1,v2,w
+  real (kind=real_kind) ::  v1,v2,w,dpdn
   integer :: i,j,k,kptr,ie
 
   call t_startf('compute_and_apply_rhs')
@@ -974,8 +972,6 @@ contains
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
               KE(i,j,k)=0.5D0*( v1*v1 + v2*v2 )
-              v_theta(i,j,1,k) = v1*theta(i,j,k)
-              v_theta(i,j,2,k) =+v2*theta(i,j,k)
            end do
         end do
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
@@ -1028,6 +1024,7 @@ contains
         elem(ie)%accum%S2=0
         elem(ie)%accum%P1=0
         elem(ie)%accum%P2=0
+        elem(ie)%accume
         ! See element_state.F90 for an account of what these variables are defined as
 
         do j=1,np
@@ -1038,46 +1035,58 @@ contains
         enddo
 
         do k=1,nlev
-           divtemp=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
            do j=1,np
-              do i=1,np
-                  v1 = elem(ie)%state%v(i,j,1,k,n0)
-                  v2 = elem(ie)%state%v(i,j,2,k,n0)
-                  w = elem(ie)%state%w(i,j,k,n0)                 
-                  phi = elem(ie)%state%phi(i,j,k,n0)
-                  theta = elem(ie)%state%theta(i,j,k,n0)
+              do i=1,np                
+                  if (theta_hydrostatic_mode) then
+                      phitemp=elem(ie)%derived%phi
+		  else
+		      phitemp=elem(ie)%state%phi(i,j,k,n0)
+		  endif
+                  if k < nlev
+                      dpdn=(0.5*eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k))
+                  else
+                      dpdn=-0.5*eta_dot_dpdn(:,:,k)
+                  endif
                !  Form KEhoriz1
                   elem(ie)%accum%KEhoriz1(i,j) = -v_gradKE(i,j,k)*dp3d(i,j,k) &
                   -KE(i,j,k)*divdp(i,j,k)
                !  Form KEhoriz2
-                  elem(ie)%accum%KEhoriz2(i,j)=-dp3d(i,j,k)*w *v_gradw(i,j,k) &
-                  -0.5*w**2 * divdp(i,j,k)
-               !  How is d(dpi/dn etadot)/dn formed?
+                  elem(ie)%accum%KEhoriz2(i,j)=-dp3d(i,j,k)*                  &
+                  elem(ie)%state%w(i,j,k,n0) *v_gradw(i,j,k)                  &
+                  -0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k)
                !  Form KEvert1
-               !   elem(ie)%accum%KEvert1(i,j) = v1*v_vadv(i,j,1,k)            &
-               !   +v2*v_vadv(i,j,2,k)*dp3d(i,j,k)-0.5*(v1*v1+v2*v2)
+                  elem(ie)%accum%KEvert1(i,j) = elem(ie)%state%v(i,j,1,k,n0)  &
+                  *v_vadv(i,j,1,k)+v2*v_vadv(i,j,2,k)*dp3d(i,j,k)-            &
+                  0.5*(v1*v1+v2*v2)
                !  Form KEvert2
-               !   elem(ie)%accum%KEvert2(i,j) =-v_vadv(i,j,2,k)*w*dp3d(i,j,k) &
-               !   -0.5*w*w*
+                  elem(ie)%accum%KEvert2(i,j) =-v_vadv(i,j,2,k)*              &
+                  elem(ie)%state%w(i,j,k,n0)*dp3d(i,j,k)                      &   
+                  -dpdn*elem(ie)%state%w(i,j,k,n0))**2
                !  Form IEvert1
                   elem(ie)%accum%IEvert1(i,j) = exner(i,j,k)*s_vadv(i,j,k,2)  &
                   -s_vadv(i,j,k,3)*dpnh(i,j,k)
                !  Form PEhoriz1
-                  elem(ie)accum%PEhoriz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-       &
+                  elem(ie)accum%PEhoriz1(i,j)=-phitemp*divdp(i,j,k)-          &
                   dp3d(i,j,k)*v_gradphi(i,j,k)
-               !  Form PEvert1, how to form d(di/dn)/dn ?
-               !   elem(ie)%accum%PEvert1(i,j)=-phi*etadot dp/dn -      &
-               !   dp3d(i,j,k)*s_vadv(i,j,k,3)
+               !  Form PEvert1
+                  elem(ie)%accum%PEvert1(i,j)=-phitemp*etadot dp/dn -         &
+                  dp3d(i,j,k)*s_vadv(i,j,k,3)
                !  Form T1
-                  elem(ie)%accum%T1(i,j)=-theta*(grad_exner(i,j,1,k)*v1+grad_exner(i,j,2,k)*v2)
+                  elem(ie)%accum%T1(i,j)=-elem(ie)%state%theta(i,j,k,n0)      &
+                  *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +         &
+                  gradexner(i,j,2,k)*elem(ie)*state*v(i,j,2,k,n0)
                !  Form S1 
-                  elem(ie)%accum%S1(i,j)=-exner(i,j,k)*divtemp
+                  elem(ie)%accum%S1(i,j)=-exner(i,j,k)*                       &
+                  (v_theta(i,j,k)*dp(i,j,k)+elem(ie)%state%theta(i,j,k,n0)&   &
+                  divdp(i,j,k)
                !  Form T2 
-                  elem(ie)%accum%T2(i,j)=(g*w-v_gradphi(i,j,k))*dpnh(i,j,k)
+                  elem(ie)%accum%T2(i,j)=(g*elem(ie)%state%w(i,j,k,n0)        &
+                  -v_gradphi(i,j,k))*dpnh(i,j,k)-g*v_gradphi(i,j,k)
                !  Form S2
-               !   elem(ie)%accum%S2(i,j)=-elem(ie)%accum%accum%T2(i,j)
+                  elem(ie)%accum%S2(i,j)=-elem(ie)%accum%accum%T2(i,j)
                !  Form P1
-                  elem(ie)%accum%P1(i,j)= - g*w*dp3d(i,j,k)
+                  elem(ie)%accum%P1(i,j)= - g*elem(ie)%state%w(i,j,k,n0)      &
+                  *dp3d(i,j,k)
                !  Form P2
                   elem(ie)%accum%P2(i,j)=-elem(ie)%accum%P1(i,j) 
               enddo
