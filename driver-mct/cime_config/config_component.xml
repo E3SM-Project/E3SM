@@ -2426,16 +2426,6 @@
     <desc>level of debug output, 0=minimum, 1=normal, 2=more, 3=too much</desc>
   </entry>
 
-  <entry id="SCIENCE_SUPPORT">
-    <type>char</type>
-    <valid_values>on, off</valid_values>
-    <default_value>off</default_value>
-    <group>case_def</group>
-    <file>env_case.xml</file>
-    <desc>If set to off, this component set/ grid specification is not scientifically supported.
-    If set to on, this component set/ grid specification is scientifically supported</desc>
-  </entry>
-
   <entry id="CLM_USE_PETSC">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
