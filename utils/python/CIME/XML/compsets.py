@@ -20,17 +20,22 @@ class Compsets(GenericXML):
         self.groups={}
 
     def get_compset_match(self, name):
+        """
+        science support is used in cesm to determine if this compset and grid
+        is scientifically supported.   science_support is returned as an array of grids for this compset
+        """
         nodes = self.get_nodes("compset")
         alias = None
         lname = None
-        science_support = False
+        science_support = []
         for node in nodes:
             alias = self.get_element_text("alias",root=node)
             lname = self.get_element_text("lname",root=node)
             if alias == name or lname == name:
-                science_support = self.get_element_text("science_support", root=node)
-                if science_support == None:
-                    science_support = False
+                science_support_nodes = self.get_nodes("science_support", root=node)
+                for node in science_support_nodes:
+                    science_support.append(node.get("grid"))
+
                 logger.debug("Found node match with alias: %s and lname: %s" % (alias, lname))
                 return (lname, alias, science_support)
         return (None, None, False)

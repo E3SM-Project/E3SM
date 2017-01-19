@@ -10,6 +10,7 @@
   <xs:element name="help" type="xs:string"/>
   <xs:element name="alias" type="xs:NCName"/>
   <xs:element name="lname" type="xs:string"/>
+  <xs:element name="science_support"/>
 
   <!-- complex elements -->
 
@@ -30,6 +31,7 @@
       <xs:sequence>
         <xs:element ref="alias"/>
         <xs:element ref="lname"/>
+	<xs:element ref="science_support" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
       <xs:attribute ref="grid"/>
     </xs:complexType>

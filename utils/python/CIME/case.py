@@ -409,7 +409,7 @@ class Case(object):
         either a longname or an alias.  This will also set the
         compsets and pes specfication files.
         """
-        science_support = False
+        science_support = {}
         compset_alias = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
@@ -454,8 +454,8 @@ class Case(object):
         else:
             expect(False,
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
-        expect(not science_support, "science_support not expected to be true here")
-        return False
+
+        return None, science_support
 
     def get_compset_components(self):
         #If are doing a create_clone then, self._compsetname is not set yet
@@ -741,8 +741,8 @@ class Case(object):
         logger.info(" Components in compset are: %s " %self._components)
 
         if not test and not run_unsupported and self._cime_model == "cesm":
-            if science_support:
-                logger.info("\nThis is a CESM scientifically supported compset.\n")
+            if grid_name in science_support:
+                logger.info("\nThis is a CESM scientifically supported compset at this resolution.\n")
             else:
                 self._check_testlists(compset_alias, grid_name, files)
 
@@ -1098,6 +1098,9 @@ class Case(object):
             self._is_env_loaded = True
 
     def _check_testlists(self, compset_alias, grid_name, files):
+        """
+        CESM only: check the testlist file for tests of this compset grid combination
+        """
         if "TESTS_SPEC_FILE" in self.lookups:
             tests_spec_file = self.get_resolved_value(self.lookups["TESTS_SPEC_FILE"])
         else:
