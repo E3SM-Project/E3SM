@@ -9,7 +9,7 @@
 !                         issues for specific communication patterns
 !
 ! !DESCRIPTION:
-! This module provides the swapm equivalent to MPI_Alltoallv that
+! This module provides the swapm equivalent to MPI_Alltoallv that 
 ! has proven to be more robust with respect to performance than the
 ! MPI collective or the native MCT communication algorithms when the
 ! communication pattern is sparse and when load imbalance or send/receive
@@ -20,7 +20,7 @@
 !
 ! !SEE ALSO:
 !  m_Rearranger
-!
+! 
 !
 ! !INTERFACE:
 
@@ -96,14 +96,14 @@
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
       comm, comm_hs, comm_isend, comm_maxreq       )
 
-!-----------------------------------------------------------------------
-!
-!> Purpose:
-!!   Reduced version of original swapm (for swap of multiple messages
-!!   using MPI point-to-point routines), more efficiently implementing a
+!----------------------------------------------------------------------- 
+! 
+!> Purpose: 
+!!   Reduced version of original swapm (for swap of multiple messages 
+!!   using MPI point-to-point routines), more efficiently implementing a 
 !!   subset of the swap protocols.
-!!
-!! Method:
+!! 
+!! Method: 
 !! comm_protocol:
 !!  comm_isend == .true.: use nonblocking send, else use blocking send
 !!  comm_hs == .true.: use handshaking protocol
@@ -114,7 +114,7 @@
 !!
 !! Author of original version:  P. Worley
 !! Ported from PIO1: P. Worley, September 2016
-!<
+!< 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
    use m_mpif90
@@ -135,7 +135,7 @@
                                                !  should be sent from
    integer, intent(in)   :: stypes(0:nprocs-1) ! MPI data types
    integer, intent(in)   :: rcvlths(0:nprocs-1)! length of incoming messages
-   integer, intent(in)   :: rdispls(0:nprocs-1)! offset from beginning of receive
+   integer, intent(in)   :: rdispls(0:nprocs-1)! offset from beginning of receive 
                                                !  buffer where incoming messages
                                                !  should be placed
    integer, intent(in)   :: rtypes(0:nprocs-1) ! MPI data types
@@ -144,7 +144,7 @@
    integer, intent(in)   :: comm               ! MPI communicator
    logical, intent(in)   :: comm_hs            ! handshaking protocol?
    logical, intent(in)   :: comm_isend         ! nonblocking send protocol?
-   integer, intent(in)   :: comm_maxreq        ! maximum number of outstanding
+   integer, intent(in)   :: comm_maxreq        ! maximum number of outstanding 
                                                !  nonblocking requests
 
 !---------------------------Output arguments--------------------------
@@ -163,23 +163,23 @@
    integer :: tag                              ! MPI message tag
    integer :: offset_t                         ! MPI message tag offset, for addressing
                                                !  message conflict bug (if necessary)
-   integer :: offset_s                         ! index of message beginning in
+   integer :: offset_s                         ! index of message beginning in 
                                                !  send buffer
-   integer :: offset_r                         ! index of message beginning in
+   integer :: offset_r                         ! index of message beginning in 
                                                !  receive buffer
    integer :: sndids(nprocs)                   ! send request ids
    integer :: rcvids(nprocs)                   ! receive request ids
    integer :: hs_rcvids(nprocs)                ! handshake receive request ids
 
-   integer :: maxreq, maxreqh                  ! maximum number of outstanding
+   integer :: maxreq, maxreqh                  ! maximum number of outstanding 
                                                !  nonblocking requests (and half)
    integer :: hs                               ! handshake variable
    integer :: rstep                            ! "receive" step index
 
    logical :: handshake, sendd                 ! protocol option flags
 
-   integer :: ier                              ! return error status
-   integer :: status(MP_STATUS_SIZE)           ! MPI status
+   integer :: ier                              ! return error status    
+   integer :: status(MP_STATUS_SIZE)           ! MPI status 
 !
 !-------------------------------------------------------------------------------------
 !
@@ -288,7 +288,7 @@
       enddo
       rstep = maxreq
 
-      ! Send (and start receiving) data
+      ! Send (and start receiving) data 
       do istep=1,steps
          p = swapids(istep)
 
@@ -387,7 +387,7 @@
       enddo
       rstep = maxreq
 
-      ! Send (and start receiving) data
+      ! Send (and start receiving) data 
       do istep=1,steps
          p = swapids(istep)
 
@@ -480,7 +480,7 @@
       enddo
       rstep = maxreq
 
-      ! Send (and start receiving) data
+      ! Send (and start receiving) data 
       do istep=1,steps
          p = swapids(istep)
 
@@ -547,7 +547,7 @@
       enddo
       rstep = maxreq
 
-      ! Send (and start receiving) data
+      ! Send (and start receiving) data 
       do istep=1,steps
          p = swapids(istep)
 
@@ -622,14 +622,14 @@
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
       comm, comm_hs, comm_isend, comm_maxreq       )
 
-!-----------------------------------------------------------------------
-!
-!> Purpose:
-!!   Reduced version of original swapm (for swap of multiple messages
-!!   using MPI point-to-point routines), more efficiently implementing a
+!----------------------------------------------------------------------- 
+! 
+!> Purpose: 
+!!   Reduced version of original swapm (for swap of multiple messages 
+!!   using MPI point-to-point routines), more efficiently implementing a 
 !!   subset of the swap protocols.
-!!
-!! Method:
+!! 
+!! Method: 
 !! comm_protocol:
 !!  comm_isend == .true.: use nonblocking send, else use blocking send
 !!  comm_hs == .true.: use handshaking protocol
@@ -640,7 +640,7 @@
 !!
 !! Author of original version:  P. Worley
 !! Ported from PIO1: P. Worley, September 2016
-!<
+!< 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
    use m_mpif90
@@ -661,7 +661,7 @@
                                                !  should be sent from
    integer, intent(in)   :: stypes(0:nprocs-1) ! MPI data types
    integer, intent(in)   :: rcvlths(0:nprocs-1)! length of incoming messages
-   integer, intent(in)   :: rdispls(0:nprocs-1)! offset from beginning of receive
+   integer, intent(in)   :: rdispls(0:nprocs-1)! offset from beginning of receive 
                                                !  buffer where incoming messages
                                                !  should be placed
    integer, intent(in)   :: rtypes(0:nprocs-1) ! MPI data types
@@ -670,7 +670,7 @@
    integer, intent(in)   :: comm               ! MPI communicator
    logical, intent(in)   :: comm_hs            ! handshaking protocol?
    logical, intent(in)   :: comm_isend         ! nonblocking send protocol?
-   integer, intent(in)   :: comm_maxreq        ! maximum number of outstanding
+   integer, intent(in)   :: comm_maxreq        ! maximum number of outstanding 
                                                !  nonblocking requests
 
 !---------------------------Output arguments--------------------------
@@ -689,23 +689,23 @@
    integer :: tag                              ! MPI message tag
    integer :: offset_t                         ! MPI message tag offset, for addressing
                                                !  message conflict bug (if necessary)
-   integer :: offset_s                         ! index of message beginning in
+   integer :: offset_s                         ! index of message beginning in 
                                                !  send buffer
-   integer :: offset_r                         ! index of message beginning in
+   integer :: offset_r                         ! index of message beginning in 
                                                !  receive buffer
    integer :: sndids(nprocs)                   ! send request ids
    integer :: rcvids(nprocs)                   ! receive request ids
    integer :: hs_rcvids(nprocs)                ! handshake receive request ids
 
-   integer :: maxreq, maxreqh                  ! maximum number of outstanding
+   integer :: maxreq, maxreqh                  ! maximum number of outstanding 
                                                !  nonblocking requests (and half)
    integer :: hs                               ! handshake variable
    integer :: rstep                            ! "receive" step index
 
    logical :: handshake, sendd                 ! protocol option flags
 
-   integer :: ier                              ! return error status
-   integer :: status(MP_STATUS_SIZE)           ! MPI status
+   integer :: ier                              ! return error status    
+   integer :: status(MP_STATUS_SIZE)           ! MPI status 
 !
 !-------------------------------------------------------------------------------------
 !
@@ -814,7 +814,7 @@
       enddo
       rstep = maxreq
 
-      ! Send (and start receiving) data
+      ! Send (and start receiving) data 
       do istep=1,steps
          p = swapids(istep)
 
@@ -913,7 +913,7 @@
       enddo
       rstep = maxreq
 
-      ! Send (and start receiving) data
+      ! Send (and start receiving) data 
       do istep=1,steps
          p = swapids(istep)
 
@@ -1006,7 +1006,7 @@
       enddo
       rstep = maxreq
 
-      ! Send (and start receiving) data
+      ! Send (and start receiving) data 
       do istep=1,steps
          p = swapids(istep)
 
@@ -1073,7 +1073,7 @@
       enddo
       rstep = maxreq
 
-      ! Send (and start receiving) data
+      ! Send (and start receiving) data 
       do istep=1,steps
          p = swapids(istep)
 
