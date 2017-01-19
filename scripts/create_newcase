@@ -15,7 +15,7 @@ def parse_command_line(args, cimeroot, description):
 %s --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
 OR
 %s --help
-"""
+""" % ((os.path.basename(args[0]), ) * 2)
     model = get_model()
 
     parser = argparse.ArgumentParser(usage=help_str,
