@@ -2,16 +2,26 @@
 
 from Tools.standard_script_setup import *
 from shutil import copyfile
-from CIME.utils         import expect
+from CIME.utils         import expect, get_model
 from CIME.case          import Case
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def parse_command_line(args, cimeroot):
+def parse_command_line(args, cimeroot, description):
 ###############################################################################
+    help_str = \
+"""
+%s --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
+OR
+%s --help
+"""
+    model = get_model()
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(usage=help_str,
+                                     description=description,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -87,6 +97,11 @@ def parse_command_line(args, cimeroot):
     parser.add_argument("--output-root",
                         help="Alternative path for the directory where case output is written")
 
+    if model == "cesm":
+        parser.add_argument("--run-unsupported", action="store_true",
+                            help="Force the creation of a case not tested or supported by CESM developers")
+
+
     # hidden argument indicating called from create_test
     parser.add_argument("--test", "-test", action="store_true",
                         help="Used to indicate that create_newcase was called from create_test"
@@ -124,14 +139,19 @@ def parse_command_line(args, cimeroot):
         expect(args.gridfile is not None,
                "User grid specification file must be set if the user grid is requested")
 
+    run_unsupported = False
+    if model == "cesm":
+        run_unsupported = args.run_unsupported
+
+
     return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.walltime, args.queue, args.output_root
+        args.walltime, args.queue, args.output_root, run_unsupported
 
 ###############################################################################
-def _main_func():
+def _main_func(description):
 ###############################################################################
     cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
 
@@ -139,7 +159,7 @@ def _main_func():
         mpilib, project, pecount,  \
         user_mods_dir, user_compset, pesfile, \
         user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
-        output_root = parse_command_line(sys.argv, cimeroot)
+        output_root, run_unsupported = parse_command_line(sys.argv, cimeroot, description)
 
     caseroot = os.path.abspath(caseroot)
 
@@ -156,10 +176,11 @@ def _main_func():
 
         # Configure the Case
         case.configure(compset, grid, machine_name=machine, project=project,
-                          pecount=pecount, compiler=compiler, mpilib=mpilib,
-                          user_compset=user_compset, pesfile=pesfile,
-                          user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
-                          walltime=walltime, queue=queue, output_root=output_root)
+                       pecount=pecount, compiler=compiler, mpilib=mpilib,
+                       user_compset=user_compset, pesfile=pesfile,
+                       user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
+                       walltime=walltime, queue=queue, output_root=output_root,
+                       run_unsupported=run_unsupported)
 
         case.create_caseroot()
 
@@ -177,4 +198,4 @@ def _main_func():
 ###############################################################################
 
 if __name__ == "__main__":
-    _main_func()
+    _main_func(__doc__)

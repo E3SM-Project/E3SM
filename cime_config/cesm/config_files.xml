@@ -153,6 +153,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of all system tests for primary component (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/testlist.xsd</schema>
   </entry>
 
   <entry id="TESTS_MODS_DIR">

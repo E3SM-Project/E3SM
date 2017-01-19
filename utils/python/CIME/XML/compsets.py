@@ -21,12 +21,19 @@ class Compsets(GenericXML):
 
     def get_compset_match(self, name):
         nodes = self.get_nodes("compset")
+        alias = None
+        lname = None
+        science_support = False
         for node in nodes:
-            alias = self.get_node("alias",root=node)
-            lname = self.get_node("lname",root=node)
-            if alias.text == name or lname.text == name:
-                logger.debug("Found node match with alias: %s and lname: %s" % (alias.text, lname.text))
-                return lname.text
+            alias = self.get_element_text("alias",root=node)
+            lname = self.get_element_text("lname",root=node)
+            if alias == name or lname == name:
+                science_support = self.get_element_text("science_support", root=node)
+                if science_support == None:
+                    science_support = False
+                logger.debug("Found node match with alias: %s and lname: %s" % (alias, lname))
+                return (lname, alias, science_support)
+        return (None, None, False)
 
     def get_compset_var_settings(self, compset, grid):
         '''
