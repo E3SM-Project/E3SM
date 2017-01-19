@@ -4,6 +4,7 @@
 
 macro(preqx_acc_setup)
 
+SET(TARGET_DIR      ${HOMME_SOURCE_DIR}/src/preqx_acc)
 SET(UTILS_SHARE_DIR ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/share)
@@ -14,18 +15,17 @@ SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                             ${UTILS_TIMING_DIR} )
 
-SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx_acc)
-FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
+# Find all F90 files in specific directories
+FILE(GLOB TARGET_F90    ${TARGET_DIR}/*.F90)
+FILE(GLOB TEST_SRC_F90  ${SRC_DIR}/test_src/*.F90)
+
 
 SET(PREQX_SRCS_F90
   ${TARGET_F90}
-  ${PHYSICS_DIR}/column_model_mod.F90 
-  ${PHYSICS_DIR}/column_types_mod.F90 
-  ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
+  ${TEST_SRC_F90}
   ${SRC_DIR}/checksum_mod.F90 
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/common_movie_mod.F90 
-  ${SRC_DIR}/forcing_mod.F90 
   ${SRC_DIR}/interp_movie_mod.F90 
   ${SRC_DIR}/interpolate_driver_mod.F90 
   ${SRC_DIR}/netcdf_io_mod.F90 
@@ -74,7 +74,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/physics_mod.F90 
   ${SRC_SHARE_DIR}/prim_advance_mod.F90 
   ${SRC_SHARE_DIR}/prim_advection_base.F90 
-  ${SRC_SHARE_DIR}/prim_driver_mod.F90 
+  ${SRC_SHARE_DIR}/prim_driver_base.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90 
   ${SRC_SHARE_DIR}/prim_state_mod.F90

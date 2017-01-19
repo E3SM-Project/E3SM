@@ -1039,7 +1039,7 @@ call vertical_dss(f)
 	subroutine test_vertical_operators(hybrid)
 
       integer, parameter :: ni = 200 ! number of interpolation pts
-      logical, parameter :: write_files = .true.
+      logical, parameter :: write_files = .false.
 
 			type (hybrid_t), intent(in)	:: hybrid
 

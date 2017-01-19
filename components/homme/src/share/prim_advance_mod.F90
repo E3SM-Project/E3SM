@@ -619,7 +619,7 @@ contains
 
   do ie=nets,nete
      ! apply forcing to Qdp
-     elem(ie)%derived%FQps(:,:,1)=0
+     elem(ie)%derived%FQps(:,:)=0
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
@@ -627,7 +627,7 @@ contains
         do k=1,nlev
            do j=1,np
               do i=1,np
-                 v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
+                 v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q)
                  !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
                  if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
                     !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
@@ -641,7 +641,7 @@ contains
                  !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
                  elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
                  if (q==1) then
-                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt_q
                  endif
               enddo
            enddo
@@ -651,7 +651,7 @@ contains
      if (use_moisture) then
         ! to conserve dry mass in the precese of Q1 forcing:
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
-             dt_q*elem(ie)%derived%FQps(:,:,1)
+             dt_q*elem(ie)%derived%FQps(:,:)
      endif
 
 #if 0
@@ -701,8 +701,8 @@ contains
         enddo
      enddo
 
-     elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,np1)   + dt_q*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+     elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,np1)   + dt_q*elem(ie)%derived%FT(:,:,:)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:)
 
   enddo
   end subroutine applyCAMforcing
@@ -723,8 +723,8 @@ contains
   real (kind=real_kind) :: v1,dp
 
   do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt_q*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:,1)
+     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt_q*elem(ie)%derived%FT(:,:,:)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt_q*elem(ie)%derived%FM(:,:,:,:)
   enddo
   end subroutine applyCAMforcing_dynamics
 

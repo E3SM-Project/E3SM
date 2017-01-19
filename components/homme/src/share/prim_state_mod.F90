@@ -200,8 +200,8 @@ contains
        umax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
 
-       fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:,pnm1))
-       fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
+       fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:))
+       fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:))
 
        tmax_local(ie)    = MAXVAL(elem(ie)%state%T(:,:,:,n0))
 
@@ -209,24 +209,24 @@ contains
             dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
 
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
-       ftmax_local(ie)    = MAXVAL(elem(ie)%derived%FT(:,:,:,pnm1))
-       fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
+       ftmax_local(ie)    = MAXVAL(elem(ie)%derived%FT(:,:,:))
+       fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1))
        omegamax_local(ie)    = MAXVAL(elem(ie)%derived%Omega_p(:,:,:))
        !======================================================
 
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
 
-       Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:,pnm1))
-       Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
+       Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:))
+       Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:))
 
        tmin_local(ie)    = MINVAL(elem(ie)%state%T(:,:,:,n0))
 
        if (rsplit>0) &
             dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
 
-       Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:,pnm1))
-       Fqmin_local(ie) = MINVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
+       Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:))
+       Fqmin_local(ie) = MINVAL(elem(ie)%derived%FQ(:,:,:,1))
        Omegamin_local(ie) = MINVAL(elem(ie)%derived%Omega_p(:,:,:))
 
 
@@ -235,8 +235,8 @@ contains
 
        usum_local(ie)    = SUM(elem(ie)%state%v(:,:,1,:,n0))
        vsum_local(ie)    = SUM(elem(ie)%state%v(:,:,2,:,n0))
-       Fusum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,1,:,pnm1))
-       Fvsum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,2,:,pnm1))
+       Fusum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,1,:))
+       Fvsum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,2,:))
 
        tsum_local(ie)    = SUM(elem(ie)%state%t(:,:,:,n0))
        if (rsplit>0) then
@@ -247,8 +247,8 @@ contains
           dpsum_local(ie)    = 0.0D0
        end if
 
-       Ftsum_local(ie)    = SUM(elem(ie)%derived%FT(:,:,:,pnm1))
-       FQsum_local(ie) = SUM(elem(ie)%derived%FQ(:,:,:,1,pnm1))
+       Ftsum_local(ie)    = SUM(elem(ie)%derived%FT(:,:,:))
+       FQsum_local(ie) = SUM(elem(ie)%derived%FQ(:,:,:,1))
        Omegasum_local(ie) = SUM(elem(ie)%derived%Omega_p(:,:,:))
 
        pssum_local(ie) = SUM(tmp(:,:,ie))

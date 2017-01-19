@@ -375,8 +375,8 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
   ! apply sponge layer forcing to momentum terms
   do ie=nets,nete
     do k=1,nlev
-      elem(ie)%derived%FM(:,:,1,k,n) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,1,k,n) - u0(:,:,k,ie) )
-      elem(ie)%derived%FM(:,:,2,k,n) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,2,k,n) - v0(:,:,k,ie) )
+      elem(ie)%derived%FM(:,:,1,k) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,1,k,n) - u0(:,:,k,ie) )
+      elem(ie)%derived%FM(:,:,2,k) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,2,k,n) - v0(:,:,k,ie) )
     enddo
   enddo
 
