@@ -38,7 +38,7 @@
                         <attribute name="type">output</attribute>
                         <attribute name="filename_template">output.nc</attribute>
                         <attribute name="output_interval">0000-06-00_00:00:00</attribute>
-                        <attribute name="clobber_mode">truncate</attribute>
+                        <attribute name="clobber_mode">overwrite</attribute>
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
                                 <member name="xtime" type="var"/>
@@ -52,7 +52,7 @@
                         <attribute name="type">output</attribute>
                         <attribute name="filename_template">output2.nc</attribute>
                         <attribute name="output_interval">0000-00-15_00:00:00</attribute>
-                        <attribute name="clobber_mode">truncate</attribute>
+                        <attribute name="clobber_mode">overwrite</attribute>
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
                                 <member name="xtime" type="var"/>
@@ -65,6 +65,8 @@
                                 <member name="channelArea" type="var"/>
                                 <member name="waterFlux" type="var"/>
                                 <member name="waterPressure" type="var"/>
+                                <member name="externalWaterInput" type="var"/>
+                                <member name="basalMeltInput" type="var"/>
                                 <member name="deltat" type="var"/>
                                 <member name="deltatSGH" type="var"/>
                                 <member name="deltatSGHadvec" type="var"/>
@@ -77,7 +79,7 @@
 
                 <stream name="restart">
                         <attribute name="type">input;output</attribute>
-                        <attribute name="filename_template">restart.$Y.nc</attribute>
+                        <attribute name="filename_template">restart.$Y.$M.nc</attribute>
                         <attribute name="filename_interval">output_interval</attribute>
                         <attribute name="output_interval">0002-00-00_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>

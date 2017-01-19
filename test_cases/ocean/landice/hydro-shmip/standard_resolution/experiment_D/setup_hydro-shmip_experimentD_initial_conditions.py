@@ -15,7 +15,7 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename", type='string', help="file to setup", metavar="FILE")
 parser.add_option("-a", dest="afile", type='string', help="restart file from test A1 to use to set up this test", metavar="FILE")
-parser.add_option("-n", "--number", dest="number", type='int', help="test variant to set up, 1-5", metavar="NUMBER")
+#parser.add_option("-n", "--number", dest="number", type='int', help="test variant to set up, 1-5", metavar="NUMBER")  # NOT USED
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'

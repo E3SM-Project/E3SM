@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="experiment_D1">
+<config case="experiment_D4">
         <!-- add needed files/executables -->
         <add_executable source="model" dest="landice_model"/>
         <!-- link in scripts that the user will need -->
@@ -7,7 +7,7 @@
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="shmip_template.xml" path_base="script_resolution_dir"/>
-                <option name="config_SGH_shmip_forcing">'D1'</option>
+                <option name="config_SGH_shmip_forcing">'D4'</option>
                 <option name="config_SGH_englacial_porosity">0.001</option>
         </namelist>
 
