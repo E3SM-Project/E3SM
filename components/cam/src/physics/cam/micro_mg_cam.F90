@@ -1535,7 +1535,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), parameter :: deicon = 50._r8            ! Convective ice effective diameter (meters)
 
    real(r8), pointer :: pckdptr(:,:)
-   logical :: cldfsnow_logic = .false.
 
    !-------------------------------------------------------------------------------
 
@@ -2350,14 +2349,15 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          ! If no cloud and snow, then set to 0.25
          !BSINGH- Following code MUST be reworked. This is TEMPORARY solution to maintain BFB
          !PMA: .lt. is replaced by .le. following part of NCAR RRTMG bug fix         
-         cldfsnow_logic = ( cldfsnow(i,k) .lt. 1.e-4_r8 )
-         if (rrtmg_temp_fix) then
-            cldfsnow_logic = ( cldfsnow(i,k) .le. 1.e-4_r8 )
+         if(rrtmg_temp_fix ) then
+            if( (cldfsnow(i,k) .le. 1.e-4_r8) .and. (qsout(i,k) .gt. 1.e-6_r8) ) then
+               cldfsnow(i,k) = 0.25_r8
+            endif
+         else
+            if( (cldfsnow(i,k) .lt. 1.e-4_r8) .and. (qsout(i,k) .gt. 1.e-6_r8) ) then
+               cldfsnow(i,k) = 0.25_r8
+            endif
          endif
-         if( cldfsnow_logic .and. ( qsout(i,k) .gt. 1.e-6_r8 )) then
-
-            cldfsnow(i,k) = 0.25_r8
-         end if
          ! Calculate in-cloud snow water path
          icswp(i,k) = qsout(i,k) / max( mincld, cldfsnow(i,k) ) * state_loc%pdel(i,k) / gravit
       end do
