@@ -19,13 +19,9 @@ FILE(GLOB TEST_SRC_F90  ${SRC_DIR}/test_src/*.F90)
 SET(PESE_SRCS_F90
   ${TARGET_F90}
   ${TEST_SRC_F90}
-  ${PHYSICS_DIR}/column_model_mod.F90 
-  ${PHYSICS_DIR}/column_types_mod.F90
-  ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
   ${SRC_DIR}/checksum_mod.F90
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/common_movie_mod.F90
-  ${SRC_DIR}/forcing_mod.F90
   ${SRC_DIR}/interp_movie_mod.F90
   ${SRC_DIR}/interpolate_driver_mod.F90
   ${SRC_DIR}/netcdf_interp_mod.F90
@@ -68,7 +64,7 @@ SET(PESE_SRCS_F90
   ${SRC_SHARE_DIR}/physical_constants.F90
   ${SRC_SHARE_DIR}/physics_mod.F90 
   ${SRC_SHARE_DIR}/prim_advection_base.F90 
-  ${SRC_SHARE_DIR}/prim_driver_mod.F90
+  ${SRC_SHARE_DIR}/prim_driver_base.F90
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_ref_mod.F90
   ${SRC_SHARE_DIR}/prim_state_mod.F90

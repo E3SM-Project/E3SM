@@ -14,7 +14,7 @@ module prim_advection_mod
   use hybrid_mod, only      : hybrid_t
   use control_mod, only     : use_semi_lagrange_transport
   use sl_advection, only    : prim_advec_tracers_remap_ALE, sl_init1
-  use prim_advection_mod_base, only: prim_advec_init1_rk2, prim_advec_tracers_remap_rk2
+  use prim_advection_base, only: prim_advec_init1_rk2, prim_advec_tracers_remap_rk2
 
   implicit none
 

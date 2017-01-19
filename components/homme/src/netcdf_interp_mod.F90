@@ -5,7 +5,9 @@
 ! For questions, please contact: david.hall@colorado.edu
 !_______________________________________________________________________
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 module netcdf_interp_mod
 
@@ -69,7 +71,7 @@ module netcdf_interp_mod
   !_____________________________________________________________________
   !  possible output variables
 
-  integer, parameter :: n_vars= 40 ! number of possible output fields
+  integer, parameter :: n_vars= 38 ! number of possible output fields
 
   type(nc_sfield_t), parameter :: nc_vars(n_vars) =&
   (/&
@@ -87,7 +89,7 @@ module netcdf_interp_mod
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'p    ', 'Pa',              'hydrostatic atmo pressure'  ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'pt   ', 'Pa',              'total atmospheric pressure' ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'T    ', 'degrees Kelvin',  'temperature'                ),&
-    nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'Tp   ', 'degrees Kelvin',  'potential temperature'      ),&
+    nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'theta', 'degrees Kelvin',  'potential temperature'      ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),1, .false., 'u    ', 'meters/second',   'longitudinal wind component'),&
     nc_sfield_t(pio_double, (/1,2,3,4/),1, .false., 'v    ', 'meters/second',   'latitudinal wind component' ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'w    ', 'meters/second',   'vertical wind component'    ),&
@@ -99,9 +101,7 @@ module netcdf_interp_mod
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'omega', '',                ''                           ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'D3   ', '',                '3d divergence of velocity'  ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'speed', 'meters/second',   'wind speed'                 ),&
-    nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'spd_ ', 'meters/second',   'speed - speed0'             ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'KE   ', 'Joules',          'kinetic energy'             ),&
-    nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'KE_  ', 'Joules',          'KE - KE0'                   ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'alpha', '',                'specific volume'            ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'rho  ', '',                'density'                    ),&
     nc_sfield_t(pio_double, (/1,2,3,4/),0, .false., 'dpdn ', '',                'pseudo-density'             ),&

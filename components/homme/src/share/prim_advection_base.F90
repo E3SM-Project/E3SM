@@ -35,7 +35,7 @@
 !  remap Qdp* to Qdp(t+1)   [ dp_star(t+1) -> dp(t+1) ]
 
 
-module prim_advection_mod_base
+module prim_advection_base
 !
 ! total divergence formulation:
 !    d/dt[dp/dn Q] +  div( U dp/dn Q ) + d/dn ( eta_dot dp/dn Q ) = 0
@@ -739,8 +739,4 @@ OMP_SIMD
   end subroutine advance_hypervis_scalar
 
 
-
-
-
-
-end module prim_advection_mod_base
+end module prim_advection_base

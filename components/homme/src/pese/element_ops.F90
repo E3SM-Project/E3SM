@@ -18,7 +18,7 @@ module element_ops
   use kinds,          only: rl => real_kind, real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : kappa, p0, g
+  use physical_constants, only: kappa, p0, g
   use shr_const_mod,  only: unset => shr_const_spval
   use vertical_se,    only: eta_derivative, elem_height, vertical_dss, v_interpolate
 
@@ -39,18 +39,28 @@ contains
     integer,                intent(in) :: nt
     integer,                intent(in) :: ntQ
 
-    integer :: i,j,k
+    integer :: i,j,k, qi
     real(rl) :: var(np,np,nlev)
 
     ! get prognostic variables
 
     select case(name)
 
-      case('phi'); var = elem%derived%phi(:,:,:)
-      case('T'  ); var = elem%state%T(:,:,:,nt)
-      case('u'  ); var = elem%state%v(:,:,1,:,nt)
-      case('v'  ); var = elem%state%v(:,:,2,:,nt)
+      case('T'  ); var = elem%state%T   (:,:,:,nt)
+      case('u'  ); var = elem%state%v   (:,:,1,:,nt)
+      case('v'  ); var = elem%state%v   (:,:,2,:,nt)
       case('p'  ); var = elem%state%dp3d(:,:,:,nt)
+      case('ps' ); forall(k=1:nlev) var(:,:,k) = elem%state%ps_v(:,:,nt)
+
+      case('Q'  ); var = elem%state%Q(:,:,:,1)
+      case('Q2' ); qi=2; if(qsize_d>1) var = elem%state%Q(:,:,:,qi)
+      case('Q3' ); qi=3; if(qsize_d>2) var = elem%state%Q(:,:,:,qi)
+      case('Q4' ); qi=4; if(qsize_d>3) var = elem%state%Q(:,:,:,qi)
+      case('Q5' ); qi=5; if(qsize_d>4) var = elem%state%Q(:,:,:,qi)
+
+      case('phi');  var = elem%derived%phi
+      case('geo');  var = elem%derived%phi
+      case('omega');var = elem%derived%omega
 
       case default
         print *,'name = ',trim(name)
@@ -118,6 +128,20 @@ contains
     elem%derived%phi(i,j,k)        = g*zm
 
   end subroutine
+
+  !_____________________________________________________________________
+  subroutine set_thermostate(elem,temperature,hvcoord,n0,n0_q)
+
+    implicit none
+    
+    type (element_t),       intent(inout) :: elem
+    real (kind=real_kind),  intent(in)    :: temperature(np,np,nlev)
+    type (hvcoord_t),       intent(in)    :: hvcoord                    ! hybrid vertical coordinate struct
+    integer :: n0,n0_q
+
+    elem%state%T(:,:,:,n0)=temperature(:,:,:)
+
+  end subroutine set_thermostate
 
   !_____________________________________________________________________
   subroutine copy_state(elem,nin,nout)

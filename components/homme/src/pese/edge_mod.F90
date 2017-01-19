@@ -3,9 +3,33 @@
 #endif
 
 module edge_mod
-  use edge_mod_base, only: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack,       &
-                           edgeVunpackMIN, edgeVunpackMAX, edgeDGVpack, edgeDGVunpack, edgeVunpackVert, edgeDefaultVal, initGhostBuffer3D, FreeGhostBuffer3D, &
-                           ghostVpackfull, ghostVunpackfull, ghostVpack_unoriented, ghostVunpack_unoriented, ghostVpack3d, ghostVunpack3d, &
-                           edgeSpack, edgeSunpackMin, edgeSunpackMax
+  use edge_mod_base, only:&
+    FreeEdgeBuffer,&
+    FreeGhostBuffer3D,&
+    FreeLongEdgeBuffer,&
+    LongEdgeVpack,&
+    LongEdgeVunpackMIN,&
+    edgeDGVpack,&
+    edgeDGVunpack,&
+    edgeDefaultVal,&
+    edgeSpack,&
+    edgeSunpackMax,&
+    edgeSunpackMin,&
+    edgeVpack,&
+    edgeVunpack,&
+    edgeVunpackMAX,&
+    edgeVunpackMIN,&
+    edgeVunpackVert,&
+    ghostVpack3d,&
+    ghostVpack_unoriented,&
+    ghostVpackfull,&
+    ghostVunpack3d,&
+    ghostVunpack_unoriented,&
+    ghostVunpackfull,&
+    initEdgeBuffer,&
+    initEdgeSBuffer,&
+    initGhostBuffer3D,&
+    initLongEdgeBuffer
+
   implicit none
 end module edge_mod
