@@ -56,6 +56,16 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$grid_prefix .= 'cice.EC60to30km.restartFrom_eos1b';
 	$decomp_date .= '151020';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oEC60to30v3' ) {
+        $grid_date .= '161222';
+	$grid_prefix .= 'cice.EC60to30v3';
+	$decomp_date .= '161222';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oEC60to30v3_ICG' ) {
+        $grid_date .= '170111';
+	$grid_prefix .= 'seaice.EC60to30v3.ICG_a16q_yr60';
+	$decomp_date .= '161222';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30wLI' ) {
         $grid_date .= '160830';
         $grid_prefix .= 'cice.EC60to30wLI';
@@ -91,6 +101,11 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
         $grid_prefix .= 'seaice.RRS.30-10km';
         $decomp_date .= '151031';
         $decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oRRS30to10v3' ) {
+        $grid_date .= '161221';
+        $grid_prefix .= 'oRRS30to10v3';
+        $decomp_date .= '161221';
+        $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS30to10wLI' ) {
         $grid_date .= '160930';
         $grid_prefix .= 'seaice.RRS30-10wLI';
@@ -99,7 +114,13 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 } elsif ( $ICE_GRID eq 'oRRS18to6' ) {
         $grid_date .= '160830';
         $grid_prefix .= 'seaice.RRS.18to6km';
+        $decomp_date .= '160830';
         $decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oRRS18to6v3' ) {
+        $grid_date .= '170111';
+        $grid_prefix .= 'seaice.RRS18to6v3';
+        $decomp_date .= '170111';
+        $decomp_prefix .= 'mpas-cice.graph.info.lblat_3.';
 } elsif ( $ICE_GRID eq 'oRRS15to5' ) {
         $grid_date .= '151209';
         $grid_prefix .= 'seaice.RRS.15to5km';

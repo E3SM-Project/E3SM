@@ -10,10 +10,13 @@
 <config_dt ice_grid="oQU120">3600.0</config_dt>
 <config_dt ice_grid="mpas120">3600.0</config_dt>
 <config_dt ice_grid="oEC60to30">1800.0</config_dt>
+<config_dt ice_grid="oEC60to30v3">1800.0</config_dt>
 <config_dt ice_grid="oEC60to30wLI">1800.0</config_dt>
 <config_dt ice_grid="oRRS30to10">900.0</config_dt>
+<config_dt ice_grid="oRRS30to10v3">900.0</config_dt>
 <config_dt ice_grid="oRRS30to10wLI">900.0</config_dt>
 <config_dt ice_grid="oRRS18to6">900.0</config_dt>
+<config_dt ice_grid="oRRS18to6v3">900.0</config_dt>
 <config_dt ice_grid="oRRS15to5">900.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
@@ -86,8 +89,11 @@
 <config_dynamics_subcycle_number ice_grid="oQU120">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="mpas120">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oEC60to30">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oEC60to30v3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oRRS30to10v3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS18to6">2</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oRRS18to6v3">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS15to5">2</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
