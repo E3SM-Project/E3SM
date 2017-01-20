@@ -410,7 +410,7 @@ module mpas_pool_routines
 !> \author Michael Duda, Doug Jacobsen
 !> \date   03/27/2014
 !> \details
-!>  This routine will remove all memebers from within a pool associated with inPool.
+!>  This routine will remove all members from within a pool associated with inPool.
 !
 !-----------------------------------------------------------------------
    recursive subroutine mpas_pool_empty_pool(inPool)!{{{
@@ -5888,13 +5888,17 @@ module mpas_pool_routines
       threadNum = mpas_threading_get_thread_num()
 
       if (currentErrorLevel == MPAS_POOL_WARN) then
+#ifdef MPAS_DEBUG
          if ( threadNum == 0 ) then
             write(stderrUnit,*) trim(mesg)
          end if
+#endif
       else if (currentErrorLevel == MPAS_POOL_FATAL) then
+#ifdef MPAS_DEBUG
          if ( threadNum == 0 ) then
             write(stderrUnit,*) trim(mesg)
          end if
+#endif
          call mpas_dmpar_global_abort(trim(mesg))
       end if
 
