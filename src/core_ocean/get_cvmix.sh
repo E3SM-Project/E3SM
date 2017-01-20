@@ -15,21 +15,26 @@ GIT=`which git`
 SVN=`which svn`
 PROTOCOL=""
 
-# CVMix exists. Need to make sure it's updated if it is git.
+# CVMix exists. Check to see if it is the correct version.
 # Otherwise, flush the directory to ensure it's updated.
 if [ -d cvmix ]; then
-	unlink cvmix
 
 	if [ -d .cvmix_all/.git ]; then
 		cd .cvmix_all
-		git fetch origin &> /dev/null
-		git checkout ${CVMIX_TAG} &> /dev/null
+		CURR_TAG=$(git describe --tags)
 		cd ../
-		ln -sf .cvmix_all/${CVMIX_SUBDIR} cvmix
+		if [ "${CURR_TAG}" == "${CVMIX_TAG}" ]; then
+			echo "CVmix version is current. Skip update"
+		else
+			unlink cvmix
+			rm -rf .cvmix_all
+		fi
 	else
+		unlink cvmix
 		rm -rf .cvmix_all
 	fi
 fi
+
 
 # CVmix Doesn't exist, need to acquire souce code
 # If might have been flushed from the above if, in the case where it was svn or wget that acquired the source.
