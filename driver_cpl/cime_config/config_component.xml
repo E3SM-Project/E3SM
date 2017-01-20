@@ -1967,6 +1967,14 @@
     <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
+  <entry id="TOTAL_CORES">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
+    <desc>total number of cores used (setup automatically - DO NOT EDIT)</desc>
+  </entry>
+
   <entry id="MAX_TASKS_PER_NODE">
     <type>integer</type>
     <default_value>0</default_value>

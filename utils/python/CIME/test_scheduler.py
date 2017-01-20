@@ -12,7 +12,7 @@ import shutil, traceback, stat, threading, time, glob
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
-from CIME.utils import append_status, TESTS_FAILED_ERR_CODE
+from CIME.utils import append_status, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
@@ -29,6 +29,46 @@ logger = logging.getLogger(__name__)
 TEST_START = "INIT" # Special pseudo-phase just for test_scheduler bookkeeping
 PHASES = [TEST_START, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
           SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
+
+###############################################################################
+def _translate_test_names_for_new_pecount(test_names, force_procs, force_threads):
+###############################################################################
+    new_test_names = []
+    for test_name in test_names:
+        testcase, caseopts, grid, compset, machine, compiler, testmod = parse_test_name(test_name)
+        rewrote_caseopt = False
+        if caseopts is not None:
+            for idx, caseopt in enumerate(caseopts):
+                if caseopt.startswith("P"):
+                    caseopt = caseopt[1:]
+                    if "x" in caseopt:
+                        old_procs, old_thrds = caseopt.split("x")
+                    else:
+                        old_procs, old_thrds = caseopt, None
+
+                    new_procs = force_procs if force_procs is not None else old_procs
+                    new_thrds = force_threads if force_threads is not None else old_thrds
+
+                    newcaseopt = ("P%s" % new_procs) if new_thrds is None else ("P%sx%s" % (new_procs, new_thrds))
+
+                    # No idea why pylint thinks this is unsubscriptable
+                    caseopts[idx] = newcaseopt # pylint: disable=unsubscriptable-object
+
+                    rewrote_caseopt = True
+                    break
+
+        if not rewrote_caseopt:
+            force_procs = "M" if force_procs is None else force_procs
+            newcaseopt = ("P%s" % force_procs) if force_threads is None else ("P%sx%s" % (force_procs, force_threads))
+            if caseopts is None:
+                caseopts = [newcaseopt]
+            else:
+                caseopts.append(newcaseopt)
+
+        new_test_name = get_full_test_name(testcase, caseopts=caseopts, grid=grid, compset=compset, machine=machine, compiler=compiler, testmod=testmod)
+        new_test_names.append(new_test_name)
+
+    return new_test_names
 
 ###############################################################################
 class TestScheduler(object):
@@ -52,12 +92,14 @@ class TestScheduler(object):
         self._save_timing   = save_timing
         self._queue         = queue
         self._test_data     = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
-        self._force_procs   = force_procs
-        self._force_threads = force_threads
 
         self._allow_baseline_overwrite  = allow_baseline_overwrite
 
         self._machobj = Machines(machine=machine_name)
+
+        # If user is forcing procs or threads, re-write test names to reflect this.
+        if force_procs or force_threads:
+            test_names = _translate_test_names_for_new_pecount(test_names, force_procs, force_threads)
 
         self._no_setup = no_setup
         self._no_build = no_build or no_setup or namelists_only
@@ -316,13 +358,6 @@ class TestScheduler(object):
         if self._output_root is not None:
             create_newcase_cmd += " --output-root %s " % self._output_root
 
-        if self._force_procs or self._force_threads:
-            pecount_str = "M" if self._force_procs is None else str(self._force_procs)
-            if self._force_threads is not None:
-                pecount_str += "x%d" % self._force_threads
-
-            create_newcase_cmd += " --pecount %s" % pecount_str
-
         if test_mods is not None:
             files = Files()
             (component,modspath) = test_mods.split('/',1)
@@ -535,7 +570,7 @@ class TestScheduler(object):
     ###########################################################################
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
-            out = run_cmd_no_fail("./xmlquery TOTALPES -value", from_dir=test_dir)
+            out = run_cmd_no_fail("./xmlquery TOTAL_CORES -value", from_dir=test_dir)
             return int(out)
         elif (phase == SHAREDLIB_BUILD_PHASE):
             # Will force serialization of sharedlib builds

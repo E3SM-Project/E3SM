@@ -186,7 +186,6 @@
       <arguments>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n $TOTALPES</arg>
-        <arg name="thread_count"> -c {{ cores_per_task }}</arg>
         <arg name="binding"> --cpu_bind=cores</arg>
       </arguments>
     </mpirun>
@@ -298,7 +297,6 @@
       <arguments>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n $TOTALPES</arg>
-        <arg name="thread_count"> -c {{ cores_per_task }}</arg>
         <arg name="binding"> --cpu_bind=cores</arg>
       </arguments>
     </mpirun>

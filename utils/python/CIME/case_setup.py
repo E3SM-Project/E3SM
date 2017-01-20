@@ -207,6 +207,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+
             # Make sure pio settings are consistant
             for comp in models:
                 pio_stride = case.get_value("PIO_STRIDE_%s"%comp)

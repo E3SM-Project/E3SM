@@ -1202,13 +1202,16 @@ class K_TestCimeCase(TestCreateTestCommon):
                               % (SCRIPT_DIR, self._baseline_name, self._testroot, self._testroot))
 
         casedir = os.path.join(self._testroot,
-                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial_P16x8.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
 
         with Case(casedir, read_only=True) as case:
             self.assertEqual(case.get_value("NTASKS_CPL"), 16)
 
             self.assertEqual(case.get_value("NTHRDS_CPL"), 8)
+
+            expected_cores = 16 * case.cores_per_task
+            self.assertEqual(case.get_value("TOTAL_CORES"), expected_cores)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
