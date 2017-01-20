@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 # from matplotlib.contour import QuadContourSet
 # import time
+import random
 
 secInYr = 3600.0 * 24.0 * 365.0  # Note: this may be slightly wrong for some calendar types!
 
@@ -42,6 +43,9 @@ if options.A3 and options.A5:
 
 f = netCDF4.Dataset(options.filename,'r')
 
+nCells = len(f.dimensions['nCells'])
+nEdges = len(f.dimensions['nEdges'])
+nTime = len(f.dimensions['Time'])
 #xtime = f.variables['xtime'][:]
 xCell = f.variables['xCell'][:]
 yCell = f.variables['yCell'][:]
@@ -271,14 +275,18 @@ plt.legend(loc='best')
 ############################
 fig = plt.figure(2, facecolor='w')
 # thickness over time
-ax1 = fig.add_subplot(321)
-for i in ind:
+ax1 = fig.add_subplot(331)
+# plot n random cells
+n=1000
+#for i in ind:  # this version plots cells along the centerline only
+for i in random.sample(range(min(nCells,n)), n):
     plt.plot(days/365.0, f.variables['waterThickness'][:,i])
+plt.plot(days[:]/365.0, f.variables['waterThickness'][:,:].max(axis=1), linewidth=2) #max
 plt.xlabel('Years since start')
 plt.ylabel('water thickness (m)')
 plt.grid(True)
 
-ax = fig.add_subplot(323)
+ax = fig.add_subplot(334)
 # max change in thickness
 delH =  (f.variables['waterThickness'][-1,:] - f.variables['waterThickness'][-2,:]) / ((days[-1] - days[-2])/365.0)
 plt.plot(f.variables['waterThickness'][-1,:], delH, '.')
@@ -287,7 +295,7 @@ plt.xlabel('water thickness (m)')
 plt.title('Rate of change on final time step')
 plt.grid(True)
 
-ax = fig.add_subplot(325)
+ax = fig.add_subplot(337)
 # max change in thickness
 plt.plot(f.variables['waterThickness'][-1,:], delH/f.variables['waterThickness'][-1,:]*100, '.')
 plt.ylabel('dh/dt (%)')
@@ -295,18 +303,23 @@ plt.xlabel('water thickness (m)')
 plt.title('Rate of change on final time step.  Goal=0.1%?')
 plt.grid(True)
 
+# ----
 
 # Effective pressure over time
-ax = fig.add_subplot(322, sharex=ax1)
-for i in ind:
+ax = fig.add_subplot(332, sharex=ax1)
+# plot n random cells
+n=1000
+#for i in ind:  # this version plots cells along the centerline only
+for i in random.sample(range(min(nCells,n)), n):
     plt.plot(days/365.0, f.variables['effectivePressure'][:,i]/1.0e6)
+plt.plot(days[:]/365.0, f.variables['effectivePressure'][:,:].max(axis=1)/1.0e6, linewidth=2) #max
 plt.xlabel('Years since start')
 plt.ylabel('effective pressure (MPa)')
 plt.grid(True)
 
 
-ax = fig.add_subplot(324)
-# max change in thickness
+ax = fig.add_subplot(335)
+# max change in N
 delN =  (f.variables['effectivePressure'][-1,:] - f.variables['effectivePressure'][-2,:]) / ((days[-1] - days[-2])/365.0)
 plt.plot(f.variables['effectivePressure'][-1,:], delN, '.')
 plt.ylabel('dN/dt (Pa/yr)')
@@ -314,14 +327,44 @@ plt.xlabel('N (Pa)')
 plt.title('Rate of change on final time step')
 plt.grid(True)
 
-ax = fig.add_subplot(326)
-# max change in thickness
+ax = fig.add_subplot(338)
+# max change in N
 plt.plot(f.variables['effectivePressure'][-1,:], delN/f.variables['effectivePressure'][-1,:]*100.0, '.')
 plt.ylabel('dN/dt (%)')
 plt.xlabel('N (Pa)')
 plt.title('Rate of change on final time step. Goal=0.1%?')
 plt.grid(True)
 
+# ---
+
+# Channel area over time
+ax = fig.add_subplot(333, sharex=ax1)
+# plot n random edges
+n=2000
+for i in random.sample(range(min(nEdges,n)), n):
+    plt.plot(days/365.0, f.variables['channelArea'][:,i])
+plt.plot(days[:]/365.0, f.variables['channelArea'][:,:].max(axis=1), linewidth=2)  #max
+plt.xlabel('Years since start')
+plt.ylabel('maximum channel area (m^2)')
+plt.grid(True)
+
+
+ax = fig.add_subplot(336)
+# max change in channel area
+delS =  (f.variables['channelArea'][-1,:] - f.variables['channelArea'][-2,:]) / ((days[-1] - days[-2])/365.0)
+plt.plot(f.variables['channelArea'][-1,:], delS, '.')
+plt.ylabel('dS/dt (m^2/yr)')
+plt.xlabel('channel area (m^2)')
+plt.title('Rate of change on final time step')
+plt.grid(True)
+
+ax = fig.add_subplot(339)
+# max change in channel area, %
+plt.plot(f.variables['channelArea'][-1,:], delS/f.variables['channelArea'][-1,:]*100.0, '.')
+plt.ylabel('dS/dt (%)')
+plt.xlabel('S (m^2)')
+plt.title('Rate of change on final time step. Goal=0.1%?')
+plt.grid(True)
 
 
 
