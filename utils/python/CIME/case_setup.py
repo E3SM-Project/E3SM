@@ -190,7 +190,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                    "it is not possible to run with OpenMP if using the NAG Fortran compiler")
             cost_pes = env_mach_pes.get_cost_pes(pestot, thread_count, machine=case.get_value("MACH"))
             case.set_value("COST_PES", cost_pes)
-            case.set_value("TOTAL_CORES", pestot * thread_count)
 
             # create batch files
             logger.info("Creating batch script case.run")

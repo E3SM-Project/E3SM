@@ -128,12 +128,9 @@ class Case(object):
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
         smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE")/self.get_value("PES_PER_NODE")))
 
-        self.cores_per_task = ((self.get_value("MAX_TASKS_PER_NODE")/smt_factor) \
-                               / self.tasks_per_node) * 2
+        self.cores_per_task = self.thread_count / smt_factor
 
         return total_tasks
-
-
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -774,7 +771,9 @@ class Case(object):
             self.set_value("TIMER_LEVEL", 4)
         if test:
             self.set_value("TEST",True)
+
         total_tasks = self.initialize_derived_attributes()
+
         # Make sure that parallel IO is not specified if total_tasks==1
         if total_tasks == 1:
             for compclass in self._component_classes:
@@ -783,6 +782,8 @@ class Case(object):
                 if pio_typename in ("pnetcdf", "netcdf4p"):
                     self.set_value(key, "netcdf")
 
+        # Set TOTAL_CORES
+        self.set_value("TOTAL_CORES", total_tasks * self.cores_per_task )
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
