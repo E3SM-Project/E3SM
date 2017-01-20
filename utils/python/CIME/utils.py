@@ -508,6 +508,7 @@ def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
 def get_project(machobj=None):
     """
     Hierarchy for choosing PROJECT:
+    0. Command line flag to create_newcase or create_test
     1. Environment variable PROJECT
     2  Environment variable ACCOUNT  (this is for backward compatibility)
     3. File $HOME/.cime/config       (this is new)

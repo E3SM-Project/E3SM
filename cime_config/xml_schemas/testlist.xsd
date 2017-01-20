@@ -19,7 +19,7 @@
       <xs:attribute name="compset" use="required" type="xs:NCName"/>
       <xs:attribute name="grid" use="required" type="xs:NCName"/>
       <xs:attribute name="name" use="required" type="xs:NCName"/>
-      <xs:attribute name="testmods" use="required"/>
+      <xs:attribute name="testmods" />
     </xs:complexType>
   </xs:element>
 

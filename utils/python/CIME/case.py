@@ -14,6 +14,7 @@ from CIME.utils                     import get_build_threaded, get_current_commi
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
+from CIME.XML.testlist                 import Testlist
 from CIME.XML.component             import Component
 from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
@@ -82,6 +83,8 @@ class Case(object):
         # table and then remove the entry.
         self.lookups = {}
         self.set_lookup_value('CIMEROOT',os.path.abspath(get_cime_root()))
+        self._cime_model = get_model()
+        self.set_lookup_value('MODEL', self._cime_model)
         self._compsetname = None
         self._gridname = None
         self._compsetsfile = None
@@ -90,7 +93,7 @@ class Case(object):
         self._components = []
         self._component_classes = []
         self._is_env_loaded = False
-        self._cime_model = get_model()
+
 
         self.thread_count = None
         self.tasks_per_node = None
@@ -406,7 +409,8 @@ class Case(object):
         either a longname or an alias.  This will also set the
         compsets and pes specfication files.
         """
-
+        science_support = {}
+        compset_alias = None
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
 
@@ -420,7 +424,7 @@ class Case(object):
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
-                match = compsets.get_compset_match(name=compset_name)
+                match, compset_alias, science_support = compsets.get_compset_match(name=compset_name)
                 pesfile = files.get_value("PES_SPEC_FILE"     , {"component":component})
                 if match is not None:
                     self._pesfile = pesfile
@@ -439,7 +443,7 @@ class Case(object):
                     logger.info("Compset longname is %s " %(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pesfile))
-                    return
+                    return compset_alias, science_support
 
         if user_compset is True:
             #Do not error out for user_compset
@@ -451,6 +455,7 @@ class Case(object):
             expect(False,
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
+        return None, science_support
 
     def get_compset_components(self):
         #If are doing a create_clone then, self._compsetname is not set yet
@@ -550,13 +555,13 @@ class Case(object):
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None, queue=None, output_root=None):
+                  walltime=None, queue=None, output_root=None, run_unsupported=False):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
         files = Files()
-        self._set_compset_and_pesfile(compset_name, files, user_compset=user_compset, pesfile=pesfile)
+        compset_alias, science_support = self._set_compset_and_pesfile(compset_name, files, user_compset=user_compset, pesfile=pesfile)
 
         self._components = self.get_compset_components()
         #FIXME - if --user-compset is True then need to determine that
@@ -734,6 +739,13 @@ class Case(object):
         logger.info(" Compset is: %s " %self._compsetname)
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
+
+        if not test and not run_unsupported and self._cime_model == "cesm":
+            if grid_name in science_support:
+                logger.info("\nThis is a CESM scientifically supported compset at this resolution.\n")
+            else:
+                self._check_testlists(compset_alias, grid_name, files)
+
 
         # Set project id
         if project is None:
@@ -1084,3 +1096,20 @@ class Case(object):
             env_module = self.get_env("mach_specific")
             env_module.load_env(compiler=compiler,debug=debug, mpilib=mpilib)
             self._is_env_loaded = True
+
+    def _check_testlists(self, compset_alias, grid_name, files):
+        """
+        CESM only: check the testlist file for tests of this compset grid combination
+        """
+        if "TESTS_SPEC_FILE" in self.lookups:
+            tests_spec_file = self.get_resolved_value(self.lookups["TESTS_SPEC_FILE"])
+        else:
+            tests_spec_file = self.get_value("TESTS_SPEC_FILE")
+
+        tests = Testlist(tests_spec_file, files)
+        testlist = tests.get_tests(compset=compset_alias, grid=grid_name)
+        if len(testlist) > 0:
+            logger.info("\nThis compset and grid combination is not scientifically supported, however it is used in %d tests.\n"%(len(testlist)))
+        else:
+            expect(False, "\nThis compset and grid combination is unsupported in CESM.  "
+                   "If you wish to use it anyway you must supply the --run-unsupported option to create_newcase.")
