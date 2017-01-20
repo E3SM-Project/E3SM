@@ -46,11 +46,11 @@ post_build:
 	( cp $(ROOT_DIR)/default_inputs/streams.ocean.init $(ROOT_DIR)/streams.ocean.init )
 
 cvmix_source: get_cvmix.sh
-	(chmod a+x get_cvmix.sh; ./get_cvmix.sh)
+	(/bin/bash ./get_cvmix.sh)
 	(cd cvmix)
 
 BGC_source: get_BGC.sh
-	(chmod a+x get_BGC.sh; ./get_BGC.sh)
+	(/bin/bash ./get_BGC.sh)
 	(cd BGC)
 
 libcvmix: cvmix_source
