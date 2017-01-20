@@ -130,7 +130,7 @@ class Case(object):
         smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
 
         threads_per_node = self.tasks_per_node * self.thread_count
-        threads_per_core = 1 if (threads_per_node < pes_per_node) else smt_factor
+        threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
         return total_tasks

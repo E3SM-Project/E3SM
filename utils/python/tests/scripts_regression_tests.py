@@ -1207,7 +1207,8 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             self.assertEqual(case.get_value("NTHRDS_CPL"), 8)
 
-            self.assertEqual(case.get_value("TOTAL_CORES"), 128)
+            expected_cores = 16 * case.cores_per_task
+            self.assertEqual(case.get_value("TOTAL_CORES"), expected_cores)
 
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
