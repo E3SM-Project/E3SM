@@ -1,6 +1,25 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-20-2017
+Tag: cime5.2.0-alpha.22
+Answer Changes: None
+Tests: cesm tests, scripts_regression_tests
+Dependencies:
+
+Brief Summary: Fix issue in drv buildnml reading xml file.
+
+User interface changes: Added error if buildnml file not found.
+
+Modified files: git diff --name-status
+M       driver_cpl/cime_config/buildnml
+M       utils/python/CIME/XML/namelist_definition.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 01-19-2017
 Tag: cime5.2.0-alpha.21
 Answer Changes: None
