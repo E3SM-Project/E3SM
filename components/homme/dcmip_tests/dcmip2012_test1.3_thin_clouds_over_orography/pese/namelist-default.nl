@@ -8,8 +8,8 @@
   test_case         = "dcmip2012_test1_3"       ! test identifier
   ne                = 30                        ! number of elements per cube face
   qsize             = 4                         ! num tracer fields
-  ndays             = 12                         ! num simulation days: 0 = use nmax steps
-  statefreq         = 50                        ! number of steps between screen dumps
+  ndays             = 12                        ! num simulation days: 0 = use nmax steps
+  statefreq         = 100                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
   tstep             = 100                        ! largest timestep in seconds
