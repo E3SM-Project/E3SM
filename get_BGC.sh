@@ -16,18 +16,22 @@ GIT=`which git`
 SVN=`which svn`
 PROTOCOL=""
 
-# BGC exists. Need to make sure it's updated if it is git.
+# BGC exists. Check to see if it is the correct version.
 # Otherwise, flush the directory to ensure it's updated.
 if [ -d BGC ]; then
-	unlink BGC
 
 	if [ -d .BGC_all/.git ]; then
 		cd .BGC_all
-		git fetch origin &> /dev/null
-		git checkout ${BGC_TAG} &> /dev/null
+		CURR_TAG=$(git rev-parse --short HEAD)
 		cd ../
-		ln -sf .BGC_all/${BGC_SUBDIR} BGC
+		if [ "${CURR_TAG}" == "${BGC_TAG}" ]; then
+			echo "BGC version is current. Skip update"
+		else
+			unlink BGC
+			rm -rf .BGC_all
+		fi
 	else
+		unlink BGC
 		rm -rf .BGC_all
 	fi
 fi
