@@ -119,16 +119,19 @@ class Case(object):
         """
         env_mach_pes = self.get_env("mach_pes")
         comp_classes = self.get_values("COMP_CLASSES")
-        total_tasks = env_mach_pes.get_total_tasks(comp_classes)
+        total_tasks  = env_mach_pes.get_total_tasks(comp_classes)
+        pes_per_node = self.get_value("PES_PER_NODE")
 
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
         logger.debug("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
         self.num_nodes = env_mach_pes.get_total_nodes(total_tasks, self.thread_count)
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
-        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE")/self.get_value("PES_PER_NODE")))
+        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
 
-        self.cores_per_task = self.thread_count / smt_factor
+        threads_per_node = self.tasks_per_node * self.thread_count
+        threads_per_core = 1 if (threads_per_node < pes_per_node) else smt_factor
+        self.cores_per_task = self.thread_count / threads_per_core
 
         return total_tasks
 

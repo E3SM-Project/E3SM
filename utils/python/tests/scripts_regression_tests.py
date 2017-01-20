@@ -1207,6 +1207,8 @@ class K_TestCimeCase(TestCreateTestCommon):
 
             self.assertEqual(case.get_value("NTHRDS_CPL"), 8)
 
+            self.assertEqual(case.get_value("TOTAL_CORES"), 128)
+
 ###############################################################################
 class X_TestSingleSubmit(TestCreateTestCommon):
 ###############################################################################
