@@ -12,7 +12,7 @@ module TemperatureType
   use clm_varcon      , only : spval
   use GridcellType    , only : grc
   use LandunitType    , only : lun                
-  use ColumnType      , only : col                
+  use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   !
   implicit none
@@ -539,14 +539,14 @@ contains
     SHR_ASSERT_ALL((ubound(em_improad_lun) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(em_perroad_lun) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
 
-    associate(snl => col%snl) ! Output: [integer (:)    ]  number of snow layers   
+    associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
 
       ! Set snow/soil temperature
       ! t_lake only has valid values over non-lake   
       ! t_soisno, t_grnd and t_veg have valid values over all land 
 
       do c = bounds%begc,bounds%endc
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          this%t_soisno_col(c,-nlevsno+1:nlevgrnd) = spval
 
@@ -568,36 +568,36 @@ contains
 
             else if (lun%urbpoi(l)) then
                if (use_vancouver) then
-                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then 
+                  if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
                      ! Set road top layer to initial air temperature and interpolate other
                      ! layers down to 20C in bottom layer
                      do j = 1, nlevgrnd
                         this%t_soisno_col(c,j) = 297.56 - (j-1) * ((297.56-293.16)/(nlevgrnd-1)) 
                      end do
                      ! Set wall and roof layers to initial air temperature
-                  else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof) then
+                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
                      this%t_soisno_col(c,1:nlevurb) = 297.56
                   else
                      this%t_soisno_col(c,1:nlevgrnd) = 283._r8
                   end if
                else if (use_mexicocity) then
-                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then 
+                  if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
                      ! Set road top layer to initial air temperature and interpolate other
                      ! layers down to 22C in bottom layer
                      do j = 1, nlevgrnd
                         this%t_soisno_col(c,j) = 289.46 - (j-1) * ((289.46-295.16)/(nlevgrnd-1)) 
                      end do
-                  else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof) then
+                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
                      ! Set wall and roof layers to initial air temperature
                      this%t_soisno_col(c,1:nlevurb) = 289.46
                   else
                      this%t_soisno_col(c,1:nlevgrnd) = 283._r8
                   end if
                else
-                  if (col%itype(c) == icol_road_perv .or. col%itype(c) == icol_road_imperv) then 
+                  if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
                      this%t_soisno_col(c,1:nlevgrnd) = 274._r8
-                  else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                       .or. col%itype(c) == icol_roof) then
+                  else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                       .or. col_pp%itype(c) == icol_roof) then
                      ! Set sunwall, shadewall, roof to fairly high temperature to avoid initialization
                      ! shock from large heating/air conditioning flux
                      this%t_soisno_col(c,1:nlevurb) = 292._r8
@@ -612,7 +612,7 @@ contains
       ! Set Ground temperatures
 
       do c = bounds%begc,bounds%endc
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          if (lun%lakpoi(l)) then 
             this%t_grnd_col(c) = 277._r8
@@ -623,7 +623,7 @@ contains
       end do
 
       do c = bounds%begc,bounds%endc
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
          if (lun%lakpoi(l)) then ! lake
             this%t_lake_col(c,1:nlevlak) = this%t_grnd_col(c)
             this%t_soisno_col(c,1:nlevgrnd) = this%t_grnd_col(c)
@@ -695,13 +695,13 @@ contains
     end do
 
     do c = bounds%begc,bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
-       if (col%itype(c) == icol_roof       ) this%emg_col(c) = em_roof_lun(l)
-       if (col%itype(c) == icol_sunwall    ) this%emg_col(c) = em_wall_lun(l)
-       if (col%itype(c) == icol_shadewall  ) this%emg_col(c) = em_wall_lun(l)
-       if (col%itype(c) == icol_road_imperv) this%emg_col(c) = em_improad_lun(l)
-       if (col%itype(c) == icol_road_perv  ) this%emg_col(c) = em_perroad_lun(l)
+       if (col_pp%itype(c) == icol_roof       ) this%emg_col(c) = em_roof_lun(l)
+       if (col_pp%itype(c) == icol_sunwall    ) this%emg_col(c) = em_wall_lun(l)
+       if (col_pp%itype(c) == icol_shadewall  ) this%emg_col(c) = em_wall_lun(l)
+       if (col_pp%itype(c) == icol_road_imperv) this%emg_col(c) = em_improad_lun(l)
+       if (col_pp%itype(c) == icol_road_perv  ) this%emg_col(c) = em_perroad_lun(l)
     end do
 
   end subroutine InitCold

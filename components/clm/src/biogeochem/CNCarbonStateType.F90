@@ -17,7 +17,7 @@ module CNCarbonStateType
   use spmdMod                , only : masterproc 
   use subgridAveMod          , only : p2c
   use LandunitType           , only : lun                
-  use ColumnType             , only : col                
+  use ColumnType             , only : col_pp                
   use PatchType              , only : pft
   use clm_varctl             , only : nu_com, use_ed
   
@@ -1085,7 +1085,7 @@ contains
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
@@ -1231,7 +1231,7 @@ contains
     
     ! initialize column-level variables
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
 
           if (.not. present(c12_carbonstate_vars)) then !c12

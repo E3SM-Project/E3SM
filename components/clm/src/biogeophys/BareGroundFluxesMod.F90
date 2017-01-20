@@ -18,7 +18,7 @@ module BareGroundFluxesMod
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use LandunitType         , only : lun                
-  use ColumnType           , only : col                
+  use ColumnType           , only : col_pp                
   use PatchType            , only : pft                
   !
   ! !PUBLIC TYPES:
@@ -108,9 +108,9 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                          & 
-         snl              =>    col%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                                                  
-         dz               =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                                     
-         zii              =>    col%zii                               , & ! Input:  [real(r8) (:)   ]  convective boundary height [m]                                        
+         snl              =>    col_pp%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                                                  
+         dz               =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                                     
+         zii              =>    col_pp%zii                               , & ! Input:  [real(r8) (:)   ]  convective boundary height [m]                                        
 
          forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v           =>    atm2lnd_vars%forc_v_grc               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       

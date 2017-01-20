@@ -23,7 +23,7 @@ module CNDecompCascadeBGCMod
   use CanopyStateType        , only : canopystate_type
   use TemperatureType        , only : temperature_type 
   use ch4Mod                 , only : ch4_type
-  use ColumnType             , only : col                
+  use ColumnType             , only : col_pp                
   !
   implicit none
   save
@@ -774,14 +774,14 @@ contains
          do j=1,nlev_soildecomp_standard
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               frw(c) = frw(c) + col%dz(c,j)
+               frw(c) = frw(c) + col_pp%dz(c,j)
             end do
          end do
          do j = 1,nlev_soildecomp_standard
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                if (frw(c) /= 0._r8) then
-                  fr(c,j) = col%dz(c,j) / frw(c)
+                  fr(c,j) = col_pp%dz(c,j) / frw(c)
                else
                   fr(c,j) = 0._r8
                end if

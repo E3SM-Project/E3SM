@@ -11,7 +11,7 @@ module CNPrecisionControlMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use PhosphorusStateType , only : phosphorusstate_type
   use PatchType           , only : pft
-  use ColumnType          , only : col
+  use ColumnType          , only : col_pp
   !
   implicit none
   save

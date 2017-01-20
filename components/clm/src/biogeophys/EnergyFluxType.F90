@@ -8,7 +8,7 @@ module EnergyFluxType
   use clm_varcon     , only : spval
   use decompMod      , only : bounds_type
   use LandunitType   , only : lun                
-  use ColumnType     , only : col                
+  use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
   !
   implicit none
@@ -588,10 +588,10 @@ contains
 
     SHR_ASSERT_ALL((ubound(t_grnd_col) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
-    associate(snl => col%snl) ! Output: [integer (:)    ]  number of snow layers   
+    associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
 
       do c = bounds%begc, bounds%endc
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          if (lun%urbpoi(l)) then
             this%eflx_building_heat_col(c) = 0._r8

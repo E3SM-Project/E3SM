@@ -6,7 +6,7 @@ module TracerFluxType
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use decompMod      , only : bounds_type
   use LandunitType   , only : lun
-  use ColumnType     , only : col
+  use ColumnType     , only : col_pp
   use PatchType      , only : pft
   use clm_varcon     , only : spval, ispval
   use clm_varpar     , only : nlevtrc_soil
@@ -392,7 +392,7 @@ contains
        endif
     enddo
     do c = begc, endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%ifspecial(l)) then
          this%tracer_flx_top_soil_col(c,:)    = spval
          this%tracer_flx_can_loss_col(c,:)    = spval
@@ -594,7 +594,7 @@ contains
 
          if(is_volatile(jj))then
             kk = volatileid(jj)
-            this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col%dz(c,1:nlevtrc_soil))
+            this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col_pp%dz(c,1:nlevtrc_soil))
 
             this%tracer_flx_surfemi_col(c,kk) = this%tracer_flx_tparchm_col(c,kk) + this%tracer_flx_dif_col(c,kk) + &
                  this%tracer_flx_ebu_col(c,kk)
@@ -605,7 +605,7 @@ contains
       enddo
 
       do jj = 1, ntracers
-         this%tracer_flx_netpro_col(c,jj) = dot_sum(x=this%tracer_flx_netpro_vr_col(c,1:nlevtrc_soil,jj),y=col%dz(c,1:nlevtrc_soil))
+         this%tracer_flx_netpro_col(c,jj) = dot_sum(x=this%tracer_flx_netpro_vr_col(c,1:nlevtrc_soil,jj),y=col_pp%dz(c,1:nlevtrc_soil))
          if(jj<=ngwmobile_tracers)then
             if(is_volatile(jj))then
                kk = volatileid(jj)

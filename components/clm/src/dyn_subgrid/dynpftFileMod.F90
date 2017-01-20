@@ -17,7 +17,7 @@ module dynpftFileMod
   use spmdMod             , only : masterproc, mpicom
   use clm_varcon          , only : grlnd, nameg
   use LandunitType        , only : lun                
-  use ColumnType          , only : col                
+  !DW  not use at all     !   use ColumnType          , only : col                
   use PatchType           , only : pft                
   !
   ! !PUBLIC MEMBER FUNCTIONS:

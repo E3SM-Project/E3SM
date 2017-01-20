@@ -18,7 +18,7 @@ Module HydrologyNoDrainageMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use LandunitType      , only : lun                
-  use ColumnType        , only : col                
+  use ColumnType        , only : col_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -122,11 +122,11 @@ contains
     !-----------------------------------------------------------------------
     
     associate(                                                          & 
-         z                  => col%z                                  , & ! Input:  [real(r8) (:,:) ]  layer depth  (m)                      
-         dz                 => col%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
-         zi                 => col%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
-         snl                => col%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
-         ctype              => col%itype                              , & ! Input:  [integer  (:)   ]  column type                              
+         z                  => col_pp%z                                  , & ! Input:  [real(r8) (:,:) ]  layer depth  (m)                      
+         dz                 => col_pp%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
+         zi                 => col_pp%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
+         snl                => col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
+         ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type                              
 
          t_h2osfc           => temperature_vars%t_h2osfc_col          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
          dTdz_top           => temperature_vars%dTdz_top_col          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
@@ -323,7 +323,7 @@ contains
       ! Calculate soil temperature and total water (liq+ice) in top 17cm of soil
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
          if (.not. lun%urbpoi(l)) then
             t_soi_10cm(c) = 0._r8
             tsoi17(c) = 0._r8
@@ -333,7 +333,7 @@ contains
       do j = 1, nlevsoi
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
-            l = col%landunit(c)
+            l = col_pp%landunit(c)
             if (.not. lun%urbpoi(l)) then
                ! soil T at top 17 cm added by F. Li and S. Levis
                if (zi(c,j) <= 0.17_r8) then
@@ -371,7 +371,7 @@ contains
       do fc = 1, num_nolakec
 
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          ! t_grnd is weighted average of exposed soil and snow
          if (snl(c) < 0) then

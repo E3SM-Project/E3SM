@@ -97,7 +97,7 @@ module subgridWeightsMod
   use decompMod    , only : bounds_type
   use GridcellType , only : grc                
   use LandunitType , only : lun                
-  use ColumnType   , only : col                
+  use ColumnType   , only : col_pp                
   use PatchType    , only : pft                
   !
   ! PUBLIC TYPES:
@@ -214,8 +214,8 @@ contains
   subroutine compute_higher_order_weights(bounds)
     !
     ! !DESCRIPTION:
-    ! Assuming pft%wtcol, col%wtlunit and lun%wtgcell have already been computed, compute
-    ! the "higher-order" weights: pft%wtlunit, pft%wtgcell and col%wtgcell, for all p and c
+    ! Assuming pft%wtcol, col_pp%wtlunit and lun%wtgcell have already been computed, compute
+    ! the "higher-order" weights: pft%wtlunit, pft%wtgcell and col_pp%wtgcell, for all p and c
     !
     ! !USES:
     !
@@ -228,14 +228,14 @@ contains
     !------------------------------------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
-       col%wtgcell(c) = col%wtlunit(c) * lun%wtgcell(l)
+       l = col_pp%landunit(c)
+       col_pp%wtgcell(c) = col_pp%wtlunit(c) * lun%wtgcell(l)
     end do
 
     do p = bounds%begp, bounds%endp
        c = pft%column(p)
-       pft%wtlunit(p) = pft%wtcol(p) * col%wtlunit(c)
-       pft%wtgcell(p) = pft%wtcol(p) * col%wtgcell(c)
+       pft%wtlunit(p) = pft%wtcol(p) * col_pp%wtlunit(c)
+       pft%wtgcell(p) = pft%wtcol(p) * col_pp%wtgcell(c)
     end do
   end subroutine compute_higher_order_weights
 
@@ -269,9 +269,9 @@ contains
     end do
 
     do c = bounds%begc,bounds%endc
-       l = col%landunit(c)
-       col%active(c) = is_active_c(c)
-       if (col%active(c) .and. .not. lun%active(l)) then
+       l = col_pp%landunit(c)
+       col_pp%active(c) = is_active_c(c)
+       if (col_pp%active(c) .and. .not. lun%active(l)) then
           write(iulog,*) trim(subname),' ERROR: active column found on inactive landunit', &
                          'at c = ', c, ', l = ', l
           call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
@@ -281,7 +281,7 @@ contains
     do p = bounds%begp,bounds%endp
        c = pft%column(p)
        pft%active(p) = is_active_p(p)
-       if (pft%active(p) .and. .not. col%active(c)) then
+       if (pft%active(p) .and. .not. col_pp%active(c)) then
           write(iulog,*) trim(subname),' ERROR: active pft found on inactive column', &
                          'at p = ', p, ', c = ', c
           call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
@@ -383,8 +383,8 @@ contains
        is_active_c = .true.
 
     else
-       l =col%landunit(c)
-       g =col%gridcell(c)
+       l =col_pp%landunit(c)
+       g =col_pp%gridcell(c)
 
        is_active_c = .false.
 
@@ -392,7 +392,7 @@ contains
        ! General conditions under which is_active_c NEEDS to be true in order to satisfy
        ! the requirements laid out at the top of this module:
        ! ------------------------------------------------------------------------
-       if (lun%active(l) .and. col%wtlunit(c) > 0._r8) is_active_c = .true.
+       if (lun%active(l) .and. col_pp%wtlunit(c) > 0._r8) is_active_c = .true.
 
        ! ------------------------------------------------------------------------
        ! Conditions under which is_active_c is set to true because we want extra virtual columns:
@@ -407,7 +407,7 @@ contains
 
        ! We don't really need to run over 0-weight urban columns. But because of some
        ! messiness in the urban code (many loops are over the landunit filter, then drill
-       ! down to columns - so we would need to add 'col%active(c)' conditionals in many
+       ! down to columns - so we would need to add 'col_pp%active(c)' conditionals in many
        ! places) it keeps the code cleaner to run over 0-weight urban columns. This generally
        ! shouldn't add much computation time, since in most places, all urban columns are
        ! non-zero weight if the landunit is non-zero weight.
@@ -446,7 +446,7 @@ contains
        ! General conditions under which is_active_p NEEDS to be true in order to satisfy
        ! the requirements laid out at the top of this module:
        ! ------------------------------------------------------------------------
-       if (col%active(c) .and. pft%wtcol(p) > 0._r8) is_active_p = .true.
+       if (col_pp%active(c) .and. pft%wtcol(p) > 0._r8) is_active_p = .true.
 
     end if
 
@@ -595,7 +595,7 @@ contains
     end do
 
     do c = bounds%begc,bounds%endc
-       if (.not. weights_okay(sumwtcol(c), active_only, col%active(c))) then
+       if (.not. weights_okay(sumwtcol(c), active_only, col_pp%active(c))) then
           write(iulog,*) trim(subname),' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
                          'active_only = ', active_only
           error_found = .true.
@@ -623,12 +623,12 @@ contains
     sumwtgcell(bounds%begg : bounds%endg) = 0._r8
 
     do c = bounds%begc,bounds%endc
-       l = col%landunit(c)
-       g = col%gridcell(c)
+       l = col_pp%landunit(c)
+       g = col_pp%gridcell(c)
 
-       if ((active_only .and. col%active(c)) .or. .not. active_only) then
-          sumwtlunit(l) = sumwtlunit(l) + col%wtlunit(c)
-          sumwtgcell(g) = sumwtgcell(g) + col%wtgcell(c)
+       if ((active_only .and. col_pp%active(c)) .or. .not. active_only) then
+          sumwtlunit(l) = sumwtlunit(l) + col_pp%wtlunit(c)
+          sumwtgcell(g) = sumwtgcell(g) + col_pp%wtgcell(c)
        end if
     end do
 
@@ -798,11 +798,11 @@ contains
        subgrid_weights_diagnostics%pct_glc_mec(bounds%begg:bounds%endg, :) = 0._r8
     
        do c = bounds%begc, bounds%endc
-          g = col%gridcell(c)
-          l = col%landunit(c)
+          g = col_pp%gridcell(c)
+          l = col_pp%landunit(c)
           if (lun%itype(l) == istice_mec) then
-             icemec_class = col_itype_to_icemec_class(col%itype(c))
-             subgrid_weights_diagnostics%pct_glc_mec(g, icemec_class) = col%wtlunit(c) * 100._r8
+             icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
+             subgrid_weights_diagnostics%pct_glc_mec(g, icemec_class) = col_pp%wtlunit(c) * 100._r8
           end if
        end do
     end if

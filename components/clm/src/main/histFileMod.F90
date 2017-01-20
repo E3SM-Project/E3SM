@@ -18,7 +18,7 @@ module histFileMod
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
   use GridcellType   , only : grc                
   use LandunitType   , only : lun                
-  use ColumnType     , only : col                
+  use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
   use ncdio_pio 
   use EDtypesMod     , only : nlevsclass_ed, nlevage_ed
@@ -1126,7 +1126,7 @@ contains
           active => pft%active
        else if (type1d == namec) then
           check_active = .true.
-          active => col%active
+          active => col_pp%active
        else if (type1d == namel) then
           check_active = .true.
           active =>lun%active
@@ -1399,7 +1399,7 @@ contains
           active => pft%active
        else if (type1d == namec) then
           check_active = .true.
-          active => col%active
+          active => col_pp%active
        else if (type1d == namel) then
           check_active = .true.
           active =>lun%active
@@ -1544,7 +1544,7 @@ contains
     SHR_ASSERT_ALL((ubound(field_out, 2) == ubound(field_in, 2)), errMsg(__FILE__, __LINE__))
 
     associate(&
-    snl            => col%snl  &   ! Input: [integer (:)] number of snow layers (negative)
+    snl            => col_pp%snl  &   ! Input: [integer (:)] number of snow layers (negative)
     )
 
     num_levels = ubound(field_in, 2)
@@ -2112,10 +2112,10 @@ contains
           histi(:,:) = spval
           do lev = 1,nlevgrnd
              do c = bounds%begc,bounds%endc
-                l = col%landunit(c)
+                l = col_pp%landunit(c)
                    ! Field indices MUST match varnames array order above!
-                   if (ifld ==1) histi(c,lev) = col%z(c,lev)
-                   if (ifld ==2) histi(c,lev) = col%dz(c,lev)
+                   if (ifld ==1) histi(c,lev) = col_pp%z(c,lev)
+                   if (ifld ==2) histi(c,lev) = col_pp%dz(c,lev)
                    if (ifld ==3) histi(c,lev) = watsat_col(c,lev)
                    if (ifld ==4) histi(c,lev) = sucsat_col(c,lev)
                    if (ifld ==5) histi(c,lev) = bsw_col(c,lev)
@@ -2198,11 +2198,11 @@ contains
           histil(:,:) = spval
           do lev = 1,nlevlak
              do c = bounds%begc,bounds%endc
-                l = col%landunit(c)
+                l = col_pp%landunit(c)
                 if (lun%lakpoi(l)) then
                    ! Field indices MUST match varnamesl array order above!
-                   if (ifld ==1) histil(c,lev) = col%z_lake(c,lev) 
-                   if (ifld ==2) histil(c,lev) = col%dz_lake(c,lev)
+                   if (ifld ==1) histil(c,lev) = col_pp%z_lake(c,lev) 
+                   if (ifld ==2) histil(c,lev) = col_pp%dz_lake(c,lev)
                 end if
              end do
           end do
@@ -2935,32 +2935,32 @@ contains
        ! Write column info
 
        do c = bounds%begc,bounds%endc
-         rcarr(c) = grc%londeg(col%gridcell(c))
+         rcarr(c) = grc%londeg(col_pp%gridcell(c))
        enddo
        call ncd_io(varname='cols1d_lon', data=rcarr, dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         rcarr(c) = grc%latdeg(col%gridcell(c))
+         rcarr(c) = grc%latdeg(col_pp%gridcell(c))
        enddo
        call ncd_io(varname='cols1d_lat', data=rcarr, dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         icarr(c) = mod(ldecomp%gdc2glo(col%gridcell(c))-1,ldomain%ni) + 1
+         icarr(c) = mod(ldecomp%gdc2glo(col_pp%gridcell(c))-1,ldomain%ni) + 1
        enddo
        call ncd_io(varname='cols1d_ixy', data=icarr, dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         icarr(c) = (ldecomp%gdc2glo(col%gridcell(c))-1)/ldomain%ni + 1
+         icarr(c) = (ldecomp%gdc2glo(col_pp%gridcell(c))-1)/ldomain%ni + 1
        enddo
        call ncd_io(varname='cols1d_jxy'    , data=icarr         ,dim1name=namec, ncid=ncid, flag='write')
        ! --- EBK Do NOT write out indices that are incorrect 4/1/2011 Bug 1310
-       !call ncd_io(varname='cols1d_gi'     , data=col%gridcell, dim1name=namec, ncid=ncid, flag='write')
-       !call ncd_io(varname='cols1d_li'     , data=col%landunit, dim1name=namec, ncid=ncid, flag='write')
+       !call ncd_io(varname='cols1d_gi'     , data=col_pp%gridcell, dim1name=namec, ncid=ncid, flag='write')
+       !call ncd_io(varname='cols1d_li'     , data=col_pp%landunit, dim1name=namec, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
-       call ncd_io(varname='cols1d_wtgcell', data=col%wtgcell , dim1name=namec, ncid=ncid, flag='write')
-       call ncd_io(varname='cols1d_wtlunit', data=col%wtlunit , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_wtgcell', data=col_pp%wtgcell , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_wtlunit', data=col_pp%wtlunit , dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         icarr(c) = lun%itype(col%landunit(c))
+         icarr(c) = lun%itype(col_pp%landunit(c))
        enddo
        call ncd_io(varname='cols1d_itype_lunit', data=icarr    , dim1name=namec, ncid=ncid, flag='write')
-       call ncd_io(varname='cols1d_active' , data=col%active  , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_active' , data=col_pp%active  , dim1name=namec, ncid=ncid, flag='write')
 
        ! Write pft info
 
@@ -4208,37 +4208,37 @@ contains
        clmptr_rs(hpindex)%ptr => ptr_col
        if (present(set_lake)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (lun%lakpoi(l)) ptr_col(c) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (.not.(lun%lakpoi(l))) ptr_col(c) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (lun%urbpoi(l)) ptr_col(c) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (.not.(lun%urbpoi(l))) ptr_col(c) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (lun%ifspecial(l)) ptr_col(c) = set_spec
           end do
        end if
        if (present(set_noglcmec)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (.not.(lun%glcmecpoi(l))) ptr_col(c) = set_noglcmec
           end do
        endif
@@ -4528,31 +4528,31 @@ contains
        clmptr_ra(hpindex)%ptr => ptr_col
        if (present(set_lake)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (lun%lakpoi(l)) ptr_col(c,:) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (.not.(lun%lakpoi(l))) ptr_col(c,:) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (lun%urbpoi(l)) ptr_col(c,:) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (.not.(lun%urbpoi(l))) ptr_col(c,:) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do c = bounds%begc,bounds%endc
-             l =col%landunit(c)
+             l =col_pp%landunit(c)
              if (lun%ifspecial(l)) ptr_col(c,:) = set_spec
           end do
        end if

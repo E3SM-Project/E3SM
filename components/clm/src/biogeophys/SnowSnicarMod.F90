@@ -22,7 +22,7 @@ module SnowSnicarMod
   use TemperatureType , only : temperature_type
   use GridcellType    , only : grc       
   use LandunitType    , only : lun       
-  use ColumnType      , only : col       
+  use ColumnType      , only : col_pp       
   !
   implicit none
   save
@@ -379,7 +379,7 @@ contains
     SHR_ASSERT_ALL((ubound(flx_abs)        == (/bounds%endc, 1, numrad/)),      errMsg(__FILE__, __LINE__))
 
     associate(& 
-         snl         =>   col%snl                           , & ! Input:  [integer (:)]  negative number of snow layers (col) [nbr]
+         snl         =>   col_pp%snl                           , & ! Input:  [integer (:)]  negative number of snow layers (col) [nbr]
 
          h2osno      =>   waterstate_vars%h2osno_col        , & ! Input:  [real(r8) (:)]  snow liquid water equivalent (col) [kg/m2]
          frac_sno    =>   waterstate_vars%frac_sno_eff_col    & ! Input:  [real(r8) (:)]  fraction of ground covered by snow (0 to 1)
@@ -442,8 +442,8 @@ contains
                snl_top   = snl_lcl+1
 
                ! for debugging only
-               l_idx     = col%landunit(c_idx)
-               g_idx     = col%gridcell(c_idx)
+               l_idx     = col_pp%landunit(c_idx)
+               g_idx     = col_pp%gridcell(c_idx)
                sfctype   = lun%itype(l_idx)
                lat_coord = grc%latdeg(g_idx)
                lon_coord = grc%londeg(g_idx)
@@ -1029,7 +1029,7 @@ contains
                      write(iulog,*) "SNICAR STATS: dust2(0)= ", mss_cnc_aer_lcl(0,4)
                      write(iulog,*) "SNICAR STATS: dust3(0)= ", mss_cnc_aer_lcl(0,5)
                      write(iulog,*) "SNICAR STATS: dust4(0)= ", mss_cnc_aer_lcl(0,6)
-                     l_idx     = col%landunit(c_idx)
+                     l_idx     = col_pp%landunit(c_idx)
                      write(iulog,*) "column index: ", c_idx
                      write(iulog,*) "landunit type", lun%itype(l_idx)
                      write(iulog,*) "frac_sno: ", frac_sno(c_idx)
@@ -1206,8 +1206,8 @@ contains
     !--------------------------------------------------------------------------!
 
     associate(                                                      & 
-         snl                => col%snl                            , & ! Input:  [integer  (:)   ]  negative number of snow layers (col) [nbr]
-         dz                 => col%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (col,lyr) [m]         
+         snl                => col_pp%snl                            , & ! Input:  [integer  (:)   ]  negative number of snow layers (col) [nbr]
+         dz                 => col_pp%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (col,lyr) [m]         
 
          qflx_snow_grnd_col => waterflux_vars%qflx_snow_grnd_col  , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (col) [kg m-2 s-1]
          qflx_snwcp_ice     => waterflux_vars%qflx_snwcp_ice_col  , & ! Input:  [real(r8) (:)   ]  excess precipitation due to snow capping [kg m-2 s-1]

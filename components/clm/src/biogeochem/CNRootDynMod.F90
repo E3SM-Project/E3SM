@@ -6,21 +6,21 @@ module CNRootDynMod
   ! Includes dynamic root depth for crops
   !
   ! !USES:
-  use shr_kind_mod        , only: r8 => shr_kind_r8
-  use clm_time_manager    , only: get_step_size
-  use clm_varpar          , only: nlevsoi, nlevgrnd
-  use clm_varctl          , only: use_vertsoilc
-  use decompMod           , only: bounds_type
-  use pftvarcon           , only: noveg, npcropmin, roota_par, rootb_par,root_dmx
-  use ColumnType          , only: col
-  use PatchType           , only: pft
-  use CNStateType         , only: cnstate_type
-  use CNCarbonStateType   , only: carbonstate_type
-  use CNCarbonFluxType    , only: carbonflux_type
-  use CNNitrogenStateType , only: nitrogenstate_type
-  use SoilStateType       , only: soilstate_type
-  use CropType            , only: crop_type
-  use SimpleMathMod       , only: array_normalization
+  use shr_kind_mod        , only : r8 => shr_kind_r8
+  use clm_time_manager    , only : get_step_size
+  use clm_varpar          , only : nlevsoi, nlevgrnd
+  use clm_varctl          , only : use_vertsoilc
+  use decompMod           , only : bounds_type
+  use pftvarcon           , only : noveg, npcropmin, roota_par, rootb_par,root_dmx
+  use ColumnType          , only : col_pp 
+  use PatchType           , only : pft
+  use CNStateType         , only : cnstate_type
+  use CNCarbonStateType   , only : carbonstate_type
+  use CNCarbonFluxType    , only : carbonflux_type
+  use CNNitrogenStateType , only : nitrogenstate_type
+  use SoilStateType       , only : soilstate_type
+  use CropType            , only : crop_type
+  use SimpleMathMod       , only : array_normalization
 
   ! !PUBLIC TYPES:
   implicit none
@@ -86,8 +86,8 @@ contains
          frootc_xfer_to_frootc  => carbonflux_vars%frootc_xfer_to_frootc_patch , & ! Input  :  [real(r8) (:)] fine root C growth from storage (gC/m2/s)
          dormant_flag           => cnstate_vars%dormant_flag_patch             , & ! Input  :  [real(r8) (:)]  dormancy flag
          root_depth             => soilstate_vars%root_depth_patch             , & ! InOut  :  [real(r8) (:)] current root depth
-         dz                     => col%dz                                      , & ! Input  :  layer thickness (m)  (-nlevsno+1:nlevgrnd)
-         zi                     => col%zi                                      , & ! Input  :  interface level below a "z" level (m) (-nlevsno+0:nlevgrnd)
+         dz                     => col_pp%dz                                      , & ! Input  :  layer thickness (m)  (-nlevsno+1:nlevgrnd)
+         zi                     => col_pp%zi                                      , & ! Input  :  interface level below a "z" level (m) (-nlevsno+0:nlevgrnd)
          rootfr                 => soilstate_vars%rootfr_patch                 , & ! Output :  [real(r8) (:,:)]  fraction of roots in each soil layer
          sucsat                 => soilstate_vars%sucsat_col                   , & ! Input  :  minimum soil suction (mm)
          soilpsi                => soilstate_vars%soilpsi_col                  , & ! Input  :  soil water potential in each soil layer (MPa)

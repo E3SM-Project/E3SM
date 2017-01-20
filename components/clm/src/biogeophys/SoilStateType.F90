@@ -20,7 +20,7 @@ module SoilStateType
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use ch4varcon       , only : allowlakeprod
   use LandunitType    , only : lun                
-  use ColumnType      , only : col                
+  use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   !
   implicit none
@@ -371,9 +371,9 @@ contains
 
     ! Currently pervious road has same properties as soil
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
-       if (lun%urbpoi(l) .and. col%itype(c) == icol_road_perv) then 
+       if (lun%urbpoi(l) .and. col_pp%itype(c) == icol_road_perv) then 
           do lev = 1, nlevgrnd
              this%rootfr_road_perv_col(c,lev) = 0._r8
           enddo
@@ -472,7 +472,7 @@ contains
        call endrun(msg=' ERROR: FMAX NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        this%wtfact_col(c) = gti(g)
     end do
     deallocate(gti)
@@ -514,8 +514,8 @@ contains
 
 
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
-       l = col%landunit(c)
+       g = col_pp%gridcell(c)
+       l = col_pp%landunit(c)
 
        if (lun%itype(l)==istwet .or. lun%itype(l)==istice .or. lun%itype(l)==istice_mec) then
 
@@ -548,7 +548,7 @@ contains
              endif
           end do
 
-       else if (lun%urbpoi(l) .and. (col%itype(c) /= icol_road_perv) .and. (col%itype(c) /= icol_road_imperv) )then
+       else if (lun%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
 
           ! Urban Roof, sunwall, shadewall properties set to special value
           do lev = 1,nlevgrnd
@@ -708,13 +708,13 @@ contains
           end do
 
           ! Urban pervious and impervious road
-          if (col%itype(c) == icol_road_imperv) then
+          if (col_pp%itype(c) == icol_road_imperv) then
              ! Impervious road layers -- same as above except set watdry and watopt as missing
              do lev = 1,nlevgrnd
                 this%watdry_col(c,lev) = spval 
                 this%watopt_col(c,lev) = spval 
              end do
-          else if (col%itype(c) == icol_road_perv) then 
+          else if (col_pp%itype(c) == icol_road_perv) then 
              ! pervious road layers  - set in UrbanInitTimeConst
           end if
 
@@ -726,8 +726,8 @@ contains
     ! --------------------------------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
-       l = col%landunit(c)
+       g = col_pp%gridcell(c)
+       l = col_pp%landunit(c)
 
        if (lun%itype(l)==istdlak) then
 
@@ -800,7 +800,7 @@ contains
     ! --------------------------------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
 
        this%gwc_thr_col(c) = 0.17_r8 + 0.14_r8 * clay3d(g,1) * 0.01_r8
        this%mss_frc_cly_vld_col(c) = min(clay3d(g,1) * 0.01_r8, 0.20_r8)

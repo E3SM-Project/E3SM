@@ -38,7 +38,7 @@ module CanopyFluxesMod
   use ch4Mod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
   use GridcellType          , only : grc                
-  use ColumnType            , only : col                
+  use ColumnType            , only : col_pp                
   use PatchType             , only : pft                
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type
@@ -317,7 +317,7 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                               & 
-         snl                  => col%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                                                  
+         snl                  => col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                                                  
          dayl                 => grc%dayl                                  , & ! Input:  [real(r8) (:)   ]  daylength (s)
          max_dayl             => grc%max_dayl                              , & ! Input:  [real(r8) (:)   ]  maximum daylength for this grid cell (s)
 
@@ -639,8 +639,8 @@ contains
                   vol_liq_so   = eff_porosity(c,j) * (-smpso(pft%itype(p))/sucsat(c,j))**(-1/bsw(c,j))
 
                   ! Translate vol_liq_so and eff_porosity into h2osoi_liq_so and h2osoi_liq_sat and calculate deficit
-                  h2osoi_liq_so  = vol_liq_so * denh2o * col%dz(c,j)
-                  h2osoi_liq_sat = eff_porosity(c,j) * denh2o * col%dz(c,j)
+                  h2osoi_liq_so  = vol_liq_so * denh2o * col_pp%dz(c,j)
+                  h2osoi_liq_sat = eff_porosity(c,j) * denh2o * col_pp%dz(c,j)
                   deficit        = max((h2osoi_liq_so + irrig_factor*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
 
                   ! Add deficit to irrig_rate, converting units from mm to mm/sec

@@ -15,7 +15,7 @@ module PlantSoilnutrientFluxType
   use clm_time_manager       , only : get_nstep
   use clm_varcon             , only : spval, ispval
   use decompMod              , only : bounds_type
-  use ColumnType             , only : col
+  use ColumnType             , only : col_pp
   use PatchType              , only : pft
   ! !PUBLIC TYPES:
   implicit none
@@ -240,7 +240,7 @@ module PlantSoilnutrientFluxType
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
@@ -350,7 +350,7 @@ module PlantSoilnutrientFluxType
     p = filter_soilp(fp)
     c = pft%column(p)
     this%plant_minn_uptake_potential_patch(p) = Vmax_minn*max(frootc_patch(p),10._r8)
-    if(abs(grc%latdeg(col%gridcell(c)))<20._r8)this%plant_minn_uptake_potential_patch(p) = this%plant_minn_uptake_potential_patch(p) * 1.e3_r8
+    if(abs(grc%latdeg(col_pp%gridcell(c)))<20._r8)this%plant_minn_uptake_potential_patch(p) = this%plant_minn_uptake_potential_patch(p) * 1.e3_r8
   enddo
 
   ! now use the p2c routine to get the column-averaged plant_ndemand

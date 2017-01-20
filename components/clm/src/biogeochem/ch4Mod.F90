@@ -36,7 +36,7 @@ module ch4Mod
   use WaterstateType     , only : waterstate_type
   use GridcellType       , only : grc                
   use LandunitType       , only : lun                
-  use ColumnType         , only : col                
+  use ColumnType         , only : col_pp                
   use PatchType          , only : pft                
   !
   implicit none
@@ -737,7 +737,7 @@ contains
     end if
 
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
 
        if (.not. fin_use_fsat) then
           this%zwt0_col(c) = zwt0_in(g)
@@ -784,7 +784,7 @@ contains
        ! To detect first time-step for denitrification code
        this%o2_decomp_depth_unsat_col(c,:)= spval
 
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
 
           this%conc_ch4_sat_col   (c,1:nlevsoi) = 0._r8
@@ -1335,9 +1335,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                 & 
-         dz                   =>   col%dz                                    , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
-         zi                   =>   col%zi                                    , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
-         z                    =>   col%z                                     , & ! Input:  [real(r8) (:,:) ]  layer depth (m) (-nlevsno+1:nlevsoi)            
+         dz                   =>   col_pp%dz                                    , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
+         zi                   =>   col_pp%zi                                    , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
+         z                    =>   col_pp%z                                     , & ! Input:  [real(r8) (:,:) ]  layer depth (m) (-nlevsno+1:nlevsoi)            
 
          forc_t               =>   atm2lnd_vars%forc_t_not_downscaled_grc    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
          forc_pbot            =>   atm2lnd_vars%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
@@ -1449,7 +1449,7 @@ contains
       ! Initialize CH4 balance and calculate finundated
       do fc = 1, num_soilc
          c = filter_soilc(fc)
-         g = col%gridcell(c)
+         g = col_pp%gridcell(c)
 
          totcolch4_bef(c) = totcolch4(c)
          totcolch4(c) = 0._r8
@@ -1559,7 +1559,7 @@ contains
          do j=1, nlevsoi
             do fc = 1, num_soilc
                c = filter_soilc(fc)
-               if (.not. col%active(c)) rootfr_col(c,j) = dz(c,j) / zi(c,nlevsoi)
+               if (.not. col_pp%active(c)) rootfr_col(c,j) = dz(c,j) / zi(c,nlevsoi)
             end do
          end do
       end if
@@ -1574,7 +1574,7 @@ contains
       ! Set the gridcell atmospheric CH4 and O2 concentrations
       do fc = 1, num_soilc
          c = filter_soilc(fc)
-         g = col%gridcell(c)
+         g = col_pp%gridcell(c)
 
          c_atm(g,1) =  forc_pch4(g) / rgasm / forc_t(g) ! [mol/m3 air]
          c_atm(g,2) =  forc_po2(g)  / rgasm / forc_t(g) ! [mol/m3 air]
@@ -1824,7 +1824,7 @@ contains
                if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
                   write(iulog,*)'CH4 Conservation Error in CH4Mod driver, nstep, c, errch4 (gC /m^2.timestep)', &
                        nstep,c,errch4
-                  g = col%gridcell(c)
+                  g = col_pp%gridcell(c)
                   write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
                   call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
                end if
@@ -1844,7 +1844,7 @@ contains
                   if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
                      write(iulog,*)'CH4 Conservation Error in CH4Mod driver for lake column, nstep, c, errch4 (gC/m^2.timestep)', &
                           nstep,c,errch4
-                     g = col%gridcell(c)
+                     g = col_pp%gridcell(c)
                      write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
                      call endrun(msg=' ERROR: Methane conservation error, allowlakeprod'//&
                           errMsg(__FILE__, __LINE__))
@@ -1951,9 +1951,9 @@ contains
 
     associate(                                                     & 
          wtcol          =>    pft%wtcol                          , & ! Input:  [real(r8) (:)    ]  weight (relative to column)                       
-         dz             =>    col%dz                             , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
-         z              =>    col%z                              , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)            
-         zi             =>    col%zi                             , & ! Input:  [real(r8) (:,:)  ]  interface level below a "z" level (m)           
+         dz             =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
+         z              =>    col_pp%z                              , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)            
+         zi             =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:)  ]  interface level below a "z" level (m)           
 
          t_soisno       =>    temperature_vars%t_soisno_col      , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
 
@@ -2039,7 +2039,7 @@ contains
       do j=1,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
-            g = col%gridcell(c)
+            g = col_pp%gridcell(c)
 
             if (.not. lake) then
 
@@ -2441,8 +2441,8 @@ contains
     SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                     & 
-         z             =>    col%z                               , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)            
-         dz            =>    col%dz                              , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
+         z             =>    col_pp%z                               , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)            
+         dz            =>    col_pp%dz                              , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
          wtcol         =>    pft%wtcol                           , & ! Input:  [real(r8) (:)    ]  weight (relative to column)                       
 
          elai          =>    canopystate_vars%elai_patch         , & ! Input:  [real(r8) (:)    ]  one-sided leaf area index with burying by snow    
@@ -2519,7 +2519,7 @@ contains
             do fp = 1, num_methp
                p = filter_methp (fp)
                c = pft%column(p)
-               g = col%gridcell(c)
+               g = col_pp%gridcell(c)
 
                ! Calculate transpiration loss
                if (transpirationloss .and. pft%itype(p) /= noveg) then !allow tloss above WT ! .and. j > jwt(c)) then
@@ -2680,10 +2680,10 @@ contains
     SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                      & 
-         z            =>    col%z                                 , & ! Input:  [real(r8) (:,:) ]  soil layer depth (m)                            
-         dz           =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
-         zi           =>    col%zi                                , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
-         lakedepth    =>    col%lakedepth                         , & ! Input:  [real(r8) (:)   ]  column lake depth (m)                             
+         z            =>    col_pp%z                                 , & ! Input:  [real(r8) (:,:) ]  soil layer depth (m)                            
+         dz           =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
+         zi           =>    col_pp%zi                                , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
+         lakedepth    =>    col_pp%lakedepth                         , & ! Input:  [real(r8) (:)   ]  column lake depth (m)                             
 
          forc_pbot    =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
 
@@ -2876,10 +2876,10 @@ contains
     SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                 & 
-         z             =>    col%z                           , & ! Input:  [real(r8) (:,:) ]  soil layer depth (m)                            
-         dz            =>    col%dz                          , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
-         zi            =>    col%zi                          , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
-         snl           =>    col%snl                         , & ! Input:  [integer  (:)   ]  negative of number of snow layers                  
+         z             =>    col_pp%z                           , & ! Input:  [real(r8) (:,:) ]  soil layer depth (m)                            
+         dz            =>    col_pp%dz                          , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
+         zi            =>    col_pp%zi                          , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
+         snl           =>    col_pp%snl                         , & ! Input:  [integer  (:)   ]  negative of number of snow layers                  
 
          bsw           =>    soilstate_vars%bsw_col          , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b" (nlevgrnd)             
          watsat        =>    soilstate_vars%watsat_col       , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
@@ -3067,14 +3067,14 @@ contains
             if (source(c,j,1) + conc_ch4(c,j) / dtime < -1.e-12_r8) then
                write(iulog,*) 'Methane demands exceed methane available. Error in methane competition (mol/m^3/s), c,j:', &
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
-               g = col%gridcell(c)
+               g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
                call endrun(msg=' ERROR: Methane demands exceed methane available.'&
                     //errMsg(__FILE__, __LINE__))
             else if (ch4stress(c,j) < 1._r8 .and. source(c,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*) 'Methane limited, yet some left over. Error in methane competition (mol/m^3/s), c,j:', &
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
-               g = col%gridcell(c)
+               g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
                call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
                     errMsg(__FILE__, __LINE__))
@@ -3084,14 +3084,14 @@ contains
             if (source(c,j,2) + conc_o2(c,j) / dtime < -1.e-12_r8) then
                write(iulog,*) 'Oxygen demands exceed oxygen available. Error in oxygen competition (mol/m^3/s), c,j:', &
                     source(c,j,2) + conc_o2(c,j) / dtime, c, j
-               g = col%gridcell(c)
+               g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
                call endrun(msg=' ERROR: Oxygen demands exceed oxygen available.'//&
                     errMsg(__FILE__, __LINE__) )
             else if (o2stress(c,j) < 1._r8 .and. source(c,j,2) + conc_o2(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*) 'Oxygen limited, yet some left over. Error in oxygen competition (mol/m^3/s), c,j:', &
                     source(c,j,2) + conc_o2(c,j) / dtime, c, j
-               g = col%gridcell(c)
+               g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
                call endrun(msg=' ERROR: Oxygen limited, yet some left over.'//errMsg(__FILE__, __LINE__))
             end if
@@ -3121,7 +3121,7 @@ contains
       do j = 0,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
-            g = col%gridcell(c)
+            g = col_pp%gridcell(c)
 
             if (j == 0) then
                conc_ch4_rel(c,j) = c_atm(g,1)
@@ -3233,7 +3233,7 @@ contains
          do j = 1,nlevsoi
             do fc = 1, num_methc
                c = filter_methc (fc)
-               g = col%gridcell(c)
+               g = col_pp%gridcell(c)
 
                t_soisno_c = t_soisno(c,j) - tfrz
 
@@ -3308,7 +3308,7 @@ contains
          do j = 0,nlevsoi
             do fc = 1, num_methc
                c = filter_methc (fc)
-               g = col%gridcell(c)
+               g = col_pp%gridcell(c)
 
                conc_ch4_rel_old(c,j) = conc_ch4_rel(c,j)
 
@@ -3407,7 +3407,7 @@ contains
             ! Calculate net ch4 flux to the atmosphere from the surface (+ to atm)
             do fc = 1, num_methc
                c = filter_methc (fc)
-               g = col%gridcell(c)
+               g = col_pp%gridcell(c)
                if (jwt(c) /= 0) then ! WT not at the surface
                   ch4_surf_diff(c) = dm1_zm1(c,1) * ( (conc_ch4_rel(c,1)+conc_ch4_rel_old(c,1))/2._r8 &
                        - c_atm(g,s)) ! [mol/m2/s]
@@ -3434,7 +3434,7 @@ contains
                         if (deficit > 1.e-2_r8) then
                            write(iulog,*)'Note: sink > source in ch4_tran, sources are changing '// &
                                 ' quickly relative to diffusion timestep, and/or diffusion is rapid.'
-                           g = col%gridcell(c)
+                           g = col_pp%gridcell(c)
                            write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
                            write(iulog,*)'This typically occurs when there is a larger than normal '// &
                                 ' diffusive flux.'
@@ -3508,7 +3508,7 @@ contains
             do j = 1,nlevsoi
                do fc = 1, num_methc
                   c = filter_methc (fc)
-                  g = col%gridcell(c)
+                  g = col_pp%gridcell(c)
                   conc_o2_rel(c,j) = max (conc_o2_rel(c,j), 1.e-12_r8)
                   ! In case of pathologically large aerenchyma conductance. Should be OK in general but
                   ! this will maintain stability even if a PFT with very small weight somehow has an absurd NPP or LAI.
@@ -3557,7 +3557,7 @@ contains
          else ! errch4 > 1e-8 mol / m^2 / timestep
             write(iulog,*)'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)', &
                  nstep,c,errch4(c)
-            g = col%gridcell(c)
+            g = col_pp%gridcell(c)
             write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
             call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
                  errMsg(__FILE__, __LINE__))

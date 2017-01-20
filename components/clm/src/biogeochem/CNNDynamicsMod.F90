@@ -21,7 +21,7 @@ module CNNDynamicsMod
   use WaterStateType      , only : waterstate_type
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
-  use ColumnType          , only : col                
+  use ColumnType          , only : col_pp                
   use PatchType           , only : pft
   use EcophysConType      , only : ecophyscon
   use CNCarbonStateType   , only : carbonstate_type
@@ -139,7 +139,7 @@ contains
       
       ! Loop through columns
       do c = bounds%begc, bounds%endc
-         g = col%gridcell(c)
+         g = col_pp%gridcell(c)
          ndep_to_sminn(c) = forc_ndep(g)
       end do
 
@@ -303,7 +303,7 @@ contains
          elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ( (depth_runoff_Nloss - zisoi(j-1)) / col%dz(c,j))
+               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ( (depth_runoff_Nloss - zisoi(j-1)) / col_pp%dz(c,j))
             end do
          endif
       end do
@@ -342,12 +342,12 @@ contains
                   ! assumes that 10% of mineral nitrogen is soluble
                   disn_conc = 0._r8
                   if (h2osoi_liq(c,j) > 0._r8) then
-                     disn_conc = (sf * sminn_vr(c,j) * col%dz(c,j) )/(h2osoi_liq(c,j) )
+                     disn_conc = (sf * sminn_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
                   end if
 
                   ! calculate the N leaching flux as a function of the dissolved
                   ! concentration and the sub-surface drainage flux
-                  sminn_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col%dz(c,j) )
+                  sminn_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
 
                end if
 
@@ -389,12 +389,12 @@ contains
                   ! assumes that 10% of mineral nitrogen is soluble
                   disn_conc = 0._r8
                   if (h2osoi_liq(c,j) > 0._r8) then
-                     disn_conc = (sf_no3 * smin_no3_vr(c,j) * col%dz(c,j) )/(h2osoi_liq(c,j) )
+                     disn_conc = (sf_no3 * smin_no3_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
                   end if
                   !
                   ! calculate the N leaching flux as a function of the dissolved
                   ! concentration and the sub-surface drainage flux
-                  smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col%dz(c,j) )
+                  smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
                   !
                   ! ensure that leaching rate isn't larger than soil N pool
                   smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), smin_no3_vr(c,j) / dt )
@@ -406,11 +406,11 @@ contains
                   ! calculate the N loss from surface runoff, assuming a shallow mixing of surface waters into soil and removal based on runoff
                   if ( zisoi(j) <= depth_runoff_Nloss )  then
                      smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
-                          h2osoi_liq(c,j) / ( surface_water(c) * col%dz(c,j) )
+                          h2osoi_liq(c,j) / ( surface_water(c) * col_pp%dz(c,j) )
                   elseif ( zisoi(j-1) < depth_runoff_Nloss )  then
                      smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
                           h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / &
-                          col%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
+                          col_pp%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
                   else
                      smin_no3_runoff_vr(c,j) = 0._r8
                   endif
@@ -664,7 +664,7 @@ contains
       do fc=1,num_soilc
           c = filter_soilc(fc)
           nfix_to_sminn(c) = 0.0_r8
-          do p = col%pfti(c), col%pftf(c)
+          do p = col_pp%pfti(c), col_pp%pftf(c)
               if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
                   ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
                   r_fix = -6.25_r8*(exp(-3.62_r8 + 0.27_r8*(t_soi10cm_col(c)-273.15_r8)*(1.0_r8-0.5_r8*(t_soi10cm_col(c)-273.15_r8)/25.15_r8))-2.0_r8) 

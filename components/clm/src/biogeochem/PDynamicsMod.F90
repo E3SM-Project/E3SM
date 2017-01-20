@@ -26,7 +26,7 @@ module PDynamicsMod
   use WaterStateType      , only : waterstate_type
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
-  use ColumnType          , only : col
+  use ColumnType          , only : col_pp
   use PatchType           , only : pft
   use EcophysConType      , only : ecophyscon
   !
@@ -74,7 +74,7 @@ contains
 
       ! Loop through columns
       do c = bounds%begc, bounds%endc
-         g = col%gridcell(c)
+         g = col_pp%gridcell(c)
          pdep_to_sminp(c) = forc_pdep(g)
       end do
 
@@ -422,7 +422,7 @@ contains
          elseif ( zisoi(j-1) < depth_runoff_Ploss)  then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ((depth_runoff_Ploss - zisoi(j-1)) / col%dz(c,j))
+               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ((depth_runoff_Ploss - zisoi(j-1)) / col_pp%dz(c,j))
             end do
          endif
       end do
@@ -450,12 +450,12 @@ contains
                else
                   disp_conc = 0._r8
                   if (h2osoi_liq(c,j) > 0._r8) then
-                     disp_conc = (solutionp_vr(c,j) * col%dz(c,j))/(h2osoi_liq(c,j) )
+                     disp_conc = (solutionp_vr(c,j) * col_pp%dz(c,j))/(h2osoi_liq(c,j) )
                   end if
 
                   ! calculate the P leaching flux as a function of the dissolved
                   ! concentration and the sub-surface drainage flux
-                  sminp_leached_vr(c,j) = disp_conc * drain_tot(c) *h2osoi_liq(c,j) / ( tot_water(c) * col%dz(c,j) )
+                  sminp_leached_vr(c,j) = disp_conc * drain_tot(c) *h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
 
                end if
                ! limit the flux based on current sminp state
@@ -640,7 +640,7 @@ contains
         do fc = 1,num_soilc
             c = filter_soilc(fc)
             biochem_pmin_vr(c,j) = 0.0_r8
-            do p = col%pfti(c), col%pftf(c)
+            do p = col_pp%pfti(c), col_pp%pftf(c)
                 if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
                     !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
                     lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)

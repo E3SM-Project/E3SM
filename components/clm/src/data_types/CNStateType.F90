@@ -14,7 +14,7 @@ module CNStateType
   use clm_varctl     , only : use_vertsoilc, use_c14, use_cn 
   use clm_varctl     , only : iulog, fsurdat
   use LandunitType   , only : lun                
-  use ColumnTypeNew     , only : col_pp                
+  use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
   ! 
   ! !PUBLIC TYPES:
@@ -1275,6 +1275,13 @@ contains
           end do
        end if
     end if
+
+    call restartvar(ncid=ncid, flag=flag, varname='cn_scalar', xtype=ncd_double,  &
+            dim1name='pft', long_name='cn_scalar', units='-', &
+            interpinic_flag='interp', readvar=readvar, data=this%cn_scalar)
+    call restartvar(ncid=ncid, flag=flag, varname='cp_scalar', xtype=ncd_double,  &
+            dim1name='pft', long_name='cp_scalar', units='-', &
+            interpinic_flag='interp', readvar=readvar, data=this%cp_scalar)
 
   end subroutine Restart
 

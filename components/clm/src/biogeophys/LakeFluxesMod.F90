@@ -18,7 +18,7 @@ module LakeFluxesMod
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc                
-  use ColumnType           , only : col                
+  use ColumnType           , only : col_pp                
   use PatchType            , only : pft                
   !    
   ! !PUBLIC TYPES:
@@ -146,10 +146,10 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                           & 
-         snl              =>    col%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                              
-         dz               =>    col%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness for soil or snow (m)            
-         dz_lake          =>    col%dz_lake                            , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)                    
-         lakedepth        =>    col%lakedepth                          , & ! Input:  [real(r8) (:)   ]  variable lake depth (m)                           
+         snl              =>    col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                              
+         dz               =>    col_pp%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness for soil or snow (m)            
+         dz_lake          =>    col_pp%dz_lake                            , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)                    
+         lakedepth        =>    col_pp%lakedepth                          , & ! Input:  [real(r8) (:)   ]  variable lake depth (m)                           
          
          forc_t           =>    atm2lnd_vars%forc_t_downscaled_col     , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                  
          forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col  , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
@@ -230,7 +230,7 @@ contains
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = pft%column(p)
-         g = col%gridcell(c)
+         g = col_pp%gridcell(c)
 
          ! Set fetch for prognostic roughness length-- if not found in surface data.
          ! This is poorly constrained, and should eventually be based on global lake data

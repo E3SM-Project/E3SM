@@ -23,7 +23,7 @@ module CanopyHydrologyMod
   use TemperatureType , only : temperature_type
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
-  use ColumnType      , only : col                
+  use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   !
   ! !PUBLIC TYPES:
@@ -169,16 +169,16 @@ contains
           pcolumn              => pft%column                               , & ! Input:  [integer  (:)   ]  pft's column                             
           ltype                => lun%itype                                , & ! Input:  [integer  (:)   ]  landunit type                            
           urbpoi               => lun%urbpoi                               , & ! Input:  [logical  (:)   ]  true => landunit is an urban point       
-          cgridcell            => col%gridcell                             , & ! Input:  [integer  (:)   ]  columns's gridcell                       
-          clandunit            => col%landunit                             , & ! Input:  [integer  (:)   ]  columns's landunit                       
-          ctype                => col%itype                                , & ! Input:  [integer  (:)   ]  column type                              
-          pfti                 => col%pfti                                 , & ! Input:  [integer  (:)   ]  column's beginning pft index             
-          npfts                => col%npfts                                , & ! Input:  [integer  (:)   ]  number of patches in column                 
-          snl                  => col%snl                                  , & ! Input:  [integer  (:)   ]  number of snow layers                    
-          n_melt               => col%n_melt                               , & ! Input:  [real(r8) (:)   ]  SCA shape parameter                     
-          zi                   => col%zi                                   , & ! Output: [real(r8) (:,:) ]  interface level below a "z" level (m) 
-          dz                   => col%dz                                   , & ! Output: [real(r8) (:,:) ]  layer depth (m)                       
-          z                    => col%z                                    , & ! Output: [real(r8) (:,:) ]  layer thickness (m)                   
+          cgridcell            => col_pp%gridcell                             , & ! Input:  [integer  (:)   ]  columns's gridcell                       
+          clandunit            => col_pp%landunit                             , & ! Input:  [integer  (:)   ]  columns's landunit                       
+          ctype                => col_pp%itype                                , & ! Input:  [integer  (:)   ]  column type                              
+          pfti                 => col_pp%pfti                                 , & ! Input:  [integer  (:)   ]  column's beginning pft index             
+          npfts                => col_pp%npfts                                , & ! Input:  [integer  (:)   ]  number of patches in column                 
+          snl                  => col_pp%snl                                  , & ! Input:  [integer  (:)   ]  number of snow layers                    
+          n_melt               => col_pp%n_melt                               , & ! Input:  [real(r8) (:)   ]  SCA shape parameter                     
+          zi                   => col_pp%zi                                   , & ! Output: [real(r8) (:,:) ]  interface level below a "z" level (m) 
+          dz                   => col_pp%dz                                   , & ! Output: [real(r8) (:,:) ]  layer depth (m)                       
+          z                    => col_pp%z                                    , & ! Output: [real(r8) (:,:) ]  layer thickness (m)                   
 
           forc_rain            => atm2lnd_vars%forc_rain_downscaled_col    , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                        
           forc_snow            => atm2lnd_vars%forc_snow_downscaled_col    , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                        
@@ -662,7 +662,7 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                              & 
-          micro_sigma  => col%micro_sigma                  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)                     
+          micro_sigma  => col_pp%micro_sigma                  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)                     
 
           h2osno       => waterstate_vars%h2osno_col       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                               
           
@@ -679,7 +679,7 @@ contains
 
        do f = 1, num_h2osfc
           c = filter_h2osfc(f)
-          l = col%landunit(c)
+          l = col_pp%landunit(c)
           qflx_h2osfc2topsoi(c) = 0._r8
           ! h2osfc only calculated for soil vegetated land units
           if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then

@@ -24,7 +24,7 @@ module BGCReactionsCenturyType
   use BGCCenturySubMod
   use BGCCenturySubCoreMod
   use LandunitType          , only : lun
-  use ColumnType            , only : col
+  use ColumnType            , only : col_pp
   use GridcellType          , only : grc
   use landunit_varcon       , only : istsoil, istcrop
   implicit none
@@ -593,7 +593,7 @@ contains
     call calc_nuptake_prof(bounds, ubj, num_soilc, filter_soilc,                                                &
          tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, 1:ubj, betrtracer_vars%id_trc_nh3x),  &
          tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, 1:ubj, betrtracer_vars%id_trc_no3x),  &
-         col%dz(bounds%begc:bounds%endc,1:ubj), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj), &
+         col_pp%dz(bounds%begc:bounds%endc,1:ubj), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj), &
          nuptake_prof(bounds%begc:bounds%endc,1:ubj))
 
     !update plant nitrogen uptake potential
@@ -603,7 +603,7 @@ contains
 
     !calculate multiplicative scalars for decay parameters
     call calc_decompK_multiply_scalar(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, &
-         waterstate_vars%finundated_col(bounds%begc:bounds%endc), col%z(bounds%begc:bounds%endc, lbj:ubj),&
+         waterstate_vars%finundated_col(bounds%begc:bounds%endc), col_pp%z(bounds%begc:bounds%endc, lbj:ubj),&
          temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lbj:ubj), &
          tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_o2), &
          tracercoeff_vars%aqu2bulkcef_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_o2), &
@@ -630,7 +630,7 @@ contains
          anaerobic_frac(bounds%begc:bounds%endc, lbj:ubj))
     
     !calculate normalized rate for nitrification and denitrification
-    call calc_nitrif_denitrif_rate(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, col%dz(bounds%begc:bounds%endc, lbj:ubj), &
+    call calc_nitrif_denitrif_rate(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, col_pp%dz(bounds%begc:bounds%endc, lbj:ubj), &
          temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lbj:ubj),                                                      &
          chemstate_vars%soil_pH(bounds%begc:bounds%endc, lbj:ubj),  pot_co2_hr, anaerobic_frac,                                &
          tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x),               &
@@ -642,7 +642,7 @@ contains
     !now there is no plant nitrogen uptake, I tend to create a new structure to indicate plant nutrient demand when it is hooked
     !back with CLM
 
-    call calc_plant_nitrogen_uptake_prof(bounds, ubj, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc, lbj:ubj), &
+    call calc_plant_nitrogen_uptake_prof(bounds, ubj, num_soilc, filter_soilc, col_pp%dz(bounds%begc:bounds%endc, lbj:ubj), &
          plantsoilnutrientflux_vars%plant_minn_uptake_potential_col(bounds%begc:bounds%endc),                            &
          nuptake_prof(bounds%begc:bounds%endc,1:ubj),                                                                    &
          k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
@@ -678,7 +678,7 @@ contains
                time, dtime, yf(:,c,j), pscal)
 
           if(pscal<5.e-1_r8)then
-             write(iulog,*)'lat, lon=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+             write(iulog,*)'lat, lon=',grc%latdeg(col_pp%gridcell(c)),grc%londeg(col_pp%gridcell(c))
              write(iulog,*)'col, lev, pscal=',c, j, pscal
              write(iulog,*)'nstep =',get_nstep()
              call endrun()
@@ -778,7 +778,7 @@ contains
     use tracerstatetype , only : tracerstate_type
     use WaterstateType  , only : waterstate_type
     use LandunitType    , only : lun
-    use ColumnType      , only : col
+    use ColumnType      , only : col_pp
     use PatchType       , only : pft
     use clm_varcon      , only : spval, ispval
 
@@ -803,7 +803,7 @@ contains
          )
 
       do c = bounds%begc, bounds%endc
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
          if (lun%ifspecial(l)) then
             if(betrtracer_vars%ngwmobile_tracers>0)then
                tracerstate_vars%tracer_conc_mobile_col(c,:,:)        = spval
@@ -945,7 +945,7 @@ contains
       !eventually, this will replace the century bgc
       do j = 1, nlevtrc_soil
          do c = bounds%begc, bounds%endc
-            l = col%landunit(c)
+            l = col_pp%landunit(c)
             if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
                tracer_conc_mobile(c,j,id_trc_no3x)=smin_no3_vr_col(c,j) /natomw
                tracer_conc_mobile(c,j,id_trc_nh3x)=smin_nh4_vr_col(c,j) /natomw

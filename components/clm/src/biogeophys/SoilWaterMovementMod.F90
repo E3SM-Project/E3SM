@@ -66,7 +66,7 @@ contains
     use WaterStateType             , only : waterstate_type
     use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
     use clm_varcon                 , only : denh2o, denice, watmin
-    use ColumnType                 , only : col
+    use ColumnType                 , only : col_pp
     use ExternalModelConstants     , only : EM_VSFM_SOIL_HYDRO_STAGE
     use ExternalModelConstants     , only : EM_ID_VSFM
     use ExternalModelInterfaceMod  , only : EMI_Driver
@@ -96,7 +96,7 @@ contains
     !------------------------------------------------------------------------------
     associate(                                                         &
       wa                 =>    soilhydrology_vars%wa_col             , & ! Input:  [real(r8) (:)   ] water in the unconfined aquifer (mm)
-      dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)    
+      dz                 =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)    
       zwt                =>    soilhydrology_vars%zwt_col            , & ! Input:  [real(r8) (:)   ]  water table depth (m)
       h2osoi_ice         =>    waterstate_vars%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
       h2osoi_vol         =>    waterstate_vars%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
@@ -259,7 +259,7 @@ contains
     use WaterStateType       , only : waterstate_type
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use PatchType            , only : pft
-    use ColumnType           , only : col
+    use ColumnType           , only : col_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -326,9 +326,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-         z                 =>    col%z                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
-         zi                =>    col%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
-         dz                =>    col%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                             
+         z                 =>    col_pp%z                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
+         zi                =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
+         dz                =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                             
 
          origflag          =>    soilhydrology_vars%origflag        , & ! Input:  constant
          qcharge           =>    soilhydrology_vars%qcharge_col     , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)                      
@@ -758,7 +758,7 @@ contains
     use WaterFluxType             , only : waterflux_type
     use WaterStateType            , only : waterstate_type
     use PatchType                 , only : pft
-    use ColumnType                , only : col
+    use ColumnType                , only : col_pp
     use clm_varcon                , only : watmin
     use LandunitType              , only : lun
     use landunit_varcon           , only : istsoil, istcrop
@@ -793,9 +793,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate( &
-         zi                        =>    col%zi                                     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-         dz                        =>    col%dz                                     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
-         snl                       =>    col%snl                                    , & ! Input:  [integer  (:)   ]  minus number of snow layers
+         zi                        =>    col_pp%zi                                     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+         dz                        =>    col_pp%dz                                     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
+         snl                       =>    col_pp%snl                                    , & ! Input:  [integer  (:)   ]  minus number of snow layers
 
          zwt                       =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)
 
@@ -837,6 +837,7 @@ contains
 
       dtime = get_step_size()
 
+<<<<<<< HEAD
       mflx_infl_col(:)              = 0.d0
       mflx_dew_col(:)               = 0.d0
       mflx_snowlyr_disp_col(:)      = 0.d0

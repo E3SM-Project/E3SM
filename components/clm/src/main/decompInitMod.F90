@@ -15,7 +15,7 @@ module decompInitMod
   use clm_varcon      , only : grlnd
   use GridcellType    , only : grc
   use LandunitType    , only : lun                
-  use ColumnType      , only : col                
+  use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   use FatesInterfaceMod, only : fates_maxElementsPerSite
   use decompMod
@@ -824,7 +824,7 @@ contains
     allocate(gindex(begc:endc))
     ioff(:) = 0
     do ci = begc,endc
-       gi = col%gridcell(ci)
+       gi = col_pp%gridcell(ci)
        gindex(ci) = cstart(gi) + ioff(gi)
        ioff(gi) = ioff(gi) + 1 
        ! check that this is less than [cstart(gi) + ccount(gi)]

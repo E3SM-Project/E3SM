@@ -74,7 +74,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use shr_log_mod    , only : errMsg => shr_log_errMsg
     use decompMod      , only : bounds_type
-    use ColumnType     , only : col
+    use ColumnType     , only : col_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -103,7 +103,7 @@ contains
        do fc = 1, numf
           c = filter(fc)
           !compute the volumetric ice content
-          vol_ice=min(watsat(c,j), h2osoi_ice(c,j)/(denice*col%dz(c,j)))
+          vol_ice=min(watsat(c,j), h2osoi_ice(c,j)/(denice*col_pp%dz(c,j)))
 
           !compute the maximum soil space to fill liquid water and air
           eff_por(c,j) = watsat(c,j) - vol_ice
@@ -122,7 +122,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use decompMod      , only : bounds_type
     use shr_log_mod    , only : errMsg => shr_log_errMsg    
-    use ColumnType     , only : col
+    use ColumnType     , only : col_pp
     implicit none
     !
     ! !ARGUMENTS:
@@ -156,7 +156,7 @@ contains
           c = filter(fc)
           if (j>=jtop(c)) then
              !compute the volumetric ice content       
-             vol_ice=min(1._r8, h2osoi_ice(c,j)/(denice*col%dz(c,j)))
+             vol_ice=min(1._r8, h2osoi_ice(c,j)/(denice*col_pp%dz(c,j)))
 
              !compute the maximum snow void space to fill liquid water and air         
              eff_por(c,j) = 1._r8 - vol_ice
@@ -178,7 +178,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use shr_log_mod    , only : errMsg => shr_log_errMsg  
     use decompMod      , only : bounds_type
-    use ColumnType     , only : col
+    use ColumnType     , only : col_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -208,7 +208,7 @@ contains
           c = filter(fc)
           if(j>=jtop(c))then
              !volume of liquid is no greater than effective void space
-             vol_liq(c,j) = min(eff_porosity(c,j), h2osoi_liq(c,j)/(col%dz(c,j)*denh2o))
+             vol_liq(c,j) = min(eff_porosity(c,j), h2osoi_liq(c,j)/(col_pp%dz(c,j)*denh2o))
           endif
        enddo
     enddo

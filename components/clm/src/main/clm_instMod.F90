@@ -52,7 +52,7 @@ module clm_instMod
   use SoilorderConType           , only : soilordercon         ! Constants
 
   use LandunitType               , only : lun
-  use ColumnType                 , only : col
+  use ColumnType                 , only : col_pp
   use PatchType                  , only : pft
 
   use clm_bgc_interface_data     , only : clm_bgc_interface_data_type
@@ -265,8 +265,8 @@ contains
     ! for columns with net ablation, at the cost of delaying ice formation
     ! in columns with net accumulation.
     do c = begc,endc
-       l = col%landunit(c)
-       g = col%gridcell(c)
+       l = col_pp%landunit(c)
+       g = col_pp%gridcell(c)
 
        if (lun%itype(l)==istice) then
           h2osno_col(c) = h2osno_max

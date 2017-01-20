@@ -13,7 +13,7 @@ module FrictionVelocityType
   use abortutils     , only : endrun
   use spmdMod        , only : masterproc
   use LandunitType   , only : lun                
-  use ColumnType     , only : col                
+  use ColumnType     , only : col_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -231,7 +231,7 @@ contains
     end if
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%lakpoi(l)) then !lake
           this%z0mg_col(c) = 0.0004_r8
        end if

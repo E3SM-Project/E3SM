@@ -229,7 +229,7 @@ contains
     use TemperatureType  , only : temperature_type
     use CNStateType      , only : cnstate_type
     use PatchType        , only : pft                
-    use ColumnType       , only : col
+    use ColumnType       , only : col_pp
     !
     ! !ARGUMENTS:
     class(crop_type)       , intent(inout) :: this
@@ -289,8 +289,8 @@ contains
           ivt = pft%itype(p)
           c = pft%column(p)
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               ((temperature_vars%t_soisno_col(c,1)*col%dz(c,1) + &
-               temperature_vars%t_soisno_col(c,2)*col%dz(c,2))/(col%dz(c,1)+col%dz(c,2))) - &
+               ((temperature_vars%t_soisno_col(c,1)*col_pp%dz(c,1) + &
+               temperature_vars%t_soisno_col(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
                (SHR_CONST_TKFRZ + baset(ivt)))) * dtime/SHR_CONST_CDAY
           if (ivt == nwcereal .or. ivt == nwcerealirrig) then
              rbufslp(p) = rbufslp(p)*cnstate_vars%vf_patch(p)

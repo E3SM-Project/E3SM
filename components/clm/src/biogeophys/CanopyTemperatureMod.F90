@@ -30,8 +30,8 @@ module CanopyTemperatureMod
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use LandunitType         , only : lun                
-  use ColumnType           , only : col                
-  use PatchType            , only : pft
+  use ColumnType           , only : col_pp                
+  use PatchType            , only : pft                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -119,9 +119,9 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                          & 
-         snl              =>    col%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                     
-         dz               =>    col%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
-         zii              =>    col%zii                               , & ! Output: [real(r8) (:)   ] convective boundary height [m]           
+         snl              =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                     
+         dz               =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
+         zii              =>    col_pp%zii                               , & ! Output: [real(r8) (:)   ] convective boundary height [m]           
          z_0_town         =>    lun%z_0_town                          , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
          z_d_town         =>    lun%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
          urbpoi           =>    lun%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
@@ -213,8 +213,8 @@ contains
       do j = -nlevsno+1, nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
-            if ((col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall &
-                 .or. col%itype(c) == icol_roof) .and. j > nlevurb) then
+            if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                 .or. col_pp%itype(c) == icol_roof) .and. j > nlevurb) then
                tssbef(c,j) = spval 
             else
                tssbef(c,j) = t_soisno(c,j)
@@ -229,9 +229,9 @@ contains
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
-         if (col%itype(c) == icol_road_perv) then
+         if (col_pp%itype(c) == icol_road_perv) then
             hr_road_perv = 0._r8
          end if
 
@@ -265,7 +265,7 @@ contains
                     + frac_sno(c) + frac_h2osfc(c)
                soilalpha(c) = qred
 
-            else if (col%itype(c) == icol_road_perv) then
+            else if (col_pp%itype(c) == icol_road_perv) then
                ! Pervious road depends on water in total soil column
                do j = 1, nlevsoi
                   if (t_soisno(c,j) >= tfrz) then
@@ -290,11 +290,11 @@ contains
                end if
                soilalpha_u(c) = qred
 
-            else if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall) then
+            else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
                qred = 0._r8
                soilalpha_u(c) = spval
 
-            else if (col%itype(c) == icol_roof .or. col%itype(c) == icol_road_imperv) then
+            else if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
                qred = 1._r8
                soilalpha_u(c) = spval
             end if

@@ -20,7 +20,7 @@ module SoilFluxesMod
   use WaterstateType    , only : waterstate_type
   use WaterfluxType     , only : waterflux_type
   use LandunitType	, only : lun                
-  use ColumnType	, only : col                
+  use ColumnType	, only : col_pp                
   use PatchType		, only : pft                
   !
   ! !PUBLIC TYPES:
@@ -166,13 +166,13 @@ contains
       call t_startf('bgp2_loop_1')
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         j = col%snl(c)+1
+         j = col_pp%snl(c)+1
 
          ! Calculate difference in soil temperature from last time step, for
          ! flux corrections
 
-         if (col%snl(c) < 0) then
-            t_grnd0(c) = frac_sno_eff(c) * tssbef(c,col%snl(c)+1) &
+         if (col_pp%snl(c) < 0) then
+            t_grnd0(c) = frac_sno_eff(c) * tssbef(c,col_pp%snl(c)+1) &
                  + (1 - frac_sno_eff(c) - frac_h2osfc(c)) * tssbef(c,1) &
                  + frac_h2osfc(c) * t_h2osfc_bef(c)
          else
@@ -231,8 +231,8 @@ contains
       do pi = 1,max_patch_per_col
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
-            if ( pi <= col%npfts(c) ) then
-               p = col%pfti(c) + pi - 1
+            if ( pi <= col_pp%npfts(c) ) then
+               p = col_pp%pfti(c) + pi - 1
                if (pft%active(p)) then
                   topsoil_evap_tot(c) = topsoil_evap_tot(c) + qflx_evap_soi(p) * pft%wtcol(p)
                end if
@@ -258,7 +258,7 @@ contains
          c = pft%column(p)
          l = pft%landunit(p)
          g = pft%gridcell(p)
-         j = col%snl(c)+1
+         j = col_pp%snl(c)+1
 
          ! Correct soil fluxes for possible evaporation in excess of top layer water
          ! excess energy is added to the sensible heat flux from soil
@@ -275,7 +275,7 @@ contains
          ! Ground heat flux
          
          if (.not. lun%urbpoi(l)) then
-            lw_grnd=(frac_sno_eff(c)*tssbef(c,col%snl(c)+1)**4 &
+            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
                  +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 
@@ -289,7 +289,7 @@ contains
             end if
          else
             ! For all urban columns we use the net longwave radiation (eflx_lwrad_net) since
-            ! the term (emg*sb*tssbef(col%snl+1)**4) is not the upward longwave flux because of 
+            ! the term (emg*sb*tssbef(col_pp%snl+1)**4) is not the upward longwave flux because of 
             ! interactions between urban columns.
 
             eflx_lwrad_del(p) = 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
@@ -345,7 +345,7 @@ contains
          ! This was moved in from Hydrology2 to keep all pft-level
          ! calculations out of Hydrology2
 
-         if (col%snl(c) < 0 .and. do_capsnow(c)) then
+         if (col_pp%snl(c) < 0 .and. do_capsnow(c)) then
             qflx_snwcp_liq(p) = qflx_snwcp_liq(p)+frac_sno_eff(c)*qflx_dew_grnd(p)
             qflx_snwcp_ice(p) = qflx_snwcp_ice(p)+frac_sno_eff(c)*qflx_dew_snow(p)
          end if
@@ -372,7 +372,7 @@ contains
 
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
-         if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof) then
+         if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall .or. col_pp%itype(c)==icol_roof) then
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat(c) 
          end if
       end do
@@ -381,10 +381,10 @@ contains
             p = filter_nolakep(fp)
             c = pft%column(p)
 
-            if ((col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall &
-                 .and. col%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
+            if ((col_pp%itype(c) /= icol_sunwall .and. col_pp%itype(c) /= icol_shadewall &
+                 .and. col_pp%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
                ! area weight heat absorbed by snow layers
-               if (j >= col%snl(c)+1 .and. j < 1) errsoi_patch(p) = errsoi_patch(p) &
+               if (j >= col_pp%snl(c)+1 .and. j < 1) errsoi_patch(p) = errsoi_patch(p) &
                     - frac_sno_eff(c)*(t_soisno(c,j)-tssbef(c,j))/fact(c,j)
                if (j >= 1) errsoi_patch(p) = errsoi_patch(p) &
                     - (t_soisno(c,j)-tssbef(c,j))/fact(c,j)
@@ -405,10 +405,10 @@ contains
          c = pft%column(p)
          l = pft%landunit(p)
          g = pft%gridcell(p)
-         j = col%snl(c)+1
+         j = col_pp%snl(c)+1
 
          if (.not. lun%urbpoi(l)) then
-            lw_grnd=(frac_sno_eff(c)*tssbef(c,col%snl(c)+1)**4 &
+            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
                  +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 

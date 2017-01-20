@@ -24,7 +24,7 @@ module UrbanRadiationMod
   use UrbanParamsType   , only : urbanparams_type
   use EnergyFluxType    , only : energyflux_type
   use LandunitType      , only : lun                
-  use ColumnType        , only : col                
+  use ColumnType        , only : col_pp                
   use PatchType         , only : pft                
   !
   ! !PUBLIC TYPES:
@@ -112,7 +112,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                 & 
-         ctype              =>    col%itype                                  , & ! Input:  [integer (:)    ]  column type                                        
+         ctype              =>    col_pp%itype                                  , & ! Input:  [integer (:)    ]  column type                                        
          coli               =>    lun%coli                                   , & ! Input:  [integer (:)    ]  beginning column index for landunit                
          colf               =>    lun%colf                                   , & ! Input:  [integer (:)    ]  ending column index for landunit                   
          canyon_hwr         =>    lun%canyon_hwr                             , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          

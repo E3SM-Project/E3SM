@@ -15,7 +15,7 @@ module BGCReactionsSminNType
   use BGCReactionsMod , only : bgc_reaction_type
   use tracer_varcon   , only : bndcond_as_conc, bndcond_as_flux
   use LandunitType    , only : lun
-  use ColumnType      , only : col
+  use ColumnType      , only : col_pp
   implicit none
 
   save
@@ -297,7 +297,7 @@ contains
 
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%ifspecial(l)) then
           if(betrtracer_vars%ngwmobile_tracers>0)then
              tracerstate_vars%tracer_conc_mobile_col(c,:,:)        = spval
@@ -428,7 +428,7 @@ contains
 
       do j = 1, nlevtrc_soil
          do c = bounds%begc, bounds%endc
-            l = col%landunit(c)
+            l = col_pp%landunit(c)
             if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
 
                tracer_conc_mobile(c,j,id_trc_no3x) = smin_no3_vr_col(c,j) / natomw

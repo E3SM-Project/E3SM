@@ -30,7 +30,7 @@ module clm_pflotran_interfaceMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use GridcellType        , only : grc
   use LandunitType        , only : lun
-  use ColumnType          , only : col
+  use ColumnType          , only : col_pp 
   use PatchType           , only : pft
 
   use decompMod           , only : bounds_type
@@ -451,26 +451,26 @@ contains
          ! Assign local pointers to derived subtypes components (landunit-level)
          ltype      =>  lun%itype      , & !  [integer (:)]  landunit type index
          ! Assign local pointer to derived subtypes components (column-level)
-         cgridcell  =>  col%gridcell   , & !  [integer (:)]  gridcell index of column
-         clandunit  =>  col%landunit   , & !  [integer (:)]  landunit index of column
-         cwtgcell   =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
-         ctype      =>  col%itype      , & !  [integer (:)]  column type index
-         topo       =>  col%glc_topo   , &  ! surface elevation (m)
-         micro_sigma=>  col%micro_sigma, &  ! microtopography pdf sigma (m)
-         slope      =>  col%topo_slope , &  ! gridcell topographic slope
-         topo_std   =>  col%topo_std     &  ! gridcell elevation standard deviation
+         cgridcell  =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
+         clandunit  =>  col_pp%landunit   , & !  [integer (:)]  landunit index of column
+         cwtgcell   =>  col_pp%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
+         ctype      =>  col_pp%itype      , & !  [integer (:)]  column type index
+         topo       =>  col_pp%glc_topo   , &  ! surface elevation (m)
+         micro_sigma=>  col_pp%micro_sigma, &  ! microtopography pdf sigma (m)
+         slope      =>  col_pp%topo_slope , &  ! gridcell topographic slope
+         topo_std   =>  col_pp%topo_std     &  ! gridcell elevation standard deviation
          )
 
     !------------------------------------------------------------------------
 
     do c = bounds%begc, bounds%endc
-      l = col%landunit(c)
-      if (.not.(ltype(l)==istsoil .or. ltype(l)==istcrop) .and. col%active(c)) then
+      l = col_pp%landunit(c)
+      if (.not.(ltype(l)==istsoil .or. ltype(l)==istcrop) .and. col_pp%active(c)) then
         write (iulog,*) 'WARNING: Land Unit type of active Columns of non-soil/crop type found within the domain'
         write (iulog,*) 'CLM-CN -- PFLOTRAN does not support this land unit presently'
         write (iulog,*) 'So, DEactive the column: ', c
 
-        col%active(c) = .false.
+        col_pp%active(c) = .false.
 
       endif
 
@@ -1037,13 +1037,13 @@ endif
 
     associate( &
          ! Assign local pointer to derived subtypes components (column-level)
-         clandunit  =>  col%landunit   , & !  [integer (:)]  landunit index of column
-         cgridcell  =>  col%gridcell   , & !  [integer (:)]  gridcell index of column
-         wtgcell    =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
-         cactive    =>  col%active     , & !  [logical (:)]  column active or not
+         clandunit  =>  col_pp%landunit   , & !  [integer (:)]  landunit index of column
+         cgridcell  =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
+         wtgcell    =>  col_pp%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
+         cactive    =>  col_pp%active     , & !  [logical (:)]  column active or not
          z          =>  clm_bgc_data%z          , & !  [real(r8) (:,:)]  layer depth (m)
          dz         =>  clm_bgc_data%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
-         zi         =>  col%zi         , & !  [real(r8) (:,:)]  interface level below a "z" level (m)
+         zi         =>  col_pp%zi         , & !  [real(r8) (:,:)]  interface level below a "z" level (m)
          !
          bd         =>  clm_bgc_data%bd_col         , & !
          bsw        =>  clm_bgc_data%bsw_col        , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
@@ -1200,9 +1200,9 @@ endif
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-      gridcell        => col%gridcell     , & ! column's gridcell
-      wtgcell         => col%wtgcell      , & ! column's weight relative to gridcell
-      cactive         => col%active       , & ! [logical (:)]  column active or not
+      gridcell        => col_pp%gridcell     , & ! column's gridcell
+      wtgcell         => col_pp%wtgcell      , & ! column's weight relative to gridcell
+      cactive         => col_pp%active       , & ! [logical (:)]  column active or not
       dz              => clm_bgc_data%dz           , & ! layer thickness depth (m)
 !      zi              => clm_bgc_data%zi           , & ! interface depth (m)
     !
@@ -1348,10 +1348,10 @@ endif
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-    gridcell        => col%gridcell     , & ! column's gridcell
-    wtgcell         => col%wtgcell      , & ! column's weight relative to gridcell
-    cactive         => col%active       , & ! column's active or not
-    dz              => col%dz           , & ! layer thickness depth (m)
+    gridcell        => col_pp%gridcell     , & ! column's gridcell
+    wtgcell         => col_pp%wtgcell      , & ! column's weight relative to gridcell
+    cactive         => col_pp%active       , & ! column's active or not
+    dz              => col_pp%dz           , & ! layer thickness depth (m)
     watsat          => clm_bgc_data%watsat_col       , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
     h2osoi_ice      => clm_bgc_data%h2osoi_ice_col    & ! ice lens (kg/m2)
     )
@@ -1484,11 +1484,11 @@ endif
   !-----------------------------------------------------------------------
     associate ( &
     ltype             => lun%itype             , & ! landunit type
-    cgridcell         => col%gridcell          , & ! column's gridcell
-    clandunit         => col%landunit          , & ! column's landunit
-    zi                => col%zi                , & ! Input: (:,:) soil layer interface depth (m)
-    dz                => col%dz                , & ! Input: (:,:) soil layer thickness (m)
-    pfti              => col%pfti                                , &! beginning pft index for each column
+    cgridcell         => col_pp%gridcell          , & ! column's gridcell
+    clandunit         => col_pp%landunit          , & ! column's landunit
+    zi                => col_pp%zi                , & ! Input: (:,:) soil layer interface depth (m)
+    dz                => col_pp%dz                , & ! Input: (:,:) soil layer thickness (m)
+    pfti              => col_pp%pfti                                , &! beginning pft index for each column
     pwtgcell          => pft%wtgcell                             , &! weight relative to gridcell for each pft
     pwtcol            => pft%wtcol                               , &! weight relative to column for each pft
     !
@@ -1552,7 +1552,7 @@ endif
 !    do pftindex = 1, max_patch_per_col
 !       do fc = 1, num_soilc
 !          c = filter_soilc(fc)
-!          if (pftindex <= col%npfts(c)) then
+!          if (pftindex <= col_pp%npfts(c)) then
 !             p = pfti(c) + pftindex - 1
 !
 !             if (pwtgcell(p)>0._r8) then
@@ -1659,7 +1659,7 @@ endif
        reference_pressure = clm_pf_idata%pressure_reference
        ponding_pressure = pondmax(c)*SHR_CONST_G              ! max. ponding water depth (mm) ==> pressure (Pa)
 
-       press_maxponding_clmp_loc(gcount+1) = reference_pressure+ponding_pressure*col%wtgcell(c)
+       press_maxponding_clmp_loc(gcount+1) = reference_pressure+ponding_pressure*col_pp%wtgcell(c)
 
        do j = 1, nlevsoi
          cellcount = gcount*clm_pf_idata%nzclm_mapped + j
@@ -1680,11 +1680,11 @@ endif
                 if (soillsat_clms_loc(cellcount) >= 1._r8) then
                    ! water-head formed on saturated below-ground soil layer
                    press_top_clmp_loc(gcount+1) = press_clms_loc(cellcount) + &
-                          qflx_ground*col%wtgcell(c)*dtime*SHR_CONST_G
+                          qflx_ground*col_pp%wtgcell(c)*dtime*SHR_CONST_G
                 else
                    ! ground-water-head discontinued from below-ground (atm. pressure applied at both ends)
                    press_top_clmp_loc(gcount+1) = press_top_clmp_loc(gcount+1) +  &
-                          qflx_ground*col%wtgcell(c)*dtime*SHR_CONST_G
+                          qflx_ground*col_pp%wtgcell(c)*dtime*SHR_CONST_G
                 endif
 
                 ! mmH2O/sec ==> mH2O/sec of potential infiltration (flux) rate as top BC (neumann)
@@ -1702,7 +1702,7 @@ endif
           ! adding plant root extraction of water (transpiration)
           qflx = qflx - qflx_tran_col(c)*rootfr_col(c,j)  ! by this point: unit: mmH2O/sec for CLM column
 
-          qflx = qflx * col%wtgcell(c)                    ! from now on: per PF 3-D cells
+          qflx = qflx * col_pp%wtgcell(c)                    ! from now on: per PF 3-D cells
           qflx = qflx * area * 1.e-3 *denh2o              ! unit: mmH2O/sec ==> kgH2O/sec
 
           ! previous time-step soil water saturation for adjusting qflx to avoid too wet or too dry to cause PF math issue
@@ -1736,7 +1736,7 @@ endif
              tempreal = soilvwc/watsat(c,j)                                    ! using 'real' saturation
              kbot = hksat(c,j)*(tempreal**(2._r8*bsw(c,j)+3._r8))*1.e-3        ! mmH2O/sec ==> mH2O/sec
              qflux_base_clmp_loc(gcount+1) =  qflux_base_clmp_loc(gcount+1) &
-                    + max(dsoilliq3, -kbot * col%wtgcell(c))             ! mH2O/sec
+                    + max(dsoilliq3, -kbot * col_pp%wtgcell(c))             ! mH2O/sec
 
           end if
 
@@ -1829,10 +1829,10 @@ endif
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-    cgridcell         => col%gridcell                            , &! column's gridcell
-    clandunit         => col%landunit                            , &! column's landunit
-    dz                => col%dz                                  , &! layer thickness depth (m)
-    pfti              => col%pfti                                , &! beginning pft index for each column
+    cgridcell         => col_pp%gridcell                            , &! column's gridcell
+    clandunit         => col_pp%landunit                            , &! column's landunit
+    dz                => col_pp%dz                                  , &! layer thickness depth (m)
+    pfti              => col_pp%pfti                                , &! beginning pft index for each column
     pwtgcell          => pft%wtgcell                             , &! weight relative to gridcell for each pft
     pwtcol            => pft%wtcol                               , &! weight relative to column for each pft
     !
@@ -1867,14 +1867,14 @@ endif
     ! CLM appears NO column-level ground-heat-flux variable, instead by 'patch'
     do fc = 1, num_soilc
        c = filter_soilc(fc)
-       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
+       if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data from PF for inactive cell
        g = cgridcell(c)
        gcount = g - bounds%begg
 
        gflux_subsurf_clmp_loc(gcount+1)  = gflux_subsurf_clmp_loc(gcount+1) &
-                                         + eflx_soil_grnd(c)*1.d-3 * col%wtgcell(c)     ! 1.d-3: from W/m2 --> kJ/m2/s
+                                         + eflx_soil_grnd(c)*1.d-3 * col_pp%wtgcell(c)     ! 1.d-3: from W/m2 --> kJ/m2/s
 !        do pftindex = 1, max_patch_per_col
-!           if (pftindex <= col%npfts(c)) then
+!           if (pftindex <= col_pp%npfts(c)) then
 !              p = pfti(c) + pftindex - 1
 !              if (pwtgcell(p)>0._r8) then
 !                gflux_subsurf_clmp_loc(gcount+1)  = gflux_subsurf_clmp_loc(gcount+1) &
@@ -1887,15 +1887,15 @@ endif
     ! CLM column-level variables available to PFLOTRAN
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
+       if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data from PF for inactive cell
 
        g = cgridcell(c)
        gcount = g - bounds%begg
 
        gflux_subbase_clmp_loc(gcount+1)  =  gflux_subbase_clmp_loc(gcount+1) &
-          + eflx_bot(c)*1.d-3 * col%wtgcell(c)
+          + eflx_bot(c)*1.d-3 * col_pp%wtgcell(c)
        gtemp_subsurf_clmp_loc(gcount+1)  = gflux_subbase_clmp_loc(gcount+1) &
-          + (t_grnd(c) - tfrz) * col%wtgcell(c)
+          + (t_grnd(c) - tfrz) * col_pp%wtgcell(c)
 
        gtemp_subbase_clmp_loc(gcount+1)  = 0._r8                 ! not yet get it from CLM (i.e.,dirichlet type not available)
 
@@ -2075,10 +2075,10 @@ endif
     do fc = 1, num_soilc  ! will need to extend to multiple columns?
        c = filter_soilc(fc)
 
-       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data to PF for inactive cell
+       if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data to PF for inactive cell
 
-       g       = col%gridcell(c)
-       wtgcell = col%wtgcell(c)
+       g       = col_pp%gridcell(c)
+       wtgcell = col_pp%wtgcell(c)
 
        gcount = g - bounds%begg
        do j = 1, nlevdecomp
@@ -2428,11 +2428,11 @@ endif
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
+       if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data from PF for inactive cell
 
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        gcount = g - bounds%begg
-       wtgcell = col%wtgcell(c)
+       wtgcell = col_pp%wtgcell(c)
 
        do j = 1, nlevdecomp
           cellcount = gcount*clm_pf_idata%nzclm_mapped+j
@@ -2653,9 +2653,9 @@ endif
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-         gridcell   =>  col%gridcell   , & !  [integer (:)]  gridcell index of column
-         wtgcell    =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
-         dz         =>  col%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
+         gridcell   =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
+         wtgcell    =>  col_pp%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
+         dz         =>  col_pp%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
          !
          h2osoi_liq_col =>  clm_bgc_data%h2osoi_liq_col      , &
          h2osoi_ice_col =>  clm_bgc_data%h2osoi_ice_col      , &
@@ -2673,9 +2673,9 @@ endif
 
     do fc = 1,num_soilc
       c = filter_soilc(fc)
-      if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
+      if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data from PF for inactive cell
 
-      g = col%gridcell(c)
+      g = col_pp%gridcell(c)
       gcount = g - bounds%begg
       do j = 1, nlevsoi
 
@@ -2752,9 +2752,9 @@ endif
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-         gridcell   =>  col%gridcell   , & !  [integer (:)]  gridcell index of column
-         wtgcell    =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
-         dz         =>  col%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
+         gridcell   =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
+         wtgcell    =>  col_pp%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
+         dz         =>  col_pp%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
          !
          t_soisno   => clm_bgc_data%t_soisno_col   & ! snow-soil temperature (Kelvin)
     )
@@ -2764,9 +2764,9 @@ endif
 
     do fc = 1,num_soilc
       c = filter_soilc(fc)
-      if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
+      if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data from PF for inactive cell
 
-      g = col%gridcell(c)
+      g = col_pp%gridcell(c)
       gcount = g - bounds%begg
       do j = 1, nlevsoi
 
@@ -2957,9 +2957,9 @@ endif
        ! (TODO) NOT YET do columna-level down-scaling from PF's grid-cell variables
 
        c = filter_soilc(fc)
-       g = col%gridcell(c)
-       wtgcell = col%wtgcell(c)
-       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
+       g = col_pp%gridcell(c)
+       wtgcell = col_pp%wtgcell(c)
+       if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data from PF for inactive cell
 
        gcount = g - bounds%begg
        do j = 1, nlevdecomp
@@ -3314,9 +3314,9 @@ endif
      lair_barrier(:) = -1            ! (-1: no barrier, 0: ground snow/ice/water-layer barrier, >=1: barrier in soil column)
      do fc = 1,num_soilc
        c = filter_soilc(fc)
-       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
+       if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data from PF for inactive cell
 
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        gcount = g - bounds%begg
 
        if((frac_sno(c)+ frac_h2osfc(c))>=0.90_r8) then
@@ -3345,9 +3345,9 @@ endif
     !
     do fc = 1,num_soilc          ! operating on soil column, which then back to CLM-CN
        c = filter_soilc(fc)
-       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
+       if ( col_pp%wtgcell(c) <= 0._r8 .or. (.not.col_pp%active(c)) ) cycle     ! don't assign data from PF for inactive cell
 
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        gcount = g - bounds%begg
 
        total_p = forc_pbot(g)
@@ -3552,10 +3552,10 @@ endif
 !    !-----------------------------------------------------------------------
 !
 !    associate(&
-!    clandunit         =>    col%landunit          , & ! column's landunit
+!    clandunit         =>    col_pp%landunit          , & ! column's landunit
 !    ltype             =>    lun%itype             , & ! landunit type
-!    zi                =>    col%zi                , & ! Input: (:,:) soil layer interface depth (m)
-!    dz                =>    col%dz                , & ! Input: (:,:) soil layer thickness (m)
+!    zi                =>    col_pp%zi                , & ! Input: (:,:) soil layer interface depth (m)
+!    dz                =>    col_pp%dz                , & ! Input: (:,:) soil layer thickness (m)
 !    !
 !    forc_pbot         =>    clm_a2l%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)]  atmospheric pressure (Pa)
 !    t_grnd            =>    ces_vars%t_grnd_col                  , & ! Input:  [real(r8) (:)]  ground surface temperature [K]
@@ -3609,7 +3609,7 @@ endif
 !    do fc = 1, num_soilc
 !
 !      c = filter_soilc(fc)
-!      g = col%gridcell(c)
+!      g = col_pp%gridcell(c)
 !      gcount = g - bounds%begg
 !
 !      dew = 0._r8

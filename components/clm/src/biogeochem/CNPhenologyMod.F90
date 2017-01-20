@@ -29,7 +29,7 @@ module CNPhenologyMod
   use SoilStateType       , only : soilstate_type
   use TemperatureType     , only : temperature_type
   use WaterstateType      , only : waterstate_type
-  use ColumnType          , only : col                
+  use ColumnType          , only : col_pp                
   use GridcellType        , only : grc                
   use PatchType           , only : pft                
   use PhosphorusFluxType  , only : phosphorusflux_type
@@ -2759,8 +2759,8 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
-               if ( pi <=  col%npfts(c) ) then
-                  p = col%pfti(c) + pi - 1
+               if ( pi <=  col_pp%npfts(c) ) then
+                  p = col_pp%pfti(c) + pi - 1
                   if (pft%active(p)) then
 
                      ! leaf litter carbon fluxes
@@ -2901,8 +2901,8 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
 
-         if (pi <=  col%npfts(c)) then
-            p = col%pfti(c) + pi - 1
+         if (pi <=  col_pp%npfts(c)) then
+            p = col_pp%pfti(c) + pi - 1
 
             if (pft%active(p)) then
 

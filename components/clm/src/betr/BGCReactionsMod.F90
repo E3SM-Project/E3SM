@@ -5,7 +5,7 @@ module BGCReactionsMod
   !
   ! !USES:
   use LandunitType , only : lun
-  use ColumnType   , only : col
+  use ColumnType   , only : col_pp
   implicit none
   save
   private
@@ -209,7 +209,7 @@ module BGCReactionsMod
        use tracerstatetype          , only : tracerstate_type
        use WaterstateType           , only : waterstate_type
        use LandunitType             , only : lun
-       use ColumnType               , only : col
+       use ColumnType               , only : col_pp
        use PatchType                , only : pft
        use decompMod                , only : bounds_type
 

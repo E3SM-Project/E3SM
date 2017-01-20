@@ -18,7 +18,7 @@ module SurfaceRadiationMod
   use SolarAbsorbedType , only : solarabs_type
   use GridcellType      , only : grc                
   use LandunitType      , only : lun                
-  use ColumnType        , only : col                
+  use ColumnType        , only : col_pp                
   use PatchType         , only : pft
 
   !
@@ -380,7 +380,7 @@ contains
      !------------------------------------------------------------------------------
 
      associate(                                                     & 
-          snl             =>    col%snl                           , & ! Input:  [integer  (:)   ] negative number of snow layers [nbr]     
+          snl             =>    col_pp%snl                           , & ! Input:  [integer  (:)   ] negative number of snow layers [nbr]     
 
           forc_solad      =>    atm2lnd_vars%forc_solad_grc       , & ! Input:  [real(r8) (:,:) ] direct beam radiation (W/m**2)        
           forc_solai      =>    atm2lnd_vars%forc_solai_grc       , & ! Input:  [real(r8) (:,:) ] diffuse radiation (W/m**2)            

@@ -12,7 +12,7 @@ module CNVerticalProfileMod
   use SoilStateType   , only : soilstate_type
   use CanopyStateType , only : canopystate_type
   use CNStateType     , only : cnstate_type
-  use ColumnType      , only : col                
+  use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   !
   implicit none
@@ -198,8 +198,8 @@ contains
          do pi = 1,maxpatch_pft
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               if (pi <=  col%npfts(c)) then
-                  p = col%pfti(c) + pi - 1
+               if (pi <=  col_pp%npfts(c)) then
+                  p = col_pp%pfti(c) + pi - 1
                   do j = 1,nlevdecomp
                      col_cinput_rootfr(c,j) = col_cinput_rootfr(c,j) + cinput_rootfr(p,j) * pft%wtcol(p)
                   end do
@@ -265,8 +265,8 @@ contains
             write(iulog, *) 'cinput_rootfr: ', cinput_rootfr(c,:)
             write(iulog, *) 'dzsoi_decomp: ', dzsoi_decomp(:)
             write(iulog, *) 'surface_prof: ', surface_prof(:)
-            write(iulog, *) 'npfts(c): ', col%npfts(c)
-            do p = col%pfti(c), col%pfti(c) + col%npfts(c) -1
+            write(iulog, *) 'npfts(c): ', col_pp%npfts(c)
+            do p = col_pp%pfti(c), col_pp%pfti(c) + col_pp%npfts(c) -1
                write(iulog, *) 'p, itype(p), wtcol(p): ', p, pft%itype(p), pft%wtcol(p)
                write(iulog, *) 'cinput_rootfr(p,:): ', cinput_rootfr(p,:)
             end do

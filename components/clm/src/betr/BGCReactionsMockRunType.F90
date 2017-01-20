@@ -14,7 +14,7 @@ module BGCReactionsMockRunType
   use BGCReactionsMod       , only : bgc_reaction_type
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
   use LandunitType , only : lun
-  use ColumnType , only : col
+  use ColumnType , only : col_pp
   implicit none
 
   save
@@ -337,7 +337,7 @@ contains
 
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%ifspecial(l)) then
           if(betrtracer_vars%ngwmobile_tracers>0)then
              tracerstate_vars%tracer_conc_mobile_col(c,:,:)        = spval

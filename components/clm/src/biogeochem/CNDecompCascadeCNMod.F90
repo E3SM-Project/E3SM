@@ -23,7 +23,7 @@ module CNDecompCascadeCNMod
   use CanopyStateType        , only : canopystate_type
   use TemperatureType        , only : temperature_type 
   use ch4Mod                 , only : ch4_type
-  use ColumnType             , only : col                
+  use ColumnType             , only : col_pp                
   !
   implicit none
   save
@@ -678,7 +678,7 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                             &
-          dz             => col%dz                        , & ! Input:  [real(r8) (:,:)   ]  soil layer thickness (m)                               
+          dz             => col_pp%dz                        , & ! Input:  [real(r8) (:,:)   ]  soil layer thickness (m)                               
 
           sucsat         => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:)   ]  minimum soil suction (mm)                              
           soilpsi        => soilstate_vars%soilpsi_col    , & ! Input:  [real(r8) (:,:)   ]  soil water potential in each soil layer (MPa)          

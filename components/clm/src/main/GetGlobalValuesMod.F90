@@ -76,7 +76,7 @@ contains
     use clm_varcon   , only : nameg, namel, namec, namep
     use GridcellType , only : grc                
     use LandunitType , only : lun                
-    use ColumnType   , only : col                
+    use ColumnType   , only : col_pp                
     use PatchType    , only : pft                
     !
     ! Arguments:
@@ -109,15 +109,15 @@ contains
     else if (trim(clmlevel) == namec) then
 
        icol = decomp_index
-       ilun = col%landunit(icol)
-       igrc = col%gridcell(icol)
+       ilun = col_pp%landunit(icol)
+       igrc = col_pp%gridcell(icol)
        write(iulog,*)'local  column   index = ',icol
        write(iulog,*)'global column   index = ',GetGlobalIndex(decomp_index=icol, clmlevel=namec)
        write(iulog,*)'global landunit index = ',GetGlobalIndex(decomp_index=ilun, clmlevel=namel)
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
        write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
-       write(iulog,*)'column   type         = ',col%itype(icol)
+       write(iulog,*)'column   type         = ',col_pp%itype(icol)
        write(iulog,*)'landunit type         = ',lun%itype(ilun)
    
     else if (trim(clmlevel) == namep) then
@@ -134,7 +134,7 @@ contains
        write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
        write(iulog,*)'pft      type         = ',pft%itype(ipft)
-       write(iulog,*)'column   type         = ',col%itype(icol)
+       write(iulog,*)'column   type         = ',col_pp%itype(icol)
        write(iulog,*)'landunit type         = ',lun%itype(ilun)
 
     else		       

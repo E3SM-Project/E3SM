@@ -15,7 +15,7 @@ module TracerParamsMod
   use clm_varpar            , only : nlevsoi
   use clm_varcon            , only : spval
   use PatchType             , only : pft
-  use ColumnType            , only : col
+  use ColumnType            , only : col_pp
   use tracer_varcon
   implicit none
   save
@@ -1158,7 +1158,7 @@ contains
 
    !compute weigthed conductances
    call calc_bulk_conductances(bounds, lbj, ubj, jtops, numf, filter, bulkdiffus, &
-      col%dz(bounds%begc:bounds%endc,lbj:ubj), betrtracer_vars,  &
+      col_pp%dz(bounds%begc:bounds%endc,lbj:ubj), betrtracer_vars,  &
       tracercoeff_vars%hmconductance_col(bounds%begc:bounds%endc, lbj:ubj-1, :))
 
    end subroutine set_multi_phase_diffusion
@@ -1765,8 +1765,8 @@ contains
   SHR_ASSERT_ALL((ubound(rootfr) == (/bounds%endp, nlevsoi/)), errMsg(__FILE__, __LINE__))
 
   associate(                                                   & !
-    z              =>    col%z                               , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)
-    dz             =>    col%dz                              , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
+    z              =>    col_pp%z                               , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)
+    dz             =>    col_pp%dz                              , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
     wtcol          =>    pft%wtcol                           , & ! Input:  [real(r8) (:)    ]  weight (relative to column)
     lbl_rsc_h2o    =>    canopystate_vars%lbl_rsc_h2o_patch  , & ! laminar layer resistance for h2o
     elai           =>    canopystate_vars%elai_patch         , &
@@ -1790,7 +1790,7 @@ contains
     do fp = 1, num_soilp
       p = filter_soilp (fp)
       c = pft%column(p)
-      g = col%gridcell(c)
+      g = col_pp%gridcell(c)
       ! Calculate aerenchyma diffusion
       if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. pft%itype(p) /= noveg) then
         ! Attn EK: This calculation of aerenchyma properties is very uncertain. Let's check in once all

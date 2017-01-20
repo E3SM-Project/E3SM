@@ -16,7 +16,7 @@ module filterMod
   use decompMod      , only : bounds_type  
   use GridcellType   , only : grc
   use LandunitType   , only : lun                
-  use ColumnType     , only : col                
+  use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
   !
   ! !PUBLIC TYPES:
@@ -294,8 +294,8 @@ contains
     fl = 0
     fnl = 0
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .or. include_inactive) then
-          l =col%landunit(c)
+       if (col_pp%active(c) .or. include_inactive) then
+          l =col_pp%landunit(c)
           if (lun%lakpoi(l)) then
              fl = fl + 1
              this_filter(nc)%lakec(fl) = c
@@ -337,8 +337,8 @@ contains
 
     fs = 0
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .or. include_inactive) then
-          l =col%landunit(c)
+       if (col_pp%active(c) .or. include_inactive) then
+          l =col_pp%landunit(c)
           if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
              fs = fs + 1
              this_filter(nc)%soilc(fs) = c
@@ -365,9 +365,9 @@ contains
 
     f = 0
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .or. include_inactive) then
-          l =col%landunit(c)
-          if (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
+       if (col_pp%active(c) .or. include_inactive) then
+          l =col_pp%landunit(c)
+          if (lun%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
                lun%itype(l) == istcrop) then
              f = f + 1
              this_filter(nc)%hydrologyc(f) = c
@@ -421,8 +421,8 @@ contains
     f = 0
     fn = 0
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .or. include_inactive) then
-          l = col%landunit(c)
+       if (col_pp%active(c) .or. include_inactive) then
+          l = col_pp%landunit(c)
           if (lun%urbpoi(l)) then
              f = f + 1
              this_filter(nc)%urbanc(f) = c
@@ -456,8 +456,8 @@ contains
 
     f = 0
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .or. include_inactive) then
-          l = col%landunit(c)
+       if (col_pp%active(c) .or. include_inactive) then
+          l = col_pp%landunit(c)
           if (lun%itype(l) == istice_mec) then
              f = f + 1
              this_filter(nc)%icemecc(f) = c
@@ -468,9 +468,9 @@ contains
     
     f = 0
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .or. include_inactive) then
-          l = col%landunit(c)
-          g = col%gridcell(c)
+       if (col_pp%active(c) .or. include_inactive) then
+          l = col_pp%landunit(c)
+          g = col_pp%gridcell(c)
           if ( lun%itype(l) == istice_mec .or. &
              (lun%itype(l) == istsoil .and. icemask_grc(g) > 0.)) then
              f = f + 1

@@ -15,7 +15,7 @@ module initSubgridMod
   use decompMod      , only : bounds_type
   use GridcellType   , only : grc                
   use LandunitType   , only : lun                
-  use ColumnType     , only : col                
+  use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
   !
   ! !PUBLIC TYPES:
@@ -91,10 +91,10 @@ contains
              write(iulog,*) 'clm_ptrs_compdown ERROR: pcolumn ',p,curc,bounds%begc,bounds%endc
              call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
           endif
-          col%pfti(curc) = p
+          col_pp%pfti(curc) = p
        endif
-       col%pftf(curc) = p
-       col%npfts(curc) = col%pftf(curc) - col%pfti(curc) + 1
+       col_pp%pftf(curc) = p
+       col_pp%npfts(curc) = col_pp%pftf(curc) - col_pp%pfti(curc) + 1
        if (pft%landunit(p) /= curl) then
           curl = pft%landunit(p)
           if (curl < bounds%begl .or. curl > bounds%endl) then
@@ -109,8 +109,8 @@ contains
 
     curl = 0
     do c = bounds%begc,bounds%endc
-       if (col%landunit(c) /= curl) then
-          curl = col%landunit(c)
+       if (col_pp%landunit(c) /= curl) then
+          curl = col_pp%landunit(c)
           if (curl < bounds%begl .or. curl > bounds%endl) then
              write(iulog,*) 'clm_ptrs_compdown ERROR: clandunit ',c,curl,bounds%begl,bounds%endl
              call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
@@ -207,10 +207,10 @@ contains
     if (masterproc) write(iulog,*) '   clm_ptrs_check: l index ranges - OK'
 
     error = .false.
-    if (minval(col%gridcell(begc:endc)) < begg .or. maxval(col%gridcell(begc:endc)) > endg) error=.true.
-    if (minval(col%landunit(begc:endc)) < begl .or. maxval(col%landunit(begc:endc)) > endl) error=.true.
-    if (minval(col%pfti(begc:endc)) < begp .or. maxval(col%pfti(begc:endc)) > endp) error=.true.
-    if (minval(col%pftf(begc:endc)) < begp .or. maxval(col%pftf(begc:endc)) > endp) error=.true.
+    if (minval(col_pp%gridcell(begc:endc)) < begg .or. maxval(col_pp%gridcell(begc:endc)) > endg) error=.true.
+    if (minval(col_pp%landunit(begc:endc)) < begl .or. maxval(col_pp%landunit(begc:endc)) > endl) error=.true.
+    if (minval(col_pp%pfti(begc:endc)) < begp .or. maxval(col_pp%pfti(begc:endc)) > endp) error=.true.
+    if (minval(col_pp%pftf(begc:endc)) < begp .or. maxval(col_pp%pftf(begc:endc)) > endp) error=.true.
     if (error) then
        write(iulog,*) '   clm_ptrs_check: c index ranges - ERROR'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -248,16 +248,16 @@ contains
 
     error = .false.
     do c=begc+1,endc
-      l = col%landunit(c)
-      l_prev = col%landunit(c-1)
+      l = col_pp%landunit(c)
+      l_prev = col_pp%landunit(c-1)
       if ((lun%itype(l) == lun%itype(l_prev)) .and. &
-           col%gridcell(c) < col%gridcell(c-1)) then
+           col_pp%gridcell(c) < col_pp%gridcell(c-1)) then
          ! grid cell indices should be monotonically increasing for a given landunit type
          error = .true.
       end if
-      if (col%landunit(c) < col%landunit(c-1)) error = .true.
-      if (col%pfti(c) < col%pfti(c-1)) error = .true.
-      if (col%pftf(c) < col%pftf(c-1)) error = .true.
+      if (col_pp%landunit(c) < col_pp%landunit(c-1)) error = .true.
+      if (col_pp%pfti(c) < col_pp%pfti(c-1)) error = .true.
+      if (col_pp%pftf(c) < col_pp%pftf(c-1)) error = .true.
       if (error) then
          write(iulog,*) '   clm_ptrs_check: c mono increasing - ERROR'
          call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
@@ -298,13 +298,13 @@ contains
                 call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
              endif
              do c = lun%coli(l),lun%colf(l)
-                if (col%gridcell(c) /= g) error = .true.
-                if (col%landunit(c) /= l) error = .true.
+                if (col_pp%gridcell(c) /= g) error = .true.
+                if (col_pp%landunit(c) /= l) error = .true.
                 if (error) then
                    write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
                    call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
                 endif
-                do p = col%pfti(c),col%pftf(c)
+                do p = col_pp%pfti(c),col_pp%pftf(c)
                    if (pft%gridcell(p) /= g) error = .true.
                    if (pft%landunit(p) /= l) error = .true.
                    if (pft%column(p)   /= c) error = .true.
@@ -398,10 +398,10 @@ contains
 
     ci = ci + 1
 
-    col%landunit(ci) = li
-    col%gridcell(ci) = lun%gridcell(li)
-    col%wtlunit(ci) = wtlunit
-    col%itype(ci) = ctype
+    col_pp%landunit(ci) = li
+    col_pp%gridcell(ci) = lun%gridcell(li)
+    col_pp%wtlunit(ci) = wtlunit
+    col_pp%itype(ci) = ctype
     
   end subroutine add_column
 
@@ -433,9 +433,9 @@ contains
     pi = pi + 1
 
     pft%column(pi) = ci
-    li = col%landunit(ci)
+    li = col_pp%landunit(ci)
     pft%landunit(pi) = li
-    pft%gridcell(pi) = col%gridcell(ci)
+    pft%gridcell(pi) = col_pp%gridcell(ci)
 
     pft%wtcol(pi) = wtcol
 

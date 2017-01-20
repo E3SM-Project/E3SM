@@ -11,7 +11,7 @@ module ActiveLayerMod
   use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
   use GridcellType    , only : grc       
-  use ColumnType      , only : col       
+  use ColumnType      , only : col_pp       
   !
   implicit none
   save
@@ -85,7 +85,7 @@ contains
       if ( (mon .eq. 1) .and. (day .eq. 1) .and. ( sec / dtime .eq. 1) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            g = col%gridcell(c)
+            g = col_pp%gridcell(c)
             if ( grc%lat(g) > 0. ) then 
                altmax_lastyear(c) = altmax(c)
                altmax_lastyear_indx(c) = altmax_indx(c)
@@ -97,7 +97,7 @@ contains
       if ( (mon .eq. 7) .and. (day .eq. 1) .and. ( sec / dtime .eq. 1) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            g = col%gridcell(c)
+            g = col_pp%gridcell(c)
             if ( grc%lat(g) <= 0. ) then 
                altmax_lastyear(c) = altmax(c)
                altmax_lastyear_indx(c) = altmax_indx(c)

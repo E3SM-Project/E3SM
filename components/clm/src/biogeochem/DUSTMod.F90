@@ -28,7 +28,7 @@ module DUSTMod
   use WaterstateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
   use LandunitType         , only : lun
-  use ColumnType           , only : col
+  use ColumnType           , only : col_pp
   use PatchType            , only : pft
   !  
   ! !PUBLIC TYPES
@@ -172,7 +172,7 @@ contains
     ! Set basin factor to 1 for now
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
        if (.not.lun%lakpoi(l)) then
           this%mbl_bsn_fct_col(c) = 1.0_r8

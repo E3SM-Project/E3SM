@@ -11,7 +11,7 @@ module CNNitrogenFluxType
   use CNDecompCascadeConType , only : decomp_cascade_con
   use abortutils             , only : endrun
   use LandunitType           , only : lun                
-  use ColumnType             , only : col                
+  use ColumnType             , only : col_pp                
   use PatchType              , only : pft
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
@@ -1999,7 +1999,7 @@ contains
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c

@@ -22,7 +22,7 @@ module dynConsBiogeochemMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use LandunitType        , only : lun                
-  use ColumnType          , only : col                
+  use ColumnType          , only : col_pp                
   use PatchType           , only : pft                
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -2495,8 +2495,8 @@ contains
     ! calculate column-level seeding fluxes
     do pi = 1,max_patch_per_col
        do c = bounds%begc, bounds%endc
-          if ( pi <=  col%npfts(c) ) then
-             p = col%pfti(c) + pi - 1
+          if ( pi <=  col_pp%npfts(c) ) then
+             p = col_pp%pfti(c) + pi - 1
              
              ! C fluxes
              cf%dwt_seedc_to_leaf_col(c) = cf%dwt_seedc_to_leaf_col(c) + dwt_leafc_seed(p)/dt
@@ -2533,8 +2533,8 @@ contains
     do j = 1, nlevdecomp
        do pi = 1,max_patch_per_col
           do c = bounds%begc, bounds%endc
-             if ( pi <=  col%npfts(c) ) then
-                p = col%pfti(c) + pi - 1
+             if ( pi <=  col_pp%npfts(c) ) then
+                p = col_pp%pfti(c) + pi - 1
                 
                 ! fine root litter carbon fluxes
                 cf%dwt_frootc_to_litr_met_c_col(c,j) = &
@@ -2661,8 +2661,8 @@ contains
     ! calculate pft-to-column for fluxes into product pools and conversion flux
     do pi = 1,max_patch_per_col
        do c = bounds%begc,bounds%endc
-          if (pi <= col%npfts(c)) then
-             p = col%pfti(c) + pi - 1
+          if (pi <= col_pp%npfts(c)) then
+             p = col_pp%pfti(c) + pi - 1
              
              ! column-level fluxes are accumulated as positive fluxes.
              ! column-level C flux updates

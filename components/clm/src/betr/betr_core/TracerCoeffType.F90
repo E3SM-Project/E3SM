@@ -8,7 +8,7 @@ module TracerCoeffType
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
   use PatchType              , only : pft
-  use ColumnType             , only : col
+  use ColumnType             , only : col_pp
   use LandunitType           , only : lun
   use landunit_varcon, only : istsoil, istcrop
   !
@@ -243,7 +243,7 @@ contains
     !-----------------------------------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
        if (lun%ifspecial(l)) then
           this%aqu2neutralcef_col        (c,:,:) = spval

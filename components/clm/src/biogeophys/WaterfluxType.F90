@@ -8,7 +8,7 @@ module WaterfluxType
   use decompMod    , only : bounds_type, get_proc_global
   use clm_varcon   , only : spval
   use LandunitType , only : lun                
-  use ColumnType   , only : col                
+  use ColumnType   , only : col_pp                
   use PatchType    , only : pft                
   !
   implicit none
@@ -558,7 +558,7 @@ contains
     this%dwb_col(bounds%begc:bounds%endc) = 0._r8
     ! needed for CNNLeaching 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
           this%qflx_drain_col(c) = 0._r8
           this%qflx_surf_col(c)  = 0._r8

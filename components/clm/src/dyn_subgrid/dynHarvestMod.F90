@@ -25,7 +25,7 @@ module dynHarvestMod
   use CNNitrogenFluxType    , only : nitrogenflux_type
   use EcophysConType        , only : ecophyscon
   use clm_varcon            , only : grlnd
-  use ColumnType            , only : col                
+  use ColumnType            , only : col_pp                
   use PatchType             , only : pft                
 
   use PhosphorusStateType   , only : phosphorusstate_type
@@ -593,8 +593,8 @@ contains
            do fc = 1,num_soilc
               c = filter_soilc(fc)
 
-              if (pi <=  col%npfts(c)) then
-                 p = col%pfti(c) + pi - 1
+              if (pi <=  col_pp%npfts(c)) then
+                 p = col_pp%pfti(c) + pi - 1
 
                  if (pft%active(p)) then
 
@@ -779,8 +779,8 @@ contains
         do fc = 1,num_soilc
            c = filter_soilc(fc)
 
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
 
               if (pft%active(p)) then
 

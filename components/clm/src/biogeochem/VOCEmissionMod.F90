@@ -465,7 +465,7 @@ contains
     end if
 
     associate(                                                    & 
-         !dz           => col%dz                                , & ! Input:  [real(r8) (:,:) ]  depth of layer (m)                              
+         !dz           => col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  depth of layer (m)                              
          !bsw          => soilstate_vars%bsw_col                , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b" (nlevgrnd)             
          !clayfrac     => soilstate_vars%clayfrac_col           , & ! Input:  [real(r8) (:)   ]  fraction of soil that is clay                     
          !sandfrac     => soilstate_vars%sandfrac_col           , & ! Input:  [real(r8) (:)   ]  fraction of soil that is sand                     
@@ -559,7 +559,7 @@ contains
 
           ! Activity factor for soil moisture: all species (commented out for now)
           !          gamma_sm = get_gamma_SM(clayfrac(p), sandfrac(p), h2osoi_vol(c,:), h2osoi_ice(c,:), &
-          !               col%dz(c,:), soilstate_vars%bsw_col(c,:), watsat(c,:), sucsat(c,:), root_depth(pft%itype(p)))
+          !               col_pp%dz(c,:), soilstate_vars%bsw_col(c,:), watsat(c,:), sucsat(c,:), root_depth(pft%itype(p)))
           gamma_sm = 1.0_r8
 
           ! Loop through VOCs for light, temperature and leaf age activity factor & apply

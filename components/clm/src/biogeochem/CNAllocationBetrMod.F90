@@ -25,7 +25,7 @@ module CNAllocationBetrMod
   use CropType            , only : crop_type
   use EcophysConType      , only : ecophyscon
   use LandunitType        , only : lun                
-  use ColumnType          , only : col                
+  use ColumnType          , only : col_pp                
   use PatchType           , only : pft                
   !
   implicit none

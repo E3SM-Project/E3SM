@@ -19,7 +19,7 @@ module LakeHydrologyMod
   ! ! USES
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use decompMod            , only : bounds_type
-  use ColumnType           , only : col                
+  use ColumnType           , only : col_pp                
   use PatchType            , only : pft                
   use atm2lndType          , only : atm2lnd_type
   use AerosolType          , only : aerosol_type
@@ -119,13 +119,13 @@ contains
     associate(                                                            & 
          pcolumn              =>  pft%column                            , & ! Input:  [integer  (:)   ]  pft's column index                       
          pgridcell            =>  pft%gridcell                          , & ! Input:  [integer  (:)   ]  pft's gridcell index                     
-         cgridcell            =>  col%gridcell                          , & ! Input:  [integer  (:)   ]  column's gridcell                        
-         clandunit            =>  col%landunit                          , & ! Input:  [integer  (:)   ]  column's landunit                        
-         dz_lake              =>  col%dz_lake                           , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)          
-         z                    =>  col%z                                 , & ! Input:  [real(r8) (:,:) ]  layer depth  (m)                      
-         dz                   =>  col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
-         zi                   =>  col%zi                                , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
-         snl                  =>  col%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                    
+         cgridcell            =>  col_pp%gridcell                          , & ! Input:  [integer  (:)   ]  column's gridcell                        
+         clandunit            =>  col_pp%landunit                          , & ! Input:  [integer  (:)   ]  column's landunit                        
+         dz_lake              =>  col_pp%dz_lake                           , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)          
+         z                    =>  col_pp%z                                 , & ! Input:  [real(r8) (:,:) ]  layer depth  (m)                      
+         dz                   =>  col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness depth (m)             
+         zi                   =>  col_pp%zi                                , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
+         snl                  =>  col_pp%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                    
 
          forc_rain            =>  atm2lnd_vars%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                        
          forc_snow            =>  atm2lnd_vars%forc_snow_downscaled_col , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                        

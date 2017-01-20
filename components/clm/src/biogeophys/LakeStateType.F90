@@ -12,7 +12,7 @@ module LakeStateType
   use spmdMod      , only : masterproc
   use abortUtils   , only : endrun
   use LandunitType , only : lun                
-  use ColumnType   , only : col                
+  use ColumnType   , only : col_pp                
   !
   implicit none
   save
@@ -198,7 +198,7 @@ contains
        etal_in(:) = -1._r8
     end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        this%etal_col(c) = etal_in(g)
     end do
     deallocate(etal_in)
@@ -214,7 +214,7 @@ contains
        lakefetch_in(:) = -1._r8
     end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+       g = col_pp%gridcell(c)
        this%lakefetch_col(c) = lakefetch_in(g)
     end do
     deallocate(lakefetch_in)
@@ -226,7 +226,7 @@ contains
     !-------------------------------------------------
          
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%lakpoi(l)) then
 
           ! Set lake ice fraction and top eddy conductivity from previous timestep

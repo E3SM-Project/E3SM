@@ -12,7 +12,7 @@ module CanopyStateType
   use clm_varpar      , only : nlevcan
   use clm_varctl      , only : iulog, use_cn, use_ed
   use LandunitType    , only : lun                
-  use ColumnType      , only : col                
+  use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   !
   implicit none
@@ -448,7 +448,7 @@ contains
     end do
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
 
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
           this%alt_col(c)               = 0._r8 !iniitialized to spval for all columns

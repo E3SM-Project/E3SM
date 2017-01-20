@@ -1,8 +1,9 @@
-module ColumnPhysicalPropertiesType
+module ColumnType
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   !DW  Converted from ColumnType
+  !DW  Change the old function into PhysicalPropertiesType
   ! Column data type allocation and initialization
   ! -------------------------------------------------------- 
   ! column types can have values of
@@ -29,7 +30,7 @@ module ColumnPhysicalPropertiesType
   save
   private
   !
-  type, public :: column_phyiscal_properties_type
+  type, public :: column_physical_properties_type
      ! g/l/c/p hierarchy, local g/l/c/p cells only
      integer , pointer :: landunit             (:)   ! index into landunit level quantities
      real(r8), pointer :: wtlunit              (:)   ! weight (relative to landunit)
@@ -67,7 +68,7 @@ module ColumnPhysicalPropertiesType
 
   end type column_physical_properties_type
 
-  type(column_type), public, target :: col !column data structure (soil/snow/canopy columns)
+  type(column_physical_properties_type), public, target :: col_pp !column data structure (soil/snow/canopy columns)
   !------------------------------------------------------------------------
 
 contains
@@ -76,7 +77,7 @@ contains
   subroutine col_pp_init(this, begc, endc)
     !
     ! !ARGUMENTS:
-    class(column_type)  :: this
+    class(column_physical_properties_type)  :: this
     integer, intent(in) :: begc,endc
     !------------------------------------------------------------------------
 
@@ -113,7 +114,7 @@ contains
   subroutine col_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(column_phyiscal_properties_type) :: this
+    class(column_physical_properties_type) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell   )
@@ -142,4 +143,4 @@ contains
   end subroutine col_pp_clean
 
 
-end module ColumnPhysicalPropertiesType
+end module ColumnType

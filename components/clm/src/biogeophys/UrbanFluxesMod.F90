@@ -24,7 +24,7 @@ module UrbanFluxesMod
   use WaterfluxType        , only : waterflux_type
   use GridcellType         , only : grc                
   use LandunitType         , only : lun                
-  use ColumnType           , only : col                
+  use ColumnType           , only : col_pp                
   use PatchType            , only : pft                
   use SurfaceResistanceMod , only : do_soilevap_beta
   !
@@ -181,8 +181,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
-         snl                 =>   col%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                              
-         ctype               =>   col%itype                                 , & ! Input:  [integer  (:)   ]  column type                                        
+         snl                 =>   col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                              
+         ctype               =>   col_pp%itype                                 , & ! Input:  [integer  (:)   ]  column type                                        
          z_0_town            =>   lun%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)   
          z_d_town            =>   lun%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)         
          ht_roof             =>   lun%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)                          
@@ -437,7 +437,7 @@ contains
 
          do fc = 1,num_urbanc
             c = filter_urbanc(fc)
-            l = col%landunit(c)
+            l = col_pp%landunit(c)
 
             if (ctype(c) == icol_roof) then
 
@@ -842,7 +842,7 @@ contains
 
       do fc = 1,num_urbanc
          c = filter_urbanc(fc)
-         l = col%landunit(c)
+         l = col_pp%landunit(c)
 
          if (ctype(c) == icol_roof) then
             t_roof_innerl(l) = t_soisno(c,nlevurb)

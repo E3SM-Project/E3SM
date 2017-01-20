@@ -14,7 +14,7 @@ module CNCIsoFluxMod
   use CNCarbonFluxType       , only : carbonflux_type
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
-  use ColumnType             , only : col                
+  use ColumnType             , only : col_pp                
   use PatchType              , only : pft                
   !
   implicit none
@@ -829,8 +829,8 @@ contains
          do pi = 1,max_patch_per_col
             do fc = 1,num_soilc
                cc = filter_soilc(fc)
-               if ( pi <=  col%npfts(cc) ) then
-                  pp = col%pfti(cc) + pi - 1
+               if ( pi <=  col_pp%npfts(cc) ) then
+                  pp = col_pp%pfti(cc) + pi - 1
                   if (pft%active(pp)) then
                      do j = 1, nlevdecomp
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
@@ -908,8 +908,8 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
-               if ( pi <=  col%npfts(c) ) then
-                  p = col%pfti(c) + pi - 1
+               if ( pi <=  col_pp%npfts(c) ) then
+                  p = col_pp%pfti(c) + pi - 1
                   if (pft%active(p)) then
                      ! leaf litter carbon fluxes
                      phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
@@ -1003,8 +1003,8 @@ contains
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
 
-                if (pi <=  col%npfts(c)) then
-                   p = col%pfti(c) + pi - 1
+                if (pi <=  col_pp%npfts(c)) then
+                   p = col_pp%pfti(c) + pi - 1
 
                    if (pft%active(p)) then
 
@@ -1148,8 +1148,8 @@ contains
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 
-                if (pi <=  col%npfts(c)) then
-                   p = col%pfti(c) + pi - 1
+                if (pi <=  col_pp%npfts(c)) then
+                   p = col_pp%pfti(c) + pi - 1
 
                    if (pft%active(p)) then
 
@@ -1219,8 +1219,8 @@ contains
        do pi = 1,maxpatch_pft
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             if (pi <=  col%npfts(c)) then
-                p = col%pfti(c) + pi - 1
+             if (pi <=  col_pp%npfts(c)) then
+                p = col_pp%pfti(c) + pi - 1
 
                 if (pft%active(p)) then
                    chrv_deadstemc_to_prod10c(c)  = chrv_deadstemc_to_prod10c(c)  + &

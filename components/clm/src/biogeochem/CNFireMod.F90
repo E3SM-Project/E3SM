@@ -44,7 +44,7 @@ module CNFireMod
   use TemperatureType        , only : temperature_type
   use WaterstateType         , only : waterstate_type
   use GridcellType           , only : grc                
-  use ColumnType             , only : col                
+  use ColumnType             , only : col_pp                
   use PatchType              , only : pft                
   use mct_mod
   use PhosphorusFluxType     , only : phosphorusflux_type
@@ -311,8 +311,8 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
               ! For crop veg types
               if( pft%itype(p) > nc4_grass )then
                  cropf_col(c) = cropf_col(c) + pft%wtcol(p)
@@ -334,8 +334,8 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
               ! For crop PFTs, fuel load includes leaf and litter; only
               ! column-level litter carbon
               ! is available, so we use leaf carbon to estimate the
@@ -370,9 +370,9 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           g = col%gridcell(c)
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           g = col_pp%gridcell(c)
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
 
               ! For non-crop -- natural vegetation and bare-soil
               if( pft%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
@@ -383,15 +383,15 @@ contains
                     end if
                  end if
                  if( pft%itype(p) == nbrdlf_evr_trp_tree .and. pft%wtcol(p)  >  0._r8 )then
-                    trotr1_col(c)=trotr1_col(c)+pft%wtcol(p)*col%wtgcell(c)
+                    trotr1_col(c)=trotr1_col(c)+pft%wtcol(p)*col_pp%wtgcell(c)
                  end if
                  if( pft%itype(p) == nbrdlf_dcd_trp_tree .and. pft%wtcol(p)  >  0._r8 )then
-                    trotr2_col(c)=trotr2_col(c)+pft%wtcol(p)*col%wtgcell(c)
+                    trotr2_col(c)=trotr2_col(c)+pft%wtcol(p)*col_pp%wtgcell(c)
                  end if
                  if ( flanduse_timeseries /= ' ' ) then    !true when landuse data is used
                     if( pft%itype(p) == nbrdlf_evr_trp_tree .or. pft%itype(p) == nbrdlf_dcd_trp_tree )then
                        if(lfpftd(p) > 0._r8)then
-                          dtrotr_col(c)=dtrotr_col(c)+lfpftd(p)*col%wtgcell(c)
+                          dtrotr_col(c)=dtrotr_col(c)+lfpftd(p)*col_pp%wtgcell(c)
                        end if
                     end if
                  end if
@@ -492,10 +492,10 @@ contains
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           g= col%gridcell(c)
+           g= col_pp%gridcell(c)
            hdmlf=forc_hdm(g)
-           if (pi <=  col%npfts(c)) then
-              p = col%pfti(c) + pi - 1
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
               ! For crop
               if( forc_t(c)  >=  SHR_CONST_TKFRZ .and. pft%itype(p)  >  nc4_grass .and.  &
                    kmo == abm_lf(c) .and. forc_rain(c)+forc_snow(c) == 0._r8  .and. &
@@ -525,7 +525,7 @@ contains
      !
      do fc = 1, num_soilc
         c = filter_soilc(fc)
-        g= col%gridcell(c)
+        g= col_pp%gridcell(c)
         if(grc%latdeg(g) < borealat )then
            baf_peatf(c) = non_boreal_peatfire_c/secsphr*max(0._r8, &
                 min(1._r8,(4.0_r8-prec60_col(c)*secspday)/ &
@@ -557,7 +557,7 @@ contains
      !
      do fc = 1, num_soilc
         c = filter_soilc(fc)
-        g = col%gridcell(c)
+        g = col_pp%gridcell(c)
         hdmlf=forc_hdm(g)
         if( cropf_col(c)  <  1.0 )then
            if (trotr1_col(c)+trotr2_col(c)>0.6_r8) then
@@ -1274,8 +1274,8 @@ contains
         do pi = 1,max_patch_per_col
            do fc = 1,num_soilc
               c = filter_soilc(fc)
-              if (pi <=  col%npfts(c)) then
-                 p = col%pfti(c) + pi - 1
+              if (pi <=  col_pp%npfts(c)) then
+                 p = col_pp%pfti(c) + pi - 1
                  if ( pft%active(p) ) then
 
                     fire_mortality_c_to_cwdc(c,j) = fire_mortality_c_to_cwdc(c,j) + &
@@ -1469,7 +1469,7 @@ contains
      !
      do fc = 1,num_soilc
         c = filter_soilc(fc)
-        g = col%gridcell(c)
+        g = col_pp%gridcell(c)
         if( grc%latdeg(g)  <  borealat)then
            somc_fire(c)= totsomc(c)*baf_peatf(c)*6.0_r8/33.9_r8
         else

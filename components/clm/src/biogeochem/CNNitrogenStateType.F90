@@ -18,7 +18,7 @@ module CNNitrogenStateType
   use abortutils             , only : endrun
   use spmdMod                , only : masterproc 
   use LandunitType           , only : lun                
-  use ColumnType             , only : col                
+  use ColumnType             , only : col_pp                
   use PatchType              , only : pft
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
@@ -767,7 +767,7 @@ contains
 
     num_special_col = 0
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
@@ -848,7 +848,7 @@ contains
     !-------------------------------------------
 
     do c = bounds%begc, bounds%endc
-       l = col%landunit(c)
+       l = col_pp%landunit(c)
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
 
           ! column nitrogen state variables
