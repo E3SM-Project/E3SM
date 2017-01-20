@@ -68,7 +68,7 @@
 			 description="mixed layer depth based on temperature threshold"
 		/>
 		<var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
-			 description="mixed layer depth based on temperature threshold"
+			 description="mixed layer depth based on density threshold"
 		/>
 		<var name="tGradMLD" type="real" dimensions="nCells Time" units="m"
 			 description="mixed layer depth based on gradient of temperature"
