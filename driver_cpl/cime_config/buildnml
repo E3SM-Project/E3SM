@@ -172,7 +172,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
     if len(infiles) != 0:
         config = {}
-        definition_file = files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv_flds"})
+        definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", attribute={"component":"drv_flds"})]
 
         nmlgen = NamelistGenerator(case, definition_file, files=files)
         skip_entry_loop = True

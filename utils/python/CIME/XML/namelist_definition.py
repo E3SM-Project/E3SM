@@ -45,10 +45,8 @@ class NamelistDefinition(EntryID):
         schema = None
         if files is None:
             files = Files()
-            cimeroot = get_cime_root()
-            schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
-            self.validate_xml_file(infile, schema)
-
+        schema = files.get_schema("NAMELIST_DEFINITION_FILE")
+        expect(os.path.isfile(infile), "File %s does not exist"%infile)
         super(NamelistDefinition, self).__init__(infile, schema=schema)
 
         self._attributes = {}
@@ -58,10 +56,6 @@ class NamelistDefinition(EntryID):
         self._entry_types = {}
         self._group_names = {}
         self._nodes = {}
-
-
-
-
 
     def set_nodes(self, skip_groups=None):
         """
