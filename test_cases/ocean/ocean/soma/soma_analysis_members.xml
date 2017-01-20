@@ -1,0 +1,48 @@
+<template>
+
+	<namelist>
+		<option name="config_AM_globalStats_enable">.true.</option>
+		<option name="config_AM_globalStats_compute_on_startup">.true.</option>
+		<option name="config_AM_globalStats_write_on_startup">.true.</option>
+		<option name="config_AM_zonalMean_enable">.true.</option>
+		<option name="config_AM_zonalMean_num_bins">100</option>
+		<option name="config_AM_okuboWeiss_enable">.true.</option>
+		<option name="config_AM_okuboWeiss_eddy_min_cells">100</option>
+		<option name="config_AM_highFrequencyOutput_enable">.true.</option>
+		<option name="config_AM_eliassenPalm_enable">.true.</option>
+		<option name="config_AM_eliassenPalm_compute_interval">'03_00:00:00'</option>
+		<option name="config_AM_eliassenPalm_nBuoyancyLayers">100</option>
+		<option name="config_AM_eliassenPalm_rhomin_buoycoor">1028.0</option>
+		<option name="config_AM_eliassenPalm_rhomax_buoycoor">1030.7</option>
+		<option name="config_AM_mixedLayerDepths_enable">.true.</option>
+		<option name="config_AM_timeFilters_enable">.false.</option>
+		<option name="config_AM_timeFilters_initialize_filters">.false.</option>
+		<option name="config_AM_lagrPartTrack_enable">.false.</option>
+		<option name="config_AM_lagrPartTrack_reset_criteria">'global_time'</option>
+		<option name="config_AM_lagrPartTrack_reset_global_timestamp">'0029_23:59:59'</option>
+		<option name="config_AM_lagrPartTrack_region_stream">'none'</option>
+	</namelist>
+
+	<streams>
+		<stream name="globalStatsOutput">
+			<attribute name="output_interval">0001_00:00:00</attribute>
+		</stream>
+		<stream name="zonalMeanOutput">
+			<attribute name="output_interval">0003_00:00:00</attribute>
+		</stream>
+		<stream name="okuboWeissOutput">
+			<attribute name="output_interval">00-00-05_00:00:00</attribute>
+			<attribute name="reference_time=">0001-01-01_00:00:00</attribute>
+		</stream>
+		<stream name="highFrequencyOutput">
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+		</stream>
+		<stream name="eliassenPalmOutput">
+			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+		</stream>
+		<stream name="lagrPartTrackInput">
+			<attribute name="filename_template">particles.nc</attribute>
+		</stream>
+  </streams>
+
+</template>
