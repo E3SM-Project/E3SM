@@ -148,32 +148,44 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                     # expand xml variables
                     full_path = case.get_resolved_value(full_path)
                     rel_path  = full_path.replace(input_data_root, "")
+                    model = os.path.basename(data_list_file).split('.')[0]
 
-                    # There are some special values of rel_path that
-                    # we need to ignore - some of the component models
-                    # set things like 'NULL' or 'same_as_TS' -
-                    # basically if rel_path does not contain '/' (a
-                    # directory tree) you can assume it's a special
-                    # value and ignore it (perhaps with a warning)
-                    if ("/" in rel_path and not os.path.exists(full_path)):
-                        model = os.path.basename(data_list_file).split('.')[0]
-                        logging.warning("Model %s missing file %s = '%s'" % (model,description,full_path))
-
-                        if (download):
-                            success = download_if_in_repo(svn_loc, input_data_root, rel_path)
-                            if (not success):
-                                # If ACME, try CESM repo as backup
-                                if (get_model() == "acme" and svn_loc != SVN_LOCS["cesm"]):
-                                    success = download_if_in_repo(SVN_LOCS["cesm"], input_data_root, rel_path)
-                                    if (not success):
-                                        no_files_missing = False
-                                else:
-                                    no_files_missing = False
-                        # if not download
-                        else:
+                    if ("/" in rel_path and rel_path == full_path):
+                        # User pointing to a file outside of input_data_root, we cannot determine
+                        # rel_path, and so cannot download the file. If it already exists, we can
+                        # proceed
+                        if not os.path.exists(full_path):
+                            logging.warning("  Model %s missing file %s = '%s'" % (model, description, full_path))
+                            logging.warning("    Cannot download file since it lives outside of the input_data_root '%s'" % input_data_root)
                             no_files_missing = False
+                        else:
+                            logging.info("  Found input file: '%s'" % full_path)
+
                     else:
-                        logging.debug("Already had input file: '%s'" % full_path)
+                        # There are some special values of rel_path that
+                        # we need to ignore - some of the component models
+                        # set things like 'NULL' or 'same_as_TS' -
+                        # basically if rel_path does not contain '/' (a
+                        # directory tree) you can assume it's a special
+                        # value and ignore it (perhaps with a warning)
+                        if ("/" in rel_path and not os.path.exists(full_path)):
+                            logging.warning("  Model %s missing file %s = '%s'" % (model,description,full_path))
+
+                            if (download):
+                                success = download_if_in_repo(svn_loc, input_data_root, rel_path)
+                                if (not success):
+                                    # If ACME, try CESM repo as backup
+                                    if (get_model() == "acme" and svn_loc != SVN_LOCS["cesm"]):
+                                        success = download_if_in_repo(SVN_LOCS["cesm"], input_data_root, rel_path)
+                                        if (not success):
+                                            no_files_missing = False
+                                    else:
+                                        no_files_missing = False
+                            # if not download
+                            else:
+                                no_files_missing = False
+                        else:
+                            logging.info("  Already had input file: '%s'" % full_path)
 
                 else:
                     model = os.path.basename(data_list_file).split('.')[0]
