@@ -509,7 +509,7 @@ contains
 
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
-  real (kind=real_kind) :: v1,v2,dt,heating,T0,T1,phitemp
+  real (kind=real_kind) :: v1,v2,dt,heating,T0,T1
   real (kind=real_kind) :: ps_ref(np,np)
   real (kind=real_kind) :: p_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
@@ -1024,7 +1024,6 @@ contains
         elem(ie)%accum%S2=0
         elem(ie)%accum%P1=0
         elem(ie)%accum%P2=0
-        elem(ie)%accume
         ! See element_state.F90 for an account of what these variables are defined as
 
         do j=1,np
@@ -1037,18 +1036,10 @@ contains
         do k=1,nlev
            do j=1,np
               do i=1,np                
-                  if (theta_hydrostatic_mode) then
-                      phitemp=elem(ie)%derived%phi
-		  else
-		      phitemp=elem(ie)%state%phi(i,j,k,n0)
-		  endif
-                  if k < nlev
-                      dpdn=(0.5*eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k))
-                  else
-                      dpdn=-0.5*eta_dot_dpdn(:,:,k)
-                  endif
+                 dpdn=(0.5*eta_dot_dpdn(i,j,k+1)-eta_dot_dpdn(i,j,k))
                !  Form KEhoriz1
-                  elem(ie)%accum%KEhoriz1(i,j) = -v_gradKE(i,j,k)*dp3d(i,j,k) &
+                  elem(ie)%accum%KEhoriz1(i,j) = elem(ie)%accum%KEhoriz1(i,j) + &
+                  -v_gradKE(i,j,k)*dp3d(i,j,k) &
                   -KE(i,j,k)*divdp(i,j,k)
                !  Form KEhoriz2
                   elem(ie)%accum%KEhoriz2(i,j)=-dp3d(i,j,k)*                  &
@@ -1061,15 +1052,15 @@ contains
                !  Form KEvert2
                   elem(ie)%accum%KEvert2(i,j) =-v_vadv(i,j,2,k)*              &
                   elem(ie)%state%w(i,j,k,n0)*dp3d(i,j,k)                      &   
-                  -dpdn*elem(ie)%state%w(i,j,k,n0))**2
+                  -dpdn*(elem(ie)%state%w(i,j,k,n0))**2
                !  Form IEvert1
                   elem(ie)%accum%IEvert1(i,j) = exner(i,j,k)*s_vadv(i,j,k,2)  &
                   -s_vadv(i,j,k,3)*dpnh(i,j,k)
                !  Form PEhoriz1
-                  elem(ie)accum%PEhoriz1(i,j)=-phitemp*divdp(i,j,k)-          &
+                  elem(ie)accum%PEhoriz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-          &
                   dp3d(i,j,k)*v_gradphi(i,j,k)
                !  Form PEvert1
-                  elem(ie)%accum%PEvert1(i,j)=-phitemp*etadot dp/dn -         &
+                  elem(ie)%accum%PEvert1(i,j)=-phi(i,j,k)*etadot dp/dn -         &
                   dp3d(i,j,k)*s_vadv(i,j,k,3)
                !  Form T1
                   elem(ie)%accum%T1(i,j)=-elem(ie)%state%theta(i,j,k,n0)      &
