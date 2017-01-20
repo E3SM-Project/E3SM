@@ -604,6 +604,16 @@ contains
                     // poolItr % memberName(1:nameLength) // '.'
                end if
             end if
+
+            ! Reset configs to false, so we don't write or compute the state every coupling interval for use within ACME.
+            ! This ensures that these startup options are only done once.
+            if ( config_AM_compute_on_startup) then
+              config_AM_compute_on_startup = .false.
+            end if
+            if ( config_AM_write_on_startup ) then
+              config_AM_write_on_startup = .false.
+            end if
+
          end if
       end do
 
