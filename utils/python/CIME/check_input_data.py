@@ -156,7 +156,8 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                         # proceed
                         if not os.path.exists(full_path):
                             logging.warning("  Model %s missing file %s = '%s'" % (model, description, full_path))
-                            logging.warning("    Cannot download file since it lives outside of the input_data_root '%s'" % input_data_root)
+                            if download:
+                                logging.warning("    Cannot download file since it lives outside of the input_data_root '%s'" % input_data_root)
                             no_files_missing = False
                         else:
                             logging.info("  Found input file: '%s'" % full_path)
