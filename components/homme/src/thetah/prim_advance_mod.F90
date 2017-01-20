@@ -1031,9 +1031,8 @@ contains
               do i=1,np                
                   dpdn=0.5*(eta_dot_dpdn(i,j,k+1)-eta_dot_dpdn(i,j,k))
                !  Form KEhoriz1
-                  elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)+   &
-                  elem(ie)%accum%KEhoriz1(i,j)-v_gradKE(i,j,k)*dp3d(i,j,k)     &
-                  -KE(i,j,k)*divdp(i,j,k)
+                  elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
+                  -v_gradKE(i,j,k)*dp3d(i,j,k)-KE(i,j,k)*divdp(i,j,k)          
                !  Form KEhoriz2
                   elem(ie)%accum%KEhoriz2(i,j)=elem(ie)%accum%KEhoriz2(i,j)-   &
                   dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    &
