@@ -1,6 +1,74 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-19-2017
+Tag: cime5.2.0-alpha.21
+Answer Changes: None
+Tests: scripts_regression_tests, cesm testing
+Dependencies:
+
+Brief Summary: Add science_support field for CESM.  Add schema files
+	for config_batch, config_compsets xml files.
+	Add a config_machines_template.xml for documentation and porting.
+	Add model dependent config_component_$model.xml files for driver.
+
+User interface changes: New flag in create_newcase --run-unsupported (cesm only)
+	New flag in create_clone --cime-output-root to support cloning across user.
+
+Modified files: git diff --name-status
+M	cime_config/acme/config_files.xml
+M	cime_config/acme/machines/config_batch.xml
+M	cime_config/cesm/allactive/config_compsets.xml
+M	cime_config/cesm/config_files.xml
+M	cime_config/cesm/machines/config_batch.xml
+D	cime_config/cesm/machines/config_batch.xsd
+M	cime_config/cesm/machines/config_compilers.xml
+A	cime_config/xml_schemas/config_batch.xsd
+A	cime_config/xml_schemas/config_compsets.xsd
+A	cime_config/xml_schemas/config_machines_template.xml
+M	cime_config/xml_schemas/config_pes.xsd
+M	cime_config/xml_schemas/entry_id_base.xsd
+M	cime_config/xml_schemas/testlist.xsd
+M	components/data_comps/datm/cime_config/buildnml
+M	components/data_comps/dice/cime_config/buildnml
+M	components/data_comps/dlnd/cime_config/buildnml
+M	components/data_comps/docn/cime_config/buildnml
+M	components/data_comps/drof/cime_config/buildnml
+M	components/data_comps/dwav/cime_config/buildnml
+M	driver_cpl/cime_config/buildnml
+M	driver_cpl/cime_config/config_component.xml
+A	driver_cpl/cime_config/config_component_acme.xml
+A	driver_cpl/cime_config/config_component_cesm.xml
+M	driver_cpl/cime_config/config_compsets.xml
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/create_test
+M	tools/cprnc/compare_vars_mod.F90.in
+M	tools/cprnc/cprnc.F90
+M	tools/cprnc/filestruct.F90
+M	utils/python/CIME/XML/batch.py
+M	utils/python/CIME/XML/compilers.py
+M	utils/python/CIME/XML/compsets.py
+M	utils/python/CIME/XML/env_mach_pes.py
+M	utils/python/CIME/XML/files.py
+M	utils/python/CIME/XML/generic_xml.py
+M	utils/python/CIME/XML/grids.py
+M	utils/python/CIME/XML/machines.py
+M	utils/python/CIME/XML/namelist_definition.py
+M	utils/python/CIME/XML/pes.py
+M	utils/python/CIME/XML/testlist.py
+M	utils/python/CIME/case.py
+M	utils/python/CIME/nmlgen.py
+M	utils/python/CIME/preview_namelists.py
+M	utils/python/CIME/test_scheduler.py
+M	utils/python/CIME/utils.py
+M	utils/python/tests/scripts_regression_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 01-15-2017
 Tag: cime5.2.0-alpha.20
 Answer Changes: None
