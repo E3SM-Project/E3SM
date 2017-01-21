@@ -21,7 +21,7 @@ module prim_derived_type_mod
     type (hybrid_t)         :: hybrid
     logical                 :: compute_diagnostics
     integer                 :: n_Q
-    real (kind=real_kind)   :: eta_ave_w
+!    real (kind=real_kind)   :: eta_ave_w
     type (derivative_t)     :: deriv
     real (kind=real_kind)   :: dt
     type (TimeLevel_t)      :: tl
@@ -55,7 +55,7 @@ module prim_derived_type_mod
 
  contains
   subroutine initialize(object, method, elem, hvcoord, compute_diagnostics, &
-           n_Q, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
+           n_Q, hybrid, deriv, dt, tl, nets, nete)
 
    use kinds, only : real_kind
    use element_mod, only : element_t
@@ -76,7 +76,7 @@ module prim_derived_type_mod
     type (hybrid_t)        ,intent(in)  :: hybrid
     logical                ,intent(in)  :: compute_diagnostics
     integer                ,intent(in)  :: n_Q
-    real (kind=real_kind)  ,intent(in)  :: eta_ave_w
+!    real (kind=real_kind)  ,intent(in)  :: eta_ave_w
     type (derivative_t)    ,intent(in)  :: deriv
     real (kind=real_kind)  ,intent(in)  :: dt
     type (TimeLevel_t)     ,intent(in)  :: tl
@@ -91,7 +91,7 @@ module prim_derived_type_mod
    object%hybrid = hybrid
    object%compute_diagnostics = compute_diagnostics
    object%n_Q = n_Q
-   object%eta_ave_w = eta_ave_w
+!   object%eta_ave_w = eta_ave_w
    object%deriv = deriv
    object%dt = dt
    object%tl = tl
