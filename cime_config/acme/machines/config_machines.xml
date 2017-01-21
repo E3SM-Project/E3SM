@@ -910,7 +910,7 @@
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
-         <COMPILERS>gnu,intel,pgi</COMPILERS>
+         <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/group/acme/$USER/acme_scratch</CESMSCRATCHROOT>
 	 <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
@@ -925,12 +925,19 @@
          <OS>LINUX</OS>
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
+         <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>36</PES_PER_NODE>
          <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
 	 <PROJECT>ACME</PROJECT>
-         <mpirun mpilib="default">
+         <mpirun mpilib="openmpi">
+           <executable>mpiexec</executable>
+           <arguments>
+             <arg name="num_tasks"> -n $TOTALPES </arg>
+             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE={{ thread_count }} --bind-to core</arg>
+           </arguments>
+         </mpirun>
+         <mpirun mpilib="mvapich">
            <executable>mpiexec</executable>
            <arguments>
              <arg name="num_tasks"> -n $TOTALPES </arg>
@@ -944,11 +951,13 @@
       <init_path lang="sh">/etc/profile.d/a_softenv.sh</init_path>
       <cmd_path lang="csh">soft</cmd_path>
       <cmd_path lang="sh">soft</cmd_path>
+      <modules>
+	<command name="add">+cmake-2.8.12</command>
+	<command name="add">+python-2.7</command>
+      </modules>
       <modules compiler="intel">
 	<command name="add">+intel-16.0.3</command>
 	<command name="add">+netcdf-c-4.4.0-f77-4.4.4-intel-16.0.3-serial</command>
-	<command name="add">+cmake-2.8.12</command>
-	<command name="add">+python-2.7</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
 	<command name="add">+mvapich2-2.2b-intel-16.0.3-acme</command>
@@ -961,8 +970,6 @@
       <modules compiler="gnu">
 	<command name="add">+gcc-5.3.0</command>
 	<command name="add">+netcdf-c-4.4.0-f77-4.4.3-gcc-5.3.0-serial</command>
-	<command name="add">+cmake-2.8.12</command>
-	<command name="add">+python-2.7</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
 	<command name="add">+mvapich2-2.2b-gcc-5.3.0-acme</command>
@@ -975,8 +982,6 @@
       <modules compiler="pgi">
 	<command name="add">+pgi-16.3</command>
 	<command name="add">+netcdf-c-4.4.0-f77-4.4.3-pgi-16.3-serial</command>
-	<command name="add">+cmake-2.8.12</command>
-	<command name="add">+python-2.7</command>
       </modules>
       <modules compiler="pgi" mpilib="mvapich">
 	<command name="add">+mvapich2-2.2b-pgi-16.3-acme</command>
@@ -988,34 +993,16 @@
       </modules>
     </module_system>
     <environment_variables>
+      <env name="NETCDF_PATH">`which nc-config | xargs dirname | xargs dirname`</env>
+      <env name="PNETCDF_PATH">`which pnetcdf_version | xargs dirname | xargs dirname`</env>
+    </environment_variables>
+    <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
-    </environment_variables>
-    <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/soft/spack/opt/spack/linux-centos6-x86_64/intel-16.0.3/netcdf-4.4.0-ds5gqquzjytf4efz3d5njsvpkfmmrwq7</env>
-    </environment_variables>
-    <environment_variables compiler="intel" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/spack/opt/spack/linux-centos6-x86_64/intel-16.0.3/parallel-netcdf-1.7.0-gabvxdumr3chrvldpid5sqwtkijq6xkr</env>
-    </environment_variables>
-    <environment_variables compiler="intel" mpilib="openmpi">
-      <env name="PNETCDFROOT">/soft/spack/opt/spack/linux-centos6-x86_64/intel-16.0.3/parallel-netcdf-1.7.0-3gxxcl2twfmvvq7rvs7z3yykaw4t2trr</env>
-    </environment_variables>
-    <environment_variables compiler="gnu">
-      <env name="NETCDFROOT">/soft/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-4.4.0-xezev3j3kyay6obokfjvwfzqc2l6uwh5</env>
-    </environment_variables>
-    <environment_variables compiler="gnu" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/spack/opt/spack/linux-x86_64/gcc-5.3.0/parallel-netcdf-1.6.1-njywxqs3qjc75ah5mrziqln3qk2nkzg6</env>
-    </environment_variables>
-    <environment_variables compiler="gnu" mpilib="openmpi">
-      <env name="PNETCDFROOT">/soft/spack/opt/spack/linux-x86_64/gcc-5.3.0/parallel-netcdf-1.6.1-vdvnv2sfg53mug2rcyalhb47nfxk2ki7</env>
-    </environment_variables>
-    <environment_variables compiler="pgi">
-      <env name="NETCDFROOT">/soft/spack/opt/spack/linux-x86_64/pgi-16.3-0/netcdf-4.4.0-3jeeee43ip5lcnvdgxssbqhnvylxw5gp</env>
-    </environment_variables>
-    <environment_variables compiler="pgi" mpilib="mvapich">
-      <env name="PNETCDFROOT">/soft/spack/opt/spack/linux-x86_64/pgi-16.3-0/parallel-netcdf-1.6.1-4uarepsh5u2am2bbv2cbct4fl7jombz4</env>
-    </environment_variables>
-    <environment_variables compiler="pgi" mpilib="openmpi">
-      <env name="PNETCDFROOT">/soft/spack/opt/spack/linux-x86_64/pgi-16.3-0/parallel-netcdf-1.6.1-5lmcmthdcd2ewbvtpncpnryzocj5b3bd</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_MAX_ACTIVE_LEVELS">1</env>
+      <env name="KMP_HOT_TEAMS_MODE">1</env>
+      <env name="KMP_HOT_TEAMS_MAX_LEVEL">1</env>
     </environment_variables>
 </machine>
 
