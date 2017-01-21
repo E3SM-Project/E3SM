@@ -137,8 +137,8 @@ contains
     use time_mod,       only: timelevel_qdp, tevolve
 
 #ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
+    use prim_derived_type_mod, only: derived_type, initialize
 #endif
 
 #ifdef CAM
@@ -169,35 +169,27 @@ contains
     integer :: n,i,j,lx,lenx
 
 #ifdef TRILINOS
-    real (c_double) ,allocatable, dimension(:) :: xstate(:)
+    ! 1d state array to pass model state to Trilinos
+    real(c_double), allocatable, dimension(:) :: xstate
 
     ! state_object is a derived data type passed thru noxinit as a pointer
-    type(derived_type) ,target         :: state_object
-    type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-    type(derived_type) ,target         :: pre_object
-    type(derived_type) ,pointer         :: pptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_pre
-    type(derived_type) ,target         :: jac_object
-    type(derived_type) ,pointer         :: jptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_jac
+    type(derived_type), target  :: state_object
+    type(derived_type), pointer :: fptr=>NULL()
+    type(c_ptr)                 :: c_ptr_to_object
 
+	! NOX solver error flag
     integer(c_int) :: ierr = 0
 
-  interface
-
-   subroutine noxsolve(vectorSize,vector,v_container,p_container,j_container,ierr) &
-     bind(C,name='noxsolve')
-     use ,intrinsic :: iso_c_binding
-       integer(c_int)                :: vectorSize
-       real(c_double)  ,dimension(*) :: vector
-       type(c_ptr)                   :: v_container
-       type(c_ptr)                   :: p_container  !precon ptr
-       type(c_ptr)                   :: j_container  !analytic jacobian ptr
-       integer(c_int)                :: ierr         !error flag
-    end subroutine noxsolve
-
-  end interface
+    interface
+       subroutine noxsolve(VectorSize, StateVector, StateData, ierr) &
+            bind(C,name='noxsolve')
+         use, intrinsic :: iso_c_binding
+         integer(c_int)               :: VectorSize  ! length of state vector
+         real(c_double), dimension(*) :: StateVector ! 1d state vector
+         type(c_ptr)                  :: StateData   ! derived type
+         integer(c_int)               :: ierr        ! error flag
+       end subroutine noxsolve      
+    end interface
 #endif
 
     call t_startf('prim_advance_exp')
@@ -290,7 +282,8 @@ contains
     !
     ! integration = "full_imp"
     !
-    !   tstep_type=1  Backward Euler or BDF2 implicit dynamics
+    !   tstep_type=11  Backward Euler implicit dynamics, first order
+    !   tstep_type=12  BDF2 implicit dynamics, second order
     !
 
     ! ==================================
@@ -431,132 +424,152 @@ contains
 !      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
 
 #ifdef TRILINOS
-      call t_startf("JFNK_imp_timestep")
-      lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
-      allocate(xstate(lenx))
-      xstate(:) = 0d0
+       call t_startf("JFNK_imp_timestep")
+       call t_startf('nox_solve_pre_1')
+       lenx = (3*np*np*nlev + np*np)*(nete-nets+1)  ! 3 3d vars plus 1 2d var
+       allocate(xstate(lenx))
 
-      call initialize(state_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
+       xstate(:) = 0.0d0
 
-      call initialize(pre_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
+       call initialize(state_object, method, elem, hvcoord, compute_diagnostics, &
+            qn0, hybrid, deriv, dt, tl, nets, nete)
 
-      call initialize(jac_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
+       fptr => state_object
+       c_ptr_to_object = c_loc(fptr)
+       call t_stopf('nox_solve_pre_1')
 
-!      pc_elem = elem
-!      jac_elem = elem
+       ! create flat state vector to pass through NOX
+       ! use previous time step as the first guess for the new one (because with LF time level update n0=np1)
 
-        fptr => state_object
-        c_ptr_to_object =  c_loc(fptr)
-        pptr => state_object
-        c_ptr_to_pre =  c_loc(pptr)
-        jptr => state_object
-        c_ptr_to_jac =  c_loc(jptr)
+       call t_startf('nox_solve_pre_2')
+       !np1 = n0 ! why? Not necessary
 
-! create flat state vector to pass through NOX
-! use previous time step as the first guess for the new one (because with LF time level update n0=np1)
-
-       np1 = n0
-
+       ! initialize 1d array index
        lx = 1
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do k=1,nlev
-			   do j=1,np
-				   do i=1,np
-					   xstate(lx) = elem(ie)%state%T(i,j,k,n0)
-					   lx = lx+1
-				   end do
-			   end do
-		   end do
-	   end do
-	   do ie=nets,nete
-		   do j=1,np
-			   do i=1,np
-				   xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
-				   lx = lx+1
-			   end do
-		   end do
-	   end do
+
+       ! copy v1
+       do ie=nets,nete
+          do k=1,nlev
+             do j=1,np
+                do i=1,np
+                   xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
+                   lx = lx+1
+                end do
+             end do
+          end do
+       end do
+
+       ! copy v2
+       do ie=nets,nete
+          do k=1,nlev
+             do j=1,np
+                do i=1,np
+                   xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
+                   lx = lx+1
+                end do
+             end do
+          end do
+       end do
+
+       ! copy ps
+       do ie=nets,nete
+          do j=1,np
+             do i=1,np
+                xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
+                lx = lx+1
+             end do
+          end do
+       end do
+
+       ! copy T
+       do ie=nets,nete
+          do k=1,nlev
+             do j=1,np
+                do i=1,np
+                   xstate(lx) = elem(ie)%state%T(i,j,k,n0)
+                   lx = lx+1
+                end do
+             end do
+          end do
+       end do
+
+       call t_stopf('nox_solve_pre_2')
+
+       ! activate these lines to test infrastructure and still solve with explicit code
+       !       ! RK2
+       !       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
+       !       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
+       !            deriv,nets,nete,compute_diagnostics,0d0)
+       !       ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
+       !       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+       !            deriv,nets,nete,.false.,eta_ave_w)
+
+       ! interface to use nox and loca solver libraries using JFNK, and returns xstate(n+1)
+       call t_startf('nox_solve')
+       call noxsolve(size(xstate), xstate, c_ptr_to_object, ierr)
+       call t_stopf('nox_solve')
+
+       if (ierr /= 0) call abortmp('Error in noxsolve')
+
+       call t_startf('nox_solve_post_1')
+       call c_f_pointer(c_ptr_to_object, fptr) ! convert C ptr to F ptr
+       call t_stopf('nox_solve_post_1')
+
+
+       call t_startf('nox_solve_post_2')
+       !elem = fptr%base ! Why? Not necessary
+
+       ! initialize 1d array index
+       lx = 1
        
-! activate these lines to test infrastructure and still solve with explicit code
-!       ! RK2
-!       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
-!       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
-!            deriv,nets,nete,compute_diagnostics,0d0)
-!       ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
-!       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-!            deriv,nets,nete,.false.,eta_ave_w)
+       ! copy v1
+       do ie=nets,nete
+          do k=1,nlev
+             do j=1,np
+                do i=1,np
+                   elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
+                   lx = lx+1
+                end do
+             end do
+          end do
+       end do
 
-! interface to use nox and loca solver libraries using JFNK, and returns xstate(n+1)
-    call noxsolve(size(xstate), xstate, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac, ierr)
+       ! copy v2
+       do ie=nets,nete
+          do k=1,nlev
+             do j=1,np
+                do i=1,np
+                   elem(ie)%state%v(i,j,2,k,np1) = xstate(lx) 
+                   lx = lx+1
+                end do
+             end do
+          end do
+       end do
 
-    if (ierr /= 0) call abortmp('Error in noxsolve: Newton failed to converge')
+       ! copy ps
+       do ie=nets,nete
+          do j=1,np
+             do i=1,np
+                elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
+                lx = lx+1
+             end do
+          end do
+       end do
 
-      call c_f_pointer(c_ptr_to_object, fptr) ! convert C ptr to F ptr
-      elem = fptr%base
+       ! copy T
+       do ie=nets,nete
+          do k=1,nlev
+             do j=1,np
+                do i=1,np
+                   elem(ie)%state%T(i,j,k,np1) = xstate(lx)
+                   lx = lx+1
+                end do
+             end do
+          end do
+       end do
 
-	  lx = 1
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%v(i,j,2,k,np1) = xstate(lx) 
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do k=1,nlev
-			  do j=1,np
-				  do i=1,np
-					  elem(ie)%state%T(i,j,k,np1) = xstate(lx)
-					  lx = lx+1
-				  end do
-			  end do
-		  end do
-	  end do
-	  do ie=nets,nete
-		  do j=1,np
-			  do i=1,np
-				  elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
-				  lx = lx+1
-			  end do
-		  end do
-	  end do
-      call t_stopf("JFNK_imp_timestep")
+       call t_stopf("JFNK_imp_timestep")
+       call t_stopf('nox_solve_post_2')
 #endif
 
     else

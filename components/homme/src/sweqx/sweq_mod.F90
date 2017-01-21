@@ -126,29 +126,15 @@ contains
 
 #ifdef TRILINOS
     integer :: lenx
-    real (c_double) ,allocatable ,dimension(:) :: xstate
-! state_object is a derived data type passed thru noxinit as a pointer
+
+    real(c_double), allocatable, dimension(:) :: xstate
+
+    ! state_object is a derived data type passed thru noxinit as a pointer
     type(derived_type) ,target         :: state_object
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 
-    type(derived_type) ,target          :: pre_object
-    type(derived_type) ,pointer         :: pptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_pre
-
-    type(derived_type) ,target          :: jac_object
-    type(derived_type) ,pointer        :: jptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_jac
-
-    type (element_t)  :: pc_elem(size(elem))
-    type (element_t)  :: jac_elem(size(elem))
-
-
     real (kind=real_kind), dimension(np,np)  :: utemp1,utemp2
-
-
-
-
 #endif
 
     integer :: simday
@@ -172,28 +158,24 @@ contains
 
 #ifdef TRILINOS
   interface 
-     subroutine noxinit(vectorSize, vector, comm, v_container, p_container) &
+     subroutine noxinit(np, nlev, nelemd, statevector, statedata, comm) &
           bind(C,name='noxinit')
        use ,intrinsic :: iso_c_binding
-       integer(c_int)                :: vectorSize,comm
-       real(c_double)  ,dimension(*) :: vector
-       type(c_ptr)                   :: v_container
-       type(c_ptr)                   :: p_container  !precon ptr
+       integer(c_int)               :: np, nlev, nelemd, comm
+       real(c_double), dimension(*) :: statevector
+       type(c_ptr)                  :: statedata
      end subroutine noxinit
-
-    subroutine noxfinish() bind(C,name='noxfinish')
-      use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
-    end subroutine noxfinish
-
+     
+     subroutine noxfinish() bind(C,name='noxfinish')
+       use, intrinsic :: iso_c_binding, only : c_double ,c_int ,c_ptr
+     end subroutine noxfinish
+     
   end interface
 #endif
 
 #if 0
      call allocate_subcell_integration_matrix(np,  6)
 #endif
-
-
-
 
     if(Debug) print *,'homme: point #1'
 
@@ -506,34 +488,15 @@ contains
 #ifdef TRILINOS
       lenx=np*np*nlev*nvar*(nete-nets+1)
       allocate(xstate(lenx))
-      xstate(:) = 0
-       call initialize(state_object, lenx, elem, pmean,edge1,edge2, edge3, &
-        hybrid, deriv, dt, tl, nets, nete)
+      xstate(:) = 0.0d0
 
-    
-       pc_elem=elem
-       jac_elem=elem
+      call initialize(state_object, lenx, elem, pmean,edge1,edge2, edge3, &
+           hybrid, deriv, dt, tl, nets, nete)
 
+      fptr => state_object
+      c_ptr_to_object =  c_loc(fptr)
 
-       call initialize(pre_object, lenx, pc_elem, pmean, edge1,edge2,edge3, &
-        hybrid, deriv, dt, tl, nets, nete)
-
-       call initialize(jac_object, lenx, jac_elem, pmean, edge1,edge2,edge3, &
-        hybrid, deriv, dt, tl, nets, nete)
-
-
-       fptr => state_object
-       c_ptr_to_object =  c_loc(fptr)
-       pptr => pre_object
-       c_ptr_to_pre =  c_loc(pptr)
-       jptr => jac_object
-       c_ptr_to_jac =  c_loc(jptr)
-
-
-
-
-
-        call noxinit(size(xstate), xstate, 1, c_ptr_to_object, c_ptr_to_pre)
+      call noxinit(np, nlev, nelemd, xstate, c_ptr_to_object, 1)
 #endif
 
     end if
@@ -653,7 +616,7 @@ contains
        ! update time level pointers
        ! =================================
         if (integration == "full_imp") then
-           if (tstep_type == 13) then
+           if (tstep_type == 12) then
               call TimeLevel_update(tl,"leapfrog") ! for BDF2
            else     
               call TimeLevel_update(tl,"forward") ! second order Crank Nicolson

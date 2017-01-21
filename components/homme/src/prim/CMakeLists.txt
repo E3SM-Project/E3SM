@@ -5,14 +5,15 @@ macro(prim_setup)
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
-# SET(TARGET_DIR              ${HOMME_SOURCE_DIR}/src/prim)
-SET(UTILS_SHARE_DIR   		${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(SRC_DIR           		${HOMME_SOURCE_DIR}/src)
-SET(SRC_SHARE_DIR     		${HOMME_SOURCE_DIR}/src/share)
-SET(SRC_SHARE_PREQX_DIR     ${HOMME_SOURCE_DIR}/src/preqx)
-SET(PHYSICS_DIR             ${HOMME_SOURCE_DIR}/physics)
-SET(UTILS_TIMING_DIR        ${CMAKE_BINARY_DIR}/utils/timing)
-SET(UTILS_TRILINOS_DIR      ${HOMME_SOURCE_DIR}/utils/trilinos)
+# SET(TARGET_DIR          ${HOMME_SOURCE_DIR}/src/prim)
+SET(UTILS_SHARE_DIR       ${HOMME_SOURCE_DIR}/utils/csm_share)
+SET(SRC_DIR               ${HOMME_SOURCE_DIR}/src)
+SET(SRC_SHARE_DIR         ${HOMME_SOURCE_DIR}/src/share)
+SET(SRC_SHARE_PREQX_DIR   ${HOMME_SOURCE_DIR}/src/preqx)
+SET(SRC_SHARE_PRIM_DIR    ${HOMME_SOURCE_DIR}/src/prim)
+SET(PHYSICS_DIR           ${HOMME_SOURCE_DIR}/physics)
+SET(UTILS_TIMING_DIR      ${CMAKE_BINARY_DIR}/utils/timing)
+SET(UTILS_TRILINOS_DIR    ${HOMME_SOURCE_DIR}/utils/trilinos)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
@@ -110,6 +111,12 @@ SET(PRIM_SRCS_F90
   ${SRC_SHARE_PREQX_DIR}/solver_init_mod.F90
   ${SRC_SHARE_PREQX_DIR}/vertremap_mod.F90
   ${SRC_SHARE_PREQX_DIR}/viscosity_mod.F90
+
+  ${SRC_SHARE_PRIM_DIR}/prim_preconditioner_mod.F90
+  ${SRC_SHARE_PRIM_DIR}/prim_jacobian_operator_mod.F90
+  ${SRC_SHARE_PRIM_DIR}/prim_jacobian_dense_mod.F90
+  ${SRC_SHARE_PRIM_DIR}/prim_jacobian_sparse_mod.F90
+  ${SRC_SHARE_PRIM_DIR}/prim_jacobian_check_mod.F90
     
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
@@ -121,13 +128,21 @@ SET(PRIM_SRCS_F90
 
   ${SRC_SHARE_DIR}/prim_derived_type_mod.F90
   ${SRC_SHARE_DIR}/prim_implicit_mod.F90
-  ${SRC_SHARE_DIR}/prim_derived_type_mod.F90 
 
+  ${UTILS_TRILINOS_DIR}/trilinosUtils.cpp 
+  ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp 
+  ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 
+  ${UTILS_TRILINOS_DIR}/Precon_Operator.cpp 
+  ${UTILS_TRILINOS_DIR}/SparsePreconditionerBase.cpp 
+  ${UTILS_TRILINOS_DIR}/IdentityPreconditioner.cpp 
+  ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Op.cpp 
+  ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Dense.cpp 
+  ${UTILS_TRILINOS_DIR}/BlockPreconditioner_Sparse.cpp 
+  ${UTILS_TRILINOS_DIR}/BlockPreconditioner_SparseML.cpp 
+  ${UTILS_TRILINOS_DIR}/GMRESPreconditioner_Sparse.cpp
+  ${UTILS_TRILINOS_DIR}/GMRESPreconditioner_Op.cpp
+  ${UTILS_TRILINOS_DIR}/MLPreconditioner.cpp
   ${UTILS_TRILINOS_DIR}/belos_helm.cpp
-  ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp
-  ${UTILS_TRILINOS_DIR}/precon_interface.cpp
-  ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp
-  ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp
 
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
   ${PHYSICS_DIR}/column_model_mod.F90 

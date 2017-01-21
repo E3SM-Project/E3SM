@@ -5,41 +5,76 @@
 #ifdef TRILINOS
 
 module prim_implicit_mod
-  use kinds, only : real_kind
+
+  use kinds, only        : real_kind
   use edgetype_mod, only : EdgeBuffer_t
-  use parallel_mod, only : abortmp, parallel_t, iam
-  use perf_mod, only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
+  use parallel_mod, only : abortmp, iam
+  use perf_mod, only     : t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
+
   implicit none
   private
   save
 
-  public :: prim_implicit_init
+  public :: prim_implicit_init, prim_implicit_finalize
 
+  ! exchange buffer
   type(EdgeBuffer_t) :: edge3p1
 
 contains
 
   subroutine prim_implicit_init(par, elem)
-    use edge_mod, only : initEdgeBuffer
-    use element_mod, only : element_t
-    use dimensions_mod, only : nlev, nelemd
-    use control_mod, only : qsplit, rsplit
+    use parallel_mod, only   : parallel_t
+    use element_mod, only    : element_t
+    use edge_mod, only       : initEdgeBuffer
+    use dimensions_mod, only : nlev
+    use control_mod, only    : qsplit, rsplit
+
+    use prim_preconditioner_mod, only : prim_preconditioner_init
+
     implicit none
 
     type (parallel_t), intent(in) :: par
     type (element_t),  intent(in), target :: elem(:)
 
     if (rsplit==0) then
-       call initEdgeBuffer(par,edge3p1,elem,3*nlev+1)
+       call initEdgeBuffer(par, edge3p1, elem, 3*nlev+1)
     else
        ! need extra buffer space for dp3d
-       call initEdgeBuffer(par,edge3p1,elem,4*nlev+1)
+       call initEdgeBuffer(par, edge3p1, elem, 4*nlev+1)
     endif
+
+    ! initialize preconditioner
+    call prim_preconditioner_init(par, elem)
 
   end subroutine prim_implicit_init
 
 
 
+  subroutine prim_implicit_finalize()
+    !----------------------------------------------------------------------------
+    ! deallocate module variables 
+    !----------------------------------------------------------------------------
+    use edge_mod, only                : FreeEdgeBuffer
+    use prim_preconditioner_mod, only : prim_preconditioner_finalize
+    
+    implicit none
+
+    interface
+       subroutine noxfinish() bind(C,name='noxfinish')
+         use, intrinsic :: iso_c_binding
+       end subroutine noxfinish
+    end interface
+
+    call noxfinish()
+    
+    call FreeEdgeBuffer(edge3p1)
+
+    call prim_preconditioner_finalize()
+    
+  end subroutine prim_implicit_finalize
+
+  
+  
   subroutine residual(xstate, fx, nxstate, c_ptr_to_object) bind(C,name='calc_f')
     ! ===================================
     ! compute the RHS, accumulate into a residual for each dependent variable and apply DSS
@@ -95,7 +130,7 @@ contains
     real*8   :: dt2, dti
     logical  :: compute_diagnostics
 
-    real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
+    !real (kind=real_kind) :: eta_ave_w  ! weighting for eta_dot_dpdn mean flux
     real (kind=real_kind), pointer, dimension(:,:)   :: ps         ! surface pressure for current tiime level
     real (kind=real_kind), pointer, dimension(:,:,:) :: phi        ! geopotential 
 
@@ -129,13 +164,12 @@ contains
     real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
     real (kind=real_kind) ::  glnps1,glnps2,gpterm
     real (kind=real_kind) ::  gam
-    integer :: i,j,k,kptr,ie, n_Q
+    integer :: i,j,k,kptr,ie !, n_Q
 
-    type (element_t), target     :: elem(nelemd)
-    type (hvcoord_t)     :: hvcoord
-    type (hybrid_t)      :: hybrid
-    type (derivative_t)  :: deriv
-    type (TimeLevel_t)   :: tl
+    type (hvcoord_t)    :: hvcoord
+    type (hybrid_t)     :: hybrid
+    type (derivative_t) :: deriv
+    type (TimeLevel_t)  :: tl
 
     integer(c_int) ,intent(in) ,value  :: nxstate
     real (c_double) ,intent(in)        :: xstate(nxstate)
@@ -145,11 +179,15 @@ contains
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 
+    ! call t_adj_detailf(+1)
+    call t_startf('residual')
+
     call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
 
     ! set these to match the compute_and_apply_rhs for evenutal reincorporation, so
-    ! BE  0= x(np1)-x(nm1) - (RSS*x(n0))
-    ! BDF2  0= (1.5) (x(np1)-x(nm1)) - (0.5) (x(nm1)-x(nm)) - (RSS*x(n0))
+    ! BE    0 = x(np1)-x(nm1) - (RSS*x(n0))
+    ! BDF2  0 = (1.5) (x(np1)-x(nm1)) - (0.5) (x(nm1)-x(nm)) - (RSS*x(n0))
+    !       0 = (1.5) x(np1) - 2 x(nm1) + 0.5 x(nm) - (RSS*x(n0))
 
     np1        = fptr%tl%np1  
     nm1        = fptr%tl%n0    
@@ -159,7 +197,7 @@ contains
 
     method     = fptr%method
     dt2        = fptr%dt
-    dti        = 1/dt2
+    dti        = 1.0d0/dt2
     hvcoord    = fptr%hvcoord
     hybrid     = fptr%hybrid
     deriv      = fptr%deriv
@@ -167,19 +205,21 @@ contains
     nete       = fptr%nete
     compute_diagnostics = fptr%compute_diagnostics
     qn0        = fptr%n_Q
-    eta_ave_w  = fptr%eta_ave_w
+    !eta_ave_w  = fptr%eta_ave_w
 
-    if ((method==11).or.(nstep==0)) then
-       gam=0.0  ! use BE for BDF as well for the first time step
+    if (method == 11) then
+       gam = 0.0d0  ! use BE for BDF as well for the first time step
     else if (method==12) then
-       gam=0.5  ! BDF2 
-    else ! for adding more methods, right now default to BE
+        if (nstep == 0) then
+         gam = 0.0d0  ! BE
+        else 
+         gam = 0.5d0  ! BDF2 
+        end if
+    else 
        call abortmp('ERROR: method > 12 not yet coded for implicit time integration')
     end if
 
     !JMD  call t_barrierf('sync_residual', hybrid%par%comm)
-    call t_adj_detailf(+1)
-    call t_startf('residual')
 
     call t_startf('residual_int')
     !fvtens = 0.0d0
@@ -187,7 +227,10 @@ contains
     !fpstens = 0.0d0
     !fdptens = 0.0d0
 
+    ! initialize 1d array index
     lx = 1
+
+    ! copy V1
     do ie=nets,nete
        do k=1,nlev
           do j=1,np
@@ -198,6 +241,8 @@ contains
           end do
        end do
     end do
+
+    ! copy V2
     do ie=nets,nete
        do k=1,nlev
           do j=1,np
@@ -208,6 +253,18 @@ contains
           end do
        end do
     end do
+
+    ! copy Ps
+    do ie=nets,nete
+       do j=1,np
+          do i=1,np
+             fptr%base(ie)%state%ps_v(i,j,np1) = xstate(lx)
+             lx = lx+1
+          end do
+       end do
+    end do
+
+    ! copy T
     do ie=nets,nete
        do k=1,nlev
           do j=1,np
@@ -218,14 +275,7 @@ contains
           end do
        end do
     end do
-    do ie=nets,nete
-       do j=1,np
-          do i=1,np
-             fptr%base(ie)%state%ps_v(i,j,np1) = xstate(lx)
-             lx = lx+1
-          end do
-       end do
-    end do
+
     call t_stopf('residual_int')
 
     call t_startf('residual_cal')
@@ -302,8 +352,8 @@ contains
           ! ================================
           ! Accumulate mean Vel_rho flux in vn0
           ! ================================
-          fptr%base(ie)%derived%vn0(:,:,:,k)=fptr%base(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vtemp(:,:,:)
-
+          !fptr%base(ie)%derived%vn0(:,:,:,k)=fptr%base(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vtemp(:,:,:)
+          fptr%base(ie)%derived%vn0(:,:,:,k)=vtemp(:,:,:)
 
           ! =========================================
           !
@@ -365,7 +415,7 @@ contains
        !    (div(v_k) + v_k.grad(lnps))*dsigma_k = div( v dp )
        ! used by eta_dot_dpdn and lnps tendency
        ! ==================================================
-       sdot_sum=0
+       sdot_sum = 0.0d0
 
        ! ==================================================
        ! Compute eta_dot_dpdn
@@ -373,9 +423,9 @@ contains
        ! ==================================================
        if (rsplit>0) then
           ! VERTICALLY LAGRANGIAN:   no vertical motion
-          eta_dot_dpdn=0
-          T_vadv=0
-          v_vadv=0
+          eta_dot_dpdn = 0.0d0
+          T_vadv       = 0.0d0
+          v_vadv       = 0.0d0
        else
           do k=1,nlev
              ! ==================================================
@@ -415,15 +465,22 @@ contains
 #if (defined COLUMN_OPENMP)
        !$omp parallel do private(k)
 #endif
+       ! unlike the RK/LF code, do not average over subcycled dynamics to get these values
        do k=1,nlev  !  Loop index added (AAM)
-          fptr%base(ie)%derived%eta_dot_dpdn(:,:,k) = &
-               fptr%base(ie)%derived%eta_dot_dpdn(:,:,k) + eta_ave_w*eta_dot_dpdn(:,:,k)
-          fptr%base(ie)%derived%omega_p(:,:,k) = &
-               fptr%base(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
+          fptr%base(ie)%derived%eta_dot_dpdn(:,:,k) = eta_dot_dpdn(:,:,k)
+          fptr%base(ie)%derived%omega_p(:,:,k)      = omega_p(:,:,k)
        enddo
-       fptr%base(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
-            fptr%base(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
+       fptr%base(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev+1)
 
+       ! Original RK/LF averaging over subcycles
+       ! do k=1,nlev  !  Loop index added (AAM)
+       !    fptr%base(ie)%derived%eta_dot_dpdn(:,:,k) = &
+       !         fptr%base(ie)%derived%eta_dot_dpdn(:,:,k) + eta_ave_w*eta_dot_dpdn(:,:,k)
+       !    fptr%base(ie)%derived%omega_p(:,:,k) = &
+       !         fptr%base(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
+       ! enddo
+       ! fptr%base(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
+       !      fptr%base(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
 
        ! ==============================================
        ! Compute phi + kinetic energy term: 10*np*np Flops
@@ -651,22 +708,22 @@ contains
        ! for BE, gam = 0. For BDF2, gam = 0.5
        do k=1,nlev
           fttens(:,:,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-               ( (1+gam)*(fptr%base(ie)%state%T(:,:,k,np1) - fptr%base(ie)%state%T(:,:,k,nm1))*dti - &
+                ((1.0d0 + gam) * (fptr%base(ie)%state%T(:,:,k,np1) - fptr%base(ie)%state%T(:,:,k,nm1) )*dti - &
                gam*(fptr%base(ie)%state%T(:,:,k,nm1) - fptr%base(ie)%state%T(:,:,k,nm))*dti - &
                ttens(:,:,k) )
 
           fvtens(:,:,1,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-               ( (1+gam)*(fptr%base(ie)%state%v(:,:,1,k,np1) - fptr%base(ie)%state%v(:,:,1,k,nm1))*dti - &
+                ((1.0d0 + gam) * (fptr%base(ie)%state%v(:,:,1,k,np1) - fptr%base(ie)%state%v(:,:,1,k,nm1) )*dti - &
                gam*(fptr%base(ie)%state%v(:,:,1,k,nm1) - fptr%base(ie)%state%v(:,:,1,k,nm))*dti - &
                vtens1(:,:,k) )
 
           fvtens(:,:,2,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-               ( (1+gam)*(fptr%base(ie)%state%v(:,:,2,k,np1) - fptr%base(ie)%state%v(:,:,2,k,nm1))*dti - &
+                ((1.0d0 + gam) * (fptr%base(ie)%state%v(:,:,2,k,np1) - fptr%base(ie)%state%v(:,:,2,k,nm1) )*dti - &
                gam*(fptr%base(ie)%state%v(:,:,2,k,nm1) - fptr%base(ie)%state%v(:,:,2,k,nm))*dti - &
                vtens2(:,:,k) )
        enddo
        fpstens(:,:,ie) = fptr%base(ie)%spheremp(:,:)* &
-            ( (1+gam)*(fptr%base(ie)%state%ps_v(:,:,np1) - fptr%base(ie)%state%ps_v(:,:,nm1))*dti - &
+             ((1.0d0 + gam) * (fptr%base(ie)%state%ps_v(:,:,np1) - fptr%base(ie)%state%ps_v(:,:,nm1) )*dti - &
             gam*(fptr%base(ie)%state%ps_v(:,:,nm1) - fptr%base(ie)%state%ps_v(:,:,nm))*dti + &
             sdot_sum(:,:) )
 
@@ -677,6 +734,8 @@ contains
        ! Pack ps(np1), T, and v tendencies into comm buffer
        !
        ! =========================================================
+       call t_startf('residual_pack')
+
        kptr=0
        call edgeVpack(edge3p1, fpstens(:,:,ie),1,kptr,ie)
 
@@ -690,19 +749,23 @@ contains
           kptr=kptr+2*nlev
           call edgeVpack(edge3p1, fdptens(:,:,:,ie),nlev,kptr,ie)
        endif
+       call t_stopf('residual_pack')
     end do
 
     ! =============================================================
     ! Insert communications here: for shared memory, just a single
     ! sync is required
     ! =============================================================
-
+    call t_startf('residual_exchange')
     call bndry_exchangeV(hybrid,edge3p1)
+    call t_stopf('residual_exchange')
 
     do ie=nets,nete
        ! ===========================================================
        ! Unpack the edges for vgrad_T and v tendencies...
        ! ===========================================================
+       call t_startf('residual_unpack')
+
        kptr=0
        call edgeVunpack(edge3p1, fpstens(:,:,ie), 1, kptr, ie)
 
@@ -716,6 +779,7 @@ contains
           kptr=kptr+2*nlev
           call edgeVunpack(edge3p1, fdptens(:,:,:,ie),nlev,kptr, ie)
        endif
+       call t_stopf('residual_unpack')
 
        ! ====================================================
        ! Scale tendencies by inverse mass matrix
@@ -744,18 +808,24 @@ contains
 
     end do
 
+    call t_startf('residual_hypervis')
     if (rsplit==0) then
        ! forward-in-time, maybe hypervis applied to PS
-       call rhs_advance_hypervis(edge3p1,fvtens,fttens,fpstens,fptr%base,hvcoord,hybrid,deriv,np1,nets,nete,dt2,eta_ave_w)
+       call rhs_advance_hypervis(edge3p1,fvtens,fttens,fpstens,fptr%base,hvcoord,hybrid,deriv,np1,nets,nete,dt2)
     else
        ! forward-in-time, hypervis applied to dp3d
-       call rhs_advance_hypervis_dp(edge3p1,fvtens,fttens,fdptens,fptr%base,hvcoord,hybrid,deriv,np1,nets,nete,dt2,eta_ave_w)
+       call rhs_advance_hypervis_dp(edge3p1,fvtens,fttens,fdptens,fptr%base,hvcoord,hybrid,deriv,np1,nets,nete,dt2)
     endif
-
+    call t_stopf('residual_hypervis')
 
     call t_stopf('residual_cal')
+
     call t_startf('residual_fin')
+
+    ! initialize 1d array index
     lx = 1
+
+    ! copy V1  
     do ie=nets,nete
        do k=1,nlev
           do j=1,np
@@ -766,6 +836,8 @@ contains
           end do
        end do
     end do
+    
+    ! copy V2
     do ie=nets,nete
        do k=1,nlev
           do j=1,np
@@ -776,6 +848,18 @@ contains
           end do
        end do
     end do
+    
+    ! copy Ps
+    do ie=nets,nete
+       do j=1,np
+          do i=1,np
+             fx(lx) = fpstens(i,j,ie)
+             lx = lx+1
+          end do
+       end do
+    end do
+
+    ! copy T
     do ie=nets,nete
        do k=1,nlev
           do j=1,np
@@ -786,14 +870,7 @@ contains
           end do
        end do
     end do
-    do ie=nets,nete
-       do j=1,np
-          do i=1,np
-             fx(lx) = fpstens(i,j,ie)
-             lx = lx+1
-          end do
-       end do
-    end do
+
     call t_stopf('residual_fin')
 
     !       if (hybrid%masterthread) print*, "F(u,v,t,p)",NORM2(fvtens),NORM2(fttens),NORM2(fpstens)
@@ -804,114 +881,13 @@ contains
 #endif
 #endif
     call t_stopf('residual')
-    call t_adj_detailf(-1)
+    ! call t_adj_detailf(-1)
 
   end subroutine residual
 
 
 
-  ! placeholder for precon routines
-  subroutine update_prec_state(xs, nxs, c_ptr_to_object) bind(C,name='update_prec_state')
-
-    use, intrinsic :: iso_c_binding
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev, nvar, nelemd
-    use prim_derived_type_mod ,only : derived_type, initialize
-    use perf_mod, only : t_startf, t_stopf
-    use hybrid_mod, only : hybrid_t
-
-    implicit none
-
-    real (c_double) ,intent(in)        :: xs(nxs)
-    integer(c_int) ,intent(in) ,value  :: nxs
-    type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-    integer              :: ns
-    integer              :: ne
-
-    integer    :: i,j,k,n,ie
-    integer    :: nm1,n0,np1,lx
-    type (hybrid_t)      :: hybrid
-
-    !    call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
-    !
-    !    np1        = fptr%ntl1
-    !    n0         = fptr%ntl1
-    !    nm1        = fptr%ntl2
-    !    ns         = fptr%nets
-    !    ne         = fptr%nete
-    !
-    !       lx = 1
-    !       do ie=ns,ne
-    !        if (n.le.3) then
-    !        do k=1,nlev
-    !          do j=1,np
-    !            do i=1,np
-    !             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
-    !             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
-    !             if (n==3) fptr%base(ie)%state%T(i,j,k,np1)  = xs(lx)
-    !             lx = lx+1
-    !            end do  !np
-    !          end do  !np
-    !        end do  !nlev
-    !        else
-    !          do j=1,np
-    !            do i=1,np
-    !              if (n==4) fptr%base(ie)%state%ps_v(i,j,np1)  = xs(lx)
-    !              lx = lx+1
-    !            end do  !np
-    !          end do  !np
-    !        end if ! nvar
-    !       end do !ie
-
-  end subroutine update_prec_state
-
-
-
-  subroutine test_id(xs, nxs, fx, c_ptr_to_object) bind(C,name='test_id')
-    use ,intrinsic :: iso_c_binding
-    use kinds, only : real_kind
-    use prim_derived_type_mod ,only : derived_type, initialize
-    use perf_mod, only : t_startf, t_stopf
-    use hybrid_mod, only : hybrid_t
-
-    integer(c_int) ,intent(in) ,value  :: nxs
-    real (c_double) ,intent(in)        :: xs(nxs)
-    real (c_double) ,intent(out)       :: fx(nxs)
-    !type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-
-    !integer    :: i,j,k,n,ie
-    !type (hybrid_t)      :: hybrid
-
-    !call flush(6)
-    !write(6,*)'test id'
-    !call flush(6)
-
-    !    call t_startf('test id')
-    !call flush(6)
-    !write(6,*)'startf'
-    !call flush(6)
-
-
-    !    call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
-    !call flush(6)
-    !write(6,*)'cf pointer'
-    !call flush(6)
-
-    !write(6,*)'setting'
-    !call flush(6)
-    fx=xs
-
-    !    call t_stopf('test id')
-
-    !write(6,*)'returning'
-    !call flush(6)
-  end subroutine test_id
-
-
-
-  subroutine rhs_advance_hypervis(edge3,fv,ft,fp,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
+  subroutine rhs_advance_hypervis(edge3,fv,ft,fp,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2)
     !
     !  take one timestep of:
     !          fv(:,:,2,:,:) = fv(:,:,2,:,:) +  nu*laplacian**order ( v )
@@ -946,7 +922,7 @@ contains
     integer :: nets,nete
 
     ! local
-    real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
+    !real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
     real (kind=real_kind) :: nu_scale, dpdn,dpdn0, nu_scale_top
     integer :: k,kptr,i,j,ie,ic,nt
     real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
@@ -969,7 +945,7 @@ contains
 
     if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
     !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-    call t_adj_detailf(+1)
+    ! call t_adj_detailf(+1)
     call t_startf('rhs_advance_hypervis')
 
     dt=dt2
@@ -995,19 +971,26 @@ contains
              ! comptue mean flux
              if (nu_p>0) then
 #if 0
-                elem(ie)%derived%psdiss_ave(:,:)=&
-                     elem(ie)%derived%psdiss_ave(:,:)+eta_ave_w*elem(ie)%state%ps_v(:,:,nt)/hypervis_subcycle
-                elem(ie)%derived%psdiss_biharmonic(:,:)=&
-                     elem(ie)%derived%psdiss_biharmonic(:,:)+eta_ave_w*pstens(:,:,ie)/hypervis_subcycle
+                elem(ie)%derived%psdiss_ave(:,:)= elem(ie)%state%ps_v(:,:,nt)
+                elem(ie)%derived%psdiss_biharmonic(:,:)=pstens(:,:,ie)
+
+!                elem(ie)%derived%psdiss_ave(:,:)=&
+!                     elem(ie)%derived%psdiss_ave(:,:)+eta_ave_w*elem(ie)%state%ps_v(:,:,nt)/hypervis_subcycle
+!                elem(ie)%derived%psdiss_biharmonic(:,:)=&
+!                     elem(ie)%derived%psdiss_biharmonic(:,:)+eta_ave_w*pstens(:,:,ie)/hypervis_subcycle
 #else
                 do k=1,nlev
                    dptemp1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-                   elem(ie)%derived%dpdiss_ave(:,:,k)=elem(ie)%derived%dpdiss_ave(:,:,k)+eta_ave_w*dptemp1(:,:)/hypervis_subcycle
+
+                   elem(ie)%derived%dpdiss_ave(:,:,k)=dptemp1(:,:)
+!                   elem(ie)%derived%dpdiss_ave(:,:,k)=elem(ie)%derived%dpdiss_ave(:,:,k)+eta_ave_w*dptemp1(:,:)/hypervis_subcycle
 
                    dptemp2(:,:) = (hvcoord%hybi(k+1)-hvcoord%hybi(k))*pstens(:,:,ie)
-                   elem(ie)%derived%dpdiss_biharmonic(:,:,k)=&
-                        elem(ie)%derived%dpdiss_biharmonic(:,:,k)+eta_ave_w*dptemp2(:,:)/hypervis_subcycle
+
+                   elem(ie)%derived%dpdiss_biharmonic(:,:,k)=dptemp2(:,:)
+!                   elem(ie)%derived%dpdiss_biharmonic(:,:,k)=&
+!                        elem(ie)%derived%dpdiss_biharmonic(:,:,k)+eta_ave_w*dptemp2(:,:)/hypervis_subcycle
                 enddo
 #endif
              endif
@@ -1137,13 +1120,13 @@ contains
     endif
 
     call t_stopf('rhs_advance_hypervis')
-    call t_adj_detailf(-1)
+    ! call t_adj_detailf(-1)
 
   end subroutine rhs_advance_hypervis
 
 
 
-  subroutine rhs_advance_hypervis_dp(edge3,fv,ft,fp3,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
+  subroutine rhs_advance_hypervis_dp(edge3,fv,ft,fp3,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2)
     !
     !  take one timestep of:
     !          fv(:,:,:,np) = fv(:,:,:,np) +  nu*laplacian**order ( v )
@@ -1180,7 +1163,7 @@ contains
     integer :: nets,nete
 
     ! local
-    real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
+    !real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
     real (kind=real_kind) :: dpdn,dpdn0, nu_scale_top
     integer :: k,kptr,i,j,ie,ic,nt
     real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
@@ -1211,7 +1194,7 @@ contains
 
     if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
     !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-    call t_adj_detailf(+1)
+    ! call t_adj_detailf(+1)
     call t_startf('rhs_advance_hypervis_dp')
     dt=dt2
     !took out regluar viscosity option
@@ -1234,10 +1217,13 @@ contains
 
              ! comptue mean flux
              if (nu_p>0) then
-                elem(ie)%derived%dpdiss_ave(:,:,:)=elem(ie)%derived%dpdiss_ave(:,:,:)+&
-                     eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)/hypervis_subcycle
-                elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
-                     eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
+                elem(ie)%derived%dpdiss_ave(:,:,:)=elem(ie)%state%dp3d(:,:,:,nt)
+                elem(ie)%derived%dpdiss_biharmonic(:,:,:)=dptens(:,:,:,ie)
+
+!                elem(ie)%derived%dpdiss_ave(:,:,:)=elem(ie)%derived%dpdiss_ave(:,:,:)+&
+!                     eta_ave_w*elem(ie)%state%dp3d(:,:,:,nt)/hypervis_subcycle
+!                elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
+!                     eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
              endif
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp,laplace_fluxes)
@@ -1278,12 +1264,16 @@ contains
                    enddo
                 enddo
                 if (0<ntrac) then
-                   elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - &
-                        eta_ave_w*nu_p*dpflux(:,:,:,k,ie)/hypervis_subcycle
+                   elem(ie)%sub_elem_mass_flux(:,:,:,k) = nu_p*dpflux(:,:,:,k,ie)
+
+!                   elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - &
+!                        eta_ave_w*nu_p*dpflux(:,:,:,k,ie)/hypervis_subcycle
                    if (nu_top>0 .and. k<=3) then
                       laplace_fluxes=subcell_Laplace_fluxes(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),np,nc)
-                      elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                           eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
+                      elem(ie)%sub_elem_mass_flux(:,:,:,k) = nu_scale_top*nu_top*laplace_fluxes
+
+!                      elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
+!                           eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
                    endif
                 endif
              enddo
@@ -1336,8 +1326,10 @@ contains
                    cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:)
                    cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:)
 
-                   elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                        eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)/hypervis_subcycle
+                   elem(ie)%sub_elem_mass_flux(:,:,:,k) = subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)
+
+!                   elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
+!                        eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)/hypervis_subcycle
                 end do
              endif
 
@@ -1392,7 +1384,7 @@ contains
     endif
 
     call t_stopf('rhs_advance_hypervis_dp')
-    call t_adj_detailf(-1)
+    ! call t_adj_detailf(-1)
 
   end subroutine rhs_advance_hypervis_dp
 

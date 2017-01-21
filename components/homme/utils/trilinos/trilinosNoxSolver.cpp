@@ -2,141 +2,122 @@
 #include "config.h.c"
 #endif
 
-// Trilinos Objects
+// Preconditioner Options
+#include "trilinosDefines.h"
+
+// Trilinos header files
 #include "Piro_Epetra_NOXSolver.hpp"
-//#include "Piro_Epetra_LOCASolver.hpp"
+
 #include "trilinosModelEvaluator.hpp"
 
 #include "Epetra_MpiComm.h"
+
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_XMLParameterListHelpers.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
-
 #include "Teuchos_DefaultMpiComm.hpp"
 
+#include "Teuchos_oblackholestream.hpp"
+#include "Teuchos_TimeMonitor.hpp"
 
-//#define SIMPLE_PREC_ON
-#define IDENTITY_PREC_ON
+using std::cout;
+using std::endl;
 
-//#define SIMPLE_ML_PREC_ON
-
-//#define PRINT_DEBUG
-
-using namespace std;
 using Teuchos::RCP;
 using Teuchos::rcp;
+using Teuchos::ParameterList;
+using Teuchos::TimeMonitor;
 
-// Objects that are global to the file
 static RCP<EpetraExt::ModelEvaluator> Nsolver;
 static RCP<trilinosModelEvaluator> model;
-static RCP<Teuchos::ParameterList> paramList;
 static RCP<Epetra_MpiComm> Comm_;
 
 static EpetraExt::ModelEvaluator::InArgs inArgs;
 static EpetraExt::ModelEvaluator::OutArgs outArgs;
-static bool printProc;
-static int timeStep=1; // time step counter
 
-static Teuchos::RCP<Teuchos::ParameterList> FSolvePL;
-static Teuchos::RCP<Teuchos::ParameterList> SchurSolvePL;
+static bool printproc;
 
-static int* FTotalIt;
-static int* SchurTotalIt;
+static int timeStep=0; // time step counter
 
-static int FTotalIts;
-static int SchurTotalIts;
+// Trilinos XML parameter list
+static RCP<ParameterList> paramList;
 
-static int OutputStep;
+// Parameter sub-lists in XML file for preconditioner solves
+static RCP<ParameterList> ASolvePL;
+static RCP<ParameterList> SSolvePL;
+static RCP<ParameterList> PSolvePL;
 
-static Teuchos::RCP<Teuchos::ParameterList> HelmSolvePL;
-static int* HelmTotalIt;
-static int HelmTotalIts;
+// Iteration counters for preconditioner solves
+static int* ATotalIt;
+static int* STotalIt;
+static int* PTotalIt;
+
+static int ATotalIts;
+static int STotalIts;
+static int PTotalIts;
 
 
-// Prototypes for function pointers
+// ------------------------------------------------------------------------------
+// Prototypes for Fortran functions
+// ------------------------------------------------------------------------------
 extern "C" {
+  // residual function
+  void calc_f(double*, double*, int, void*);
 
-  /* Defining external functions */
-  void test_id(double *, int, double *, void *);
+  // swim analytic Jacobian vector product
+  void sw_jacobian(double*, int, double*, void*);
 
-  void calc_f(double *, double *, int, void *);     // residual 
-  void sw_jacobian(double *, int, double*, void *); // jacobian-vector product
-
+  // update Jacobian (when using analytic Jacobian)
   void update_jac_state(double*, int, void*);
-  void update_prec_state(double *, int, void *); 
-  void get_jac_vector(double *, int, void *); 
 
-  void sw_picard_block_11(double *, int, double *, void *); 
-  void sw_picard_block_21(double *, int, double *, int, void *); 
-  void sw_picard_DFinvBt(double *, int, double *, int, void *);
-  void sw_picard_schur(double *, int, double *, void *); 
+  // update preconditioner
+  void update_prec_state(double*, int, void*); 
 
-#ifdef SIMPLE_ML_PREC_ON
-  void homme_globalIDs(int, int* ,void *);
-  void helm_mat(int, int, double *, int *, void *);
-  void helm_map(int, int, int *, void *);
-  void get_discrete_params(int, int, int, int);
-#endif
+  // output analytic dense, analytic sparse, and finite difference Jacobians
+  // to disk for comparison
+  void check_jacobian(double*, int, void*); 
 }
 
 extern "C" {
-
-  // Prototypes for functions in this file.
-  RCP<Teuchos::ParameterList> readParameterListAndSetDefaults(MPI_Comm& mpi_comm_c);
-
-  //void printNewtonKrylovFinalStats(Teuchos::ParameterList& nlParams, Teuchos::RCP<NOX::Epetra::LinearSystemStratimikos>& linsys);
-  //void printNewtonKrylovFinalStats();
+  // Prototypes for functions in this file
+  RCP<ParameterList> readParameterListAndSetDefaults(MPI_Comm& mpi_comm_c);
 
 
 
-  void noxinit(int* nelems, double* statevector, int* mpi_comm_f,
-               void* blackbox_res, void* blackbox_prec, void* jac_data)
+  // ----------------------------------------------------------------------------
+  // Initialize NOX solver
+  // ----------------------------------------------------------------------------
+  void noxinit(int* np_, int* nlev_, int* nelemd_, 
+	       double* StateVector, void* StateData, int* mpi_comm_f)
   {
-    int N=*nelems;
-    void (*residualFunction)(double *, double *, int, void *) = calc_f;
+    // HOMME descretization parameters
+    const int np     = *np_;
+    const int nlev   = *nlev_;
+    const int nelemd = *nelemd_;
 
-    void (*precFunction)(double *, int, double*,  void *) = test_id;   
-    void (*precUpdateFunction)(double *, int, void *) = update_prec_state;
-
+    // local state vector length
 #ifdef _PRIM
-    void (*jacFunction)(double*,  int, double*,  void*) = test_id; 
-    void (*jacUpdateFunction)(double*, int, void*) = NULL;
-    void (*getJacVector)(double*, int, void*) = NULL;
+    int nState = (3*np*np*nlev + np*np)*nelemd;
+#else //_SWIM
+    int nState = 3*np*np*nlev*nelemd;
+#endif
+
+    // set residual function
+    void (*residualFunction)(double*, double*, int, void*) = calc_f;
+
+    // set Jacobian matvec and update functions
+    void (*jacFunction)(double*, int, double*, void*) = NULL; 
+    void (*jacUpdateFunction)(double*, int, void*)    = NULL;
+
+    // set preconditioner update function
+#ifdef CHECK_JAC
+    void (*precUpdateFunction)(double*, int, void*) = check_jacobian;
 #else
-    void (*jacFunction)(double*,  int, double*,  void*) = NULL; 
-    void (*jacUpdateFunction)(double*, int, void*) = NULL;
-    void (*getJacVector)(double*, int, void*) = NULL;
-    // void (*jacFunction)(double*,  int, double*,  void*) = sw_jacobian; 
-    // void (*jacUpdateFunction)(double*, int, void*) = update_jac_state;
-    // void (*getJacVector)(double*, int, void*) = get_jac_vector;
+    void (*precUpdateFunction)(double*, int, void*) = update_prec_state;
 #endif
 
-    /*Convention: for SIMPLE algorithm based on Picard linearization
-      11 block is F
-      12 block is diag(F)^{-1}B'
-      21 block is B
-      22 block is S=G-Bdiag(F)^{-1}B' */  
-
-#ifdef SIMPLE_PREC_ON
-    void (*precFunctionblock11)(double*, int, double*, void*)      = sw_picard_block_11;
-    void (*precFunctionblock12)(double*, int, double*, int, void*) = sw_picard_DFinvBt;
-    void (*precFunctionblock21)(double*, int, double*, int, void*) = sw_picard_block_21;
-    void (*precFunctionblock22)(double*, int, double*, void*)      = sw_picard_schur;
-#endif
-
-#ifdef SIMPLE_ML_PREC_ON
-    void (*precFunctionblock11)(double*, int, double*, void*)      = sw_picard_block_11;
-    void (*precFunctionblock12)(double*, int, double*, int, void*) = sw_picard_DFinvBt;
-    void (*precFunctionblock21)(double*, int, double*, int, void*) = sw_picard_block_21;
-    void (*precFunctionblock22)(double*, int, double*, void *)     = sw_picard_schur;
-
-    void (*get_globalIDs)(int, int *, void *) = homme_globalIDs;
-    void (*get_HelmElementMat)(int, int, double *,int *, void *)=helm_mat;
-    void (*get_HelmMap)(int, int, int *, void *)=helm_map;
-#endif
-
-    bool succeeded=true;
+    bool succeeded = true;
     try {
       // Build the epetra communicator
       //  AGS: MPI_Comm_f2c did not work on my machine -- all procs were rank=0
@@ -144,9 +125,9 @@ extern "C" {
       MPI_Comm mpi_comm_c = MPI_COMM_WORLD; //MPI_Comm_f2c(*mpi_comm_f);
       Comm_=rcp(new Epetra_MpiComm(mpi_comm_c));
       Epetra_Comm& Comm=*Comm_;
-      printProc = (Comm_->MyPID() == 0);
+      printproc = (Comm_->MyPID() == 0);
       
-      if (printProc) cout << "NOXINIT CALLED    for nelem=" << N 
+      if (printproc) cout << "NOXINIT CALLED    for nelem=" << nState 
                           << ". Looking for trilinosOptions.xml" << endl;
       
       try {
@@ -159,65 +140,26 @@ extern "C" {
         exit(1);
       }
 
-      if (printProc) cout << "NOXInit: param list is: \n" << *paramList << endl;
+      if (printproc) cout << "NOXInit: Parameter List: \n" << *paramList << endl;
 
-#ifdef IDENTITY_PREC_ON
-      /* Interface for IDENTITY preconditioner */
-      model = Teuchos::rcp(new trilinosModelEvaluator(N, statevector, Comm, 
-						      blackbox_res, blackbox_prec, jac_data, 
-						      residualFunction,
-						      jacFunction,
-						      jacUpdateFunction,
-						      precUpdateFunction,
-						      getJacVector)); 
-#endif
-     
-#ifdef SIMPLE_PREC_ON
-      /* Interface for SIMPLE preconditioner */
-      model = Teuchos::rcp(new trilinosModelEvaluator(N, statevector, Comm, 
-						      blackbox_res, blackbox_prec,jac_data, 
-						      residualFunction, 
-						      precFunctionblock11,precFunctionblock12, 
-						      precFunctionblock21,precFunctionblock22, 
-						      jacFunction,jacUpdateFunction,precUpdateFunction,getJacVector,
-						      FSolvePL,SchurSolvePL,
-						      FTotalIt,SchurTotalIt
-						      ));      
-#endif
+      model = rcp(new trilinosModelEvaluator(np, nlev, nelemd, 
+ 					     StateVector, StateData, Comm, 
+					     residualFunction, 
+					     jacFunction, jacUpdateFunction,
+					     precUpdateFunction,
+					     ASolvePL, SSolvePL, PSolvePL,
+					     ATotalIt, STotalIt, PTotalIt));
       
-#ifdef SIMPLE_ML_PREC_ON
-      int nets=1;
-      int nete=N;
-      int np=4;
-      int nlev=1;
-      get_discrete_params(nets,nete,np,nlev);
-      
-      model = Teuchos::rcp(new trilinosModelEvaluator(N, statevector, Comm, 
-						      blackbox_res, blackbox_prec,jac_data, 
-						      residualFunction, 
-						      precFunctionblock11,precFunctionblock12, 
-						      precFunctionblock21,precFunctionblock22, 
-						      jacFunction,jacUpdateFunction,precUpdateFunction,getJacVector,
-						      FSolvePL,SchurSolvePL,
-						      FTotalIt,SchurTotalIt, 
-						      get_globalIDs,get_HelmElementMat,get_HelmMap,
-						      HelmSolvePL, HelmTotalIt, nets, nete, np, nlev 
-						      ));      
-#endif
-
       Nsolver = rcp(new Piro::Epetra::NOXSolver(paramList, model));
       
-      inArgs=Nsolver->createInArgs();
-      outArgs=Nsolver->createOutArgs();
+      inArgs  = Nsolver->createInArgs();
+      outArgs = Nsolver->createOutArgs();
 
       // Ask the model for the converged solution from g(0)
       RCP<const Epetra_Map> xmap = Nsolver->get_g_map(0);
-      RCP<Epetra_Vector> xout = rcp(new Epetra_Vector(*xmap));
+      RCP<Epetra_Vector>    xout = rcp(new Epetra_Vector(*xmap));
 
       outArgs.set_g(0,xout);
-
-      // Time step counter: just for deciding whether to use continuation on relaxatin param
-      timeStep++;
 
     } //end try block
     TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, succeeded);
@@ -225,26 +167,33 @@ extern "C" {
   }
   
 
-
-  void noxsolve(int* nelems, double* statevector, void* blackbox_res, void* blackbox_prec, void* jac_data, int* ierr)
+  // ----------------------------------------------------------------------------
+  // Solve nonlinear system with NOX
+  // ----------------------------------------------------------------------------
+  void noxsolve(int* nelems, double* StateVector, void* StateData, int* ierr)
   {
-    *ierr = 0;
+    *ierr = 0; // solver success flag
+
     try {
-      TEUCHOS_TEST_FOR_EXCEPTION(is_null(Nsolver), logic_error, 
+      TEUCHOS_TEST_FOR_EXCEPTION(is_null(Nsolver), std::logic_error, 
 				 "Exception: noxsolve called with Nsolver=null: "
-				 << "either did call noxinit 1st, or called noxfinish already");
+				 << "either did not call noxinit 1st, or called noxfinish already");
 
       // reset solver with new initial Guess
-      model->resetInitialGuess(statevector);
+      model->resetInitialGuess(StateVector);
 
-      // reset interface with new blackbox
-      model->resetBlackbox(blackbox_res, blackbox_prec, jac_data);
-      //model->resetBlackbox(blackbox_res, blackbox_prec);
+      // reset interface with new state data
+      model->resetStateData(StateData);
 
-      // Solve    
-      Nsolver->evalModel(inArgs,outArgs);
+      // solve    
+      Nsolver->evalModel(inArgs, outArgs);
 
-      // Check for solver failure
+      // output timers
+      // Teuchos::oblackholestream blackhole;
+      // std::ostream &out = (printproc ? std::cout : blackhole);
+      // TimeMonitor::summarize(out);
+
+      // check for solver failure
       if (outArgs.isFailed()) {
 	*ierr = 1;
 	throw "Noxsolve Error: Newton Failed to Converge";    
@@ -254,26 +203,42 @@ extern "C" {
       RCP<Epetra_Vector> xout = outArgs.get_g(0); 
       if(xout == Teuchos::null) throw "evalModel is NOT returning a vector";
 
-      for (int i=0; i<*nelems; i++) statevector[i] = (*xout)[i];
+      for (int i=0; i<*nelems; i++) StateVector[i] = (*xout)[i];
+
+      // Time step counter: just for deciding whether to use continuation on relaxatin param
+      timeStep++;
     }
     catch (std::exception& e) {
+      *ierr = -1;
       cout << e.what() << endl;
     }
     catch (const char *s) {
+      *ierr = -1;
       cout << s << endl;
     }
     catch (...) {
+      *ierr = -1;
       cout << "Caught unknown exception in noxsolve!" << endl;
     }
   }
-
-
-
+  
+  
+  // ----------------------------------------------------------------------------
+  // print solver data and clean up at end of run
+  // ----------------------------------------------------------------------------
   void noxfinish()
   {
-    if (printProc) {
-      cout<<"FTotalIts="<< FTotalIts<<endl;
-      cout<<"SchurTotalIts="<< SchurTotalIts<<endl;
+    // print timings
+    Teuchos::oblackholestream blackhole;
+    std::ostream &out = (printproc ? std::cout : blackhole);
+    
+    TimeMonitor::summarize(out);
+
+    if (printproc) {
+      cout << "TimeSteps= " << timeStep  << endl;
+      cout << "ATotalIts= " << ATotalIts << endl;
+      cout << "STotalIts= " << STotalIts << endl;
+      cout << "PTotalIts= " << PTotalIts << endl;
     }
     Nsolver   = Teuchos::null;
     model     = Teuchos::null;
@@ -282,85 +247,92 @@ extern "C" {
   }
 
 
-
-  RCP<Teuchos::ParameterList> readParameterListAndSetDefaults(MPI_Comm& mpi_comm_c)
+  // ----------------------------------------------------------------------------
+  // read solver xml parameter file
+  // ----------------------------------------------------------------------------
+  RCP<ParameterList> readParameterListAndSetDefaults(MPI_Comm& mpi_comm_c)
   {
-    RCP<Teuchos::ParameterList> 
-      params = rcp(new Teuchos::ParameterList("Trilinos Options for Piro"));
+    RCP<ParameterList> params = rcp(new ParameterList("Trilinos Options for Piro"));
 
     Teuchos::MpiComm<int> tcomm(Teuchos::opaqueWrapper(mpi_comm_c));
-    Teuchos::updateParametersFromXmlFileAndBroadcast(
-						     "trilinosOptions.xml", params.ptr(),tcomm);
+    Teuchos::updateParametersFromXmlFileAndBroadcast("trilinosOptions.xml", 
+						     params.ptr(), tcomm);
 
     // Set 2 defaults different then NOX defaults unless overwridden in input file
     if (!params->isParameter("Jacobian Operator"))
       params->set("Jacobian Operator","Matrix-Free");
+
     if (!params->isParameter("Lean Matrix Free"))
       params->set("Lean Matrix Free", true);
 
-    Teuchos::ParameterList& nlPrintParams = params->sublist("NOX").sublist("Printing");
+    ParameterList& nlPrintParams = params->sublist("NOX").sublist("Printing");
     nlPrintParams.set("MyPID", Comm_->MyPID());
     if (!nlPrintParams.isParameter("Output Information"))
       nlPrintParams.set("Output Information", 67);
+
     // Following is required for our usage of Piro::NOX.
-    params->sublist("NOX").set("Reset Initial Guess",true);
+    params->sublist("NOX").set("Reset Initial Guess", true);
 
     // Validate top level of parameter list (error catching)
-    Teuchos::ParameterList validPL("Valid List");;
-    validPL.sublist("NOX"); validPL.sublist("LOCA");
-    validPL.sublist("FSolvePL"); validPL.sublist("SchurSolvePL");
-    validPL.set("Jacobian Operator","Matrix-Free");
+    ParameterList validPL("Valid List");
+    validPL.sublist("NOX"); 
+    validPL.sublist("LOCA");
+    validPL.sublist("ASolvePL"); 
+    validPL.sublist("SSolvePL");
+    validPL.sublist("PSolvePL");
+    validPL.set("Jacobian Operator", "Matrix-Free");
     validPL.set("Lean Matrix Free", true);
     validPL.set("Matrix-Free Perturbation", 1.0e-6);
     params->validateParameters(validPL, 0);
 
-    // Parameter list for F solve in SIMPLE preconditioner
-    FSolvePL  = Teuchos::rcp(new Teuchos::ParameterList);
-    *FSolvePL = params->sublist("FSolvePL");
-    FTotalIts=0;
-    FTotalIt=&FTotalIts;
+    // Parameter list for A solve in preconditioner
+    ASolvePL  = rcp(new ParameterList);
+    *ASolvePL = params->sublist("ASolvePL");
+    ATotalIts = 0;
+    ATotalIt  = &ATotalIts;
 
-    // Parameter list for Schur solve in SIMPLE preconditioner
-    SchurSolvePL  = Teuchos::rcp(new Teuchos::ParameterList);
-    *SchurSolvePL = params->sublist("SchurSolvePL");
-    SchurTotalIts=0;
-    SchurTotalIt=&SchurTotalIts;
+    // Parameter list for S solve in preconditioner
+    SSolvePL  = rcp(new ParameterList);
+    *SSolvePL = params->sublist("SSolvePL");
+    STotalIts = 0;
+    STotalIt  = &STotalIts;
 
-    // Parameter list for Helmholtz ML solver
-    HelmSolvePL  = Teuchos::rcp(new Teuchos::ParameterList);
-    *HelmSolvePL = params->sublist("HelmSolvePL");
-    HelmTotalIts=0;
-    HelmTotalIt=&HelmTotalIts;
+    // Parameter list for P solve in preconditioner
+    PSolvePL  = rcp(new ParameterList);
+    *PSolvePL = params->sublist("SSolvePL");
+    PTotalIts = 0;
+    PTotalIt  = &PTotalIts;
 
     return params;
   }
 
-  //Andy this is the function that I am trying to write to accumulate the total newton iteration and the total linear iteration
 
-  /*
-    void printNewtonKrylovFinalStats()
-    {
-    static int totalNewtonIters=0;
-    static int totalKrylovIters=0;
-    static int stepNum=0;
-    int NewtonIters = nlParams.sublist("Output").get("Nonlinear Iterations", -1000);
-    int KrylovIters = linsys->getLinearItersTotal();
-      
-    totalNewtonIters += NewtonIters;
-    stepNum++;
-    if (stepNum > 1) {
-    //make this 120 parameter something read in from file based on IO frequency
-    //if (stepNum == 120) {
-    globalData->locaUtils->out() << "Convergence Stats:"<<endl 
-    << "Linear Tolerance " << lintol << endl
-    << "Time Steps " << stepNum << endl
-    << "Total Newton Iterations " << totalNewtonIters <<endl
-    << "Total Krylov Iterations  " << KrylovIters <<endl
-    << "Average Newton Steps per timestep" << (double) totalNewtonIters / (double) stepNum<<endl
-    << "Average Linear Steps per Newton Step" << (double) KrylovIters / (double) totalNewtonIters <<endl
-    << "Average Linear Steps per Time Step" << (double) KrylovIters / (double) stepNum<<endl;
-    //}
-    }
-    }
-  */
+  // ----------------------------------------------------------------------------
+  // Preconditioner type passed to Fortran:
+  //  -1 = Check Jacobian test
+  //   0 = Identity
+  //   1 = PC with Spectral Element Operators
+  //   2 = PC with Fotran Dense Matrices
+  //   3 = PC with Trilinos Sparse Matrices
+  // ----------------------------------------------------------------------------
+  void get_ptype(int* ptype)
+  {
+#if defined(CHECK_JAC)
+    *ptype = -1;
+#elif defined(IDENT_PC)
+    *ptype = 0;
+#elif defined(BLOCK_PC_OP) || defined(GMRES_PC_OP)
+    *ptype = 1;
+#elif defined(BLOCK_PC_DENSE)
+    *ptype = 2;    
+#elif defined(BLOCK_PC_SPARSE) || \
+  defined(BLOCK_PC_SPARSE_ML)  || \
+  defined(GMRES_PC_SPARSE)     || \
+  defined(ML_PC)
+    *ptype = 3;
+#else
+#error Unknown preconditioner option set in trilinosDefines.h
+#endif
+  }
+
 } //extern "C"

@@ -117,10 +117,6 @@ contains
     use shr_reprosum_mod,   only: repro_sum => shr_reprosum_calc
 #endif
 
-#ifdef TRILINOS
-    use prim_implicit_mod,  only : prim_implicit_init
-#endif
-
     implicit none
 
     type (element_t),   pointer     :: elem(:)
@@ -602,40 +598,28 @@ contains
     integer :: n0_qdp
 
 #ifdef TRILINOS
-     integer :: lenx
-    real (c_double) ,allocatable, dimension(:) :: xstate(:)
+    integer :: lenx
+
+    real(c_double), allocatable, dimension(:) :: xstate
+
     ! state_object is a derived data type passed thru noxinit as a pointer
-    type(derived_type) ,target         :: state_object
-    type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-
-    type(derived_type) ,target         :: pre_object
-    type(derived_type) ,pointer        :: pptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_pre
-
-    type(derived_type) ,target         :: jac_object
-    type(derived_type) ,pointer        :: jptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_jac
-
-!    type(element_t)                    :: pc_elem(size(elem))
-!    type(element_t)                    :: jac_elem(size(elem))
+    type(derived_type), target  :: state_object
+    type(derived_type), pointer :: fptr=>NULL()
+    type(c_ptr)                 :: c_ptr_to_object
 
     logical :: compute_diagnostics
     integer :: qn0
-    real (kind=real_kind) :: eta_ave_w
+    real(kind=real_kind) :: eta_ave_w
 
-  interface
-    subroutine noxinit(vectorSize,vector,comm,v_container,p_container,j_container) &
-        bind(C,name='noxinit')
-    use ,intrinsic :: iso_c_binding
-      integer(c_int)                :: vectorSize,comm
-      real(c_double)  ,dimension(*) :: vector
-      type(c_ptr)                   :: v_container
-      type(c_ptr)                   :: p_container  !precon ptr
-      type(c_ptr)                   :: j_container  !analytic jacobian ptr
-    end subroutine noxinit
-
-  end interface
+    interface
+       subroutine noxinit(np, nlev, nelemd, StateVector, StateData, comm) &
+            bind(C,name='noxinit')
+         use, intrinsic :: iso_c_binding
+         integer(c_int)               :: np, nlev, nelemd, comm
+         real(c_double), dimension(*) :: StateVector
+         type(c_ptr)                  :: StateData
+       end subroutine noxinit
+    end interface
 #endif
 
     if (topology == "cube") then
@@ -660,33 +644,20 @@ contains
 
 #ifdef TRILINOS
 
-      lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
-      allocate(xstate(lenx))
-      xstate(:) = 0d0
-      compute_diagnostics = .false.
-      qn0 = -1 ! dry case for testing right now
-      eta_ave_w = 1d0 ! divide by qsplit for mean flux interpolation
+    lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
+    allocate(xstate(lenx))
+    xstate(:) = 0.0d0
+    compute_diagnostics = .false.
+    qn0 = -1 ! dry case for testing right now
+    eta_ave_w = 1.0d0 ! divide by qsplit for mean flux interpolation
 
-      call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
+    call initialize(state_object, tstep_type, elem, hvcoord, compute_diagnostics, &
+         qn0, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
 
-      call initialize(pre_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
+    fptr => state_object
+    c_ptr_to_object = c_loc(fptr)
 
-      call initialize(jac_object, lenx, elem, hvcoord, .false., &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
-
-!      pc_elem = elem
-!      jac_elem = elem
-
-      fptr => state_object
-      c_ptr_to_object =  c_loc(fptr)
-      pptr => state_object
-      c_ptr_to_pre =  c_loc(pptr)
-      jptr => state_object
-      c_ptr_to_jac =  c_loc(jptr)
-
-      call noxinit(size(xstate), xstate, 1, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac)
+    call noxinit(np, nlev, nelemd, xstate, c_ptr_to_object, 1)
 
 #endif
 
@@ -1379,14 +1350,11 @@ contains
   subroutine prim_finalize()
 
 #ifdef TRILINOS
-  interface
-    subroutine noxfinish() bind(C,name='noxfinish')
-    use ,intrinsic :: iso_c_binding
-    end subroutine noxfinish
-  end interface
+    use prim_implicit_mod, only: prim_implicit_finalize
+#endif
 
-  call noxfinish()
-
+#ifdef TRILINOS
+    call prim_implicit_finalize
 #endif
 
     ! ==========================
