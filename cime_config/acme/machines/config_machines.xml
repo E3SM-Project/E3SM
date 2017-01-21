@@ -1051,8 +1051,8 @@
                <!-- Ranks per node!! -->
                <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
-               <arg name="num_tasks"> --np $TOTALPES</arg>
-               <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes --envs MPI_TYPE_MAX=100000  --envs OMP_DYNAMIC=FALSE $LOCARGS</arg>
+               <arg name="num_tasks"> --np {{ num_tasks }}</arg>
+               <arg name="locargs"> --block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
@@ -1144,7 +1144,7 @@
 
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 cores/node, batch system is cobalt</DESC>
-	 <NODENAME_REGEX>.*.fst.alcf.anl.gov</NODENAME_REGEX>
+	 <NODENAME_REGEX>mira.*</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
@@ -1174,8 +1174,8 @@
                <!-- Ranks per node!! -->
                <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
-               <arg name="num_tasks"> --np $TOTALPES</arg>
-               <arg name="locargs"> --block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
+               <arg name="num_tasks"> --np {{ num_tasks }}</arg>
+               <arg name="locargs"> --block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
