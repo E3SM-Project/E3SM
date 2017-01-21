@@ -1,5 +1,5 @@
 #!/bin/csh -f
-# corip1 syslog script: 
+# cori-haswell syslog script: 
 #  mach_syslog <sampling interval (in seconds)> <job identifier> <time stamp> <run directory> <timing directory> <output directory> 
 
 set sec = 0
