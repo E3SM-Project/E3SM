@@ -912,8 +912,8 @@ for mct, etc.
   <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
   <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
   <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
-  <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/ </HDF5_PATH>
-  <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.14/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
+  <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/</HDF5_PATH>
+  <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
   <ADD_SLIBS compile_threaded="true"> -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
@@ -931,11 +931,12 @@ for mct, etc.
   <MPIFC> mpixlf2003_r </MPIFC>
   <SCC> mpixlc_r </SCC>
   <MPICC> mpixlc_r </MPICC>
-  <NETCDF_PATH>/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/</NETCDF_PATH>
-  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.3.1/cnk-xl/current/</PNETCDF_PATH>
+  <LD> mpixlf77_r </LD>
+  <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
+  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
   <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
-  <ADD_LDFLAGS>-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl </ADD_LDFLAGS>
-   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
+  <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/</HDF5_PATH>
+  <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
   <ADD_SLIBS compile_threaded="true"> -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
