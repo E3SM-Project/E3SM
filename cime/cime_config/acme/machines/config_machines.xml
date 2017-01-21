@@ -293,6 +293,7 @@
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
+	<command name="load">zlib</command>
 	<!--command name="load">cray-petsc/3.7.0.0</command-->
       </modules>
     </module_system>
@@ -426,6 +427,7 @@
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
+	<command name="load">zlib</command>
 	<!--command name="load">cray-petsc/3.7.0.0</command-->
       </modules>
     </module_system>
