@@ -45,7 +45,8 @@
        <arg flag="-A" name="PROJECT"/>
        <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
        <!-- space is required here so that variable is resolved correctly -->
-       <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+       <!-- ceiling of $a/$b is ($a+$b-1)/$b -->
+       <arg flag="-n" name=" ($TOTALPES+$MAX_TASKS_PER_NODE-1)/$MAX_TASKS_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
        <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
@@ -211,7 +212,7 @@
 
     <batch_system MACH="mira" type="cobalt">
       <queues>
-        <queue walltimemax="06:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
+        <queue walltimemax="03:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
       </queues>
       <walltimes>
         <walltime default="true">03:00:00</walltime>
@@ -220,7 +221,7 @@
 
     <batch_system MACH="cetus" type="cobalt">
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="4096" default="true">default</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="65536" default="true">default</queue>
       </queues>
       <walltimes>
         <walltime default="true">01:00:00</walltime>
