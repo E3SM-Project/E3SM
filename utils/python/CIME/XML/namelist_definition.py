@@ -19,7 +19,6 @@ from CIME.namelist import fortran_namelist_base_value, \
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
 from CIME.XML.files import Files
-from CIME.utils import get_cime_root
 
 logger = logging.getLogger(__name__)
 
