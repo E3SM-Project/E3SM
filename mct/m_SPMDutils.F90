@@ -24,6 +24,19 @@
 !
 ! !INTERFACE:
 
+! Disable the use of the MPI ready send protocol by default, to
+! address recurrent issues with poor performance or incorrect
+! functionality in MPI libraries. When support is known to be robust,
+! or for experimentation, can be re-enabled by defining the CPP token
+! _USE_MPI_RSEND during the build process.
+!
+#ifndef _USE_MPI_RSEND
+#define MPI_RSEND MPI_SEND
+#define mpi_rsend mpi_send
+#define MPI_IRSEND MPI_ISEND
+#define mpi_irsend mpi_isend
+#endif
+
  module m_SPMDutils
 
       implicit none
