@@ -586,8 +586,8 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl">
-  <ADD_FFLAGS> -xMIC-AVX512 </ADD_FFLAGS>
-  <ADD_CFLAGS> -xMIC-AVX512 </ADD_CFLAGS>
+  <ADD_FFLAGS> -xMIC-AVX512 -diag-disable 10121</ADD_FFLAGS>
+  <ADD_CFLAGS> -axMIC-AVX512 -xCORE-AVX2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qno-opt-dynamic-align</ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
