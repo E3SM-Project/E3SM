@@ -48,21 +48,32 @@ def plot_min_max_mean(canvas, template, variable):
     plot_text(canvas, var_max, template.max.x+0.12, template.max.y, height, "right")
     plot_text(canvas, var_mean, template.mean.x+0.12, template.mean.y, height, "right")
 
-def plot_rmse_and_corr(canvas, template, model, obs):
+def plot_rmse_and_corr(canvas, model, obs):
     """canvas is a vcs.Canvas, template is a vcs.Template,
     model and obs are a cdms2.tvariable.TransientVariable"""
 
     rmse = '%.2f' % compute_rmse(obs, model)
     corr = '%.2f' % compute_corr(obs, model)
 
-    text_orientation = canvas.gettextorientation(template.mean.textorientation)
-    height = text_orientation.height
+    rmse_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_title',
+                                           To_source = 'diff_plot_comment1_title')
+    corr_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment2_title',
+                                           To_source = 'diff_plot_comment2_title')
+    rmse_label.string = 'RMSE'
+    corr_label.string = 'CORR'
 
-    plot_text(canvas, "RMSE", template.comment1.x, template.comment1.y, height, "left")
-    plot_text(canvas, "CORR", template.comment2.x, template.comment2.y, height, "left")
+    rmse_value = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_value',
+                                           To_source = 'diff_plot_comment1_value')
+    corr_value = canvas.createtextcombined(Tt_source = 'diff_plot_comment2_value',
+                                           To_source = 'diff_plot_comment2_value')
 
-    plot_text(canvas, rmse, template.comment1.x+0.12, template.comment1.y, height, "right")
-    plot_text(canvas, corr, template.comment2.x+0.12, template.comment2.y, height, "right")
+    rmse_value.string = rmse
+    corr_value.string = corr
+
+    canvas.plot(rmse_label)
+    canvas.plot(corr_label)
+    canvas.plot(rmse_value)
+    canvas.plot(corr_value)
 
 def plot_text(canvas, label_string, x, y, height, align):
     label = vcs.createtextcombined()
@@ -139,58 +150,17 @@ template_0.dataname.priority = 1
 template_1.dataname.priority = 1
 
 # model and observation graph
-'''
-isofill = x.createisofill('reference_isofill')
-isofill.datawc_x1 = 0
-isofill.datawc_x2 = 360
-isofill.datawc_y1 = -90
-isofill.datawc_y2 = 90
-isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
-# NOTE: because of the obs and model data files used,
-# there is no 360 degree value, so we use 358 as 0.
-# Same for 0 where we use 2 instead.
-isofill.xticlabels1 = {0: '0', 30: '30E', 60: '60E', 90: '90E',
-                       120: '120E', 150: '150E', 180: '180W', 210: '150W',
-                       240: '120W', 270: '90W', 300: '60W', 330: '30W', 360: '0'}
-isofill.yticlabels1 = {-90: '90S', -80: '80S', -60: '60S', -40: '40S',
-                       -20:'20S', 0: 'Eq', 20: '20N', 40: '40N', 60: '60N',
-                       80: '80N', 90: '90N'}
-
-# ext_1 and ext_2 are arrows
-isofill.ext_1 = True
-isofill.ext_2 = True
-isofill.script('plot_set_5_new.json')
-'''
 plot_min_max_mean(x, template_0, mod_pr)
 plot_min_max_mean(x, template_1, obs_pr)
 x.plot(mod_pr, template_0, vcs.getisofill('reference_isofill'))
-x.plot(obs_pr, template_1, vcs.getisofill('reference_isofill'))
+x.plot(obs_pr, template_1, vcs.getisofill('test_isofill'))
 
 # Create main title for the 3 plots
 plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
 
-'''
-# difference graph
-isofill = x.createisofill('diff_plot')
-isofill.datawc_x1 = 0
-isofill.datawc_x2 = 360
-isofill.datawc_y1 = -90
-isofill.datawc_y2 = 90
-
-isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
-#isofill.levels=vcs.mkscale(dif_pr.min(), dif_pr.max())
-isofill.ext_1 = True
-isofill.ext_2 = True
-
-isofill.colormap = x.getcolormap('bl_to_darkred')
-# do this for only old colormaps
-colors = vcs.getcolors(isofill.levels, colors=range(6, 240))
-isofill.fillareacolors = colors
-isofill.script('plot_set_5_new.json')
-'''
 plot_min_max_mean(x, template_2, dif_pr)
 #x.plot(dif_pr, template_2, isofill)
 x.plot(dif_pr, template_2, vcs.getisofill('diff_plot'))
 
-plot_rmse_and_corr(x, template_2, mod_pr_reg, obs_pr_reg)
+plot_rmse_and_corr(x, mod_pr_reg, obs_pr_reg)
 x.png(case_id + '/' + parameter.output_file)

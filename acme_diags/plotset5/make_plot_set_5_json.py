@@ -23,7 +23,7 @@ def compute_corr(model, obs):
         print err
     return corr
 
-def plot_min_max_mean(canvas, template, variable):
+def plot_min_max_mean(canvas, template, variable, plot_name):
     """canvas is a vcs.Canvas, template is a vcs.Template,
     variable is a cdms2.tvariable.TransientVariable"""
     var_min = '%.2f' % float(variable.min())
@@ -39,14 +39,14 @@ def plot_min_max_mean(canvas, template, variable):
     height = text_orientation.height
 
     # Draw the "Max", "Mean", and "Min" labels
-    plot_text(canvas, 'Min', template.min.x, template.min.y, height, "left")
-    plot_text(canvas, 'Max', template.max.x, template.max.y, height, "left")
-    plot_text(canvas, 'Mean', template.mean.x, template.mean.y, height, "left")
+    plot_text(canvas, 'Min', template.min.x, template.min.y, height, "left", plot_name + '_min_label')
+    plot_text(canvas, 'Max', template.max.x, template.max.y, height, "left", plot_name + '_max_label')
+    plot_text(canvas, 'Mean', template.mean.x, template.mean.y, height, "left", plot_name + '_mean_label')
 
     # Draw the actual mean, max, min labels
-    plot_text(canvas, var_min, template.min.x+0.12, template.min.y, height, "right")
-    plot_text(canvas, var_max, template.max.x+0.12, template.max.y, height, "right")
-    plot_text(canvas, var_mean, template.mean.x+0.12, template.mean.y, height, "right")
+    plot_text(canvas, var_min, template.min.x+0.12, template.min.y, height, "right", plot_name + '_min_value')
+    plot_text(canvas, var_max, template.max.x+0.12, template.max.y, height, "right", plot_name + '_max_value')
+    plot_text(canvas, var_mean, template.mean.x+0.12, template.mean.y, height, "right", plot_name + '_mean_value')
 
 def plot_rmse_and_corr(canvas, template, model, obs):
     """canvas is a vcs.Canvas, template is a vcs.Template,
@@ -58,19 +58,20 @@ def plot_rmse_and_corr(canvas, template, model, obs):
     text_orientation = canvas.gettextorientation(template.mean.textorientation)
     height = text_orientation.height
 
-    plot_text(canvas, "RMSE", template.comment1.x, template.comment1.y, height, "left")
-    plot_text(canvas, "CORR", template.comment2.x, template.comment2.y, height, "left")
+    plot_text(canvas, "RMSE", template.comment1.x, template.comment1.y, height, "left", 'diff_plot_comment1_title')
+    plot_text(canvas, "CORR", template.comment2.x, template.comment2.y, height, "left", 'diff_plot_comment2_title')
 
-    plot_text(canvas, rmse, template.comment1.x+0.12, template.comment1.y, height, "right")
-    plot_text(canvas, corr, template.comment2.x+0.12, template.comment2.y, height, "right")
+    plot_text(canvas, rmse, template.comment1.x+0.12, template.comment1.y, height, "right", 'diff_plot_comment1_value')
+    plot_text(canvas, corr, template.comment2.x+0.12, template.comment2.y, height, "right", 'diff_plot_comment2_value')
 
-def plot_text(canvas, label_string, x, y, height, align):
-    label = vcs.createtextcombined()
+def plot_text(canvas, label_string, x, y, height, align, vcs_name):
+    label = canvas.createtextcombined(vcs_name)
     label.x = x
     label.y = y
     label.string = label_string
     label.height = height
     label.halign = align
+    label.script('plot_set_5_new.json')
     canvas.plot(label)
 
 parser = acme_diags.acme_parser.ACMEParser()
@@ -116,7 +117,7 @@ dif_pr = mod_pr_reg - obs_pr_reg
 x = vcs.init(bg=True, geometry=(1212,1628))
 
 x.scriptrun('plot_set_5.json')
-x.scriptrun('plot_set_5_new.json')
+#x.scriptrun('plot_set_5_new.json')
 template_0 = x.gettemplate('plotset5_0_x_0')
 template_1 = x.gettemplate('plotset5_0_x_1')
 template_2 = x.gettemplate('plotset5_0_x_2')
@@ -139,7 +140,7 @@ template_0.dataname.priority = 1
 template_1.dataname.priority = 1
 
 # model and observation graph
-'''
+
 isofill = x.createisofill('reference_isofill')
 isofill.datawc_x1 = 0
 isofill.datawc_x2 = 360
@@ -160,16 +161,39 @@ isofill.yticlabels1 = {-90: '90S', -80: '80S', -60: '60S', -40: '40S',
 isofill.ext_1 = True
 isofill.ext_2 = True
 isofill.script('plot_set_5_new.json')
-'''
-plot_min_max_mean(x, template_0, mod_pr)
-plot_min_max_mean(x, template_1, obs_pr)
-x.plot(mod_pr, template_0, vcs.getisofill('reference_isofill'))
-x.plot(obs_pr, template_1, vcs.getisofill('reference_isofill'))
+
+isofill = x.createisofill('test_isofill')
+isofill.datawc_x1 = 0
+isofill.datawc_x2 = 360
+isofill.datawc_y1 = -90
+isofill.datawc_y2 = 90
+isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+# NOTE: because of the obs and model data files used,
+# there is no 360 degree value, so we use 358 as 0.
+# Same for 0 where we use 2 instead.
+isofill.xticlabels1 = {0: '0', 30: '30E', 60: '60E', 90: '90E',
+                       120: '120E', 150: '150E', 180: '180W', 210: '150W',
+                       240: '120W', 270: '90W', 300: '60W', 330: '30W', 360: '0'}
+isofill.yticlabels1 = {-90: '90S', -80: '80S', -60: '60S', -40: '40S',
+                       -20:'20S', 0: 'Eq', 20: '20N', 40: '40N', 60: '60N',
+                       80: '80N', 90: '90N'}
+
+# ext_1 and ext_2 are arrows
+isofill.ext_1 = True
+isofill.ext_2 = True
+isofill.script('plot_set_5_new.json')
+
+plot_min_max_mean(x, template_0, mod_pr, 'reference')
+plot_min_max_mean(x, template_1, obs_pr, 'test')
+#x.plot(mod_pr, template_0, vcs.getisofill('reference_isofill'))
+x.plot(mod_pr, template_0, isofill)
+#x.plot(obs_pr, template_1, vcs.getisofill('reference_isofill'))
+x.plot(obs_pr, template_1, isofill)
 
 # Create main title for the 3 plots
-plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
+plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left", 'main_title')
 
-'''
+
 # difference graph
 isofill = x.createisofill('diff_plot')
 isofill.datawc_x1 = 0
@@ -187,8 +211,8 @@ isofill.colormap = x.getcolormap('bl_to_darkred')
 colors = vcs.getcolors(isofill.levels, colors=range(6, 240))
 isofill.fillareacolors = colors
 isofill.script('plot_set_5_new.json')
-'''
-plot_min_max_mean(x, template_2, dif_pr)
+
+plot_min_max_mean(x, template_2, dif_pr, 'diff')
 #x.plot(dif_pr, template_2, isofill)
 x.plot(dif_pr, template_2, vcs.getisofill('diff_plot'))
 

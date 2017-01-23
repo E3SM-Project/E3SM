@@ -187,6 +187,1243 @@
     "90": "90N"
    }, 
    "yticlabels2": "*"
+  }, 
+  "test_isofill": {
+   "colormap": null, 
+   "datawc_calendar": 135441, 
+   "datawc_timeunits": "days since 2000", 
+   "datawc_x1": 0, 
+   "datawc_x2": 360, 
+   "datawc_y1": -90, 
+   "datawc_y2": 90, 
+   "ext_1": true, 
+   "ext_2": true, 
+   "fillareacolors": [
+    1
+   ], 
+   "fillareaindices": [
+    1
+   ], 
+   "fillareaopacity": [], 
+   "fillareastyle": "solid", 
+   "legend": null, 
+   "levels": [
+    -1e+20, 
+    0, 
+    0.2, 
+    0.5, 
+    1, 
+    2, 
+    3, 
+    4, 
+    5, 
+    6, 
+    7, 
+    8, 
+    9, 
+    10, 
+    12, 
+    14, 
+    17, 
+    1e+20
+   ], 
+   "missing": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "projection": "linear", 
+   "xaxisconvert": "linear", 
+   "xmtics1": "", 
+   "xmtics2": "", 
+   "xticlabels1": {
+    "0": "0", 
+    "120": "120E", 
+    "150": "150E", 
+    "180": "180W", 
+    "210": "150W", 
+    "240": "120W", 
+    "270": "90W", 
+    "30": "30E", 
+    "300": "60W", 
+    "330": "30W", 
+    "360": "0", 
+    "60": "60E", 
+    "90": "90E"
+   }, 
+   "xticlabels2": "*", 
+   "yaxisconvert": "linear", 
+   "ymtics1": "", 
+   "ymtics2": "", 
+   "yticlabels1": {
+    "-20": "20S", 
+    "-40": "40S", 
+    "-60": "60S", 
+    "-80": "80S", 
+    "-90": "90S", 
+    "0": "Eq", 
+    "20": "20N", 
+    "40": "40N", 
+    "60": "60N", 
+    "80": "80N", 
+    "90": "90N"
+   }, 
+   "yticlabels2": "*"
+  }
+ }, 
+ "To": {
+  "diff_max_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_max_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_mean_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_mean_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_min_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_min_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_plot_comment1_title": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_plot_comment1_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_plot_comment2_title": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "diff_plot_comment2_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "main_title": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 18, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "reference_max_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "reference_max_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "reference_mean_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "reference_mean_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "reference_min_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "reference_min_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "test_max_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "test_max_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "test_mean_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "test_mean_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "test_min_label": {
+   "angle": 0, 
+   "halign": 0, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }, 
+  "test_min_value": {
+   "angle": 0, 
+   "halign": 2, 
+   "height": 10.490567316175754, 
+   "path": 0, 
+   "valign": 2
+  }
+ }, 
+ "Tt": {
+  "diff_max_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Max"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.3633333333333333
+   ]
+  }, 
+  "diff_max_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "10.88"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.3633333333333333
+   ]
+  }, 
+  "diff_mean_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Mean"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.3483333333333333
+   ]
+  }, 
+  "diff_mean_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "0.45"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.3483333333333333
+   ]
+  }, 
+  "diff_min_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Min"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.33333333333333326
+   ]
+  }, 
+  "diff_min_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "-5.81"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.33333333333333326
+   ]
+  }, 
+  "diff_plot_comment1_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "RMSE"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.07499999999999993
+   ]
+  }, 
+  "diff_plot_comment1_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "1.20"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.07499999999999993
+   ]
+  }, 
+  "diff_plot_comment2_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "CORR"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.05999999999999993
+   ]
+  }, 
+  "diff_plot_comment2_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "0.85"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.05999999999999993
+   ]
+  }, 
+  "main_title": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "PRECT ANN"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.42
+   ], 
+   "y": [
+    0.98
+   ]
+  }, 
+  "reference_max_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Max"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.99
+   ]
+  }, 
+  "reference_max_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "19.03"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.99
+   ]
+  }, 
+  "reference_mean_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Mean"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.975
+   ]
+  }, 
+  "reference_mean_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "3.13"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.975
+   ]
+  }, 
+  "reference_min_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Min"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.96
+   ]
+  }, 
+  "reference_min_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "0.02"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.96
+   ]
+  }, 
+  "test_max_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Max"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.6766666666666666
+   ]
+  }, 
+  "test_max_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "12.22"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.6766666666666666
+   ]
+  }, 
+  "test_mean_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Mean"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.6616666666666666
+   ]
+  }, 
+  "test_mean_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "2.67"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.6616666666666666
+   ]
+  }, 
+  "test_min_label": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "Min"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.873
+   ], 
+   "y": [
+    0.6466666666666666
+   ]
+  }, 
+  "test_min_value": {
+   "backgroundcolor": [
+    100.0, 
+    100.0, 
+    100.0, 
+    0.0
+   ], 
+   "backgroundopacity": 0, 
+   "color": [
+    0.0, 
+    0.0, 
+    0.0, 
+    100.0
+   ], 
+   "colormap": null, 
+   "expansion": 100, 
+   "fillincolor": 0, 
+   "font": 1, 
+   "priority": 1, 
+   "projection": "default", 
+   "spacing": 2, 
+   "string": [
+    "0.02"
+   ], 
+   "viewport": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "worldcoordinate": [
+    0.0, 
+    1.0, 
+    0.0, 
+    1.0
+   ], 
+   "x": [
+    0.993
+   ], 
+   "y": [
+    0.6466666666666666
+   ]
   }
  }
 }
