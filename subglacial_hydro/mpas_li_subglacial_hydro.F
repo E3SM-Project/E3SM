@@ -818,12 +818,14 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
       real (kind=RKIND), dimension(:), pointer :: channelVelocity
       real (kind=RKIND), dimension(:), pointer :: diffusivity
+      real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
       real (kind=RKIND), dimension(:), pointer :: dcEdge
       real (kind=RKIND), pointer :: deltatSGH
       real (kind=RKIND), pointer :: deltatSGHadvec
       real (kind=RKIND), pointer :: deltatSGHdiffu
       real (kind=RKIND), pointer :: deltatSGHpressure
-      real (kind=RKIND), pointer :: deltatSGHchannel
+      real (kind=RKIND), pointer :: deltatSGHadvecChannel
+      real (kind=RKIND), pointer :: deltatSGHdiffuChannel
       real (kind=RKIND), pointer :: porosity
       type (block_type), pointer :: block
       real (kind=RKIND), pointer :: deltat
@@ -836,6 +838,7 @@ module li_subglacial_hydro
       real (kind=RKIND) :: dtSGHdiffuBlock, dtSGHdiffuProc
       real (kind=RKIND) :: dtSGHpressureBlock, dtSGHpressureProc
       real (kind=RKIND) :: dtSGHadvecChanBlock, dtSGHadvecChanProc
+      real (kind=RKIND) :: dtSGHdiffuChanBlock, dtSGHdiffuChanProc
       integer :: err_tmp
       real(kind=RKIND), parameter :: bigNumber = 1.0e36_RKIND
       real(kind=RKIND), pointer :: CFLfraction
@@ -855,6 +858,7 @@ module li_subglacial_hydro
       dtSGHdiffuProc = bigNumber
       dtSGHpressureProc = bigNumber
       dtSGHadvecChanProc = bigNumber
+      dtSGHdiffuChanProc = bigNumber
 
       block => domain % blocklist
       do while (associated(block))
@@ -869,10 +873,12 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'deltatSGHadvec', deltatSGHadvec)
          call mpas_pool_get_array(hydroPool, 'deltatSGHdiffu', deltatSGHdiffu)
          call mpas_pool_get_array(hydroPool, 'deltatSGHpressure', deltatSGHpressure)
-         call mpas_pool_get_array(hydroPool, 'deltatSGHchannel', deltatSGHchannel)
+         call mpas_pool_get_array(hydroPool, 'deltatSGHadvecChannel', deltatSGHadvecChannel)
+         call mpas_pool_get_array(hydroPool, 'deltatSGHdiffuChannel', deltatSGHdiffuChannel)
          call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
          call mpas_pool_get_array(hydroPool, 'channelVelocity', channelVelocity)
          call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
+         call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
          ! Calculate advective CFL-limited time step
@@ -892,6 +898,9 @@ module li_subglacial_hydro
             ! Calculate channel advection limited time step
             dtSGHadvecChanBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(channelVelocity(1:nEdgesSolve)) + 1.0e-12_RKIND))  ! regularize
             dtSGHadvecChanProc = min(dtSGHadvecChanProc, dtSGHadvecChanBlock)
+            ! Calculate channel diffusion limited time step
+            dtSGHdiffuChanBlock = 0.25_RKIND * minval(dcEdge(1:nEdgesSolve)**2 / (channelDiffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
+            dtSGHdiffuChanProc = min(dtSGHdiffuChanProc, dtSGHdiffuChanBlock)
          endif
 
          ! Master deltat is needed below, so grab it in this block loop
@@ -906,7 +915,8 @@ module li_subglacial_hydro
       call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuProc, deltatSGHdiffu)
       call mpas_dmpar_min_real(domain % dminfo, dtSGHpressureProc, deltatSGHpressure)
       if (config_SGH_chnl_active) then
-         call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecChanProc, deltatSGHchannel)
+         call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecChanProc, deltatSGHadvecChannel)
+         call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuChanProc, deltatSGHdiffuChannel)
       endif
 
 
@@ -915,10 +925,10 @@ module li_subglacial_hydro
          call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep_fraction', CFLfraction)
          call mpas_pool_get_config(liConfigs, 'config_SGH_max_adaptive_timestep', maxDt)
 
-         ! Find smallest of 4 limiting time steps
+         ! Find smallest of 3 or 5 limiting time steps
          proposedDt = min(deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure)
          if (config_SGH_chnl_active) then
-            proposedDt = min(proposedDt, deltatSGHchannel)
+            proposedDt = min(proposedDt, deltatSGHadvecChannel, deltatSGHdiffuChannel)
          endif
          proposedDt = proposedDt * CFLfraction
 
@@ -952,7 +962,7 @@ module li_subglacial_hydro
 
       ! optional: always write out for debugging
       if (config_SGH_chnl_active) then
-         write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHchannel:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHchannel
+         write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel
       else
          write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
       endif
@@ -967,8 +977,11 @@ module li_subglacial_hydro
       if (deltatSGH > deltatSGHpressure) then
          write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHpressure  ", deltatSGH, deltatSGHpressure
       endif
-      if (config_SGH_chnl_active .and. (deltatSGH > deltatSGHchannel)) then
-         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHchannel  ", deltatSGH, deltatSGHchannel
+      if (config_SGH_chnl_active .and. (deltatSGH > deltatSGHadvecChannel)) then
+         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHadvecChannel  ", deltatSGH, deltatSGHadvecChannel
+      endif
+      if (config_SGH_chnl_active .and. (deltatSGH > deltatSGHdiffuChannel)) then
+         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHdiffuChannel  ", deltatSGH, deltatSGHdiffuChannel
       endif
 
    !--------------------------------------------------------------------
@@ -1251,6 +1264,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: flowParamAChannel
       real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: edgeMask
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
@@ -1299,6 +1313,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
+      call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
       ! Calculate terms needed for opening (melt) rate
@@ -1320,6 +1335,15 @@ module li_subglacial_hydro
       end where
 
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
+
+      ! diffusivity used only to limit channel dt right now
+      where(gradMagPhiEdge < 0.01_RKIND)
+         channelDiffusivity = 0.0_RKIND
+      elsewhere
+         channelDiffusivity = abs(rho_water * gravity * channelArea *  &
+            Kc * channelArea**(alpha_c - 1.0_RKIND) * gradMagPhiEdge**(beta_c - 2.0_RKIND))
+      end where
+
       channelMelt = (abs(channelDischarge * hydropotentialBaseSlopeNormal) &  ! channel dissipation
                   +  abs(waterFlux * hydropotentialBaseSlopeNormal * config_SGH_incipient_channel_width)        &  ! some sheet dissipation
                   ) / latent_heat_ice
