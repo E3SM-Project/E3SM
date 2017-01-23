@@ -54,7 +54,9 @@ module vertical_se
 	end type
 
   real(rl), dimension(npv,npv) :: ddn,ddn2,ddn3,ddn4                    ! derivatives w.r.t eta
-  real(rl), dimension(npv,npv) :: M,LU                                  ! mass, stiffness, LU decomp matrices
+  real(rl), dimension(npv,npv) :: ddn_1,ddn_n                           ! eta integration with upper bc, lower bc
+  real(rl), dimension(npv,npv) :: M,LU_1,LU_n                           ! mass, LU decomposition matrices
+
   type (quadrature_t)	:: gll																						! gll nodes for 1 vertical element
   real(rl) :: eta_t, eta_b                                              ! position of bottom and top of the column
   real(rl) :: ds_deta, deta_ds												 								  ! metric terms for linear map
@@ -62,7 +64,7 @@ module vertical_se
   real(rl) :: ddn_hyam(nlev),  ddn_hybm(nlev)                           ! vertical derivatives of hybrid coefficients
   real(rl) :: ddn_hyai(nlevp), ddn_hybi(nlevp)                          ! vertical derivatives of hybrid coefficients
 
-  integer  :: ipiv(npv)                                                 ! pivot indices for integration
+  integer  :: ipiv_1(npv),ipiv_n(npv)                                   ! pivot indices for vertical integration
 
   type(velem_t), allocatable :: ev(:)                                   ! array of vertical element data structures
   real(rl) :: elem_height                                               ! height of vertical elements in s coords
@@ -240,26 +242,25 @@ module vertical_se
 
   end function
   !_____________________________________________________________________
-  subroutine get_least_squares_LU(D,LU,ipiv)
+  subroutine precompute_LU()
 
     ! pre-compute LU decomposition to make integration faster
 
-    real(rl), intent(in) :: D   (npv,npv)                               ! derivative matrix
-    real(rl), intent(out):: LU  (npv,npv)                               ! LU factorization
-    integer,  intent(out):: ipiv(npv)                                   ! pivot indices
-
     integer  :: info																									  ! status flag: 0=success
-    real(rl) :: Dtr(npv,npv)                                            ! array for LU factoring
 
-    Dtr = transpose(D)
+		! get LU decomposition of vertical integration matrix ddn
+		LU_1 = ddn_1
+    LU_n = ddn_n
 
-		! get LU decomposition of deriv matrix using lapack routine
-		LU = matmul(Dtr,D)
-    print *,"D^T D=",LU
-
-    call DGETRF(npv,npv,LU,npv,ipiv,info)
+    call DGETRF(npv,npv,LU_1,npv,ipiv_1,info)
 		if(info .ne. 0) then																								! halt if routine failed
-      print *,"LU=",LU
+      print *,"LU_1=",LU_1
+			print *,"least squares DGETRF info = ",info; stop
+		endif
+
+    call DGETRF(npv,npv,LU_n,npv,ipiv_n,info)
+		if(info .ne. 0) then																								! halt if routine failed
+      print *,"LU_n=",LU_n
 			print *,"least squares DGETRF info = ",info; stop
 		endif
 
@@ -292,6 +293,26 @@ module vertical_se
 
 	end function
 #endif
+
+	!_____________________________________________________________________
+	function solve_LU(B,LU,ipiv) result(x)
+
+		! LU x = B were LU is decomposed version of matrix A
+
+		real(rl), intent(in):: B(npv)														  					! 1d field to integrate
+    real(rl), intent(in):: LU(npv,npv)                                  ! LU factorization
+    integer,  intent(in):: ipiv(npv)                                    ! pivot indices
+
+    real(rl) :: x(npv)                                                  ! resulting 1d integral
+		integer  :: info																									  ! status flag: 0=success
+
+		x = B
+		call DGETRS('N',npv,1,LU,npv,ipiv,x,npv,info)                       ! solve for x
+		if(info .ne. 0) then																								! halt if routine failed
+			print *,"integrate DGETRS info = ",info; stop
+		endif
+
+	end function
 
 
   !_____________________________________________________________________
@@ -352,17 +373,16 @@ module vertical_se
     real (rl), intent(in) :: bc_1(np,np)                                ! boundary condition at n
 
 		real (rl) :: x(np,np,nlev),bc(np,np)
-    real (rl) :: A(npv,npv), B(npv),x1(npv)
+    real (rl) :: B(npv)
     integer		:: kt,kb,l,i,j
 
-    A= ddn; A(1,:)=0.0_rl; A(1,1)=1.0_rl
     bc = bc_1
 
     do l=1,nev,1
       kt = ev(l)%kt; kb = ev(l)%kb
       do j=1,np; do i=1,np
         B = f(i,j,kt:kb); B(1) = bc(i,j)
-        x(i,j,kt:kb) = solve(A, B, npv)
+        x(i,j,kt:kb) = solve_LU(B,LU_1,ipiv_1)!solve(A, B, npv)
       enddo; enddo
       bc = x(:,:,kb)
     enddo
@@ -378,17 +398,16 @@ module vertical_se
     real (rl), intent(in) :: bc_n(np,np)                                ! boundary condition at n
 
 		real (rl) :: x(np,np,nlev),bc(np,np)
-    real (rl) :: A(npv,npv), B(npv),x1(npv)
+    real (rl) :: B(npv)
     integer		:: kt,kb,l,i,j
 
-    A  = ddn; A(npv,:)=0.0_rl; A(npv,npv)=1.0_rl
     bc = bc_n
 
     do l=nev,1,-1
       kt = ev(l)%kt; kb = ev(l)%kb
       do j=1,np; do i=1,np
         B = f(i,j,kt:kb); B(npv) = bc(i,j)
-        x(i,j,kt:kb) = solve(A, B, npv)
+        x(i,j,kt:kb) = solve_LU(B,LU_n,ipiv_n)!solve(A, B, npv)
       enddo; enddo
       bc = x(:,:,kt)
     enddo
@@ -991,8 +1010,11 @@ call vertical_dss(f)
     ddn4  = matmul(ddn,ddn3)        ! get 4th deriv matrix
     M     = mass_matrix(gll,npv)
 
+    ddn_1 = ddn; ddn_1(1  ,:)=0.0_rl; ddn_1(1  ,1  )=1.0_rl
+    ddn_n = ddn; ddn_n(npv,:)=0.0_rl; ddn_n(npv,npv)=1.0_rl
+
     ! store LU decomposition needed for least-squares integration
-    !call get_least_squares_LU(ddn,LU,ipiv)
+    call precompute_LU()
 
     ! allocate vertical element array
     allocate ( ev(nev) )

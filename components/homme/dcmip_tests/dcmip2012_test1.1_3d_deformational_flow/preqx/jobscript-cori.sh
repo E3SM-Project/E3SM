@@ -10,7 +10,7 @@
 #SBATCH -p debug              # queue (partition) -- normal, development, etc.
 #SBATCH -t 00:15:00           # run time (hh:mm:ss)
 #SBATCH -A acme               # charge hours to account 1
-#SBATCH -C haswell            # use Haswell nodes 
+#SBATCH -C haswell            # use Haswell nodes
 
 EXEC=../../../test_execs/preqx-nlev60-interp/preqx-nlev60-interp        # set name of executable
 srun -n 768 $EXEC < ./namelist-default.nl                               # launch simulation
