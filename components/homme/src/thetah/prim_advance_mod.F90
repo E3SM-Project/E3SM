@@ -1042,7 +1042,7 @@ contains
                   elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +             &
                   elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k)*dp3d(i,j,k)-   &      
                   0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
-                       (elem(ie)%state%v(i,j,2,k,n0))**2)
+                       (elem(ie)%state%v(i,j,2,k,n0))**2)*dpdn
                !  Form KEvert2
                   elem(ie)%accum%KEvert2(i,j)=elem(ie)%accum%KEvert2(i,j)      &
                   -s_vadv(i,j,k,1)*(elem(ie)%state%w(i,j,k,n0))*dp3d(i,j,k)    &   
@@ -1065,7 +1065,7 @@ contains
                   gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))             
                !  Form S1 
                   elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
-                  -exner(i,j,k) * (v_gradtheta(i,j,k)+                          &
+                  -exner(i,j,k)*(dp3d(i,j,k)*v_gradtheta(i,j,k)+                &
                   elem(ie)%state%theta(i,j,k,n0)* divdp(i,j,k))
                !  Form T2 
                   elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 

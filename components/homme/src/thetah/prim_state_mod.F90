@@ -563,13 +563,13 @@ contains
           write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
-          write(iulog,'(a,2e22.14)')'Horiz KE horiz adv, vert: ',-KEhorz,-KEvert
+          write(iulog,'(a,2e22.14)')'Horiz KE horiz adv, vert: ',KEhorz,KEvert
           write(iulog,'(a,2e22.14)')'Vert  KE horiz adv:       ',KEhorz2
-          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',0d0,-IEvert
-          write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert: ',-PEhorz,-PEvert
+          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',0d0,IEvert
+          write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert: ',PEhorz,PEvert
           
-          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE:          ', -T1-T2
-          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE:          ', -S1-S2
+          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE (T1+S1):  ', T1+S1
+          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE (T2+S2):  ', T2+S2
           write(iulog,'(a,2e22.14)')'Transfer:   KE->PE, PE->KE:  ', P1,P2
           
           ddt_tot =  (KEner(2)-KEner(1))/(dt)
