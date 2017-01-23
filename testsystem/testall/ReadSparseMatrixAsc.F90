@@ -2,12 +2,12 @@
 !     Math + Computer Science Division / Argonne National Laboratory     !
 !-------------------------------------------------------------------------
 ! CVS $Id: ReadSparseMatrixAsc.F90,v 1.4 2004-06-15 19:16:08 eong Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !-----------------------------------------------------------------------
 !BOP
 !
 ! !ROUTINE:  ReadSparseMatrixAsc - Read in a SparseMatrix
-! 
+!
 ! !INTERFACE:
  subroutine ReadSparseMatrixAsc(sMat, fileID, src_dims, dst_dims)
 !
@@ -42,28 +42,28 @@
 
       implicit none
 !
-! !DESCRIPTION: This is the reader/tester driver for the Model 
+! !DESCRIPTION: This is the reader/tester driver for the Model
 ! Coupling Toolkit (mct) {\tt SparseMatrix} datatype.
-! 
-! !INPUT PARAMETERS: 
+!
+! !INPUT PARAMETERS:
 
       character(len=*),   intent(in)  :: fileID
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       type(SparseMatrix),    intent(out) :: sMat
       integer, dimension(2), intent(out) :: src_dims
       integer, dimension(2), intent(out) :: dst_dims
 
-! 
+!
 !
 ! !BUGS:
 !
-! !SYSTEM ROUTINES: 
+! !SYSTEM ROUTINES:
 !
-! !FILES USED:  
+! !FILES USED:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -71,7 +71,7 @@
  character(len=*), parameter :: myname = 'ReadSparseMatrixAsc'
 
  integer :: n,ierr
- 
+
  integer :: mdev
  character*1024 :: filename, data_dir
 
@@ -89,7 +89,7 @@
  logical :: descending(2)
 
 !------------------------------------------------
-! Use mpeu resource file utilities to read in the name of the 
+! Use mpeu resource file utilities to read in the name of the
 ! file with the weights
 !
      call I90_LoadF("ut_SparseMatrix.rc", ierr)
@@ -143,7 +143,7 @@
 
   read(mdev,*) dst_dims(1), dst_dims(2)
 
-  
+
        ! Read in the row, column, and weight data:
 
   write(stdout,'(2a)')myname,":: Reading elements from file"
@@ -239,6 +239,6 @@
      call List_clean(sort_keys)
 
 ! done testing
-!------------------------------------------------ 
+!------------------------------------------------
 
  end subroutine ReadSparseMatrixAsc
