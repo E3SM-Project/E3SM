@@ -911,6 +911,7 @@ module li_subglacial_hydro
 
       ! reduce across procs
       ! TODO Pack these into array so only need 1 comm?
+      call mpas_timer_start("global reduce")
       call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecProc, deltatSGHadvec)
       call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuProc, deltatSGHdiffu)
       call mpas_dmpar_min_real(domain % dminfo, dtSGHpressureProc, deltatSGHpressure)
@@ -918,6 +919,7 @@ module li_subglacial_hydro
          call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecChanProc, deltatSGHadvecChannel)
          call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuChanProc, deltatSGHdiffuChannel)
       endif
+      call mpas_timer_stop("global reduce")
 
 
       ! Set time step
