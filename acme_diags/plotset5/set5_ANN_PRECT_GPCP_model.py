@@ -115,14 +115,14 @@ if mod_pr.ndim == 4: # var(time,lev,lon,lat) convert from hybrid level to pressu
     levels_orig.units = 'mb'
     mod_pr_p=cdutil.vertical.logLinearInterpolation( mod_pr, levels_orig, plv17)
 
-obs_plv = obs_pr.getLevel()[:]
-
-# set the level to compare
-plev = 200 #mb
-plev_ind = plv17.tolist().index(plev)
-mod_pr = mod_pr_p[:,plev_ind,:,:]
-plev_ind = obs_plv.tolist().index(plev)
-obs_pr = obs_pr[:,plev_ind,:,:]
+    obs_plv = obs_pr.getLevel()[:]
+    
+    # set the level to compare
+    plev = 200 #mb
+    plev_ind = plv17.tolist().index(plev)
+    mod_pr = mod_pr_p[:,plev_ind,:,:]
+    plev_ind = obs_plv.tolist().index(plev)
+    obs_pr = obs_pr[:,plev_ind,:,:]
 
 axes1 = mod_pr.getAxisList()
 axes2 = obs_pr.getAxisList()
