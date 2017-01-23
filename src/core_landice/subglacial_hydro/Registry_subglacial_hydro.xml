@@ -177,7 +177,7 @@
                 <var name="waterThicknessEdgeUpwind" type="real" dimensions="nEdges Time" units="m"
 		     description="water layer thickness of cell upwind of edge" />
                 <var name="diffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
-		     description="effective Darcy hydraulic conductivity" />
+		     description="diffusivity of sheet" />
                 <var name="hydropotentialBase" type="real" dimensions="nCells Time" units="Pa"
 		     description="hydropotential without water thickness contribution" />
                 <var name="hydropotentialBaseVertex" type="real" dimensions="nVertices Time" units="Pa"
