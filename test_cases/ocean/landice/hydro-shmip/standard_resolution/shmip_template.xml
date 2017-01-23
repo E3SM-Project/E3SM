@@ -72,7 +72,8 @@
                                 <member name="deltatSGHadvec" type="var"/>
                                 <member name="deltatSGHdiffu" type="var"/>
                                 <member name="deltatSGHpressure" type="var"/>
-                                <member name="deltatSGHchannel" type="var"/>
+                                <member name="deltatSGHadvecChannel" type="var"/>
+                                <member name="deltatSGHdiffuChannel" type="var"/>
                         </add_contents>
                 </stream>
 

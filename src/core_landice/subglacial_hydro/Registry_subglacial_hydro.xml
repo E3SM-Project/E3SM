@@ -227,12 +227,16 @@
 		     description="opening rate from melt of the channel" />
                 <var name="channelChangeRate" type="real" dimensions="nEdges Time" units="m^2 s^-1"
 		     description="rate of change of channel area" />
-                <var name="deltatSGHchannel" type="real" dimensions="Time" units="s"
+                <var name="deltatSGHadvecChannel" type="real" dimensions="Time" units="s"
 		     description="time step length limited by channel advection" />
+                <var name="deltatSGHdiffuChannel" type="real" dimensions="Time" units="s"
+		     description="time step length limited by channel diffusion" />
                 <var name="divergenceChannel" type="real" dimensions="nCells Time" units="m s^-1"
 		     description="divergence due to channel flow" />
                 <var name="channelAreaChangeCell" type="real" dimensions="nCells Time" units="m s^-1"
                      description="change in channel area within each cell, averaged over cell area" />
+                <var name="channelDiffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
+		     description="diffusivity in channel" />
 
 	</var_struct>
 

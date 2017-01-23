@@ -277,7 +277,7 @@ fig = plt.figure(2, facecolor='w')
 # thickness over time
 ax1 = fig.add_subplot(331)
 # plot n random cells
-n=1000
+n=100    # set number of random cells.  More is more expensive
 #for i in ind:  # this version plots cells along the centerline only
 for i in random.sample(range(min(nCells,n)), n):
     plt.plot(days/365.0, f.variables['waterThickness'][:,i])
@@ -375,17 +375,19 @@ try:
    dtA=f.variables['deltatSGHadvec'][:]
    dtD=f.variables['deltatSGHdiffu'][:]
    dtP=f.variables['deltatSGHpressure'][:]
-   dtC=f.variables['deltatSGHchannel'][:]
+   dtAC=f.variables['deltatSGHadvecChannel'][:]
+   dtAD=f.variables['deltatSGHdiffuChannel'][:]
    fig = plt.figure(3, facecolor='w')
    plt.plot(days/365.0, dtA, label='A')
    plt.plot(days/365.0, dtD, label='D')
    plt.plot(days/365.0, dtP, label='P')
-   plt.plot(days/365.0, dtC, label='C')
+   plt.plot(days/365.0, dtAC, label='AC')
+   plt.plot(days/365.0, dtAD, label='AD')
    plt.legend()
    plt.xlabel('Time (yr)')
    plt.ylabel('Allowable time step (s)')
 except:
-   pass
+   print "Skipping plot of maximum time steps due to missing information or error."
 
 print "plotting complete"
 
