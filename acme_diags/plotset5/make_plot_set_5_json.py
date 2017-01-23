@@ -44,9 +44,9 @@ def plot_min_max_mean(canvas, template, variable, plot_name):
     plot_text(canvas, 'Mean', template.mean.x, template.mean.y, height, "left", plot_name + '_mean_label')
 
     # Draw the actual mean, max, min labels
-    plot_text(canvas, var_min, template.min.x+0.12, template.min.y, height, "right", plot_name + '_min_value')
-    plot_text(canvas, var_max, template.max.x+0.12, template.max.y, height, "right", plot_name + '_max_value')
-    plot_text(canvas, var_mean, template.mean.x+0.12, template.mean.y, height, "right", plot_name + '_mean_value')
+    plot_text(canvas, '0.00', template.min.x+0.12, template.min.y, height, "right", plot_name + '_min_value')
+    plot_text(canvas, '0.00', template.max.x+0.12, template.max.y, height, "right", plot_name + '_max_value')
+    plot_text(canvas, '0.00', template.mean.x+0.12, template.mean.y, height, "right", plot_name + '_mean_value')
 
 def plot_rmse_and_corr(canvas, template, model, obs):
     """canvas is a vcs.Canvas, template is a vcs.Template,
@@ -183,15 +183,15 @@ isofill.ext_1 = True
 isofill.ext_2 = True
 isofill.script('plot_set_5_new.json')
 
-plot_min_max_mean(x, template_0, mod_pr, 'reference')
-plot_min_max_mean(x, template_1, obs_pr, 'test')
+plot_min_max_mean(x, template_0, mod_pr, 'test')
+plot_min_max_mean(x, template_1, obs_pr, 'reference')
 #x.plot(mod_pr, template_0, vcs.getisofill('reference_isofill'))
 x.plot(mod_pr, template_0, isofill)
 #x.plot(obs_pr, template_1, vcs.getisofill('reference_isofill'))
 x.plot(obs_pr, template_1, isofill)
 
 # Create main title for the 3 plots
-plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left", 'main_title')
+plot_text(x, ' '.join([var, season]), 0.5, 0.98, 18, "center", 'main_title')
 
 
 # difference graph

@@ -10,9 +10,28 @@ season = 'ANN'
 output_file = 'test'
 
 # All of the metrics that Chris wants
+# ONLY HAVE THE 'MOST IMPORTANT' ONES
 reference_name = 'GPCP_1979-2009' # appears on the top right of the graph
 test_name = 'GPCP_1979-2009'
+diff_name = 'GPCP_1979-2009'
+
 main_title = 'PRECT ANN'
+reference_title = 'observation'
+test_title = 'reference'
+diff_title = 'model - observation'
+
 canvas_size_w = 1212
 canvas_size_h = 1628
 output_file_format = 'png'
+logo = False
+reference_levels = []
+reference_colormap = ''
+
+test_levels = []
+test_colormap = ''
+
+diff_levels = []
+diff_colormap = ''
+
+regrid_method = ''
+regrid_tool = ''

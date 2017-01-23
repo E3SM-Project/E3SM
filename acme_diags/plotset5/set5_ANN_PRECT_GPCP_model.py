@@ -23,34 +23,44 @@ def compute_corr(model, obs):
         print err
     return corr
 
-def plot_min_max_mean(canvas, template, variable):
-    """canvas is a vcs.Canvas, template is a vcs.Template,
-    variable is a cdms2.tvariable.TransientVariable"""
+def plot_min_max_mean(canvas, variable, ref_test_or_diff):
+    """canvas is a vcs.Canvas, variable is a
+    cdms2.tvariable.TransientVariable and ref_test_or_diff is a string"""
     var_min = '%.2f' % float(variable.min())
     var_max = '%.2f' % float(variable.max())
 
     # Doesn't work: var_mean = str(round(float(variable.mean()), 2))
     var_mean = '%.2f' % cdutil.averager(variable, axis='xy', weights='generate')
 
-    # Todo: Just have a textorientation object in the script titled 'min_max_mean'
-    # which will have the height and everything
-    # EX: text_orientation = canvas.gettextorientation("min_max_mean")
-    text_orientation = canvas.gettextorientation(template.mean.textorientation)
-    height = text_orientation.height
+    # can be either 'reference', 'test' or 'diff'
+    plot = ref_test_or_diff
+    min_label = canvas.createtextcombined(Tt_source = plot + '_min_label',
+                                          To_source = plot + '_min_label')
+    max_label = canvas.createtextcombined(Tt_source = plot + '_max_label',
+                                          To_source = plot + '_max_label')
+    mean_label = canvas.createtextcombined(Tt_source = plot + '_mean_label',
+                                           To_source = plot + '_mean_label')
 
-    # Draw the "Max", "Mean", and "Min" labels
-    plot_text(canvas, 'Min', template.min.x, template.min.y, height, "left")
-    plot_text(canvas, 'Max', template.max.x, template.max.y, height, "left")
-    plot_text(canvas, 'Mean', template.mean.x, template.mean.y, height, "left")
+    min_value = canvas.createtextcombined(Tt_source = plot + '_min_value',
+                                          To_source = plot + '_min_value')
+    max_value = canvas.createtextcombined(Tt_source = plot + '_max_value',
+                                          To_source = plot + '_max_value')
+    mean_value = canvas.createtextcombined(Tt_source = plot + '_mean_value',
+                                           To_source = plot + '_mean_value')
 
-    # Draw the actual mean, max, min labels
-    plot_text(canvas, var_min, template.min.x+0.12, template.min.y, height, "right")
-    plot_text(canvas, var_max, template.max.x+0.12, template.max.y, height, "right")
-    plot_text(canvas, var_mean, template.mean.x+0.12, template.mean.y, height, "right")
+    min_value.string = var_min
+    max_value.string = var_max
+    mean_value.string = var_mean
+    canvas.plot(min_value)
+    canvas.plot(min_label)
+    canvas.plot(max_value)
+    canvas.plot(max_label)
+    canvas.plot(mean_value)
+    canvas.plot(mean_label)
 
 def plot_rmse_and_corr(canvas, model, obs):
-    """canvas is a vcs.Canvas, template is a vcs.Template,
-    model and obs are a cdms2.tvariable.TransientVariable"""
+    """canvas is a vcs.Canvas, model and obs are
+    a cdms2.tvariable.TransientVariable"""
 
     rmse = '%.2f' % compute_rmse(obs, model)
     corr = '%.2f' % compute_corr(obs, model)
@@ -75,14 +85,6 @@ def plot_rmse_and_corr(canvas, model, obs):
     canvas.plot(rmse_value)
     canvas.plot(corr_value)
 
-def plot_text(canvas, label_string, x, y, height, align):
-    label = vcs.createtextcombined()
-    label.x = x
-    label.y = y
-    label.string = label_string
-    label.height = height
-    label.halign = align
-    canvas.plot(label)
 
 parser = acme_diags.acme_parser.ACMEParser()
 parameter = parser.get_parameter()
@@ -97,7 +99,6 @@ if not os.path.exists(case_id):
     os.makedirs(case_id)
 var = parameter.variables
 season = parameter.season
-
 
 # Below should be read from metadata
 mod_name = '1850_alpha6_01 (yrs0070-0099)'
@@ -124,43 +125,36 @@ else:
 dif_pr = mod_pr_reg - obs_pr_reg
 
 # Plotting
-x = vcs.init(bg=True, geometry=(1212,1628))
+vcs_canvas = vcs.init(bg=True, geometry=(1212,1628))
 
-x.scriptrun('plot_set_5.json')
-x.scriptrun('plot_set_5_new.json')
-template_0 = x.gettemplate('plotset5_0_x_0')
-template_1 = x.gettemplate('plotset5_0_x_1')
-template_2 = x.gettemplate('plotset5_0_x_2')
+vcs_canvas.scriptrun('plot_set_5.json')
+vcs_canvas.scriptrun('plot_set_5_new.json')
+template_test = vcs_canvas.gettemplate('plotset5_0_x_0')
+template_ref = vcs_canvas.gettemplate('plotset5_0_x_1')
+template_diff = vcs_canvas.gettemplate('plotset5_0_x_2')
 
 mod_pr.long_name = 'model'
 obs_pr.long_name = 'observation'
 dif_pr.long_name = 'model-observation'
 
-template_0.title.priority = 1
-template_1.title.priority = 1
-template_2.title.priority = 1
-
-template_0.units.priority = 1
-template_1.units.priority = 1
-template_2.units.priority = 1
-
 mod_pr.id = mod_name
 obs_pr.id = obs_name
-template_0.dataname.priority = 1
-template_1.dataname.priority = 1
 
 # model and observation graph
-plot_min_max_mean(x, template_0, mod_pr)
-plot_min_max_mean(x, template_1, obs_pr)
-x.plot(mod_pr, template_0, vcs.getisofill('reference_isofill'))
-x.plot(obs_pr, template_1, vcs.getisofill('test_isofill'))
+plot_min_max_mean(vcs_canvas, mod_pr, 'test')
+plot_min_max_mean(vcs_canvas, obs_pr, 'reference')
+plot_min_max_mean(vcs_canvas, dif_pr, 'diff')
 
-# Create main title for the 3 plots
-plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
+vcs_canvas.plot(mod_pr, template_test, vcs.getisofill('reference_isofill'))
+vcs_canvas.plot(obs_pr, template_ref, vcs.getisofill('test_isofill'))
+vcs_canvas.plot(dif_pr, template_diff, vcs.getisofill('diff_plot'))
 
-plot_min_max_mean(x, template_2, dif_pr)
-#x.plot(dif_pr, template_2, isofill)
-x.plot(dif_pr, template_2, vcs.getisofill('diff_plot'))
+plot_rmse_and_corr(vcs_canvas, mod_pr_reg, obs_pr_reg)
 
-plot_rmse_and_corr(x, mod_pr_reg, obs_pr_reg)
-x.png(case_id + '/' + parameter.output_file)
+# Plotting the main title
+main_title = vcs_canvas.createtextcombined(Tt_source = 'main_title',
+                                           To_source = 'main_title')
+main_title.string = 'A very long title that happens to be long'
+vcs_canvas.plot(main_title)
+
+vcs_canvas.png(case_id + '/' + parameter.output_file)

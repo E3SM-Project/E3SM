@@ -187,7 +187,7 @@
     "y": 0.9565555391090741
    },
    "title": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "__textorientation_675849204359008",
     "texttable": "default",
     "x": 0.4915,
@@ -555,7 +555,7 @@
     "y": 0.6432222057757409
    },
    "title": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "__textorientation_428791170453960",
     "texttable": "default",
     "x": 0.4915,
@@ -923,7 +923,7 @@
     "y": 0.3298888724424074
    },
    "title": {
-    "priority": 0,
+    "priority": 1,
     "textorientation": "__textorientation_916780501350462",
     "texttable": "default",
     "x": 0.4915,
