@@ -15,10 +15,12 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 # Find all F90 files in specific directories
 FILE(GLOB TARGET_F90    ${TARGET_DIR}/*.F90)
 FILE(GLOB TEST_SRC_F90  ${SRC_DIR}/test_src/*.F90)
+FILE(GLOB SB81_SRC_F90  ${SRC_SHARE_DIR}/sb81/*.F90)
 
 SET(PREQX_SRCS_F90
   ${TARGET_F90}
   ${TEST_SRC_F90}
+  ${SB81_SRC_F90}
   ${SRC_DIR}/checksum_mod.F90 
   ${SRC_DIR}/common_io_mod.F90
   ${SRC_DIR}/common_movie_mod.F90
@@ -62,7 +64,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/params_mod.F90
   ${SRC_SHARE_DIR}/physical_constants.F90
   ${SRC_SHARE_DIR}/physics_mod.F90 
-  ${SRC_SHARE_DIR}/prim_advance_mod.F90
   ${SRC_SHARE_DIR}/prim_advection_base.F90 
   ${SRC_SHARE_DIR}/prim_driver_base.F90
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
