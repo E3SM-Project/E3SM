@@ -161,6 +161,7 @@ subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
   elem%state%v   (i,j,1,k,n0:n1) = u
   elem%state%v   (i,j,2,k,n0:n1) = v
   elem%state%T   (i,j,k,n0:n1)   = T
+! OG Should it be set here?
   elem%state%dp3d(i,j,k,n0:n1)   = dp
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phis(i,j)           = phis
@@ -171,6 +172,10 @@ subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
 
 end subroutine
 
+  subroutine dcmip2012_tests_finalize()
+  implicit none
+
+  end subroutine dcmip2012_tests_finalize
 
 
 end module
