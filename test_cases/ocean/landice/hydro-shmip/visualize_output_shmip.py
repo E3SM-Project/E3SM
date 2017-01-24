@@ -375,14 +375,17 @@ try:
    dtA=f.variables['deltatSGHadvec'][:]
    dtD=f.variables['deltatSGHdiffu'][:]
    dtP=f.variables['deltatSGHpressure'][:]
-   dtAC=f.variables['deltatSGHadvecChannel'][:]
-   dtAD=f.variables['deltatSGHdiffuChannel'][:]
    fig = plt.figure(3, facecolor='w')
    plt.plot(days/365.0, dtA, label='A')
    plt.plot(days/365.0, dtD, label='D')
    plt.plot(days/365.0, dtP, label='P')
-   plt.plot(days/365.0, dtAC, label='AC')
-   plt.plot(days/365.0, dtAD, label='AD')
+   try:
+      dtAc=f.variables['deltatSGHadvecChannel'][:]
+      dtDc=f.variables['deltatSGHdiffuChannel'][:]
+      plt.plot(days/365.0, dtAc, '--', label='Ac')
+      plt.plot(days/365.0, dtDc, '--', label='Dc')
+   except:
+      print "Skipping plot of channel maximum time steps.  Channel may be disabled or an error occurred."
    plt.legend()
    plt.xlabel('Time (yr)')
    plt.ylabel('Allowable time step (s)')
