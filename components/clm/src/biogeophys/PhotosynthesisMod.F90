@@ -734,7 +734,10 @@ contains
 
                ! if (an(p,iv) < 0._r8) gs_mol(p,iv) = bbb(p)
                ! Brutely force an to zero if gs_mol is at its minimal value
-               if(abs(gs_mol(p,iv)-bbb(p))<1.e-14_r8)an(p,iv)=0._r8
+               if(abs(gs_mol(p,iv)-bbb(p))<1.e-14_r8)then
+                  an(p,iv)=0._r8
+                  ag(p,iv)=lmr_z(p,iv)
+               endif
 
                ! Final estimates for cs and ci (needed for early exit of ci iteration when an < 0)
 
