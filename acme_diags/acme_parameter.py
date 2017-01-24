@@ -7,12 +7,37 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_data_path = ''
         self.reference_data_set = ''
         self.test_data_set = ''
+
         self.variables = ''
         self.season = ''
-        self.reference_colormap = ''
-        self.test_colormap = ''
-        self.diff_colormap = ''
+        self.regrid_tool = 'esmf'
+        self.regrid_method = 'linear'
+        self.output_file = ''
 
+        # VCS Options
+        self.main_title = 'Main Title'
+
+        self.test_name = ''
+        self.test_title = 'Reference'
+        self.test_colormap = ''
+        self.test_levels = []
+        self.test_units = ''
+
+        self.reference_name = ''
+        self.reference_title = 'Observation'
+        self.reference_colormap = ''
+        self.reference_levels = []
+        self.reference_units = ''
+
+        self.diff_name = ''
+        self.diff_title = 'Model - Observation'
+        self.diff_colormap = ''
+        self.diff_levels = []
+        self.diff_units = ''
+
+        self.canvas_size_w = 1212
+        self.canvas_size_h = 1628
+        self.logo = True
 
     def check_values(self):
         # just check if reference_data_path + reference_data_set and

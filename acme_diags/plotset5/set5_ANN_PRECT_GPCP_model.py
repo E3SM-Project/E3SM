@@ -85,14 +85,23 @@ def plot_rmse_and_corr(canvas, model, obs):
     canvas.plot(rmse_value)
     canvas.plot(corr_value)
 
-def set_colormap_of_graphics_method(canvas, parameter_colormap, isofill):
+def set_colormap_of_graphics_method(canvas, parameter_colormap, method):
     if parameter_colormap is not '':
-        isofill.colormap = canvas.getcolormap(parameter_colormap)
-        _fix_levels_on_new_colormap(isofill)
+        method.colormap = canvas.getcolormap(parameter_colormap)
+        _fix_levels_on_new_colormap(method)
 
-def _fix_levels_on_new_colormap(isofill):
-    colors = vcs.getcolors(isofill.levels, colors=range(6, 240))
-    isofill.fillareacolors = colors
+def _fix_levels_on_new_colormap(method):
+    colors = vcs.getcolors(method.levels, colors=range(6, 240))
+    method.fillareacolors = colors
+
+def set_levels_of_graphics_method(method, levels):
+    if levels != []:
+        method.levels = levels
+
+
+def set_units(ref_or_test, units):
+    if units != '':
+        ref_or_test.units = units
 
 parser = acme_diags.acme_parser.ACMEParser()
 parameter = parser.get_parameter()
@@ -117,7 +126,9 @@ f_mod = cdms2.open(test_data_path + test_data_set)
 
 obs_pr = f_obs(var, longitude=(-180, 540))
 mod_pr = (f_mod('PRECC', longitude=(-180, 540)) + f_mod('PRECL', longitude=(-180, 540)))*3600.0*24.0*1000.0
-mod_pr.units = 'mm/day'
+
+set_units(obs_pr, parameter.reference_units)
+set_units(mod_pr, parameter.test_units)
 
 # For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
 axes1 = mod_pr.getAxisList()
@@ -125,15 +136,17 @@ axes2 = obs_pr.getAxisList()
 if len(axes1[1]) <= len(axes2[1]): # use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
     model_grid = mod_pr.getGrid()
     mod_pr_reg = mod_pr
-    obs_pr_reg = obs_pr.regrid(model_grid, regridTool='esmf', regridMethod='linear')
+    obs_pr_reg = obs_pr.regrid(model_grid, regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
 else:
     obs_grid = obs_pr.getGrid()
     obs_pr_reg = obs_pr
-    mod_pr_reg = mod_pr.regrid(obs_grid, regridTool='esmf', regridMethod='linear')
+    mod_pr_reg = mod_pr.regrid(obs_grid, regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
 dif_pr = mod_pr_reg - obs_pr_reg
 
 # Plotting
-vcs_canvas = vcs.init(bg=True, geometry=(1212,1628))
+vcs_canvas = vcs.init(bg=True, geometry=(parameter.canvas_size_w, parameter.canvas_size_h))
+if not parameter.logo:
+    vcs_canvas.drawlogooff()
 
 vcs_canvas.scriptrun('plot_set_5.json')
 vcs_canvas.scriptrun('plot_set_5_new.json')
@@ -158,13 +171,15 @@ reference_isofill = vcs.getisofill('reference_isofill')
 test_isofill = vcs.getisofill('test_isofill')
 diff_isofill = vcs.getisofill('diff_isofill')
 
-reference_isofill.levels = parameter.levels
-test_isofill.levels = parameter.levels
-diff_isofill.levels = parameter.levels
+set_levels_of_graphics_method(reference_isofill, parameter.reference_levels)
+set_levels_of_graphics_method(test_isofill, parameter.test_levels)
+set_levels_of_graphics_method(diff_isofill, parameter.diff_levels)
 
 set_colormap_of_graphics_method(vcs_canvas, parameter.reference_colormap, reference_isofill)
 set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill)
 set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill)
+
+
 
 vcs_canvas.plot(mod_pr, template_test, reference_isofill)
 vcs_canvas.plot(obs_pr, template_ref, test_isofill)
