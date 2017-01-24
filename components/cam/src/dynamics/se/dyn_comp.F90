@@ -292,7 +292,7 @@ CONTAINS
           if(runtype == 0) then
              do ie=nets,nete
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
-                elem(ie)%derived%fq(:,:,:,:,:)=0.0_r8
+                elem(ie)%derived%fq(:,:,:,:)=0.0_r8
              end do
           end if
        else if(ideal_phys) then

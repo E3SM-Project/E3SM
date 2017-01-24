@@ -16,11 +16,13 @@ module prim_driver_mod
   use kinds,              only: real_kind, iulog
   use parallel_mod,       only: abortmp
   use perf_mod,           only: t_startf, t_stopf
-!  use prim_advance_mod,   only: compute_and_apply_rhs
   use prim_advection_mod, only: prim_advec_tracers_remap
   use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
   use time_mod,           only: timeLevel_t, timelevel_update, timelevel_qdp
+
+#ifndef CAM
   use test_mod,           only: compute_test_forcing
+#endif
 
   implicit none
   contains
