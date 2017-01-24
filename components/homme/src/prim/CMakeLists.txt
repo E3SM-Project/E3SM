@@ -17,8 +17,12 @@ SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                        ${UTILS_TIMING_DIR} )
 
+FILE(GLOB SB81_SRC_F90  ${SRC_SHARE_DIR}/sb81/*.F90)
+
 # Make SRCS global so the tests can access it
-SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
+SET(PRIM_SRCS 
+  ${SB81_SRC_F90}
+  ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
