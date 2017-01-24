@@ -249,12 +249,14 @@ module li_subglacial_hydro
       integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltatSGH
-      real (kind=RKIND), pointer :: deltat
+      real (kind=RKIND), pointer :: masterDeltat
       real (kind=RKIND), pointer :: Cd
       real (kind=RKIND), pointer :: tillMax
       integer, pointer :: nCellsSolve
       integer, pointer :: nCells
       integer :: iCell, iEdge, iEdgeOnCell
+      real (kind=RKIND) :: timeLeft ! subcycling time remaining until master dt is reached
+      integer :: numSubCycles ! number of subcycles
       integer :: err_tmp
 
 
@@ -272,6 +274,24 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_active', config_SGH_chnl_active)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_drainage', Cd)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
+
+
+
+      ! initialize while loop
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)  ! can get from any block
+      call mpas_pool_get_array(meshPool, 'deltat', masterDeltat)
+      timeLeft = masterDeltat  ! in seconds
+      numSubCycles = 0
+      ! =============
+      ! =============
+      ! =============
+      ! subcycle hydro model until master dt is reached
+      ! =============
+      ! =============
+      ! =============
+      do while (timeLeft > 0.0_RKIND)
+      numSubCycles = numSubCycles + 1
+
 
       ! =============
       ! Calculate SHMIP time-varying forcing, if requested
@@ -373,7 +393,7 @@ module li_subglacial_hydro
       ! =============
       ! Calculate time step if being adaptive, otherwise check for CFL
       ! =============
-      call check_timestep(domain, err_tmp)
+      call check_timestep(domain, timeLeft, err_tmp)
       err = ior(err, err_tmp)
 
 
@@ -483,6 +503,17 @@ module li_subglacial_hydro
       ! =============
       ! Update model time
       ! =============
+
+
+      ! =============
+      ! =============
+      ! =============
+      end do  ! while timeLeft>0
+      ! =============
+      ! =============
+      ! =============
+
+      write(stdErrUnit,*) "Hydro model subcycled n times:", numSubCycles
 
 
       ! === error check
@@ -792,7 +823,7 @@ module li_subglacial_hydro
 !>  This routine calculates the three timesteps associated with the
 !>  SGH solver and compares them to the current model timestep.
 !-----------------------------------------------------------------------
-   subroutine check_timestep(domain, err)
+   subroutine check_timestep(domain, timeLeft, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -802,6 +833,7 @@ module li_subglacial_hydro
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain    !< Input/Output: domain object
+      real (kind=RKIND), intent(inout) :: timeLeft  !< Input/Output: time remaining for subcycling (seconds)
 
       !-----------------------------------------------------------------
       ! output variables
@@ -934,15 +966,34 @@ module li_subglacial_hydro
          endif
          proposedDt = proposedDt * CFLfraction
 
-         ! Don't let SGH time step exceed master time step - technically need to check the interval til completion, because we might already be partway through the deltat
-         proposedDt = min(proposedDt, maxDt)
 
-         write(stdOutUnit,*) '  Setting SGH time step (seconds) to:', proposedDt
+         ! Write out dt info on the final subcycle
+         if (proposedDt >= timeLeft) then
+            if (config_SGH_chnl_active) then
+               write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel:"
+               write(stdErrUnit,*) deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel
+            else
+               write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:"
+               write(stdErrUnit,*) deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
+            endif
+         endif
+
+
+         ! Don't exceed the maximum allowed hydro time step
+         proposedDt = min(proposedDt, maxDt)
+         ! Don't let SGH time step exceed time left in the master model dt
+         proposedDt = min(proposedDt, timeLeft)
+
+         !write(stdOutUnit,*) '  Setting SGH time step (seconds) to:', proposedDt
+
+         timeLeft = timeLeft - proposedDt
+         !write (stdErrUnit,*) "dt, new TIMELEFT", proposedDt, timeLeft
 
       else ! not SGH adaptive
          ! master dt could change if using master adaptive time stepper, so update it in case
          proposedDt = deltat
       endif
+
 
       ! Assign new time step to all blocks
       block => domain % blocklist
@@ -952,22 +1003,9 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
          deltatSGH = proposedDt
 
-         ! For now, hijack master dt. TODO subcycle hydro under master dt
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_array(meshPool, 'deltat', deltat)
-         deltat = proposedDt
-
-
          block => block % next
       end do
 
-
-      ! optional: always write out for debugging
-      if (config_SGH_chnl_active) then
-         write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, deltatSGHdiffuChannel
-      else
-         write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
-      endif
 
       ! compare timesteps
       if (deltatSGH > deltatSGHadvec) then
