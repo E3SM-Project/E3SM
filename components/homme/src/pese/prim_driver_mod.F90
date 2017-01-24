@@ -20,7 +20,10 @@ module prim_driver_mod
   use prim_advection_mod, only: prim_advect_tracers
   use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
   use time_mod,           only: timeLevel_t, timelevel_update, timelevel_qdp
+
+#ifndef CAM
   use test_mod,           only: compute_test_forcing
+#endif
 
   implicit none
   contains
