@@ -158,6 +158,10 @@ reference_isofill = vcs.getisofill('reference_isofill')
 test_isofill = vcs.getisofill('test_isofill')
 diff_isofill = vcs.getisofill('diff_isofill')
 
+reference_isofill.levels = parameter.levels
+test_isofill.levels = parameter.levels
+diff_isofill.levels = parameter.levels
+
 set_colormap_of_graphics_method(vcs_canvas, parameter.reference_colormap, reference_isofill)
 set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill)
 set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill)

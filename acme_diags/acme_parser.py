@@ -108,3 +108,21 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             dest='diff_title',
             help='Title for the bottom graph',
             required=False)
+
+        self.add_argument(
+            '--reference_colormap',
+            dest='reference_colormap',
+            help='Colormap for the middle graph.',
+            required=False)
+
+        self.add_argument(
+            '--test_colormap',
+            dest='test_colormap',
+            help='Colormap for the top graph',
+            required=False)
+
+        self.add_argument(
+            '--diff_colormap',
+            dest='diff_colormap',
+            help='Colormap for the bottom graph',
+            required=False)
