@@ -117,10 +117,12 @@ if mod_pr.ndim == 4: # var(time,lev,lon,lat) convert from hybrid level to pressu
 
     obs_plv = obs_pr.getLevel()[:]
     
-    # set the level to compare
-    plev = 200 #mb
+    # set the level to compare, this should be a parameter
+    plev = 850 #mb
+
     plev_ind = plv17.tolist().index(plev)
     mod_pr = mod_pr_p[:,plev_ind,:,:]
+
     plev_ind = obs_plv.tolist().index(plev)
     obs_pr = obs_pr[:,plev_ind,:,:]
 
@@ -173,7 +175,10 @@ isofill.datawc_y2 = 90
 if var == 'PRECT':
     isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 elif var == 'T':
-    isofill.levels = range(205,230)
+    if plev == 850:
+        isofill.levels =[230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300]
+    elif plev == 200:
+        isofill.levels = [190, 193, 196, 199, 202, 205, 208, 211, 214, 217, 220, 223, 226, 229, 232]
 # NOTE: because of the obs and model data files used,
 # there is no 360 degree value, so we use 358 as 0.
 # Same for 0 where we use 2 instead.
@@ -194,7 +199,11 @@ x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
 # Create main title for the 3 plots
-plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
+
+if var == 'PRECT':
+    plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
+elif var == 'T':
+    plot_text(x, ' '.join([var,str(plev),'mb', season]), 0.42, 0.98, 18, "left")
 
 # difference graph
 isofill = x.createisofill()
@@ -206,7 +215,10 @@ isofill.datawc_y2 = 90
 if var == 'PRECT':
     isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
 elif var == 'T':
-    isofill.levels = range(-12,12)
+    if plev == 850:
+        isofill.levels =[-8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8]
+    elif plev == 200:
+        isofill.levels =[-10, -8, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 8, 10] 
 #isofill.levels=vcs.mkscale(dif_pr.min(), dif_pr.max())
 isofill.ext_1 = True
 isofill.ext_2 = True
