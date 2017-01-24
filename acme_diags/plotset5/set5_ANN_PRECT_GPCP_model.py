@@ -90,18 +90,46 @@ season = parameter.season
 
 # Below should be read from metadata
 mod_name = '1850_alpha6_01 (yrs0070-0099)'
-obs_name = 'GPCP (yrs1979-2009)'
 
 f_obs = cdms2.open(reference_data_path + reference_data_set)
 f_mod = cdms2.open(test_data_path + test_data_set)
 
-obs_pr = f_obs('PRECT', longitude=(-180, 540))
-mod_pr = (f_mod('PRECC', longitude=(-180, 540)) + f_mod('PRECL', longitude=(-180, 540)))*3600.0*24.0*1000.0
-mod_pr.units = 'mm/day'
+if var == 'PRECT':
+    obs_pr = f_obs(var, longitude=(-180, 540))
+    mod_pr = (f_mod('PRECC', longitude=(-180, 540)) + f_mod('PRECL', longitude=(-180, 540)))*3600.0*24.0*1000.0
+    mod_pr.units = 'mm/day'
+    obs_name = 'GPCP (yrs1979-2009)'
+elif var == 'T':
+    obs_pr = f_obs(var)#, longitude=(-180, 180))
+    mod_pr = f_mod(var)#, longitude=(-180, 180))
+    obs_name = 'ECMWF (yrs unknown)'
 
-# For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
+if mod_pr.ndim == 4: # var(time,lev,lon,lat) convert from hybrid level to pressure
+    hyam = f_mod('hyam')
+    hybm = f_mod('hybm')
+    ps = f_mod('PS')/100.    #convert unit from 'Pa' to mb
+    p0 = 1000. #mb
+    plv17 = numpy.array([10.,30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
+                     600.,700.,775.,850.,925.,1000.])
+    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
+    levels_orig.units = 'mb'
+    mod_pr_p=cdutil.vertical.logLinearInterpolation( mod_pr, levels_orig, plv17)
+
+    obs_plv = obs_pr.getLevel()[:]
+    
+    # set the level to compare, this should be a parameter
+    plev = 850 #mb
+
+    plev_ind = plv17.tolist().index(plev)
+    mod_pr = mod_pr_p[:,plev_ind,:,:]
+
+    plev_ind = obs_plv.tolist().index(plev)
+    obs_pr = obs_pr[:,plev_ind,:,:]
+
 axes1 = mod_pr.getAxisList()
 axes2 = obs_pr.getAxisList()
+
+# For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
 if len(axes1[1]) <= len(axes2[1]): # use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
     model_grid = mod_pr.getGrid()
     mod_pr_reg = mod_pr
@@ -144,7 +172,13 @@ isofill.datawc_x1 = 0
 isofill.datawc_x2 = 360
 isofill.datawc_y1 = -90
 isofill.datawc_y2 = 90
-isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+if var == 'PRECT':
+    isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+elif var == 'T':
+    if plev == 850:
+        isofill.levels =[230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300]
+    elif plev == 200:
+        isofill.levels = [190, 193, 196, 199, 202, 205, 208, 211, 214, 217, 220, 223, 226, 229, 232]
 # NOTE: because of the obs and model data files used,
 # there is no 360 degree value, so we use 358 as 0.
 # Same for 0 where we use 2 instead.
@@ -165,7 +199,11 @@ x.plot(mod_pr, template_0, isofill)
 x.plot(obs_pr, template_1, isofill)
 
 # Create main title for the 3 plots
-plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
+
+if var == 'PRECT':
+    plot_text(x, ' '.join([var, season]), 0.42, 0.98, 18, "left")
+elif var == 'T':
+    plot_text(x, ' '.join([var,str(plev),'mb', season]), 0.42, 0.98, 18, "left")
 
 # difference graph
 isofill = x.createisofill()
@@ -174,7 +212,13 @@ isofill.datawc_x2 = 360
 isofill.datawc_y1 = -90
 isofill.datawc_y2 = 90
 
-isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+if var == 'PRECT':
+    isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+elif var == 'T':
+    if plev == 850:
+        isofill.levels =[-8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8]
+    elif plev == 200:
+        isofill.levels =[-10, -8, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 8, 10] 
 #isofill.levels=vcs.mkscale(dif_pr.min(), dif_pr.max())
 isofill.ext_1 = True
 isofill.ext_2 = True
