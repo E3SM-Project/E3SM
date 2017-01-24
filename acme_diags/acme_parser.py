@@ -66,3 +66,63 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             dest='output_file',
             help='Name of the output file',
             required=False)
+
+        self.add_argument(
+            '--reference_name',
+            dest='reference_name',
+            help='Name of the reference variable',
+            required=False)
+
+        self.add_argument(
+            '--test_name',
+            dest='test_name',
+            help='Name of the test variable',
+            required=False)
+
+        self.add_argument(
+            '--diff_name',
+            dest='diff_name',
+            help='Name of the difference variable',
+            required=False)
+
+        self.add_argument(
+            '--main_title',
+            dest='main_title',
+            help='The big title that appears on the top of the graph',
+            required=False)
+
+        self.add_argument(
+            '--reference_title',
+            dest='reference_title',
+            help='Title for the middle graph.',
+            required=False)
+
+        self.add_argument(
+            '--test_title',
+            dest='test_title',
+            help='Title for the top graph',
+            required=False)
+
+        self.add_argument(
+            '--diff_title',
+            dest='diff_title',
+            help='Title for the bottom graph',
+            required=False)
+
+        self.add_argument(
+            '--reference_colormap',
+            dest='reference_colormap',
+            help='Colormap for the middle graph.',
+            required=False)
+
+        self.add_argument(
+            '--test_colormap',
+            dest='test_colormap',
+            help='Colormap for the top graph',
+            required=False)
+
+        self.add_argument(
+            '--diff_colormap',
+            dest='diff_colormap',
+            help='Colormap for the bottom graph',
+            required=False)
