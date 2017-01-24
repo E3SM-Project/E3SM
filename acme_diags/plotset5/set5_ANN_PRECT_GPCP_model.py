@@ -137,8 +137,9 @@ mod_pr.long_name = 'model'
 obs_pr.long_name = 'observation'
 dif_pr.long_name = 'model-observation'
 
-mod_pr.id = mod_name
-obs_pr.id = obs_name
+mod_pr.id = parameter.test_name
+obs_pr.id = parameter.reference_name
+dif_pr.id = parameter.diff_name
 
 # model and observation graph
 plot_min_max_mean(vcs_canvas, mod_pr, 'test')
@@ -154,7 +155,7 @@ plot_rmse_and_corr(vcs_canvas, mod_pr_reg, obs_pr_reg)
 # Plotting the main title
 main_title = vcs_canvas.createtextcombined(Tt_source = 'main_title',
                                            To_source = 'main_title')
-main_title.string = 'A very long title that happens to be long'
+main_title.string = parameter.main_title
 vcs_canvas.plot(main_title)
 
 vcs_canvas.png(case_id + '/' + parameter.output_file)

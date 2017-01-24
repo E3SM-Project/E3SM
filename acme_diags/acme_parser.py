@@ -66,3 +66,27 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             dest='output_file',
             help='Name of the output file',
             required=False)
+
+        self.add_argument(
+            '--reference_name',
+            dest='reference_name',
+            help='Name of the reference variable',
+            required=False)
+
+        self.add_argument(
+            '--test_name',
+            dest='test_name',
+            help='Name of the test variable',
+            required=False)
+
+        self.add_argument(
+            '--diff_name',
+            dest='diff_name',
+            help='Name of the difference variable',
+            required=False)
+
+        self.add_argument(
+            '--main_title',
+            dest='main_title',
+            help='The big title that appears on the top of the graph',
+            required=False)
