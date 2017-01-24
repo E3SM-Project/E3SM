@@ -812,7 +812,7 @@ contains
   real (kind=real_kind) ::  temp(np,np,nlev)
   real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
   real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
-  real (kind=real_kind) ::  v1,v2,w,dpdn
+  real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
   integer :: i,j,k,kptr,ie
 
   call t_startf('compute_and_apply_rhs')
@@ -1029,7 +1029,8 @@ contains
         do k=1,nlev
            do j=1,np
               do i=1,np                
-                  dpdn=0.5*(eta_dot_dpdn(i,j,k+1)-eta_dot_dpdn(i,j,k))
+                  d_eta_dot_dpdn_dn=0.5*(eta_dot_dpdn(i,j,k+1)-                &
+                  eta_dot_dpdn(i,j,k))
                !  Form KEhoriz1
                   elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
                   -v_gradKE(i,j,k)*dp3d(i,j,k)-KE(i,j,k)*divdp(i,j,k)          
@@ -1042,11 +1043,11 @@ contains
                   elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +             &
                   elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k)*dp3d(i,j,k)-   &      
                   0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
-                       (elem(ie)%state%v(i,j,2,k,n0))**2)*dpdn
+                       (elem(ie)%state%v(i,j,2,k,n0))**2)*d_eta_dot_dpdn_dn
                !  Form KEvert2
                   elem(ie)%accum%KEvert2(i,j)=elem(ie)%accum%KEvert2(i,j)      &
                   -s_vadv(i,j,k,1)*(elem(ie)%state%w(i,j,k,n0))*dp3d(i,j,k)    &   
-                  -dpdn*(elem(ie)%state%w(i,j,k,n0))**2
+                  -d_eta_dot_dpdn_dn*(elem(ie)%state%w(i,j,k,n0))**2
                !  Form IEvert1
                   elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
                   +exner(i,j,k) * s_vadv(i,j,k,2)                              &
