@@ -127,7 +127,7 @@ contains
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
     real (kind=real_kind) :: KEvert,IEvert,PEvert,T1,T2,S1,S2,P1,P2
-    real (kind=real_kind) :: KEhorz,PEhorz,IEhorz
+    real (kind=real_kind) :: KEhorz,KEhorz2,PEhorz,IEhorz
     real (kind=real_kind) :: ddt_tot,ddt_diss
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
@@ -470,10 +470,16 @@ contains
     !   Vertical transport terms
 #ifdef ENERGY_DIAGNOSTICS
     do ie=nets,nete
-      tmp(:,:,ie) = elem(ie)%accum%KEhoriz1 + elem(ie)%accum%KEhoriz2
+      tmp(:,:,ie) = elem(ie)%accum%KEhoriz1
     enddo
     KEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     KEhorz = KEhorz*scale
+
+    do ie=nets,nete
+      tmp(:,:,ie) = elem(ie)%accum%KEhoriz2
+    enddo
+    KEhorz2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEhorz2 = KEhorz2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEvert1 + elem(ie)%accum%KEvert2
@@ -540,6 +546,7 @@ contains
 
 #else
     T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; KEvert=0; IEvert=0; KEhorz=0; IEhorz=0
+    KEhorz2=0;
 #endif
 
 
@@ -556,24 +563,25 @@ contains
           write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
-          write(iulog,'(a,2e22.14)')'Tot KE advection horiz, vert: ',-KEhorz,-KEvert
-          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',0d0,-IEvert
-          write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert: ',-PEhorz,-PEvert
+          write(iulog,'(a,2e22.14)')'Horiz KE horiz adv, vert: ',KEhorz,KEvert
+          write(iulog,'(a,2e22.14)')'Vert  KE horiz adv:       ',KEhorz2
+          write(iulog,'(a,2e22.14)')'Tot IE advection horiz, vert: ',0d0,IEvert
+          write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert: ',PEhorz,PEvert
           
-          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE:          ', -T1-T2
-          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE:          ', -S1-S2
+          write(iulog,'(a,2e22.14)')'Transfer:   KE->IE (T1+S1):  ', T1+S1
+          write(iulog,'(a,2e22.14)')'Transfer:   IE->KE (T2+S2):  ', T2+S2
           write(iulog,'(a,2e22.14)')'Transfer:   KE->PE, PE->KE:  ', P1,P2
           
           ddt_tot =  (KEner(2)-KEner(1))/(dt)
-          ddt_diss = ddt_tot -(T1+T2+P1) 
+          ddt_diss = ddt_tot -(KEhorz+KEhorz2+KEvert+T1+T2+P1) 
           write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
           
           ddt_tot =  (IEner(2)-IEner(1))/(dt)
-          ddt_diss = ddt_tot - (S1+S2)
+          ddt_diss = ddt_tot - (S1+S2+IEVert)
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           
           ddt_tot = (PEner(2)-PEner(1))/(dt)
-          ddt_diss = ddt_tot - P2
+          ddt_diss = ddt_tot - (PEhorz+PEvert+P1)
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
 #else
           write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/(dt)
@@ -724,15 +732,11 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
     
     !   PE   dp/dn PHIs
-       if (theta_hydrostatic_mode) then
-          elem(ie)%accum%PEner(:,:,n)=elem(ie)%state%phis(:,:)*elem(ie)%state%ps_v(:,:,t1)
-       else
-          suml=0
-          do k=1,nlev
-             suml = suml + elem(ie)%state%phi(:,:,k,t1)*dpt1(:,:,k)
-          enddo
-          elem(ie)%accum%PEner(:,:,n)=suml(:,:)
-       endif
+       suml=0
+       do k=1,nlev
+          suml = suml + elem(ie)%state%phi(:,:,k,t1)*dpt1(:,:,k)
+       enddo
+       elem(ie)%accum%PEner(:,:,n)=suml(:,:)
        
 
     !  IE = c_p^* dp/deta T - dp/ds phi  + psurf phisurf 
@@ -743,12 +747,14 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                Cp * dpt1(:,:,k) * elem(ie)%state%theta(:,:,k,t1)*exner(:,:,k) 
           suml2(:,:) = suml2(:,:)  -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)
        enddo
+       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
+            elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
+
        if (theta_hydrostatic_mode) then
-             elem(ie)%accum%IEner(:,:,n)=suml(:,:)  
-          else
-             elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
-                  elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)
-          endif
+          ! hydrostatic case: combine IE and PE
+          elem(ie)%accum%IEner(:,:,n)=elem(ie)%accum%IEner(:,:,n) + elem(ie)%accum%PEner(:,:,n)
+          elem(ie)%accum%PEner(:,:,n) = 0
+       endif
        enddo
     
 end subroutine prim_energy_halftimes

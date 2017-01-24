@@ -76,8 +76,8 @@ module element_state
 #ifdef ENERGY_DIAGNOSTICS
 
     ! Energy equation:
-    ! KE_t  = KEhoriz1 + KEvert1 + KEvert2 + P1 +  T1 + T2 + D1 + Err
-    ! IE_t  = S1 + S2 + IEvert1 + d(p dphi/dt)/deta + ptop dphitop/dt + D2
+    ! KE_t  = KEhoriz1 + KEhoriz2 +  KEvert1 + KEvert2 + P1 + T1 + T2 + D1 + Err
+    ! IE_t  = S1 + S2 + IEvert1 + d(p dphi/dt)/deta + ptop dphitop/dt + D2 
     ! PE_t  = PEhoriz1 + PEvert1 + P1
     !
     ! d(p dphi/dt)/deta + ptop dphitop/dt should vertically integrate to zero
@@ -95,7 +95,8 @@ module element_state
     ! KEhoriz1 = -0.5*(dpi/deta)*u*grad(u^2)-0.5*u^2 * div( u dpi/deta)
     ! KEhoriz2 = dpi/deta w grad(w)^2 u -0.5 w^2 div(dpi/deta u)
     ! PEhoriz1 = -phi div(u dpi/deta) - grad(phi)^T u dpi/deta
-    ! KEvert1  = etadot u du/deta dpi/deta - 0.5*u^2 d(etadot dpi/deta )/deta
+    !
+    ! KEvert1  = - etadot u du/deta dpi/deta - 0.5*u^2 d(etadot dpi/deta )/deta
     ! KEvert2  = -etadot w dw/deta dpi/deta - 0.5 w^2 d(etadot dpi/deta)/deta
     ! IEvert1  = -p^kappa d(theta etadot)/deta - theta etadot d p^kappa / deta
     ! PEvert1  = -phi d(edtadot dpi/deta)deta -etadot dpi/deta dphi/deta
@@ -107,7 +108,6 @@ module element_state
     ! S2 = -T2 (the terms are exactly opposite without integration by parts)
     ! P1 = -gw dp/deta 
     ! P2 =  gw dp/deta
-    !
 
     real (kind=real_kind) :: KEvert1(np,np)
     real (kind=real_kind) :: KEvert2(np,np)

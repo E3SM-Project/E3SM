@@ -13,7 +13,7 @@ module prim_advance_mod
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
-  use element_ops,    only: get_pnh_and_exner
+  use element_ops,    only: get_pnh_and_exner, set_hydrostatic_phi
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -480,7 +480,7 @@ contains
   use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_theta, only : biharmonic_wk_theta
-  use physical_constants, only: Cp
+  use physical_constants, only: Cp,p0,kappa,g
   implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
@@ -509,8 +509,14 @@ contains
 
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
-  real (kind=real_kind) :: v1,v2,dt,heating
-  real (kind=real_kind) :: temp(np,np,nlev)
+  real (kind=real_kind) :: v1,v2,dt,heating,T0,T1
+  real (kind=real_kind) :: ps_ref(np,np)
+  real (kind=real_kind) :: p_i(np,np,nlevp)
+  real (kind=real_kind) :: exner(np,np,nlev)
+
+  real (kind=real_kind) :: theta_ref(np,np,nlev,nets:nete)
+  real (kind=real_kind) :: phi_ref(np,np,nlev,nets:nete)
+  real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
 
 
 
@@ -526,6 +532,25 @@ contains
      call abortmp( 'ERROR: hypervis_order == 1 not coded')
   endif
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute reference states
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
+! Tref = T0+T1*exner
+! Thetaref = T0/exner + T1
+  T1 = .0065*288d0*Cp/g ! = 191
+  T0 = 288d0-T1         ! = 97
+  do ie=nets,nete
+     ps_ref(:,:) = sum(elem(ie)%state%dp3d(:,:,:,nt),3)
+     do k=1,nlev
+        dp_ref(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
+     enddo
+     p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
+  enddo
+
+
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
@@ -537,16 +562,34 @@ contains
 !                IE dissipation from continuity equation
 !                (1 deg: to about 0.1 W/m^2)
 !
-  do ie=nets,nete
-     do k=1,nlev
-        elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)-&
-             elem(ie)%state%phis(:,:)
-     enddo
-  enddo
-  
+
 
   if (hypervis_order == 2) then
      do ic=1,hypervis_subcycle
+        do ie=nets,nete
+
+           ! subtract of hydrostatic background state 
+           do k=1,nlev
+              p_i(:,:,k+1) = p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)
+           enddo
+           call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,&
+                elem(ie)%state%theta(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),&
+                phi_ref(:,:,:,ie))
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,exner)
+#endif
+           do k=1,nlev
+              exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
+              theta_ref(:,:,:,ie) = (T0/exner(:,:,:) + T1)
+              elem(ie)%state%theta(:,:,k,nt)=elem(ie)%state%theta(:,:,k,nt)-&
+                   theta_ref(:,:,k,ie)
+              elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)-&
+                   phi_ref(:,:,k,ie)
+              elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)-&
+                   dp_ref(:,:,k,ie)
+           enddo
+        enddo
+
         call biharmonic_wk_theta(elem,stens,vtens,deriv,edge6,hybrid,nt,nets,nete)
 
         do ie=nets,nete
@@ -614,8 +657,6 @@ contains
            call edgeVunpack(edgebuf, stens(:,:,:,:,ie), 4*nlev, kptr, ie)
 
 
-
-
            ! apply inverse mass matrix, accumulate tendencies
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -627,7 +668,16 @@ contains
               stens(:,:,k,2,ie)=dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)  ! theta
               stens(:,:,k,3,ie)=dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)  ! w
               stens(:,:,k,4,ie)=dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)  ! phi
+
+              !add ref state back
+              elem(ie)%state%theta(:,:,k,nt)=elem(ie)%state%theta(:,:,k,nt)+&
+                   theta_ref(:,:,k,ie)
+              elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)+&
+                   phi_ref(:,:,k,ie)
+              elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)+&
+                   dp_ref(:,:,k,ie)
            enddo
+
 
 
 #if (defined COLUMN_OPENMP)
@@ -670,21 +720,11 @@ contains
               enddo
            enddo
         enddo
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
+
      enddo
   endif
 
 
-  do ie=nets,nete
-     do k=1,nlev
-        elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)+&
-             elem(ie)%state%phis(:,:)
-     enddo
-  enddo
 
 
   call t_stopf('advance_hypervis')
@@ -749,10 +789,18 @@ contains
   real (kind=real_kind) :: dpnh(np,np,nlev)    ! 
   real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! nh pressu re on interfaces
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
-  real (kind=real_kind) :: exner_i(np,np,nlevp)  ! exner on interfaces
   real (kind=real_kind) :: dpnh_dp(np,np,nlev)   ! dpnh / dp3d  
-  real (kind=real_kind) :: grad_exner(np,np,2,nlev)     
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
+  real (kind=real_kind) :: KE(np,np,nlev)           ! Kinetic energy
+  real (kind=real_kind) :: gradexner(np,np,2,nlev)  ! grad(p^kappa)   
+  real (kind=real_kind) :: gradphi(np,np,2,nlev)     
+  real (kind=real_kind) :: gradKE(np,np,2,nlev)  ! grad(0.5 u^T u )
+  
+  real (kind=real_kind) :: v_gradw(np,np,nlev)     
+  real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
+  real (kind=real_kind) :: v_gradphi(np,np,nlev)
+  real (kind=real_kind) :: v_gradKE(np,np,nlev)     
+  real (kind=real_kind) :: vdp(np,np,2,nlev)
 
   real (kind=real_kind) :: vtens1(np,np,nlev)
   real (kind=real_kind) :: vtens2(np,np,nlev)
@@ -764,15 +812,7 @@ contains
   real (kind=real_kind) ::  temp(np,np,nlev)
   real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
   real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
-  real (kind=real_kind), dimension(np,np,2)    :: vtemp2    ! secondary generic gradient storage
-  real (kind=real_kind), dimension(np,np,2)    :: vtemp3    ! tertiary generic gradient storage
-  real (kind=real_kind), dimension(np,np,2,nlev):: vdp       !                            
-  real (kind=real_kind), dimension(np,np)      :: KE
-  real (kind=real_kind), dimension(np,np,2)      :: thetau  !  theta*u in the diagnostics
-  real (kind=real_kind), dimension(np,np)        :: divtemp ! temp divergence in the  in the diagnostics
-
-
-  real (kind=real_kind) ::  v1,v2,glnps1,glnps2,gpterm
+  real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
   integer :: i,j,k,kptr,ie
 
   call t_startf('compute_and_apply_rhs')
@@ -783,14 +823,15 @@ contains
      if (theta_hydrostatic_mode) then
         phi => elem(ie)%derived%phi(:,:,:)
 
-        call get_pnh_and_exner(hvcoord,theta,dp3d,&
-             phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0),pnh,dpnh,exner,exner_i)
+        call get_pnh_and_exner(hvcoord,theta,dp3d,phi,elem(ie)%state%phis,&
+             elem(ie)%state%Qdp(:,:,:,1,qn0),pnh,dpnh,exner) ! ,exner_i)
         
         ! Compute Hydrostatic equation
         do k=1,nlev
-           temp(:,:,k) = Cp*theta(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))
-           !temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
+           !temp(:,:,k) = Cp*theta(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))
+           temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
         enddo
+        !call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,dp)
         call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
         dpnh_dp(:,:,:) = 1
      else
@@ -806,10 +847,9 @@ contains
 
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,vtemp)
+!$omp parallel do private(k)
 #endif
      do k=1,nlev
-        grad_exner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)        
         vdp(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*dp3d(:,:,k)
         vdp(:,:,2,k) = elem(ie)%state%v(:,:,2,k,n0)*dp3d(:,:,k)
 
@@ -904,7 +944,7 @@ contains
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,KE,vtemp,vtemp2,gpterm,glnps1,glnps2)
+!$omp parallel do private(k,i,j,v1,v2,KE,vtemp)
 #endif
      vertloop: do k=1,nlev
 
@@ -912,62 +952,52 @@ contains
         ! w,theta,phi tendencies:
         ! ================================================
         vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
-        stens(:,:,k,1) = -s_vadv(:,:,k,1) &
-             -elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
-             -elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) &
-             - g *(1-dpnh_dp(:,:,k) )
+        v_gradw(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
+             +elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) 
+        stens(:,:,k,1) = -s_vadv(:,:,k,1) - v_gradw(:,:,k) - g*(1-dpnh_dp(:,:,k) )
 
         vtemp(:,:,:)   = gradient_sphere(theta(:,:,k),deriv,elem(ie)%Dinv)
-        stens(:,:,k,2) = -s_vadv(:,:,k,2) &
-             -elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
-             -elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2)
+        v_gradtheta(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
+             +elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2)
+        stens(:,:,k,2) = -s_vadv(:,:,k,2) - v_gradtheta(:,:,k)
 
-        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%phi(:,:,k,n0),deriv,elem(ie)%Dinv)
-        stens(:,:,k,3) = -s_vadv(:,:,k,3) &
-             -elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
-             -elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) &
-             + g*elem(ie)%state%w(:,:,k,n0)                              
+        gradphi(:,:,:,k) = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
+        v_gradphi(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*gradphi(:,:,1,k) &
+             +elem(ie)%state%v(:,:,2,k,n0)*gradphi(:,:,2,k) 
+        stens(:,:,k,3) = -s_vadv(:,:,k,3) - v_gradphi(:,:,k) + g*elem(ie)%state%w(:,:,k,n0)                              
 
 
-        ! vtemp = grad ( E + PHI )
         do j=1,np
            do i=1,np
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
-              KE(i,j)=0.5D0*( v1*v1 + v2*v2 )
+              KE(i,j,k)=0.5D0*( v1*v1 + v2*v2 )
            end do
         end do
-        vtemp = gradient_sphere(KE(:,:),deriv,elem(ie)%Dinv)
-        vtemp2 = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
-        vtemp2(:,:,1) = vtemp2(:,:,1)*dpnh_dp(:,:,k)
-        vtemp2(:,:,2) = vtemp2(:,:,2)*dpnh_dp(:,:,k)
+        gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
+        gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)        
 
         do j=1,np
            do i=1,np
-              glnps1 = cp*theta(i,j,k)*grad_exner(i,j,1,k)
-              glnps2 = cp*theta(i,j,k)*grad_exner(i,j,2,k)
-              !gpterm = T_v(i,j,k)/p(i,j,k)
-              !glnps1 = Rgas*gpterm*grad_p(i,j,1,k)
-              !glnps2 = Rgas*gpterm*grad_p(i,j,2,k)
-
-
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
+              v_gradKE(i,j,k)=v1*gradKE(i,j,1,k)+v2*gradKE(i,j,2,k)
 
-              vtens1(i,j,k) =   - v_vadv(i,j,1,k)                           &
+              vtens1(i,j,k) = -v_vadv(i,j,1,k) &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,1) -vtemp2(i,j,1) -glnps1
+                   - gradKE(i,j,1,k) -gradphi(i,j,1,k)*dpnh_dp(i,j,k)&
+                   -cp*theta(i,j,k)*gradexner(i,j,1,k)
 
-              vtens2(i,j,k) =   - v_vadv(i,j,2,k)                            &
-                   - v1*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - vtemp(i,j,2) -vtemp2(i,j,2) -glnps2
+              vtens2(i,j,k) = -v_vadv(i,j,2,k) &
+                   - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) &
+                   - gradKE(i,j,2,k) -gradphi(i,j,2,k)*dpnh_dp(i,j,k)&
+                   -cp*theta(i,j,k)*gradexner(i,j,2,k)
 
            end do
         end do
 
      end do vertloop
-
-#ifdef ENERGY_DIAGNOSTICSXXX
+#ifdef ENERGY_DIAGNOSTICS
      ! =========================================================
      !
      ! diagnostics
@@ -975,7 +1005,7 @@ contains
      ! uses:  sdot_sum(), eta_dot_dpdn(), grad_ps()
      ! grad_phi(), dp3d(), p(), theta_vadv(), v_vadv(), divdp()
      ! =========================================================
-
+ 
      ! =========================================================
      ! (AAM) - This section has accumulations over vertical levels.
      !   Be careful if implementing OpenMP
@@ -996,65 +1026,62 @@ contains
         elem(ie)%accum%P2=0
         ! See element_state.F90 for an account of what these variables are defined as
 
-        do j=1,np
-           do i=1,np
-              elem(ie)%accum%S2(i,j) = elem(ie)%accum%S2(i,j) - &
-                   sdot_sum(i,j)*elem(ie)%state%phis(i,j)
-           enddo
-        enddo
-
         do k=1,nlev
-           ! vtemp = grad_E(:,:,k)
            do j=1,np
-              do i=1,np
-                 v1     = elem(ie)%state%v(i,j,1,k,n0)
-                 v2     = elem(ie)%state%v(i,j,2,k,n0)
-                 Ephi(i,j)=0.5D0*( v1*v1 + v2*v2 )
-                 thetau(i,j,1)=theta(i,j,k)*v1
-                 thetau(i,j,2)=theta(i,j,k)*v2
-              enddo
-           enddo
-           vtemp = gradient_sphere(Ephi,deriv,elem(ie)%Dinv)
-           vtemp2 = gradient_sphere(elem(ie)%state%w(:,:,:,n0),deriv,elem(ie)%Dinv)
-           vtemp3 = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
-           divtemp=divergence_sphere(thetau(:,:),deriv,elem(ie))
-           do j=1,np
-              do i=1,np
-                  v1 = elem(ie)%state%v(i,j,1,k,n0)
-                  v2 = elem(ie)%state%v(i,j,2,k,n0)
-                  w = elem(ie)%state%w(i,j,k,n0)                 
+              do i=1,np                
+                  d_eta_dot_dpdn_dn=0.5*(eta_dot_dpdn(i,j,k+1)-                &
+                  eta_dot_dpdn(i,j,k))
                !  Form KEhoriz1
-                  elem(ie)%accum%KEhoriz1(i,j) = -(v1*vtemp(i,j,1)+v2*vtemp(i,j,2))*dp3d(i,j,k) &
-                  -Ephi(i,j)*divdp(i,j,k)
+                  elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
+                  -v_gradKE(i,j,k)*dp3d(i,j,k)-KE(i,j,k)*divdp(i,j,k)          
                !  Form KEhoriz2
-                  elem(ie)%accum%KEhoriz2(i,j)=-dp3d(i,j,k)*w *(v1*vtemp2(i,j,1)+               &
-                  v2*vtemp2(i,j,2))-0.5*w**2 * divdp(i,j,k)
+                  elem(ie)%accum%KEhoriz2(i,j)=elem(ie)%accum%KEhoriz2(i,j)-   &
+                  dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    &
+                  -0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k) 
                !  Form KEvert1
-                  elem(ie)%accum%KEvert1(i,j) = 0.5*w*w * divdp(i,j,k)+dp3d(i,j,k)*w*(v1*       &
-                  vtemp2(i,j,1)+v2*vtemp2(i,j,2))
+                  elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j)+     &
+                  elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +             &
+                  elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k)*dp3d(i,j,k)-   &      
+                  0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
+                       (elem(ie)%state%v(i,j,2,k,n0))**2)*d_eta_dot_dpdn_dn
                !  Form KEvert2
-               !  elem(ie)%accum%KEvert2(i,j) = eta_dot_dpdn(i,j,k)/dpnh_dp(i,j,k) * w * (dw/ds) 
-               !  -0.5*w^*2 d(eta_dot_dpdn(i,j,k)/dpnh_dp(i,j,k))/ds
+                  elem(ie)%accum%KEvert2(i,j)=elem(ie)%accum%KEvert2(i,j)      &
+                  -s_vadv(i,j,k,1)*(elem(ie)%state%w(i,j,k,n0))*dp3d(i,j,k)    &   
+                  -d_eta_dot_dpdn_dn*(elem(ie)%state%w(i,j,k,n0))**2
                !  Form IEvert1
-               !  elem(ie)%accum%IEvert1(i,j) = exner(i,j,k)*d(theta etadot)/ds - theta dexner/ds etadot
+                  elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
+                  +exner(i,j,k) * s_vadv(i,j,k,2)                              &
+                  - s_vadv(i,j,k,3)*dpnh(i,j,k)  
                !  Form PEhoriz1
-                  elem(ie)accum%PEhorz1(i,j)=-phi(i,j,k)*divdp(i,j,k)-dp3d(i,j,k)*              &
-                  (vtemp(i,j,1)*v1+vtemp(i,j,2)*v2)
-               !  Form PEvert1, how to form d(theta etadot)/ds ?
-               !   elem(ie)%accum%PEvert1(i,j)=-phi(i,j,k)*d(etadot dpi/deta)/ds - etado dpi/deta dphi/deta
+                  elem(ie)%accum%PEhoriz1(i,j)=(elem(ie)%accum%PEhoriz1(i,j))  &
+                  -phi(i,j,k)*divdp(i,j,k) - dp3d(i,j,k)*v_gradphi(i,j,k)      
+               !  Form PEvert1
+                  elem(ie)%accum%PEvert1(i,j) = (elem(ie)%accum%PEvert1(i,j))   &
+                  -phi(i,j,k)*eta_dot_dpdn(i,j,k)                               &
+                  -dp3d(i,j,k)*s_vadv(i,j,k,3)
                !  Form T1
-                  elem(ie)%accum%T1(i,j)=-theta(i,j,k)*(grad_exner(i,j,1,k)*v1+                 &
-                  grad_exner(i,j,2,k)*v2)
+                  elem(ie)%accum%T1(i,j)=elem(ie)%accum%T1(i,j)                 &
+                  -elem(ie)%state%theta(i,j,k,n0)                               &
+                  *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
+                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))             
                !  Form S1 
-                  elem(ie)%accum%S1(i,j)=-exner(i,j,k)*divtemp
+                  elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
+                  -exner(i,j,k)*(dp3d(i,j,k)*v_gradtheta(i,j,k)+                &
+                  elem(ie)%state%theta(i,j,k,n0)* divdp(i,j,k))
                !  Form T2 
-                  elem(ie)%accum%T2(i,j)=(g*w-v1*vtemp3(i,j,1,k)+v2*vtemp3(i,j,2,k))*dpnh(i,j,k)
+                  elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 
+                  (g*(elem(ie)%state%w(i,j,k,n0))-                              &
+                  v_gradphi(i,j,k))*dpnh(i,j,k)                                 
                !  Form S2
-               !   elem(ie)%accum%S2(i,j)=-elem(ie)%accum%accum%T2(i,j)
+                  elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j)                 &
+                  -(g*(elem(ie)%state%w(i,j,k,n0))-v_gradphi(i,j,k))            &
+                  *dpnh(i,j,k)
                !  Form P1
-                  elem(ie)%accum%P1(i,j)= - g*w*dp3d(i,j,k)
+                  elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j)                 &
+                  -g*(elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)
                !  Form P2
-                  elem(ie)%accum%P2(i,j)=-elem(ie)%accum%P1(i,j) 
+                  elem(ie)%accum%P2(i,j)=elem(ie)%accum%P2(i,j)                 &
+                  + g * (elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)
               enddo
             enddo
         enddo
@@ -1127,11 +1154,6 @@ contains
      end do
   end do
 
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
   call t_stopf('compute_and_apply_rhs')
 
   end subroutine compute_and_apply_rhs
