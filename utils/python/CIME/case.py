@@ -11,6 +11,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils                     import expect, get_cime_root, append_status
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.utils                     import get_build_threaded, get_current_commit
+from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -907,13 +908,13 @@ class Case(object):
 
         # Create relevant directories in $self._caseroot
         if clone:
-            newdirs = ("LockedFiles", "Tools")
+            newdirs = (LOCKED_DIR, "Tools")
         else:
-            newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
+            newdirs = ("SourceMods", LOCKED_DIR, "Buildconf", "Tools")
         for newdir in newdirs:
             os.makedirs(newdir)
-        # Open a new README.case file in $self._caseroot
 
+        # Open a new README.case file in $self._caseroot
         append_status(" ".join(sys.argv), caseroot=self._caseroot, sfile="README.case")
         append_status("Compset longname is %s"%self.get_value("COMPSET"),
                       caseroot=self._caseroot, sfile="README.case")
@@ -1022,8 +1023,8 @@ class Case(object):
         for casesub in ("SourceMods", "Buildconf"):
             shutil.copytree(os.path.join(cloneroot, casesub), os.path.join(newcaseroot, casesub))
 
-        # copy env_case.xml to LockedFiles
-        shutil.copy(os.path.join(newcaseroot,"env_case.xml"), os.path.join(newcaseroot,"LockedFiles"))
+        # lock env_case.xml in new case
+        lock_file("env_case.xml", newcaseroot)
 
         # Update README.case
         fclone   = open(cloneroot + "/README.case", "r")

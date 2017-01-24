@@ -4,6 +4,7 @@ CIME smoke test  This class inherits from SystemTestsCommon
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case_setup import case_setup
+from CIME.check_lockedfiles import *
 import shutil
 
 logger = logging.getLogger(__name__)
@@ -31,12 +32,11 @@ class SEQ(SystemTestsCommon):
         shutil.move("%s/%s.exe"%(exeroot,cime_model),
                     "%s/%s.exe.SEQ1"%(exeroot,cime_model))
         any_changes = False
-        machpes1 = os.path.join("LockedFiles","env_mach_pes.SEQ1.xml")
-        if ( os.path.isfile(machpes1) ):
-            shutil.copy(machpes1,"env_mach_pes.xml")
+        machpes1 = "env_mach_pes.SEQ1.xml"
+        if is_locked(machpes1):
+            restore(machpes1, newname="env_mach_pes.xml")
         else:
-            logging.info("Copying env_mach_pes.xml to %s"%(machpes1))
-            shutil.copy("env_mach_pes.xml", machpes1)
+            lock_file("env_mach_pes.xml", newname=machpes1)
 
         comp_classes = self._case.get_values("COMP_CLASSES")
         for comp in comp_classes:
@@ -63,9 +63,7 @@ class SEQ(SystemTestsCommon):
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
         shutil.move("%s/%s.exe"%(exeroot,cime_model),
                     "%s/%s.exe.SEQ2"%(exeroot,cime_model))
-        machpes2 = os.path.join("LockedFiles","env_mach_pes.SEQ2.xml")
-        logging.info("Copying env_mach_pes.xml to %s"%(machpes2))
-        shutil.copy("env_mach_pes.xml", machpes2)
+        lock_file("env_mach_pes.xml", newname="env_mach_pes.SEQ2.xml")
 
     def run_phase(self):
         # Move to config_tests.xml once that's ready.
@@ -87,12 +85,10 @@ class SEQ(SystemTestsCommon):
 
         shutil.copy("%s/%s.exe.SEQ1"%(exeroot,cime_model),
                     "%s/%s.exe"%(exeroot,cime_model))
-        shutil.copy(os.path.join("LockedFiles", "env_mach_pes.SEQ1.xml"), "env_mach_pes.xml")
-        shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles", "env_mach_pes.xml"))
+        restore("env_mach_pes.SEQ1.xml", newname="env_mach_pes.xml")
         self.run_indv()
 
-        shutil.copy(os.path.join("LockedFiles", "env_mach_pes.SEQ2.xml"), "env_mach_pes.xml")
-        shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles", "env_mach_pes.xml"))
+        restore("env_mach_pes.SEQ2.xml", newname="env_mach_pes.xml")
 
         os.remove("%s/%s.exe"%(exeroot,cime_model))
         shutil.copy("%s/%s.exe.SEQ1"%(exeroot,cime_model),
