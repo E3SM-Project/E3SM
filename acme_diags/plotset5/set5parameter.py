@@ -23,7 +23,7 @@ test_colormap = ''
 test_levels = []
 test_units = 'mm/day'
 
-reference_name = 'gtyjghgvhj)'
+reference_name = 'GPCP (yrs1979-2009)'
 reference_title = 'Observation'
 reference_colormap = ''
 reference_levels = []
