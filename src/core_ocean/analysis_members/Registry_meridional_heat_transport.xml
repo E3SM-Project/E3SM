@@ -31,27 +31,43 @@
 			description="maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found."
 			possible_values="Any real number."
 		/>
+		<nml_option name="config_AM_meridionalHeatTransport_region_group" type="character" default_value="" units="unitless"
+			description="The name of the region group, for which the MHT should be computed in addition to the global MHT."
+			possible_values="'all', '', or the name of a region group."
+		/>
 	</nml_record>
 	<dims>
 		<dim name="nMerHeatTransBins" definition="namelist:config_AM_meridionalHeatTransport_num_bins" units="unitless"
 			 description="Maximum number of bins for meridional heat transport."
 		/>
 		<dim name="nMerHeatTransBinsP1" definition="nMerHeatTransBins+1" units="unitless"
-			 description="Maximum number of bins for meridional heat transport, plus one."
+			description="Maximum number of bins for meridional heat transport, plus one."
 		/>
 	</dims>
 	<packages>
-		<package name="meridionalHeatTransportAMPKG" description="This package includes variables required for the meridional heat transport analysis member."/>
+		<package name="meridionalHeatTransportAMPKG"
+			description="This package includes variables required for the meridional heat transport analysis member."
+		/>
 	</packages>
 	<var_struct name="meridionalHeatTransportAM" time_levs="1" packages="meridionalHeatTransportAMPKG">
 		<var name="binBoundaryMerHeatTrans" type="real" dimensions="nMerHeatTransBinsP1" units="varies"
 			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
 		<var name="meridionalHeatTransportLatZ" type="real" dimensions="nVertLevels nMerHeatTransBinsP1 Time" units="petawatts"
-			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates, by vertical level."
+			description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates by vertical level."
+		/>
+		 <var name="merHeatTransLatZRegion" type="real" dimensions="nVertLevels nMerHeatTransBinsP1 maxRegionsInGroup Time"
+			units="petawatts"
+			description="Northward heat transport by vertical level and region."
 		/>
 		<var name="meridionalHeatTransportLat" type="real" dimensions="nMerHeatTransBinsP1 Time" units="petawatts"
-			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates."
+			description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates."
+		/>
+		<var name="merHeatTransLatRegion" type="real" dimensions="nMerHeatTransBinsP1 maxRegionsInGroup Time" units="petawatts"
+			description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates, by region."
+		/>
+		<var name="minMaxLatRegionMHT" type="real" dimensions="TWO maxRegionsInGroup" units="varies"
+			description="Coordinates of the southern and northern edge of each region (for drawing)."
 		/>
 	</var_struct>
 	<streams>
@@ -71,6 +87,14 @@
 			<var name="meridionalHeatTransportLat"/>
 			<var name="refZMid"/>
 			<var name="refBottomDepth"/>
+
+			<!-- needed to correctly plot the regional MHT -->
+			<var name="regionGroupNames"/>
+			<var name="regionNames"/>
+			<var name="nRegionsInGroup"/>
+			<var name="regionsInGroup"/>
+			<var name="merHeatTransLatZRegion"/>
+			<var name="merHeatTransLatRegion"/>
 		</stream>
 	</streams>
 
