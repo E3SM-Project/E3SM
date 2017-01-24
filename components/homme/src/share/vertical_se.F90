@@ -295,19 +295,20 @@ module vertical_se
 #endif
 
 	!_____________________________________________________________________
-	function solve_LU(B,LU,ipiv) result(x)
+	function solve_LU(B,LU,ipiv,NRHS) result(x)
 
 		! LU x = B were LU is decomposed version of matrix A
 
-		real(rl), intent(in):: B(npv)														  					! 1d field to integrate
+		real(rl), intent(in):: B(npv,NRHS)														  					! 1d field to integrate
     real(rl), intent(in):: LU(npv,npv)                                  ! LU factorization
     integer,  intent(in):: ipiv(npv)                                    ! pivot indices
+    integer,  intent(in):: NRHS                                         ! pivot indices
 
-    real(rl) :: x(npv)                                                  ! resulting 1d integral
+    real(rl) :: x(npv,NRHS)                                                  ! resulting 1d integral
 		integer  :: info																									  ! status flag: 0=success
 
 		x = B
-		call DGETRS('N',npv,1,LU,npv,ipiv,x,npv,info)                       ! solve for x
+		call DGETRS('N',npv,NRHS,LU,npv,ipiv,x,npv,info)                       ! solve for x
 		if(info .ne. 0) then																								! halt if routine failed
 			print *,"integrate DGETRS info = ",info; stop
 		endif
@@ -372,18 +373,19 @@ module vertical_se
 		real (rl), intent(in) :: f(np,np,nlev)														  ! field to differentiate
     real (rl), intent(in) :: bc_1(np,np)                                ! boundary condition at n
 
+    integer, parameter :: NRHS=np*np
 		real (rl) :: x(np,np,nlev),bc(np,np)
-    real (rl) :: B(npv)
+    real (rl) :: B(npv,NRHS),R(npv,NRHS)
     integer		:: kt,kb,l,i,j
 
     bc = bc_1
 
     do l=1,nev,1
       kt = ev(l)%kt; kb = ev(l)%kb
-      do j=1,np; do i=1,np
-        B = f(i,j,kt:kb); B(1) = bc(i,j)
-        x(i,j,kt:kb) = solve_LU(B,LU_1,ipiv_1)!solve(A, B, npv)
-      enddo; enddo
+      B           = reshape( f(:,:,kt:kb), (/npv,NRHS/), order=(/2,1/) )
+      B(1,:)      = reshape(bc,(/NRHS/))
+      R           = solve_LU(B,LU_1,ipiv_1,NRHS)
+      x(:,:,kt:kb)= reshape( R, (/np,np,npv/), order=(/3,1,2/))
       bc = x(:,:,kb)
     enddo
 
@@ -397,18 +399,19 @@ module vertical_se
 		real (rl), intent(in) :: f(np,np,nlev)														  ! field to differentiate
     real (rl), intent(in) :: bc_n(np,np)                                ! boundary condition at n
 
+    integer, parameter :: NRHS=np*np
 		real (rl) :: x(np,np,nlev),bc(np,np)
-    real (rl) :: B(npv)
+    real (rl) :: B(npv,NRHS),R(npv,NRHS)
     integer		:: kt,kb,l,i,j
 
     bc = bc_n
 
     do l=nev,1,-1
       kt = ev(l)%kt; kb = ev(l)%kb
-      do j=1,np; do i=1,np
-        B = f(i,j,kt:kb); B(npv) = bc(i,j)
-        x(i,j,kt:kb) = solve_LU(B,LU_n,ipiv_n)!solve(A, B, npv)
-      enddo; enddo
+      B           = reshape( f(:,:,kt:kb), (/npv,NRHS/), order=(/2,1/) )
+      B(npv,:)    = reshape(bc,(/NRHS/))
+      R           = solve_LU(B,LU_n,ipiv_n,NRHS)
+      x(:,:,kt:kb)= reshape( R, (/np,np,npv/), order=(/3,1,2/))
       bc = x(:,:,kt)
     enddo
 
@@ -437,12 +440,16 @@ module vertical_se
 		! get vertical derivative spanning entire column
 
 		real (rl), intent(in) :: f(np,np,nlev)														  ! field to differentiate
-		real (rl) :: deriv(np,np,nlev)
+
+    integer, parameter :: NRHS=np*np
+		real (rl) :: deriv(np,np,nlev), B(npv,NRHS), R(npv,NRHS)
 		integer		:: i,j,kt,kb,l
 
     do l=1,nev
       kt = ev(l)%kt; kb = ev(l)%kb;
-      forall(i=1:np,j=1:np) deriv(i,j,kt:kb) = matmul(ddn, f(i,j,kt:kb) )
+      B = reshape( f(:,:,kt:kb), (/npv,NRHS/), order=(/2,1/) )
+      R = matmul(ddn, B )
+      deriv(:,:,kt:kb) = reshape( R, (/np,np,npv/), order=(/3,1,2/) )
     enddo
     call vertical_dss(deriv)
 
