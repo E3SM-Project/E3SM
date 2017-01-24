@@ -158,7 +158,7 @@ contains
     integer,          intent(in)            :: ie                       ! element index
 		type(solver_args),intent(inout)         :: a                        ! solver arguments
 
-		real (rl), dimension(np,np,nlev)	:: u,v,T,p,phi,rhom,Tv,qv         ! local copies of 3d fields
+		real (rl), dimension(np,np,nlev)	:: u,v,T,p,phi,Tv,qv,alpha        ! local copies of 3d fields
 		real (rl), dimension(np,np)				:: ps                             ! local copies of 2d fields
 		real (rl), dimension(np,np,nlev)	:: dp_deta, dT_deta								! vertical hydrostatic pressure gradient
     real (rl), dimension(np,np,nlev)	:: du_deta, dv_deta               ! vertical velocity gradients
@@ -206,8 +206,7 @@ contains
     endif
 
     ! get moist density from virtual temperature and pressure
-    rhom = p/(Rgas*Tv)
-
+    alpha = rgas*Tv/p
 
     ! get vertical derivatives
     dp_deta = eta_derivative(p)
@@ -216,7 +215,7 @@ contains
     dT_deta = eta_derivative(T)
 
     ! get geopotential-height by integrating hydrostatic balance from bottom
-    phi = eta_integral_from_n( -dp_deta/rhom, s%phis )
+    phi = eta_integral_from_n( -dp_deta*alpha, s%phis )
 
     ! get horizontal gradient of geopotential-height
     do k=1,nlev; grad_phi(:,:,:,k) = gradient_sphere(phi(:,:,k),a%deriv,e%Dinv); enddo
@@ -251,9 +250,9 @@ contains
     enddo
 
     ! get total time-derivs
-    ddt_u  = -grad_p(:,:,1,:)/rhom -grad_phi(:,:,1,:) -f_corilois(:,:,1,:)
-    ddt_v  = -grad_p(:,:,2,:)/rhom -grad_phi(:,:,2,:) -f_corilois(:,:,2,:)
-    ddt_T  = omega/(rhom*CpStar)
+    ddt_u  = -grad_p(:,:,1,:)*alpha -grad_phi(:,:,1,:) -f_corilois(:,:,1,:)
+    ddt_v  = -grad_p(:,:,2,:)*alpha -grad_phi(:,:,2,:) -f_corilois(:,:,2,:)
+    ddt_T  = omega*alpha/CpStar
 
     ! get advection terms
     adv_T  = advection2(T,dT_deta,u,v,eta_dot,a,e)
@@ -272,8 +271,8 @@ contains
     s%v   (:,:,2,:,a%np1) = s%v   (:,:,2,:,a%nm1) + a%dt * rhs_v
 
     ! compute derived quantities for output
-    s%dp3d              = 1
-    e%derived%omega_p   = omega/p
+    !s%dp3d              = 1
+    !e%derived%omega_p   = omega/p
     e%derived%phi       = phi
     e%derived%omega     = omega
 
