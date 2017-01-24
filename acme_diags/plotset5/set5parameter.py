@@ -14,23 +14,24 @@ test_name = '1850_alpha6_01 (yrs0070-0099)'
 diff_name = ''
 
 main_title = 'PRECT ANN'
-
-# All of the metrics that Chris wants, which happen to be not implemented
-# ONLY HAVE THE 'MOST IMPORTANT' ONES
 reference_title = 'observation'
 test_title = 'reference'
 diff_title = 'model - observation'
 
-reference_levels = []
+
 reference_colormap = ''
+test_colormap = ''
+diff_colormap = ''
+
+# All of the metrics that Chris wants, which happen to be not implemented
+# ONLY HAVE THE 'MOST IMPORTANT' ONES
+reference_levels = []
 reference_units = ''
 
 test_levels = []
-test_colormap = ''
 test_units = ''
 
 diff_levels = []
-diff_colormap = ''
 diff_units = ''
 
 regrid_method = ''

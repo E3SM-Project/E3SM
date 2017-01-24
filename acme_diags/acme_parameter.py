@@ -9,6 +9,9 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_data_set = ''
         self.variables = ''
         self.season = ''
+        self.reference_colormap = ''
+        self.test_colormap = ''
+        self.diff_colormap = ''
 
 
     def check_values(self):

@@ -1,6 +1,6 @@
 {
  "Gfi": {
-  "diff_plot": {
+  "diff_isofill": {
    "colormap": "bl_to_darkred", 
    "datawc_calendar": 135441, 
    "datawc_timeunits": "days since 2000", 

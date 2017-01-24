@@ -90,3 +90,21 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             dest='main_title',
             help='The big title that appears on the top of the graph',
             required=False)
+
+        self.add_argument(
+            '--reference_title',
+            dest='reference_title',
+            help='Title for the middle graph.',
+            required=False)
+
+        self.add_argument(
+            '--test_title',
+            dest='test_title',
+            help='Title for the top graph',
+            required=False)
+
+        self.add_argument(
+            '--diff_title',
+            dest='diff_title',
+            help='Title for the bottom graph',
+            required=False)

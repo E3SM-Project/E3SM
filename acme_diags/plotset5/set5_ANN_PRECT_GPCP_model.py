@@ -85,6 +85,14 @@ def plot_rmse_and_corr(canvas, model, obs):
     canvas.plot(rmse_value)
     canvas.plot(corr_value)
 
+def set_colormap_of_graphics_method(canvas, parameter_colormap, isofill):
+    if parameter_colormap is not '':
+        isofill.colormap = canvas.getcolormap(parameter_colormap)
+        _fix_levels_on_new_colormap(isofill)
+
+def _fix_levels_on_new_colormap(isofill):
+    colors = vcs.getcolors(isofill.levels, colors=range(6, 240))
+    isofill.fillareacolors = colors
 
 parser = acme_diags.acme_parser.ACMEParser()
 parameter = parser.get_parameter()
@@ -133,9 +141,9 @@ template_test = vcs_canvas.gettemplate('plotset5_0_x_0')
 template_ref = vcs_canvas.gettemplate('plotset5_0_x_1')
 template_diff = vcs_canvas.gettemplate('plotset5_0_x_2')
 
-mod_pr.long_name = 'model'
-obs_pr.long_name = 'observation'
-dif_pr.long_name = 'model-observation'
+mod_pr.long_name = parameter.test_title
+obs_pr.long_name = parameter.reference_title
+dif_pr.long_name = parameter.diff_title
 
 mod_pr.id = parameter.test_name
 obs_pr.id = parameter.reference_name
@@ -146,9 +154,17 @@ plot_min_max_mean(vcs_canvas, mod_pr, 'test')
 plot_min_max_mean(vcs_canvas, obs_pr, 'reference')
 plot_min_max_mean(vcs_canvas, dif_pr, 'diff')
 
-vcs_canvas.plot(mod_pr, template_test, vcs.getisofill('reference_isofill'))
-vcs_canvas.plot(obs_pr, template_ref, vcs.getisofill('test_isofill'))
-vcs_canvas.plot(dif_pr, template_diff, vcs.getisofill('diff_plot'))
+reference_isofill = vcs.getisofill('reference_isofill')
+test_isofill = vcs.getisofill('test_isofill')
+diff_isofill = vcs.getisofill('diff_isofill')
+
+set_colormap_of_graphics_method(vcs_canvas, parameter.reference_colormap, reference_isofill)
+set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill)
+set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill)
+
+vcs_canvas.plot(mod_pr, template_test, reference_isofill)
+vcs_canvas.plot(obs_pr, template_ref, test_isofill)
+vcs_canvas.plot(dif_pr, template_diff, diff_isofill)
 
 plot_rmse_and_corr(vcs_canvas, mod_pr_reg, obs_pr_reg)
 
