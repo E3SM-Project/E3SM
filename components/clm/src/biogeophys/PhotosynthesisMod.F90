@@ -31,7 +31,6 @@ module  PhotosynthesisMod
   use clm_varctl          , only : cnallocate_carbon_only
   use clm_varctl          , only : cnallocate_carbonnitrogen_only
   use clm_varctl          , only : cnallocate_carbonphosphorus_only
-  use clm_varctl          , only : iulog
   use pftvarcon           , only : noveg
     
   !
@@ -733,14 +732,26 @@ contains
 
                ! End of ci iteration.  Check for an < 0, in which case gs_mol = bbb
 
-               if (an(p,iv) < 0._r8) gs_mol(p,iv) = bbb(p)
+               ! if (an(p,iv) < 0._r8) gs_mol(p,iv) = bbb(p)
+               ! Brutely force an to zero if gs_mol is at its minimal value
+               if(abs(gs_mol(p,iv)-bbb(p))<1.e-14_r8)then
+                  an(p,iv)=0._r8
+                  ag(p,iv)=lmr_z(p,iv)
+               endif
 
                ! Final estimates for cs and ci (needed for early exit of ci iteration when an < 0)
 
                cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(c)
                cs = max(cs,1.e-06_r8)
-               ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
-
+               if(abs(gs_mol(p,iv)-bbb(p))<1.e-14_r8)then
+                  ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
+               else
+                  ci_z(p,iv) = ciold
+               endif
+               if(ci_z(p,iv)<0._r8)then
+                 write(iulog,*)'negative ci',ci_z(p,iv),an(p,iv),gs_mol(p,iv)-bbb(p)
+                 call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+               endif
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
                gs = gs_mol(p,iv) / cf
@@ -1039,78 +1050,70 @@ contains
     real(r8), parameter :: eps1= 1.e-4_r8
     integer,  parameter :: itmax = 40          !maximum number of iterations
     real(r8) :: tol,minx,minf
-
+    real(r8) :: ci_val(5)
+    real(r8) :: fi_val(5)
+    integer  :: ii, mi
+    associate(&
+      c3flag     => photosyns_vars%c3flag_patch             , & ! Output: [logical  (:)   ]  true if C3 and false if C4   
+      cp         => photosyns_vars%cp_patch  & !Intput: [real(r8) (:)   ]  CO2 compensation point (Pa)
+    )
+    iter=0
     call ci_func(x0, f0, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
          atm2lnd_vars, photosyns_vars)
 
-    if(f0 == 0._r8)return
+    if(abs(f0) < 1.e-14_r8)return
+    ci_val(3)=x0
+    fi_val(3)=f0
+    !compute the minimum ci value
+    if(c3flag(p))then
+      ci_val(1)=cp(p)+1.e-6_r8
+    else
+      ci_val(1)=1.e-6_r8
+    endif
+    call ci_func(ci_val(1), fi_val(1), p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+         atm2lnd_vars, photosyns_vars)     
 
-    minx=x0
-    minf=f0
-    x1 = x0 * 0.99_r8
-
-    call ci_func(x1,f1, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+    ci_val(2)=(ci_val(1)+ci_val(3))*0.5
+    call ci_func(ci_val(2), fi_val(2), p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
          atm2lnd_vars, photosyns_vars)
 
-    if(f1==0._r8)then
-       x0 = x1
-       return
-    endif
-    if(f1<minf)then
-       minx=x1
-       minf=f1
-    endif
+    ci_val(4)=(cair+ci_val(3))*0.5
+    call ci_func(ci_val(4), fi_val(4), p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+         atm2lnd_vars, photosyns_vars)
 
-    !first use the secant approach, then use the brent approach as a backup
-    iter = 0
-    do
-       iter = iter + 1
-       dx = - f1 * (x1-x0)/(f1-f0)
-       x = x1 + dx
-       tol = abs(x) * eps
-       if(abs(dx)<tol)then
-          x0 = x
-          exit
-       endif
-       x0 = x1
-       f0 = f1
-       x1 = x   
+    !compute the maximum ci value
+    ci_val(5)=cair*0.999_r8
+    call ci_func(ci_val(5), fi_val(5), p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
+         atm2lnd_vars, photosyns_vars)
 
-       call ci_func(x1,f1, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
-            atm2lnd_vars, photosyns_vars)
-
-       if(f1<minf)then
-          minx=x1
-          minf=f1
-       endif
-       if(abs(f1)<=eps1)then
-          x0 = x1
-          exit
-       endif
-
-       !if a root zone is found, use the brent method for a robust backup strategy
-       if(f1 * f0 < 0._r8)then
-
-          call brent(x, x0,x1,f0,f1, tol, p, iv, c, gb_mol, je, cair, oair, &
+    mi = -1
+    do ii = 1, 4
+      if(fi_val(ii)*fi_val(ii+1)<0._r8)then
+         mi = ii
+      endif
+    enddo
+    if(mi > 0)then
+       x0 = ci_val(mi)
+       f0 = fi_val(mi)
+       x1 = ci_val(mi+1)
+       f1 = ci_val(mi+1)
+       call brent(x, x0,x1,f0,f1, tol, p, iv, c, gb_mol, je, cair, oair, &
                lmr_z, par_z, rh_can, gs_mol, &
                atm2lnd_vars, photosyns_vars)
-
-          x0=x
-          exit
+       x0=x
+       if(x0<0._r8)then
+         write(iulog,*)'negative after brent',x0
        endif
-       if(iter>itmax)then 
-          !in case of failing to converge within itmax iterations
-          !stop at the minimum function
-          !this happens because of some other issues besides the stomatal conductance calculation
-          !and it happens usually in very dry places and more likely with c4 plants.
-
-          call ci_func(minx,f1, p, iv, c, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
-               atm2lnd_vars, photosyns_vars)
-
-          exit
-       endif
-    enddo
-
+    else
+      ! write(iulog,'(I8,13(X,E15.8),X,L8)')p,ci_val(1),fi_val(1),ci_val(2),fi_val(2),&
+      !   ci_val(3),fi_val(3),ci_val(4),fi_val(4),ci_val(5),fi_val(5),photosyns_vars%aj_patch(p,iv),&
+      !   photosyns_vars%ag_patch(p,iv),photosyns_vars%an_patch(p,iv), all(fi_val<0._r8)
+      ! write(iulog,*)'no solution for ci and gs_mol is forced to be the minimum for pft',p
+      ! write(iulog,*)'no solution found for ci'
+      ! call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+      
+    endif
+   end associate 
   end subroutine hybrid
 
   !------------------------------------------------------------------------------
@@ -1142,7 +1145,7 @@ contains
     type(photosyns_type), intent(inout) :: photosyns_vars
     !
     !!LOCAL VARIABLES:
-    integer, parameter :: ITMAX=20            !maximum number of iterations
+    integer, parameter :: ITMAX=30            !maximum number of iterations
     real(r8), parameter :: EPS=1.e-2_r8       !relative error tolerance
     integer :: iter
     real(r8)  :: a,b,c,d,e,fa,fb,fc,p,q,r,s,tol1,xm
@@ -1178,7 +1181,7 @@ contains
        endif
        tol1=2._r8*EPS*abs(b)+0.5_r8*tol  !Convergence check.   
        xm=0.5_r8*(c-b)
-       if(abs(xm) <= tol1 .or. fb == 0.)then
+       if(abs(xm) <= tol1 .or. fb == 0._r8)then
           x=b
           return
        endif
@@ -1217,13 +1220,13 @@ contains
        call ci_func(b, fb, ip, iv, ic, gb_mol, je, cair, oair, lmr_z, par_z, rh_can, gs_mol, &
          atm2lnd_vars, photosyns_vars)
 
-       if(fb==0._r8)exit
+       if(abs(fb)<1.e-5_r8)exit
 
     enddo
 
     if(iter==ITMAX)write(iulog,*) 'brent exceeding maximum iterations', b, fb
     x=b
-
+    if(x<0._r8)write(iulog,*)'negative in brent',x,x1,x2
     return
   end subroutine brent
 
@@ -1361,7 +1364,6 @@ contains
          bbb        => photosyns_vars%bbb_patch                , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)                 
          mbb        => photosyns_vars%mbb_patch                  & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship           
          )
-
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       fnps = 0.15_r8
       theta_psii = 0.7_r8
@@ -1407,25 +1409,30 @@ contains
       ! Net photosynthesis. Exit iteration if an < 0
 
       an(p,iv) = ag(p,iv) - lmr_z
-      if (an(p,iv) < 0._r8) then
-         fval = 0._r8
-         return
-      endif
+!      if (an(p,iv) < 0._r8) then
+!         fval = 0._r8
+!         return
+!      endif
       ! Quadratic gs_mol calculation with an known. Valid for an >= 0.
       ! With an <= 0, then gs_mol = bbb
-
-      cs = cair - 1.4_r8/gb_mol * an(p,iv) * forc_pbot(c)
-      cs = max(cs,1.e-06_r8)
-      aquad = cs
-      bquad = cs*(gb_mol - bbb(p)) - mbb(p)*an(p,iv)*forc_pbot(c)
-      cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(c)*rh_can)
-      call quadratic (aquad, bquad, cquad, r1, r2)
-      gs_mol = max(r1,r2)
-
+      if(an(p,iv)<=0.0)then
+        gs_mol=bbb(p)
+        if(aj(p,iv)<=1.e-20_r8)then
+          fval=0._r8
+        else
+          fval = ci-cair
+        endif
+      else
+        cs = cair - 1.4_r8/gb_mol * an(p,iv) * forc_pbot(c)
+        cs = max(cs,1.e-06_r8)
+        aquad = cs
+        bquad = cs*(gb_mol - bbb(p)) - mbb(p)*an(p,iv)*forc_pbot(c)
+        cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(c)*rh_can)
+        call quadratic (aquad, bquad, cquad, r1, r2)
+        gs_mol = max(r1,r2)
       ! Derive new estimate for ci
-
-      fval =ci - cair + an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
-
+        fval =ci - cair + an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
+      endif
     end associate
 
   end subroutine ci_func
