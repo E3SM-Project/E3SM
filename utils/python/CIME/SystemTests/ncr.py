@@ -10,6 +10,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.case_setup import case_setup
 import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from CIME.check_lockedfiles import *
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +26,16 @@ class NCR(SystemTestsCommon):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
-        machpes1 = os.path.join("LockedFiles","env_mach_pes.NCR1.xml")
-        if ( os.path.isfile(machpes1) ):
-            shutil.copy(machpes1,"env_mach_pes.xml")
+        machpes1 = "env_mach_pes.NCR1.xml"
+        if is_locked(machpes1):
+            restore(machpes1, newname="env_mach_pes.xml")
 
         # Build two exectuables for this test, the first is a default build, the
         # second halves the number of tasks and runs two instances for each component
         # Lay all of the components out concurrently
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
-            machpes = os.path.join("LockedFiles","env_mach_pes.NCR%s.xml"%bld)
+            machpes = "env_mach_pes.NCR%s.xml" % bld
             ntasks_sum = 0
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 self._case.set_value("NINST_%s"%comp,str(bld))
@@ -54,14 +55,12 @@ class NCR(SystemTestsCommon):
             self.build_indv(sharedlib_only, model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
-            shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCR%s.xml"%bld))
-            shutil.copy("env_mach_pes.xml", machpes)
+            lock_file("env_build.xml", newname="env_build.NCR%s.xml" % bld)
+            lock_file("env_mach_pes.xml", newname=machpes)
 
         # Because mira/cetus interprets its run script differently than
         # other systems we need to copy the original env_mach_pes.xml back
-        shutil.copy(machpes1,"env_mach_pes.xml")
-        shutil.copy("env_mach_pes.xml",
-                    os.path.join("LockedFiles","env_mach_pes.xml"))
+        restore(machpes1, newname="env_mach_pes.xml")
 
     def run_phase(self):
         os.chdir(self._caseroot)
@@ -70,16 +69,15 @@ class NCR(SystemTestsCommon):
         cime_model = CIME.utils.get_model()
 
         # Reset beginning test settings
-        expect(os.path.exists("LockedFiles/env_mach_pes.NCR1.xml"),
+        expect(is_locked("env_mach_pes.NCR1.xml"),
                "ERROR: LockedFiles/env_mach_pes.NCR1.xml does not exist\n"
                "   this would been produced in the build - must run case.test_build")
 
-        shutil.copy("LockedFiles/env_mach_pes.NCR1.xml", "env_mach_pes.xml")
-        shutil.copy("env_mach_pes.xml", "LockedFiles/env_mach_pes.xml")
+        restore("env_mach_pes.NCR1.xml", newname="env_mach_pes.xml")
+        restore("env_build.NCR1.xml", newname="env_build.xml")
         shutil.copy("%s/%s.exe.NCR1" % (exeroot, cime_model),
                     "%s/%s.exe" % (exeroot, cime_model))
-        shutil.copy("LockedFiles/env_build.NCR1.xml", "env_build.xml")
-        shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+
 
         stop_n      = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
@@ -104,8 +102,7 @@ class NCR(SystemTestsCommon):
         os.remove("%s/%s.exe" % (exeroot, cime_model))
         shutil.copy("%s/%s.exe.NCR2" % (exeroot, cime_model),
                     "%s/%s.exe" % (exeroot, cime_model))
-        shutil.copy("LockedFiles/env_build.NCR2.xml", "env_build.xml")
-        shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+        restore("env_build.NCR2.xml", "env_build.xml")
 
         logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
         self.run_indv(suffix="multiinst")

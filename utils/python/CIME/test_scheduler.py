@@ -21,6 +21,7 @@ from CIME.XML.component import Component
 from CIME.XML.tests import Tests
 from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
+from CIME.check_lockedfiles import lock_file
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)
@@ -495,11 +496,7 @@ class TestScheduler(object):
                     expect(False, "Could not parse option '%s' " %opt)
 
         envtest.write()
-        lockedfiles = os.path.join(test_dir, "LockedFiles")
-        if not os.path.exists(lockedfiles):
-            os.mkdir(lockedfiles)
-        shutil.copy(os.path.join(test_dir,"env_run.xml"),
-                    os.path.join(lockedfiles, "env_run.orig.xml"))
+        lock_file("env_run.xml", caseroot=test_dir, newname="env_run.orig.xml")
 
         with Case(test_dir, read_only=False) as case:
             if self._output_root is None:

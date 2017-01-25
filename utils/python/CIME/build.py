@@ -5,6 +5,7 @@ from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, append_status, analyze_build_log
 from CIME.provenance            import save_build_provenance
 from CIME.preview_namelists     import create_namelists
+from CIME.check_lockedfiles     import check_lockedfiles, lock_file, unlock_file
 import glob, shutil, time, threading, gzip, subprocess
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,6 @@ def stringify_bool(val):
 def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                 lid, caseroot, cimeroot, compiler):
 ###############################################################################
-
     logs = []
 
     thread_bad_results = []
@@ -137,10 +137,7 @@ def post_build(case, logs):
         case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
     case.flush()
 
-    if os.path.exists("LockedFiles/env_build.xml"):
-        os.remove("LockedFiles/env_build.xml")
-
-    shutil.copy("env_build.xml", "LockedFiles")
+    lock_file("env_build.xml")
 
     # must ensure there's an lid
     lid = os.environ["LID"] if "LID" in os.environ else run_cmd_no_fail("date +%y%m%d-%H%M%S")
@@ -168,7 +165,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
 
     comp_classes = case.get_values("COMP_CLASSES")
 
-    run_cmd_no_fail("./Tools/check_lockedfiles --caseroot %s" % caseroot)
+    check_lockedfiles(caseroot)
 
     # Retrieve relevant case data
     # This environment variable gets set for cesm Make and
@@ -542,9 +539,7 @@ def clean(case, cleanlist=None):
     run_cmd_no_fail(cmd)
 
     # unlink Locked files directory
-    locked_env_build = os.path.join(caseroot,"LockedFiles/env_build.xml")
-    if os.path.isfile(locked_env_build):
-        os.unlink(locked_env_build)
+    unlock_file("env_build.xml")
 
     # reset following values in xml files
     case.set_value("SMP_BUILD",str(0))

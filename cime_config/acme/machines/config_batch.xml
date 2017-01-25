@@ -39,13 +39,13 @@
      <batch_directive></batch_directive>
      <jobid_pattern>(\d+)</jobid_pattern>
      <depend_string> --dependencies</depend_string>
-     <walltime_format>%H:%M:%S</walltime_format>
+     <walltime_format>%H:%M:%s</walltime_format>
      <submit_args>
        <arg flag="--cwd" name="CASEROOT"/>
        <arg flag="-A" name="PROJECT"/>
        <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
        <!-- space is required here so that variable is resolved correctly -->
-       <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+       <arg flag="-n" name=" $TOTALPES / $PES_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
      </submit_args>
@@ -72,43 +72,43 @@
     <batch_redirect>&lt;</batch_redirect>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
-    <depend_string> -w "done(jobid)"</depend_string>
+    <depend_string> -w 'done(jobid)'</depend_string>
     <walltime_format>%H:%M</walltime_format>
+    <submit_args>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="-W" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-P" name="$PROJECT"/>
+    </submit_args>
     <directives>
-      <directive                       > -n {{ totaltasks }} </directive>
-      <directive                       > -R "span[ptile={{ ptile }}]"</directive>
-      <directive                       > -q {{ job_queue }} </directive>
+      <directive                       > -n {{ total_tasks }} </directive>
+      <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
-      <directive                       > -x {{ queue_exclusive }} </directive>
-      <directive default="acme.stdout" > -o {{ acme_stdout }}.%J  </directive>
-      <directive default="acme.stderr" > -e {{ acme_stderr }}.%J  </directive>
+      <directive default="acme.stdout" > -o {{ output_error_path }}.%J  </directive>
+      <directive default="acme.stderr" > -e {{ output_error_path }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
-      <directive                       > -W {{ job_wallclock_time }} </directive>
-      <directive                       > -P {{ account }}  </directive>
     </directives>
   </batch_system>
 
   <batch_system type="pbs" >
-    <batch_query args="-u $USER" >qselect</batch_query>
+    <batch_query args="-f" >qstat</batch_query>
     <batch_submit>qsub </batch_submit>
     <batch_directive>#PBS</batch_directive>
-    <jobid_pattern>^(\d+)</jobid_pattern>
+    <jobid_pattern>^(\S+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
     <submit_args>
-      <arg flag="-q" name="JOB_QUEUE"/>
-      <arg flag="-l walltime=" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-A" name="PROJECT"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-A" name="$PROJECT"/>
     </submit_args>
     <directives>
-      <directive> -V </directive>
       <directive> -N {{ job_id }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
-      <directive default="/bin/bash" > -S {{ shell }} </directive>
+      <directive> -V </directive>
     </directives>
   </batch_system>
 
@@ -119,11 +119,13 @@
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
+    <submit_args>
+      <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-A" name="$PROJECT"/>
+    </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
-      <directive> -l walltime={{ job_wallclock_time }}</directive>
       <directive> -j oe </directive>
-      <directive> -A {{ project }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive default="/bin/bash" > -S {{ shell }}</directive>
@@ -131,20 +133,23 @@
   </batch_system>
 
    <batch_system type="slurm" >
-     <batch_query args="-o '%i' -h -u $USER">squeue </batch_query>
+     <batch_query>squeue</batch_query>
      <batch_submit>sbatch</batch_submit>
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
+     <submit_args>
+       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+       <arg flag="-p" name="$JOB_QUEUE"/>
+       <arg flag="--account" name="$PROJECT"/>
+     </submit_args>
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
+       <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
        <directive> --output={{ output_error_path }}   </directive>
        <directive> --exclusive                        </directive>
-       <directive> --time={{ job_wallclock_time }}</directive>
-       <directive> --partition={{ job_queue }}</directive>
-       <directive> --account={{ project }}</directive>
      </directives>
    </batch_system>
 
