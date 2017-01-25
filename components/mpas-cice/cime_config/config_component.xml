@@ -19,7 +19,7 @@
         <default_value>cold_start</default_value>
         <values>
            <value compset="MPASCICE_">cold_start</value> 
-           <value compset="_MPASCICE%SPINUP">spunup</value> 
+           <value compset="_MPASCICE%SPUNUP">spunup</value> 
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
