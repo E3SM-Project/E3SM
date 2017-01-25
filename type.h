@@ -2,7 +2,7 @@
 #define TYPE_H
 
 /* type.h */
-/* defines interface and types used for mpi-serial user-defined datatypes */ 
+/* defines interface and types used for mpi-serial user-defined datatypes */
 
 #include "mpiP.h"
 
@@ -12,7 +12,7 @@
 #endif
 
 //predefined type value used in typemap
-typedef int Simpletype; 
+typedef int Simpletype;
 
 typedef struct
 {
@@ -20,7 +20,7 @@ typedef struct
   Simpletype type;
 } typepair;
 
-typedef struct 
+typedef struct
 {
   int count;
   long ub;
@@ -37,7 +37,7 @@ typedef struct
 
 typedef Typestruct* Datatype;
 
-//Simpletype constants 
+//Simpletype constants
 #define SIMPLE_CHAR         0
 #define SIMPLE_SHORT        1
 #define SIMPLE_INT          2
@@ -79,7 +79,7 @@ typedef Typestruct* Datatype;
 
 #define SIMPLE_OFFSET      34
 
-//internal type functions 
+//internal type functions
 int Simpletype_length(Simpletype s);
 
 //testing only
@@ -103,7 +103,7 @@ int print_typemap(MPI_Datatype in);
 #endif
 
 #ifdef CONFIG_FORT_DOUBLE
-#define FSIZE_DPRECISION CONFIG_FORT_DOUBLE 
+#define FSIZE_DPRECISION CONFIG_FORT_DOUBLE
 #else
 #define FSIZE_DPRECISION 8
 #endif
@@ -119,6 +119,6 @@ Datatype* mpi_handle_to_datatype(int handle);
 
 extern int Unpack(void * inbuf, int insize, int * position, void *outbuf,
                   int outcount, Datatype type, Comm* comm);
-extern int Pack(void *inbuf, int incount, Datatype type, 
+extern int Pack(void *inbuf, int incount, Datatype type,
               void *outbuf, int outsize, int *position, Comm * comm);
 #endif /* TYPE_H */

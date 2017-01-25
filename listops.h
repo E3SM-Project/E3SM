@@ -17,7 +17,7 @@
 
 typedef struct _List     *pList;
 typedef struct _Listitem *pListitem;
-  
+
 #include "list.h"
 
 #endif

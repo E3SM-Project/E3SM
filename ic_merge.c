@@ -4,7 +4,7 @@
 /*
  * MPI_Intercomm_merge - Creates an intracommunicator from an intercommunicator
  * This is just a stub for now to support mpi function calls even in Serial
- * applications. In the case of a serial program, this function is a no-op and 
+ * applications. In the case of a serial program, this function is a no-op and
  * only ever returns MPI_SUCCESS
  */
 
