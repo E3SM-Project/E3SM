@@ -8,11 +8,11 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CIMEROOT            = `./xmlquery  CIMEROOT            -value`;
+my $CIMEROOT        = `./xmlquery  CIMEROOT             -value`;
 my $CASEROOT        = `./xmlquery  CASEROOT		-value`;
 my $CASEBUILD       = `./xmlquery  CASEBUILD		-value`;
 my $COMPSET         = `./xmlquery  CCSM_COMPSET         -value`;
-my $SRCROOT        = `./xmlquery  SRCROOT              -value`;
+my $SRCROOT         = `./xmlquery  SRCROOT              -value`;
 my $OBJROOT         = `./xmlquery  OBJROOT		-value`;
 my $SCRIPTSROOT	    = `./xmlquery  SCRIPTSROOT		-value`;
 my $COMP_INTERFACE  = `./xmlquery  COMP_INTERFACE	-value`;
@@ -52,8 +52,8 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '151020';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30_ICG' ) {
-        $grid_date = '160827';
-	$grid_prefix = 'cice.EC60to30km.restartFrom_eos1b';
+        $grid_date .= '160827';
+	$grid_prefix .= 'cice.EC60to30km.restartFrom_eos1b';
 	$decomp_date .= '151020';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30wLI' ) {
