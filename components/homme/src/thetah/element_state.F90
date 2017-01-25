@@ -76,7 +76,7 @@ module element_state
 #ifdef ENERGY_DIAGNOSTICS
 
     ! Energy equation:
-    ! KE_t  = KEhoriz1 + KEhoriz2 +  KEvert1 + KEvert2 + P1 + T1 + T2 + D1 + Err
+    ! KE_t  = KE1 + KE2 + KEhoriz2 +  KEvert1 + KEvert2 + P1 + T1 + T2 + D1 + Err
     ! IE_t  = S1 + S2 + IEvert1 + d(p dphi/dt)/deta + ptop dphitop/dt + D2 
     ! PE_t  = PEhoriz1 + PEvert1 + P1
     !
@@ -92,7 +92,8 @@ module element_state
     ! (has an Err term that goes to zero as dt**2)
     !
     ! non-transfer terms
-    ! KEhoriz1 = -0.5*(dpi/deta)*u*grad(u^2)-0.5*u^2 * div( u dpi/deta)
+    ! KE1 = -0.5*(dpi/deta)*u*grad(u^2)
+    ! KE2 = -0.5*u^2 * div( u dpi/deta)
     ! KEhoriz2 = dpi/deta w grad(w)^2 u -0.5 w^2 div(dpi/deta u)
     ! PEhoriz1 = -phi div(u dpi/deta) - grad(phi)^T u dpi/deta
     !
@@ -117,6 +118,8 @@ module element_state
 
     real (kind=real_kind) :: KEhoriz1(np,np)
     real (kind=real_kind) :: KEhoriz2(np,np)
+    real (kind=real_kind) :: KE1(np,np)
+    real (kind=real_kind) :: KE2(np,np)
     real (kind=real_kind) :: PEhoriz1(np,np)
 
     real (kind=real_kind) :: T1(np,np)

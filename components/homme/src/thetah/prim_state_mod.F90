@@ -127,7 +127,7 @@ contains
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
     real (kind=real_kind) :: KEvert,IEvert,PEvert,T1,T2,S1,S2,P1,P2
-    real (kind=real_kind) :: KEhorz,KEhorz2,PEhorz,IEhorz
+    real (kind=real_kind) :: KEhorz,KEhorz2,PEhorz,IEhorz,KEH1,KEH2
     real (kind=real_kind) :: ddt_tot,ddt_diss
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
@@ -476,6 +476,20 @@ contains
     KEhorz = KEhorz*scale
 
     do ie=nets,nete
+      tmp(:,:,ie) = elem(ie)%accum%KE1
+    enddo
+    KEH1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEH1 = KEH1*scale
+
+    do ie=nets,nete
+      tmp(:,:,ie) = elem(ie)%accum%KE2
+    enddo
+    KEH2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEH2 = KEH2*scale
+
+
+
+    do ie=nets,nete
       tmp(:,:,ie) = elem(ie)%accum%KEhoriz2
     enddo
     KEhorz2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
@@ -564,11 +578,13 @@ contains
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
           write(iulog,'(a,2e22.14)')'horiz adv KE-u terms, should = 0      :',KEhorz
+          write(iulog,'(a,2e22.14)')'horiz adv KE-u terms, should+to 0     :',KEH1,KEH2
           write(iulog,'(a,2e22.14)')'vert adv etadot KE-uw terms = 0       :',KEvert
           write(iulog,'(a,2e22.14)')'horiz adv KE-w terms, possibly nonzero:',KEhorz2
           write(iulog,'(a,2e22.14)')'Tot IE advection vert =0              :',IEvert
           write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert = 0      :',PEhorz,PEvert       
-          write(iulog,'(a,2e22.14)')'(T1+S1 = 0)                           :',T1+S1
+          write(iulog,'(a,2e22.14)')'(T1+S1 = 0)                           :',S1+T1
+          write(iulog,'(a,2e22.14)')'(T1,S1)                               :',S1,T1
           write(iulog,'(a,2e22.14)')'(T2+S2 = 0)                           :',T2+S2
           
           ddt_tot =  (KEner(2)-KEner(1))/(dt)
