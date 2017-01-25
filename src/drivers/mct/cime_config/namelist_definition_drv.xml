@@ -1448,9 +1448,6 @@
       NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
       associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
     </desc>
-    <values>
-      <value>-999</value>
-    </values>
   </entry>
 
   <entry id="glc_cpl_dt" modify_via_xml="GLC_NCPL" skip_default_entry="true">
@@ -1466,16 +1463,16 @@
     </desc>
   </entry>
 
-  <entry id="glc_avg_cpl_dt" modify_via_xml="GLC_AVG_NCPL" skip_default_entry="true">
-    <type>integer</type>
+  <entry id="glc_avg_period" modify_via_xml="GLC_AVG_PERIOD">
+    <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
+    <valid_values>yearly,daily</valid_values>
+    <values>
+      <value>$GLC_AVG_PERIOD</value>
+    </values>
     <desc>
-      glc coupling averging interval in seconds
-      set via GLC_AVG_NCPL in env_run.xml.
-      GLC_AVG_NCPL is averging period for glc  per NCPL_BASE_PERIOD
-      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
-      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+      glc coupling averging period
     </desc>
   </entry>
 
