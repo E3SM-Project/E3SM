@@ -956,16 +956,16 @@
 	<command name="add">+python-2.7</command>
       </modules>
       <modules compiler="intel">
-	<command name="add">+intel-16.0.3</command>
-	<command name="add">+netcdf-c-4.4.0-f77-4.4.4-intel-16.0.3-serial</command>
+	<command name="add">+intel-17.0.0</command>
+	<command name="add">+netcdf-c-4.4.1-f77-4.4.4-intel-17.0.0-serial</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-	<command name="add">+mvapich2-2.2b-intel-16.0.3-acme</command>
-	<command name="add">+pnetcdf-1.7.0-intel-16.0.3-mvapich2-2.2b-acme</command>
+	<command name="add">+mvapich2-2.2-intel-17.0.0-acme</command>
+	<command name="add">+pnetcdf-1.7.0-intel-17.0.0-mvapich2-2.2-acme</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
-	<command name="add">+openmpi-1.10.3-intel-16.0.3-acme</command>
-	<command name="add">+pnetcdf-1.7.0-intel-16.0.3-openmpi-1.10.3-acme</command>
+	<command name="add">+openmpi-2.0.1-intel-17.0.0-acme</command>
+	<command name="add">+pnetcdf-1.7.0-intel-17.0.0-openmpi-2.0.1-acme</command>
       </modules>
       <modules compiler="gnu">
 	<command name="add">+gcc-5.3.0</command>
