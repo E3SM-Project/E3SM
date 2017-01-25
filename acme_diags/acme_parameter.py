@@ -37,6 +37,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.canvas_size_w = 1212
         self.canvas_size_h = 1628
+        self.arrows = True
         self.logo = True
 
     def check_values(self):

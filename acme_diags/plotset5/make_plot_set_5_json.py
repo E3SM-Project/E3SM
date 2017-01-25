@@ -167,7 +167,7 @@ isofill.datawc_x1 = 0
 isofill.datawc_x2 = 360
 isofill.datawc_y1 = -90
 isofill.datawc_y2 = 90
-isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+#isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 # NOTE: because of the obs and model data files used,
 # there is no 360 degree value, so we use 358 as 0.
 # Same for 0 where we use 2 instead.
@@ -179,8 +179,8 @@ isofill.yticlabels1 = {-90: '90S', -80: '80S', -60: '60S', -40: '40S',
                        80: '80N', 90: '90N'}
 
 # ext_1 and ext_2 are arrows
-isofill.ext_1 = True
-isofill.ext_2 = True
+#isofill.ext_1 = True
+#isofill.ext_2 = True
 isofill.script('plot_set_5_new.json')
 
 plot_min_max_mean(x, template_0, mod_pr, 'test')
@@ -201,20 +201,19 @@ isofill.datawc_x2 = 360
 isofill.datawc_y1 = -90
 isofill.datawc_y2 = 90
 
-isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
-#isofill.levels=vcs.mkscale(dif_pr.min(), dif_pr.max())
-isofill.ext_1 = True
-isofill.ext_2 = True
+#isofill.levels=[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+#isofill.ext_1 = True
+#isofill.ext_2 = True
 
-isofill.colormap = x.getcolormap('bl_to_darkred')
+#isofill.colormap = x.getcolormap('bl_to_darkred')
 # do this for only old colormaps
-colors = vcs.getcolors(isofill.levels, colors=range(6, 240))
-isofill.fillareacolors = colors
+#colors = vcs.getcolors(isofill.levels, colors=range(6, 240))
+#isofill.fillareacolors = colors
 isofill.script('plot_set_5_new.json')
 
 plot_min_max_mean(x, template_2, dif_pr, 'diff')
 #x.plot(dif_pr, template_2, isofill)
-x.plot(dif_pr, template_2, vcs.getisofill('diff_isofill'))
+x.plot(dif_pr, template_2, isofill)
 
 plot_rmse_and_corr(x, template_2, mod_pr_reg, obs_pr_reg)
 x.png(case_id + '/' + parameter.output_file)

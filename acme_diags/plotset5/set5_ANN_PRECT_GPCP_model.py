@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import numpy
+import cdutil
 import cdms2
 import acme_diags.acme_parser
 import plot_set_5
@@ -14,9 +16,6 @@ test_data_set = parameter.test_data_set # model
 var = parameter.variables
 season = parameter.season
 
-
-# Below should be read from metadata
-mod_name = '1850_alpha6_01 (yrs0070-0099)'
 
 f_obs = cdms2.open(reference_data_path + reference_data_set)
 f_mod = cdms2.open(test_data_path + test_data_set)
@@ -40,10 +39,10 @@ if mod_pr.ndim == 4: # var(time,lev,lon,lat) convert from hybrid level to pressu
                      600.,700.,775.,850.,925.,1000.])
     levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
     levels_orig.units = 'mb'
-    mod_pr_p=cdutil.vertical.logLinearInterpolation( mod_pr, levels_orig, plv17)
+    mod_pr_p=cdutil.vertical.logLinearInterpolation(mod_pr, levels_orig, plv17)
 
     obs_plv = obs_pr.getLevel()[:]
-    
+
     # set the level to compare, this should be a parameter
     plev = 850 #mb
 
@@ -66,4 +65,20 @@ else:
     obs_pr_reg = obs_pr
     mod_pr_reg = mod_pr.regrid(obs_grid, regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
 
+if var == 'T' and plev == 850:
+    levels = [230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300]
+    diff_levels = [-8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8]
+    parameter.reference_levels = levels
+    parameter.test_levels = levels
+    parameter.diff_levels = diff_levels
+elif var == 'T' and plev == 200:
+    levels = [190, 193, 196, 199, 202, 205, 208, 211, 214, 217, 220, 223, 226, 229, 232]
+    diff_levels = [-10, -8, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 8, 10]
+    parameter.reference_levels = levels
+    parameter.test_levels = levels
+    parameter.diff_levels = diff_levels
+
+if var == 'T':
+    parameter.main_title = ' '.join([var, str(plev), 'mb', season])
+    
 plot_set_5.plot(obs_pr, mod_pr, obs_pr_reg, mod_pr_reg, parameter)

@@ -1,41 +1,19 @@
 {
  "Gfi": {
   "diff_isofill": {
-   "colormap": "bl_to_darkred", 
+   "colormap": null, 
    "datawc_calendar": 135441, 
    "datawc_timeunits": "days since 2000", 
    "datawc_x1": 0, 
    "datawc_x2": 360, 
    "datawc_y1": -90, 
    "datawc_y2": 90, 
-   "ext_1": true, 
-   "ext_2": true, 
+   "ext_1": false, 
+   "ext_2": false, 
    "fillareacolors": [
-    6, 
-    23, 
-    39, 
-    56, 
-    72, 
-    89, 
-    105, 
-    122, 
-    123, 
-    140, 
-    156, 
-    173, 
-    189, 
-    206, 
-    222, 
-    239
+    1
    ], 
    "fillareaindices": [
-    1, 
-    1, 
-    1, 
-    1, 
-    1, 
-    1, 
-    1, 
     1, 
     1, 
     1, 
@@ -57,35 +35,15 @@
     null, 
     null, 
     null, 
-    null, 
-    null, 
-    null, 
-    null, 
-    null, 
-    null, 
-    null, 
     null
    ], 
    "fillareastyle": "solid", 
    "legend": null, 
    "levels": [
-    -1e+20, 
-    -6, 
-    -5, 
-    -4, 
-    -3, 
-    -2, 
-    -1, 
-    -0.5, 
-    0, 
-    0.5, 
-    1, 
-    2, 
-    3, 
-    4, 
-    5, 
-    6, 
-    1e+20
+    [
+     1.0000000200408773e+20, 
+     1.0000000200408773e+20
+    ]
    ], 
    "missing": [
     0.0, 
@@ -196,8 +154,8 @@
    "datawc_x2": 360, 
    "datawc_y1": -90, 
    "datawc_y2": 90, 
-   "ext_1": true, 
-   "ext_2": true, 
+   "ext_1": false, 
+   "ext_2": false, 
    "fillareacolors": [
     1
    ], 
@@ -208,24 +166,10 @@
    "fillareastyle": "solid", 
    "legend": null, 
    "levels": [
-    -1e+20, 
-    0, 
-    0.2, 
-    0.5, 
-    1, 
-    2, 
-    3, 
-    4, 
-    5, 
-    6, 
-    7, 
-    8, 
-    9, 
-    10, 
-    12, 
-    14, 
-    17, 
-    1e+20
+    [
+     1.0000000200408773e+20, 
+     1.0000000200408773e+20
+    ]
    ], 
    "missing": [
     0.0, 
