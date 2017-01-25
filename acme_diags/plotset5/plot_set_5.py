@@ -3,22 +3,17 @@ import numpy
 import cdutil
 import vcs
 import genutil.statistics
+import acme_diags.metrics.rmse
+import acme_diags.metrics.corr
 
 def compute_rmse(model, obs):
-    rmse = -numpy.infty
-    try:
-        rmse = float(genutil.statistics.rms(model, obs, axis='xy', weights='generate'))
-    except Exception, err:
-        print err
-    return rmse
+    rmse_func = acme_diags.metrics.rmse.RMSE()
+    return rmse_func(model, obs)
 
 def compute_corr(model, obs):
-    corr = -numpy.infty
-    try:
-        corr = float(genutil.statistics.correlation(model, obs, axis='xy', weights='generate'))
-    except Exception, err:
-        print err
-    return corr
+    corr_func = acme_diags.metrics.corr.CORR()
+    return corr_func(model, obs)
+
 
 def plot_min_max_mean(canvas, variable, ref_test_or_diff):
     """canvas is a vcs.Canvas, variable is a
