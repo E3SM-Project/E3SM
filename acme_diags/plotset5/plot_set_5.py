@@ -85,15 +85,15 @@ def plot_rmse_and_corr(canvas, model, obs):
 def set_colormap_of_graphics_method(canvas, parameter_colormap, method):
     if parameter_colormap is not '':
         method.colormap = vcs.getcolormap(parameter_colormap)
-        _fix_levels_on_new_colormap(method)
+        colors = vcs.getcolors(method.levels, colors=range(6, 240))
+        method.fillareacolors = colors
 
-def _fix_levels_on_new_colormap(method):
-    colors = vcs.getcolors(method.levels, colors=range(6, 240))
-    method.fillareacolors = colors
-
-def set_levels_of_graphics_method(method, levels):
+def set_levels_of_graphics_method(method, levels, data):
     if levels != []:
         method.levels = levels
+
+    if method.levels == [[1.0000000200408773e+20, 1.0000000200408773e+20]]:
+        method.levels = vcs.mkscale(data.min(), data.max())
 
 def set_units(ref_or_test, units):
     if units != '':
@@ -138,9 +138,9 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     test_isofill = vcs.getisofill('test_isofill')
     diff_isofill = vcs.getisofill('diff_isofill')
 
-    set_levels_of_graphics_method(reference_isofill, parameter.reference_levels)
-    set_levels_of_graphics_method(test_isofill, parameter.test_levels)
-    set_levels_of_graphics_method(diff_isofill, parameter.diff_levels)
+    set_levels_of_graphics_method(reference_isofill, parameter.reference_levels, reference)
+    set_levels_of_graphics_method(test_isofill, parameter.test_levels, test)
+    set_levels_of_graphics_method(diff_isofill, parameter.diff_levels, diff)
 
     if parameter.arrows:
         reference_isofill.ext_1 = True

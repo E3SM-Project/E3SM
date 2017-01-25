@@ -80,5 +80,5 @@ elif var == 'T' and plev == 200:
 
 if var == 'T':
     parameter.main_title = ' '.join([var, str(plev), 'mb', season])
-    
+
 plot_set_5.plot(obs_pr, mod_pr, obs_pr_reg, mod_pr_reg, parameter)

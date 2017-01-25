@@ -146,7 +146,7 @@ isofill.datawc_x1 = 0
 isofill.datawc_x2 = 360
 isofill.datawc_y1 = -90
 isofill.datawc_y2 = 90
-isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+#isofill.levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 # NOTE: because of the obs and model data files used,
 # there is no 360 degree value, so we use 358 as 0.
 # Same for 0 where we use 2 instead.
@@ -158,8 +158,8 @@ isofill.yticlabels1 = {-90: '90S', -80: '80S', -60: '60S', -40: '40S',
                        80: '80N', 90: '90N'}
 
 # ext_1 and ext_2 are arrows
-isofill.ext_1 = True
-isofill.ext_2 = True
+#isofill.ext_1 = True
+#isofill.ext_2 = True
 isofill.script('plot_set_5_new.json')
 
 isofill = x.createisofill('test_isofill')

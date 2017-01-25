@@ -21,19 +21,22 @@ main_title = 'PRECT ANN'
 test_name = '1850_alpha6_01 (yrs0070-0099)'
 test_title = 'Reference'
 test_colormap = ''
-test_levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+#test_levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+test_levels = []
 test_units = 'mm/day'
 
 reference_name = 'GPCP (yrs1979-2009)'
 reference_title = 'Observation'
 reference_colormap = ''
-reference_levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+#reference_levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
+reference_levels = []
 reference_units = 'mm/day'
 
 diff_name = ''
 diff_title = 'Model - Observation'
 diff_colormap = 'bl_to_darkred'
-diff_levels = [-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+#diff_levels = [-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6]
+diff_levels = []
 diff_units = 'mm/day'
 
 canvas_size_w = 1212

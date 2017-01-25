@@ -71,8 +71,8 @@
    "datawc_x2": 360, 
    "datawc_y1": -90, 
    "datawc_y2": 90, 
-   "ext_1": true, 
-   "ext_2": true, 
+   "ext_1": false, 
+   "ext_2": false, 
    "fillareacolors": [
     1
    ], 
@@ -83,24 +83,10 @@
    "fillareastyle": "solid", 
    "legend": null, 
    "levels": [
-    -1e+20, 
-    0, 
-    0.2, 
-    0.5, 
-    1, 
-    2, 
-    3, 
-    4, 
-    5, 
-    6, 
-    7, 
-    8, 
-    9, 
-    10, 
-    12, 
-    14, 
-    17, 
-    1e+20
+    [
+     1.0000000200408773e+20, 
+     1.0000000200408773e+20
+    ]
    ], 
    "missing": [
     0.0, 
