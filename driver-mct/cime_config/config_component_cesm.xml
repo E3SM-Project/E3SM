@@ -200,12 +200,10 @@
     <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
   </entry>
 
-  <entry id="GLC_AVG_NCPL">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <values>
-      <value compset="_DLND.*_CISM\d">1</value>
-    </values>
+  <entry id="GLC_AVG_PERIOD">
+    <type>char</type>
+    <valid_values>yearly,daily</valid_values>
+    <default_value>yearly</default_value>
     <group>run_coupling</group>
     <file>env_run.xml</file>
     <desc>Number of glc coupling intervals relative to NCPL_BASE_PERIOD for averaging of GLC input.</desc>

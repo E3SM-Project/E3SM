@@ -132,11 +132,12 @@ module seq_timemgr_mod
       seq_timemgr_optNMonth         = "nmonth"    , &
       seq_timemgr_optNYears         = "nyears"    , &
       seq_timemgr_optNYear          = "nyear"     , &
+      seq_timemgr_optDaily          = "daily"     , &
       seq_timemgr_optMonthly        = "monthly"   , &
       seq_timemgr_optYearly         = "yearly"    , &
       seq_timemgr_optDate           = "date"      , &
       seq_timemgr_optIfdays0        = "ifdays0"   , &
-      seq_timemgr_optEnd            = "end"     
+      seq_timemgr_optEnd            = "end"      
 
    integer(SHR_KIND_IN),private,parameter :: &
       seq_timemgr_nclock_drv  = 1, &
@@ -244,7 +245,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
       Eclock_rof, EClock_wav, Eclock_esp)
                                            
 ! !USES:
-  use pio, only : file_desc_T
+   use pio, only : file_desc_T
    use shr_string_mod, only : shr_string_toupper
    use shr_file_mod,   only : shr_file_getunit, shr_file_freeunit
    use shr_mpi_mod,    only : shr_mpi_bcast
@@ -322,7 +323,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     integer(SHR_KIND_IN)    :: ice_cpl_dt            ! Sea-Ice coupling interval
     integer(SHR_KIND_IN)    :: ocn_cpl_dt            ! Ocean coupling interval
     integer(SHR_KIND_IN)    :: glc_cpl_dt            ! Glc coupling interval
-    integer(SHR_KIND_IN)    :: glc_avg_cpl_dt        ! Glc avering coupling interval
+    character(SHR_KIND_CS)  :: glc_avg_period        ! Glc avering coupling period
     integer(SHR_KIND_IN)    :: rof_cpl_dt            ! Runoff coupling interval
     integer(SHR_KIND_IN)    :: wav_cpl_dt            ! Wav coupling interval
     integer(SHR_KIND_IN)    :: esp_cpl_dt            ! Esp coupling interval
@@ -353,7 +354,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
          start_ymd, start_tod, ref_ymd, ref_tod,                 &
          atm_cpl_dt, ocn_cpl_dt, ice_cpl_dt, lnd_cpl_dt,         &
          atm_cpl_offset, lnd_cpl_offset, ocn_cpl_offset,         &
-         ice_cpl_offset, glc_cpl_dt, glc_cpl_offset, glc_avg_cpl_dt, &
+         ice_cpl_offset, glc_cpl_dt, glc_cpl_offset, glc_avg_period, &
          wav_cpl_dt, wav_cpl_offset, esp_cpl_dt, esp_cpl_offset, &
          rof_cpl_dt, rof_cpl_offset, end_restart
 !-------------------------------------------------------------------------------
@@ -415,7 +416,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        ice_cpl_dt       = 0
        ocn_cpl_dt       = 0
        glc_cpl_dt       = 0
-       glc_avg_cpl_dt   = 0
+       glc_avg_period   = seq_timemgr_optDaily
        rof_cpl_dt       = 0
        wav_cpl_dt       = 0
        esp_cpl_dt       = 0
@@ -481,11 +482,6 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        if (glc_cpl_dt == 0) glc_cpl_dt = atm_cpl_dt ! Copy atm coupling time into glc
        if (wav_cpl_dt == 0) wav_cpl_dt = atm_cpl_dt ! Copy atm coupling time into wav
        if (esp_cpl_dt == 0) esp_cpl_dt = atm_cpl_dt ! Copy atm coupling time into esp
-
-       if (glc_avg_cpl_dt == 0) then
-          ! set default average coupling interval 
-          glc_avg_cpl_dt = glc_cpl_dt
-       end if
 
        if ( ref_ymd == 0 ) then
           ref_ymd = start_ymd
@@ -561,7 +557,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0I) trim(subname),' ice_cpl_dt     = ',ice_cpl_dt
        write(logunit,F0I) trim(subname),' ocn_cpl_dt     = ',ocn_cpl_dt
        write(logunit,F0I) trim(subname),' glc_cpl_dt     = ',glc_cpl_dt
-       write(logunit,F0I) trim(subname),' glc_avg_cpl_dt = ',glc_avg_cpl_dt
+       write(logunit,F0I) trim(subname),' glc_avg_period = ',glc_avg_period
        write(logunit,F0I) trim(subname),' rof_cpl_dt     = ',rof_cpl_dt
        write(logunit,F0I) trim(subname),' wav_cpl_dt     = ',wav_cpl_dt
        write(logunit,F0I) trim(subname),' esp_cpl_dt     = ',esp_cpl_dt
@@ -651,7 +647,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call shr_mpi_bcast( ice_cpl_dt,           mpicom )
     call shr_mpi_bcast( ocn_cpl_dt,           mpicom )
     call shr_mpi_bcast( glc_cpl_dt,           mpicom )
-    call shr_mpi_bcast( glc_avg_cpl_dt,       mpicom )
+    call shr_mpi_bcast( glc_avg_period,       mpicom )
     call shr_mpi_bcast( rof_cpl_dt,           mpicom )
     call shr_mpi_bcast( wav_cpl_dt,           mpicom )
     call shr_mpi_bcast( esp_cpl_dt,           mpicom )
@@ -929,18 +925,22 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        opt_n   = dtime(seq_timemgr_nclock_glc), &
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_glcrun))
-
-    ! --- this is the glcrun_avg alarm (there ^) offset by a -dtime of the driver
-    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_glc), rc=rc )
-    OffsetTime = CurrTime + TimeStep
-    call ESMF_TimeIntervalSet( TimeStep, s=-offset(seq_timemgr_nclock_drv), rc=rc )
-    OffsetTime = OffsetTime + TimeStep
-    call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
-       EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun),  &
-       option  = seq_timemgr_optNSeconds,       &
-       opt_n   = glc_avg_cpl_dt,                &
-       RefTime = OffsetTime,                    &
+    if (glc_avg_period == seq_timemgr_optDaily) then
+       call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+            EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun_avg),  &
+            option  = seq_timemgr_optNSeconds,       &
+            opt_n   = 86400,                         &
+            RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_glcrun_avg))
+    else if (glc_avg_period == seq_timemgr_optYearly) then 
+       call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+            EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun_avg),  &
+            option  = seq_timemgr_optYearly,         &
+            RefTime = OffsetTime,                    &
+            alarmname = trim(seq_timemgr_alarm_glcrun_avg))
+    else
+       call shr_sys_abort(subname//':: glc_avg_period can only be yearly or daily')
+    end if
 
     call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_ocn), rc=rc )
     OffsetTime = CurrTime + TimeStep
