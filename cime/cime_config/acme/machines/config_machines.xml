@@ -903,7 +903,9 @@
     <environment_variables compiler="intel" mpilib="mvapich">
       <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>
     </environment_variables>
-
+    <environment_variables>
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
 </machine>
 
 <machine MACH="anvil">
