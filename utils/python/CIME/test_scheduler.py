@@ -222,7 +222,7 @@ class TestScheduler(object):
                 expect(not os.path.exists(self._get_test_dir(test)),
                        "Cannot create new case in directory '%s', it already exists."
                        " Pick a different test-id" % self._get_test_dir(test))
-
+        logger.info("Created test in directory %s"%self._get_test_dir(test))
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
