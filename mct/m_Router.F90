@@ -5,7 +5,7 @@
 ! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_Router -- Router class 
+! !MODULE: m_Router -- Router class
 !
 ! !DESCRIPTION:
 ! The Router data type contains all the information needed
@@ -63,7 +63,7 @@
       integer :: comp2id                           ! id of second component
       integer :: nprocs	                           ! number of procs to talk to
       integer :: maxsize                           ! maximum amount of data going to a processor
-      integer :: lAvsize                           ! The local size of AttrVect which can be 
+      integer :: lAvsize                           ! The local size of AttrVect which can be
                                                    ! used with this Router in MCT_Send/MCT_Recv
       integer :: numiatt                           ! Number of integer attributes currently in use
       integer :: numratt                           ! Number of real attributes currently in use
@@ -94,7 +94,7 @@
 
 ! !REVISION HISTORY:
 ! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize 
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize
 !           to Router type
 ! 25Sep02 - R. Jacob <jacob@mcs.anl.gov> Remove type string.  Add lAvsize
 ! 23Jul03 - R. Jacob <jacob@mcs.anl.gov> Add status and reqs arrays used
@@ -152,7 +152,7 @@
 ! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 ! 06Feb01 - R. Jacob <jacob@mcs.anl.gov> - Finish initialization
 !           of the Router.  Router now works both ways.
-! 25Apr01 - R. Jacob <jacob@mcs.anl.gov> - Eliminate early 
+! 25Apr01 - R. Jacob <jacob@mcs.anl.gov> - Eliminate early
 !           custom code to exchange GSMap components and instead
 !           the more general purpose routine in m_ExchangeMaps.
 !           Use new subroutine OrderedPoints in m_GlobalSegMap
@@ -171,11 +171,11 @@
 
 !--------------------------begin code-----------------------
 
-!!!!!!!!!!!!!!!!!Exchange of global map data 
+!!!!!!!!!!!!!!!!!Exchange of global map data
 
   if(present(name)) then
     tagname='01'//name//'ExGSMap'
-    
+
     call zeit_ci(trim(tagname))
     call MCT_ExGSMap(GSMap,mycomm,RGSMap,othercomp,ier)
     if(ier /= 0) call die(myname_,'ExGSMap',ier)
@@ -260,7 +260,7 @@
 !           Rewrote to reduce number of loops and temp storage
 ! 26Apr06 - R. Loy <rloy@mcs.anl.gov> - recode the search through
 !           the remote GSMap to improve efficiency
-! 05Jan07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of 
+! 05Jan07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of
 !           tmpsegcount and tmpsegstart
 ! 15May07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of
 !           rgs_lb and rgs_ub
@@ -287,7 +287,7 @@
   integer :: my_rightmost   ! Rightmost point in local segments (global memory)
   integer :: r_left         ! Left point in remote segment (global memory)
   integer :: r_right        ! Right point in remote segment (global memory)
-  integer :: r_leftmost     ! Leftmost point and rightmost point 
+  integer :: r_leftmost     ! Leftmost point and rightmost point
   integer :: r_rightmost    !  in remote segments in given process (global memory)
   integer :: nsegs_overlap  ! Number of segments that overlap between two procs
 
@@ -380,12 +380,12 @@
   othercomp = GSMap_comp_id(RGSMap)
 
 
-!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
+!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
 
 
 
-!! 
-!! determine the global segments on this processor 
+!!
+!! determine the global segments on this processor
 !! just once, so the info be used repeatedly below
 !! same code was used in m_GlobalToLocal - should make a subroutine...
 !!
@@ -425,7 +425,7 @@
   endif
 
 !!
-!! determine the possibly overlapping segments 
+!! determine the possibly overlapping segments
 !! in RGSMap that are local to each proc
 !!
   nprocs=ThisMCTWorld%nprocspid(othercomp)
@@ -435,7 +435,7 @@
     my_leftmost  = mygs_lb(1)
     my_rightmost = mygs_ub(nlseg)
 
-!! 
+!!
 !!  count number of potentially overlapping remote segments
 !!  and which and how many processes hold these
 !!
@@ -465,7 +465,7 @@
         rgs_count(proc) = rgs_count(proc) + 1
       endif
 
-    enddo 
+    enddo
 
     feas_nprocs   = 0
     feas_procs    = -1
@@ -478,7 +478,7 @@
       endif
     enddo
 
-!! 
+!!
 !!  build list of potentially overlapping remote segments
 !!
     !! original size of rgs_lb()/ub() was (r_ngseg,nprocs)
@@ -496,7 +496,7 @@
               nsegs_overlap_arr(feas_nprocs), stat=ier )
     if(ier/=0) call die(myname_,'allocate rgs, nsegs',ier)
 
-    !! (note: redefining rgs_count to be indexed as 1:feas_nprocs 
+    !! (note: redefining rgs_count to be indexed as 1:feas_nprocs
     !!  instead of as 1:nprocs)
     rgs_count = 0
     do i=1,r_ngseg
@@ -512,7 +512,7 @@
         rgs_ub( rgs_count(feas_proc) , feas_proc ) = RGSMap%start(i) + RGSMap%length(i) -1
       endif
 
-    enddo 
+    enddo
 
     deallocate(inv_feas_procs,stat=ier)
     if(ier/=0) call die(myname_,'deallocate inv_feas_procs',ier)
@@ -571,23 +571,23 @@
       my_right= mygs_ub(myseg)
 
       ! determine whether any overlap
-      if (.not. (my_right < r_leftmost   .or.  &  
+      if (.not. (my_right < r_leftmost   .or.  &
                  my_left  > r_rightmost)       ) then
 
         rseg_start = rseg_leftbase + 1       ! rseg loop index to start searching from
 
         ! loop over candidate overlapping remote segs on 'feas_proc'
-        do rseg = rseg_start, rgs_count(feas_proc) 
+        do rseg = rseg_start, rgs_count(feas_proc)
 
           r_right = rgs_ub(rseg,feas_proc)
           if (r_right < my_left ) then       ! to the left
-            rseg_leftbase = rseg             ! remember to start to the right of 
+            rseg_leftbase = rseg             ! remember to start to the right of
                                              !  this for next myseg
             cycle                            ! try the next remote segment
           endif
 
           r_left  = rgs_lb(rseg,feas_proc)
-          if (r_left  > my_right) exit       ! to the right, so no more segments 
+          if (r_left  > my_right) exit       ! to the right, so no more segments
                                              !  need to be examined
 
           ! otherwise, overlaps
@@ -653,7 +653,7 @@
   endif
 
 
-!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
+!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
 
 
 !!!!!!!!!!!!!!!!!!!!end of search through remote GSMap
@@ -692,7 +692,7 @@
 
   m=0
   do i=1,feas_nprocs
-    if(tmppe_list(i))then 
+    if(tmppe_list(i))then
       m=m+1
       ! load processor rank in MCT_comm
       proc = feas_procs(i)
@@ -850,7 +850,7 @@
     integer myrank
     integer ier
     character(len=*),parameter :: myname_=myname//'::print_'
-  
+
     call MP_comm_rank(mycomm,myrank,ier)
     if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
 
@@ -859,7 +859,7 @@
       if (rout%num_segs(iproc) > 0) then
         write(lun,*) myrank,rout%pe_list(iproc),rout%locsize(iproc)
       endif
-    end do        
+    end do
 
 
   end subroutine print_

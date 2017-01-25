@@ -2,15 +2,15 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_GlobalSegMapComms - GlobalSegMap Communications Support
 !
 ! !DESCRIPTION:
 !
-! This module provides communications support for the {\tt GlobalSegMap} 
-! datatype.  Both blocking and non-blocking point-to-point communications 
+! This module provides communications support for the {\tt GlobalSegMap}
+! datatype.  Both blocking and non-blocking point-to-point communications
 ! are provided for send (analogues to {\tt MPI\_SEND()/MPI\_ISEND()})
 ! A receive and broadcast method is also supplied.
 !
@@ -50,13 +50,13 @@
 ! !IROUTINE: send_ - Point-to-point blocking Send of a GlobalSegMap
 !
 ! !DESCRIPTION:
-! This routine performs a blocking send of a {\tt GlobalSegMap} (the 
+! This routine performs a blocking send of a {\tt GlobalSegMap} (the
 ! input argument {\tt outgoingGSMap}) to the root processor on component
-! {\tt comp\_id}. The input {\tt INTEGER} argument {\tt TagBase} 
-! is used to generate tags for the messages associated with this operation; 
-! there are six messages involved, so the user should avoid using tag 
+! {\tt comp\_id}. The input {\tt INTEGER} argument {\tt TagBase}
+! is used to generate tags for the messages associated with this operation;
+! there are six messages involved, so the user should avoid using tag
 ! values {\tt TagBase} and {\tt TagBase + 5}.  All six messages are blocking.
-! The success (failure) of this operation is reported in the zero 
+! The success (failure) of this operation is reported in the zero
 ! (non-zero) value of the optional {\tt INTEGER} output variable {\tt status}.
 !
 ! !INTERFACE:
@@ -86,7 +86,7 @@
   integer,               intent(IN)  :: comp_id
   integer,               intent(IN)  :: TagBase
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
   integer, optional,     intent(OUT) :: status
 
@@ -160,23 +160,23 @@
 ! !IROUTINE: isend_ - Point-to-point Non-blocking Send of a GlobalSegMap
 !
 ! !DESCRIPTION:
-! This routine performs a non-blocking send of a {\tt GlobalSegMap} (the 
+! This routine performs a non-blocking send of a {\tt GlobalSegMap} (the
 ! input argument {\tt outgoingGSMap}) to the root processor on component
-! {\tt comp\_id}  The input {\tt INTEGER} argument {\tt TagBase} 
-! is used to generate tags for the messages associated with this operation; 
-! there are six messages involved, so the user should avoid using tag 
+! {\tt comp\_id}  The input {\tt INTEGER} argument {\tt TagBase}
+! is used to generate tags for the messages associated with this operation;
+! there are six messages involved, so the user should avoid using tag
 ! values {\tt TagBase} and {\tt TagBase + 5}.  All six messages are non-
 ! blocking, and the request handles for them are returned in the output
-! {\tt INTEGER} array {\tt reqHandle}, which can be checked for completion 
-! using any of MPI's wait functions.  The success (failure) of 
-! this operation is reported in the zero (non-zero) value of the optional 
+! {\tt INTEGER} array {\tt reqHandle}, which can be checked for completion
+! using any of MPI's wait functions.  The success (failure) of
+! this operation is reported in the zero (non-zero) value of the optional
 ! {\tt INTEGER} output variable {\tt status}.
 !
 ! {\bf N.B.}:  Data is sent directly out of {\tt outgoingGSMap} so it
 ! must not be deleted until the send has completed.
 !
-! {\bf N.B.}:  The array {\tt reqHandle} represents allocated memory that 
-! must be deallocated when it is no longer needed.  Failure to do so will 
+! {\bf N.B.}:  The array {\tt reqHandle} represents allocated memory that
+! must be deallocated when it is no longer needed.  Failure to do so will
 ! create a memory leak.
 !
 ! !INTERFACE:
@@ -204,7 +204,7 @@
   integer,               intent(IN)  :: comp_id
   integer,               intent(IN)  :: TagBase
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
   integer, dimension(:), pointer     :: reqHandle
   integer, optional,     intent(OUT) :: status
@@ -285,13 +285,13 @@
 ! !IROUTINE: recv_ - Point-to-point blocking Receive of a GlobalSegMap
 !
 ! !DESCRIPTION:
-! This routine performs a blocking receive of a {\tt GlobalSegMap} (the 
+! This routine performs a blocking receive of a {\tt GlobalSegMap} (the
 ! input argument {\tt outgoingGSMap}) from the root processor on component
-! {\tt comp\_id}. The input {\tt INTEGER} argument {\tt TagBase} 
-! is used to generate tags for the messages associated with this operation; 
-! there are six messages involved, so the user should avoid using tag 
+! {\tt comp\_id}. The input {\tt INTEGER} argument {\tt TagBase}
+! is used to generate tags for the messages associated with this operation;
+! there are six messages involved, so the user should avoid using tag
 ! values {\tt TagBase} and {\tt TagBase + 5}. The success (failure) of this
-! operation is reported in the zero (non-zero) value of the optional {\tt INTEGER} 
+! operation is reported in the zero (non-zero) value of the optional {\tt INTEGER}
 ! output variable {\tt status}.
 !
 ! !INTERFACE:
@@ -318,7 +318,7 @@
   integer,               intent(IN)  :: comp_id
   integer,               intent(IN)  :: TagBase
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
   type(GlobalSegMap),    intent(OUT) :: incomingGSMap
   integer, optional,     intent(OUT) :: status
@@ -340,7 +340,7 @@
 
        ! Receive the GlobalSegMap's basic constants:  component id,
        ! grid size, and number of segments.  The number of segments
-       ! is needed to construct the arrays into which segment 
+       ! is needed to construct the arrays into which segment
        ! information will be received.  Thus, this receive blocks.
 
   call MPI_RECV(RecvBuffer(1), 1, MP_Type(RecvBuffer(1)), sourceID, &
@@ -398,11 +398,11 @@
 !
 ! !DESCRIPTION:
 !
-! The routine {\tt bcast\_()} takes the input/output {\em GlobalSegMap} 
+! The routine {\tt bcast\_()} takes the input/output {\em GlobalSegMap}
 ! argument {\tt GSMap} (on input valid only on the {\tt root} process,
 ! on output valid on all processes) and broadcasts it to all processes
 ! on the communicator associated with the F90 handle {\tt comm}.  The
-! success (failure) of this operation is returned as a zero (non-zero) 
+! success (failure) of this operation is returned as a zero (non-zero)
 ! value of the optional output {\tt INTEGER} argument {\tt status}.
 !
 ! !INTERFACE:
@@ -425,11 +425,11 @@
       integer,            intent(in)     :: root
       integer,            intent(in)     :: comm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
       type(GlobalSegMap), intent(inout)  :: GSMap  ! Output GlobalSegMap
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       integer, optional,  intent(out)    :: status ! global vector size
 
@@ -502,7 +502,7 @@
        status = 5
        return
     endif
-  endif 
+  endif
 
   if(myID == root) then ! pack outgoing broadcast buffer
      do n=1,GSMap%ngseg
@@ -539,7 +539,7 @@
 
        ! Clean up buffer space:
 
-  deallocate(IntBuffer, stat=ierr) 
+  deallocate(IntBuffer, stat=ierr)
   if(ierr /= 0) then
     if(.not. present(status)) then
        call die(myname_,'second deallocate(IntBuffer)',ierr)
@@ -548,7 +548,7 @@
        status = 8
        return
     endif
-  endif 
+  endif
 
  end subroutine bcast_
 

@@ -1,6 +1,6 @@
 .NOTPARALLEL:
 SHELL           = /bin/sh
-VPATH=$(SRCDIR)/mct 
+VPATH=$(SRCDIR)/mct
 # SOURCE FILES
 
 MODULE		= mct
@@ -32,7 +32,7 @@ SRCS_F90	= m_MCTWorld.F90		\
 		  m_Router.F90			\
 		  m_Rearranger.F90        	\
 		  m_SPMDutils.F90               \
-		  m_Transfer.F90          
+		  m_Transfer.F90
 
 OBJS_ALL	= $(SRCS_F90:.F90=.o)
 
@@ -77,7 +77,7 @@ install: all
 
 $(OBJS_ALL): $(MPEUPATH)/libmpeu.a
 
-m_AttrVect.o: 
+m_AttrVect.o:
 m_Accumulator.o: m_AttrVect.o
 m_GlobalMap.o:
 m_GlobalSegMap.o:
