@@ -667,6 +667,12 @@
 					possible_values="Any positive real number."
 		/>
 	</nml_record>
+	<nml_record name="coupling" mode="init;forward">
+		<nml_option name="config_ssh_grad_relax_timescale" type="real" default_value="0.0" units="seconds"
+					description="Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response."
+					possible_values="Any positive real number."
+		/>
+	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
 		<nml_option name="config_sw_absorption_type" type="character" default_value="none" units="unitless"
 					description="Name of shortwave absorption type used in simulation. "
@@ -2691,6 +2697,14 @@
 			/>
 			<var name="avgSSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
 				 description="Time averaged meridional gradient of SSH"
+			/>
+		</var_array>
+		<var_array name="filteredSSHGradient" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+			<var name="filteredSSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
+				 description="Time filtered zonal gradient of SSH"
+			/>
+			<var name="filteredSSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
+				 description="Time filtered meridional gradient of SSH"
 			/>
 		</var_array>
 
