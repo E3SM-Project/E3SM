@@ -38,4 +38,3 @@ diff_units = 'mm/day'
 
 canvas_size_w = 1212
 canvas_size_h = 1628
-logo = False
