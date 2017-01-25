@@ -1043,7 +1043,7 @@ contains
     ! note that tendencies are not only in sfc layer (because of sedimentation)
     ! and that ptend is updated within each subroutine for different species
     
-    call physics_ptend_init(ptend, state%psetcols, 'aero_model_drydep', lq=drydep_lq)
+    call physics_ptend_init(ptend, state%psetcols, 'drydep', lq=drydep_lq)
 
     call pbuf_get_field(pbuf, dgnumwet_idx,   dgncur_awet, start=(/1,1,1/), kount=(/pcols,pver,nmodes/) ) 
     call pbuf_get_field(pbuf, wetdens_ap_idx, wetdens,     start=(/1,1,1/), kount=(/pcols,pver,nmodes/) ) 
@@ -1483,7 +1483,7 @@ contains
     lchnk = state%lchnk
     ncol  = state%ncol
 
-    call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep', lq=wetdep_lq)
+    call physics_ptend_init(ptend, state%psetcols, 'wetdep', lq=wetdep_lq)
     
     ! Do calculations of mode radius and water uptake if:
     ! 1) modal aerosols are affecting the climate, or

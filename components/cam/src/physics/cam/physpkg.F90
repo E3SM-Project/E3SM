@@ -1209,7 +1209,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           ilchnk = (c - lastblock) - tot_chnk_till_this_prc(iam)
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c), rnglw(:,:,:,ilchnk),  & !BSINGH - Added rnglw and rngsw
-                       rngsw(:,:,:,ilchnk), sgh30(1,c), cam_out(c), cam_in(c) )
+                       rngsw(:,:,:,ilchnk), sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
        end do
 
@@ -1922,7 +1922,7 @@ end subroutine tphysac
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,     fsds,    landm,  rnglw,   & !BSINGH- Added rnglw and rngsw
-       rngsw,   sgh30, cam_out, cam_in )
+       rngsw,   sgh, sgh30, cam_out, cam_in )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -2950,7 +2950,7 @@ end subroutine phys_timestep_init
 subroutine add_fld_default_calls()
   !BSINGH -  For adding addfld and add defualt calls
   use units,        only: getunit, freeunit
-  use cam_history,  only: addfld, add_default, phys_decomp, fieldname_len
+  use cam_history,  only: addfld, add_default, fieldname_len
   use ppgrid,       only: pcols, pver
   implicit none
   
@@ -2984,28 +2984,29 @@ subroutine add_fld_default_calls()
 
      str_S        = 'S_'//trim(adjustl(str_in(i)))
      str_S_detail = 'Static Energy from '// trim(adjustl(str_in(i)))
-     call addfld (trim(adjustl(str_S)), 'K', pver, 'A',  trim(adjustl(str_S_detail)),phys_decomp)
+
+     call addfld (trim(adjustl(str_S)), (/ 'lev' /), 'A', 'K', trim(adjustl(str_S_detail)),flag_xyfill=.true.)
      call add_default (trim(adjustl(str_S)), 1, ' ')
 
      str_T        = 'T_'//trim(adjustl(str_in(i)))
      str_T_detail = 'Temprature from '// trim(adjustl(str_in(i)))
-     call addfld (trim(adjustl(str_T)), 'K', pver, 'A',  trim(adjustl(str_T_detail)),phys_decomp)
+     call addfld (trim(adjustl(str_T)), (/ 'lev' /), 'A', 'K', trim(adjustl(str_T_detail)),flag_xyfill=.true.)
      call add_default (trim(adjustl(str_T)), 1, ' ')
      
      str_QV        = 'QV_'//trim(adjustl(str_in(i)))
      str_QV_detail = 'water vapor from '// trim(adjustl(str_in(i)))
-     call addfld (str_QV, 'kg/kg', pver, 'A', str_QV_detail, phys_decomp)
+     call addfld (str_QV, (/ 'lev' /), 'A', 'kg/kg',str_QV_detail, flag_xyfill=.true.)
      call add_default (str_QV, 1, ' ')
      
      if(trim(adjustl(str_in(i))) .NE. 'topphysbc') then
         !str_Stend        = 'St_'//trim(adjustl(str_in(i)))
         !str_Stend_detail = 'Static Energy tend from '// trim(adjustl(str_in(i)))
-        !call addfld (str_Stend, 'K/s', pver, 'A', str_Stend_detail, phys_decomp)
+        !call addfld (str_Stend, (/ 'lev' /), 'A', 'K/s', str_Stend_detail,flag_xyfill=.true.)
         !call add_default (str_Stend, 1, ' ')
         
         !str_QVtend        = 'QVt_'//trim(adjustl(str_in(i)))
         !str_QVtend_detail = 'water vapor tend from '// trim(adjustl(str_in(i)))
-        !call addfld (str_QVtend, 'kg/kg/s', pver, 'A', str_QVtend_detail, phys_decomp)
+        !call addfld (str_QVtend,(/ 'lev' /), 'A', 'kg/kg/s',str_QVtend_detail, flag_xyfill=.true.)
         !call add_default (str_QVtend, 1, ' ')
      endif
      
