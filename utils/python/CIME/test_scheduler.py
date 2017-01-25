@@ -638,6 +638,9 @@ class TestScheduler(object):
             # updating the TestStatus file
             self._update_test_status_file(test, test_phase, status)
 
+        if test_phase == XML_PHASE:
+            append_status("Case Created using: "+" ".join(sys.argv), caseroot=self._get_test_dir(test), sfile="README.case")
+
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
         if (success and not self._no_run and not self._no_batch and test_phase == MODEL_BUILD_PHASE):
