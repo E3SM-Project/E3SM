@@ -222,7 +222,7 @@ class TestScheduler(object):
                 expect(not os.path.exists(self._get_test_dir(test)),
                        "Cannot create new case in directory '%s', it already exists."
                        " Pick a different test-id" % self._get_test_dir(test))
-
+        logger.info("Created test in directory %s"%self._get_test_dir(test))
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
@@ -637,6 +637,9 @@ class TestScheduler(object):
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
             self._update_test_status_file(test, test_phase, status)
+
+        if test_phase == XML_PHASE:
+            append_status("Case Created using: "+" ".join(sys.argv), caseroot=self._get_test_dir(test), sfile="README.case")
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
