@@ -476,7 +476,8 @@ contains
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phi(i,j,k,n0:n1)      = g*zm
   elem%state%phis(i,j)           = phis
-
+! This needs to be debugged.
+  elem%state%dp3d(i,j,k,n0:n1)   = dp
 
   if (use_moisture) then
      call abortmp('ERROR: thetah set_state not yet coded for moisture')
@@ -486,8 +487,23 @@ contains
   end subroutine set_state
 
 
+  subroutine dcmip2012_tests_finalize(elem, hvcoord, temp)
+! Need to switch this to set_hydrostatic and debug against analyt. \phi.
+  implicit none
 
+  type(hvcoord_t),     intent(in)  :: hvcoord
+  type(element_t),  intent(inout)  :: elem
+  integer                          :: tl
+  real(real_kind)                  :: temp(np,np,nlev)
 
-  
+!  if( present(temp) )then
+  do tl = 1,timelevels
+    call set_thermostate(elem,temp,hvcoord,tl,0)
+  enddo
+!  else
+!    call abortmp('ERROR: In thetah, dcmip2012_tests_finalize() cannot be called without T.')
+!  endif
+  end subroutine dcmip2012_tests_finalize
+
 end module
 

@@ -53,7 +53,7 @@ module parallel_mod
 #ifdef CAM
   type (parallel_t)    :: par              ! parallel structure for distributed memory programming
 #endif
-  integer, parameter :: nrepro_vars=MAX(10,nlev*qsize_d)
+  integer, parameter :: nrepro_vars=MAX(11,nlev*qsize_d)
   real(kind=8), public, allocatable :: global_shared_buf(:,:)
   real(kind=8), public :: global_shared_sum(nrepro_vars)
 

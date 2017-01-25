@@ -11,7 +11,7 @@ use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_had
 use derivative_mod,       only: derivative_t, gradient_sphere
 use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
 use element_mod,          only: element_t
-use element_ops,          only: set_state, copy_state, set_thermostate
+use element_ops,          only: set_state, copy_state, set_thermostate, dcmip2012_tests_finalize
 use element_state,        only: nt=>timelevels
 use hybrid_mod,           only: hybrid_t
 use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
@@ -264,7 +264,7 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
 !save temperature of the whole element to reset nonhydro model to discrete hydrostatic balance
-!  real(rl):: t_local(np,np,nlev)
+  real(rl):: t_local(np,np,nlev), he
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-0: steady state atmosphere with orography'
 
@@ -280,16 +280,14 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
     call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
     call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,phis,ps,rho,q(1))
     dp = pressure_thickness(ps,k,hvcoord)
-  !  t_local(i,j,k) = T
-    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+!    t_local(i,j,k) = T
+!let's get an analytical \phi
+    he = (T0 - T)/gamma
+!print *, 'zm, height', zm(k), he
+    call set_state(u,v,w,T,ps,phis,p,dp,he,g, i,j,k,elem(ie),1,nt)
     call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
   enddo; enddo; enddo; 
-  ! reset phi and theta
-  ! time index from 1 to nt, last index is for tracer(s), not used
-  !call set_thermostate(elem(ie), t_local, hvcoord, 1, 0)
-  !do i = 2, nt
-  !call copy_state(elem(ie),1,i)
-  !enddo
+!  if ( model_name == 'thetah' ) call dcmip2012_tests_finalize(elem(ie),hvcoord,t_local)
   enddo
 
 end subroutine
