@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_IndexBin_logical - Template of indexed bin-sorting module
@@ -68,7 +68,7 @@ contains
 		endif
 !________________________________________
 		! Count numbers entries for the given key0
-	
+
   lc(0)=1	! the location of values the same as key0
   ln(0)=0
   do i=1,n
@@ -84,7 +84,7 @@ contains
     if(keys(ix) .eqv. key0) then
       ni=lc(0)+ln(0)
       ln(0)=ln(0)+1
-      
+
     else
       ni=lc(1)+ln(1)
       ln(1)=ln(1)+1
