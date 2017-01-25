@@ -58,7 +58,7 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30v3' ) {
         $grid_date .= '161222';
-	$grid_prefix .= 'cice.EC60to30v3';
+	$grid_prefix .= 'seaice.EC60to30v3';
 	$decomp_date .= '161222';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30v3_ICG' ) {
@@ -103,7 +103,7 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
         $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS30to10v3' ) {
         $grid_date .= '161221';
-        $grid_prefix .= 'oRRS30to10v3';
+        $grid_prefix .= 'seaice.RRS30to10v3';
         $decomp_date .= '161221';
         $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS30to10wLI' ) {
