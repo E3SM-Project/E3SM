@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: mutils.F90,v 1.8 2005-11-18 23:15:38 rloy Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: mutils -- utilities for the sequential climate example
@@ -65,7 +65,7 @@ subroutine get_index(ldecomp,nprocs,myproc,gnx,gny,gridbuf)
    if((trim(ldecomp) .ne. 'R') .and. (ldecomp .ne. 'C') .and. (ldecomp .ne. 'RC')) then
       ldecomp = 'R'
    endif
-  
+
 ! A 'by-row' or 'by-latitude' decomposition
   if(trim(ldecomp) .eq. 'R') then
    npesx=1
@@ -128,7 +128,7 @@ subroutine get_index(ldecomp,nprocs,myproc,gnx,gny,gridbuf)
      enddo
    enddo
 
-   
+
   endif
 
 end subroutine get_index

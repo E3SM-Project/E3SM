@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: dstmodel.F90,v 1.8 2006-10-17 21:47:56 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: dstmodel -- generic model for sequential climate model
@@ -72,7 +72,7 @@ subroutine dstinit(GSMap,IMPORT,EXPORT,comm,compid)
 ! !INPUT PARAMETERS:
   type(GlobalSegMap),intent(inout) :: GSMap    ! decomposition
   type(AttrVect),intent(inout)     :: IMPORT,EXPORT  ! state data
-  integer,intent(in)               :: comm     ! MPI communicator 
+  integer,intent(in)               :: comm     ! MPI communicator
   integer,intent(in)               :: compid   ! component ID
 !
 !EOP ___________________________________________________________________
@@ -172,7 +172,7 @@ subroutine dstrun(IMPORT,EXPORT)
 
 ! local variables
   integer :: avsize,ier,i,index
-     
+
   if(rank==0) write(6,*) modelname, ' run start'
 
 ! Copy input data to output data using translation between different names
@@ -214,7 +214,7 @@ subroutine dstfin(IMPORT,EXPORT,GSMap)
     lsize=AttrVect_lsize(GlobalD)
     open(mdev, file="TS1out.dat")
     do i=1,lsize
-     write(mdev,*) GlobalD%rAttr(1,i) 
+     write(mdev,*) GlobalD%rAttr(1,i)
     enddo
     close(mdev)
   endif
