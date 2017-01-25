@@ -743,8 +743,15 @@ contains
 
                cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(c)
                cs = max(cs,1.e-06_r8)
-               ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
-
+               if(abs(gs_mol(p,iv)-bbb(p))<1.e-14_r8)then
+                  ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(c) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
+               else
+                  ci_z(p,iv) = ciold
+               endif
+               if(ci_z(p,iv)<0._r8)then
+                 write(iulog,*)'negative ci',ci_z(p,iv),an(p,iv),gs_mol(p,iv)-bbb(p)
+                 call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+               endif
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
                gs = gs_mol(p,iv) / cf
@@ -1094,6 +1101,9 @@ contains
                lmr_z, par_z, rh_can, gs_mol, &
                atm2lnd_vars, photosyns_vars)
        x0=x
+       if(x0<0._r8)then
+         write(iulog,*)'negative after brent',x0
+       endif
     else
       ! write(iulog,'(I8,13(X,E15.8),X,L8)')p,ci_val(1),fi_val(1),ci_val(2),fi_val(2),&
       !   ci_val(3),fi_val(3),ci_val(4),fi_val(4),ci_val(5),fi_val(5),photosyns_vars%aj_patch(p,iv),&
@@ -1171,7 +1181,7 @@ contains
        endif
        tol1=2._r8*EPS*abs(b)+0.5_r8*tol  !Convergence check.   
        xm=0.5_r8*(c-b)
-       if(abs(xm) <= tol1 .or. fb == 0.)then
+       if(abs(xm) <= tol1 .or. fb == 0._r8)then
           x=b
           return
        endif
@@ -1216,7 +1226,7 @@ contains
 
     if(iter==ITMAX)write(iulog,*) 'brent exceeding maximum iterations', b, fb
     x=b
-
+    if(x<0._r8)write(iulog,*)'negative in brent',x,x1,x2
     return
   end subroutine brent
 
@@ -1354,7 +1364,6 @@ contains
          bbb        => photosyns_vars%bbb_patch                , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)                 
          mbb        => photosyns_vars%mbb_patch                  & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship           
          )
-
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       fnps = 0.15_r8
       theta_psii = 0.7_r8
