@@ -7,7 +7,7 @@ static int mpi_match_send(void *r, void *tag)
 	  *((int *)tag) == ((Req *)r)->tag );
 }
 
-FC_FUNC(mpi_iprobe, MPI_IPROBE)(int * source, int * tag, int * comm, 
+FC_FUNC(mpi_iprobe, MPI_IPROBE)(int * source, int * tag, int * comm,
                                   int * flag, int *status, int * ierr)
 {
   *ierr = MPI_Iprobe(*source, *tag, *comm, flag, mpi_c_status(status));

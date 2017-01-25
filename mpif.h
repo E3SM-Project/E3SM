@@ -111,8 +111,8 @@
         integer MPI_ERR_LASTCODE
         parameter (MPI_ERR_LASTCODE= -1)
 
-        integer MPI_ERRORS_RETURN 
-        parameter (MPI_ERRORS_RETURN= -1) 
+        integer MPI_ERRORS_RETURN
+        parameter (MPI_ERRORS_RETURN= -1)
 
 !
 !
@@ -157,8 +157,8 @@
 !
 !  New datatype values
 !  Type constants represent integer handles, matching up to the index of the
-!  type array equal to the absolute value of the constant plus one.  For 
-!  example, MPI_BYTE=-12, corresponding to type index 11. 
+!  type array equal to the absolute value of the constant plus one.  For
+!  example, MPI_BYTE=-12, corresponding to type index 11.
 !  (Array in type_const.c)
 !
 
@@ -180,7 +180,7 @@
 
 	INTEGER MPI_INTEGER
 	PARAMETER (MPI_INTEGER=-16)
-	
+
 	INTEGER MPI_REAL
 	PARAMETER (MPI_REAL=-17)
 
@@ -236,7 +236,7 @@
         PARAMETER (MPI_REAL8= -38 )
 
         INTEGER MPI_REAL16
-        PARAMETER (MPI_REAL16= -39 ) 
+        PARAMETER (MPI_REAL16= -39 )
 
 
         integer MPI_COMPLEX8
@@ -259,7 +259,7 @@
 
         integer MPI_OFFSET
         parameter (MPI_OFFSET= -45)
-        
+
 !
 ! MPI_Op values
 !
