@@ -1123,10 +1123,13 @@ class Z_FullSystemTest(TestCreateTestCommon):
                 # the submitted case.test script is run, which could take a while if the system is
                 # busy. This potentially leaves a window where the wait_for_tests command below will
                 # not wait for the re-submitted jobs to run because it sees the original PASS.
-                # The code below forces things back to PEND to avoid this race condition.
+                # The code below forces things back to PEND to avoid this race condition. Note
+                # that we must use the MEMLEAK phase, not the RUN phase, because RUN being in a non-PEND
+                # state is how system tests know they are being re-run and must reset certain
+                # case settings.
                 if self._hasbatch:
                     with TestStatus(test_dir=casedir) as ts:
-                        ts.set_status(RUN_PHASE, TEST_PEND_STATUS)
+                        ts.set_status(MEMLEAK_PHASE, TEST_PEND_STATUS)
 
                 run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
 
