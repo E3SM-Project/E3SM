@@ -1064,7 +1064,6 @@
       <env name="MPI_TYPE_MAX">100000</env>
       <env name="OMP_DYNAMIC">FALSE</env>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="HDF5">/soft/libraries/hdf5/1.8.14/cnk-xl/current</env>
     </environment_variables>
 </machine>
 
@@ -1187,7 +1186,6 @@
       <env name="MPI_TYPE_MAX">10000</env>
       <env name="OMP_DYNAMIC">FALSE</env>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="HDF5">/soft/libraries/hdf5/1.8.14/cnk-xl/current</env>
     </environment_variables>
 </machine>
 
