@@ -9,11 +9,11 @@ module scanslt
 ! $Id$
 !
 !-----------------------------------------------------------------------
-   use shr_kind_mod, only: r8 => shr_kind_r8
-   use pmgrid,       only: plon, plat, plev, beglat, endlat, plevp
-   use constituents, only: pcnst
+   use shr_kind_mod,     only: r8 => shr_kind_r8
+   use pmgrid,           only: plon, plat, plev, beglat, endlat, plevp
+   use constituents,     only: pcnst
    use cam_abortutils,   only: endrun
-   use scamMod,      only: single_column
+   use scamMod,          only: single_column
    use perf_mod
 !-----------------------------------------------------------------------
    implicit none
@@ -131,7 +131,7 @@ end subroutine scanslt_alloc
 !
 !-----------------------------------------------------------------------
 !
-subroutine scanslt_initial( adv_state, etamid, gravit_in, gw, detam, cwava )
+subroutine scanslt_initial( adv_state, etamid, gravit_in, detam, cwava )
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -146,17 +146,16 @@ subroutine scanslt_initial( adv_state, etamid, gravit_in, gw, detam, cwava )
    use prognostics,  only: ps, n3
    use rgrid,        only: nlon
    use time_manager, only: is_first_step
-   use hycoef,       only: hyai, hybi, ps0
+   use hycoef,       only: hyam, hybm, hyai, hybi, ps0
    use eul_control_mod, only : pdela
 !
 ! Input arguments
 !
-   real(r8), intent(inout) :: etamid(plev)  ! vertical coords at midpoints
+   real(r8), intent(out) :: etamid(plev)  ! vertical coords at midpoints
    real(r8), intent(in) :: gravit_in        ! Gravitational constant
 !
 ! Output arguments
 !
-   real(r8), intent(out) :: gw(plat)               ! Gaussian weights
    real(r8), intent(out) :: detam(plev)            ! intervals between vert full levs.
    real(r8), intent(out) :: cwava(plat)            ! weight applied to global integrals
    type(advection_state), intent(out) :: adv_state ! Advection state data
@@ -169,16 +168,17 @@ subroutine scanslt_initial( adv_state, etamid, gravit_in, gw, detam, cwava )
    real(r8) :: pmid(plon,plev)    ! pressure at model levels
    real(r8) :: pint(plon,plevp)   ! pressure at interfaces
    real(r8) :: pdel(plon,plev)    ! pressure difference between
+   real(r8) :: gw(plat)           ! Gaussian weights needed for SCAM grdini call
 !
 ! Allocate memory for scanslt variables
 !
    call adv_state_alloc( adv_state )
-!
-! Eta at interfaces
-!
-   do k=1,plevp
+
+   do k = 1, plev
+      etamid(k) = hyam(k) + hybm(k)
       etaint(k) = hyai(k) + hybi(k)
    end do
+   etaint(plevp) = hyai(plevp) + hybi(plevp)
 !
 ! For SCAM compute pressure levels to use for eta interface
 !
@@ -636,7 +636,8 @@ subroutine grdini(pmap    ,etamid  ,etaint  ,gravit  ,dlam    , &
 ! Reviewed:          D. Williamson, P. Rasch, March 1996
 !
 !-----------------------------------------------------------------------
-   use rgrid,   only: nlon
+   use rgrid,      only: nlon
+   use vrtmap_mod, only: vrtmap
 !------------------------------Parameters-------------------------------
 !
 ! Input arguments
@@ -716,48 +717,48 @@ subroutine grdini(pmap    ,etamid  ,etaint  ,gravit  ,dlam    , &
 !-----------------------------------------------------------------------
    if (single_column) then
 
-   dlam(:)=0._r8
-   lam(:,:)=0._r8
-   phi(:)=0._r8
-   dphi(:)=0._r8
-   sinlam(:,:)=0._r8
-   coslam(:,:)=0._r8
-   detai(:)=0._r8
-   kdpmpf(:)=0._r8
-   kdpmph(:)=0._r8
-   gw(:)=1._r8
-   call basdz(plev    ,etamid  ,lbasdz  )
-   call basdz(plevp   ,etaint  ,lbassd  )
+      dlam(:)=0._r8
+      lam(:,:)=0._r8
+      phi(:)=0._r8
+      dphi(:)=0._r8
+      sinlam(:,:)=0._r8
+      coslam(:,:)=0._r8
+      detai(:)=0._r8
+      kdpmpf(:)=0._r8
+      kdpmph(:)=0._r8
+      gw(:)=1._r8
+      call basdz(plev    ,etamid  ,lbasdz  )
+      call basdz(plevp   ,etaint  ,lbassd  )
 
    else
-!
-! Initialize extended horizontal grid coordinates.
-!
-   call grdxy(dlam    ,lam     ,phi     ,gw      ,sinlam  , &
-      coslam  )
-!
-! Basis functions for computing Lagrangian cubic derivatives
-! on unequally spaced latitude and vertical grids.
-!
-   call basdy(phi     ,lbasdy  )
+      !
+      ! Initialize extended horizontal grid coordinates.
+      !
+      call grdxy(dlam    ,lam     ,phi     ,gw      ,sinlam  , &
+         coslam  )
+      !
+      ! Basis functions for computing Lagrangian cubic derivatives
+      ! on unequally spaced latitude and vertical grids.
+      !
+      call basdy(phi     ,lbasdy  )
 
-   call basdz(plev    ,etamid  ,lbasdz  )
-   call basdz(plevp   ,etaint  ,lbassd  )
+      call basdz(plev    ,etamid  ,lbasdz  )
+      call basdz(plevp   ,etaint  ,lbassd  )
 
 
-!
-! Basis functions for computing weights for Lagrangian cubic
-! interpolation on unequally spaced latitude grids.
-!
-   call basiy(phi     ,lbasiy  )
-!
-! Compute interval lengths in latitudinal grid
-!
-   do j = 1,platd-1
-      dphi(j) = phi(j+1) - phi(j)
-   end do
+      !
+      ! Basis functions for computing weights for Lagrangian cubic
+      ! interpolation on unequally spaced latitude grids.
+      !
+      call basiy(phi     ,lbasiy  )
+      !
+      ! Compute interval lengths in latitudinal grid
+      !
+      do j = 1,platd-1
+         dphi(j) = phi(j+1) - phi(j)
+      end do
 
-endif
+   endif
 !
 ! Compute interval lengths in vertical grids.
 !
