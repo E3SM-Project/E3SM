@@ -1113,25 +1113,21 @@ class Z_FullSystemTest(TestCreateTestCommon):
         # Test that re-running works
         tests = update_acme_tests.get_test_suite("cime_developer")
         for test in tests:
-            if test.startswith("ERI"):
-                # TODO: these need to all work in the future but currently do not support re-run
-                pass
-            else:
-                casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
+            casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
 
-                # Subtle issue: The run phases of these tests will be in the PASS state until
-                # the submitted case.test script is run, which could take a while if the system is
-                # busy. This potentially leaves a window where the wait_for_tests command below will
-                # not wait for the re-submitted jobs to run because it sees the original PASS.
-                # The code below forces things back to PEND to avoid this race condition. Note
-                # that we must use the MEMLEAK phase, not the RUN phase, because RUN being in a non-PEND
-                # state is how system tests know they are being re-run and must reset certain
-                # case settings.
-                if self._hasbatch:
-                    with TestStatus(test_dir=casedir) as ts:
-                        ts.set_status(MEMLEAK_PHASE, TEST_PEND_STATUS)
+            # Subtle issue: The run phases of these tests will be in the PASS state until
+            # the submitted case.test script is run, which could take a while if the system is
+            # busy. This potentially leaves a window where the wait_for_tests command below will
+            # not wait for the re-submitted jobs to run because it sees the original PASS.
+            # The code below forces things back to PEND to avoid this race condition. Note
+            # that we must use the MEMLEAK phase, not the RUN phase, because RUN being in a non-PEND
+            # state is how system tests know they are being re-run and must reset certain
+            # case settings.
+            if self._hasbatch:
+                with TestStatus(test_dir=casedir) as ts:
+                    ts.set_status(MEMLEAK_PHASE, TEST_PEND_STATUS)
 
-                run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
+            run_cmd_assert_result(self, "./case.submit", from_dir=casedir)
 
         if (self._hasbatch):
             run_cmd_assert_result(self, "%s/wait_for_tests *%s/TestStatus" % (TOOLS_DIR, self._baseline_name),
