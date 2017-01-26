@@ -49,16 +49,20 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug, sysos
 def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     """
     Copy any system or compiler Depends files if they do not exist in the output directory
+    If there is a match for Depends.machine_name.compiler copy that and ignore the others
     """
-    for dep in (machine_name, compiler):
-        dfile = os.path.join(machines_dir, "Depends.%s"%dep)
-        outputdfile = os.path.join(output_dir, "Depends.%s"%dep)
-        if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
-            shutil.copyfile(dfile, outputdfile)
     dfile = os.path.join(machines_dir, "Depends.%s.%s"%(machine_name,compiler))
     outputdfile = os.path.join(output_dir, "Depends.%s.%s"%(machine_name,compiler))
-    if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
-        shutil.copyfile(dfile, outputdfile)
+    if os.path.isfile(dfile):
+        if not os.path.isfile(outputdfile):
+            shutil.copyfile(dfile, outputdfile)
+    else:
+        for dep in (machine_name, compiler):
+            dfile = os.path.join(machines_dir, "Depends.%s"%dep)
+            outputdfile = os.path.join(output_dir, "Depends.%s"%dep)
+            if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
+                shutil.copyfile(dfile, outputdfile)
+
 
 def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug, sysos):
     """
