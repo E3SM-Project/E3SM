@@ -557,7 +557,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0I) trim(subname),' ice_cpl_dt     = ',ice_cpl_dt
        write(logunit,F0I) trim(subname),' ocn_cpl_dt     = ',ocn_cpl_dt
        write(logunit,F0I) trim(subname),' glc_cpl_dt     = ',glc_cpl_dt
-       write(logunit,F0I) trim(subname),' glc_avg_period = ',glc_avg_period
+       write(logunit,F0A) trim(subname),' glc_avg_period = ',glc_avg_period
        write(logunit,F0I) trim(subname),' rof_cpl_dt     = ',rof_cpl_dt
        write(logunit,F0I) trim(subname),' wav_cpl_dt     = ',wav_cpl_dt
        write(logunit,F0I) trim(subname),' esp_cpl_dt     = ',esp_cpl_dt
