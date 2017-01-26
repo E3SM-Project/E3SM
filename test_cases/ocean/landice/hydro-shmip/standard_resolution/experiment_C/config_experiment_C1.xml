@@ -8,17 +8,29 @@
         <namelist name="namelist.landice" mode="forward">
                 <template file="shmip_template.xml" path_base="script_resolution_dir"/>
                 <option name="config_SGH_shmip_forcing">'C1'</option>
+                <option name="config_dt">'0000-00-00_01:00:00'</option>
         </namelist>
 
         <streams name="streams.landice" keep="immutable" mode="forward">
                 <template file="shmip_template.xml" path_base="script_resolution_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0000-01-00_00:00:00</attribute>
+                        <attribute name="filename_template">output.$Y.nc</attribute>
+                        <attribute name="filename_interval">0001-00-00_00:00:00</attribute>
+                </stream>
+                <stream name="output2">
+                        <attribute name="output_interval">0000-00-00_01:00:00</attribute>
+                        <attribute name="filename_template">output2.$Y.nc</attribute>
+                        <attribute name="filename_interval">0001-00-00_00:00:00</attribute>
+                </stream>
+                <stream name="restart">
+                        <attribute name="output_interval">0000-01-00_00:00:00</attribute>
+                </stream>
         </streams>
 
-        <run_script name="setup_test.py">
 
         <!-- Don't actually do anything - just set up directory -->
 
-        </run_script>
 
 </config>
 

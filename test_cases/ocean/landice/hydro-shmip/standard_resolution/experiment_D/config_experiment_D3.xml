@@ -16,12 +16,12 @@
                 <stream name="output">
                         <attribute name="output_interval">0000-01-00_00:00:00</attribute>
                         <attribute name="filename_template">output.$Y.nc</attribute>
-                        <attribute name="filename_interval">0000-00-01_00:00:00</attribute>
+                        <attribute name="filename_interval">0001-00-00_00:00:00</attribute>
                 </stream>
                 <stream name="output2">
                         <attribute name="output_interval">0000-00-01_00:00:00</attribute>
                         <attribute name="filename_template">output2.$Y.nc</attribute>
-                        <attribute name="filename_interval">0000-00-01_00:00:00</attribute>
+                        <attribute name="filename_interval">0001-00-00_00:00:00</attribute>
                 </stream>
                 <stream name="restart">
                         <attribute name="output_interval">0000-03-00_00:00:00</attribute>

@@ -1,6 +1,6 @@
 <template>
         <namelist>
-                <option name="config_dt">'0000-01-0_00:00:00'</option>
+                <option name="config_dt">'0000-00-01_00:00:00'</option>
                 <option name="config_stop_time">'0030-01-01_00:00:00'</option>
                 <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
                 <option name="config_velocity_solver">'none'</option>
@@ -10,7 +10,7 @@
 
                 <option name="config_SGH">.true.</option>
                 <option name="config_SGH_adaptive_timestep">.true.</option>
-                <option name="config_SGH_adaptive_timestep_fraction">0.5</option>
+                <option name="config_SGH_adaptive_timestep_fraction">0.9</option>
                 <option name="config_SGH_max_adaptive_timestep">864000.0</option>
                 <option name="config_SGH_tangent_slope_calculation">'from_vertex_barycentric_kiteareas'</option>
                 <option name="config_SGH_alpha">1.25</option>

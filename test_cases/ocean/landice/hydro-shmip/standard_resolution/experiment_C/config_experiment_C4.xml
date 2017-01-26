@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
-<config case="experiment_D2">
+<config case="experiment_C4">
         <!-- add needed files/executables -->
         <add_executable source="model" dest="landice_model"/>
         <!-- link in scripts that the user will need -->
-        <add_link source_path="script_test_dir" source="setup_hydro-shmip_experimentD_initial_conditions.py" dest="."/>
+        <add_link source_path="script_test_dir" source="setup_hydro-shmip_experimentC_initial_conditions.py" dest="."/>
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="shmip_template.xml" path_base="script_resolution_dir"/>
-                <option name="config_SGH_shmip_forcing">'D2'</option>
-                <option name="config_SGH_englacial_porosity">0.001</option>
+                <option name="config_SGH_shmip_forcing">'C4'</option>
+                <option name="config_dt">'0000-00-00_01:00:00'</option>
         </namelist>
 
         <streams name="streams.landice" keep="immutable" mode="forward">
@@ -19,16 +19,18 @@
                         <attribute name="filename_interval">0001-00-00_00:00:00</attribute>
                 </stream>
                 <stream name="output2">
-                        <attribute name="output_interval">0000-00-01_00:00:00</attribute>
+                        <attribute name="output_interval">0000-00-00_01:00:00</attribute>
                         <attribute name="filename_template">output2.$Y.nc</attribute>
                         <attribute name="filename_interval">0001-00-00_00:00:00</attribute>
                 </stream>
                 <stream name="restart">
-                        <attribute name="output_interval">0000-03-00_00:00:00</attribute>
+                        <attribute name="output_interval">0000-01-00_00:00:00</attribute>
                 </stream>
         </streams>
 
+
         <!-- Don't actually do anything - just set up directory -->
+
 
 </config>
 
