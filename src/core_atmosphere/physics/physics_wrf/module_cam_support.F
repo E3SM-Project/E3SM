@@ -7,9 +7,12 @@ MODULE module_cam_support
 ! Author: William.Gustafson@pnl.gov, Nov 2009
 !------------------------------------------------------------------------
 #if defined(mpas)
-  use mpas_atmphys_utilities
+  use mpas_atmphys_utilities,only:physics_error_fatal
+#define FATAL_ERROR(M) call physics_error_fatal( M )
 #else
   use module_state_description, only: param_num_moist
+  use module_wrf_error
+#define FATAL_ERROR(M) call wrf_error_fatal( M )
 #endif
   use shr_kind_mod
 
@@ -87,7 +90,7 @@ CONTAINS
 !!$END FUNCTION cnst_get_type_byind
 
 
-#if defined(mpas)
+
 !------------------------------------------------------------------------
 SUBROUTINE endrun(msg)
 ! Pass through routine to wrf_error_fatal that mimics endrun in module
@@ -102,36 +105,13 @@ SUBROUTINE endrun(msg)
   character(len=*), intent(in), optional :: msg
 
   if(present(msg)) then
-     call physics_error_fatal(msg)
+     FATAL_ERROR(msg)
   else
 ! The error message is written to iulog bwfore the endrun call
-     call physics_error_fatal(iulog)
+     FATAL_ERROR(iulog)
   endif
 END SUBROUTINE endrun
-#else
-!------------------------------------------------------------------------
-SUBROUTINE endrun(msg)
-! Pass through routine to wrf_error_fatal that mimics endrun in module
-! abortutils of CAM.
-!
-! Replaces endrun in abortutils module in CAM.
-!
-! Author: William.Gustafson@pnl.gov, Nov 2009
-! Modified : Balwinder.Singh@pnl.gov - Argument made optional 
-!------------------------------------------------------------------------
-  USE module_wrf_error
 
-! Argument of the subroutine is made optional to accomodate endrun calls with no argument 
-  character(len=*), intent(in), optional :: msg
-
-  if(present(msg)) then
-     call wrf_error_fatal(msg)
-  else
-! The error message is written to iulog bwfore the endrun call
-     call wrf_error_fatal(iulog)
-  endif
-END SUBROUTINE endrun
-#endif
 
 
 !------------------------------------------------------------------------

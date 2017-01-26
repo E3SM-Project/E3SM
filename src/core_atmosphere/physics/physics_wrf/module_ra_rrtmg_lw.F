@@ -2634,6 +2634,15 @@ contains
 !
       module rrtmg_lw_cldprmc
 
+#if defined(mpas)
+ use mpas_atmphys_utilities,only: physics_error_fatal
+#define FATAL_ERROR(M) call physics_error_fatal( M )
+#else
+use module_wrf_error
+#define FATAL_ERROR(M) call wrf_error_fatal( M )
+#endif
+
+
 !  --------------------------------------------------------------------------
 ! |                                                                          |
 ! |  Copyright 2002-2009, Atmospheric & Environmental Research, Inc. (AER).  |
@@ -2853,7 +2862,7 @@ contains
                          write(errmess,'(A,i5,i5,f8.2,f8.2)' )         &
                'ERROR: ICE GENERALIZED EFFECTIVE SIZE OUT OF BOUNDS'   &
                ,ig, lay, ciwpmc(ig,lay), radice
-                         call wrf_error_fatal(errmess)
+                         FATAL_ERROR(errmess)
                      end if
                      ncbands = 16
                      factor = (radice - 2._rb)/3._rb
@@ -2875,7 +2884,7 @@ contains
                          write(errmess,'(A,i5,i5,f8.2,f8.2)' )         &
                'ERROR: SNOW GENERALIZED EFFECTIVE SIZE OUT OF BOUNDS'   &
                ,ig, lay, cswpmc(ig,lay), radsno
-                         call wrf_error_fatal(errmess)
+                         FATAL_ERROR(errmess)
                      end if
                      ncbands = 16
                      factor = (radsno - 2._rb)/3._rb
@@ -11420,6 +11429,7 @@ use mpas_atmphys_o3climatology,only: vinterp_ozn
 #else
 use module_model_constants, only : cp
 use module_wrf_error
+#define FATAL_ERROR(M) call wrf_error_fatal( M )
 #if (HWRF == 1)
    USE module_state_description, ONLY : FER_MP_HIRES, FER_MP_HIRES_ADVECT, ETAMP_HWRF 
 #else

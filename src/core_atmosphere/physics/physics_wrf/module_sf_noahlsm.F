@@ -3,9 +3,11 @@ MODULE module_sf_noahlsm
 #if defined(mpas)
 !MPAS specific (Laura D. Fowler):
 use mpas_atmphys_constants, rhowater => rho_w
-use mpas_atmphys_utilities
+use mpas_atmphys_utilities,only: physics_error_fatal
+#define FATAL_ERROR(M) call physics_error_fatal( M )
 #else
-  USE module_model_constants
+USE module_model_constants
+#define FATAL_ERROR(M) write(0,*) M ; stop
 #endif
 !MPAS specific end.
 
@@ -492,7 +494,7 @@ CONTAINS
          ELSE
             SNDENS = SNEQV / SNOWH
             IF(SNDENS > 1.0) THEN
-!            CALL wrf_error_fatal ( 'Physical snow depth is less than snow water equiv.' )
+             FATAL_ERROR ( 'Physical snow depth is less than snow water equiv.' )
             ENDIF
             CALL CSNOW (SNCOND,SNDENS)
          END IF
@@ -2419,7 +2421,7 @@ CONTAINS
                IF (NROOT .gt. NSOIL) THEN
                   WRITE (err_message,*) 'Error: too many root layers ',  &
                                                  NSOIL,NROOT
-!                 CALL wrf_error_fatal ( err_message )
+                  FATAL_ERROR ( err_message )
 ! ----------------------------------------------------------------------
 ! CALCULATE ROOT DISTRIBUTION.  PRESENT VERSION ASSUMES UNIFORM
 ! DISTRIBUTION BASED ON SOIL LAYER DEPTHS.
