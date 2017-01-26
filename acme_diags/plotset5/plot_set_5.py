@@ -58,7 +58,6 @@ def plot_min_max_mean(canvas, variable, ref_test_or_diff):
 def plot_rmse_and_corr(canvas, model, obs):
     """canvas is a vcs.Canvas, model and obs are
     a cdms2.tvariable.TransientVariable"""
-
     rmse = '%.2f' % compute_rmse(obs, model)
     corr = '%.2f' % compute_corr(obs, model)
 

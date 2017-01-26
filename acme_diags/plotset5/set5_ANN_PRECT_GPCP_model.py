@@ -35,22 +35,22 @@ if mod_pr.ndim == 4: # var(time,lev,lon,lat) convert from hybrid level to pressu
     hybm = f_mod('hybm')
     ps = f_mod('PS')/100.    #convert unit from 'Pa' to mb
     p0 = 1000. #mb
-    plv17 = numpy.array([10.,30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
-                     600.,700.,775.,850.,925.,1000.])
+    plv17 = [10.,30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
+                     600.,700.,775.,850.,925.,1000.]
     levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
     levels_orig.units = 'mb'
     mod_pr_p=cdutil.vertical.logLinearInterpolation(mod_pr, levels_orig, plv17)
-
-    obs_plv = obs_pr.getLevel()[:]
+    
+    # Create pressure grid to interpolate reference data
+    obs_levels_orig = cdms2.createAxis(plv17,id = 'lev')
+    obs_pr_p = obs_pr.pressureRegrid(obs_levels_orig)
 
     # set the level to compare, this should be a parameter
     plev = 850 #mb
 
-    plev_ind = plv17.tolist().index(plev)
+    plev_ind = plv17.index(plev)
     mod_pr = mod_pr_p[:,plev_ind,:,:]
-
-    plev_ind = obs_plv.tolist().index(plev)
-    obs_pr = obs_pr[:,plev_ind,:,:]
+    obs_pr = obs_pr_p[:,plev_ind,:,:]
 
 axes1 = mod_pr.getAxisList()
 axes2 = obs_pr.getAxisList()
