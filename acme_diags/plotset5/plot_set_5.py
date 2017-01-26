@@ -3,27 +3,35 @@ import numpy
 import cdutil
 import vcs
 import genutil.statistics
+'''
 import acme_diags.metrics.rmse
 import acme_diags.metrics.corr
+import acme_diags.metrics.min
+import acme_diags.metrics.max
+import acme_diags.metrics.mean
+'''
+from acme_diags.metrics import rmse, corr, min, max, mean
 
 def compute_rmse(model, obs):
-    rmse_func = acme_diags.metrics.rmse.RMSE()
+    rmse_func = rmse.RMSE()
     return rmse_func(model, obs)
 
 def compute_corr(model, obs):
-    corr_func = acme_diags.metrics.corr.CORR()
+    corr_func = corr.CORR()
     return corr_func(model, obs)
 
 
 def plot_min_max_mean(canvas, variable, ref_test_or_diff):
     """canvas is a vcs.Canvas, variable is a
     cdms2.tvariable.TransientVariable and ref_test_or_diff is a string"""
-    var_min = '%.2f' % float(variable.min())
-    var_max = '%.2f' % float(variable.max())
+    min_func = min.Min()
+    max_func = max.Max()
+    mean_func = mean.Mean()
 
-    # Doesn't work: var_mean = str(round(float(variable.mean()), 2))
-    var_mean = '%.2f' % cdutil.averager(variable, axis='xy', weights='generate')
-
+    var_min = '%.2f' % min_func(variable)
+    var_max = '%.2f' % max_func(variable)
+    var_mean = '%.2f' % mean_func(variable)
+    
     # can be either 'reference', 'test' or 'diff'
     plot = ref_test_or_diff
     min_label = canvas.createtextcombined(Tt_source = plot + '_min_label',
