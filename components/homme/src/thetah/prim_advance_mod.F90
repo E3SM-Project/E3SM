@@ -693,7 +693,6 @@ contains
                          +stens(i,j,k,3,ie)
                     v1=elem(ie)%state%v(i,j,1,k,nt)
                     v2=elem(ie)%state%v(i,j,2,k,nt)
-
 !                   For the 3D non-hydrostatic with hypervisosity in the horizontal components, 
 !                   the heating term to be added to theta is (dpi/ds)*HVterm/ p^kappa as opposed to 
 !                   HVterm/c_p^*
@@ -992,7 +991,6 @@ contains
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) &
                    - gradKE(i,j,2,k) -gradphi(i,j,2,k)*dpnh_dp(i,j,k)&
                    -cp*theta(i,j,k)*gradexner(i,j,2,k)
-
            end do
         end do
 
@@ -1028,7 +1026,11 @@ contains
         elem(ie)%accum%P2=0
         ! See element_state.F90 for an account of what these variables are defined as
 
-        do k=1,nlev
+
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,j,v1,v2,KE,vtemp)
+#endif
+         do k=1,nlev
            do j=1,np
               do i=1,np                
                   d_eta_dot_dpdn_dn=0.5*(eta_dot_dpdn(i,j,k+1)-                &
@@ -1036,6 +1038,13 @@ contains
                !  Form KEhoriz1
                   elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
                   -v_gradKE(i,j,k)*dp3d(i,j,k) - KE(i,j,k)*divdp(i,j,k)
+               !   print*, v_gradKE(i,j,k), dp3d(i,j,k), divdp(i,j,k)
+               !   v1 = elem(ie)%state%v(i,j,1,k,n0)
+               !   v2 = elem(ie)%state%v(i,j,2,k,n0)
+               !   print*, 'v1',  elem(ie)%state%v(i,j,1,k,n0)
+               !   print*, 'v2',  elem(ie)%state%v(i,j,2,k,n0)
+               !   print*, 'KE',  KE(i,j,k)
+               !   print*, 'gradKE', gradKE(i,j,1,k), gradKE(i,j,2,k)
                !  Form KE1,KE2
                   elem(ie)%accum%KE1(i,j)=elem(ie)%accum%KE1(i,j)              &
                   -v_gradKE(i,j,k)*dp3d(i,j,k) 
@@ -1070,7 +1079,7 @@ contains
                   elem(ie)%accum%T1(i,j)=elem(ie)%accum%T1(i,j)                 &
                   -elem(ie)%state%theta(i,j,k,n0)                               &
                   *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
-                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))             
+                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))*dp3d(i,j,k)             
                !  Form S1 
                   elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
                   -exner(i,j,k)*(dp3d(i,j,k)*v_gradtheta(i,j,k)+                &
