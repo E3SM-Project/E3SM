@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file
+from CIME.utils import touch, gzip_existing_file, SharedArea, copy_umask
 
 import tarfile, getpass, signal, glob, shutil
 
@@ -18,7 +18,7 @@ def _get_batch_job_id_for_syslog(case):
     mach = case.get_value("MACH")
     if mach == 'titan':
         return os.environ["PBS_JOBID"]
-    elif mach in ['edison', 'corip1']:
+    elif mach in ['cori-haswell', 'cori-knl', 'edison']:
         return os.environ["SLURM_JOB_ID"]
     elif mach == 'mira':
         return os.environ["COBALT_JOBID"]
@@ -43,7 +43,7 @@ def save_build_provenance_acme(case, lid=None):
     if os.path.exists(headfile_prov):
         os.remove(headfile_prov)
     if os.path.exists(headfile):
-        shutil.copy(headfile, headfile_prov)
+        copy_umask(headfile, headfile_prov)
 
     # Save SourceMods
     sourcemods = os.path.join(caseroot, "SourceMods")
@@ -52,13 +52,13 @@ def save_build_provenance_acme(case, lid=None):
         os.remove(sourcemods_prov)
     if os.path.isdir(sourcemods):
         with tarfile.open(sourcemods_prov, "w:gz") as tfd:
-            tfd.add(sourcemods)
+            tfd.add(sourcemods, arcname="SourceMods")
 
     # Save build env
     env_prov = os.path.join(exeroot, "build_environment.%s.txt" % lid)
     if os.path.exists(env_prov):
         os.remove(env_prov)
-    shutil.copy(os.path.join(caseroot, "software_environment.txt"), env_prov)
+    copy_umask(os.path.join(caseroot, "software_environment.txt"), env_prov)
 
     # For all the just-created post-build provenance files, symlink a generic name
     # to them to indicate that these are the most recent or active.
@@ -77,11 +77,12 @@ def save_build_provenance_cesm(case, lid=None): # pylint: disable=unused-argumen
     pass
 
 def save_build_provenance(case, lid=None):
-    model = case.get_value("MODEL")
-    if model == "acme":
-        save_build_provenance_acme(case, lid=lid)
-    elif model == "cesm":
-        save_build_provenance_cesm(case, lid=lid)
+    with SharedArea():
+        model = case.get_value("MODEL")
+        if model == "acme":
+            save_build_provenance_acme(case, lid=lid)
+        elif model == "cesm":
+            save_build_provenance_cesm(case, lid=lid)
 
 def save_prerun_provenance_acme(case, lid=None):
     if not case.get_value("SAVE_TIMING"):
@@ -115,7 +116,7 @@ def save_prerun_provenance_acme(case, lid=None):
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
-    elif mach in ["corip1", "edison"]:
+    elif mach in ["cori-haswell", "cori-knl", "edison"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
@@ -138,7 +139,7 @@ def save_prerun_provenance_acme(case, lid=None):
     source_mods_dir = os.path.join(caseroot, "SourceMods")
     if os.path.isdir(source_mods_dir):
         with tarfile.open(os.path.join(full_timing_dir, "SourceMods.%s.tar.gz" % lid), "w:gz") as tfd:
-            tfd.add(source_mods_dir)
+            tfd.add(source_mods_dir, arcname="SourceMods")
 
     # Save various case configuration items
     case_docs = os.path.join(full_timing_dir, "CaseDocs.%s" % lid)
@@ -158,7 +159,7 @@ def save_prerun_provenance_acme(case, lid=None):
         ]
     for glob_to_copy in globs_to_copy:
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
-            shutil.copy(item, os.path.join(case_docs, os.path.basename(item) + "." + lid))
+            copy_umask(item, os.path.join(case_docs, os.path.basename(item) + "." + lid))
 
     # Copy some items from build provenance
     blddir_globs_to_copy = [
@@ -167,7 +168,7 @@ def save_prerun_provenance_acme(case, lid=None):
         ]
     for blddir_glob_to_copy in blddir_globs_to_copy:
         for item in glob.glob(os.path.join(blddir, blddir_glob_to_copy)):
-            shutil.copy(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid))
+            copy_umask(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid))
 
     # What this block does is mysterious to me (JGF)
     if job_id is not None:
@@ -176,7 +177,7 @@ def save_prerun_provenance_acme(case, lid=None):
             archive_checkpoints = os.path.join(full_timing_dir, "checkpoints.%s" % lid)
             os.mkdir(archive_checkpoints)
             touch("%s/acme.log.%s" % (rundir, lid))
-            syslog_jobid = run_cmd_no_fail("./mach_syslog %d %s %s %s %s/timing/checkpoints %s/checkpoints >& /dev/null & echo $!" %
+            syslog_jobid = run_cmd_no_fail("./mach_syslog %d %s %s %s %s/timing/checkpoints %s >& /dev/null & echo $!" %
                                            (sample_interval, job_id, lid, rundir, rundir, archive_checkpoints),
                                            from_dir=os.path.join(caseroot, "Tools"))
             with open(os.path.join(rundir, "syslog_jobid.%s" % job_id), "w") as fd:
@@ -189,11 +190,12 @@ def save_prerun_provenance_cesm(case, lid=None): # pylint: disable=unused-argume
     pass
 
 def save_prerun_provenance(case, lid=None):
-    model = case.get_value("MODEL")
-    if model == "acme":
-        save_prerun_provenance_acme(case, lid=lid)
-    elif model == "cesm":
-        save_prerun_provenance_cesm(case, lid=lid)
+    with SharedArea():
+        model = case.get_value("MODEL")
+        if model == "acme":
+            save_prerun_provenance_acme(case, lid=lid)
+        elif model == "cesm":
+            save_prerun_provenance_cesm(case, lid=lid)
 
 def save_postrun_provenance_cesm(case, lid=None):
     save_timing = case.get_value("SAVE_TIMING")
@@ -222,7 +224,7 @@ def save_postrun_provenance_acme(case, lid):
     # Kill mach_syslog
     job_id = _get_batch_job_id_for_syslog(case)
     if job_id is not None:
-        syslog_jobid_path = os.path.join(rundir, "syslog_jobid", ".%s" % job_id)
+        syslog_jobid_path = os.path.join(rundir, "syslog_jobid.%s" % job_id)
         if os.path.exists(syslog_jobid_path):
             try:
                 with open(syslog_jobid_path, "r") as fd:
@@ -234,8 +236,19 @@ def save_postrun_provenance_acme(case, lid):
                 os.remove(syslog_jobid_path)
 
     # copy/tar timings
-    with tarfile.open(os.path.join(full_timing_dir, "timing.%s.tar.gz" % lid), "w:gz") as tfd:
-        tfd.add(os.path.join(rundir, "timing"))
+    rundir_timing_dir = os.path.join(rundir, "timing." + lid)
+    shutil.move(os.path.join(rundir, "timing"), rundir_timing_dir)
+    with tarfile.open("%s.tar.gz" % rundir_timing_dir, "w:gz") as tfd:
+        tfd.add(rundir_timing_dir, arcname=os.path.basename(rundir_timing_dir))
+
+    shutil.rmtree(rundir_timing_dir)
+    copy_umask("%s.tar.gz" % rundir_timing_dir, full_timing_dir)
+
+    gzip_existing_file(os.path.join(caseroot, "timing", "acme_timing_stats.%s" % lid))
+
+    # JGF: not sure why we do this
+    timing_saved_file = "timing.%s.saved" % lid
+    touch(os.path.join(caseroot, "timing", timing_saved_file))
 
     #
     # save output files and logs
@@ -246,21 +259,22 @@ def save_postrun_provenance_acme(case, lid):
     elif mach == "mira":
         globs_to_copy.append("%s*output" % job_id)
         globs_to_copy.append("%s*cobaltlog" % job_id)
-    elif mach in ["edison", "corip1"]:
+    elif mach in ["cori-haswell", "cori-knl", "edison"]:
         globs_to_copy.append("%s" % case.get_value("CASE"))
 
     globs_to_copy.append("logs/acme.log.%s.gz" % lid)
     globs_to_copy.append("logs/cpl.log.%s.gz" % lid)
-    globs_to_copy.append("timing/*.%s" % lid)
+    globs_to_copy.append("timing/*.%s*" % lid)
     globs_to_copy.append("CaseStatus")
 
     for glob_to_copy in globs_to_copy:
         for item in glob.glob(os.path.join(caseroot, glob_to_copy)):
             basename = os.path.basename(item)
-            if lid not in basename and not basename.endswith(".gz"):
-                shutil.copy(item, os.path.join(full_timing_dir, "%s.%s" % (basename, lid)))
-            else:
-                shutil.copy(item, full_timing_dir)
+            if basename != timing_saved_file:
+                if lid not in basename and not basename.endswith(".gz"):
+                    copy_umask(item, os.path.join(full_timing_dir, "%s.%s" % (basename, lid)))
+                else:
+                    copy_umask(item, full_timing_dir)
 
     # zip everything
     for root, _, files in os.walk(full_timing_dir):
@@ -269,8 +283,9 @@ def save_postrun_provenance_acme(case, lid):
                 gzip_existing_file(os.path.join(root, filename))
 
 def save_postrun_provenance(case, lid=None):
-    model = case.get_value("MODEL")
-    if model == "acme":
-        save_postrun_provenance_acme(case, lid=lid)
-    elif model == "cesm":
-        save_postrun_provenance_cesm(case, lid=lid)
+    with SharedArea():
+        model = case.get_value("MODEL")
+        if model == "acme":
+            save_postrun_provenance_acme(case, lid=lid)
+        elif model == "cesm":
+            save_postrun_provenance_cesm(case, lid=lid)
