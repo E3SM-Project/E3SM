@@ -710,9 +710,10 @@ contains
       !
       ! Gradient Richardson number
       !
-      RiTopOfCell = 100.0_RKIND
+
       !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, factor, delU2, shearMean)
       do iCell=1,nCells
+         RiTopOfCell(:,iCell) = 100.0_RKIND
          invAreaCell1 = 1.0_RKIND / areaCell(iCell)
          do k=2,maxLevelCell(iCell)
            shearSquared = 0.0_RKIND
@@ -756,17 +757,12 @@ contains
 
         nCells = nCellsArray( 1 )
 
-        !$omp do schedule(runtime)
-        do iCell = 1, nCells
-           tracersSurfaceLayerValue(:, iCell) = 0.0_RKIND
-           indexSurfaceLayerDepth( iCell) = -9.e30
-        end do
-        !$omp end do
-
         !$omp do schedule(runtime) private(surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
         do iCell=1,nCells
           surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
           sumSurfaceLayer=0.0_RKIND
+          tracersSurfaceLayerValue(:,iCell) = 0.0_RKIND
+          indexSurfaceLayerDepth(iCell) = -9.e30
           do k=1,maxLevelCell(iCell)
            sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
            rSurfaceLayer = maxLevelCell(iCell)
@@ -794,14 +790,10 @@ contains
         ! average normal velocity values over the ocean surface layer
         ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
         !
-        !$omp do schedule(runtime)
-        do iEdge = 1, nEdges
-           normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
-        end do
-        !$omp end do
-
+ 
         !$omp do schedule(runtime) private(cell1, cell2, surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
         do iEdge=1,nEdges
+          normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
           cell1=cellsOnEdge(1,iEdge)
           cell2=cellsOnEdge(2,iEdge)
           surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging

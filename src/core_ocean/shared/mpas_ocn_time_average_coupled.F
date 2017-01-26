@@ -169,7 +169,13 @@ module ocn_time_average_coupled
            !$omp end do
         endif
 
+        call mpas_threading_barrier()
+        !$omp master
+
         nAccumulatedCoupled = 0
+
+        !$omp end master
+        call mpas_threading_barrier()
 
     end subroutine ocn_time_average_coupled_init!}}}
 
@@ -376,7 +382,13 @@ module ocn_time_average_coupled
            !$omp end do
         endif
 
+        call mpas_threading_barrier()
+        !$omp master
+
         nAccumulatedCoupled = nAccumulatedCoupled + 1
+
+        !$omp end master
+        call mpas_threading_barrier()
 
     end subroutine ocn_time_average_coupled_accumulate!}}}
 
