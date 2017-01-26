@@ -3,6 +3,7 @@ Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
 import logging, gzip, sys, os, time, re, shutil, glob
+import stat as statlib
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
@@ -859,7 +860,9 @@ def gunzip_existing_file(filepath):
 
 def gzip_existing_file(filepath):
     """
-    Gzips an existing file, removes the unzipped version, returns path to zip file
+    Gzips an existing file, removes the unzipped version, returns path to zip file.
+    Note the that the timestamp of the original file will be maintained in
+    the zipped file.
 
     >>> import tempfile
     >>> fd, filename = tempfile.mkstemp(text=True)
@@ -871,12 +874,18 @@ def gzip_existing_file(filepath):
     >>> os.remove(gzfile)
     """
     expect(os.path.exists(filepath), "%s does not exists" % filepath)
+
+    st = os.stat(filepath)
+    orig_atime, orig_mtime = st[statlib.ST_ATIME], st[statlib.ST_MTIME]
+
     gzpath = '%s.gz' % filepath
     with open(filepath, "rb") as f_in:
         with gzip.open(gzpath, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     os.remove(filepath)
+
+    os.utime(gzpath, (orig_atime, orig_mtime))
 
     return gzpath
 
@@ -948,3 +957,34 @@ def get_lids(case):
     model = case.get_value("MODEL")
     rundir = case.get_value("RUNDIR")
     return _get_most_recent_lid_impl(glob.glob("%s/%s.log*" % (rundir, model)))
+
+def get_umask():
+    current_umask = os.umask(0)
+    os.umask(current_umask)
+
+    return current_umask
+
+def copy_umask(src, dst):
+    """
+    Preserves all file metadata except making sure new file obeys umask
+    """
+    curr_umask = get_umask()
+    shutil.copy2(src, dst)
+    octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
+    dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
+    os.chmod(dst, octal_base - curr_umask)
+
+class SharedArea(object):
+    """
+    Enable 0002 umask within this manager
+    """
+
+    def __init__(self, new_perms=0o002):
+        self._orig_umask = None
+        self._new_perms  = new_perms
+
+    def __enter__(self):
+        self._orig_umask = os.umask(self._new_perms)
+
+    def __exit__(self, *_):
+        os.umask(self._orig_umask)
