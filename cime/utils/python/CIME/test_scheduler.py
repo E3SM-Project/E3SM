@@ -464,8 +464,7 @@ class TestScheduler(object):
             case.set_value("SHAREDLIBROOT",
                            os.path.join(test_dir, "sharedlibroot.%s" % self._test_id))
             envtest.set_initial_values(case)
-            if self._save_timing:
-                case.set_value("SAVE_TIMING", True)
+            case.set_value("SAVE_TIMING", self._save_timing)
 
         return True
 
