@@ -393,13 +393,6 @@
       <support>For testing tri-grid</support>
     </model_grid>
 
-    <model_grid alias="ne30_f09_g16">
-      <grid name="atm">ne30np4</grid>
-      <grid name="lnd">0.9x1.25</grid>
-      <grid name="ocnice">gx1v6</grid>
-      <support>For testing tri-grid</support>
-    </model_grid>
-
     <model_grid alias="ne60_g16">
       <grid name="atm">ne60np4</grid>
       <grid name="lnd">ne60np4</grid>
