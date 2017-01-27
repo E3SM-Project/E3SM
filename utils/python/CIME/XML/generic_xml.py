@@ -7,6 +7,8 @@ from distutils.spawn import find_executable
 from xml.dom import minidom
 from CIME.utils import expect, get_cime_root
 
+import getpass
+
 logger = logging.getLogger(__name__)
 
 class GenericXML(object):
@@ -198,10 +200,13 @@ class GenericXML(object):
         '4'
         >>> obj.get_resolved_value("0001-01-01")
         '0001-01-01'
+        >>> obj.get_resolved_value("$SHELL{echo hi}")
+        'hi'
         """
         logger.debug("raw_value %s" % raw_value)
         reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
+        shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
         math_re = re.compile(r'\s[+-/*]\s')
         item_data = raw_value
 
@@ -217,6 +222,11 @@ class GenericXML(object):
             expect(env_var in os.environ, "Undefined env var '%s'" % env_var)
             item_data = item_data.replace(m.group(), os.environ[env_var])
 
+        for s in shell_ref_re.finditer(item_data):
+            logger.debug("execute %s in shell" % item_data)
+            shell_cmd = s.groups()[0]
+            item_data = item_data.replace(s.group(), run_cmd_no_fail(shell_cmd))
+
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
             logger.debug("find: %s" % var)
@@ -230,11 +240,9 @@ class GenericXML(object):
             elif var == "SRCROOT":
                 srcroot = os.path.join(get_cime_root(),"..")
                 item_data = item_data.replace(m.group(), srcroot)
-            elif var in os.environ:
-                # this is a list of suppressed warnings (things normally expected to be resolved in env)
-                if var not in ("USER",):
-                    logging.debug("Resolved from env: " + var)
-                item_data = item_data.replace(m.group(), os.environ[var])
+            elif var == "USER":
+                item_data = item_data.replace(m.group(), getpass.getuser())
+
         if math_re.search(item_data):
             try:
                 tmp = eval(item_data)
