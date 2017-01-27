@@ -181,7 +181,7 @@
 
 <machine MACH="cori-haswell">
     <DESC>Cori. XC40 Cray system at NERSC. Haswell partition. os is CNL, 32 pes/node, batch system is SLURM</DESC>
-    <NODENAME_REGEX>cori</NODENAME_REGEX>
+    <NODENAME_REGEX>cori-knl-is-default</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
@@ -314,7 +314,7 @@
 <!-- KNL nodes of Cori -->
 <machine MACH="cori-knl">
     <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
-    <NODENAME_REGEX>cori-knl-haswell-is-default</NODENAME_REGEX>
+    <NODENAME_REGEX>cori</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
