@@ -17,8 +17,8 @@ module thread_mod
   private
 
   integer, public :: NThreads, nthreads_accel
-  integer, public :: vert_num_threads
   integer, public :: nThreadsHoriz=1   ! Actuall number of threads in the horizontal dimension
+                                       ! set from 1 to nthreads after early init in prim_init1
   integer, public :: vthreads
 
   public :: omp_get_thread_num

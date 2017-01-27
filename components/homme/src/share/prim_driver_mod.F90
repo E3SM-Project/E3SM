@@ -17,7 +17,6 @@ module prim_driver_mod
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer
   use solver_mod,       only: blkjac_t
-  use thread_mod,       only: nThreadsHoriz, omp_get_num_threads
 
 #ifndef CAM
   use column_types_mod, only : ColumnModel_t
@@ -46,7 +45,7 @@ contains
   subroutine prim_init1(elem, par, dom_mt, Tl)
 
     ! --------------------------------
-    use thread_mod, only : nthreads, omp_get_thread_num
+    use thread_mod, only : nthreads, nThreadsHoriz
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, integration, topology, &
          partmethod, use_semi_lagrange_transport
@@ -440,12 +439,11 @@ contains
     deallocate(TailPartition)
     deallocate(HeadPartition)
 
-    n_domains = min(Nthreads,nelemd)
-    nthreads = n_domains
 
     ! =====================================
     ! Set number of threads...
     ! =====================================
+    nthreads = n_domains
     if(par%masterproc) then
        write(iulog,*) "Main:NThreads=",NThreads
        write(iulog,*) "Main:n_domains = ",n_domains
@@ -459,7 +457,7 @@ contains
     nets=1
     nete=nelemd
     ! set the actual number of threads which will be used in the horizontal
-    nThreadsHoriz = n_domains
+    nThreadsHoriz = nthreads
 #ifndef CAM
     allocate(cm(0:n_domains-1))
 #endif
@@ -496,7 +494,6 @@ contains
     use prim_advection_mod,   only: prim_advec_init2
     use solver_init_mod,      only: solver_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
-    use thread_mod,           only: nthreads
 
 #ifndef CAM
     use column_model_mod,     only: InitColumnModel
