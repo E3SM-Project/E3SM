@@ -487,22 +487,28 @@ contains
   end subroutine set_state
 
 
-  subroutine dcmip2012_tests_finalize(elem, hvcoord, temp)
+  subroutine dcmip2012_tests_finalize(elem, hvcoord,ns,ne)
 ! Need to switch this to set_hydrostatic and debug against analyt. \phi.
   implicit none
 
   type(hvcoord_t),     intent(in)  :: hvcoord
   type(element_t),  intent(inout)  :: elem
-  integer                          :: tl
-  real(real_kind)                  :: temp(np,np,nlev)
+  integer,             intent(in)  :: ns,ne
 
-!  if( present(temp) )then
-  do tl = 1,timelevels
-    call set_thermostate(elem,temp,hvcoord,tl,0)
+  integer :: k,ie,tl
+  real(real_kind):: dp(np,np,nlev)
+
+!  set dp
+  do k=1,nlev
+    dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
   enddo
-!  else
-!    call abortmp('ERROR: In thetah, dcmip2012_tests_finalize() cannot be called without T.')
-!  endif
+  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta(:,:,:,ns),dp,elem%state%phi(:,:,:,ns))
+
+  do tl = ns+1,ne
+    call copy_state(elem,ns,tl)
+  enddo
+
   end subroutine dcmip2012_tests_finalize
 
 end module

@@ -172,9 +172,14 @@ subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
 
 end subroutine
 
-  subroutine dcmip2012_tests_finalize()
+  subroutine dcmip2012_tests_finalize(elem,hvcoord,ns,ne)
   implicit none
 
+  type(hvcoord_t),     intent(in)  :: hvcoord
+  type(element_t),  intent(inout)  :: elem
+  integer,             intent(in)  :: ns,ne
+
+  !do nothing
   end subroutine dcmip2012_tests_finalize
 
 
