@@ -472,7 +472,7 @@ contains
       is_soil                        (i_soil2) = .true.
       is_cwd                         (i_soil2) = .false.
       initial_cn_ratio               (i_soil2) = cn_s2
-      initial_cp_ratio               (i_soil2) = cn_s2*np_s2_new
+      initial_cp_ratio               (i_soil2) = cn_s2*np_s3_new
       initial_stock                  (i_soil2) = 20._r8
       is_metabolic                   (i_soil2) = .false.
       is_cellulose                   (i_soil2) = .false.

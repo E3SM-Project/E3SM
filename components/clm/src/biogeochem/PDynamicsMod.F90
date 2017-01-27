@@ -599,6 +599,7 @@ contains
     ! !USES:
     use pftvarcon              , only : noveg
     use clm_varpar             , only : ndecomp_pools
+    use clm_time_manager       , only : get_step_size
     
     !
     ! !ARGUMENTS:
@@ -614,6 +615,7 @@ contains
     real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
     real(r8) :: sop_profile(1:ndecomp_pools)
     real(r8) :: sop_tot
+    integer  :: dt
     !-----------------------------------------------------------------------
 
     associate(                                                              &
@@ -629,6 +631,8 @@ contains
          cp_scalar             => cnstate_vars%cp_scalar                 &
          )
 
+    dt = real( get_step_size(), r8 )
+
     ! set initial values for potential C and N fluxes
     biochem_pmin_ppools_vr_col(bounds%begc : bounds%endc, :, :) = 0._r8
       
@@ -641,7 +645,6 @@ contains
                     !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
                     lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
-                    lamda_ptase = 15.0_r8
                     biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
                         vmax_ptase_vr(j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
                         (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * froot_prof(p,j) * pft%wtcol(p)
@@ -676,7 +679,7 @@ contains
             biochem_pmin_vr(c,j)=0._r8
             do l = 1, ndecomp_pools
                biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j)+ &
-                                          biochem_pmin_ppools_vr_col(c,j,l)
+                                          biochem_pmin_ppools_vr_col(c,j,l)*dt
             enddo
         enddo
     end do

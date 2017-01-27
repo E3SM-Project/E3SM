@@ -110,12 +110,6 @@ module CNNitrogenStateType
 
      real(r8), pointer :: plant_nbuffer_col            (:)     ! col plant nitrogen buffer, (gN/m2), used to exchange info with betr 
 
-     real(r8), pointer :: actual_leafcn                (:)     ! dynamic leaf cn ratio
-     real(r8), pointer :: actual_frootcn               (:)     ! dynamic fine root cn ratio
-     real(r8), pointer :: actual_livewdcn              (:)     ! dynamic live wood cn ratio
-     real(r8), pointer :: actual_deadwdcn              (:)     ! dynamic dead wood cn ratio
-     real(r8), pointer :: actual_graincn               (:)     ! dynamic grain cn ratio
-     
      real(r8), pointer :: totpftn_beg_col              (:)
      real(r8), pointer :: cwdn_beg_col                 (:)
      real(r8), pointer :: totlitn_beg_col              (:)
@@ -310,12 +304,6 @@ contains
     allocate(this%errnb_patch (begp:endp));     this%errnb_patch (:) =nan
     allocate(this%errnb_col   (begc:endc));     this%errnb_col   (:) =nan 
     
-    allocate(this%actual_leafcn       (begp:endp))   ; this%actual_leafcn       (:) = nan
-    allocate(this%actual_frootcn      (begp:endp))   ; this%actual_frootcn      (:) = nan
-    allocate(this%actual_livewdcn     (begp:endp))   ; this%actual_livewdcn     (:) = nan
-    allocate(this%actual_deadwdcn     (begp:endp))   ; this%actual_deadwdcn     (:) = nan
-    allocate(this%actual_graincn      (begp:endp))   ; this%actual_graincn      (:) = nan
-
     allocate(this%totpftn_beg_col     (begc:endc))   ; this%totpftn_beg_col     (:) = nan
     allocate(this%cwdn_beg_col        (begc:endc))   ; this%cwdn_beg_col        (:) = nan
     allocate(this%totlitn_beg_col     (begc:endc))   ; this%totlitn_beg_col     (:) = nan
@@ -339,8 +327,8 @@ contains
     allocate(this%ntrunc_end_col      (begc:endc))   ; this%ntrunc_end_col      (:) = nan
 
     ! for dynamic C/N/P allocation
-    allocate(this%npimbalance_patch           (begp:endp)) ;             this%npimbalance_patch           (:) = 0.0_r8 ! initialize to zero for Phosphatase module
-    allocate(this%pnup_pfrootc_patch          (begp:endp)) ;             this%pnup_pfrootc_patch          (:) = 0.0_r8 ! initialize to zero for N2 Fixation module
+    allocate(this%npimbalance_patch           (begp:endp)) ;             this%npimbalance_patch           (:) = nan
+    allocate(this%pnup_pfrootc_patch          (begp:endp)) ;             this%pnup_pfrootc_patch          (:) = nan
     allocate(this%ppup_pfrootc_patch          (begp:endp)) ;             this%ppup_pfrootc_patch          (:) = nan
     allocate(this%ptlai_pleafc_patch          (begp:endp)) ;             this%ptlai_pleafc_patch          (:) = nan
     allocate(this%ppsnsun_ptlai_patch         (begp:endp)) ;             this%ppsnsun_ptlai_patch         (:) = nan
@@ -355,7 +343,7 @@ contains
     allocate(this%plmrsha_ptlai_patch         (begp:endp)) ;             this%plmrsha_ptlai_patch         (:) = nan
     allocate(this%plmrsha_pleafn_patch        (begp:endp)) ;             this%plmrsha_pleafn_patch        (:) = nan
     allocate(this%plaisha_ptlai_patch         (begp:endp)) ;             this%plaisha_ptlai_patch         (:) = nan
-    allocate(this%benefit_pgpp_pleafc_patch   (begp:endp)) ;             this%benefit_pgpp_pleafc_patch   (:) = 0.0_r8 ! initialize to zero for N2 Fixation module
+    allocate(this%benefit_pgpp_pleafc_patch   (begp:endp)) ;             this%benefit_pgpp_pleafc_patch   (:) = nan
     allocate(this%benefit_pgpp_pleafn_patch   (begp:endp)) ;             this%benefit_pgpp_pleafn_patch   (:) = nan
     allocate(this%benefit_pgpp_pleafp_patch   (begp:endp)) ;             this%benefit_pgpp_pleafp_patch   (:) = nan
     allocate(this%cost_pgpp_pfrootc_patch     (begp:endp)) ;             this%cost_pgpp_pfrootc_patch     (:) = nan
@@ -552,22 +540,11 @@ contains
          avgflag='A', long_name='total PFT-level nitrogen', &
          ptr_patch=this%totpftn_patch)
 
-    call hist_addfld1d (fname='actual_leafcn', units='gC/gN', &
-         avgflag='A', long_name='flexible leafCN', &
-         ptr_patch=this%actual_leafcn)
-    call hist_addfld1d (fname='actual_frootcn', units='gC/gN', &
-         avgflag='A', long_name='flexible frootCN', &
-         ptr_patch=this%actual_frootcn)
-    call hist_addfld1d (fname='actual_livewdcn', units='gC/gN', &
-         avgflag='A', long_name='flexible livewdCN', &
-         ptr_patch=this%actual_livewdcn)
-    call hist_addfld1d (fname='actual_deadwdcn', units='gC/gN', &
-         avgflag='A', long_name='flexible deadwdCN', &
-         ptr_patch=this%actual_deadwdcn)
-    call hist_addfld1d (fname='actual_graincn', units='gC/gN', &
-         avgflag='A', long_name='flexible grainCN', &
-         ptr_patch=this%actual_graincn)
-         
+    this%npimbalance_patch(begp:endp) = spval
+    call hist_addfld1d (fname='leaf_npimbalance', units='gN/gP', &
+         avgflag='A', long_name='leaf np imbalance partial C partial P/partial C partial N', &
+         ptr_patch=this%npimbalance_patch)
+     
     !-------------------------------
     ! N state variables - native to column
     !-------------------------------
@@ -861,12 +838,9 @@ contains
           this%totpftn_patch(p)            = 0._r8          
        end if
 
-       this%actual_leafcn(p)       = ecophyscon%leafcn(pft%itype(p))
-       this%actual_frootcn(p)      = ecophyscon%frootcn(pft%itype(p))
-       this%actual_livewdcn(p)     = ecophyscon%livewdcn(pft%itype(p))
-       this%actual_deadwdcn(p)     = ecophyscon%deadwdcn(pft%itype(p))
-       this%actual_graincn(p)      = ecophyscon%graincn(pft%itype(p))
-       
+       this%npimbalance_patch(p) = 0.0_r8
+       this%pnup_pfrootc_patch(p) = 0.0_r8 
+       this%benefit_pgpp_pleafc_patch(p) = 0.0_r8   
     end do
 
     !-------------------------------------------
@@ -1091,22 +1065,16 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%grainn_xfer_patch)
     end if
     
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_leafcn', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible leafCN', units='gC/gN', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_leafcn)
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_frootcn', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible frootCN', units='gC/gN', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_frootcn)
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_livewdcn', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible livewdCN', units='gC/gN', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_livewdcn)
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_deadwdcn', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible deadwdCN', units='gC/gN', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_deadwdcn)
-    call restartvar(ncid=ncid, flag=flag,  varname='actual_graincn', xtype=ncd_double,  &
-        dim1name='pft',    long_name='flexible grainCN', units='gC/gN', &
-        interpinic_flag='interp', readvar=readvar, data=this%actual_graincn)
-       
+    call restartvar(ncid=ncid, flag=flag,  varname='npimbalance_patch', xtype=ncd_double,  &
+        dim1name='pft',    long_name='npimbalance_patch', units='-', &
+        interpinic_flag='interp', readvar=readvar, data=this%npimbalance_patch)
+     call restartvar(ncid=ncid, flag=flag,  varname='pnup_pfrootc_patch', xtype=ncd_double,  &
+        dim1name='pft',    long_name='pnup_pfrootc_patch', units='-', &
+        interpinic_flag='interp', readvar=readvar, data=this%pnup_pfrootc_patch)
+    call restartvar(ncid=ncid, flag=flag,  varname='benefit_pgpp_pleafc_patch', xtype=ncd_double,  &
+        dim1name='pft',    long_name='benefit_pgpp_pleafc_patch', units='-', &
+        interpinic_flag='interp', readvar=readvar, data=this%benefit_pgpp_pleafc_patch)
+ 
     !--------------------------------
     ! column nitrogen state variables
     !--------------------------------
@@ -1437,11 +1405,6 @@ contains
        this%storvegn_patch(i)           = value_patch
        this%totvegn_patch(i)            = value_patch
        this%totpftn_patch(i)            = value_patch
-       
-       this%actual_leafcn(i)            = value_patch
-       this%actual_frootcn(i)           = value_patch
-       this%actual_livewdcn(i)          = value_patch
-       this%actual_deadwdcn(i)          = value_patch
     end do
 
     if ( crop_prog )then
@@ -1450,7 +1413,6 @@ contains
           this%grainn_patch(i)          = value_patch
           this%grainn_storage_patch(i)  = value_patch
           this%grainn_xfer_patch(i)     = value_patch 
-          this%actual_graincn(i)        = value_patch
        end do
     end if
 

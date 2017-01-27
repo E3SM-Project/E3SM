@@ -667,15 +667,16 @@ contains
           do p = col%pfti(c), col%pftf(c)
               if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
                   ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
-                  r_fix = -6.25*(exp(-3.62 + 0.27*t_soi10cm_col(c)*(1-0.5*t_soi10cm_col(c)/25.15))-2) 
+                  r_fix = -6.25*(exp(-3.62 + 0.27*(t_soi10cm_col(c)-273.15)*(1-0.5*(t_soi10cm_col(c)-273.15)/25.15))-2) 
                   ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
                   r_nup = benefit_pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-20_r8)
                   ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797
                   f_nodule = 1 - min(1.0_r8,r_fix / r_nup )
                   ! np limitation factor of n2 fixation (not considered now)
                   ! calculate aqueous N2 concentration and bulk aqueous N2 concentration
-                  ! 78% atm * 6.1e-4 mol/L/atm * 28 g/mol * 1e-3L/m3 * water content m3/m3 at 10 cm
-                  N2_aq = 0.78 * 6.1e-4 *28 /1e-3 * h2osoi_vol(c,4)
+                  ! aqueous N2 concentration under pure nitrogen is 6.1e-4 mol/L/atm (based on Hery's law)
+                  ! 78% atm * 6.1e-4 mol/L/atm * 28 g/mol * 1e3L/m3 * water content m3/m3 at 10 cm
+                  N2_aq = 0.78 * 6.1e-4 *28 *1e3 * h2osoi_vol(c,4)
                   km_n2 = 5 ! calibrated value
                   ! calculate n2 fixation rate for each pft and add it to column total
                   nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix * frootc(p) * cn_scalar(p) *f_nodule * &
@@ -683,7 +684,7 @@ contains
               end if
           end do
       end do
-      
+
     end associate
 
   end subroutine CNNFixation_balance

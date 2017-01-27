@@ -53,7 +53,6 @@ module CNAllocationMod
   public :: CNAllocation3_PlantCNPAlloc     !!Plant C/N/P Allocation; called in CNDecompAlloc2
   !!-----------------------------------------------------------------------------------------------------
   public :: dynamic_plant_alloc        ! dynamic plant carbon allocation based on different nutrient stress
-  public :: update_plant_stoichiometry ! prognostic plant C:N:P stoichiometry
 
   type :: CNAllocParamsType
      real(r8) :: bdnr              ! bulk denitrification rate (1/s)
@@ -257,9 +256,13 @@ contains
         case('ECA') ! ECA competition version of CLM-CNP
             nu_com_leaf_physiology = .true. ! leaf level physiology must be true if using ECA
             nu_com_root_kinetics   = .true. ! root uptake kinetics must be true if using ECA
+            nu_com_phosphatase = .true.     ! new phosphatase activity
+            nu_com_nfix = .true.            ! new fixation
         case('MIC') ! MIC outcompete plant version of CLM-CNP
             nu_com_leaf_physiology = .true.
             nu_com_root_kinetics   = .true.
+            nu_com_phosphatase = .true.
+            nu_com_nfix = .true.
     end select
     ! phosphorus conditions of plants are needed, in order to use new fixation and phosphatase 
     ! activity subroutines, under carbon only or carbon nitrogen only mode, fixation and phosphatase
@@ -268,7 +271,7 @@ contains
         nu_com_nfix = .false.
         nu_com_phosphatase = .false.
     end if
-    
+ 
     call get_curr_date(yr, mon, day, sec)
     if (spinup_state == 1 .and. yr .le. nyears_ad_carbon_only) then
       Carbon_only = .true.
@@ -391,10 +394,6 @@ contains
 
     real(r8), pointer :: labilep_vr                   (:,:)
     real(r8), pointer :: secondp_vr                   (:,:)
-    real(r8), pointer :: actual_leafcp                (:)
-    real(r8), pointer :: actual_frootcp               (:)
-    real(r8), pointer :: actual_livewdcp              (:)
-    real(r8), pointer :: actual_deadwdcp              (:)
     real(r8), pointer :: leafp                        (:)
     real(r8), pointer :: plant_p_uptake_flux          (:)
 
@@ -636,6 +635,7 @@ contains
          km_nit                       => ecophyscon%km_nit                                     , &
          km_den                       => ecophyscon%km_den                                     , &
          decompmicc_patch_vr          => ecophyscon%decompmicc_patch_vr                        , &
+         slatop                       => ecophyscon%slatop                                     , &
          t_scalar                     => carbonflux_vars%t_scalar_col                          , &
          w_scalar                     => carbonflux_vars%w_scalar_col                          , &
          smin_nh4_to_plant_patch      => nitrogenflux_vars%smin_nh4_to_plant_patch             , &                                   
@@ -648,10 +648,6 @@ contains
 
       sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch
       secondp_vr                   => phosphorusstate_vars%secondp_vr_col
-      actual_leafcp                => phosphorusstate_vars%actual_leafcp
-      actual_frootcp               => phosphorusstate_vars%actual_frootcp
-      actual_livewdcp              => phosphorusstate_vars%actual_livewdcp
-      actual_deadwdcp              => phosphorusstate_vars%actual_deadwdcp
       leafp                        => phosphorusstate_vars%leafp_patch
       col_plant_ndemand_vr         => nitrogenflux_vars%col_plant_ndemand_vr
       col_plant_nh4demand_vr       => nitrogenflux_vars%col_plant_nh4demand_vr
@@ -721,7 +717,7 @@ contains
          gpp(p) = psnsun_to_cpool(p) + psnshade_to_cpool(p)
 
          ! carbon return of leaf C investment
-         benefit_pgpp_pleafc(p) = max(gpp(p)  / max(leafc(p) ,1e-20_r8), 0.0_r8)
+         benefit_pgpp_pleafc(p) = max(gpp(p)  / max(laisun(p)/slatop(ivt(p)) ,1e-20_r8), 0.0_r8)
 
          ! get the time step total maintenance respiration
          ! These fluxes should already be in gC/m2/s
@@ -1160,7 +1156,7 @@ contains
     real(r8):: solution_no3conc(bounds%begc:bounds%endc, 1:nlevdecomp) 
     real(r8):: solution_pconc(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: cn_stoich_var=0.2    ! variability of CN ratio
-    real(r8):: cp_stoich_var=0.5    ! variability of CP ratio
+    real(r8):: cp_stoich_var=0.4    ! variability of CP ratio
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -1253,7 +1249,6 @@ contains
          nfixation_prof               => cnstate_vars%nfixation_prof_col                       , & ! Output: [real(r8) (:,:) ]                                        
 
          primp_to_labilep_vr_col      => phosphorusflux_vars%primp_to_labilep_vr_col           , &
-         actual_leafcp                => phosphorusstate_vars%actual_leafcp                    , &
          leafp                        => phosphorusstate_vars%leafp_patch                      , &
 
          km_decomp_nh4                => ecophyscon%km_decomp_nh4                              , &
@@ -1558,7 +1553,7 @@ contains
                        col_plant_pdemand_vr(c,j) + biochem_pmin_vr_col(c,j) + &
                        primp_to_labilep_vr_col(c,j) + pdep_to_sminp(c) *ndep_prof(c,j)
                   adsorb_to_labilep_vr(c,j) = (vmax_minsurf_p_vr(isoilorder(c),j)* km_minsurf_p_vr(isoilorder(c),j)) / &
-                       ((km_minsurf_p_vr(isoilorder(c),j)+solutionp_vr(c,j))**2._r8 ) * dsolutionp_dt(c,j)
+                       ((km_minsurf_p_vr(isoilorder(c),j)+max(solutionp_vr(c,j),0._r8))**2._r8 ) * dsolutionp_dt(c,j)
                   ! sign convention: if adsorb_to_labilep_vr(c,j) < 0, then it's desorption
                   if (adsorb_to_labilep_vr(c,j) >= 0) then
                      adsorb_to_labilep_vr(c,j) = max(min(adsorb_to_labilep_vr(c,j), &
@@ -1573,6 +1568,7 @@ contains
                   ! loop over each pft within the same column
                   ! calculate competition coefficients for N/P
                   solution_pconc(c,j) = solutionp_vr(c,j)/h2osoi_vol(c,j) ! convert to per soil water based
+                  solution_pconc(c,j) = max(solution_pconc(c,j), 0._r8)
                   e_km_p = 0._r8
                   decompmicc(c,j) = 0.0_r8
                   do p = col%pfti(c), col%pftf(c)
@@ -2373,7 +2369,7 @@ contains
                        col_plant_pdemand_vr(c,j) + biochem_pmin_vr_col(c,j) + &
                        primp_to_labilep_vr_col(c,j) + pdep_to_sminp(c) *ndep_prof(c,j)
                   adsorb_to_labilep_vr(c,j) = (vmax_minsurf_p_vr(isoilorder(c),j)* km_minsurf_p_vr(isoilorder(c),j)) / &
-                       ((km_minsurf_p_vr(isoilorder(c),j)+solutionp_vr(c,j))**2._r8 ) * dsolutionp_dt(c,j)
+                       ((km_minsurf_p_vr(isoilorder(c),j)+max(solutionp_vr(c,j),0._r8))**2._r8 ) * dsolutionp_dt(c,j)
                   ! sign convention: if adsorb_to_labilep_vr(c,j) < 0, then it's desorption
                   if (adsorb_to_labilep_vr(c,j) >= 0) then
                      adsorb_to_labilep_vr(c,j) = max(min(adsorb_to_labilep_vr(c,j), &
@@ -2388,6 +2384,7 @@ contains
                   ! loop over each pft within the same column
                   ! calculate competition coefficients for P
                   solution_pconc(c,j) = solutionp_vr(c,j)/h2osoi_vol(c,j) ! convert to per soil water based
+                  solution_pconc(c,j) = max(solution_pconc(c,j), 0._r8)
                   e_km_p = 0._r8
                   decompmicc(c,j) = 0.0_r8
                   do p = col%pfti(c), col%pftf(c)
@@ -2969,8 +2966,9 @@ contains
     real(r8):: W_lim_factor(bounds%begp : bounds%endp)                  ! water stress factor that impact dynamic C allocation
     real(r8):: nlc_adjust_high  ! adjustment of C allocation to non-structural pools due to CNP imbalance
     real(r8):: cn_stoich_var=0.2    ! variability of CN ratio
-    real(r8):: cp_stoich_var=0.5    ! variability of CP ratio
-    real(r8):: curmr, curmr_ratio                                    !xsmrpool temporary variables
+    real(r8):: cp_stoich_var=0.4    ! variability of CP ratio
+    real(r8):: curmr, curmr_ratio         !xsmrpool temporary variables
+    real(r8):: xsmr_ratio                 ! ratio of mr comes from non-structue carobn hydrate pool
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -3133,6 +3131,7 @@ contains
          allocation_leaf              => carbonflux_vars%allocation_leaf                       , &
          allocation_stem              => carbonflux_vars%allocation_stem                       , &
          allocation_froot             => carbonflux_vars%allocation_froot                      , &
+         xsmrpool_turnover            => carbonflux_vars%xsmrpool_turnover_patch               , &
 
          c13cf => c13_carbonflux_vars, &
          c14cf => c14_carbonflux_vars  &
@@ -3310,9 +3309,9 @@ contains
              else if (cnallocate_carbonphosphorus_only()) then
                  N_lim_factor(p) = 0.0_r8
              end if
-             W_lim_factor(p) = 0.0_r8!w_scalar(c,1)
+             W_lim_factor(p) = 0.0_r8
              do j = 1 , nlevdecomp
-                 W_lim_factor(p) = w_scalar(c,j) * froot_prof(p,j)
+                 W_lim_factor(p) = W_lim_factor(p) + w_scalar(c,j) * froot_prof(p,j)
              end do
              ! N_lim_factor/P_lim_factor ones: highly limited
              ! N_lim_factor/P_lim_factor zeros: not limited
@@ -3380,10 +3379,14 @@ contains
                 avail_retransn(p) = 0.0_r8
                 avail_retransp(p) = 0.0_r8
              end if
- 
+
+             ! make sure available retrans N doesn't exceed storage
+             avail_retransn(p) =max( min(avail_retransn(p),retransn(p)/dt),0.0_r8)
+             avail_retransp(p) =max( min(avail_retransp(p),retransp(p)/dt),0.0_r8)
+
              retransn_to_npool(p) = avail_retransn(p)
              retransp_to_ppool(p) = avail_retransp(p)
- 
+
              plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
              plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
              
@@ -3393,45 +3396,59 @@ contains
              else if (ivt(p) >= npcropmin) then
                 if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
              end if
-             ! try to take mr from xsmr storage pool first
+             
+             ! take mr from xsmrpool pool first
              if (xsmrpool(p) > 0) then
-                if (mr > 0._r8 .and. (xsmrpool(p) + gpp(p)) <= mr) then
+                if (mr > 0._r8 .and. (xsmrpool(p)/dt + gpp(p)) <= mr) then
                    curmr = gpp(p)
                    curmr_ratio = curmr / mr
+                   xsmr_ratio = xsmrpool(p)/dt/mr ! not enough non-structure carbon hydrate, limit mr
                    availc(p) = 0.0
-                else if (mr > 0._r8 .and. (xsmrpool(p) + gpp(p)) > mr .and. xsmrpool(p) <= mr ) then
-                   curmr = mr - xsmrpool(p)
+                else if (mr > 0._r8 .and. (xsmrpool(p)/dt + gpp(p)) > mr .and. xsmrpool(p)/dt <= mr ) then
+                   curmr = mr - xsmrpool(p)/dt
                    curmr_ratio = curmr / mr
-                   availc(p) = gpp(p) - (mr - xsmrpool(p))
-                else if (mr > 0._r8 .and. (xsmrpool(p) + gpp(p)) > mr .and. xsmrpool(p) > mr ) then
+                   xsmr_ratio = xsmrpool(p)/dt/mr
+                   availc(p) = gpp(p) - (mr - xsmrpool(p)/dt)
+                else if (mr > 0._r8 .and. (xsmrpool(p)/dt + gpp(p)) > mr .and. xsmrpool(p)/dt > mr ) then
                    curmr = 0.0
                    curmr_ratio = curmr / mr
+                   xsmr_ratio = 1 - curmr_ratio
                    availc(p) = gpp(p)
                 end if
              else
                 if (mr > 0._r8 .and.  gpp(p) <= mr) then
                    curmr = gpp(p)
                    curmr_ratio = curmr / mr
+                   xsmr_ratio = 0 ! not enough non-structure carbon hydrate, limit mr
                    availc(p) = 0.0
                 else if (mr > 0._r8 .and. gpp(p) > mr ) then
                    curmr = mr
                    curmr_ratio = curmr / mr
+                   xsmr_ratio = 0
                    availc(p) = gpp(p) - mr
                 end if
              end if
-
+             
              ! carbon flux available for allocation
              leaf_curmr(p) = leaf_mr(p) * curmr_ratio
-             leaf_xsmr(p) = leaf_mr(p) - leaf_curmr(p)
+             leaf_xsmr(p) = leaf_mr(p) * xsmr_ratio
+             leaf_mr(p) =  leaf_curmr(p) + leaf_xsmr(p) 
              froot_curmr(p) = froot_mr(p) * curmr_ratio
-             froot_xsmr(p) = froot_mr(p) - froot_curmr(p)
+             froot_xsmr(p) = froot_mr(p) * xsmr_ratio
+             froot_mr(p) =  froot_curmr(p) + froot_xsmr(p) 
              livestem_curmr(p) = livestem_mr(p) * curmr_ratio
-             livestem_xsmr(p) = livestem_mr(p) - livestem_curmr(p)
+             livestem_xsmr(p) = livestem_mr(p) * xsmr_ratio
+             livestem_mr(p) =  livestem_curmr(p) + livestem_xsmr(p) 
              livecroot_curmr(p) = livecroot_mr(p) * curmr_ratio
-             livecroot_xsmr(p) = livecroot_mr(p) - livecroot_curmr(p)
+             livecroot_xsmr(p) = livecroot_mr(p) * xsmr_ratio
+             livecroot_mr(p) =  livecroot_curmr(p) + livecroot_xsmr(p) 
              grain_curmr(p) = grain_mr(p) * curmr_ratio
-             grain_xsmr(p) = grain_mr(p) - grain_curmr(p)
-         
+             grain_xsmr(p) = grain_mr(p) * xsmr_ratio
+             grain_mr(p) =  grain_curmr(p) + grain_xsmr(p) 
+             
+             ! no allocation when available c is negative
+             availc(p) = max(availc(p),0.0_r8)
+
              ! test for an xsmrpool deficit
              if (xsmrpool(p) < 0.0_r8) then
                 ! Running a deficit in the xsmrpool, so the first priority is to let
@@ -3448,13 +3465,15 @@ contains
                    availc(p) = 0.0_r8
                 end if
                 cpool_to_xsmrpool(p) = xsmrpool_recover(p)
+ 
+                ! storage pool turnover
+                xsmrpool_turnover(p) = 0.0_r8
              else
 
-                ! bug fix: set to zero otherwise xsmrpool may grow infinitely when:
-                ! (1) at one timestep xsmrpool(p) <0, cpool_to_xsmrpool(p) is set a positive value 
-                ! (2) later on if xsmrpool(p) >0; then cpool_to_xsmrpool(p) will neither be updated by following codes nor re-set to zero 
-                ! (3) each time step in CNCStateUpdate1 xsmrpool(p) = xsmrpool(p) + cpool_to_xsmrpool(p)*dt
                 cpool_to_xsmrpool(p) = 0.0_r8
+                
+                ! storage pool turnover
+                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (10.0*365.0*secspday)
              end if
              
              plant_calloc(p) = availc(p)
@@ -3783,10 +3802,10 @@ contains
                  
              else if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then
 
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_leafc(p) / cpl - ppool_to_leafp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_leafc_storage(p) / cpl - ppool_to_leafp_storage(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_frootc(p) / cpfr - ppool_to_frootp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_frootc_storage(p) / cpfr - ppool_to_frootp_storage(p)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_leafc(p) / cpl - ppool_to_leafp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_leafc_storage(p) / cpl - ppool_to_leafp_storage(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_frootc(p) / cpfr - ppool_to_frootp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_frootc_storage(p) / cpfr - ppool_to_frootp_storage(p),0._r8)
                      
                      ppool_to_leafp(p) = cpool_to_leafc(p) / cpl
                      ppool_to_leafp_storage(p) =  cpool_to_leafc_storage(p) / cpl
@@ -3794,14 +3813,14 @@ contains
                      ppool_to_frootp_storage(p) = cpool_to_frootc_storage(p) / cpfr
                  
                  if (woody(ivt(p)) == 1._r8) then
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_livestemc_storage(p) / cplw - ppool_to_livestemp_storage(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_deadstemc(p) /cpdw - ppool_to_deadstemp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_deadstemc_storage(p)  / cpdw- ppool_to_deadstemp_storage(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_livecrootc(p) / cplw - ppool_to_livecrootp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_livecrootc_storage(p) / cplw - ppool_to_livecrootp_storage(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_deadcrootc(p) / cpdw - ppool_to_deadcrootp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_deadcrootc_storage(p) / cpdw - ppool_to_deadcrootp_storage(p) 
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livestemc_storage(p) / cplw - ppool_to_livestemp_storage(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadstemc(p) /cpdw - ppool_to_deadstemp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadstemc_storage(p)  / cpdw- ppool_to_deadstemp_storage(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livecrootc(p) / cplw - ppool_to_livecrootp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livecrootc_storage(p) / cplw - ppool_to_livecrootp_storage(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadcrootc(p) / cpdw - ppool_to_deadcrootp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadcrootc_storage(p) / cpdw - ppool_to_deadcrootp_storage(p),0._r8)
                      
                      ppool_to_livestemp(p) = cpool_to_livestemc(p) / cplw
                      ppool_to_livestemp_storage(p) = cpool_to_livestemc_storage(p) / cplw
@@ -3814,16 +3833,16 @@ contains
                  end if
                  if (ivt(p) >= npcropmin) then ! skip 2 generic crops
                      cpg = graincp(ivt(p))
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_livestemc_storage(p) / cplw - ppool_to_livestemp_storage(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_deadstemc(p) /cpdw - ppool_to_deadstemp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_deadstemc_storage(p)  / cpdw- ppool_to_deadstemp_storage(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_livecrootc(p) / cplw - ppool_to_livecrootp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_livecrootc_storage(p) / cplw - ppool_to_livecrootp_storage(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_deadcrootc(p) / cpdw - ppool_to_deadcrootp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_deadcrootc_storage(p) / cpdw - ppool_to_deadcrootp_storage(p) 
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_grainc(p) / cpg - ppool_to_grainp(p)
-                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  cpool_to_grainc_storage(p) / cpg - ppool_to_grainp_storage(p) 
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livestemc(p) / cplw - ppool_to_livestemp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livestemc_storage(p) / cplw - ppool_to_livestemp_storage(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadstemc(p) /cpdw - ppool_to_deadstemp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadstemc_storage(p)  / cpdw- ppool_to_deadstemp_storage(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livecrootc(p) / cplw - ppool_to_livecrootp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_livecrootc_storage(p) / cplw - ppool_to_livecrootp_storage(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadcrootc(p) / cpdw - ppool_to_deadcrootp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_deadcrootc_storage(p) / cpdw - ppool_to_deadcrootp_storage(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_grainc(p) / cpg - ppool_to_grainp(p),0._r8)
+                     supplement_to_sminp_vr(c,1) = supplement_to_sminp_vr(c,1) +  max(cpool_to_grainc_storage(p) / cpg - ppool_to_grainp_storage(p),0._r8)
                      
                      ppool_to_livestemp(p) = cpool_to_livestemc(p) / cplw
                      ppool_to_livestemp_storage(p) = cpool_to_livestemc_storage(p) / cplw
@@ -4214,156 +4233,6 @@ contains
     end if
 
   end subroutine dynamic_plant_alloc
-
-!-----------------------------------------------------------------------
-
-  subroutine update_plant_stoichiometry(num_soilp, filter_soilp, &
-           carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars)
-
-    ! ! DESCRIPTION
-    ! Added by Qing Zhu 2015
-    ! update leaf, fine root, livewood, deadwood stoichiometry
-    
-    ! ! USES:
-    use pftvarcon      , only : noveg,npcropmin
-    use clm_varctl     , only : iulog
-    !
-    ! !ARGUMENTS:
-    integer                    , intent(in)    :: num_soilp        ! number of soil patches in filter
-    integer                    , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-    type(carbonstate_type)     , intent(in)    :: carbonstate_vars
-    type(nitrogenstate_type)   , intent(inout) :: nitrogenstate_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-
-    !! variables
-    integer :: p,fp                                            !indices
-    
-    associate(                                                                          &
-        ivt                          => pft%itype                                     , & ! Input:  [integer  (:) ]  pft vegetation type                                
-        woody                        => ecophyscon%woody                              , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)  
-
-        leafc                        => carbonstate_vars%leafc_patch                  , &
-        frootc                       => carbonstate_vars%frootc_patch                 , &
-        livestemc                    => carbonstate_vars%livestemc_patch              , &
-        livecrootc                   => carbonstate_vars%livecrootc_patch             , &
-        deadstemc                    => carbonstate_vars%deadstemc_patch              , &
-        deadcrootc                   => carbonstate_vars%deadcrootc_patch             , &
-        grainc                       => carbonstate_vars%grainc_patch                 , &
-        leafc_storage                => carbonstate_vars%leafc_storage_patch	      , &
-        frootc_storage               => carbonstate_vars%frootc_storage_patch         , &
-        livestemc_storage            => carbonstate_vars%livestemc_storage_patch      , &
-        deadstemc_storage            => carbonstate_vars%deadstemc_storage_patch      , &
-        livecrootc_storage           => carbonstate_vars%livecrootc_storage_patch     , &
-        deadcrootc_storage           => carbonstate_vars%deadcrootc_storage_patch     , &
-        grainc_storage               => carbonstate_vars%grainc_storage_patch         , &
-        leafc_xfer                   => carbonstate_vars%leafc_xfer_patch             , &
-        frootc_xfer                  => carbonstate_vars%frootc_xfer_patch            , &
-        livestemc_xfer               => carbonstate_vars%livestemc_xfer_patch         , &
-        deadstemc_xfer               => carbonstate_vars%deadstemc_xfer_patch         , &
-        livecrootc_xfer              => carbonstate_vars%livecrootc_xfer_patch 	      , &
-        deadcrootc_xfer              => carbonstate_vars%deadcrootc_xfer_patch 	      , &
-        grainc_xfer                  => carbonstate_vars%grainc_xfer_patch            , &
-        
-        leafn                        => nitrogenstate_vars%leafn_patch                , &
-        frootn                       => nitrogenstate_vars%frootn_patch               , &
-        livestemn                    => nitrogenstate_vars%livestemn_patch            , &
-        livecrootn                   => nitrogenstate_vars%livecrootn_patch           , &
-        deadstemn                    => nitrogenstate_vars%deadstemn_patch            , &
-        deadcrootn                   => nitrogenstate_vars%deadcrootn_patch           , &
-        grainn                       => nitrogenstate_vars%grainn_patch               , &
-        leafn_storage                => nitrogenstate_vars%leafn_storage_patch	      , &
-        frootn_storage               => nitrogenstate_vars%frootn_storage_patch       , &
-        livestemn_storage            => nitrogenstate_vars%livestemn_storage_patch    , &
-        deadstemn_storage            => nitrogenstate_vars%deadstemn_storage_patch    , &
-        livecrootn_storage           => nitrogenstate_vars%livecrootn_storage_patch   , &
-        deadcrootn_storage           => nitrogenstate_vars%deadcrootn_storage_patch   , &
-        grainn_storage               => nitrogenstate_vars%grainn_storage_patch       , &
-        leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch           , &
-        frootn_xfer                  => nitrogenstate_vars%frootn_xfer_patch          , &
-        livestemn_xfer               => nitrogenstate_vars%livestemn_xfer_patch       , &
-        deadstemn_xfer               => nitrogenstate_vars%deadstemn_xfer_patch       , &
-        livecrootn_xfer              => nitrogenstate_vars%livecrootn_xfer_patch      , &
-        deadcrootn_xfer              => nitrogenstate_vars%deadcrootn_xfer_patch      , &
-        grainn_xfer                  => nitrogenstate_vars%grainn_xfer_patch          , &
-        
-        leafp                        => phosphorusstate_vars%leafp_patch              , &
-        frootp                       => phosphorusstate_vars%frootp_patch             , &
-        livestemp                    => phosphorusstate_vars%livestemp_patch          , &
-        livecrootp                   => phosphorusstate_vars%livecrootp_patch         , &
-        deadstemp                    => phosphorusstate_vars%deadstemp_patch          , &
-        deadcrootp                   => phosphorusstate_vars%deadcrootp_patch         , &
-        grainp                       => phosphorusstate_vars%grainp_patch             , &
-        leafp_storage                => phosphorusstate_vars%leafp_storage_patch      , &
-        frootp_storage               => phosphorusstate_vars%frootp_storage_patch     , &
-        livestemp_storage            => phosphorusstate_vars%livestemp_storage_patch  , &
-        deadstemp_storage            => phosphorusstate_vars%deadstemp_storage_patch  , &
-        livecrootp_storage           => phosphorusstate_vars%livecrootp_storage_patch , &
-        deadcrootp_storage           => phosphorusstate_vars%deadcrootp_storage_patch , &
-        grainp_storage               => phosphorusstate_vars%grainp_storage_patch     , &
-        leafp_xfer                   => phosphorusstate_vars%leafp_xfer_patch         , &
-        frootp_xfer                  => phosphorusstate_vars%frootp_xfer_patch        , &
-        livestemp_xfer               => phosphorusstate_vars%livestemp_xfer_patch     , &
-        deadstemp_xfer               => phosphorusstate_vars%deadstemp_xfer_patch     , &
-        livecrootp_xfer              => phosphorusstate_vars%livecrootp_xfer_patch    , &
-        deadcrootp_xfer              => phosphorusstate_vars%deadcrootp_xfer_patch    , &
-        grainp_xfer                  => phosphorusstate_vars%grainp_xfer_patch        , &
-        
-        actual_leafcn                => nitrogenstate_vars%actual_leafcn              , &
-        actual_frootcn               => nitrogenstate_vars%actual_frootcn             , &
-        actual_livewdcn              => nitrogenstate_vars%actual_livewdcn            , &
-        actual_deadwdcn              => nitrogenstate_vars%actual_deadwdcn            , &
-        actual_graincn               => nitrogenstate_vars%actual_graincn             , &
-
-        actual_leafcp                => phosphorusstate_vars%actual_leafcp            , &
-        actual_frootcp               => phosphorusstate_vars%actual_frootcp           , &
-        actual_livewdcp              => phosphorusstate_vars%actual_livewdcp          , &
-        actual_deadwdcp              => phosphorusstate_vars%actual_deadwdcp          , &
-        actual_graincp               => phosphorusstate_vars%actual_graincp             &
-        )
-
-    ! loop over patches
-    do fp=1,num_soilp
-        p = filter_soilp(fp)
-        if (pft%active(p) .and. (pft%itype(p) .ne. noveg)) then
-            actual_leafcn(p) = (leafc(p) + leafc_storage(p) + leafc_xfer(p)) / max((leafn(p) + leafn_storage(p) + leafn_xfer(p)),1e-20_r8)
-            actual_frootcn(p) = (frootc(p) + frootc_storage(p) + frootc_xfer(p)) / max((frootn(p) + frootn_storage(p) + frootn_xfer(p)),1e-20_r8)
-            actual_leafcp(p) = (leafc(p) + leafc_storage(p) + leafc_xfer(p)) / max((leafp(p) + leafp_storage(p) + leafp_xfer(p)),1e-20_r8)
-            actual_frootcp(p) = (frootc(p) + frootc_storage(p) + frootc_xfer(p)) / max((frootp(p) + frootp_storage(p) + frootp_xfer(p)),1e-20_r8)
-            if (woody(ivt(p)) == 1._r8) then
-                actual_livewdcn(p) = (livestemc(p) + livecrootc(p) + livestemc_storage(p) + livecrootc_storage(p) + livestemc_xfer(p) + livecrootc_xfer(p)) / &
-                                 max((livestemn(p) + livecrootn(p) + livestemn_storage(p) + livecrootn_storage(p) + livestemn_xfer(p) + livecrootn_xfer(p)),1e-20_r8)
-                actual_deadwdcn(p) = (deadstemc(p) + deadcrootc(p) + deadstemc_storage(p) + deadcrootc_storage(p) + deadstemc_xfer(p) + deadcrootc_xfer(p)) / &
-                                 max((deadstemn(p) + deadcrootn(p) + deadstemn_storage(p) + deadcrootn_storage(p) + deadstemn_xfer(p) + deadcrootn_xfer(p)),1e-20_r8)
-                actual_livewdcp(p) = (livestemc(p) + livecrootc(p) + livestemc_storage(p) + livecrootc_storage(p) + livestemc_xfer(p) + livecrootc_xfer(p)) / &
-                                 max((livestemp(p) + livecrootp(p) + livestemp_storage(p) + livecrootp_storage(p) + livestemp_xfer(p) + livecrootp_xfer(p)),1e-20_r8)
-                actual_deadwdcp(p) = (deadstemc(p) + deadcrootc(p) + deadstemc_storage(p) + deadcrootc_storage(p) + deadstemc_xfer(p) + deadcrootc_xfer(p)) / &
-                                 max((deadstemp(p) + deadcrootp(p) + deadstemp_storage(p) + deadcrootp_storage(p) + deadstemp_xfer(p) + deadcrootp_xfer(p)),1e-20_r8)
-            end if
-            if (ivt(p) >= npcropmin) then
-                actual_graincn(p) = (grainc(p) + grainc_storage(p) + grainc_xfer(p)) / max((grainn(p) + grainn_storage(p) + grainn_xfer(p)),1e-20_r8)
-                actual_graincp(p) = (grainc(p) + grainc_storage(p) + grainc_xfer(p)) / max((grainp(p) + grainp_storage(p) + grainp_xfer(p)),1e-20_r8)
-            end if
-            
-            !actual_leafcn(p) = leafc(p)  / max(leafn(p),1e-20_r8)
-            !actual_frootcn(p) = frootc(p)  / max(frootn(p) ,1e-20_r8)
-            !actual_leafcp(p) = leafc(p)  / max(leafp(p) ,1e-20_r8)
-            !actual_frootcp(p) = frootc(p)  / max(frootp(p) ,1e-20_r8)
-            !if (woody(ivt(p)) == 1._r8) then
-            !    actual_livewdcn(p) = livestemc(p)  / max(livestemn(p) ,1e-20_r8)
-            !    actual_deadwdcn(p) = deadstemc(p) / max(deadstemn(p) ,1e-20_r8)
-            !    actual_livewdcp(p) = livestemc(p) / max(livestemp(p) ,1e-20_r8)
-            !    actual_deadwdcp(p) = deadstemc(p) / max(deadstemp(p) ,1e-20_r8)
-            !end if
-            !if (ivt(p) >= npcropmin) then
-            !    actual_graincn(p) = grainc(p)  / max(grainn(p) ,1e-20_r8)
-            !    actual_graincp(p) = grainc(p)  / max(grainp(p) ,1e-20_r8)
-            !end if
-        end if
-    end do
-
-    end associate
-          
-  end subroutine update_plant_stoichiometry
 
 !-----------------------------------------------------------------------
 

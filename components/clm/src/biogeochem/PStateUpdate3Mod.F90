@@ -162,19 +162,26 @@ contains
                smax_c = vmax_minsurf_p_vr(isoilorder(c),j)
                ks_sorption_c = km_minsurf_p_vr(isoilorder(c),j)
                temp_solutionp(c,j) = ( ps%solutionp_vr_col(c,j) + ps%labilep_vr_col(c,j) + &
-                            ( (pf%gross_pmin_vr_col(c,j) - pf%actual_immob_p_vr_col(c,j) + &
-                            pf%biochem_pmin_vr_col(c,j) + pf%primp_to_labilep_vr_col(c,j))*dt + &
+                            (flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + &
                             pf%secondp_to_labilep_vr_col(c,j)*dt + pf%supplement_to_sminp_vr_col(c,j)*dt - &
                             pf%sminp_to_plant_vr_col(c,j)*dt - pf%labilep_to_secondp_vr_col(c,j)*dt - &
                             pf%sminp_leached_vr_col(c,j)*dt ))
-               ! sorbp = smax*solutionp/(ks+solutionp)
-               ! sorbp + solutionp = smax*solutionp/(ks+solutionp) + solutionp = total p pool after competition
-               ! solve quadratic function to get equilibrium solutionp and adsorbp pools
-               aa = 1;
-               bb = smax_c + ks_sorption_c - temp_solutionp(c,j)
-               cc = -1.0 * ks_sorption_c *  temp_solutionp(c,j)
-               ps%solutionp_vr_col(c,j)  = (-bb+(bb*bb-4.0*aa*cc)**0.5)/(2.0*aa)
-               ps%labilep_vr_col(c,j) = temp_solutionp(c,j) - ps%solutionp_vr_col(c,j)
+                if (temp_solutionp(c,j) < 0.0_r8) then
+                  pf%labilep_to_secondp_vr_col(c,j) = pf%labilep_to_secondp_vr_col(c,j)/(pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j))*(temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + pf%sminp_leached_vr_col(c,j)*dt) /dt
+                  pf%sminp_leached_vr_col(c,j) = pf%sminp_leached_vr_col(c,j)/(pf%labilep_to_secondp_vr_col(c,j)+pf%sminp_leached_vr_col(c,j))*(temp_solutionp(c,j) + pf%labilep_to_secondp_vr_col(c,j)*dt + pf%sminp_leached_vr_col(c,j)*dt) /dt
+                  temp_solutionp(c,j) = 0.0_r8
+                  ps%solutionp_vr_col(c,j) = 0.0_r8
+                  ps%labilep_vr_col(c,j) = 0.0_r8
+                else
+                  ! sorbp = smax*solutionp/(ks+solutionp)
+                  ! sorbp + solutionp = smax*solutionp/(ks+solutionp) + solutionp = total p pool after competition
+                  ! solve quadratic function to get equilibrium solutionp and adsorbp pools
+                  aa = 1;
+                  bb = smax_c + ks_sorption_c - temp_solutionp(c,j)
+                  cc = -1.0 * ks_sorption_c *  temp_solutionp(c,j)
+                  ps%solutionp_vr_col(c,j)  = (-bb+(bb*bb-4.0*aa*cc)**0.5)/(2.0*aa)
+                  ps%labilep_vr_col(c,j) = temp_solutionp(c,j) - ps%solutionp_vr_col(c,j)
+               end if
             enddo
          enddo
       end if

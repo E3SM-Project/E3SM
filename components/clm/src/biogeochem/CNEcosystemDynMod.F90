@@ -285,7 +285,6 @@ contains
     use CNNDynamicsMod         , only: CNNLeaching
     use PDynamicsMod           , only: PLeaching
     use CNNDynamicsMod         , only: CNNFixation_balance
-    use CNAllocationMod        , only: update_plant_stoichiometry
     use PDynamicsMod           , only: PWeathering,PAdsorption,PDesorption,POcclusion
     use PDynamicsMod           , only: PBiochemMin,PBiochemMin_balance
   
@@ -517,7 +516,6 @@ contains
 !    use CNAllocationMod        , only: cnallocation
     use CNDecompMod            , only: CNDecompAlloc
     use CNDecompMod            , only: CNDecompAlloc2 !!after CNDecompAlloc
-    use CNAllocationMod        , only: update_plant_stoichiometry
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -843,11 +841,6 @@ contains
 
           call C14BombSpike(num_soilp, filter_soilp, &
                cnstate_vars)
-       end if
-
-       if (nu_com .ne. 'RD') then
-          call update_plant_stoichiometry(num_soilp, filter_soilp, &
-               carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars)
        end if
 
        call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
