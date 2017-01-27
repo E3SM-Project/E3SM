@@ -2504,6 +2504,25 @@
       Albany.</desc>
   </entry>
 
+  <!-- Prerun/postrun custom script options -->
+
+  <entry id="PRERUN_SCRIPT">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc>External script to be run before model completion</desc>
+  </entry>
+  <entry id="POSTRUN_SCRIPT">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc>External script to be run after model completion</desc>
+  </entry>
+
   <!-- Data Assimilation type stuff -->
 
   <entry id="DATA_ASSIMILATION">
