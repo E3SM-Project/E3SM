@@ -2117,19 +2117,4 @@ module mpas_timekeeping
     end subroutine mpas_expand_string!}}}
  
 
-
-
 end module mpas_timekeeping
-
-
-subroutine wrf_error_fatal(msg)
-
-   use mpas_abort, only : mpas_dmpar_global_abort
-
-   implicit none
-
-   character (len=*) :: msg
-
-   call mpas_dmpar_global_abort('ERROR: mpas_timekeeping: '//trim(msg))
-
-end subroutine wrf_error_fatal
