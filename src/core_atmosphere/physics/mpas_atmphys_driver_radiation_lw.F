@@ -9,7 +9,6 @@
  module mpas_atmphys_driver_radiation_lw
  use mpas_kind_types
  use mpas_pool_routines
-!use mpas_derived_types
 
  use mpas_atmphys_driver_radiation_sw, only: radconst
  use mpas_atmphys_constants
@@ -82,6 +81,9 @@
 ! * in the call to rrtmg_lwrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
 !   qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
+! * substituted "use mpas_atmphys_o3climatology" with "use module_ra_rrtmg_vinterp" since we moved subroutine
+!   vinterp_ozn to is own module in physics_wrf.
+!   laura D. Fowler (laura@ucar.edu) / 2017-01-27.
 
 
  contains

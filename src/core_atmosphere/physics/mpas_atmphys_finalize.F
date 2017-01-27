@@ -7,7 +7,6 @@
 !
 !=================================================================================================================
  module mpas_atmphys_finalize
- use mpas_derived_types
  use mpas_pool_routines
 
  use module_mp_thompson

@@ -9,7 +9,6 @@
  module mpas_atmphys_initialize_real
  use mpas_kind_types
  use mpas_dmpar
- use mpas_derived_types
  use mpas_pool_routines
  use mpas_init_atm_surface
 
