@@ -185,6 +185,16 @@ LII    CLM initial condition interpolation test
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>22</STOP_N>
     <DOUT_S>FALSE</DOUT_S>
+    <RUN_TYPE>startup</RUN_TYPE>
+    <RUN_REFCASE>case.std</RUN_REFCASE>
+    <RUN_REFDATE>0001-01-01</RUN_REFDATE>
+    <RUN_REFTOD>00000</RUN_REFTOD>
+    <REST_OPTION>ndays</REST_OPTION>
+    <REST_N>$STOP_N</REST_N>
+    <GET_REFCASE>FALSE</GET_REFCASE>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <HIST_OPTION>never</HIST_OPTION>
+    <HIST_N>-999</HIST_N>
   </test>
 
   <test NAME="ERP">
