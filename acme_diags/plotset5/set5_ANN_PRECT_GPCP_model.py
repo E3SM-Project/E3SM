@@ -30,27 +30,45 @@ elif var == 'T':
     mod_pr = f_mod(var)#, longitude=(-180, 180))
     obs_name = 'ECMWF (yrs unknown)'
 
-if mod_pr.ndim == 4: # var(time,lev,lon,lat) convert from hybrid level to pressure
-    hyam = f_mod('hyam')
-    hybm = f_mod('hybm')
-    ps = f_mod('PS')/100.    #convert unit from 'Pa' to mb
-    p0 = 1000. #mb
-    plv17 = [10.,30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
-                     600.,700.,775.,850.,925.,1000.]
-    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
-    levels_orig.units = 'mb'
-    mod_pr_p=cdutil.vertical.logLinearInterpolation(mod_pr, levels_orig, plv17)
-    
-    # Create pressure grid to interpolate reference data
-    obs_levels_orig = cdms2.createAxis(plv17,id = 'lev')
-    obs_pr_p = obs_pr.pressureRegrid(obs_levels_orig)
-
+if mod_pr.ndim == 4: # var(time,lev,lon,lat) 
+    obs_plv = obs_pr.getLevel()
+    mod_plv = mod_pr.getLevel()
     # set the level to compare, this should be a parameter
     plev = 850 #mb
+    
+    if mod_plv.long_name.lower().find('hybrid') != -1: # var(time,lev,lon,lat) convert from hybrid level to pressure
+        hyam = f_mod('hyam')
+        hybm = f_mod('hybm')
+        ps = f_mod('PS')/100.    #convert unit from 'Pa' to mb
+        p0 = 1000. #mb
+        plv17 = [10.,30.,50.,70.,100.,150.,200.,250.,300.,400.,500.,
+                         600.,700.,775.,850.,925.,1000.]
+        levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
+        levels_orig.units = 'mb'
+        mod_pr_p=cdutil.vertical.logLinearInterpolation(mod_pr, levels_orig, plv17)
 
-    plev_ind = plv17.index(plev)
-    mod_pr = mod_pr_p[:,plev_ind,:,:]
-    obs_pr = obs_pr_p[:,plev_ind,:,:]
+    elif mod_plv.long_name.lower().find('pressure') !=-1: 
+        mod_pr_p = mod_pr
+
+    else: 
+        print( 'Vertical level is neither hybrid nor pressure.')
+        quit()
+        
+    # Create pressure grid to interpolate reference data
+    # Save this for set4 metrics
+    #obs_levels_orig = cdms2.createAxis(plv17,id = 'lev')
+    #obs_pr_p = obs_pr.pressureRegrid(obs_levels_orig)
+    #obs_pr = obs_pr_p[:,plev_ind,:,:]
+    try: 
+        plev_ind = plv17.index(plev)
+        mod_pr = mod_pr_p[:,plev_ind,:,:]
+    except:
+        print( 'Spicified level should within '+plv17+' for model')
+    try:
+        plev_ind = obs_plv[:].tolist().index(plev)
+        obs_pr = obs_pr[:,plev_ind,:,:]
+    except:
+        print( 'Spicified level is not a reference data level')
 
 axes1 = mod_pr.getAxisList()
 axes2 = obs_pr.getAxisList()
