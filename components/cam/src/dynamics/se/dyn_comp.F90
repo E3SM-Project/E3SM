@@ -2,7 +2,7 @@ Module dyn_comp
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use domain_mod, only : domain1d_t
-  use element_mod, only : element_t, elem_state_t
+  use element_mod, only : element_t
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t
   use hybrid_mod, only : hybrid_t
@@ -12,7 +12,6 @@ Module dyn_comp
   use time_manager, only: is_first_step
   use spmd_utils,  only : iam, npes_cam => npes
   use pio,         only: file_desc_t
-  use fvm_control_volume_mod, only : fvm_struct
 
   implicit none
   private
@@ -20,7 +19,7 @@ Module dyn_comp
 
 
   ! PUBLIC MEMBER FUNCTIONS:
-  public dyn_init1, dyn_init2, dyn_run, dyn_final
+  public dyn_init1, dyn_init2, dyn_run
 
   ! PUBLIC DATA MEMBERS:
   public dyn_import_t, dyn_export_t
@@ -30,12 +29,10 @@ Module dyn_comp
 
   type dyn_import_t
      type (element_t), pointer :: elem(:) => null()
-     type (fvm_struct), pointer :: fvm(:) => null()
   end type dyn_import_t
 
   type dyn_export_t
      type (element_t), pointer :: elem(:) => null()
-     type (fvm_struct), pointer :: fvm(:) => null()
   end type dyn_export_t
   type (hvcoord_t), public  :: hvcoord
   integer, parameter  ::  DYN_RUN_SUCCESS           = 0
@@ -84,7 +81,7 @@ CONTAINS
     use ref_pres,            only: ref_pres_init
 
     use pmgrid,              only: dyndecomp_set
-    use dyn_grid,            only: dyn_grid_init, fvm, elem, get_dyn_grid_parm,&
+    use dyn_grid,            only: dyn_grid_init, elem, get_dyn_grid_parm,&
                                    set_horiz_grid_cnt_d, define_cam_grids
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
@@ -176,12 +173,10 @@ CONTAINS
     endif
 #endif
     if(iam < par%nprocs) then
-       call prim_init1(elem,fvm,par,dom_mt,TimeLevel)
+       call prim_init1(elem,par,dom_mt,TimeLevel)
 
        dyn_in%elem => elem
        dyn_out%elem => elem
-       dyn_in%fvm => fvm
-       dyn_out%fvm => fvm
     
        call set_horiz_grid_cnt_d(GlobalUniqueCols)
 
@@ -243,7 +238,7 @@ CONTAINS
 
   subroutine dyn_init2(dyn_in)
     use dimensions_mod,   only: nlev, nelemd
-    use prim_driver_mod,  only: prim_init2, prim_run
+    use prim_driver_mod,  only: prim_init2
     use prim_si_ref_mod,  only: prim_set_mass
     use hybrid_mod,       only: hybrid_create
     use hycoef,           only: hyam, hybm, hyai, hybi, ps0
@@ -258,7 +253,6 @@ CONTAINS
     type (dyn_import_t), intent(inout) :: dyn_in
 
     type(element_t),    pointer :: elem(:)
-    type(fvm_struct), pointer :: fvm(:)
 
     integer :: ithr, nets, nete, ie, k
     real(r8), parameter :: Tinit=300.0_r8
@@ -266,7 +260,6 @@ CONTAINS
     type(hybrid_t) :: hybrid
 
     elem  => dyn_in%elem
-    fvm => dyn_in%fvm
 
     dyn_ps0=ps0
     hvcoord%hyam=hyam
@@ -306,8 +299,6 @@ CONTAINS
           moisture='dry'
           if(runtype == 0) then
              do ie=nets,nete
-                elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
-
                 elem(ie)%state%ps_v(:,:,:) =dyn_ps0
 
                 elem(ie)%state%phis(:,:)=0.0_r8
@@ -322,8 +313,6 @@ CONTAINS
           end if
        else if(aqua_planet .and. runtype==0)  then
           do ie=nets,nete
-             !          elem(ie)%state%lnps(:,:,:) =LOG(dyn_ps0)
-             !          elem(ie)%state%ps_v(:,:,:) =dyn_ps0
              elem(ie)%state%phis(:,:)=0.0_r8
           end do
           if(allocated(landm)) landm=0.0_r8
@@ -342,7 +331,7 @@ CONTAINS
           ! new run, scale mass to value given in namelist, if needed
           call prim_set_mass(elem, TimeLevel,hybrid,hvcoord,nets,nete)
        endif
-       call prim_init2(elem,fvm,hybrid,nets,nete, TimeLevel, hvcoord)
+       call prim_init2(elem,hybrid,nets,nete, TimeLevel, hvcoord)
        !
        ! This subroutine is used to create nc_topo files, if requested
        ! 
@@ -367,7 +356,7 @@ CONTAINS
 
     ! !USES:
     use parallel_mod,     only : par
-    use prim_driver_mod,  only: prim_run, prim_run_subcycle
+    use prim_driver_mod,  only: prim_run_subcycle
     use dimensions_mod,   only : nlev
     use time_mod,         only: tstep
     use hybrid_mod,       only: hybrid_create
@@ -403,7 +392,7 @@ CONTAINS
        do n=1,se_nsplit
           ! forward-in-time RK, with subcycling
           call t_startf("prim_run_sybcycle")
-          call prim_run_subcycle(dyn_state%elem,dyn_state%fvm,hybrid,nets,nete,&
+          call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
                tstep, TimeLevel, hvcoord, n)
           call t_stopf("prim_run_sybcycle")
        end do
@@ -418,16 +407,6 @@ CONTAINS
     !EOC
   end subroutine dyn_run
   !-----------------------------------------------------------------------
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine dyn_final(DYN_STATE, RESTART_FILE)
-
-    type (elem_state_t), target     :: DYN_STATE
-    character(LEN=*)   , intent(IN) :: RESTART_FILE
-
-
-
-  end subroutine dyn_final
 
 
 

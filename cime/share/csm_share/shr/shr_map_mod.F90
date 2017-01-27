@@ -46,7 +46,7 @@
 !    mapSet method is called, the mapData method can be used.
 !    \newline
 !    A Note on Subroutine Arguments:
-!    Lat, lon, and mask arguments in these routines are 2d (nx,ny) 
+!    Lat, lon, and mask arguments in these routines are 2d (nx,ny)
 !    Array arguments are 2d (nf,nxy), number of fields by grid point
 !    \newline
 !    General Usage:
@@ -91,8 +91,8 @@ module shr_map_mod
 
   type shr_map_mapType                       ! like mct sparsematrix datatype
     private
-    character(SHR_KIND_CS)       :: name 
-    character(SHR_KIND_CS)       :: type 
+    character(SHR_KIND_CS)       :: name
+    character(SHR_KIND_CS)       :: type
     character(SHR_KIND_CS)       :: algo
     character(SHR_KIND_CS)       :: mask
     character(SHR_KIND_CS)       :: vect
@@ -1131,7 +1131,7 @@ subroutine shr_map_mapSet_global(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,name,type,
     enddo
   enddo
   enddo
-  
+
   call shr_map_checkGrids_global(Xsrc,Ysrc,Msrc,Xdst,Ydst,Mdst,map,lrc)
 
   map%nwts = 0
@@ -1392,7 +1392,7 @@ subroutine shr_map_mapSet_global(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,name,type,
     if (debug > 1 .and. s_loglev > 0) write(s_logunit,F02) ' rm src grid points, nwts old/new = ',nwts,ncnt
     nwts = ncnt
   endif
-  
+
   !--- renormalize wgts to 1.0 ---
   allocate(sum(nid*njd))
   !--- sum weights for dst grid points ---
@@ -1464,7 +1464,7 @@ subroutine shr_map_mapSet_global(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,name,type,
 
   if (present(rc)) rc = lrc
 
-end subroutine shr_map_mapSet_global  
+end subroutine shr_map_mapSet_global
 
 !===============================================================================
 !BOP ===========================================================================
@@ -1614,7 +1614,7 @@ subroutine shr_map_mapSet_dest(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,ndst,Idst,na
       endif
     enddo
   enddo
-  
+
   call shr_map_checkGrids_dest(Xsrc,Ysrc,Msrc,Xdst,Ydst,Mdst,map,lrc)
 
   map%nwts = 0
@@ -1864,7 +1864,7 @@ subroutine shr_map_mapSet_dest(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,ndst,Idst,na
     if (debug > 1 .and. s_loglev > 0) write(s_logunit,F02) ' rm src grid points, nwts old/new = ',nwts,ncnt
     nwts = ncnt
   endif
-  
+
   !--- renormalize wgts to 1.0 ---
   allocate(sum(ndst))
   !--- sum weights for dst grid points ---
@@ -1936,7 +1936,7 @@ subroutine shr_map_mapSet_dest(map,Xsrc,Ysrc,Msrc,Xdst_in,Ydst,Mdst,ndst,Idst,na
 
   if (present(rc)) rc = lrc
 
-end subroutine shr_map_mapSet_dest  
+end subroutine shr_map_mapSet_dest
 
 !===============================================================================
 !BOP ===========================================================================
@@ -2866,7 +2866,7 @@ end subroutine shr_map_checkWgts_global
 !
 ! !REMARKS:
 !     Assumes Xsrc,Ysrc are regular lat/lon grids, monotonicallly increasing
-!        on constant latitude and longitude lines.  
+!        on constant latitude and longitude lines.
 !     Assumes Xdst,Ydst,Xsrc,Ysrc are all either radians or degrees
 !
 ! !REVISION HISTORY:
@@ -2919,7 +2919,7 @@ subroutine shr_map_getWts(Xdst,Ydst,Xsrc,Ysrc,pti,ptj,ptw,pnum,units)
 
   !--- is lat/lon degrees or radians?  needed for X wraparound ---
   if (present(units)) then
-    if (trim(units) == 'degrees') then
+    if (index(units,'degrees').ne.0) then
        csize = 360._SHR_KIND_R8
     elseif (trim(units) == 'radians') then
        csize = c2*pi
@@ -2945,6 +2945,7 @@ subroutine shr_map_getWts(Xdst,Ydst,Xsrc,Ysrc,pti,ptj,ptw,pnum,units)
   if (yd >  cpole + 1.0e-3 .or. &
       yd < -cpole - 1.0e-3) then
      write(s_logunit,*) trim(subname),' ERROR: yd outside bounds ',yd
+     write(s_logunit,*) trim(subname),'        cpole = ', cpole
      call shr_map_abort(subName//' ERROR yd outside 90 degree bounds')
   endif
   if (yd >  cpole) yd =  cpole
@@ -3375,7 +3376,11 @@ logical function shr_map_checkRad(Grid)
   shr_map_checkRad = .false.
   rmin = minval(Grid)
   rmax = maxval(Grid)
-  if ((rmax - rmin) < 1.01_SHR_KIND_R8*c2*pi) shr_map_checkRad = .true.
+  if (rmax.ne.rmin) then
+    shr_map_checkRad = ((rmax - rmin) < 1.01_SHR_KIND_R8*c2*pi)
+  else
+    shr_map_checkRad = .true.
+  end if
 
 end function shr_map_checkRad
 
@@ -3390,7 +3395,7 @@ subroutine shr_map_1dto2d(gid,ni,nj,i,j)
   integer(SHR_KIND_IN),intent(in) :: gid,ni,nj
   integer(SHR_KIND_IN),intent(out):: i,j
   character(*),parameter :: subName = "('shr_map_1dto2d') "
-  character(*),parameter :: F01     = "('(shr_map_1dto2d) ',a,3i8)" 
+  character(*),parameter :: F01     = "('(shr_map_1dto2d) ',a,3i8)"
 
 !-------------------------------------------------------------------------------
 
@@ -3414,7 +3419,7 @@ subroutine shr_map_2dto1d(gid,ni,nj,i,j)
   integer(SHR_KIND_IN),intent(in) :: ni,nj,i,j
   integer(SHR_KIND_IN),intent(out):: gid
   character(*),parameter :: subName = "('shr_map_2dto1d') "
-  character(*),parameter :: F01     = "('(shr_map_2dto1d) ',a,4i8)" 
+  character(*),parameter :: F01     = "('(shr_map_2dto1d) ',a,4i8)"
 
 !-------------------------------------------------------------------------------
 
@@ -3429,4 +3434,4 @@ end subroutine shr_map_2dto1d
 !===============================================================================
 !===============================================================================
 end module shr_map_mod
-  
+

@@ -132,6 +132,8 @@ contains
 
     integer :: errorCode  ! error code
     integer :: err_tmp
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr, scratchFName
 
     character(len=StrKIND) :: cpl_seq_option
 
@@ -286,7 +288,12 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, status='SCRATCH')
+       write (scratchFName,'(a,i9.9)') 'scratch_glc_',iam
+       open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in glc_init_mct open stdout_shr '//trim(ioerrstr))
+       endif
     else
        inquire(file='glc_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -307,7 +314,7 @@ contains
     glcStdOutUnit = stdout_shr
 
     ! Write to glcStdErrUnit here, because stderrUnit is not correctly set until the mpas_framework_init_phase1 call
-    write(glcStdErrUnit,*) '=== Beginning glc_init_mct.'
+    write(glcStdErrUnit,'(a,i6)') '=== Beginning glc_init_mct: rank=',iam
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_g, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
@@ -354,7 +361,7 @@ contains
 
         ! Setup start time. Will be over written later when clocks are synchronized
         call mpas_pool_get_config(domain % configs, "config_start_time", tempCharConfig)
-        tempCharConfig = "0001-01-01_00:00:00"
+        tempCharConfig = trim(tempCharConfig) // "0:00:00"
 
         ! Setup run duration. Will be ignored in coupled run, since coupler defines how long the run is.
         call mpas_pool_get_config(domain % configs, "config_run_duration", tempCharConfig)
@@ -431,11 +438,11 @@ contains
     end if
 
     if ( trim(filename_interval_temp) == 'none' ) then
-        call mpas_expand_string(ref_time_temp, mesh_filename_temp, mesh_filename)
+        call mpas_expand_string(ref_time_temp, -1, mesh_filename_temp, mesh_filename)
     else
         call mpas_set_time(ref_time, dateTimeString=ref_time_temp, ierr=ierr)
         call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
-        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
+        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, -1, mesh_filename, ierr)
     end if
 
     write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
@@ -720,13 +727,8 @@ contains
     call check_clocks_sync(domain % clock, Eclock, stderrUnit, err_tmp)
     ierr = ior(ierr,err_tmp)
 
-    write(stderrUnit,*) '=== glc_init_mct complete.'
-
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       close(stdout_shr)
-    end if
-#endif
+    write(glcStdErrUnit,'(a,i6)') '=== Completed glc_init_mct: rank=',iam
+    call shr_sys_flush(glcStdErrUnit)
 
 !-----------------------------------------------------------------------
 !EOC
@@ -777,16 +779,10 @@ contains
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
-      integer :: err, err_tmp, globalErr, streamDirection, my_proc_id
+      integer :: err, err_tmp, globalErr, streamDirection, iam
       logical :: solveVelo, streamActive
 
-      my_proc_id = domain % dminfo % my_proc_id
-
-#ifndef MPAS_DEBUG
-      if ( my_proc_id /= 0 ) then
-         open(glcStdErrUnit, status='SCRATCH')
-      end if
-#endif
+      iam = domain % dminfo % my_proc_id
 
       call mpas_io_units_set_stdout(glcStdOutUnit)
       call mpas_io_units_set_stderr(glcStdErrUnit)
@@ -836,7 +832,6 @@ contains
          itimestep = itimestep + 1
 
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
-         call shr_sys_flush(stderrUnit)
 
          ! ===
          ! === Perform Timestep
@@ -928,7 +923,6 @@ contains
          endif
 
          write(stderrUnit,*) 'Completed timestep number ', iTimeStep
-         call shr_sys_flush(stderrUnit)
       end do
       err = ior(err, err_tmp)
 
@@ -957,7 +951,7 @@ contains
             end if
          end do
 
-         if ( domain % dminfo % my_proc_id == 0 ) then
+         if ( iam == 0 ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
@@ -988,16 +982,12 @@ contains
       err = ior(err,err_tmp)
 
       write(stdoutUnit,*) '=== Completed glc_run_mct.'
+      call shr_sys_flush(stdoutUnit)
+      call shr_sys_flush(stderrUnit)
 
       ! Reset I/O logs
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
-
-#ifndef MPAS_DEBUG
-      if ( my_proc_id /= 0 ) then
-         close(glcStdErrUnit)
-      end if
-#endif
 
 !-----------------------------------------------------------------------
   end subroutine glc_run_mct!}}}
@@ -1034,18 +1024,13 @@ contains
 !  local variables
 !
 !-----------------------------------------------------------------------
-    integer :: shrloglev, shrlogunit, my_proc_id
-    integer :: err, err_tmp, iErr
+    integer :: shrloglev, shrlogunit, iam
+    integer :: err, err_tmp, iErr, ioerr
+    character(len=StrKIND) :: ioerrstr
 
 !-----------------------------------------------------------------------
 
-    my_proc_id = domain % dminfo % my_proc_id
-
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       open(glcStdErrUnit, status='SCRATCH')
-    end if
-#endif
+    iam = domain % dminfo % my_proc_id
 
     call mpas_io_units_set_stdout(glcStdOutUnit)
     call mpas_io_units_set_stderr(glcStdErrUnit)
@@ -1070,8 +1055,12 @@ contains
     call shr_file_setLogLevel(shrloglev)
 
 #ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       close(glcStdErrUnit)
+    if ( iam /= 0 ) then
+       close(glcStdErrUnit, status='DELETE', iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',glcStdErrUnit,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in glc_final_mct close glcStdErrUnit '//trim(ioerrstr))
+       endif
     end if
 #endif
 

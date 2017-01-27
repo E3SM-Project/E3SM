@@ -21,7 +21,6 @@ SET(NAMELIST_FILES
 ${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist.nl
 )
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/*26*)
-SET(REFSOLN_FILES ${HOMME_ROOT}/test/reg_test/ref_sol/T340ref.nc)
 
 SET(NC_OUTPUT_FILES 
   camBaroMoist-asp_baroclinic1.nc 

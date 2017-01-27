@@ -140,6 +140,8 @@ contains
     type(mct_gGrid), pointer :: dom_o
 
     integer :: errorCode  ! error code
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr, scratchFName
 
     character(len=StrKIND) :: cpl_seq_option
 
@@ -295,7 +297,12 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, status='SCRATCH')
+       write (scratchFName,'(a,i9.9)') 'scratch_ocn_',iam
+       open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ocn_init_mct open stdout_shr '//trim(ioerrstr))
+       endif
     else
        inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -316,6 +323,7 @@ contains
     domain_ptr => domain
     ocnStdErrUnit = stdout_shr
     ocnStdOutUnit = stdout_shr
+    write(ocnStdErrUnit,'(a,i6)') '=== Beginning ocn_init_mct: rank=',iam
     call mpas_framework_init_phase1(domain_ptr % dminfo, mpicom_o, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
     ! Setup function pointers for MPAS-O core and domain types
@@ -360,7 +368,7 @@ contains
 
         ! Setup start time. Will be over written later when clocks are synchronized
         call mpas_pool_get_config(domain_ptr % configs, "config_start_time", tempCharConfig)
-        tempCharConfig = "0001-01-01_00:00:00"
+        tempCharConfig = trim(tempCharConfig) // "0:00:00"
 
         ! Setup run duration. Will be ignored in coupled run, since coupler defines how long the run is.
         call mpas_pool_get_config(domain_ptr % configs, "config_run_duration", tempCharConfig)
@@ -434,11 +442,11 @@ contains
     end if
 
     if ( trim(filename_interval_temp) == 'none' ) then
-        call mpas_expand_string(ref_time_temp, mesh_filename_temp, mesh_filename)
+        call mpas_expand_string(ref_time_temp, -1, mesh_filename_temp, mesh_filename)
     else
         call mpas_set_time(ref_time, dateTimeString=ref_time_temp, ierr=ierr)
         call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
-        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
+        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, -1, mesh_filename, ierr)
     end if
 
     ! Bootstrap framework (1). Here data structures are setup, but dimensions and arrays are not finalized.
@@ -709,14 +717,8 @@ contains
         call memmon_reset_addr()
     endif
 #endif
+    write(ocnStdErrUnit,'(a,i6)') '=== Completed ocn_init_mct: rank=',iam
     call shr_sys_flush(stderrUnit)
-
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       close(stdout_shr)
-    end if
-#endif
-
 
 !-----------------------------------------------------------------------
 !EOC
@@ -761,18 +763,12 @@ contains
       type (domain_type), pointer :: domain_ptr
       character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
-      integer :: ierr, streamDirection
+      integer :: iam, ierr, streamDirection
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       character (len=StrKIND), pointer :: config_restart_timestamp_name
 
-#ifndef MPAS_DEBUG
-    if ( domain % dminfo % my_proc_id /= 0 ) then
-       open(ocnStdErrUnit, status='SCRATCH')
-    end if
-#endif
-
-
+      iam = domain % dminfo % my_proc_id
       call mpas_io_units_set_stdout(ocnStdOutUnit)
       call mpas_io_units_set_stderr(ocnStdErrUnit)
 
@@ -822,11 +818,9 @@ contains
          currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
-         call shr_sys_flush(stderrUnit)
 
          ! Build forcing arrays.
-         write(stderrUnit,*) '   Building forcing arrays'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Building forcing arrays'
          block_ptr => domain_ptr % blocklist
          do while(associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -846,18 +840,15 @@ contains
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
             block_ptr => block_ptr % next
          end do
-         write(stderrUnit,*) '   Finished building forcing arrays'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Finished building forcing arrays'
 
-         write(stderrUnit,*) '   Performing forward update'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Performing forward update'
          call mpas_timer_start("time integration", .false.)
          !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
          call ocn_timestep(domain, dt, timeStamp)
          !$omp end parallel
          call mpas_timer_stop("time integration")
-         write(stderrUnit,*) '   Finished performing forward update'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Finished performing forward update'
 
          ! Move time level 2 fields back into time level 1 for next time step
          block_ptr => domain_ptr % blocklist
@@ -867,23 +858,22 @@ contains
             block_ptr => block_ptr % next
          end do
 
-         write(stderrUnit,*) '   Computing analysis members'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Computing analysis members'
          call ocn_analysis_compute(domain_ptr, ierr) 
-         write(stderrUnit,*) '   Finished computing analysis members'
-         write(stderrUnit,*) '   Preparing analysis members for restart'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) then
+            write(stderrUnit,*) '   Finished computing analysis members'
+            write(stderrUnit,*) '   Preparing analysis members for restart'
+         endif
          call ocn_analysis_restart(domain_ptr, ierr) 
-         write(stderrUnit,*) '   Finished preparing analysis members for restart'
-         write(stderrUnit,*) '   Writing analysis member output'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) then
+            write(stderrUnit,*) '   Finished preparing analysis members for restart'
+            write(stderrUnit,*) '   Writing analysis member output'
+         endif
          call ocn_analysis_write(domain_ptr, ierr)
-         write(stderrUnit,*) '   Finished writing analysis member output'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Finished writing analysis member output'
 
          ! Reset any restart alarms to prevent restart files being written without the coupler requesting it.
-         write(stderrUnit,*) '   Resetting restart alarms'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Resetting restart alarms'
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
 
          do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
@@ -893,61 +883,52 @@ contains
                call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
             end if
          end do
-         write(stderrUnit,*) '   Finished resetting restart alarms'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Finished resetting restart alarms'
 
-         write(stderrUnit,*) '   Writing output streams'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) '   Writing output streams'
          call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-         write(stderrUnit,*) '   Finished writing output streams'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) then
+            write(stderrUnit,*) '   Finished writing output streams'
+            write(stderrUnit,*) '   Validating ocean state'
+         endif
          call ocn_validate_state(domain, timeLevel=1)
-         write(stderrUnit,*) '   Validating ocean state'
-         write(stderrUnit,*) '   Completed validating ocean state'
+         if (iam==0) write(stderrUnit,*) '   Completed validating ocean state'
          write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
-
-         call shr_sys_flush(stderrUnit)
       end do
 
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
-         write(stderrUnit,*) 'Writing restart streams'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) 'Writing restart streams'
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
 
          do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive ) )
 
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
-               write(stderrUnit,*) '   Writing stream ' // trim(streamName)
-               call shr_sys_flush(stderrUnit)
+               if (iam==0) write(stderrUnit,*) '   Writing stream ' // trim(streamName)
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, ierr=ierr)
-               write(stderrUnit,*) '   Finished writing stream ' // trim(streamName)
-               call shr_sys_flush(stderrUnit)
+               if (iam==0) write(stderrUnit,*) '   Finished writing stream ' // trim(streamName)
             end if
          end do
 
-         if ( domain_ptr % dminfo % my_proc_id == 0 ) then
+         if ( iam == 0 ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
          end if
-         write(stderrUnit,*) 'Finished writing restart streams'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) 'Finished writing restart streams'
       end if
 
       ! Export state to coupler
-      write(stderrUnit,*) 'Exporting ocean state'
-      call shr_sys_flush(stderrUnit)
+      if (iam==0) write(stderrUnit,*) 'Exporting ocean state'
       call ocn_export_mct(o2x_o, ierr)
-      write(stderrUnit,*) 'Finished exporting ocean state'
-      call shr_sys_flush(stderrUnit)
+      if (iam==0) write(stderrUnit,*) 'Finished exporting ocean state'
 
       ! Check if clocks are in sync
       currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
@@ -963,15 +944,9 @@ contains
       end if
 
       ! Reset I/O logs
+      call shr_sys_flush(stderrUnit)
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
-
-#ifndef MPAS_DEBUG
-    if ( domain % dminfo % my_proc_id /= 0 ) then
-       close(ocnStdErrUnit)
-    end if
-#endif
-
 
 !-----------------------------------------------------------------------
 !EOC
@@ -1009,19 +984,15 @@ contains
 
 
     integer :: shrloglev, shrlogunit
-    integer :: errorCode
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr
 
     type (domain_type), pointer :: domain_ptr
 
-    integer :: ierr, my_proc_id
+    integer :: ierr, iam
 
 !-----------------------------------------------------------------------
-    my_proc_id = domain % dminfo % my_proc_id
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       open(ocnStdErrUnit, status='SCRATCH')
-    end if
-#endif
+    iam = domain % dminfo % my_proc_id
 
     call mpas_io_units_set_stdout(ocnStdOutUnit)
     call mpas_io_units_set_stderr(ocnStdErrUnit)
@@ -1048,8 +1019,12 @@ contains
     call shr_file_setLogLevel(shrloglev)
 
 #ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       close(ocnStdErrUnit)
+    if ( iam /= 0 ) then
+       close(ocnStdErrUnit, status='DELETE', iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',ocnStdErrUnit,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ocn_final_mct close ocnStdErrUnit '//trim(ioerrstr))
+       endif
     end if
 #endif
 
@@ -1172,11 +1147,13 @@ contains
 
     type (block_type), pointer :: block_ptr
 
-    type (mpas_pool_type), pointer :: meshPool
+    type (mpas_pool_type), pointer :: meshPool, forcingPool
 
     integer, pointer :: nCellsSolve
 
     real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+
+    integer, dimension(:), pointer :: landIceMask
 
     real (kind=RKIND), pointer :: sphere_radius
 
@@ -1277,7 +1254,33 @@ contains
     end do
     call mct_gGrid_importRattr(dom_o,"area",data,lsize) 
 
-    data(:) = 1.0_RKIND ! No land cells in MPAS-O, only Ocean cells
+    ! Build mask and frac based on landIceMask
+    block_ptr => domain % blocklist
+    do while (associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       if ( associated(landIceMask) ) then
+          do i = 1, nCellsSolve
+             if ( landIceMask(i) == 1 ) then
+                 data(i) = 0.0_RKIND
+             else
+                 data(i) = 1.0_RKIND
+             end if
+          end do
+       else
+          do i = 1, nCellsSolve
+             data(i) = 1.0_RKIND
+          end do
+       end if
+
+       block_ptr => block_ptr % next
+    end do
+
     call mct_gGrid_importRattr(dom_o,"mask",data,lsize) 
     call mct_gGrid_importRattr(dom_o,"frac",data,lsize) 
 

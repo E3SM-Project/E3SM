@@ -38,7 +38,7 @@ module ocn_comp_esmf
 
   !
   ! Author: Fei Liu
-  ! This module is ESMF compliant ocn data component 
+  ! This module is ESMF compliant ocn data component
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 contains
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -238,7 +238,7 @@ contains
     integer, intent(out)         :: rc
 
     !----------------------------------------------------------------------------
-    ! Finalize routine 
+    ! Finalize routine
     !----------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS

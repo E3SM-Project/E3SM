@@ -26,6 +26,7 @@ module UrbanFluxesMod
   use LandunitType         , only : lun                
   use ColumnType           , only : col                
   use PatchType            , only : pft                
+  use SurfaceResistanceMod , only : do_soilevap_beta
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -58,6 +59,7 @@ contains
     use QSatMod             , only : QSat
     use clm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
     use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
+    use clm_varctl          , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    
@@ -201,6 +203,7 @@ contains
 
          rootr_road_perv     =>   soilstate_vars%rootr_road_perv_col        , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer for urban pervious road
          soilalpha_u         =>   soilstate_vars%soilalpha_u_col            , & ! Input:  [real(r8) (:)   ]  Urban factor that reduces ground saturated specific humidity (-)
+         soilbeta            =>   soilstate_vars%soilbeta_col               , & ! Input:  [real(r8) (:)   ]  soil wetness relative to field capacity
          rootr               =>   soilstate_vars%rootr_patch                , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
 
          t_grnd              =>   temperature_vars%t_grnd_col               , & ! Input:  [real(r8) (:)   ]  ground surface temperature (K)                    
@@ -488,6 +491,14 @@ contains
                ! unscaled latent heat conductance
                wtuq_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
 
+               if (use_vsfm) then
+                  if (qaf(l) < qg(c)) then
+                     if (do_soilevap_beta()) then
+                        wtuq_road_perv(l)       = soilbeta(c)*wtuq_road_perv(l)
+                        wtuq_road_perv_unscl(l) = soilbeta(c)*wtuq_road_perv_unscl(l)
+                     endif
+                  endif
+               endif
             else if (ctype(c) == icol_road_imperv) then
 
                ! scaled sensible heat conductance

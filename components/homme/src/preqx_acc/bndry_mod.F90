@@ -4,9 +4,9 @@
 #endif
 
 module bndry_mod
-  use bndry_mod_base, only: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, ghost_exchangeV, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
+  use bndry_mod_base, only: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
   use parallel_mod, only : syncmp,parallel_t,abortmp,iam
-  use edgetype_mod, only : Ghostbuffertr_t, Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
+  use edgetype_mod, only : Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
   use thread_mod, only : omp_in_parallel, omp_get_thread_num, omp_get_num_threads
   use kinds, only: real_kind
   implicit none
@@ -30,7 +30,7 @@ module bndry_mod
   type(send_stager_t), private :: stg_send(maxCycles)
   type(recv_stager_t), private :: stg_recv(maxCycles)
 
-  public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, ghost_exchangeV, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
+  public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
   public :: bndry_exchangeS_simple_overlap
   public :: bndry_exchangeV_timing
   public :: bndry_exchangeV_simple_overlap

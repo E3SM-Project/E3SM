@@ -89,7 +89,7 @@ MODULE map_mod
    SAVE
 
 !===============================================================================
-CONTAINS 
+CONTAINS
 !===============================================================================
 
 SUBROUTINE map_read(map, filename)
@@ -123,7 +123,7 @@ SUBROUTINE map_read(map, filename)
 !-------------------------------------------------------------------------------
 ! PURPOSE:
 ! o reads map matrix information from netCDF data file
-! 
+!
 ! NOTE:
 !-------------------------------------------------------------------------------
 
@@ -137,7 +137,7 @@ SUBROUTINE map_read(map, filename)
       call shr_sys_abort()
    endif
    do i=1,7
-     if (i == 1) attstr = 'title'      
+     if (i == 1) attstr = 'title'
      if (i == 2) attstr = 'normalization'
      if (i == 3) attstr = 'map_method'
      if (i == 4) attstr = 'conventions'
@@ -160,7 +160,7 @@ SUBROUTINE map_read(map, filename)
    end do
 
    !-----------------------------------------------
-   ! get "a" domain info 
+   ! get "a" domain info
    !-----------------------------------------------
    rcode = nf_inq_dimid (fid, 'n_a' , did)
    rcode = nf_inq_dimlen(fid, did   , map%n_a  )
@@ -226,7 +226,7 @@ SUBROUTINE map_read(map, filename)
    rcode = nf_get_var_double(fid,vid     ,map%frac_a)
 
    !-----------------------------------------------
-   ! get "b" domain info 
+   ! get "b" domain info
    !-----------------------------------------------
    rcode = nf_inq_dimid (fid, 'n_b' , did)
    rcode = nf_inq_dimlen(fid, did   , map%n_b  )
@@ -292,7 +292,7 @@ SUBROUTINE map_read(map, filename)
    rcode = nf_get_var_double(fid,vid     ,map%frac_b)
 
    !-----------------------------------------------
-   ! get matrix info 
+   ! get matrix info
    !-----------------------------------------------
    rcode = nf_inq_dimid (fid, 'n_s', did)  ! size of sparse matrix
    rcode = nf_inq_dimlen(fid, did  , map%n_s)
@@ -327,7 +327,7 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
    type(sMatrix)    , intent(inout) :: map          ! sMatrix info to be read in
    character(*)     , intent(in)    :: rfilename    ! name of rtm rdirc file
    character(*)     , intent(in)    :: ofilename    ! name of ocn scrip grid file
-   character(*)     , intent(in)    :: gridtype     ! type of roff grid data 
+   character(*)     , intent(in)    :: gridtype     ! type of roff grid data
    logical, optional, intent(in)    :: lmake_rSCRIP ! .true. => convert runoff
                                                     ! grid to SCRIP format
    !--- local ---
@@ -366,7 +366,7 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
 !-------------------------------------------------------------------------------
 ! PURPOSE:
 ! o reads map matrix information from netCDF data file
-! 
+!
 ! NOTE:
 !-------------------------------------------------------------------------------
 
@@ -576,7 +576,7 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
 
 !     !--- safe to assume units are already degrees? ---
 !     if (units == radians)
-!     map%xc_b = map%xc_b * RADtoDEG 
+!     map%xc_b = map%xc_b * RADtoDEG
 !     map%yc_b = map%yc_b * RADtoDEG
 !     map%xv_b = map%xv_b * RADtoDEG
 !     map%yv_b = map%yv_b * RADtoDEG
@@ -689,8 +689,8 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
      rcode = nf_put_att_text(fid,NF_GLOBAL,'history'    ,len_trim(str),str)
 
      ! dimension data
-     rcode = nf_def_dim(fid, 'grid_size', map%n_a, did1) 
-     rcode = nf_def_dim(fid, 'grid_rank', grid_rank, did2) 
+     rcode = nf_def_dim(fid, 'grid_size', map%n_a, did1)
+     rcode = nf_def_dim(fid, 'grid_rank', grid_rank, did2)
      rcode = nf_def_dim(fid, 'grid_corners', map%nv_a, did3)
 
      ! variable data
@@ -747,7 +747,7 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
      print*, "Area sum is ", sum(map%area_a)
      return
    end if
- 
+
    !----------------------------------------------------------------------------
    write(*,F00) "read destination domain info -- pop grid"
    !----------------------------------------------------------------------------
@@ -1083,7 +1083,7 @@ SUBROUTINE map_gennn0(map)
    integer         :: t0        ! share timer id
    character( 8)   :: cdate     ! wall clock date
    character(10)   :: ctime     ! wall clock time
-   character(80)   :: str       ! 
+   character(80)   :: str       !
 
    !--- formats ---
    character(*),parameter :: subName = "(map_gennn0) "
@@ -1327,7 +1327,7 @@ subroutine map_boundpta(map,na,istart,iend,jstart,jend)
    integer :: nbound,ilon,ilat
    integer :: i,j,k
    integer :: nmin,dmax,num
-   
+
    character(len=*),parameter :: subname = '(map_boundpta) '
 
    call map_bxindex(map%xc_a(na),map%yc_a(na),ilon,ilat)
@@ -1368,7 +1368,7 @@ SUBROUTINE map_print(map)
 !-------------------------------------------------------------------------------
 ! PURPOSE:
 ! o writes map information into CSM format sparse matrix data file (netCDF file)
-! 
+!
 ! NOTE:
 !-------------------------------------------------------------------------------
 
@@ -1459,7 +1459,7 @@ SUBROUTINE map_write(map, filename)
 !-------------------------------------------------------------------------------
 ! PURPOSE:
 ! o writes map information into CSM format sparse matrix data file (netCDF file)
-! 
+!
 ! NOTE:
 !-------------------------------------------------------------------------------
 
@@ -1698,7 +1698,7 @@ SUBROUTINE map_Sn1(map)
 
 !-------------------------------------------------------------------------------
 ! PURPOSE:
-! X compute sn1(i) = least n st row(n)=i 
+! X compute sn1(i) = least n st row(n)=i
 !                  = least link number specifying a mapping
 !                    to the ith destination point (ith row number).
 ! o compute sn1(i) = # of links for this row
@@ -1743,9 +1743,9 @@ SUBROUTINE map_dup(map_in,map_out)
 ! o create a duplicate copy a sparse_matrix (cannot deallocate existing data)
 !
 ! NOTES
-! o the return code allows the deallocate to fail without stopping program 
-!   exectution.  This would happen, eg, if the pointer had never been 
-!   allocated to begin with (dealloc doesn't like undefined pointers). 
+! o the return code allows the deallocate to fail without stopping program
+!   exectution.  This would happen, eg, if the pointer had never been
+!   allocated to begin with (dealloc doesn't like undefined pointers).
 !   F90 has no way (?) of testing an undefined pointer (eg. never allocated).
 !   See Fortran 90/95 Explained, Melcaf, 1998, p 124, 175
 !-------------------------------------------------------------------------------
@@ -1753,28 +1753,28 @@ SUBROUTINE map_dup(map_in,map_out)
    !------------------------------------------------
    ! de-allocate space
    !------------------------------------------------
-   deallocate(map_out%  xc_a,STAT=rcode) 
-   deallocate(map_out%  yc_a,STAT=rcode) 
-   deallocate(map_out%  xv_a,STAT=rcode) 
-   deallocate(map_out%  yv_a,STAT=rcode) 
-   deallocate(map_out%mask_a,STAT=rcode) 
-   deallocate(map_out%area_a,STAT=rcode) 
+   deallocate(map_out%  xc_a,STAT=rcode)
+   deallocate(map_out%  yc_a,STAT=rcode)
+   deallocate(map_out%  xv_a,STAT=rcode)
+   deallocate(map_out%  yv_a,STAT=rcode)
+   deallocate(map_out%mask_a,STAT=rcode)
+   deallocate(map_out%area_a,STAT=rcode)
 
-   deallocate(map_out%  xc_b,STAT=rcode) 
-   deallocate(map_out%  yc_b,STAT=rcode) 
-   deallocate(map_out%  xv_b,STAT=rcode) 
-   deallocate(map_out%  yv_b,STAT=rcode) 
-   deallocate(map_out%mask_b,STAT=rcode) 
-   deallocate(map_out%area_b,STAT=rcode) 
+   deallocate(map_out%  xc_b,STAT=rcode)
+   deallocate(map_out%  yc_b,STAT=rcode)
+   deallocate(map_out%  xv_b,STAT=rcode)
+   deallocate(map_out%  yv_b,STAT=rcode)
+   deallocate(map_out%mask_b,STAT=rcode)
+   deallocate(map_out%area_b,STAT=rcode)
 
-   deallocate(map_out%frac_a,STAT=rcode) 
-   deallocate(map_out%frac_b,STAT=rcode) 
+   deallocate(map_out%frac_a,STAT=rcode)
+   deallocate(map_out%frac_b,STAT=rcode)
 
-   deallocate(map_out%s     ,STAT=rcode) 
-   deallocate(map_out%row   ,STAT=rcode) 
-   deallocate(map_out%col   ,STAT=rcode) 
-   deallocate(map_out%sn1   ,STAT=rcode) 
-   deallocate(map_out%sn2   ,STAT=rcode) 
+   deallocate(map_out%s     ,STAT=rcode)
+   deallocate(map_out%row   ,STAT=rcode)
+   deallocate(map_out%col   ,STAT=rcode)
+   deallocate(map_out%sn1   ,STAT=rcode)
+   deallocate(map_out%sn2   ,STAT=rcode)
 
    !------------------------------------------------
    ! allocate space
@@ -1794,13 +1794,13 @@ SUBROUTINE map_dup(map_in,map_out)
    allocate(map_out%area_b(            map_in%n_b) )
 
    allocate(map_out%frac_a(map_in%n_a) )
-   allocate(map_out%frac_b(map_in%n_b) )  
+   allocate(map_out%frac_b(map_in%n_b) )
 
-   allocate(map_out%s     (map_in%n_s) )  
-   allocate(map_out%row   (map_in%n_s) )  
-   allocate(map_out%col   (map_in%n_s) )  
-   allocate(map_out%sn1   (map_in%n_b) )  
-   allocate(map_out%sn2   (map_in%n_b) )  
+   allocate(map_out%s     (map_in%n_s) )
+   allocate(map_out%row   (map_in%n_s) )
+   allocate(map_out%col   (map_in%n_s) )
+   allocate(map_out%sn1   (map_in%n_b) )
+   allocate(map_out%sn2   (map_in%n_b) )
 
    !------------------------------------------------
    ! set values
@@ -1871,11 +1871,11 @@ SUBROUTINE map_free(map)
 !-------------------------------------------------------------------------------
 ! PURPOSE:
 ! o deallocate a map matrix data type
-! 
+!
 ! NOTES
-! o the return code allows the deallocate to fail without stopping program 
-!   exectution.  This would happen, eg, if the pointer had never been 
-!   allocated to begin with (dealloc doesn't like undefined pointers). 
+! o the return code allows the deallocate to fail without stopping program
+!   exectution.  This would happen, eg, if the pointer had never been
+!   allocated to begin with (dealloc doesn't like undefined pointers).
 !   F90 has no way (?) of testing an undefined pointer (eg. never allocated).
 !   See Fortran 90/95 Explained, Melcaf, 1998, p 124, 175
 !-------------------------------------------------------------------------------
@@ -1892,7 +1892,7 @@ SUBROUTINE map_free(map)
    map%domain_b   = "null-free"
 
    !-----------------------------------------------
-   ! free "a" domain info 
+   ! free "a" domain info
    !-----------------------------------------------
 
    deallocate(map%  xc_a,STAT=rcode)
@@ -1904,7 +1904,7 @@ SUBROUTINE map_free(map)
    deallocate(map%frac_a,STAT=rcode)
 
    !-----------------------------------------------
-   ! free "b" domain info 
+   ! free "b" domain info
    !-----------------------------------------------
 
    deallocate(map%  xc_b,STAT=rcode)
@@ -1916,7 +1916,7 @@ SUBROUTINE map_free(map)
    deallocate(map%frac_b,STAT=rcode)
 
    !-----------------------------------------------
-   ! free matrix info 
+   ! free matrix info
    !-----------------------------------------------
    deallocate(map%s  ,STAT=rcode)
    deallocate(map%row,STAT=rcode)
@@ -1977,7 +1977,7 @@ subroutine map_bxindex(lon,lat,ibx,jbx)
    if (ibx < 1 .or. ibx > nibx .or. jbx < 1 .or. jbx > njbx) then
       write(6,*) subname,' ERROR in ibx,jbx ',ibx,jbx,nibx,njbx
    endif
-   
+
 
 end subroutine map_bxindex
 
@@ -1993,7 +1993,7 @@ integer FUNCTION nSij(smat,i,j)
    integer      ,intent(in ) :: i,j  ! index into A(i,j)
 
    !--- local ---
-   integer    :: n                   ! generic index 
+   integer    :: n                   ! generic index
 
 !-------------------------------------------------------------------------------
 ! PURPOSE:
@@ -2041,7 +2041,7 @@ SUBROUTINE map_matMatMult(A,B,S)
    integer    :: ia,ja             ! index wrt A(j,i)
    integer    :: is,js             ! index wrt S(i,j)
    integer    :: i,j,k             ! index wrt A(j,k),S(i,j),B(j,k)
-   integer    :: ns                ! index wrt S(n) 
+   integer    :: ns                ! index wrt S(n)
    integer    :: m                 ! index wrt b(i,m),a(j,m)
    integer    :: n                 ! index wrt S%S(n)
    integer    :: na                ! index wrt A%S(n)
@@ -2076,11 +2076,11 @@ SUBROUTINE map_matMatMult(A,B,S)
 
 !-------------------------------------------------------------------------------
 ! PURPOSE:
-!   does a sparse-matrix-multiply: B = S*A 
+!   does a sparse-matrix-multiply: B = S*A
 ! ASSUMPTION:
-!   o matricies are st for S(n) ~ S(i,j), 
+!   o matricies are st for S(n) ~ S(i,j),
 !     * i(n) is monotonically increasing
-!     * if i(n) = constant for n = n0,..n1 
+!     * if i(n) = constant for n = n0,..n1
 !       then j(n) is monotonically increasing for n = n0,...n1
 !   o B%s(:) is sufficiently large to store incoming data
 !-------------------------------------------------------------------------------
@@ -2112,7 +2112,7 @@ SUBROUTINE map_matMatMult(A,B,S)
    end if
 
    !-----------------------------------------------------------------
-   ! matrix multiply 
+   ! matrix multiply
    !-----------------------------------------------------------------
 
    write(6,F04) 'matrix-matrix multiply: B = S*A'
@@ -2241,7 +2241,7 @@ SUBROUTINE map_matMatMult(A,B,S)
          !------------------------------------------------------
          ! if B(i,k) > 0, add element to sparse matrix data
          !------------------------------------------------------
-         if (sum /= 0.0) then 
+         if (sum /= 0.0) then
 !$OMP CRITICAL
             nb    = nb+1
             B%n_s = nb
@@ -2266,8 +2266,8 @@ SUBROUTINE map_matMatMult(A,B,S)
    write(6,*) ' '
    write(6,*) subname,' computed ',B%n_s,' weights, size is ',size(B%s)
    write(6,*) ' '
-                 
-   n = B%n_s 
+
+   n = B%n_s
    allocate(itemp(n))
 
    itemp(1:n) = B%row(1:n)
@@ -2315,7 +2315,7 @@ SUBROUTINE map_check(sMat)
    real(r8)       :: f                    ! temporary float variable
    real(r8)       :: dist,maxdist         ! distance, max distance
    real(r8)       :: dph,dth              ! dphi,dtheta wrt cell distances
-   real(r8)       :: x0,x1,y0,y1,dx,dy    ! 
+   real(r8)       :: x0,x1,y0,y1,dx,dy    !
    real(r8)       :: mn,mx                ! min & max
    integer        :: ncol,mincol,maxcol   ! # of cols per row
    real(r8),parameter :: eps = 1.0e-1         ! epsilon wrt X =? 0.0
@@ -2427,7 +2427,7 @@ if (.true.) then
        enddo
      endif
    enddo
-   if (n1 > 0) then 
+   if (n1 > 0) then
      write(6,F11) "WARNING!  found nonunique links between col->row  ",n1
    else
      write(6,F11) "OK, this matrix has unique col->row links"
@@ -2474,7 +2474,7 @@ if (.true.) then
           avgerr = avgerr + abs( colsum(j)-sMat%area_a(j) )/sMat%area_a(j)
           if ( abs( colsum(j)-sMat%area_a(j) )/sMat%area_a(j) > maxerr) then
             maxerr = abs( colsum(j)-sMat%area_a(j) )/sMat%area_a(j)
-          end if 
+          end if
        end if
      else
        if ( colnsum(j) == 0.0) then
@@ -2495,7 +2495,7 @@ if (.true.) then
        oldrow = sMat%row(j)
      end if
    enddo
-   write(6,F22) ' "correct column sum" means' 
+   write(6,F22) ' "correct column sum" means'
    write(6,F22) '  sum over i of S(i,j)*area_b(i) = area_a(j)'
    write(6,F22) "  number of columns                              ",sMat%n_a
    write(6,F22) "  number of active columns                       ",n0
@@ -2521,7 +2521,7 @@ if (.false.) then
    sum    =0.0
    dx = 0.0 ! max dx distance
    dy = 0.0 ! max dy distance
-   
+
    do n=1,sMat%n_s
        i = sMat%row(n)
        j = sMat%col(n)

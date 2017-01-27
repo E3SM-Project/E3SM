@@ -10,15 +10,7 @@ module edgetype_mod
    
   integer, public :: initedgebuffer_callid = 0
 
-  type, public :: rotation_t
-     integer  :: nbr                                        ! nbr direction: north south east west
-     integer  :: reverse                                    ! 0 = do not reverse order
-     ! 1 = reverse order
-     real (kind=real_kind), dimension(:,:,:), pointer :: R => null()  !  rotation matrix
-  end type rotation_t
-
   type, public :: EdgeDescriptor_t
-     integer(kind=int_kind)  :: use_rotation
      integer(kind=int_kind)  :: padding
      integer(kind=int_kind), pointer  :: putmapP(:) => null()
      integer(kind=int_kind), pointer  :: getmapP(:) => null()
@@ -31,8 +23,6 @@ module edgetype_mod
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
      integer                          :: actual_neigh_edges
      logical(kind=log_kind), pointer  :: reverse(:) => null()
-     type (rotation_t), dimension(:), pointer :: rot => null() !  Identifies list of edges
-     !  that must be rotated, and how
   end type EdgeDescriptor_t
 
   type, public :: EdgeBuffer_t
@@ -58,13 +48,6 @@ module edgetype_mod
      integer (kind=int_kind), dimension(:,:), pointer :: receive => null()
   end type LongEdgeBuffer_t
 
-
-  type, public :: GhostBufferTR_t
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive => null()
-     integer :: nlyr ! Number of layers
-     integer :: nbuf ! size of the horizontal dimension of the buffers.
-  end type GhostBufferTR_t
 
   type, public :: GhostBuffer3D_t
      real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()

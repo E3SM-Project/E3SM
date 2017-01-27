@@ -2,12 +2,6 @@
 #include "config.h"
 #endif
 
-!#define _DBG_ print *,"File:",__FILE__," at ",__LINE__
-#define EMANUELSTATE
-!#define FORCINGSTAT
-!#define USE_MAXLAT
-#define _DBG_ !DBG
-
 module column_model_mod
 #ifdef _PRIM
   use element_mod,     only : element_t
@@ -15,19 +9,15 @@ module column_model_mod
   use hybrid_mod,      only : hybrid_t
   use kinds,           only : real_kind, int_kind
   use time_mod,        only : TimeLevel_t
-  use physics_mod,     only : elem_physics_t, Specific_Humidity, Saturation_Specific_Humidity, getsurfpress, Temp2PotTemp
+  use physics_mod,     only : Specific_Humidity, Saturation_Specific_Humidity, getsurfpress, Temp2PotTemp
   use dimensions_mod,  only : nlev, nlevp, np, qsize, nelemd
-  use control_mod,     only : integration, columnpackage, test_case,  physics, &
-                              statefreq, &
-                              TRACERADV_TOTAL_DIVERGENCE, &
-                              tracer_advection_formulation
+  use control_mod,     only : integration, columnpackage, test_case
   use held_suarez_mod, only : hs_forcing
   use forcing_mod,     only : Apply_Forcing,EXP_EULER,INTERP_BDF2
   use reduction_mod,   only : parallelmax,parallelmin
 
   use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
-  use physics_types_mod, only : pelem
   use physical_constants, only : Cp, DD_PI, p0, Cp
   use global_norms_mod,      only : global_integral
   use column_types_mod,      only : HeldSuarezForcing_t, ColumnModel_t
@@ -35,9 +25,6 @@ module column_model_mod
   implicit none
 
   private
-#ifdef USE_MAXLAT
-  real(kind=real_kind), parameter :: emanuel_max_lat=1.40
-#endif
 
   public :: InitColumnModel
   public :: ApplyColumnModel
@@ -46,10 +33,7 @@ contains
 
   subroutine InitColumnModel(elem, cm,hvcoord,hybrid,tl,nets,nete,runtype)
 
-    use Manager
-
     type(element_t), intent(inout) :: elem(:)
-    type(elem_physics_t), pointer :: elem_physics(:)
     type (ColumnModel_t) :: cm
     type (hvcoord_t), intent(in), target     :: hvcoord
     type (TimeLevel_t), intent(in), target   :: tl
@@ -92,10 +76,8 @@ contains
 
   subroutine ApplyColumnModel(elem,  hybrid, hvcoord, cm,dt)
     use hybvcoord_mod, only : hvcoord_t
-    use Manager
 
     type (element_t), intent(inout) :: elem(:)
-    type(elem_physics_t), pointer :: elem_physics(:)
     type (ColumnModel_t),intent(inout) :: cm
     real (kind=real_kind),intent(in)   :: dt
     type (hvcoord_t)                  :: hvcoord

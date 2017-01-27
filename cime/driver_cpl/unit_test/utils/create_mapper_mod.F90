@@ -6,7 +6,7 @@ module create_mapper_mod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use seq_map_type_mod, only : seq_map
   use simple_map_mod, only : simple_map_type
-  
+
   implicit none
   private
   save
@@ -29,7 +29,7 @@ contains
     class(simple_map_type), intent(in) :: simple_map
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'create_mapper'
     !-----------------------------------------------------------------------
 
@@ -77,13 +77,13 @@ contains
     type(seq_map), intent(inout) :: mapper
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'clean_mapper'
     !-----------------------------------------------------------------------
 
     call mct_rearr_clean(mapper%rearr)
     call mct_sMatP_clean(mapper%sMatp)
-    
+
     call mct_gsMap_clean(mapper%gsmap_s)
     deallocate(mapper%gsmap_s)
     call mct_gsMap_clean(mapper%gsmap_d)
@@ -104,7 +104,7 @@ contains
     integer, intent(in) :: npts
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'create_gsmap'
     !-----------------------------------------------------------------------
 
@@ -115,7 +115,7 @@ contains
          start = [1], &
          length = [npts], &
          pe_loc = [0])
-    
+
   end subroutine create_gsmap
 
   !-----------------------------------------------------------------------
@@ -140,12 +140,12 @@ contains
     integer, pointer :: source_indices(:)
     integer, pointer :: dest_indices(:)
     real(r8), pointer :: matrix_elements(:)
-    
+
     character(len=*), parameter :: subname = 'create_sMatp'
     !-----------------------------------------------------------------------
 
     n_elements = simple_map%get_n_overlaps()
-    
+
     call mct_sMat_init(sMati, &
          nrows = simple_map%get_n_dest_points(), &
          ncols = simple_map%get_n_source_points(), &
@@ -155,21 +155,21 @@ contains
     source_indices = simple_map%get_source_indices()
     call mct_sMat_ImpGColI(sMati, source_indices, n_elements)
     deallocate(source_indices)
-    
+
     allocate(dest_indices(n_elements))
     dest_indices = simple_map%get_dest_indices()
     call mct_sMat_ImpGRowI(sMati, dest_indices, n_elements)
     deallocate(dest_indices)
-    
+
     allocate(matrix_elements(n_elements))
     matrix_elements = simple_map%get_overlap_weights()
     call mct_sMat_ImpMatrix(sMati, matrix_elements, n_elements)
     deallocate(matrix_elements)
-    
+
     call mct_sMatP_Init(sMatP, sMati, gsmap_s, gsmap_d, 0, mct_communicator, gsmap_s%comp_id)
 
     call mct_sMat_Clean(sMati)
   end subroutine create_sMatp
 
-  
+
 end module create_mapper_mod

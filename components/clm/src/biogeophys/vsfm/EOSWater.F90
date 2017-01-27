@@ -123,14 +123,24 @@ contains
     PetscReal              :: dkappa_dp
     PetscReal              :: dkappa_dt
     PetscReal              :: dden_dt
+    PetscReal              :: dp
+    PetscBool              :: unsaturated
 
     t_c = t_K - 273.15d0
 
     ! Density of water as function of t_K
     dent = a5*(1.d0 - ((t_c + a1)**2.d0)*(t_c + a2)/a3/(t_c + a4))
 
+    unsaturated = PETSC_FALSE
+    dp = (p - p0)
+
+    if (p <= p0) then
+       unsaturated = PETSC_TRUE
+       dp = 0.d0
+    endif
+
     ! Compressibility of water
-    kappa = (1.d0 + (k0 + k1*t_c + k2*t_c**2.d0)*(p - p0))
+    kappa = (1.d0 + (k0 + k1*t_c + k2*t_c**2.d0)*dp)
 
     ! Density of water
     den = dent*kappa/FMWH2O ! [kmol m^{-3}]
@@ -143,10 +153,14 @@ contains
     ddent_dt   = a5*(ddent_dt_1 + ddent_dt_2 + ddent_dt_3)
 
     dkappa_dp  = (k0 + k1*t_c + k2*t_c**2.d0)
-    dkappa_dt  = (k1 + 2.d0*k2*t_c)*(p - p0)
+    dkappa_dt  = (k1 + 2.d0*k2*t_c)*dp
 
     dden_dt    = (ddent_dt*kappa + dent*dkappa_dt)/FMWH2O
     dden_dp    = (ddent_dp*kappa + dent*dkappa_dp)/FMWH2O
+
+    if (unsaturated) then
+       dden_dp = 0.d0
+    endif
 
   end subroutine DensityTGDPB01
 

@@ -45,9 +45,12 @@
 
 <!-- time_integration -->
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
+<config_dt ocn_grid="oQU240wLI">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30">'00:15:00'</config_dt>
+<config_dt ocn_grid="oEC60to30wLI">'00:30:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
+<config_dt ocn_grid="oRRS30to10wLI">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS18to6">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
@@ -74,9 +77,12 @@
 
 <!-- hmix -->
 <config_hmix_scaleWithMesh ocn_grid="oQU240">.false.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oQU240wLI">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oEC60to30wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oRRS30to10wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS18to6">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
@@ -92,9 +98,12 @@
 <config_use_mom_del4>.true.</config_use_mom_del4>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
+<config_mom_del4 ocn_grid="oQU240wLI">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30wLI">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
+<config_mom_del4 ocn_grid="oRRS30to10wLI">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS18to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
@@ -108,9 +117,12 @@
 
 <!-- mesoscale_eddy_parameterization -->
 <config_use_standardGM ocn_grid="oQU240">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oQU240wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oQU120">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oEC60to30">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oEC60to30wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS30to10">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS30to10wLI">.true.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS18to6">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
@@ -210,6 +222,8 @@
 
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
+<config_frazil_in_open_ocean>.true.</config_frazil_in_open_ocean>
+<config_frazil_under_land_ice>.true.</config_frazil_under_land_ice>
 <config_frazil_heat_of_fusion>3.337e5</config_frazil_heat_of_fusion>
 <config_frazil_ice_density>1000.0</config_frazil_ice_density>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
@@ -222,6 +236,9 @@
 
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oQU240wLI">'standalone'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oEC60to30wLI">'standalone'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oRRS30to10wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_formulation>'Jenkins'</config_land_ice_flux_formulation>
 <config_land_ice_flux_useHollandJenkinsAdvDiff>.false.</config_land_ice_flux_useHollandJenkinsAdvDiff>
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>
@@ -254,11 +271,16 @@
 
 <!-- eos -->
 <config_eos_type>'jm'</config_eos_type>
-<config_freezing_temperature_coeff_0>-1.8</config_freezing_temperature_coeff_0>
-<config_freezing_temperature_coeff_S>0.0</config_freezing_temperature_coeff_S>
-<config_freezing_temperature_coeff_p>6.64670038e-08</config_freezing_temperature_coeff_p>
-<config_freezing_temperature_coeff_pS>-4.44655526e-09</config_freezing_temperature_coeff_pS>
-<config_freezing_temperature_reference_pressure>1e5</config_freezing_temperature_reference_pressure>
+<config_open_ocean_freezing_temperature_coeff_0>-1.8</config_open_ocean_freezing_temperature_coeff_0>
+<config_open_ocean_freezing_temperature_coeff_S>0.0</config_open_ocean_freezing_temperature_coeff_S>
+<config_open_ocean_freezing_temperature_coeff_p>0.0</config_open_ocean_freezing_temperature_coeff_p>
+<config_open_ocean_freezing_temperature_coeff_pS>0.0</config_open_ocean_freezing_temperature_coeff_pS>
+<config_open_ocean_freezing_temperature_reference_pressure>0.0</config_open_ocean_freezing_temperature_reference_pressure>
+<config_land_ice_cavity_freezing_temperature_coeff_0>6.22e-2</config_land_ice_cavity_freezing_temperature_coeff_0>
+<config_land_ice_cavity_freezing_temperature_coeff_S>-5.63e-2</config_land_ice_cavity_freezing_temperature_coeff_S>
+<config_land_ice_cavity_freezing_temperature_coeff_p>-7.43e-8</config_land_ice_cavity_freezing_temperature_coeff_p>
+<config_land_ice_cavity_freezing_temperature_coeff_pS>-1.74e-10</config_land_ice_cavity_freezing_temperature_coeff_pS>
+<config_land_ice_cavity_freezing_temperature_reference_pressure>0.0</config_land_ice_cavity_freezing_temperature_reference_pressure>
 
 <!-- eos_linear -->
 <config_eos_linear_alpha>0.2</config_eos_linear_alpha>
@@ -274,9 +296,12 @@
 <config_n_bcl_iter_end>2</config_n_bcl_iter_end>
 <config_btr_dt>'0000_00:00:15'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
+<config_btr_dt ocn_grid="oQU240wLI">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
 <config_btr_dt ocn_grid="oEC60to30">'0000_00:00:45'</config_btr_dt>
+<config_btr_dt ocn_grid="oEC60to30wLI">'0000_00:00:45'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
+<config_btr_dt ocn_grid="oRRS30to10wLI">'0000_00:00:18'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS18to6">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
@@ -699,6 +724,29 @@
 <config_isomip_z3>-200.0</config_isomip_z3>
 <config_isomip_ice_fraction3>1.0</config_isomip_ice_fraction3>
 
+<!-- isomip_plus -->
+<config_isomip_plus_vert_levels>36</config_isomip_plus_vert_levels>
+<config_isomip_plus_vertical_level_distribution>'constant'</config_isomip_plus_vertical_level_distribution>
+<config_isomip_plus_max_bottom_depth>-720.0</config_isomip_plus_max_bottom_depth>
+<config_isomip_plus_minimum_levels>3</config_isomip_plus_minimum_levels>
+<config_isomip_plus_min_column_thickness>10.0</config_isomip_plus_min_column_thickness>
+<config_isomip_plus_min_ocean_fraction>0.5</config_isomip_plus_min_ocean_fraction>
+<config_isomip_plus_topography_file>'input_geometry_processed.nc'</config_isomip_plus_topography_file>
+<config_isomip_plus_init_top_temp>-1.9</config_isomip_plus_init_top_temp>
+<config_isomip_plus_init_bot_temp>-1.9</config_isomip_plus_init_bot_temp>
+<config_isomip_plus_init_top_sal>33.8</config_isomip_plus_init_top_sal>
+<config_isomip_plus_init_bot_sal>34.5</config_isomip_plus_init_bot_sal>
+<config_isomip_plus_restore_top_temp>-1.9</config_isomip_plus_restore_top_temp>
+<config_isomip_plus_restore_bot_temp>1.0</config_isomip_plus_restore_bot_temp>
+<config_isomip_plus_restore_top_sal>33.8</config_isomip_plus_restore_top_sal>
+<config_isomip_plus_restore_bot_sal>34.7</config_isomip_plus_restore_bot_sal>
+<config_isomip_plus_restore_rate>10.0</config_isomip_plus_restore_rate>
+<config_isomip_plus_restore_evap_rate>200</config_isomip_plus_restore_evap_rate>
+<config_isomip_plus_restore_xMin>790.0e3</config_isomip_plus_restore_xMin>
+<config_isomip_plus_restore_xMax>800.0e3</config_isomip_plus_restore_xMax>
+<config_isomip_plus_coriolis_parameter>-1.409e-4</config_isomip_plus_coriolis_parameter>
+<config_isomip_plus_effective_density>1026.</config_isomip_plus_effective_density>
+
 <!-- tracer_forcing_activeTracers -->
 <config_use_activeTracers>.true.</config_use_activeTracers>
 <config_use_activeTracers_surface_bulk_forcing>.true.</config_use_activeTracers_surface_bulk_forcing>
@@ -707,6 +755,9 @@
 <config_use_activeTracers_exponential_decay>.false.</config_use_activeTracers_exponential_decay>
 <config_use_activeTracers_idealAge_forcing>.false.</config_use_activeTracers_idealAge_forcing>
 <config_use_activeTracers_ttd_forcing>.false.</config_use_activeTracers_ttd_forcing>
+<config_use_surface_salinity_monthly_restoring>.false.</config_use_surface_salinity_monthly_restoring>
+<config_salinity_restoring_constant_piston_velocity>0.0</config_salinity_restoring_constant_piston_velocity>
+<config_salinity_restoring_max_difference>0.5</config_salinity_restoring_max_difference>
 
 <!-- tracer_forcing_debugTracers -->
 <config_use_debugTracers>.false.</config_use_debugTracers>
@@ -887,37 +938,133 @@
 <config_AM_mixedLayerDepths_den_gradient_threshold>5E-8</config_AM_mixedLayerDepths_den_gradient_threshold>
 <config_AM_mixedLayerDepths_interp_method>1</config_AM_mixedLayerDepths_interp_method>
 
-<!-- AM_regionalStats -->
-<config_AM_regionalStats_enable>.false.</config_AM_regionalStats_enable>
-<config_AM_regionalStats_compute_on_startup>.false.</config_AM_regionalStats_compute_on_startup>
-<config_AM_regionalStats_write_on_startup>.false.</config_AM_regionalStats_write_on_startup>
-<config_AM_regionalStats_compute_interval>'output_interval'</config_AM_regionalStats_compute_interval>
-<config_AM_regionalStats_output_stream>'regionalStatsOutput'</config_AM_regionalStats_output_stream>
-<config_AM_regionalStats_restart_stream>'regionalMasksInput'</config_AM_regionalStats_restart_stream>
-<config_AM_regionalStats_input_stream>'regionalMasksInput'</config_AM_regionalStats_input_stream>
-<config_AM_regionalStats_operation>'avg'</config_AM_regionalStats_operation>
-<config_AM_regionalStats_region_type>'cell'</config_AM_regionalStats_region_type>
-<config_AM_regionalStats_region_group>'all'</config_AM_regionalStats_region_group>
-<config_AM_regionalStats_1d_weighting_function>'mul'</config_AM_regionalStats_1d_weighting_function>
-<config_AM_regionalStats_2d_weighting_function>'mul'</config_AM_regionalStats_2d_weighting_function>
-<config_AM_regionalStats_1d_weighting_field>'areaCell'</config_AM_regionalStats_1d_weighting_field>
-<config_AM_regionalStats_2d_weighting_field>'volumeCell'</config_AM_regionalStats_2d_weighting_field>
-<config_AM_regionalStats_vertical_mask>'cellMask'</config_AM_regionalStats_vertical_mask>
-<config_AM_regionalStats_vertical_dimension>'nVertLevels'</config_AM_regionalStats_vertical_dimension>
+<!-- AM_regionalStatsDaily -->
+<config_AM_regionalStatsDaily_enable>.false.</config_AM_regionalStatsDaily_enable>
+<config_AM_regionalStatsDaily_compute_on_startup>.false.</config_AM_regionalStatsDaily_compute_on_startup>
+<config_AM_regionalStatsDaily_write_on_startup>.false.</config_AM_regionalStatsDaily_write_on_startup>
+<config_AM_regionalStatsDaily_compute_interval>'output_interval'</config_AM_regionalStatsDaily_compute_interval>
+<config_AM_regionalStatsDaily_output_stream>'regionalStatsDailyOutput'</config_AM_regionalStatsDaily_output_stream>
+<config_AM_regionalStatsDaily_restart_stream>'regionalMasksInput'</config_AM_regionalStatsDaily_restart_stream>
+<config_AM_regionalStatsDaily_input_stream>'regionalMasksInput'</config_AM_regionalStatsDaily_input_stream>
+<config_AM_regionalStatsDaily_operation>'avg'</config_AM_regionalStatsDaily_operation>
+<config_AM_regionalStatsDaily_region_type>'cell'</config_AM_regionalStatsDaily_region_type>
+<config_AM_regionalStatsDaily_region_group>'all'</config_AM_regionalStatsDaily_region_group>
+<config_AM_regionalStatsDaily_1d_weighting_function>'mul'</config_AM_regionalStatsDaily_1d_weighting_function>
+<config_AM_regionalStatsDaily_2d_weighting_function>'mul'</config_AM_regionalStatsDaily_2d_weighting_function>
+<config_AM_regionalStatsDaily_1d_weighting_field>'areaCell'</config_AM_regionalStatsDaily_1d_weighting_field>
+<config_AM_regionalStatsDaily_2d_weighting_field>'volumeCell'</config_AM_regionalStatsDaily_2d_weighting_field>
+<config_AM_regionalStatsDaily_vertical_mask>'cellMask'</config_AM_regionalStatsDaily_vertical_mask>
+<config_AM_regionalStatsDaily_vertical_dimension>'nVertLevels'</config_AM_regionalStatsDaily_vertical_dimension>
 
-<!-- AM_timeSeriesStats -->
-<config_AM_timeSeriesStats_enable>.true.</config_AM_timeSeriesStats_enable>
-<config_AM_timeSeriesStats_compute_on_startup>.false.</config_AM_timeSeriesStats_compute_on_startup>
-<config_AM_timeSeriesStats_write_on_startup>.true.</config_AM_timeSeriesStats_write_on_startup>
-<config_AM_timeSeriesStats_compute_interval>'0000-00-00_01:00:00'</config_AM_timeSeriesStats_compute_interval>
-<config_AM_timeSeriesStats_output_stream>'timeSeriesStatsOutput'</config_AM_timeSeriesStats_output_stream>
-<config_AM_timeSeriesStats_restart_stream>'timeSeriesStatsRestart'</config_AM_timeSeriesStats_restart_stream>
-<config_AM_timeSeriesStats_operation>'avg'</config_AM_timeSeriesStats_operation>
-<config_AM_timeSeriesStats_reference_times>'initial_time'</config_AM_timeSeriesStats_reference_times>
-<config_AM_timeSeriesStats_duration_intervals>'repeat_interval'</config_AM_timeSeriesStats_duration_intervals>
-<config_AM_timeSeriesStats_repeat_intervals>'reset_interval'</config_AM_timeSeriesStats_repeat_intervals>
-<config_AM_timeSeriesStats_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStats_reset_intervals>
-<config_AM_timeSeriesStats_backward_output_offset>'0000-01-00_00:00:00'</config_AM_timeSeriesStats_backward_output_offset>
+<!-- AM_regionalStatsWeekly -->
+<config_AM_regionalStatsWeekly_enable>.false.</config_AM_regionalStatsWeekly_enable>
+<config_AM_regionalStatsWeekly_compute_on_startup>.false.</config_AM_regionalStatsWeekly_compute_on_startup>
+<config_AM_regionalStatsWeekly_write_on_startup>.false.</config_AM_regionalStatsWeekly_write_on_startup>
+<config_AM_regionalStatsWeekly_compute_interval>'output_interval'</config_AM_regionalStatsWeekly_compute_interval>
+<config_AM_regionalStatsWeekly_output_stream>'regionalStatsWeeklyOutput'</config_AM_regionalStatsWeekly_output_stream>
+<config_AM_regionalStatsWeekly_restart_stream>'regionalMasksInput'</config_AM_regionalStatsWeekly_restart_stream>
+<config_AM_regionalStatsWeekly_input_stream>'regionalMasksInput'</config_AM_regionalStatsWeekly_input_stream>
+<config_AM_regionalStatsWeekly_operation>'avg'</config_AM_regionalStatsWeekly_operation>
+<config_AM_regionalStatsWeekly_region_type>'cell'</config_AM_regionalStatsWeekly_region_type>
+<config_AM_regionalStatsWeekly_region_group>'all'</config_AM_regionalStatsWeekly_region_group>
+<config_AM_regionalStatsWeekly_1d_weighting_function>'mul'</config_AM_regionalStatsWeekly_1d_weighting_function>
+<config_AM_regionalStatsWeekly_2d_weighting_function>'mul'</config_AM_regionalStatsWeekly_2d_weighting_function>
+<config_AM_regionalStatsWeekly_1d_weighting_field>'areaCell'</config_AM_regionalStatsWeekly_1d_weighting_field>
+<config_AM_regionalStatsWeekly_2d_weighting_field>'volumeCell'</config_AM_regionalStatsWeekly_2d_weighting_field>
+<config_AM_regionalStatsWeekly_vertical_mask>'cellMask'</config_AM_regionalStatsWeekly_vertical_mask>
+<config_AM_regionalStatsWeekly_vertical_dimension>'nVertLevels'</config_AM_regionalStatsWeekly_vertical_dimension>
+
+<!-- AM_regionalStatsMonthly -->
+<config_AM_regionalStatsMonthly_enable>.false.</config_AM_regionalStatsMonthly_enable>
+<config_AM_regionalStatsMonthly_compute_on_startup>.false.</config_AM_regionalStatsMonthly_compute_on_startup>
+<config_AM_regionalStatsMonthly_write_on_startup>.false.</config_AM_regionalStatsMonthly_write_on_startup>
+<config_AM_regionalStatsMonthly_compute_interval>'output_interval'</config_AM_regionalStatsMonthly_compute_interval>
+<config_AM_regionalStatsMonthly_output_stream>'regionalStatsMonthlyOutput'</config_AM_regionalStatsMonthly_output_stream>
+<config_AM_regionalStatsMonthly_restart_stream>'regionalMasksInput'</config_AM_regionalStatsMonthly_restart_stream>
+<config_AM_regionalStatsMonthly_input_stream>'regionalMasksInput'</config_AM_regionalStatsMonthly_input_stream>
+<config_AM_regionalStatsMonthly_operation>'avg'</config_AM_regionalStatsMonthly_operation>
+<config_AM_regionalStatsMonthly_region_type>'cell'</config_AM_regionalStatsMonthly_region_type>
+<config_AM_regionalStatsMonthly_region_group>'all'</config_AM_regionalStatsMonthly_region_group>
+<config_AM_regionalStatsMonthly_1d_weighting_function>'mul'</config_AM_regionalStatsMonthly_1d_weighting_function>
+<config_AM_regionalStatsMonthly_2d_weighting_function>'mul'</config_AM_regionalStatsMonthly_2d_weighting_function>
+<config_AM_regionalStatsMonthly_1d_weighting_field>'areaCell'</config_AM_regionalStatsMonthly_1d_weighting_field>
+<config_AM_regionalStatsMonthly_2d_weighting_field>'volumeCell'</config_AM_regionalStatsMonthly_2d_weighting_field>
+<config_AM_regionalStatsMonthly_vertical_mask>'cellMask'</config_AM_regionalStatsMonthly_vertical_mask>
+<config_AM_regionalStatsMonthly_vertical_dimension>'nVertLevels'</config_AM_regionalStatsMonthly_vertical_dimension>
+
+<!-- AM_regionalStatsCustom -->
+<config_AM_regionalStatsCustom_enable>.false.</config_AM_regionalStatsCustom_enable>
+<config_AM_regionalStatsCustom_compute_on_startup>.false.</config_AM_regionalStatsCustom_compute_on_startup>
+<config_AM_regionalStatsCustom_write_on_startup>.false.</config_AM_regionalStatsCustom_write_on_startup>
+<config_AM_regionalStatsCustom_compute_interval>'output_interval'</config_AM_regionalStatsCustom_compute_interval>
+<config_AM_regionalStatsCustom_output_stream>'regionalStatsCustomOutput'</config_AM_regionalStatsCustom_output_stream>
+<config_AM_regionalStatsCustom_restart_stream>'regionalMasksInput'</config_AM_regionalStatsCustom_restart_stream>
+<config_AM_regionalStatsCustom_input_stream>'regionalMasksInput'</config_AM_regionalStatsCustom_input_stream>
+<config_AM_regionalStatsCustom_operation>'avg'</config_AM_regionalStatsCustom_operation>
+<config_AM_regionalStatsCustom_region_type>'cell'</config_AM_regionalStatsCustom_region_type>
+<config_AM_regionalStatsCustom_region_group>'all'</config_AM_regionalStatsCustom_region_group>
+<config_AM_regionalStatsCustom_1d_weighting_function>'mul'</config_AM_regionalStatsCustom_1d_weighting_function>
+<config_AM_regionalStatsCustom_2d_weighting_function>'mul'</config_AM_regionalStatsCustom_2d_weighting_function>
+<config_AM_regionalStatsCustom_1d_weighting_field>'areaCell'</config_AM_regionalStatsCustom_1d_weighting_field>
+<config_AM_regionalStatsCustom_2d_weighting_field>'volumeCell'</config_AM_regionalStatsCustom_2d_weighting_field>
+<config_AM_regionalStatsCustom_vertical_mask>'cellMask'</config_AM_regionalStatsCustom_vertical_mask>
+<config_AM_regionalStatsCustom_vertical_dimension>'nVertLevels'</config_AM_regionalStatsCustom_vertical_dimension>
+
+<!-- AM_timeSeriesStatsDaily -->
+<config_AM_timeSeriesStatsDaily_enable>.false.</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_compute_on_startup>.false.</config_AM_timeSeriesStatsDaily_compute_on_startup>
+<config_AM_timeSeriesStatsDaily_write_on_startup>.false.</config_AM_timeSeriesStatsDaily_write_on_startup>
+<config_AM_timeSeriesStatsDaily_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsDaily_compute_interval>
+<config_AM_timeSeriesStatsDaily_output_stream>'timeSeriesStatsDailyOutput'</config_AM_timeSeriesStatsDaily_output_stream>
+<config_AM_timeSeriesStatsDaily_restart_stream>'timeSeriesStatsDailyRestart'</config_AM_timeSeriesStatsDaily_restart_stream>
+<config_AM_timeSeriesStatsDaily_operation>'avg'</config_AM_timeSeriesStatsDaily_operation>
+<config_AM_timeSeriesStatsDaily_reference_times>'initial_time'</config_AM_timeSeriesStatsDaily_reference_times>
+<config_AM_timeSeriesStatsDaily_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsDaily_duration_intervals>
+<config_AM_timeSeriesStatsDaily_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsDaily_repeat_intervals>
+<config_AM_timeSeriesStatsDaily_reset_intervals>'00-00-01_00:00:00'</config_AM_timeSeriesStatsDaily_reset_intervals>
+<config_AM_timeSeriesStatsDaily_backward_output_offset>'00-00-01_00:00:00'</config_AM_timeSeriesStatsDaily_backward_output_offset>
+
+<!-- AM_timeSeriesStatsMonthly -->
+<config_AM_timeSeriesStatsMonthly_enable>.true.</config_AM_timeSeriesStatsMonthly_enable>
+<config_AM_timeSeriesStatsMonthly_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthly_compute_on_startup>
+<config_AM_timeSeriesStatsMonthly_write_on_startup>.true.</config_AM_timeSeriesStatsMonthly_write_on_startup>
+<config_AM_timeSeriesStatsMonthly_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
+<config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
+<config_AM_timeSeriesStatsMonthly_restart_stream>'timeSeriesStatsMonthlyRestart'</config_AM_timeSeriesStatsMonthly_restart_stream>
+<config_AM_timeSeriesStatsMonthly_operation>'avg'</config_AM_timeSeriesStatsMonthly_operation>
+<config_AM_timeSeriesStatsMonthly_reference_times>'initial_time'</config_AM_timeSeriesStatsMonthly_reference_times>
+<config_AM_timeSeriesStatsMonthly_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsMonthly_duration_intervals>
+<config_AM_timeSeriesStatsMonthly_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsMonthly_repeat_intervals>
+<config_AM_timeSeriesStatsMonthly_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthly_reset_intervals>
+<config_AM_timeSeriesStatsMonthly_backward_output_offset>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthly_backward_output_offset>
+
+<!-- AM_timeSeriesStatsClimatology -->
+<config_AM_timeSeriesStatsClimatology_enable>.false.</config_AM_timeSeriesStatsClimatology_enable>
+<config_AM_timeSeriesStatsClimatology_compute_on_startup>.false.</config_AM_timeSeriesStatsClimatology_compute_on_startup>
+<config_AM_timeSeriesStatsClimatology_write_on_startup>.false.</config_AM_timeSeriesStatsClimatology_write_on_startup>
+<config_AM_timeSeriesStatsClimatology_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsClimatology_compute_interval>
+<config_AM_timeSeriesStatsClimatology_output_stream>'timeSeriesStatsClimatologyOutput'</config_AM_timeSeriesStatsClimatology_output_stream>
+<config_AM_timeSeriesStatsClimatology_restart_stream>'timeSeriesStatsClimatologyRestart'</config_AM_timeSeriesStatsClimatology_restart_stream>
+<config_AM_timeSeriesStatsClimatology_operation>'avg'</config_AM_timeSeriesStatsClimatology_operation>
+<config_AM_timeSeriesStatsClimatology_reference_times>'00-03-01_00:00:00;00-06-01_00:00:00;00-09-01_00:00:00;00-12-01_00:00:00'</config_AM_timeSeriesStatsClimatology_reference_times>
+<config_AM_timeSeriesStatsClimatology_duration_intervals>'00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00'</config_AM_timeSeriesStatsClimatology_duration_intervals>
+<config_AM_timeSeriesStatsClimatology_repeat_intervals>'01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00'</config_AM_timeSeriesStatsClimatology_repeat_intervals>
+<config_AM_timeSeriesStatsClimatology_reset_intervals>'1000-00-00_00:00:00;1000-00-00_00:00:00;1000-00-00_00:00:00;1000-00-00_00:00:00'</config_AM_timeSeriesStatsClimatology_reset_intervals>
+<config_AM_timeSeriesStatsClimatology_backward_output_offset>'00-03-00_00:00:00'</config_AM_timeSeriesStatsClimatology_backward_output_offset>
+
+<!-- AM_timeSeriesStatsCustom -->
+<config_AM_timeSeriesStatsCustom_enable>.false.</config_AM_timeSeriesStatsCustom_enable>
+<config_AM_timeSeriesStatsCustom_compute_on_startup>.false.</config_AM_timeSeriesStatsCustom_compute_on_startup>
+<config_AM_timeSeriesStatsCustom_write_on_startup>.false.</config_AM_timeSeriesStatsCustom_write_on_startup>
+<config_AM_timeSeriesStatsCustom_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsCustom_compute_interval>
+<config_AM_timeSeriesStatsCustom_output_stream>'timeSeriesStatsCustomOutput'</config_AM_timeSeriesStatsCustom_output_stream>
+<config_AM_timeSeriesStatsCustom_restart_stream>'timeSeriesStatsCustomRestart'</config_AM_timeSeriesStatsCustom_restart_stream>
+<config_AM_timeSeriesStatsCustom_operation>'avg'</config_AM_timeSeriesStatsCustom_operation>
+<config_AM_timeSeriesStatsCustom_reference_times>'initial_time'</config_AM_timeSeriesStatsCustom_reference_times>
+<config_AM_timeSeriesStatsCustom_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsCustom_duration_intervals>
+<config_AM_timeSeriesStatsCustom_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsCustom_repeat_intervals>
+<config_AM_timeSeriesStatsCustom_reset_intervals>'00-00-07_00:00:00'</config_AM_timeSeriesStatsCustom_reset_intervals>
+<config_AM_timeSeriesStatsCustom_backward_output_offset>'00-00-01_00:00:00'</config_AM_timeSeriesStatsCustom_backward_output_offset>
 
 <!-- AM_pointwiseStats -->
 <config_AM_pointwiseStats_enable>.false.</config_AM_pointwiseStats_enable>
@@ -963,5 +1110,27 @@
 <config_AM_transectTransport_output_stream>'transectTransportOutput'</config_AM_transectTransport_output_stream>
 <config_AM_transectTransport_compute_on_startup>.true.</config_AM_transectTransport_compute_on_startup>
 <config_AM_transectTransport_write_on_startup>.true.</config_AM_transectTransport_write_on_startup>
+<config_AM_transectTransport_transect_group>'all'</config_AM_transectTransport_transect_group>
+
+<!-- AM_eddyProductVariables -->
+<config_AM_eddyProductVariables_enable>.false.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_compute_interval>'dt'</config_AM_eddyProductVariables_compute_interval>
+<config_AM_eddyProductVariables_output_stream>'eddyProductVariablesOutput'</config_AM_eddyProductVariables_output_stream>
+<config_AM_eddyProductVariables_compute_on_startup>.true.</config_AM_eddyProductVariables_compute_on_startup>
+<config_AM_eddyProductVariables_write_on_startup>.false.</config_AM_eddyProductVariables_write_on_startup>
+
+<!-- AM_mocStreamfunction -->
+<config_AM_mocStreamfunction_enable>.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_compute_interval>'output_interval'</config_AM_mocStreamfunction_compute_interval>
+<config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
+<config_AM_mocStreamfunction_compute_on_startup>.true.</config_AM_mocStreamfunction_compute_on_startup>
+<config_AM_mocStreamfunction_write_on_startup>.true.</config_AM_mocStreamfunction_write_on_startup>
+<config_AM_mocStreamfunction_min_bin>-1.0e34</config_AM_mocStreamfunction_min_bin>
+<config_AM_mocStreamfunction_max_bin>-1.0e34</config_AM_mocStreamfunction_max_bin>
+<config_AM_mocStreamfunction_num_bins>180</config_AM_mocStreamfunction_num_bins>
+<config_AM_mocStreamfunction_vertical_velocity_value>'vertVelocityTop'</config_AM_mocStreamfunction_vertical_velocity_value>
+<config_AM_mocStreamfunction_normal_velocity_value>'normalVelocity'</config_AM_mocStreamfunction_normal_velocity_value>
+<config_AM_mocStreamfunction_region_group>'all'</config_AM_mocStreamfunction_region_group>
+<config_AM_mocStreamfunction_transect_group>'all'</config_AM_mocStreamfunction_transect_group>
 
 </namelist_defaults>

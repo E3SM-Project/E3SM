@@ -20,11 +20,6 @@ echo using NCPU = $NCPU
 #   ne$NEnp$NP_latlon.nc     template for interpic_new and paraview metadata
 #   ne$NEnp$NP_scrip.nc      template for SCRIP/ESMF mapping utility
 #
-# for running CAM physics on CSLAM grid
-#   ne$NEnc$NP_latlon.nc    template for interpic_new and paraview metadata
-#   ne$NEnc$NP_scrip.nc     template for SCRIP/ESMF mapping utility
-#                                  
-#
 #
 # NE=240 runs in a few minutes.  needs 24 nodes, io_stride=8
 #
@@ -32,8 +27,6 @@ echo using NCPU = $NCPU
 #
 # GLL points within each element:
 set NPTS = 4
-# CSLAM points points within each element:
-set NC = 4  
 set ne = 0 ; 
 
 set HOMME = `cd ../.. ; pwd`  # path to HOMME code. assume we are running from homme/test/template
@@ -54,7 +47,7 @@ set bld = $wdir/preqx/bld
 mkdir -p $bld
 set wdir = $wdir/preqx/template
 mkdir -p $wdir
-set exe = preqx.template.nc$NC
+set exe = preqx.template
 
 
 set input = $HOMME/test/template
@@ -78,7 +71,6 @@ else
    # UNIFORM grids
    set meshfile='none'
    set meshname = ne{$ne}np{$NPTS}   #eg  ne30np5
-   set meshsub = ne{$ne}nc{$NC}    #eg  ne30nc4
 endif
 
 
@@ -102,7 +94,7 @@ echo $outnames
 cd $bld
 if (!( -f $exe )) then
     rm -rf CMakeFiles CMakeCache.txt
-    cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_USE_PIO=TRUE  -DPREQX_NP=$NPTS -DPREQX_NC=$NC  $HOMME 
+    cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_USE_PIO=TRUE  -DPREQX_NP=$NPTS  $HOMME 
     make -j4 clean
     make -j4 preqx
     mv src/preqx/preqx $exe
@@ -155,32 +147,6 @@ else
    ncks -O -v lat,lon,area movies/$output {$meshname}_tmp.nc
    ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne  np=$NPTS
    rm -f {$meshname}_tmp.nc
-endif
-
-
-if ( ${?meshsub} ) then
-
-# a subelement control volume interpIC template:
-set echo
-ncks -O -v phys_lat,phys_lon,phys_area movies/$output {$meshsub}_tmp.nc
-ncrename -v phys_lat,lat {$meshsub}_tmp.nc
-ncrename -v phys_lon,lon {$meshsub}_tmp.nc
-ncrename -v phys_area,area {$meshsub}_tmp.nc
-ncrename -d nphys,ncol {$meshsub}_tmp.nc
-ncl $input/HOMME2META.ncl  name=\"$meshsub\"  ne=$ne
-rm -f {$meshsub}_tmp.nc
-
-
-# subelement ESMF/SCRIP template (still need phys_area)
-ncks -O -v phys_area,phys_lat,phys_lon,phys_cv_lat,phys_cv_lon movies/$output {$meshsub}_tmp.nc
-ncrename -v phys_area,area {$meshsub}_tmp.nc
-ncrename -v phys_lat,lat {$meshsub}_tmp.nc
-ncrename -v phys_lon,lon {$meshsub}_tmp.nc
-ncrename -v phys_cv_lat,cv_lat {$meshsub}_tmp.nc
-ncrename -v phys_cv_lon,cv_lon {$meshsub}_tmp.nc
-ncl $input/HOMME2SCRIP.ncl  name=\"$meshsub\"  ne=$ne
-rm -f {$meshsub}_tmp.nc
-
 endif
 
 

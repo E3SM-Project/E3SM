@@ -2,23 +2,23 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_List - A List Manager
 !
-! !DESCRIPTION:  A {\em List} is a character buffer comprising 
-! substrings called {\em items} separated by colons, combined with 
-! indexing information describing (1) the starting point in the character 
-! buffer of each substring, and  (2) the length of each substring.  The 
-! only constraints on the valid list items are (1) the value of an 
-! item does not contain the ``\verb":"'' delimitter, and (2) leading 
-! and trailing blanks are stripped from any character string presented 
+! !DESCRIPTION:  A {\em List} is a character buffer comprising
+! substrings called {\em items} separated by colons, combined with
+! indexing information describing (1) the starting point in the character
+! buffer of each substring, and  (2) the length of each substring.  The
+! only constraints on the valid list items are (1) the value of an
+! item does not contain the ``\verb":"'' delimitter, and (2) leading
+! and trailing blanks are stripped from any character string presented
 ! to define a list item (although any imbeded blanks are retained).
 !
-! {\bf Example:}  Suppose we wish to define a List containing the 
+! {\bf Example:}  Suppose we wish to define a List containing the
 ! items {\tt 'latitude'}, {\tt 'longitude'}, and {\tt 'pressure'}.
-! The character buffer of the List containing these items will be the 
+! The character buffer of the List containing these items will be the
 ! 27-character string
 ! \begin{verbatim}
 ! 'latitude:longitude:pressure'
@@ -41,8 +41,8 @@
 !\end{center}
 !\end{table}
 !
-! One final note:  All operations for the {\tt List} datatype are 
-! {\bf case sensitive}. 
+! One final note:  All operations for the {\tt List} datatype are
+! {\bf case sensitive}.
 !
 ! !INTERFACE:
 
@@ -134,7 +134,7 @@
   interface send; module procedure send_; end interface
   interface recv; module procedure recv_; end interface
   interface GetSharedListIndices; module procedure &
-      GetSharedListIndices_ 
+      GetSharedListIndices_
   end interface
 
 ! !REVISION HISTORY:
@@ -142,11 +142,11 @@
 ! 16May01 - J. Larson <larson@mcs.anl.gov> - Several changes / fixes:
 !           public interface for copy_(), corrected version of copy_(),
 !           corrected version of bcast_().
-! 15Oct01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
+! 15Oct01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL
 !           function identical_().
-! 14Dec01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
+! 14Dec01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL
 !           function allocated_().
-! 13Feb02 - J. Larson <larson@mcs.anl.gov> - Added the List query 
+! 13Feb02 - J. Larson <larson@mcs.anl.gov> - Added the List query
 !           functions exportToChar() and CharBufferLength().
 ! 13Jun02-  R.L. Jacob <jacob@mcs.anl.gov> - Move GetSharedListIndices
 !           from mct to this module.
@@ -165,7 +165,7 @@
 ! !DESCRIPTION:
 !
 ! A list is a string in the form of ``\verb"Larry:Moe:Curly"'',
-! or ``\verb"lat:lon:lev"'', combined with substring location and 
+! or ``\verb"lat:lon:lev"'', combined with substring location and
 ! length information.  Through the initialization call, the
 ! items delimited by ``\verb":"'' are stored as an array of sub-
 ! strings of a long string, accessible through an array of substring
@@ -174,14 +174,14 @@
 ! The leading and the trailing blanks are insignificant, although
 ! any imbeded blanks are.  For example,
 !
-! \begin{verbatim} 
+! \begin{verbatim}
 ! call init_(aList, 'batman  :SUPERMAN:Green Lantern:  Aquaman')
-! \end{verbatim} 
-! will result in {\tt aList} having four items:  'batman', 'SUPERMAN', 
+! \end{verbatim}
+! will result in {\tt aList} having four items:  'batman', 'SUPERMAN',
 ! 'Green Lantern', and 'Aquaman'.  That is
-! \begin{verbatim} 
+! \begin{verbatim}
 ! aList%bf =  'batman:SUPERMAN:Green Lantern:Aquaman'
-! \end{verbatim} 
+! \end{verbatim}
 !
 ! !INTERFACE:
 
@@ -191,17 +191,17 @@
 !
       use m_die,only : die
       use m_mall,only : mall_mci,mall_ison
- 
+
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       character(len=*),intent(in) :: Values ! ":" delimited names
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       type(List),intent(out)	  :: aList  ! an indexed string values
- 
+
 
 ! !REVISION HISTORY:
 ! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -239,10 +239,10 @@
   end do
   if(ib<=ie) ni=ni+1
 
-  ! COMPILER MAY NOT SIGNAL AN ERROR IF 
+  ! COMPILER MAY NOT SIGNAL AN ERROR IF
   ! ALIST HAS ALREADY BEEN INITIALIZED.
   ! PLEASE CHECK FOR PREVIOUS INITIALIZATION
-  
+
   allocate(aList%bf(le),aList%lc(0:1,ni),stat=ier)
   if(ier /= 0) call die(myname_,'allocate()',ier)
 
@@ -298,11 +298,11 @@
 !
 ! !IROUTINE: initStr_ - Initialize a List Using the String Type
 !
-! !DESCRIPTION: This routine initializes a {\tt List} datatype given 
-! an input {\tt String} datatype (see {\tt m\_String} for more 
-! information regarding the {\tt String} type).  The contents of the 
+! !DESCRIPTION: This routine initializes a {\tt List} datatype given
+! an input {\tt String} datatype (see {\tt m\_String} for more
+! information regarding the {\tt String} type).  The contents of the
 ! input {\tt String} argument {\tt pstr} must adhere to the restrictions
-! stated for character input stated in the prologue of the routine 
+! stated for character input stated in the prologue of the routine
 ! {\tt init\_()} in this module.
 !
 ! !INTERFACE:
@@ -315,11 +315,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),intent(in)	  :: pstr
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       type(List),intent(out)	  :: aList  ! an indexed string values
 
@@ -340,22 +340,22 @@
 !
 ! !IROUTINE: initStr1_ - Initialize a List Using an Array of Strings
 !
-! !DESCRIPTION: This routine initializes a {\tt List} datatype given 
-! as input array of {\tt String} datatypes (see {\tt m\_String} for more 
-! information regarding the {\tt String} type).  The contents of each 
-! {\tt String} element of the input array {\tt strs} must adhere to the 
-! restrictions stated for character input stated in the prologue of the 
-! routine {\tt init\_()} in this module.  Specifically, no element in 
-! {\tt strs} may contain the colon \verb':' delimiter, and any 
+! !DESCRIPTION: This routine initializes a {\tt List} datatype given
+! as input array of {\tt String} datatypes (see {\tt m\_String} for more
+! information regarding the {\tt String} type).  The contents of each
+! {\tt String} element of the input array {\tt strs} must adhere to the
+! restrictions stated for character input stated in the prologue of the
+! routine {\tt init\_()} in this module.  Specifically, no element in
+! {\tt strs} may contain the colon \verb':' delimiter, and any
 ! leading or trailing blanks will be stripped (though embedded blank
-! spaces will be retained).  For example, consider an invocation of 
+! spaces will be retained).  For example, consider an invocation of
 ! {\tt initStr1\_()} where the array {\tt strs(:)} contains four entries:
-! {\tt strs(1)='John'}, {\tt strs(2)=' Paul'}, 
+! {\tt strs(1)='John'}, {\tt strs(2)=' Paul'},
 ! {\tt strs(3)='George '}, and {\tt strs(4)='  Ringo'}.  The resulting
 ! {\tt List} output {\tt aList} will have
-! \begin{verbatim} 
+! \begin{verbatim}
 ! aList%bf =  'John:Paul:George:Ringo'
-! \end{verbatim} 
+! \end{verbatim}
 ! !INTERFACE:
 
  subroutine initStr1_(aList, strs)
@@ -369,11 +369,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(String),dimension(:),intent(in)	  :: strs
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       type(List),intent(out)	  :: aList  ! an indexed string values
 
@@ -408,7 +408,7 @@
     le=le+len(strs(i))
     ch1(lc:le)=ptr_chars(strs(i))
   end do
-    
+
   call init_(aList,toChar(ch1))
 
 	deallocate(ch1,stat=ier)
@@ -424,7 +424,7 @@
 !
 ! !DESCRIPTION:  This routine deallocates the allocated memory components
 ! of the input/output {\tt List} argument {\tt aList}.  Specifically, it
-! deallocates {\tt aList\%bf} and {\tt aList\%lc}.  If the optional 
+! deallocates {\tt aList\%bf} and {\tt aList\%lc}.  If the optional
 ! output {\tt INTEGER} arguemnt {\tt stat} is supplied, no warning will
 ! be printed if the Fortran intrinsic {\tt deallocate()} returns with an
 ! error condition.
@@ -440,11 +440,11 @@
 
       implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(List),        intent(inout) :: aList
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       integer, optional, intent(out)   :: stat
 
@@ -482,12 +482,12 @@
 !
 ! !IROUTINE: nullify_ - Nullify Pointers in a List
 !
-! !DESCRIPTION:  In Fortran 90, pointers may have three states:  
-! (1) {\tt ASSOCIATED}, that is the pointer is pointing at a target, 
-! (2) {\tt UNASSOCIATED}, and (3) {\tt UNINITIALIZED}.  On some 
-! platforms, the Fortran intrinsic function {\tt associated()} 
+! !DESCRIPTION:  In Fortran 90, pointers may have three states:
+! (1) {\tt ASSOCIATED}, that is the pointer is pointing at a target,
+! (2) {\tt UNASSOCIATED}, and (3) {\tt UNINITIALIZED}.  On some
+! platforms, the Fortran intrinsic function {\tt associated()}
 ! will view uninitialized pointers as {\tt UNASSOCIATED} by default.
-! This is not always the case.  It is good programming practice to 
+! This is not always the case.  It is good programming practice to
 ! nullify pointers if they are not to be used.  This routine nullifies
 ! the pointers present in the {\tt List} datatype.
 !
@@ -501,7 +501,7 @@
 
       implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(List),intent(inout) :: aList
 
@@ -522,13 +522,13 @@
 !
 ! !IROUTINE: nitem_ - Return the Number of Items in a List
 !
-! !DESCRIPTION:  
-! This function enumerates the number of items in the input {\tt List} 
-! argument {\tt aList}.  For example, suppose 
+! !DESCRIPTION:
+! This function enumerates the number of items in the input {\tt List}
+! argument {\tt aList}.  For example, suppose
 ! \begin{verbatim}
 !  aList%bf = 'John:Paul:George:Ringo'
 ! \end{verbatim}
-!  Then, 
+!  Then,
 ! $${\tt nitem\_(aList)} = 4 .$$
 !
 ! !INTERFACE:
@@ -539,14 +539,14 @@
 !
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),intent(in) :: aList
 
 ! !REVISION HISTORY:
 ! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 ! 10Oct01 - J.W. Larson <larson@mcs.anl.gov> - modified routine to
-!           check pointers aList%bf and aList%lc using  the f90 
+!           check pointers aList%bf and aList%lc using  the f90
 !           intrinsic ASSOCIATED before proceeding with the item
 !           count.  If these pointers are UNASSOCIATED, an item
 !           count of zero is returned.
@@ -576,10 +576,10 @@
 ! !IROUTINE: index_ - Return Rank in a List of a Given Item (CHARACTER)
 !
 ! !DESCRIPTION:
-! This function returns the rank of an item (defined by the 
+! This function returns the rank of an item (defined by the
 ! {\tt CHARACTER} argument {\tt item}) in the input {\tt List} argument
-! {\tt aList}.  If {\tt item} is not present in {\tt aList}, then zero 
-! is returned.  For example, suppose 
+! {\tt aList}.  If {\tt item} is not present in {\tt aList}, then zero
+! is returned.  For example, suppose
 ! \begin{verbatim}
 !  aList%bf = 'Bob:Carol:Ted:Alice'
 ! \end{verbatim}
@@ -596,7 +596,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),      intent(in) :: aList	! a List of names
       character(len=*),intent(in) :: item	! a given item name
@@ -635,9 +635,9 @@
 
        ! Initialize number of matching characters in the two strings
 
-       nMatch = 0 
+       nMatch = 0
 
-       ! Now, compare item to the current item in aList one character 
+       ! Now, compare item to the current item in aList one character
        ! at a time:
 
        CHAR_COMPARE: do j=1,length
@@ -653,12 +653,12 @@
        ! we have found a match and are finished.  Otherwise, we cycle on to
        ! the next item in aList.
 
-       if(nMatch == itemLength) then 
+       if(nMatch == itemLength) then
 	  index_ = i
 	  EXIT
        endif
 
-! Old code that does not work with V. of the IBM 
+! Old code that does not work with V. of the IBM
 !    if(item==toChar(aList%bf(lb:le))) then
 !      index_=i
 !      exit
@@ -674,14 +674,14 @@
 ! !IROUTINE: indexStr_ - Return Rank in a List of a Given Item (String)
 !
 ! !DESCRIPTION:
-! This function performs the same operation as the function 
-! {\tt index\_()}, but the item to be indexed is instead presented in 
-! the form of a {\tt String} datatype (see the module {\tt m\_String} 
-! for more information about the {\tt String} type).  This routine 
-! searches through the input {\tt List} argument {\tt aList} for an 
-! item that matches the item defined by {\tt itemStr}, and if a match 
-! is found, the rank of the item in the list is returned (see also the 
-! prologue for the routine {\tt index\_()} in this module).  If no match 
+! This function performs the same operation as the function
+! {\tt index\_()}, but the item to be indexed is instead presented in
+! the form of a {\tt String} datatype (see the module {\tt m\_String}
+! for more information about the {\tt String} type).  This routine
+! searches through the input {\tt List} argument {\tt aList} for an
+! item that matches the item defined by {\tt itemStr}, and if a match
+! is found, the rank of the item in the list is returned (see also the
+! prologue for the routine {\tt index\_()} in this module).  If no match
 ! is found, a value of zero is returned.
 !
 ! !INTERFACE:
@@ -694,7 +694,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),      intent(in) :: aList	! a List of names
       type(String),    intent(in) :: itemStr
@@ -718,17 +718,17 @@
 ! !IROUTINE: allocated_ - Check Pointers in a List for Association Status
 !
 ! !DESCRIPTION:
-! This function checks the input {\tt List} argument {\tt inList} to 
-! determine whether or not it has been allocated.  It does this by 
-! invoking the Fortran90 intrinsic function {\tt associated()} on the 
-! pointers {\tt inList\%bf} and {\tt inList\%lc}.  If both of these 
+! This function checks the input {\tt List} argument {\tt inList} to
+! determine whether or not it has been allocated.  It does this by
+! invoking the Fortran90 intrinsic function {\tt associated()} on the
+! pointers {\tt inList\%bf} and {\tt inList\%lc}.  If both of these
 ! pointers are associated, the return value is {\tt .TRUE.}.
 !
-! {\bf N.B.:}  In Fortran90, pointers have three different states:   
+! {\bf N.B.:}  In Fortran90, pointers have three different states:
 ! {\tt ASSOCIATED}, {\tt UNASSOCIATED}, and {\tt UNDEFINED}.
-!  If a pointer is {\tt UNDEFINED}, this function may return either 
-! {\tt .TRUE.} or {\tt .FALSE.} values, depending on the Fortran90 
-! compiler.  To avoid such problems, we advise that users invoke the 
+!  If a pointer is {\tt UNDEFINED}, this function may return either
+! {\tt .TRUE.} or {\tt .FALSE.} values, depending on the Fortran90
+! compiler.  To avoid such problems, we advise that users invoke the
 ! {\tt List} method {\tt nullify()} to nullify any {\tt List} pointers
 ! for {\tt List} variables that are not initialized.
 !
@@ -763,7 +763,7 @@
 ! !IROUTINE: copy_ - Copy a List
 !
 ! !DESCRIPTION:
-! This routine copies the contents of the input {\tt List} argument 
+! This routine copies the contents of the input {\tt List} argument
 ! {\tt xL} into the output {\tt List} argument {\tt yL}.
 !
 ! !INTERFACE:
@@ -780,20 +780,20 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),intent(in)  :: xL
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       type(List),intent(out) :: yL
 
 
 ! !REVISION HISTORY:
 ! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 16May01 - J. Larson <larson@mcs.anl.gov> - simpler, working 
+! 16May01 - J. Larson <larson@mcs.anl.gov> - simpler, working
 !           version that exploits the String datatype (see m_String)
-!  1Aug02 - Larson/Ong - Added logic for correct copying of blank 
+!  1Aug02 - Larson/Ong - Added logic for correct copying of blank
 !           Lists.
 !EOP ___________________________________________________________________
 
@@ -834,9 +834,9 @@
 ! {\tt inList\%bf}---as a {\tt CHARACTER} (suitable for printing).  An
 ! example of the use of this function is:
 ! \begin{verbatim}
-!           write(stdout,'(1a)') exportToChar(inList) 
+!           write(stdout,'(1a)') exportToChar(inList)
 ! \end{verbatim}
-! which writes the contents of {\tt inList\%bf} to the Fortran device 
+! which writes the contents of {\tt inList\%bf} to the Fortran device
 ! {\tt stdout}.
 !
 ! !INTERFACE:
@@ -888,9 +888,9 @@
 !
 ! !DESCRIPTION:  This function returns the character buffer portion of
 ! the input {\tt List} argument {\tt inList}---that is, the contents of
-! {\tt inList\%bf}---as a {\tt String} (see the mpeu module m\_String 
+! {\tt inList\%bf}---as a {\tt String} (see the mpeu module m\_String
 ! for more information regarding the {\tt String} type).  This function
-! was created to circumvent problems with implementing inheritance of 
+! was created to circumvent problems with implementing inheritance of
 ! the function {\tt exportToChar\_()} to other datatypes build on top
 ! of the {\tt List} type.
 !
@@ -936,19 +936,19 @@
 !
 ! !IROUTINE: CharBufferSize_ - Return size of a List's Character Buffer
 !
-! !DESCRIPTION:  This function returns the length of the character 
-! buffer portion of the input {\tt List} argument {\tt inList} (that 
+! !DESCRIPTION:  This function returns the length of the character
+! buffer portion of the input {\tt List} argument {\tt inList} (that
 ! is, the number of characters stored in {\tt inList\%bf}) as an
-! {\tt INTEGER}.  Suppose for the sake of argument that {\tt inList} 
+! {\tt INTEGER}.  Suppose for the sake of argument that {\tt inList}
 ! was created using the following call to {\tt init\_()}:
 ! \begin{verbatim}
 !  call init_(inList, 'Groucho:Harpo:Chico:Zeppo')
 ! \end{verbatim}
-! Then, using the above example value of {\tt inList}, we can use 
+! Then, using the above example value of {\tt inList}, we can use
 ! {\tt CharBufferSize\_()} as follows:
 ! \begin{verbatim}
 ! integer :: BufferLength
-! BufferLength = CharBufferSize(inList) 
+! BufferLength = CharBufferSize(inList)
 ! \end{verbatim}
 ! and the resulting value of {\tt BufferLength} will be 25.
 !
@@ -989,11 +989,11 @@
 ! !IROUTINE: get_ - Retrieve a Numbered Item from a List as a String
 !
 ! !DESCRIPTION:
-! This routine retrieves a numbered item (defined by the input 
-! {\tt INTEGER} argument {\tt ith}) from the input {\tt List} argument 
-! {\tt aList}, and returns it in the output {\tt String} argument 
-! {\tt itemStr} (see the module {\tt m\_String} for more information 
-! about the {\tt String} type).  If the argument {\tt ith} is nonpositive, 
+! This routine retrieves a numbered item (defined by the input
+! {\tt INTEGER} argument {\tt ith}) from the input {\tt List} argument
+! {\tt aList}, and returns it in the output {\tt String} argument
+! {\tt itemStr} (see the module {\tt m\_String} for more information
+! about the {\tt String} type).  If the argument {\tt ith} is nonpositive,
 ! or greater than the number of items in {\tt aList}, a String containing
 ! one blank space is returned.
 !
@@ -1007,12 +1007,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,     intent(in)  :: ith
       type(List),  intent(in)  :: aList
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       type(String),intent(out) :: itemStr
 
@@ -1044,9 +1044,9 @@
 !
 ! !DESCRIPTION:
 ! This routine returns all the items from the input {\tt List} argument
-! {\tt aList} in the output {\tt String} argument {\tt itemStr} (see 
-! the module {\tt m\_String} for more information about the {\tt String} 
-! type).  The contents of the character buffer in {\tt itemStr} will 
+! {\tt aList} in the output {\tt String} argument {\tt itemStr} (see
+! the module {\tt m\_String} for more information about the {\tt String}
+! type).  The contents of the character buffer in {\tt itemStr} will
 ! be the all of the items in {\tt aList}, separated by the colon delimiter.
 !
 ! !INTERFACE:
@@ -1059,11 +1059,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),   intent(in)  :: aList
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       type(String), intent(out) :: itemStr
 
@@ -1089,11 +1089,11 @@
 ! !IROUTINE: getrange_ - Return a Range of Items from a List as one String
 !
 ! !DESCRIPTION:
-! This routine returns all the items ranked {\tt i1} through {\tt i2} 
-! from the input {\tt List} argument {\tt aList} in the output 
-! {\tt String} argument {\tt itemStr} (see the module {\tt m\_String} 
-! for more information about the {\tt String} type).  The contents of 
-! the character buffer in {\tt itemStr} will be items in {\tt i1} through 
+! This routine returns all the items ranked {\tt i1} through {\tt i2}
+! from the input {\tt List} argument {\tt aList} in the output
+! {\tt String} argument {\tt itemStr} (see the module {\tt m\_String}
+! for more information about the {\tt String} type).  The contents of
+! the character buffer in {\tt itemStr} will be items in {\tt i1} through
 ! {\tt i2} {\tt aList}, separated by the colon delimiter.
 !
 ! !INTERFACE:
@@ -1108,13 +1108,13 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,     intent(in)  :: i1
       integer,     intent(in)  :: i2
       type(List),  intent(in)  :: aList
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       type(String),intent(out) :: itemStr
 
@@ -1177,9 +1177,9 @@
 !
 ! !DESCRIPTION:
 ! This function compares the string buffer and indexing information in
-! the two input {\tt List} arguments {\tt yL} and {\tt xL}.  If the 
+! the two input {\tt List} arguments {\tt yL} and {\tt xL}.  If the
 ! string buffers and index buffers of {\tt yL} and {\tt xL} match, this
-! function returns a value of {\tt .TRUE.}  Otherwise, it returns a 
+! function returns a value of {\tt .TRUE.}  Otherwise, it returns a
 ! value of {\tt .FALSE.}
 !
 ! !INTERFACE:
@@ -1194,7 +1194,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List), intent(in) :: yL
       type(List), intent(in) :: xL
@@ -1226,7 +1226,7 @@
 
 	if( indexStr_(xL, Dummstr) /= n ) then ! a discrepency spotted.
 	   call String_clean(Dummstr)
-	   myIdentical = .FALSE.    
+	   myIdentical = .FALSE.
 	   EXIT
 	else
 	   call String_clean(Dummstr)
@@ -1248,9 +1248,9 @@
 !
 ! !IROUTINE: get_indices_ - Index Multiple Items in a List
 !
-! !DESCRIPTION:  This routine takes as input a {\tt List} argument 
+! !DESCRIPTION:  This routine takes as input a {\tt List} argument
 ! {\tt aList}, and a {\tt CHARACTER} string {Values}, which is a colon-
-! delimited string of items, and returns an {\tt INTEGER} array 
+! delimited string of items, and returns an {\tt INTEGER} array
 ! {\tt indices(:)}, which contain the rank of each item in {\tt aList}.
 ! For example, suppose {\tt aList} was created from the character string
 ! \begin{verbatim}
@@ -1260,18 +1260,18 @@
 ! \begin{verbatim}
 ! call get_indices_(indices, aList, 'sleepy:grumpy:bashful:doc')
 ! \end{verbatim}
-! The array {\tt indices(:)} will be returned with 4 entries:  
+! The array {\tt indices(:)} will be returned with 4 entries:
 ! ${\tt indices(1)}=2$, ${\tt indices(2)}=4$, ${\tt indices(3)}=6$, and
 ! ${\tt indices(4)}=7$.
 !
-! {\bf N.B.}:  This routine operates on the assumption that each of the 
-! substrings in the colon-delimited string {\tt Values} is an item in 
-! {\tt aList}.  If this assumption is invalid, this routine terminates 
+! {\bf N.B.}:  This routine operates on the assumption that each of the
+! substrings in the colon-delimited string {\tt Values} is an item in
+! {\tt aList}.  If this assumption is invalid, this routine terminates
 ! execution with an error message.
 !
-! {\bf N.B.}:  The pointer {\tt indices} must be {\tt UNASSOCIATED} on entry 
+! {\bf N.B.}:  The pointer {\tt indices} must be {\tt UNASSOCIATED} on entry
 ! to this routine, and will be {\tt ASSOCIATED} upon return.  After this pointer
-! is no longer needed, it should be deallocated.  Failure to do so will result 
+! is no longer needed, it should be deallocated.  Failure to do so will result
 ! in a memory leak.
 !
 ! !INTERFACE:
@@ -1288,18 +1288,18 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),            intent(in)	:: aList  ! an indexed string values
       character(len=*),      intent(in) :: Values ! ":" delimited names
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       integer, dimension(:), pointer    :: indices
 
 ! !REVISION HISTORY:
 ! 31May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 12Feb03 - J. Larson <larson@mcs.anl.gov> Working refactored version  
+! 12Feb03 - J. Larson <larson@mcs.anl.gov> Working refactored version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::get_indices_'
@@ -1356,9 +1356,9 @@
 !
 ! !IROUTINE: test_indices_ - Test/Index Multiple Items in a List
 !
-! !DESCRIPTION:  This routine takes as input a {\tt List} argument 
+! !DESCRIPTION:  This routine takes as input a {\tt List} argument
 ! {\tt aList}, and a {\tt CHARACTER} string {Values}, which is a colon-
-! delimited string of items, and returns an {\tt INTEGER} array 
+! delimited string of items, and returns an {\tt INTEGER} array
 ! {\tt indices(:)}, which contain the rank of each item in {\tt aList}.
 ! For example, suppose {\tt aList} was created from the character string
 ! \begin{verbatim}
@@ -1368,7 +1368,7 @@
 ! \begin{verbatim}
 ! call test_indices_(indices, aList, 'sleepy:grumpy:bashful:doc')
 ! \end{verbatim}
-! The array {\tt indices(:)} will be returned with 4 entries:  
+! The array {\tt indices(:)} will be returned with 4 entries:
 ! ${\tt indices(1)}=2$, ${\tt indices(2)}=4$, ${\tt indices(3)}=6$, and
 ! ${\tt indices(4)}=7$.
 !
@@ -1376,18 +1376,18 @@
 ! \begin{verbatim}
 ! call test_indices_(indices, aList, 'sleepy:grumpy:bashful:Snow White')
 ! \end{verbatim}
-! The array {\tt indices(:)} will be returned with 4 entries:  
+! The array {\tt indices(:)} will be returned with 4 entries:
 ! ${\tt indices(1)}=2$, ${\tt indices(2)}=4$, ${\tt indices(3)}=6$, and
 ! ${\tt indices(4)}=0$.
 !
-! {\bf N.B.}:  This routine operates on the assumption that one or more 
-! of the substrings in the colon-delimited string {\tt Values} is may not 
-! be an item in {\tt aList}.  If an item in {\tt Values} is {\em not} in 
+! {\bf N.B.}:  This routine operates on the assumption that one or more
+! of the substrings in the colon-delimited string {\tt Values} is may not
+! be an item in {\tt aList}.  If an item in {\tt Values} is {\em not} in
 ! {\tt aList}, its corresponding entry in {\tt indices(:)} is set to zero.
 !
-! {\bf N.B.}:  The pointer {\tt indices} must be {\tt UNASSOCIATED} on entry 
+! {\bf N.B.}:  The pointer {\tt indices} must be {\tt UNASSOCIATED} on entry
 ! to this routine, and will be {\tt ASSOCIATED} upon return.  After this pointer
-! is no longer needed, it should be deallocated.  Failure to do so will result 
+! is no longer needed, it should be deallocated.  Failure to do so will result
 ! in a memory leak.
 !
 ! !INTERFACE:
@@ -1404,17 +1404,17 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),            intent(in)	:: aList  ! an indexed string values
       character(len=*),      intent(in) :: Values ! ":" delimited names
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       integer, dimension(:), pointer    :: indices
 
 ! !REVISION HISTORY:
-! 12Feb03 - J. Larson <larson@mcs.anl.gov> Working refactored version  
+! 12Feb03 - J. Larson <larson@mcs.anl.gov> Working refactored version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::test_indices_'
@@ -1459,18 +1459,18 @@
 ! !IROUTINE: append_ - Append One List Onto the End of Another
 !
 ! !DESCRIPTION:  This routine takes two {\tt List} arguments
-! {\tt iList1} and {\tt iList2}, and appends {\tt List2} onto 
+! {\tt iList1} and {\tt iList2}, and appends {\tt List2} onto
 ! the end of {\tt List1}.
 !
-! {\bf N.B.}:  There is no check for shared items in the arguments 
-! {\tt List1} and {\tt List2}.  It is the user's responsibility to 
+! {\bf N.B.}:  There is no check for shared items in the arguments
+! {\tt List1} and {\tt List2}.  It is the user's responsibility to
 ! ensure {\tt List1} and {\tt List2} share no items.  If this routine
 ! is invoked in such a manner that {\tt List1} and {\tt List2} share
-! common items, the resultant value of {\tt List1} will produce 
+! common items, the resultant value of {\tt List1} will produce
 ! ambiguous results for some of the {\tt List} query functions.
 !
 ! {\bf N.B.}:  The outcome of this routine is order dependent.  That is,
-! the entries of {\tt iList2} will follow the {\em input} entries in 
+! the entries of {\tt iList2} will follow the {\em input} entries in
 ! {\tt iList1}.
 !
 ! !INTERFACE:
@@ -1491,11 +1491,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
-      type(List),         intent(in)    :: iList2 
+      type(List),         intent(in)    :: iList2
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(List),         intent(inout) :: iList1
 
@@ -1521,11 +1521,11 @@
 ! !IROUTINE: concatenate_ - Concatenates two Lists to form a Third List.
 !
 ! !DESCRIPTION:  This routine takes two input {\tt List} arguments
-! {\tt iList1} and {\tt iList2}, and concatenates them, producing an 
+! {\tt iList1} and {\tt iList2}, and concatenates them, producing an
 ! output {\tt List} argument {\tt oList}.
 !
-! {\bf N.B.}:  The nature of this routine is such that one must 
-! {\bf never} supply as the actual value of {\tt oList} the same 
+! {\bf N.B.}:  The nature of this routine is such that one must
+! {\bf never} supply as the actual value of {\tt oList} the same
 ! value supplied for either {\tt iList1} or {\tt iList2}.
 !
 ! {\bf N.B.}:  The outcome of this routine is order dependent.  That is,
@@ -1548,19 +1548,19 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),         intent(in)  :: iList1
-      type(List),         intent(in)  :: iList2 
+      type(List),         intent(in)  :: iList2
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(List),         intent(out) :: oList
 
 ! !BUGS:  For now, the List concatenate algorithm relies on fixed-length
 ! CHARACTER variables as intermediate storage.  The lengths of these
 ! scratch variables is hard-wired to 10000, which should be large enough
-! for most applications.  This undesirable feature should be corrected 
+! for most applications.  This undesirable feature should be corrected
 ! ASAP.
 !
 ! !REVISION HISTORY:
@@ -1650,12 +1650,12 @@
 !
 ! !IROUTINE: bcast_ - MPI Broadcast for the List Type
 !
-! !DESCRIPTION:  This routine takes an input {\tt List} argument 
+! !DESCRIPTION:  This routine takes an input {\tt List} argument
 ! {\tt iList} (on input, valid on the root only), and broadcasts it.
 !
 ! {\bf N.B.}:  The outcome of this routine, {\tt ioList} on non-root
 ! processes, represents allocated memory.  When this {\tt List} is
-! no longer needed, it must be deallocated by invoking the routine 
+! no longer needed, it must be deallocated by invoking the routine
 ! {\tt List\_clean()}.  Failure to do so will cause a memory leak.
 !
 ! !INTERFACE:
@@ -1675,17 +1675,17 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,            intent(in)     :: root
       integer,            intent(in)     :: comm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
-      type(List),         intent(inout)  :: ioList  
+      type(List),         intent(inout)  :: ioList
 
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional,  intent(out)    :: status
 
@@ -1761,19 +1761,19 @@
 !
 ! !IROUTINE: send_ - MPI Point-to-Point Send for the List Type
 !
-! !DESCRIPTION:  This routine takes an input {\tt List} argument 
-! {\tt inList} and sends it to processor {\tt dest} on the communicator 
-! associated with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The 
-! message is tagged by the input {\tt INTEGER} argument {\tt TagBase}.  
-! The success (failure) of this operation is reported in the zero 
+! !DESCRIPTION:  This routine takes an input {\tt List} argument
+! {\tt inList} and sends it to processor {\tt dest} on the communicator
+! associated with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The
+! message is tagged by the input {\tt INTEGER} argument {\tt TagBase}.
+! The success (failure) of this operation is reported in the zero
 ! (nonzero) optional output argument {\tt status}.
 !
-! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
-! {\tt TagBase} and {\tt TagBase+1}.  This is because {\tt send\_()} 
-! performs the send of the {\tt List} as a pair of operations.  The 
-! first send is the number of characters in {\tt inList\%bf}, and is 
-! given MPI tag value {\tt TagBase}.  The second send is the 
-! {\tt CHARACTER} data present in {\tt inList\%bf}, and is given MPI 
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values
+! {\tt TagBase} and {\tt TagBase+1}.  This is because {\tt send\_()}
+! performs the send of the {\tt List} as a pair of operations.  The
+! first send is the number of characters in {\tt inList\%bf}, and is
+! given MPI tag value {\tt TagBase}.  The second send is the
+! {\tt CHARACTER} data present in {\tt inList\%bf}, and is given MPI
 ! tag value {\tt TagBase+1}.
 !
 ! !INTERFACE:
@@ -1794,14 +1794,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
-      type(List),         intent(in)  :: inList  
+      type(List),         intent(in)  :: inList
       integer,            intent(in)  :: dest
       integer,            intent(in)  :: TagBase
       integer,            intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional,  intent(out) :: status
 
@@ -1840,7 +1840,7 @@
      endif
   endif
 
-       ! Step 3.  Send CHARACTER portion of String DummStr 
+       ! Step 3.  Send CHARACTER portion of String DummStr
        ! to process dest.
 
  call MPI_SEND(DummStr%c(1), length, MP_CHARACTER, dest, TagBase+1, &
@@ -1864,19 +1864,19 @@
 !
 ! !IROUTINE: recv_ - MPI Point-to-Point Receive for the List Type
 !
-! !DESCRIPTION:  This routine receives the output {\tt List} argument 
+! !DESCRIPTION:  This routine receives the output {\tt List} argument
 ! {\tt outList} from processor {\tt source} on the communicator associated
 ! with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The message is
 ! tagged by the input {\tt INTEGER} argument {\tt TagBase}.  The success
 ! (failure) of this operation is reported in the zero (nonzero) optional
 ! output argument {\tt status}.
 !
-! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
-! {\tt TagBase} and {\tt TagBase+1}.  This is because {\tt recv\_()} 
-! performs the receive of the {\tt List} as a pair of operations.  The 
-! first receive is the number of characters in {\tt outList\%bf}, and 
-! is given MPI tag value {\tt TagBase}.  The second receive is the 
-! {\tt CHARACTER} data present in {\tt outList\%bf}, and is given MPI 
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values
+! {\tt TagBase} and {\tt TagBase+1}.  This is because {\tt recv\_()}
+! performs the receive of the {\tt List} as a pair of operations.  The
+! first receive is the number of characters in {\tt outList\%bf}, and
+! is given MPI tag value {\tt TagBase}.  The second receive is the
+! {\tt CHARACTER} data present in {\tt outList\%bf}, and is given MPI
 ! tag value {\tt TagBase+1}.
 !
 ! !INTERFACE:
@@ -1894,15 +1894,15 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,            intent(in)  :: source
       integer,            intent(in)  :: TagBase
       integer,            intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
-      type(List),         intent(out) :: outList  
+      type(List),         intent(out) :: outList
       integer, optional,  intent(out) :: status
 
 ! !REVISION HISTORY:
@@ -1939,7 +1939,7 @@
 
  allocate(DummStr%c(length), stat=ierr)
 
-       ! Step 2.  Send CHARACTER portion of String DummStr 
+       ! Step 2.  Send CHARACTER portion of String DummStr
        ! to process dest.
 
  call MPI_RECV(DummStr%c(1), length, MP_CHARACTER, source, TagBase+1, &
@@ -1968,13 +1968,13 @@
 ! !IROUTINE: GetSharedListIndices_ - Index Shared Items for Two Lists
 !
 ! !DESCRIPTION:  {\tt GetSharedListIndices\_()} compares two user-
-! supplied {\tt List} arguments {\tt List1} and {\tt Lis2} to determine:  
-! the number of shared items {\tt NumShared}, and arrays of the locations 
-! {\tt Indices1} and {\tt Indices2} in {\tt List1} and {\tt List2}, 
+! supplied {\tt List} arguments {\tt List1} and {\tt Lis2} to determine:
+! the number of shared items {\tt NumShared}, and arrays of the locations
+! {\tt Indices1} and {\tt Indices2} in {\tt List1} and {\tt List2},
 ! respectively.
 !
-! {\bf N.B.:}  This routine returns two allocated arrays:  {\tt Indices1(:)} 
-! and {\tt Indices2(:)}.  Both of these arrays must be deallocated once they 
+! {\bf N.B.:}  This routine returns two allocated arrays:  {\tt Indices1(:)}
+! and {\tt Indices2(:)}.  Both of these arrays must be deallocated once they
 ! are no longer needed.  Failure to do this will create a memory leak.
 !
 ! !INTERFACE:
@@ -1992,12 +1992,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(List),    intent(in)  :: List1
       type(List),    intent(in)  :: List2
 
-! !OUTPUT PARAMETERS:   
+! !OUTPUT PARAMETERS:
 !
       integer,           intent(out) :: NumShared
 
@@ -2044,7 +2044,7 @@
 
   NumShared = 0
 
-       ! Scan through the two lists.  For the sake of speed, loop 
+       ! Scan through the two lists.  For the sake of speed, loop
        ! over the shorter of the two lists...
 
   if(nitem1 <= nitem2) then ! List1 is shorter--scan it...

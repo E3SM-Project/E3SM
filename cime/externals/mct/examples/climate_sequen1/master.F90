@@ -3,13 +3,13 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: master.F90,v 1.5 2009-02-23 23:22:47 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !PROGRAM: master  -- driver for sequential coupled model example
 !
-! !DESCRIPTION:  Provide a simple example of using MCT to connect to 
-!  components executing sequentially in a single executable. 
+! !DESCRIPTION:  Provide a simple example of using MCT to connect to
+!  components executing sequentially in a single executable.
 !
 program master
 
@@ -36,7 +36,7 @@ program master
 
   character(len=*), parameter :: mastername='master.F90'
 
-  integer :: ncomps = 3   ! Must know total number of 
+  integer :: ncomps = 3   ! Must know total number of
                          ! components in coupled system
 
   integer,dimension(:),pointer :: comps  ! array with component ids
@@ -53,7 +53,7 @@ program master
   integer :: anprocs,cnprocs
 
 !-----------------------------------------------------------------------
-! The Main program. 
+! The Main program.
 ! We are implementing a single-executable, sequential-execution system.
 !
 ! This main program initializes MCT  and runs the whole model.

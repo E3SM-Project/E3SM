@@ -14,7 +14,7 @@ if ($numFiles > 2) then
   set curDir = $PWD
   echo "Cleaning *.dat files from the results directory: "$results_dir
   cd $results_dir
-  rm -fr *.dat 
+  rm -fr *.dat
   cd $curDir
 endif
 
@@ -25,5 +25,5 @@ else
   set fv_constraints = 0
 endif
 
-perl $PWD/code/load_balance.pl $TARGET_TASKS $results_dir $PWD $case $casebase $case_dir $fv_constraints $res 
+perl $PWD/code/load_balance.pl $TARGET_TASKS $results_dir $PWD $case $casebase $case_dir $fv_constraints $res
 

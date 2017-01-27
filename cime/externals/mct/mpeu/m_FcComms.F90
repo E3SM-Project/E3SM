@@ -6,7 +6,7 @@
 ! !DESCRIPTION:
 !
 ! This module includes implementations of MPI collective operators that
-! have proven problematic on certain systems when run at scale. By 
+! have proven problematic on certain systems when run at scale. By
 ! introducing additonal flow control, these problems (exhausting internal
 ! system resources) can be avoided. These routines were ported from
 ! the Community Atmosphere Model's spmd_utils.F90.
@@ -51,16 +51,16 @@
 ! !IROUTINE: fc_gather_int - Gather an array of type integer
 !
 ! !DESCRIPTION:
-! This routine gathers a {\em distributed} array of type {\em integer} 
+! This routine gathers a {\em distributed} array of type {\em integer}
 ! to the {\tt root} process. Explicit handshaking messages are used
 ! to control the number of processes communicating with the root
 ! at any one time.
 !
-! If flow_cntl optional parameter 
+! If flow_cntl optional parameter
 !    < 0 : use MPI_Gather
-!    >= 0: use point-to-point with handshaking messages and 
-!          preposting receive requests up to 
-!          min(max(1,flow_cntl),max_gather_block_size) 
+!    >= 0: use point-to-point with handshaking messages and
+!          preposting receive requests up to
+!          min(max(1,flow_cntl),max_gather_block_size)
 !          ahead if optional flow_cntl parameter is present.
 !          Otherwise, max_gather_block_size is used in its place.
 !    Default value is max_gather_block_size.
@@ -75,7 +75,7 @@
       use m_die
       use m_mpif90
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer, intent(in) :: sendbuf(*)
       integer, intent(in) :: sendcnt
@@ -86,7 +86,7 @@
       integer, intent(in) :: comm
       integer, optional, intent(in) :: flow_cntl
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, intent(out) :: recvbuf(*)
 
@@ -120,7 +120,7 @@
  endif
 
  if (fc_gather) then
- 
+
     call mpi_comm_rank (comm, mytid, ier)
     call mpi_comm_size (comm, mysize, ier)
     mtag = 0
@@ -174,7 +174,7 @@
     end if
 
  else
- 
+
     call mpi_gather (sendbuf, sendcnt, sendtype, &
                      recvbuf, recvcnt, recvtype, &
                      root, comm, ier)
@@ -197,11 +197,11 @@
 ! to control the number of processes communicating with the root
 ! at any one time.
 !
-! If flow_cntl optional parameter 
+! If flow_cntl optional parameter
 !    < 0 : use MPI_Gather
-!    >= 0: use point-to-point with handshaking messages and 
-!          preposting receive requests up to 
-!          min(max(1,flow_cntl),max_gather_block_size) 
+!    >= 0: use point-to-point with handshaking messages and
+!          preposting receive requests up to
+!          min(max(1,flow_cntl),max_gather_block_size)
 !          ahead if optional flow_cntl parameter is present.
 !          Otherwise, max_gather_block_size is used in its place.
 !    Default value is max_gather_block_size.
@@ -217,7 +217,7 @@
       use m_die
       use m_mpif90
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       real (FP), intent(in)  :: sendbuf(*)
       integer, intent(in) :: sendcnt
@@ -228,7 +228,7 @@
       integer, intent(in) :: comm
       integer, optional, intent(in) :: flow_cntl
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       real (FP), intent(out) :: recvbuf(*)
 
@@ -262,7 +262,7 @@
  endif
 
  if (fc_gather) then
- 
+
     call mpi_comm_rank (comm, mytid, ier)
     call mpi_comm_size (comm, mysize, ier)
     mtag = 0
@@ -316,7 +316,7 @@
     end if
 
  else
- 
+
     call mpi_gather (sendbuf, sendcnt, sendtype, &
                      recvbuf, recvcnt, recvtype, &
                       root, comm, ier)
@@ -334,16 +334,16 @@
 ! !IROUTINE: fc_gatherv_int - Gather an array of type integer
 !
 ! !DESCRIPTION:
-! This routine gathers a {\em distributed} array of type {\em integer} 
+! This routine gathers a {\em distributed} array of type {\em integer}
 ! to the {\tt root} process. Explicit handshaking messages are used
 ! to control the number of processes communicating with the root
 ! at any one time.
 !
-! If flow_cntl optional parameter 
+! If flow_cntl optional parameter
 !    < 0 : use MPI_Gatherv
-!    >= 0: use point-to-point with handshaking messages and 
-!          preposting receive requests up to 
-!          min(max(1,flow_cntl),max_gather_block_size) 
+!    >= 0: use point-to-point with handshaking messages and
+!          preposting receive requests up to
+!          min(max(1,flow_cntl),max_gather_block_size)
 !          ahead if optional flow_cntl parameter is present.
 !          Otherwise, max_gather_block_size is used in its place.
 !    Default value is max_gather_block_size.
@@ -358,7 +358,7 @@
       use m_die
       use m_mpif90
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer, intent(in) :: sendbuf(*)
       integer, intent(in) :: sendcnt
@@ -370,7 +370,7 @@
       integer, intent(in) :: comm
       integer, optional, intent(in) :: flow_cntl
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, intent(out) :: recvbuf(*)
 
@@ -404,7 +404,7 @@
  endif
 
  if (fc_gather) then
- 
+
     call mpi_comm_rank (comm, mytid, ier)
     call mpi_comm_size (comm, mysize, ier)
     mtag = 0
@@ -458,7 +458,7 @@
     end if
 
  else
- 
+
     call mpi_gatherv (sendbuf, sendcnt, sendtype, &
                       recvbuf, recvcnts, displs, recvtype, &
                       root, comm, ier)
@@ -481,11 +481,11 @@
 ! to control the number of processes communicating with the root
 ! at any one time.
 !
-! If flow_cntl optional parameter 
+! If flow_cntl optional parameter
 !    < 0 : use MPI_Gatherv
-!    >= 0: use point-to-point with handshaking messages and 
-!          preposting receive requests up to 
-!          min(max(1,flow_cntl),max_gather_block_size) 
+!    >= 0: use point-to-point with handshaking messages and
+!          preposting receive requests up to
+!          min(max(1,flow_cntl),max_gather_block_size)
 !          ahead if optional flow_cntl parameter is present.
 !          Otherwise, max_gather_block_size is used in its place.
 !    Default value is max_gather_block_size.
@@ -501,7 +501,7 @@
       use m_die
       use m_mpif90
 !
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       real (FP), intent(in)  :: sendbuf(*)
       integer, intent(in) :: sendcnt
@@ -513,7 +513,7 @@
       integer, intent(in) :: comm
       integer, optional, intent(in) :: flow_cntl
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       real (FP), intent(out) :: recvbuf(*)
 
@@ -547,7 +547,7 @@
  endif
 
  if (fc_gather) then
- 
+
     call mpi_comm_rank (comm, mytid, ier)
     call mpi_comm_size (comm, mysize, ier)
     mtag = 0
@@ -601,7 +601,7 @@
     end if
 
  else
- 
+
     call mpi_gatherv (sendbuf, sendcnt, sendtype, &
                       recvbuf, recvcnts, displs, recvtype, &
                       root, comm, ier)
@@ -631,10 +631,10 @@
 
      implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
     integer           :: get_fcblocksize
 
@@ -665,11 +665,11 @@
 
      implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
     integer           :: gather_block_size
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
 
 ! !REVISION HISTORY:

@@ -4,8 +4,8 @@
 
 !
 !  This file contains the initial condititions for the ASP 2008 summer school test cases
-!  and some tests from DCMIP 2012 (2nd ASP summer school)
-MODULE jw 
+
+MODULE jw
   IMPLICIT NONE
   !
   !  Functions for setting up initial conditions for the Jablonowski-Williamson test case.
@@ -970,18 +970,18 @@ module asp_tests
 !  This module contains the initial condititions for the baroclinic
 !  instability probelms in Jablonowski and Williamson, QJR (2006) 132 
 !
-use element_mod,    only: element_t, timelevels
+use element_mod,    only: element_t
+use element_state,  only: timelevels
 use hybrid_mod,     only: hybrid_t
 use hybvcoord_mod,  only: hvcoord_t
-use kinds,          only: real_kind
-use dimensions_mod, only: nlev,np, qsize,nc,ntrac
+use kinds,          only: real_kind, iulog
+use dimensions_mod, only: nlev,np, qsize
 use control_mod,    only: test_case, u_perturb
 use cube_mod,       only: rotate_grid
 use jw,             only: u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2,&
                           tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad ! _EXTERNAL
 use parallel_mod,   only: abortmp
 use physical_constants, only: p0, g
-use fvm_control_volume_mod, only: fvm_struct
 
 implicit none
 
@@ -998,20 +998,13 @@ implicit none
 				cp	= 1004.5d0,	&	! Specific heat capacity (J kg^-1 K^1)
 				pi	= 4.d0*atan(1.d0)       ! pi
 
-
-
-
-
 private
 
-public :: asp_baroclinic
-public :: asp_tracer, asp_advection_vertical, asp_gravity_wave, asp_rossby, asp_mountain
-
-public :: dcmip2_schar
+public :: asp_baroclinic, asp_tracer, asp_advection_vertical, asp_gravity_wave, asp_rossby, asp_mountain
 
 contains
 
-subroutine dcmip2_schar(elem,hybrid,hvcoord,nets,nete)
+subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
 !=======================================================================================================!
 !  
 ! new version of JW Baroclinic test case which also allows for rotation
@@ -1021,216 +1014,6 @@ subroutine dcmip2_schar(elem,hybrid,hvcoord,nets,nete)
     use prim_si_mod, only : preq_hydrostatic
 
     type(element_t), intent(inout) :: elem(:)
-
-    type (hvcoord_t)                  :: hvcoord
-    type (hybrid_t), intent(in) :: hybrid
-    integer :: nets,nete
-
-!   local
-    real (kind=real_kind)  :: lat,lon,z,p, u, v, w, t, phis, ps, rho, q 
-    integer :: i,j,k,ie
-
-
-    do ie=nets,nete
-    do j=1,np
-       do i=1,np
-          lon = elem(ie)%spherep(i,j)%lon
-          lat = elem(ie)%spherep(i,j)%lat
-          do k=1,nlev
- 
-
-
-             !elem(ie)%state%T(i,j,k,:)  = temperature(lon,lat,hvcoord%etam(k),rotate_grid)
-
-             call test2_steady_state_mountain (lon,lat,p,z,0,.true.,hvcoord%hyam(k),hvcoord%hybm(k),u,v,w,t,phis,ps,rho,q)
-
-             elem(ie)%state%T(i,j,k,:)  = t
-             elem(ie)%state%v(i,j,1,k,:)  = u
-             elem(ie)%state%v(i,j,2,k,:)  = v
-             !what to do about w?
-
-             elem(ie)%state%phis(i,j) = phis
-             elem(ie)%state%ps_v(i,j,:) = ps ! is ps_v surf pressure in homme? yes
-             elem(ie)%state%lnps(i,j,:) = LOG(ps)
-
-!p, z, w, rho --- not used
-
-             if (qsize>=1) then
-                elem(ie)%state%Q(i,j,k,1) = q
-             endif
-          enddo
-
-       enddo
-    enddo
-    enddo
-
-end subroutine dcmip2_schar
-
-
-!=========================================================================
-! Test 2-0:  Steady-State Atmosphere at Rest in the Presence of Orography
-!=========================================================================
-SUBROUTINE test2_steady_state_mountain (lon,lat,p,z,zcoords,hybrid_eta,hyam,hybm,u,v,w,t,phis,ps,rho,q)
-
-IMPLICIT NONE
-!-----------------------------------------------------------------------
-!     input/output params parameters at given location
-!-----------------------------------------------------------------------
-
-	real(8), intent(in)  :: lon, &		! Longitude (radians)
-				lat, &		! Latitude (radians)
-				z, &		! Height (m)
-				hyam, &		! A coefficient for hybrid-eta coordinate, at model level midpoint
-				hybm		! B coefficient for hybrid-eta coordinate, at model level midpoint
-
-	logical, intent(in)  :: hybrid_eta      ! flag to indicate whether the hybrid sigma-p (eta) coordinate is used
-                                                ! if set to .true., then the pressure will be computed via the 
-                                                !    hybrid coefficients hyam and hybm, they need to be initialized
-                                                ! if set to .false. (for pressure-based models): the pressure is already pre-computed
-                                                !    and is an input value for this routine 
-                                                ! for height-based models: pressure will always be computed based on the height and
-                                                !    hybrid_eta is not used
-
-	real(8), intent(inout) :: p		! Pressure  (Pa)
-				
-	integer,  intent(in) :: zcoords 	! 0 or 1 see below
-
-	real(8), intent(out) :: u, & 		! Zonal wind (m s^-1)
-				v, &		! Meridional wind (m s^-1)
-				w, &		! Vertical Velocity (m s^-1)
-				t, & 		! Temperature (K)
-				phis, & 	! Surface Geopotential (m^2 s^-2)
-				ps, & 		! Surface Pressure (Pa)
-				rho, & 		! density (kg m^-3)
-				q 		! Specific Humidity (kg/kg)
-
-	! if zcoords = 1, then we use z and output p
-	! if zcoords = 0, then we compute or use p
-        !
-	! In hybrid-eta coords: p = hyam p0 + hybm ps
-        !
-        ! The grid-point based initial data are computed in this routine. 
-
-!-----------------------------------------------------------------------
-!     test case parameters
-!----------------------------------------------------------------------- 
-	real(8), parameter :: 	T0      = 300.d0,		&	! temperature (K)
-                                gamma   = 0.0065d0,             &       ! temperature lapse rate (K/m)      
-                            	lambdam = 3.d0*pi/2.d0,		&	! mountain longitude center point (radians)   
-                            	phim    = 0.d0,			&	! mountain latitude center point (radians)    
-                            	h0      = 2000.d0,		&	! peak height of the mountain range (m)
-                            	Rm      = 3.d0*pi/4.d0,		&	! mountain radius (radians)
-                            	zetam   = pi/16.d0,		&	! mountain oscillation half-width (radians) 
-                            	ztop    = 12000.d0			! model top (m)         
-                            
-      real(8) :: height							! Model level heights (m)
-      real(8) :: r							! Great circle distance (radians)
-      real(8) :: zs							! Surface elevation (m)
-      real(8) :: exponent                                               ! exponent: g/(Rd * gamma)
-      real(8) :: exponent_rev                                           ! reversed exponent
-
-
-!-----------------------------------------------------------------------
-!    compute exponents 
-!-----------------------------------------------------------------------
-     exponent     = g/(Rd*gamma)
-     exponent_rev = 1.d0/exponent
-
-!-----------------------------------------------------------------------
-!    PHIS (surface geopotential)
-!-----------------------------------------------------------------------
-      
-	r = acos( sin(phim)*sin(lat) + cos(phim)*cos(lat)*cos(lon - lambdam) )
-
-	if (r .lt. Rm) then
-
-		zs = (h0/2.d0)*(1.d0+cos(pi*r/Rm))*cos(pi*r/zetam)**2.d0   ! mountain height
-
-	else
-
-		zs = 0.d0
-
-	endif
-
-	phis = g*zs
-
-!-----------------------------------------------------------------------
-!    PS (surface pressure)
-!-----------------------------------------------------------------------
-
-	ps = p0 * (1.d0 - gamma/T0*zs)**exponent
-
-
-!-----------------------------------------------------------------------
-!    HEIGHT AND PRESSURE
-!-----------------------------------------------------------------------
-
-	! Height and pressure are aligned (p = p0 * (1.d0 - gamma/T0*z)**exponent)
-
-	if (zcoords .eq. 1) then
-
-		height = z
-		p = p0 * (1.d0 - gamma/T0*z)**exponent
-
-	else
-
-                if (hybrid_eta) p = hyam*p0 + hybm*ps              ! compute the pressure based on the surface pressure and hybrid coefficients
-		height = T0/gamma * (1.d0 - (p/p0)**exponent_rev)  ! compute the height at this pressure
-
-	endif
-
-!-----------------------------------------------------------------------
-!    THE VELOCITIES ARE ZERO (STATE AT REST)
-!-----------------------------------------------------------------------
-
-	! Zonal Velocity
-
-	u = 0.d0
-
-	! Meridional Velocity
-
-	v = 0.d0
-
-        ! Vertical Velocity
-
-        w = 0.d0
-
-!-----------------------------------------------------------------------
-!    TEMPERATURE WITH CONSTANT LAPSE RATE
-!-----------------------------------------------------------------------
-
-	t = T0 - gamma*height
-
-!-----------------------------------------------------------------------
-!    RHO (density)
-!-----------------------------------------------------------------------
-
-	rho = p/(Rd*t)
-
-!-----------------------------------------------------------------------
-!     initialize Q, set to zero 
-!-----------------------------------------------------------------------
-
-	q = 0.d0
-
-END SUBROUTINE test2_steady_state_mountain
-
-
-
-
-
-
-subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete, fvm)
-!=======================================================================================================!
-!  
-! new version of JW Baroclinic test case which also allows for rotation
-! Code from Jablonowski and Lauritzen
-! 
-!=======================================================================================================!
-    use prim_si_mod, only : preq_hydrostatic
-
-    type(element_t), intent(inout) :: elem(:)
-    type(fvm_struct), optional, intent(inout) :: fvm(:)
     type (hvcoord_t)                  :: hvcoord
     type (hybrid_t), intent(in) :: hybrid
     integer :: nets,nete
@@ -1250,6 +1033,8 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete, fvm)
                              ZZ      = 1000.0d0,                        & ! vertical half width
                              z0      = 4500.0d0,                        & ! center point in z
                              slot    = 1.0d0/8.0d0                        ! half width of the slot in radians
+
+    if (hybrid%masterthread) write(iulog,*) 'initializing Polvani-Scott-Thomas baroclinic instability test'
 
     perturbation = (u_perturb/=0)
 
@@ -1273,7 +1058,6 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete, fvm)
           enddo
           elem(ie)%state%phis(i,j) = surface_geopotential(lon,lat,rotate_grid)
           elem(ie)%state%ps_v(i,j,:) = p0
-          elem(ie)%state%lnps(i,j,:) = LOG(p0)
        enddo
     enddo
     enddo
@@ -1355,92 +1139,6 @@ if (qsize>=5) then
    enddo
 endif
 
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! fvm tracers
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-if (present(fvm)) then
-  !
-  ! CSLAM tracers
-  !
-  if (ntrac>=1) then
-     idex=1
-     eta_c = 0.6
-     do ie=nets,nete
-        do j=1,nc
-           do i=1,nc
-              lon = fvm(ie)%centersphere(i,j)%lon
-              lat = fvm(ie)%centersphere(i,j)%lat
-              do k=1,nlev
-                 fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
-              enddo
-           enddo
-        enddo
-     enddo
-  endif
-
-
-  if (ntrac>=2) then
-     idex=2
-     eta_c = 1
-     do ie=nets,nete
-        do j=1,nc
-        do i=1,nc
-           lon = fvm(ie)%centersphere(i,j)%lon
-           lat = fvm(ie)%centersphere(i,j)%lat
-           do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
-           enddo
-        enddo
-        enddo
-     enddo
-  endif
-  if (ntrac>=3) then
-     idex=3
-     do ie=nets,nete
-        do j=1,nc
-        do i=1,nc
-           lon = fvm(ie)%centersphere(i,j)%lon
-           lat = fvm(ie)%centersphere(i,j)%lat
-           do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = tracer_q3(lon,lat,hvcoord%etam(k),rotate_grid)
-           enddo
-        enddo
-        enddo
-     enddo
-  endif
-  if (ntrac>=4) then
-     idex=4
-     eta_c = 0.6
-     do ie=nets,nete
-        do j=1,nc
-        do i=1,nc
-           lon = fvm(ie)%centersphere(i,j)%lon
-           lat = fvm(ie)%centersphere(i,j)%lat
-           do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
-           enddo
-        enddo
-        enddo
-     enddo
-  endif
-
-  if (ntrac>=5) then
-     do idex=5,ntrac
-     do ie=nets,nete
-        do k=1,nlev
-        do t=1,timelevels
-          do j=1,nc
-            do i=1,nc
-              fvm(ie)%c(i,j,k,idex,t) = 1.0D0
-            enddo
-          enddo
-        enddo
-        enddo
-     enddo
-     enddo
-  endif
-endif
 
 if (qsize>=5) then
    idex=5
@@ -1553,6 +1251,7 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
     real (kind=real_kind)  :: phi(np,np,nlev)
     integer :: i,j,k,ie,idex
 
+    if (hybrid%masterthread) write(iulog,*) 'initializing pure tracer advection tests'
 
     ! initialize phis, ps
     height=0   ! not needed for ps, phis
@@ -1568,7 +1267,6 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
 
              elem(ie)%state%phis(i,j) = surface_geopotential
              elem(ie)%state%ps_v(i,j,:) = surface_pressure
-             elem(ie)%state%lnps(i,j,:) = LOG(surface_pressure)
              elem(ie)%state%T(i,j,k,:)  = temperature
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind
@@ -1644,8 +1342,9 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
     real (kind=real_kind)  :: phi(np,np,nlev)
     integer :: i,j,k,ie,idex
 
+    if (hybrid%masterthread) write(iulog,*) 'initializing ASP Rossby Haurwitz test'
 
-    ! initialize surface pressure 
+    ! initialize surface pressure
     p=0	
     do ie=nets,nete
     do j=1,np
@@ -1657,7 +1356,6 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
                   surface_pressure)
           elem(ie)%state%phis(i,j) = surface_geopotential
           elem(ie)%state%ps_v(i,j,:) = surface_pressure
-          elem(ie)%state%lnps(i,j,:) = LOG(surface_pressure)
        enddo
     enddo
     enddo
@@ -1709,8 +1407,9 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
     real (kind=real_kind)  :: surface_geopotential, surface_pressure, p
     integer :: i,j,k,ie,idex
 
+    if (hybrid%masterthread) write(iulog,*) 'initializing ASP mountain Rossby test'
 
-    ! initialize surface pressure 
+    ! initialize surface pressure
     p=0	 ! not used by initial condition
     do ie=nets,nete
        do j=1,np
@@ -1724,7 +1423,6 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
              if (k==1) then
                 elem(ie)%state%phis(i,j) = surface_geopotential
                 elem(ie)%state%ps_v(i,j,:) = surface_pressure
-                elem(ie)%state%lnps(i,j,:) = LOG(surface_pressure)
              endif
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind
@@ -1760,6 +1458,7 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
     real (kind=real_kind)  :: phi(np,np,nlev)
     integer :: i,j,k,ie,idex
 
+    if (hybrid%masterthread) write(iulog,*) 'initializing ASP gravity wave test'
 
     ! initialize surface pressure, geopotential
     do ie=nets,nete
@@ -1777,7 +1476,6 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
              if (k.eq.1) then
                 elem(ie)%state%phis(i,j) = surface_geopotential
                 elem(ie)%state%ps_v(i,j,:) = surface_pressure
-                elem(ie)%state%lnps(i,j,:) = LOG(surface_pressure)
              endif
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind

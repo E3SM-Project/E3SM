@@ -5,14 +5,14 @@
 module prim_state_mod
 
   use kinds,            only: real_kind, iulog
-  use dimensions_mod,   only: nlev, np, nc, qsize_d, qsize, nelemd, ntrac, ntrac_d
+  use dimensions_mod,   only: nlev, np, qsize_d, qsize, nelemd
   use parallel_mod,     only:  iam, ordered, parallel_t, syncmp
   use parallel_mod,     only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
   use hybrid_mod,       only: hybrid_t
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   use control_mod,      only: integration, test_case, runtype, moisture, &
-                              tstep_type,energy_fixer, qsplit, ftype, use_cpstar, rsplit
+                              tstep_type,qsplit, ftype, use_cpstar, rsplit
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
@@ -20,10 +20,6 @@ module prim_state_mod
   use reduction_mod,    only: parallelmax,parallelmin
   use perf_mod,         only: t_startf, t_stopf
   use physical_constants, only : p0,Cp,g
-  use fvm_control_volume_mod, only: fvm_struct
-#ifdef _REFSOLN
-  use ref_state_mod,    only : ref_state_read, ref_state_write
-#endif
 
 implicit none
 private
@@ -33,7 +29,6 @@ private
 
 
   public :: prim_printstate
-  public :: prim_printstate_par
   public :: prim_printstate_init
   public :: prim_energy_halftimes
   public :: prim_diag_scalars
@@ -64,14 +59,11 @@ contains
   end subroutine prim_printstate_init
 !=======================================================================================================! 
 
-  subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete, fvm)
+  subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete)
 
     use physical_constants,     only: dd_pi
-    use control_mod,            only: tracer_transport_type
-    use fvm_control_volume_mod, only: n0_fvm, np1_fvm
 
     type(element_t),            intent(in) :: elem(:)
-    type(fvm_struct), optional, intent(in) :: fvm(:)
     type(TimeLevel_t),target,   intent(in) :: tl
     type(hybrid_t),             intent(in) :: hybrid
     type(hvcoord_t),            intent(in) :: hvcoord
@@ -108,21 +100,15 @@ contains
          dpmin_local(nets:nete), dpmax_local(nets:nete), dpsum_local(nets:nete)
 
 
-    real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d), cmin(ntrac_d),&
+    real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d),&
          psmin_p, dpmin_p
 
 
-    real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d), cmax(ntrac_d),&
+    real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d),&
          psmax_p, dpmax_p
 
-    real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d), csum(ntrac_d),&
+    real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d),&
          pssum_p, dpsum_p
-
-    !
-    ! for fvm diagnostics
-    !
-    real (kind=real_kind) :: psc_mass, psc_min, psc_max,dp_fvm_mass, dp_fvm_min, dp_fvm_max 
-
 
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
@@ -144,9 +130,6 @@ contains
     if (hybrid%masterthread) then 
        write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
     end if
-    if (.not. present(fvm) .and. ntrac>0) then
-       print *,'ERROR: prim_state_mod.F90: optional fvm argument required if ntrac>0'
-    endif
 
     TOTE     = 0
     KEner    = 0
@@ -187,7 +170,7 @@ contains
     vsum_t(1) = 0.0D0
 
     ! npts = np
-    npts=SIZE(elem(1)%state%lnps(:,:,n0),1)
+    npts=SIZE(elem(1)%state%ps_v(:,:,n0),1)
 
     do q=1,qsize
        do ie=nets,nete
@@ -211,7 +194,6 @@ contains
     do ie=nets,nete
 
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
-       !       tmp(:,:,ie)=EXP(elem(ie)%state%lnps(:,:,n0))
 
 
        !======================================================  
@@ -352,77 +334,6 @@ contains
     !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
 
-    !
-    ! fvm diagnostics
-    !
-    if (ntrac>0) then
-       do q=1,ntrac
-          do ie=nets,nete
-             tmp1(ie) = MINVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0_fvm)) 
-          enddo
-          cmin(q) = ParallelMin(tmp1,hybrid)
-          do ie=nets,nete
-             tmp1(ie) = MAXVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0_fvm))
-          enddo
-          cmax(q) = ParallelMax(tmp1,hybrid)
-          !
-          ! compute total tracer mass
-          !
-          global_shared_buf(:,1) = 0.0D0
-          do k=1,nlev
-             do ie=nets,nete
-                global_shared_buf(ie,1) = global_shared_buf(ie,1)+&
-                     SUM(fvm(ie)%c(1:nc,1:nc,k,q,n0_fvm)*&
-                         fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)*&
-                         fvm(ie)%area_sphere(1:nc,1:nc))
-             end do
-          enddo
-          call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-          csum(q) = global_shared_sum(1)/(dble(nlev)*4.0D0*DD_PI)
-       enddo
-       !
-       ! psC diagnostics
-       !
-       do ie=nets,nete
-          tmp1(ie) = MINVAL(fvm(ie)%psc(1:nc,1:nc))
-       enddo
-       psc_min = ParallelMin(tmp1,hybrid)
-       do ie=nets,nete
-          tmp1(ie) = MAXVAL(fvm(ie)%psc(1:nc,1:nc))
-       enddo
-       !
-       ! surface pressure mass implied by fvm
-       !
-       psc_max = ParallelMax(tmp1,hybrid)
-       do ie=nets,nete
-          global_shared_buf(ie,1) = SUM(fvm(ie)%psc(1:nc,1:nc)*fvm(ie)%area_sphere(1:nc,1:nc))
-       enddo
-       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       psc_mass = global_shared_sum(1)/(4.0D0*DD_PI)
-       !
-       ! dp_fvm
-       !
-       do ie=nets,nete
-          tmp1(ie) = MINVAL(fvm(ie)%dp_fvm(1:nc,1:nc,:,n0_fvm))
-       enddo
-       dp_fvm_min = ParallelMin(tmp1,hybrid)
-       do ie=nets,nete
-          tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(1:nc,1:nc,:,n0_fvm))
-       enddo
-       dp_fvm_max = ParallelMax(tmp1,hybrid)
-       
-       global_shared_buf(:,1) = 0.0D0
-       do k=1,nlev
-          do ie=nets,nete
-             global_shared_buf(ie,1) = global_shared_buf(ie,1)+&
-                  SUM(fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)*fvm(ie)%area_sphere(1:nc,1:nc))
-          end do
-       enddo
-       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       dp_fvm_mass = global_shared_sum(1)/(4.0D0*DD_PI)
-    end if
-
-
     if(hybrid%masterthread) then
        write(iulog,100) "u     = ",umin_p,umax_p,usum_p
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
@@ -439,33 +350,10 @@ contains
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,' mb     '
 
-
-
-
-
-
        if(fumin_p.ne.fumax_p) write(iulog,100) "fu = ",fumin_p,fumax_p,fusum_p
        if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
        if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
-       !
-       ! fvm diagnostics
-       !
-       if (ntrac>0) then
-          write(iulog,'(A36)') "-----------------------------------"
-          write(iulog,'(A36)') "fvm diagnostics                    "
-          write(iulog,'(A36)') "-----------------------------------"
-          do q=1,ntrac
-             write(iulog,'(A36,I1,3(E23.15))')&
-                  "#c,min(c  ), max(c  ), mass(c  ) = ",q,cmin(q), cmax(q), csum(q)
-          enddo
-          write(iulog,'(A37,3(E23.15))')&
-                  "   min(dp_), max(dp_), mass(dp_) =  ",dp_fvm_min, dp_fvm_max, dp_fvm_mass
-          write(iulog,'(A37,3(E23.15))')&
-                  "   min(psC), max(psC), mass(psC) =  ",psc_min, psc_max, psC_mass          
-          write(iulog,'(A36)') "                                   "
-
-       end if
     end if
  
 
@@ -764,78 +652,6 @@ contains
   end subroutine prim_printstate
    
    
-  subroutine prim_printstate_par(elem, tl,hybrid,hvcoord,nets,nete, par)
-    type (element_t), intent(in) :: elem(:)
-    type (TimeLevel_t), target, intent(in) :: tl
-    type (hybrid_t),intent(in)     :: hybrid
-    type (hvcoord_t), intent(in)   :: hvcoord
-    integer,intent(in)             :: nets,nete
-    character(len=*), parameter    :: fstub = "state_norms"
-    integer	                   :: simday
-    type(parallel_t)               :: par
-
-    real (kind=real_kind)  :: v(np,np,2,nlev,nets:nete)
-    real (kind=real_kind)  :: t(np,np,nlev,nets:nete)
-    real (kind=real_kind)  :: ps_v(np,np,nets:nete)
-    real (kind=real_kind)  :: vp(np,np,2,nlev,nets:nete)
-    real (kind=real_kind)  :: tp(np,np,nlev,nets:nete)
-    real (kind=real_kind)  :: ps_vp(np,np,nets:nete)
-    real (kind=real_kind) :: l1,l2,linf
-    integer               :: n0,i,j,k,ie,npts
-
-    npts=SIZE(elem(1)%state%lnps(:,:,n0),1)
-    n0=tl%n0
-    do ie=nets,nete
-       v(:,:,:,:,ie)=elem(ie)%state%v(:,:,:,:,n0) 
-       T(:,:,:,ie)=elem(ie)%state%T(:,:,:,n0) 
-       ps_v(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
-    enddo
-       simday = 0
-
-#ifdef _REFSOLN
-! parallel write file with state vector in unformatted blocks for later calculation of norms
-!    call ref_state_write(v(:,:,:,:,nets:nete),T(:,:,:,nets:nete),ps_v(:,:,nets:nete), & 
-!	fstub,simday,nets,nete,par)
-!    do ie=nets,nete
-!       vp(:,:,:,:,ie)=v(:,:,:,:,ie)
-!       Tp(:,:,:,ie)=T(:,:,:,ie)
-!       ps_vp(:,:,ie)=ps_v(:,:,ie)
-!    end do
-#endif
-
-#ifdef _REFSOLN
-! parallel read file with state vector in unformatted blocks as written above
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-!  Parallel version of ref_state, comment out if writing above
-!    call ref_state_read(vp(:,:,:,:,nets:nete),Tp(:,:,:,nets:nete),ps_vp(:,:,nets:nete), & 
-!	fstub,simday,nets,nete,par)
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-
-    npts=np
-
-    l1   = l1_snorm(elem,ps_v(:,:,nets:nete),  ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-    l2   = l2_snorm(elem,ps_v(:,:,nets:nete),  ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-    linf = linf_snorm(ps_v(:,:,nets:nete),ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
-       print *,simday, "L1=",l1
-       print *,simday, "L2=",l2
-       print *,simday, "Linf=",linf
-    end if
-#if (defined HORIZ_OPENMP)
-    !$OMP BARRIER
-#endif
-#endif
-
-
-  end subroutine prim_printstate_par
-
-!=======================================================================================================! 
-
 
 subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 
@@ -888,7 +704,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     logical :: wet
 
 
-    logical tstagger
     integer:: t2_qdp, t1_qdp   ! the time pointers for Qdp are not the same
 
     nm_f = 1
@@ -901,17 +716,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        t2=tl%np1
        call TimeLevel_Qdp(tl, qsplit, t1_qdp, t2_qdp) !get np1 into t2_qdp
     endif
-
-
-
-! energy_fixer
-!     <0         disabled, but compute energy non-staggered in time
-!     0          disabled, but compute energy staggered in time (for use with leapfrog code)
-!    >0          Enabled.  energy fixer requires dry formulation (use_cpstar=0) and non-staggered in time
-!
-    tstagger = .false.
-    if (energy_fixer==0) tstagger = .true.
-
 
     !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
     !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
@@ -946,15 +750,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                 cp_star1=cp
                 cp_star2=cp
              endif
-             if (tstagger) then
-                sumlk(i,j,k) = sumlk(i,j,k) + cp_star1*elem(ie)%state%T(i,j,k,t2) *dpt1(i,j,k)/2 
-                sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t1) *dpt2(i,j,k)/2
-                suml2k(i,j,k) = suml2k(i,j,k) + (cp_star1-cp)*elem(ie)%state%T(i,j,k,t2) *dpt1(i,j,k)/2 
-                suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t1) *dpt2(i,j,k)/2
-             else
-                sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
-                suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
-             endif
+             sumlk(i,j,k) = sumlk(i,j,k) + Cp_star2*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
+             suml2k(i,j,k) = suml2k(i,j,k) + (cp_star2-cp)*elem(ie)%state%T(i,j,k,t2) *dpt2(i,j,k)
           enddo
           enddo
        enddo
@@ -973,18 +770,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !$omp parallel do private(k,E)
 #endif
        do k=1,nlev
-          if (tstagger) then
-             E = (elem(ie)%state%v(:,:,1,k,t2)**2 +  &
+          E = (elem(ie)%state%v(:,:,1,k,t2)**2 +  &
                   elem(ie)%state%v(:,:,2,k,t2)**2 ) / 2 
-             sumlk(:,:,k) = E*dpt1(:,:,k)/2
-             E = (elem(ie)%state%v(:,:,1,k,t1)**2 +  &
-                  elem(ie)%state%v(:,:,2,k,t1)**2 ) / 2 
-             sumlk(:,:,k) = sumlk(:,:,k) + E*dpt2(:,:,k)/2
-          else
-             E = (elem(ie)%state%v(:,:,1,k,t2)**2 +  &
-                  elem(ie)%state%v(:,:,2,k,t2)**2 ) / 2 
-             sumlk(:,:,k) = E*dpt2(:,:,k)
-          endif
+          sumlk(:,:,k) = E*dpt2(:,:,k)
        enddo
        suml=0
        do k=1,nlev
@@ -997,12 +785,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !   PE   dp/dn PHIs
        suml=0
        do k=1,nlev
-          if (tstagger) then
-             suml = suml + elem(ie)%state%phis(:,:)*dpt1(:,:,k)/2
-             suml = suml + elem(ie)%state%phis(:,:)*dpt2(:,:,k)/2
-          else
-             suml = suml + elem(ie)%state%phis(:,:)*dpt2(:,:,k)
-          endif
+          suml = suml + elem(ie)%state%phis(:,:)*dpt2(:,:,k)
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
 

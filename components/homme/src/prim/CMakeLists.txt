@@ -49,16 +49,6 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/interpolate_mod.F90
   ${SRC_SHARE_DIR}/dof_mod.F90
   ${SRC_DIR}/common_io_mod.F90
-  ${SRC_SHARE_DIR}/fvm_mod.F90
-  ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
-  ${SRC_SHARE_DIR}/fvm_line_integrals_mod.F90 
-  ${SRC_SHARE_DIR}/fvm_line_integrals_flux_mod.F90 
-  ${SRC_SHARE_DIR}/fvm_transformation_mod.F90
-  ${SRC_SHARE_DIR}/fvm_analytic_mod.F90 
-  ${SRC_SHARE_DIR}/fvm_bsp_mod.F90
-  ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
-  ${SRC_SHARE_DIR}/fvm_filter_mod.F90 
-  ${SRC_SHARE_DIR}/fvm_reconstruction_mod.F90 
   ${SRC_DIR}/pio_io_mod.F90 
   ${SRC_DIR}/repro_sum_mod.F90 
   ${SRC_SHARE_DIR}/time_mod.F90 
@@ -78,12 +68,10 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/cg_mod.F90 
   ${SRC_SHARE_DIR}/linear_algebra_mod.F90 
   ${SRC_SHARE_DIR}/solver_mod.F90 
-  ${SRC_SHARE_DIR}/filter_mod.F90 
   ${SRC_DIR}/common_movie_mod.F90 
   ${SRC_SHARE_DIR}/namelist_mod.F90 
   ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
   ${SRC_DIR}/checksum_mod.F90 
-  ${SRC_SHARE_DIR}/diffusion_mod.F90 
   ${SRC_SHARE_DIR}/prim_si_mod.F90 
   ${SRC_SHARE_DIR}/prim_state_mod.F90
   ${SRC_DIR}/prim_restart_mod.F90 
@@ -94,16 +82,12 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_DIR}/forcing_mod.F90 
   ${SRC_SHARE_DIR}/metis_mod.F90 
   ${SRC_SHARE_DIR}/prim_driver_mod.F90 
-  ${SRC_DIR}/vertical_mod.F90 
   ${SRC_DIR}/prim_movie_mod.F90 
   ${SRC_DIR}/surfaces_mod.F90 
   ${SRC_DIR}/repro_sum_mod.F90 
   ${SRC_DIR}/interpolate_driver_mod.F90 
   ${SRC_DIR}/netcdf_io_mod.F90 
-  ${SRC_DIR}/ref_state_mod.F90 
-  ${SRC_DIR}/jrio.c
   ${SRC_SHARE_DIR}/mesh_mod.F90 
-  ${SRC_SHARE_DIR}/Manager.F90
   ${SRC_SHARE_DIR}/prim_derived_type_mod.F90 
   ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp 
   ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 
@@ -116,6 +100,7 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${PHYSICS_DIR}/column_model_mod.F90 
   ${PHYSICS_DIR}/column_types_mod.F90 
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
+  ${SRC_DIR}/test_mod.F90
 )
 
 

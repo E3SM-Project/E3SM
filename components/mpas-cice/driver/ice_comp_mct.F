@@ -134,6 +134,8 @@ contains
     type(mct_gGrid), pointer :: dom_i
 
     integer :: errorCode  ! error code
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr, scratchFName
 
     character(len=StrKIND) :: cpl_seq_option
 
@@ -289,7 +291,12 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, status='SCRATCH')
+       write (scratchFName,'(a,i9.9)') 'scratch_ice_',iam
+       open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ice_init_mct open stdout_shr '//trim(ioerrstr))
+       endif
     else
        inquire(file='ice_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -311,7 +318,7 @@ contains
 
     ! Write to glcStdErrUnit here, because stderrUnit is not correctly set until
     ! the mpas_framework_init_phase1 call
-    write(iceStdErrUnit,*) '=== Beginning ice_init_mct.'
+    write(iceStdErrUnit,'(a,i6)') '=== Beginning ice_init_mct: rank=',iam
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_i, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
@@ -358,7 +365,7 @@ contains
 
         ! Setup start time. Will be over written later when clocks are synchronized
         call mpas_pool_get_config(domain % configs, "config_start_time", tempCharConfig)
-        tempCharConfig = "0001-01-01_00:00:00"
+        tempCharConfig = trim(tempCharConfig) // "0:00:00"
 
         ! Setup run duration. Will be ignored in coupled run, since coupler defines how long the run is.
         call mpas_pool_get_config(domain % configs, "config_run_duration", tempCharConfig)
@@ -435,11 +442,11 @@ contains
     end if
 
     if ( trim(filename_interval_temp) == 'none' ) then
-        call mpas_expand_string(ref_time_temp, mesh_filename_temp, mesh_filename)
+        call mpas_expand_string(ref_time_temp, -1, mesh_filename_temp, mesh_filename)
     else
         call mpas_set_time(ref_time, dateTimeString=ref_time_temp, ierr=ierr)
         call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
-        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
+        call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, -1, mesh_filename, ierr)
     end if
 
     ! Bootstrap framework (1). Here data structures are setup, but dimensions and arrays are not finalized.
@@ -675,13 +682,8 @@ contains
         call memmon_reset_addr()
     endif
 #endif
+    write(iceStdErrUnit,'(a,i6)') '=== Completed ice_init_mct: rank=',iam
     call shr_sys_flush(stderrUnit)
-
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       close(stdout_shr)
-    end if
-#endif
 
 !-----------------------------------------------------------------------
 !EOC
@@ -727,7 +729,7 @@ contains
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
-      integer :: ierr, streamDirection, my_proc_id
+      integer :: ierr, streamDirection, iam
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       logical, save :: first=.true.
@@ -735,13 +737,7 @@ contains
       real(kind=RKIND), pointer :: &
             dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
-      my_proc_id = domain % dminfo % my_proc_id
-
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       open(iceStdErrUnit, status='SCRATCH')
-    end if
-#endif
+      iam = domain % dminfo % my_proc_id
 
       call mpas_io_units_set_stdout(iceStdOutUnit)
       call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -806,35 +802,33 @@ contains
         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
 
         ! pre-timestep analysis computation
-        write(stderrUnit,*) '   Starting analysis precompute'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) write(stderrUnit,*) '   Starting analysis precompute'
         call cice_analysis_precompute(domain, ierr)
-        write(stderrUnit,*) '   Finished analysis precompute'
+        if (iam==0) write(stderrUnit,*) '   Finished analysis precompute'
 
-        write(stderrUnit,*) '   Starting forward update'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) write(stderrUnit,*) '   Starting forward update'
         call mpas_timer_start("time integration", .false.)
         call cice_timestep(domain, domain % clock, itimestep)
         call mpas_timer_stop("time integration")
-        write(stderrUnit,*) '   Finished forward update'
+        if (iam==0) write(stderrUnit,*) '   Finished forward update'
 
         ! update analysis members
-        write(stderrUnit,*) '   Starting AM compute'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) write(stderrUnit,*) '   Starting AM compute'
         call cice_analysis_compute(domain, ierr)
-        write(stderrUnit,*) '   Finished AM compute'
-        write(stderrUnit,*) '   Starting AM restart'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) then
+           write(stderrUnit,*) '   Finished AM compute'
+           write(stderrUnit,*) '   Starting AM restart'
+        endif
         call cice_analysis_restart(domain, ierr)
-        write(stderrUnit,*) '   Finished AM restart'
-        write(stderrUnit,*) '   Starting AM write'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) then
+           write(stderrUnit,*) '   Finished AM restart'
+           write(stderrUnit,*) '   Starting AM write'
+        endif
         call cice_analysis_write(domain, ierr)
-        write(stderrUnit,*) '   Finished AM write'
+        if (iam==0) write(stderrUnit,*) '   Finished AM write'
 
         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
-        write(stderrUnit,*) '   Resetting restart stream alarms'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) write(stderrUnit,*) '   Resetting restart stream alarms'
         call mpas_stream_mgr_begin_iteration(domain % streamManager)
         do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                    directionProperty=streamDirection, activeProperty=streamActive) )
@@ -842,53 +836,46 @@ contains
               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
            end if
         end do
-        write(stderrUnit,*) '   Resetting restart stream alarms complete'
-
-        write(stderrUnit,*) '   Writing output streams'
-        call shr_sys_flush(stderrUnit)
+        if (iam==0) then
+           write(stderrUnit,*) '   Resetting restart stream alarms complete'
+           write(stderrUnit,*) '   Writing output streams'
+        endif
         call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-        write(stderrUnit,*) '   Finished writing output streams'
-
+        if (iam==0) write(stderrUnit,*) '   Finished writing output streams'
         write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
-        call shr_sys_flush(stderrUnit)
      end do
 
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
-         write(stderrUnit,*) 'Writing restart streams'
-         call shr_sys_flush(stderrUnit)
+         if (iam==0) write(stderrUnit,*) 'Writing restart streams'
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
-               write(stderrUnit, *) '    Writing stream: ' // trim(streamName)
-               call shr_sys_flush(stderrUnit)
+               if (iam==0) write(stderrUnit, *) '    Writing stream: ' // trim(streamName)
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, iErr=iErr)
-               write(stderrUnit, *) '    Finished Writing stream: ' // trim(streamName)
-               call shr_sys_flush(stderrUnit)
+               if (iam==0) write(stderrUnit, *) '    Finished Writing stream: ' // trim(streamName)
             end if
          end do
 
-         if ( domain % dminfo % my_proc_id == 0 ) then
+         if ( iam == 0 ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
          end if
-        write(stderrUnit,*) 'Finished writing restart streams'
+        if (iam==0) write(stderrUnit,*) 'Finished writing restart streams'
       end if
 
       ! Export state to coupler
-      write(stderrUnit,*) 'Exporting state'
-      call shr_sys_flush(stderrUnit)
+      if (iam==0) write(stderrUnit,*) 'Exporting state'
       call ice_export_mct(i2x_i, ierr)
-      write(stderrUnit,*) 'Finished exporting state'
-      call shr_sys_flush(stderrUnit)
+      if (iam==0) write(stderrUnit,*) 'Finished exporting state'
 
       ! Check if clocks are in sync
 !TODO?      call check_clocks_sync(domain % clock, Eclock, stderrUnit, ierr)
@@ -906,16 +893,9 @@ contains
       end if
  
       ! Reset I/O logs
+      call shr_sys_flush(stderrUnit)
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
-
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       close(iceStdErrUnit)
-    end if
-#endif
-
-
 
 !-----------------------------------------------------------------------
 !EOC
@@ -952,19 +932,14 @@ contains
 !-----------------------------------------------------------------------
 
 
-    integer :: shrloglev, shrlogunit, my_proc_id
-    integer :: errorCode
+    integer :: shrloglev, shrlogunit, iam
+    integer :: ioerr
+    character(len=StrKIND) :: ioerrstr
 
     integer :: ierr
 
 !-----------------------------------------------------------------------
-    my_proc_id = domain % dminfo % my_proc_id
-
-#ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       open(iceStdErrUnit, status='SCRATCH')
-    end if
-#endif
+    iam = domain % dminfo % my_proc_id
 
     call mpas_io_units_set_stdout(iceStdOutUnit)
     call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -989,8 +964,12 @@ contains
     call shr_file_setLogLevel(shrloglev)
 
 #ifndef MPAS_DEBUG
-    if ( my_proc_id /= 0 ) then
-       close(iceStdErrUnit)
+    if ( iam /= 0 ) then
+       close(iceStdErrUnit, status='DELETE', iostat=ioerr)
+       if (ioerr /= 0) then
+          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',iceStdErrUnit,',iostat=',ioerr
+          call mpas_dmpar_global_abort('ERROR in ice_final_mct close iceStdErrUnit '//trim(ioerrstr))
+       endif
     end if
 #endif
 
@@ -1113,11 +1092,13 @@ contains
 
     type (block_type), pointer :: block_ptr
 
-    type (mpas_pool_type), pointer :: meshPool
+    type (mpas_pool_type), pointer :: meshPool, oceanCouplingPool
 
     integer, pointer :: nCellsSolve
 
     real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+
+    integer, dimension(:), pointer :: landIceMask
 
     real (kind=RKIND), pointer :: sphere_radius
 
@@ -1218,7 +1199,33 @@ contains
     end do
     call mct_gGrid_importRattr(dom_i,"area",data,lsize) 
 
-    data(:) = 1.0_RKIND ! No land cells in MPAS-CICE, only Ocean cells
+    ! Build mask and frac based on landIceMask
+    block_ptr => domain % blocklist
+    do while ( associated(block_ptr) )
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'ocean_coupling',oceanCouplingPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(oceanCouplingPool, 'landIceMask',landIceMask)
+
+       if ( associated(landIceMask) ) then
+          do i = 1, nCellsSolve
+             if ( landIceMask(i) == 1 ) then
+                data(i) = 0.0_RKIND
+             else
+                data(i) = 1.0_RKIND
+             end if
+          end do
+       else
+          do i = 1, nCellsSolve
+             data(i) = 1.0_RKIND
+          end do
+       end if
+
+       block_ptr => block_ptr % next
+    end do
+
     call mct_gGrid_importRattr(dom_i,"mask",data,lsize) 
     call mct_gGrid_importRattr(dom_i,"frac",data,lsize) 
 
@@ -1913,6 +1920,7 @@ contains
 
 !----------------------------------------------------------------------- 
 
+   errorCode = 0
    n = 0
    i2x_i % rAttr(: ,:) = 0.0_RKIND
    block_ptr => domain % blocklist

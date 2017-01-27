@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-$cpus_array = $ARGV[0]; 
+$cpus_array = $ARGV[0];
 $rdir = $ARGV[1];
 $current = $ARGV[2];
 
@@ -9,7 +9,7 @@ $current = $ARGV[2];
 
 #my $case = 't'.$ARGV[3].'1_'.$ARGV[4];
 #my $casebase =  $ARGV[5].'_'.$ARGV[6].'_'.$ARGV[7];
-#my $caseDir_1 =  $ARGV[8].'/'.$case.'_'.$casebase; 
+#my $caseDir_1 =  $ARGV[8].'/'.$case.'_'.$casebase;
 
 my $case = $ARGV[3];
 my $casebase = $ARGV[4];
@@ -33,7 +33,7 @@ chomp(my @test_list = <$list_handle>);
 foreach my $f (@test_list){
   my $file_string = $f."/timing/";
   if (-e $file_string){
-    system("cp $f/timing/cesm_timing.* $rdir \n");
+    system("cp $f/timing/*_timing.* $rdir \n");
   }
 }
 
@@ -50,7 +50,7 @@ foreach my $c (@cpus){
   if ($fv_constraints == 1){
    my $minmax = "$rdir/minmax_times.txt";
    open (F1, $minmax);
-   my $cpus; 
+   my $cpus;
    while(<F1>) {
     if (/atm \s+(\d+)/){
       $cpus = $1;

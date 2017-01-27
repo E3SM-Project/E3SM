@@ -72,6 +72,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- VSFM default -->
 <use_vsfm>.false.</use_vsfm>
 <vsfm_satfunc_type>smooth_brooks_corey_bz3</vsfm_satfunc_type>
+<vsfm_use_dynamic_linesearch>.false.</vsfm_use_dynamic_linesearch>
 
 <!-- Do variable soil thickness -->
 <do_varsoil>.false.</do_varsoil>

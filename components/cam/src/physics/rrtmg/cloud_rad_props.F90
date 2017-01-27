@@ -655,6 +655,11 @@ subroutine interpolate_ice_optics_lw(ncol, iciwpth, dei, abs_od)
                    absor(lwband:lwband), 1, dei_wgts)
            enddo
            abs_od(:,i,k) = iciwpth(i,k) * absor
+!!== KZ_BUGFIX_20161011 
+!!         Limit the snow/ice optical depths fix the case where there are large masses 
+!!         of snow at high altitudes
+           where(abs_od(:,i,k) > 50.0_r8) abs_od(:,i,k) = 50.0_r8
+!!== KZ_BUGFIX_20161011 
            call lininterp_finish(dei_wgts)
         endif
      enddo

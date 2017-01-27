@@ -258,11 +258,12 @@ Original Leapfrog w/o Robert filter code
   dQ^2/dt = -.42e-3
 
 2016-2/21: switch to RK5 for initial and restart run:
+removed staggered LF energy formula.  
 RK5 code dissipates more than leapfrog w/o Robert filter, as expected:
-  KE diss = -.24e-1
-  IE diss = +.24e-1
-  PE diss = O(e-7)
-  dE/dt   = .55e-5
+  KE diss = -.2426e-1
+  IE diss = +.2425e-1
+  PE diss = 0.13e-4
+  dE/dt   = .34e-5
   Q diss  = O(e-13)
   dQ^2/dt = -.26e-6
 

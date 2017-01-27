@@ -50,6 +50,7 @@ my @groups = qw(run_modes
                 ecosys_column
                 sea_mount
                 isomip
+                isomip_plus
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
@@ -68,10 +69,18 @@ my @groups = qw(run_modes
                 am_lagrparttrack
                 am_eliassenpalm
                 am_mixedlayerdepths
-                am_regionalstats
-                am_timeseriesstats
+                am_regionalstatsdaily
+                am_regionalstatsweekly
+                am_regionalstatsmonthly
+                am_regionalstatscustom
+                am_timeseriesstatsdaily
+                am_timeseriesstatsmonthly
+                am_timeseriesstatsclimatology
+                am_timeseriesstatscustom
                 am_pointwisestats
                 am_debugdiagnostics
                 am_rpncalculator
                 am_transecttransport
+                am_eddyproductvariables
+                am_mocstreamfunction
                 );

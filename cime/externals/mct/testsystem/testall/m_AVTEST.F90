@@ -19,20 +19,20 @@
       public :: Reduce
       public :: Identical
 
-    interface testall  
-       module procedure testaV_  
+    interface testall
+       module procedure testaV_
     end interface
     interface IndexAttr
        module procedure IndexTest_
     end interface
-    interface SortPermute 
-       module procedure SortPermuteTest_  
+    interface SortPermute
+       module procedure SortPermuteTest_
     end interface
-    interface Copy 
-       module procedure CopyTest_ 
+    interface Copy
+       module procedure CopyTest_
     end interface
-    interface ImportExport 
-       module procedure ImportExportTest_ 
+    interface ImportExport
+       module procedure ImportExportTest_
     end interface
     interface Reduce
        module procedure ReduceTest_
@@ -52,10 +52,10 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: aVtest_ - Test the functions in the AttrVect module 
+! !IROUTINE: aVtest_ - Test the functions in the AttrVect module
 !
 ! !DESCRIPTION:
-! This routine writes diagnostic information about the input 
+! This routine writes diagnostic information about the input
 ! {\tt AttrVect}. Each line of the output will be preceded by the
 ! character argument {\tt identifier}. The output device is specified
 ! by the integer argument {\tt device}.
@@ -68,12 +68,12 @@
 ! !USES:
 !
       use m_AttrVect         ! Use all AttrVect routines
-      use m_stdio       
+      use m_stdio
       use m_die
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(AttrVect),             intent(in)  :: aV
       character(len=*),           intent(in)  :: identifier
@@ -121,7 +121,7 @@
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
 ! NOTE: THIS IS NOT A CHECK FOR CORRECTNESS, JUST A CHECK FOR CONSISTENCY
-  
+
   call SortPermuteTest_(aV,identifier,device)
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
@@ -130,13 +130,13 @@
 
   call CopyTest_(aV,identifier,device)
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TESTING EXPORT AND IMPORT FUNCTIONS::::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
   call ImportExportTest_(aV,identifier,device)
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TESTING LOCAL REDUCE FUNCTIONS:::::::::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
@@ -160,7 +160,7 @@ end subroutine testaV_
   subroutine IndexTest_(aV,identifier,device)
 
     use m_AttrVect, only: AttrVect, nIattr, nRattr,getIList, getRList,indexIa,indexRA
-    use m_List,   only: List_allocated   => allocated    
+    use m_List,   only: List_allocated   => allocated
     use m_String, only: String
     use m_String, only: StringToChar     => toChar
     use m_String, only: String_clean     => clean
@@ -168,7 +168,7 @@ end subroutine testaV_
     use m_die
 
     implicit none
-    
+
     type(AttrVect),             intent(in)  :: aV
     character(len=*),           intent(in)  :: identifier
     integer,                    intent(in)  :: device
@@ -230,7 +230,7 @@ end subroutine testaV_
             "::aV Index = ", j,      &
             "::Attribute Name = ", StringToChar(ItemStr)
        call String_clean(ItemStr)
-       
+
     enddo
 
   end subroutine IndexTest_
@@ -268,7 +268,7 @@ end subroutine testaV_
     if( (nIAttr(AVCOPY1)>0) .or. (nRAttr(AVCOPY1)>0) ) then
 
     if(nIAttr(AVCOPY1)>0) then
-     
+
        allocate(descend(nIAttr(AVCOPY1)),stat=ierr)
        if(ierr /= 0) call die(myname_,"allocate(descend)")
 
@@ -297,13 +297,13 @@ end subroutine testaV_
              endif
           enddo
        enddo
-       
+
        write(device,*) identifier, ":: INTEGER AV IN DESCENDING ORDER:: ", &
             AVCOPY1%iAttr(1,1:5)
-       
+
        deallocate(perm,stat=ierr)
        if(ierr /= 0) call die(myname_,"deallocate(perm)")
-     
+
        deallocate(descend,stat=ierr)
        if(ierr /= 0) call die(myname_,"deallocate(descend)")
 
@@ -345,7 +345,7 @@ end subroutine testaV_
 
        deallocate(perm,stat=ierr)
        if(ierr /= 0) call die(myname_,"deallocate(perm)")
-     
+
        deallocate(descend,stat=ierr)
        if(ierr /= 0) call die(myname_,"deallocate(descend)")
 
@@ -486,10 +486,10 @@ end subroutine testaV_
              endif
           enddo
        enddo
-     
+
        deallocate(Indices1,Indices2,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(Indices1,Indices2)",ierr)
-  
+
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
        call init(aVPartialCopy,aV,lsize(aV))
@@ -524,7 +524,7 @@ end subroutine testaV_
              endif
           enddo
        enddo
-       
+
        call List_clean(HalfIList)
        call List_clean(HalfRList)
 
@@ -558,12 +558,12 @@ end subroutine testaV_
           call String_clean(ItemStr1)
           call String_clean(ItemStr2)
        enddo
-     
+
        do i=1,NumShared
           do j=1,lsize(aV)
              if(aV%rAttr(Indices1(i),j) /= &
                   aVOtherCopy%rAttr(Indices2(i),j)) then
-                write(device,*) identifier,Indices1(i),Indices2(i), j 
+                write(device,*) identifier,Indices1(i),Indices2(i), j
                 call die(myname_,"Copy function is MALFUNCTIONING", ierr)
              endif
           enddo
@@ -571,7 +571,7 @@ end subroutine testaV_
 
        call List_clean(FullIList)
        call List_clean(FullRList)
-       
+
        deallocate(Indices1,Indices2,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(Indices1,Indices2)",ierr)
 
@@ -579,7 +579,7 @@ end subroutine testaV_
        call clean(aVPartialCopy)
        call clean(aVOtherCopy)
        call clean(HalfAV)
-      
+
     else
 
        write(device,*) identifier, &
@@ -589,7 +589,7 @@ end subroutine testaV_
 
   end subroutine CopyTest_
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TEST FOR EXPORT AND IMPORT FUNCTIONS:::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
@@ -626,9 +626,9 @@ end subroutine testaV_
     write(device,*) identifier, ":: Testing import and export functions"
 
     if(nIAttr(aV)>0) then
-  
+
        call exportIList(aV=aV,outIList=outIList)
-       
+
        if(.NOT. List_identical(aV%iList,outIList)) then
           call die(myname_, "Function exportIList failed!")
        endif
@@ -653,10 +653,10 @@ end subroutine testaV_
 
        call init(aV=importAV,iList=exportIListToChar(aV),lsize=exportsize)
        call zero(importAV)
-       
+
        call importIAttr(aV=importAV,AttrTag=StringToChar(ItemStr), &
             inVect=outIVect,lsize=exportsize)
-       
+
        j=indexIA(importAV,StringToChar(ItemStr))
        if(j<=0) call die(myname_,"indexIA(importAV,StringToChar(ItemStr))")
        do i=1,exportsize
@@ -668,16 +668,16 @@ end subroutine testaV_
        call clean(importAV)
        call List_clean(outIList)
        call String_clean(ItemStr)
-       
+
        deallocate(outIVect,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(outIVect)")
 
     endif
 
     if(nRAttr(aV)>0) then
-  
+
        call exportRList(aV=aV,outRList=outRList)
-       
+
        if(.NOT. List_identical(aV%rList,outRList)) then
           call die(myname_, "Function exportRList failed!")
        endif
@@ -699,7 +699,7 @@ end subroutine testaV_
              call die(myname_,"Function exportRAttr failed!")
           endif
        enddo
-       
+
        call init(aV=importAV,rList=exportRListToChar(aV),lsize=exportsize)
        call zero(importAV)
 
@@ -717,7 +717,7 @@ end subroutine testaV_
        call clean(importAV)
        call List_clean(outRList)
        call String_clean(ItemStr)
-       
+
        deallocate(outRVect,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(outRVect)")
 
@@ -749,7 +749,7 @@ end subroutine testaV_
        call LocalReduce(aV,reducedAVsum,AttrVectSUM)
        call LocalReduce(aV,reducedAVmin,AttrVectMIN)
        call LocalReduce(aV,reducedAVmax,AttrVectMAX)
-       
+
        call LocalReduceRAttr(aV,reducedAVRsum,AttrVectSUM)
        call LocalReduceRAttr(aV,reducedAVRmin,AttrVectMIN)
        call LocalReduceRAttr(aV,reducedAVRmax,AttrVectMAX)
@@ -758,7 +758,7 @@ end subroutine testaV_
           call die(myname_,"LocalReduce -SUM- functions produced inconsistent &
                &results!")
        endif
-       
+
        if(.NOT.Identical_(reducedAVmin,reducedAVRmin,1e-4)) then
           call die(myname_,"LocalReduce -MIN- functions produced inconsistent &
                &results!")
@@ -792,7 +792,7 @@ end subroutine testaV_
 
        write(device,*) identifier,":: NOT TESTING LOCAL REDUCE. &
             &PLEASE CONSULT SOURCE CODE."
-       
+
     endif
 
   end subroutine ReduceTest_
@@ -806,7 +806,7 @@ end subroutine testaV_
     use m_realkinds, only : FP
 
     implicit none
-      
+
     type(AttrVect), intent(in) :: aV1
     type(AttrVect), intent(in) :: aV2
     real, optional, intent(in) :: Range
@@ -853,5 +853,5 @@ end subroutine testaV_
     endif
 
   end function Identical_
-    
+
 end module m_AVTEST
