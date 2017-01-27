@@ -19,7 +19,7 @@ module SoilStateType
   use clm_varctl      , only : use_cn, use_lch4,use_dynroot, use_ed
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use ch4varcon       , only : allowlakeprod
-  use LandunitType    , only : lun                
+  use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   !
@@ -373,7 +373,7 @@ contains
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
 
-       if (lun%urbpoi(l) .and. col_pp%itype(c) == icol_road_perv) then 
+       if (lun_pp%urbpoi(l) .and. col_pp%itype(c) == icol_road_perv) then 
           do lev = 1, nlevgrnd
              this%rootfr_road_perv_col(c,lev) = 0._r8
           enddo
@@ -385,9 +385,9 @@ contains
 
     do c = bounds%begc,bounds%endc
        this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%rootfr_col (c,nlevsoi+1:nlevgrnd) = 0._r8
-       else if (lun%itype(l) == istdlak .and. allowlakeprod) then
+       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
           this%rootfr_col (c,:) = spval
        else  ! Inactive CH4 columns
           this%rootfr_col (c,:) = spval
@@ -517,7 +517,7 @@ contains
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
 
-       if (lun%itype(l)==istwet .or. lun%itype(l)==istice .or. lun%itype(l)==istice_mec) then
+       if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
 
           do lev = 1,nlevgrnd
              this%bsw_col(c,lev)    = spval
@@ -541,14 +541,14 @@ contains
              this%tkmg_col(c,lev)   = spval
              this%tksatu_col(c,lev) = spval
              this%tkdry_col(c,lev)  = spval
-             if (lun%itype(l)==istwet .and. lev > nlevsoi) then
+             if (lun_pp%itype(l)==istwet .and. lev > nlevsoi) then
                 this%csol_col(c,lev) = csol_bedrock
              else
                 this%csol_col(c,lev)= spval
              endif
           end do
 
-       else if (lun%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
+       else if (lun_pp%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
 
           ! Urban Roof, sunwall, shadewall properties set to special value
           do lev = 1,nlevgrnd
@@ -611,7 +611,7 @@ contains
                 endif
              end if
 
-             if (lun%itype(l) == istdlak) then
+             if (lun_pp%itype(l) == istdlak) then
 
                 if (lev <= nlevsoi) then
                    this%cellsand_col(c,lev) = sand
@@ -619,9 +619,9 @@ contains
                    this%cellorg_col(c,lev)  = om_frac*organic_max
                 end if
 
-             else if (lun%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
+             else if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
 
-                if (lun%urbpoi(l)) then
+                if (lun_pp%urbpoi(l)) then
                    om_frac = 0._r8 ! No organic matter for urban
                 end if
 
@@ -729,7 +729,7 @@ contains
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
 
-       if (lun%itype(l)==istdlak) then
+       if (lun_pp%itype(l)==istdlak) then
 
           do lev = 1,nlevgrnd
              if ( lev <= nlevsoi )then

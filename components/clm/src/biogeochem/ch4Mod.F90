@@ -35,7 +35,7 @@ module ch4Mod
   use WaterfluxType      , only : waterflux_type
   use WaterstateType     , only : waterstate_type
   use GridcellType       , only : grc                
-  use LandunitType       , only : lun                
+  use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use PatchType          , only : pft                
   !
@@ -785,7 +785,7 @@ contains
        this%o2_decomp_depth_unsat_col(c,:)= spval
 
        l = col_pp%landunit(c)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           this%conc_ch4_sat_col   (c,1:nlevsoi) = 0._r8
           this%conc_ch4_unsat_col (c,1:nlevsoi) = 0._r8
@@ -801,7 +801,7 @@ contains
           ! Note that finundated will be overwritten with this%fsat_bef_col upon reading
           ! a restart file - either in a continuation, branch or startup spun-up case
 
-       else if (lun%itype(l) == istdlak) then
+       else if (lun_pp%itype(l) == istdlak) then
 
           this%conc_ch4_sat_col(c,1:nlevsoi) = 0._r8
           this%conc_o2_sat_col (c,1:nlevsoi) = 0._r8
@@ -848,7 +848,7 @@ contains
        this%ch4stress_unsat_col        (c,nlevsoi+1:nlevgrnd) = 0._r8
        this%ch4stress_sat_col          (c,nlevsoi+1:nlevgrnd) = 0._r8
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           this%conc_ch4_lake_col       (c,:) = spval
           this%conc_o2_lake_col        (c,:) = spval
@@ -857,7 +857,7 @@ contains
           this%ch4_prod_depth_lake_col (c,:) = spval
           this%ch4_oxid_depth_lake_col (c,:) = spval
 
-       else if (lun%itype(l) == istdlak .and. allowlakeprod) then
+       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
 
           this%ch4_prod_depth_unsat_col   (c,:) = spval
           this%ch4_oxid_depth_unsat_col   (c,:) = spval

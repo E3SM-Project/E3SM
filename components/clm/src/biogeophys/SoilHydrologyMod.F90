@@ -15,7 +15,7 @@ module SoilHydrologyMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use TemperatureType   , only : temperature_type
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft                
   !
@@ -368,7 +368,7 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
           ! partition moisture fluxes between soil and h2osfc       
-          if (lun%itype(col_pp%landunit(c)) == istsoil .or. lun%itype(col_pp%landunit(c))==istcrop) then
+          if (lun_pp%itype(col_pp%landunit(c)) == istsoil .or. lun_pp%itype(col_pp%landunit(c))==istcrop) then
 
              ! explicitly use frac_sno=0 if snl=0
              if (snl(c) >= 0) then
@@ -1318,7 +1318,7 @@ contains
           if (use_vsfm) xs1(c) = 0._r8
           h2osoi_liq(c,1) = h2osoi_liq(c,1) - xs1(c)
 
-          if (lun%urbpoi(col_pp%landunit(c))) then
+          if (lun_pp%urbpoi(col_pp%landunit(c))) then
              qflx_rsub_sat(c)     = xs1(c) / dtime
           else
              if(h2osfcflag == 1) then

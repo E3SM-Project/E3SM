@@ -29,7 +29,7 @@ module CanopyTemperatureMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use LandunitType         , only : lun                
+  use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
   use PatchType            , only : pft                
   !
@@ -122,9 +122,9 @@ contains
          snl              =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers                     
          dz               =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
          zii              =>    col_pp%zii                               , & ! Output: [real(r8) (:)   ] convective boundary height [m]           
-         z_0_town         =>    lun%z_0_town                          , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
-         z_d_town         =>    lun%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
-         urbpoi           =>    lun%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
+         z_0_town         =>    lun_pp%z_0_town                          , & ! Input:  [real(r8) (:)   ] momentum roughness length of urban landunit (m)
+         z_d_town         =>    lun_pp%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
+         urbpoi           =>    lun_pp%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
 
          z0mr             =>    ecophyscon%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
          displar          =>    ecophyscon%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
@@ -250,10 +250,10 @@ contains
          ! Saturated vapor pressure, specific humidity and their derivatives
          ! at ground surface
          qred = 1._r8
-         if (lun%itype(l)/=istwet .AND. lun%itype(l)/=istice  &
-              .AND. lun%itype(l)/=istice_mec) then
+         if (lun_pp%itype(l)/=istwet .AND. lun_pp%itype(l)/=istice  &
+              .AND. lun_pp%itype(l)/=istice_mec) then
 
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/dz(c,1)
                fac  = min(1._r8, wx/watsat(c,1))
                fac  = max( fac, 0.01_r8 )
@@ -305,7 +305,7 @@ contains
          end if
 
          ! compute humidities individually for snow, soil, h2osfc for vegetated landunits
-         if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
             call QSat(t_soisno(c,snl(c)+1), forc_pbot(c), eg, degdT, qsatg, qsatgdT)
             if (qsatg > forc_q(c) .and. forc_q(c) > qsatg) then
@@ -362,7 +362,7 @@ contains
          ! Urban emissivities are currently read in from data file
 
          if (.not. urbpoi(l)) then
-            if (lun%itype(l)==istice .or. lun%itype(l)==istice_mec) then
+            if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
                emg(c) = 0.97_r8
             else
                emg(c) = (1._r8-frac_sno(c))*0.96_r8 + frac_sno(c)*0.97_r8
@@ -423,13 +423,13 @@ contains
          l = pft%landunit(p)
          if (urbpoi(l)) then
             eflx_sh_tot_u(p) = 0._r8
-         else if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then 
+         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then 
             eflx_sh_tot_r(p) = 0._r8
          end if
          eflx_lh_tot(p) = 0._r8
          if (urbpoi(l)) then
             eflx_lh_tot_u(p) = 0._r8
-         else if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then 
+         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then 
             eflx_lh_tot_r(p) = 0._r8
          end if
          eflx_sh_veg(p) = 0._r8
@@ -460,7 +460,7 @@ contains
             g = pft%gridcell(p)
             l = pft%landunit(p)
             c = pft%column(p)
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                if (frac_veg_nosno(p) == 0) then
                   forc_hgt_u_patch(p) = forc_hgt_u(g) + z0mg(c) + displa(p)
                   forc_hgt_t_patch(p) = forc_hgt_t(g) + z0mg(c) + displa(p)
@@ -470,13 +470,13 @@ contains
                   forc_hgt_t_patch(p) = forc_hgt_t(g) + z0m(p) + displa(p)
                   forc_hgt_q_patch(p) = forc_hgt_q(g) + z0m(p) + displa(p)
                end if
-            else if (lun%itype(l) == istwet .or. lun%itype(l) == istice      &
-                 .or. lun%itype(l) == istice_mec) then
+            else if (lun_pp%itype(l) == istwet .or. lun_pp%itype(l) == istice      &
+                 .or. lun_pp%itype(l) == istice_mec) then
                forc_hgt_u_patch(p) = forc_hgt_u(g) + z0mg(c)
                forc_hgt_t_patch(p) = forc_hgt_t(g) + z0mg(c)
                forc_hgt_q_patch(p) = forc_hgt_q(g) + z0mg(c)
                ! Appropriate momentum roughness length will be added in LakeFLuxesMod.
-            else if (lun%itype(l) == istdlak) then
+            else if (lun_pp%itype(l) == istdlak) then
                forc_hgt_u_patch(p) = forc_hgt_u(g)
                forc_hgt_t_patch(p) = forc_hgt_t(g)
                forc_hgt_q_patch(p) = forc_hgt_q(g)

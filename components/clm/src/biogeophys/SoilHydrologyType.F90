@@ -10,7 +10,7 @@ Module SoilHydrologyType
   use clm_varcon            , only : zsoi, dzsoi, zisoi, spval
   use clm_varctl            , only : iulog 
   use CNSharedParamsMod     , only : CNParamsShareInst
-  use LandunitType          , only : lun                
+  use LandunitType          , only : lun_pp                
   use ColumnType            , only : col_pp                
   !
   ! !PUBLIC TYPES:
@@ -270,8 +270,8 @@ contains
 
     do c = bounds%begc,bounds%endc
        l = col_pp%landunit(c)
-       if (.not. lun%lakpoi(l)) then  !not lake
-          if (lun%urbpoi(l)) then
+       if (.not. lun_pp%lakpoi(l)) then  !not lake
+          if (lun_pp%urbpoi(l)) then
              if (col_pp%itype(c) == icol_road_perv) then
                 this%wa_col(c)  = 4800._r8
                 this%zwt_col(c) = (25._r8 + col_pp%zi(c,nlevsoi)) - this%wa_col(c)/0.2_r8 /1000._r8  ! One meter below soil column
@@ -409,10 +409,10 @@ contains
           g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
 
-          if (lun%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
-             if (lun%itype(l)==istwet .or. lun%itype(l)==istice .or. lun%itype(l)==istice_mec) then
+          if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
+             if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
                 ! do nothing
-             else if (lun%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
+             else if (lun_pp%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
                 ! do nothing
              else
                 do lev = 1,nlevgrnd
@@ -448,7 +448,7 @@ contains
                       endif
                    end if
 
-                   if (lun%urbpoi(l)) om_frac = 0._r8
+                   if (lun_pp%urbpoi(l)) om_frac = 0._r8
                    claycol(c,lev)    = clay
                    sandcol(c,lev)    = sand
                    om_fraccol(c,lev) = om_frac
@@ -456,8 +456,8 @@ contains
              end if
           end if ! end of if not lake
 
-          if (lun%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
-             if (lun%urbpoi(l)) then
+          if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
+             if (lun_pp%urbpoi(l)) then
                 if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall .or. col_pp%itype(c)==icol_roof) then
                    ! do nothing
                 else

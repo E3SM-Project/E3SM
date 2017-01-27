@@ -221,7 +221,7 @@ module PlantSoilnutrientFluxType
     ! !USES:
     use clm_varpar      , only : crop_prog
     use landunit_varcon , only : istsoil, istcrop
-    use LandunitType   , only : lun
+    use LandunitType   , only : lun_pp
     !
     ! !ARGUMENTS:
     class(plantsoilnutrientflux_type) :: this
@@ -241,7 +241,7 @@ module PlantSoilnutrientFluxType
     num_special_col = 0
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -252,7 +252,7 @@ module PlantSoilnutrientFluxType
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
        l = pft%landunit(p)
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if

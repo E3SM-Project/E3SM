@@ -15,7 +15,7 @@ module dynInitColumnsMod
   use clm_varcon      , only : ispval, namec
   use TemperatureType , only : temperature_type
   use GridcellType    , only : grc
-  use LandunitType    , only : lun
+  use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -107,7 +107,7 @@ contains
     SHR_ASSERT_ALL((ubound(cactive_prior) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     l = col_pp%landunit(c_new)
-    ltype = lun%itype(l)
+    ltype = lun_pp%itype(l)
     select case(ltype)
     case(istsoil)
        c_template = initial_template_col_soil(c_new)
@@ -253,8 +253,8 @@ contains
 
        ! Loop through columns on this landunit; stop if as soon as we find an active
        ! column: that will serve as the template
-       c = lun%coli(l)
-       do while (.not. found .and. c <= lun%colf(l))
+       c = lun_pp%coli(l)
+       do while (.not. found .and. c <= lun_pp%colf(l))
           if (cactive_prior(c)) then
              found = .true.
           else

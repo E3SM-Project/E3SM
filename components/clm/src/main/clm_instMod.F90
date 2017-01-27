@@ -51,7 +51,7 @@ module clm_instMod
   use EcophysConType             , only : ecophyscon         ! Constants
   use SoilorderConType           , only : soilordercon         ! Constants
 
-  use LandunitType               , only : lun
+  use LandunitType               , only : lun_pp
   use ColumnType                 , only : col_pp
   use PatchType                  , only : pft
 
@@ -268,10 +268,10 @@ contains
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
 
-       if (lun%itype(l)==istice) then
+       if (lun_pp%itype(l)==istice) then
           h2osno_col(c) = h2osno_max
-       elseif (lun%itype(l)==istice_mec .or. &
-              (lun%itype(l)==istsoil .and. ldomain%glcmask(g) > 0._r8)) then
+       elseif (lun_pp%itype(l)==istice_mec .or. &
+              (lun_pp%itype(l)==istsoil .and. ldomain%glcmask(g) > 0._r8)) then
           ! Initialize a non-zero snow thickness where the ice sheet can/potentially operate.
           ! Using glcmask to capture all potential vegetated points around GrIS (ideally
           ! we would use icemask from CISM, but that isn't available until after initialization.)

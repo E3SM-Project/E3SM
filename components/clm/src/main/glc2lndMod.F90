@@ -22,7 +22,7 @@ module glc2lndMod
   use clm_varctl     , only : iulog, glc_smb
   use abortutils     , only : endrun
   use GridcellType   , only : grc 
-  use LandunitType   , only : lun
+  use LandunitType   , only : lun_pp
   use ColumnType     , only : col_pp 
   !
   ! !REVISION HISTORY:
@@ -371,7 +371,7 @@ contains
     ! !DESCRIPTION:
     ! Update subgrid fractions based on input from GLC (via the coupler)
     !
-    ! The weights updated here are some col_pp%wtlunit and lun%wtgcell values
+    ! The weights updated here are some col_pp%wtlunit and lun_pp%wtgcell values
     !
     ! !USES:
     use clm_varcon        , only : ispval
@@ -413,9 +413,9 @@ contains
              end if
           
              frac_assigned(1:maxpatch_glcmec) = .false.
-             do c = lun%coli(l_ice_mec), lun%colf(l_ice_mec)
+             do c = lun_pp%coli(l_ice_mec), lun_pp%colf(l_ice_mec)
                 icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
-                col_pp%wtlunit(c) = this%frac_grc(g, icemec_class) / lun%wtgcell(l_ice_mec)
+                col_pp%wtlunit(c) = this%frac_grc(g, icemec_class) / lun_pp%wtgcell(l_ice_mec)
                 frac_assigned(icemec_class) = .true.
              end do
 
@@ -484,7 +484,7 @@ contains
 
        ! Values from GLC are only valid within the icemask, so we only update CLM's topo values there
        if (this%icemask_grc(g) > 0._r8) then
-          if (lun%itype(l) == istice_mec) then
+          if (lun_pp%itype(l) == istice_mec) then
              icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
           else
              ! If not on a glaciated column, assign topography to the bare-land value determined by GLC.

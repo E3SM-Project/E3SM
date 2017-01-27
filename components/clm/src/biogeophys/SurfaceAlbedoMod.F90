@@ -24,7 +24,7 @@ module SurfaceAlbedoMod
   use TemperatureType   , only : temperature_type
   use WaterstateType    , only : waterstate_type
   use GridcellType      , only : grc                
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft                
 
@@ -721,8 +721,8 @@ contains
     do fp = 1,num_nourbanp
        p = filter_nourbanp(fp)
           if (coszen_patch(p) > 0._r8) then
-             if ((lun%itype(pft%landunit(p)) == istsoil .or.  &
-                  lun%itype(pft%landunit(p)) == istcrop     ) &
+             if ((lun_pp%itype(pft%landunit(p)) == istsoil .or.  &
+                  lun_pp%itype(pft%landunit(p)) == istcrop     ) &
                  .and. (elai(p) + esai(p)) > 0._r8) then
                     num_vegsol = num_vegsol + 1
                     filter_vegsol(num_vegsol) = p
@@ -1019,7 +1019,7 @@ contains
           if (coszen(c) > 0._r8) then
              l = col_pp%landunit(c)
 
-             if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop)  then ! soil
+             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)  then ! soil
                 inc    = max(0.11_r8-0.40_r8*h2osoi_vol(c,1), 0._r8)
                 soilcol = isoicol(c)
                 ! changed from local variable to clm_type:
@@ -1027,14 +1027,14 @@ contains
                 !albsoi = albsod
                 albsod(c,ib) = min(albsat(soilcol,ib)+inc, albdry(soilcol,ib))
                 albsoi(c,ib) = albsod(c,ib)
-             else if (lun%itype(l) == istice .or. lun%itype(l) == istice_mec)  then  ! land ice
+             else if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec)  then  ! land ice
                 ! changed from local variable to clm_type:
                 !albsod = albice(ib)
                 !albsoi = albsod
                 albsod(c,ib) = albice(ib)
                 albsoi(c,ib) = albsod(c,ib)
              ! unfrozen lake, wetland
-             else if (t_grnd(c) > tfrz .or. (lakepuddling .and. lun%itype(l) == istdlak .and. t_grnd(c) == tfrz .and. &
+             else if (t_grnd(c) > tfrz .or. (lakepuddling .and. lun_pp%itype(l) == istdlak .and. t_grnd(c) == tfrz .and. &
                       lake_icefrac(c,1) < 1._r8 .and. lake_icefrac(c,2) > 0._r8) ) then
 
                 albsod(c,ib) = 0.05_r8/(max(0.001_r8,coszen(c)) + 0.15_r8)
@@ -1046,7 +1046,7 @@ contains
 
                 ! ZMS: Attn EK, currently restoring this for wetlands even though it is wrong in order to try to get
                 ! bfb baseline comparison when no lakes are present. I'm assuming wetlands will be phased out anyway.
-                if (lun%itype(l) == istdlak) then
+                if (lun_pp%itype(l) == istdlak) then
                    albsoi(c,ib) = 0.10_r8
                 else
                    albsoi(c,ib) = albsod(c,ib)
@@ -1058,7 +1058,7 @@ contains
                 ! Tenatively I'm restricting this to lakes because I haven't tested it for wetlands. But if anything
                 ! the albedo should be lower when melting over frozen ground than a solid frozen lake.
                 !
-                if (lun%itype(l) == istdlak .and. .not. lakepuddling .and. snl(c) == 0) then
+                if (lun_pp%itype(l) == istdlak .and. .not. lakepuddling .and. snl(c) == 0) then
                     ! Need to reference snow layers here because t_grnd could be over snow or ice
                                       ! but we really want the ice surface temperature with no snow
                    sicefr = 1._r8 - exp(-calb * (tfrz - t_grnd(c))/tfrz)

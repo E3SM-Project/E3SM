@@ -11,7 +11,7 @@ module TemperatureType
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevlak, nlevurb, crop_prog 
   use clm_varcon      , only : spval
   use GridcellType    , only : grc
-  use LandunitType    , only : lun                
+  use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   !
@@ -558,15 +558,15 @@ contains
          end if
 
          ! Below snow temperatures - nonlake points (lake points are set below)
-         if (.not. lun%lakpoi(l)) then 
+         if (.not. lun_pp%lakpoi(l)) then 
 
-            if (lun%itype(l)==istice .or. lun%itype(l)==istice_mec) then
+            if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
                this%t_soisno_col(c,1:nlevgrnd) = 250._r8
 
-            else if (lun%itype(l) == istwet) then
+            else if (lun_pp%itype(l) == istwet) then
                this%t_soisno_col(c,1:nlevgrnd) = 277._r8
 
-            else if (lun%urbpoi(l)) then
+            else if (lun_pp%urbpoi(l)) then
                if (use_vancouver) then
                   if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then 
                      ! Set road top layer to initial air temperature and interpolate other
@@ -614,7 +614,7 @@ contains
       do c = bounds%begc,bounds%endc
          l = col_pp%landunit(c)
 
-         if (lun%lakpoi(l)) then 
+         if (lun_pp%lakpoi(l)) then 
             this%t_grnd_col(c) = 277._r8
          else
             this%t_grnd_col(c) = this%t_soisno_col(c,snl(c)+1)
@@ -624,7 +624,7 @@ contains
 
       do c = bounds%begc,bounds%endc
          l = col_pp%landunit(c)
-         if (lun%lakpoi(l)) then ! lake
+         if (lun_pp%lakpoi(l)) then ! lake
             this%t_lake_col(c,1:nlevlak) = this%t_grnd_col(c)
             this%t_soisno_col(c,1:nlevgrnd) = this%t_grnd_col(c)
          end if
@@ -656,7 +656,7 @@ contains
             this%t_ref2m_patch(p) = 283._r8
          end if
 
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             if (use_vancouver) then
                this%t_ref2m_u_patch(p) = 297.56
             else if (use_mexicocity) then
@@ -665,7 +665,7 @@ contains
                this%t_ref2m_u_patch(p) = 283._r8
             end if
          else 
-            if (.not. lun%ifspecial(l)) then 
+            if (.not. lun_pp%ifspecial(l)) then 
                if (use_vancouver) then
                   this%t_ref2m_r_patch(p) = 297.56
                else if (use_mexicocity) then
@@ -683,7 +683,7 @@ contains
     end associate
 
     do l = bounds%begl, bounds%endl 
-       if (lun%urbpoi(l)) then
+       if (lun_pp%urbpoi(l)) then
           if (use_vancouver) then
              this%taf_lun(l) = 297.56_r8
           else if (use_mexicocity) then
@@ -1149,7 +1149,7 @@ contains
           this%t_ref2m_min_inst_u_patch(p) = min(rbufslp(p), this%t_ref2m_min_inst_u_patch(p))
        endif
        if (end_cd) then
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
           this%t_ref2m_max_u_patch(p) = this%t_ref2m_max_inst_u_patch(p)
           this%t_ref2m_min_u_patch(p) = this%t_ref2m_min_inst_u_patch(p)
           this%t_ref2m_max_inst_u_patch(p) = -spval
@@ -1177,7 +1177,7 @@ contains
           this%t_ref2m_min_inst_r_patch(p) = min(rbufslp(p), this%t_ref2m_min_inst_r_patch(p))
        endif
        if (end_cd) then
-         if (.not.(lun%ifspecial(l))) then
+         if (.not.(lun_pp%ifspecial(l))) then
           this%t_ref2m_max_r_patch(p) = this%t_ref2m_max_inst_r_patch(p)
           this%t_ref2m_min_r_patch(p) = this%t_ref2m_min_inst_r_patch(p)
           this%t_ref2m_max_inst_r_patch(p) = -spval

@@ -15,7 +15,7 @@ module CNDVDriverMod
   use CNCarbonStateType , only : carbonstate_type
   use CNCarbonFluxType  , only : carbonflux_type
   use clm_varcon        , only : grlnd
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use PatchType         , only : pft                
   !
   ! !PUBLIC TYPES:
@@ -375,7 +375,7 @@ contains
       do p = bounds%begp,bounds%endp
          g = pft%gridcell(p)
          l = pft%landunit(p)
-         if (.not. lun%ifspecial(l)) rbuf2dg(g,pft%mxy(p)) = fpcgrid(p)*100._r8
+         if (.not. lun_pp%ifspecial(l)) rbuf2dg(g,pft%mxy(p)) = fpcgrid(p)*100._r8
       end do
       call ncd_io(ncid=ncid, varname='FPCGRID', dim1name=grlnd, data=rbuf2dg, &
            nt=1, flag='write')
@@ -384,7 +384,7 @@ contains
       do p = bounds%begp,bounds%endp
          g = pft%gridcell(p)
          l = pft%landunit(p)
-         if (.not. lun%ifspecial(l)) rbuf2dg(g,pft%mxy(p)) = nind(p)
+         if (.not. lun_pp%ifspecial(l)) rbuf2dg(g,pft%mxy(p)) = nind(p)
       end do
       call ncd_io(ncid=ncid, varname='NIND', dim1name=grlnd, data=rbuf2dg, &
            nt=1, flag='write')

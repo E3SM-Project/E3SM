@@ -17,7 +17,7 @@ module SurfaceRadiationMod
   use SurfaceAlbedoType , only : surfalb_type
   use SolarAbsorbedType , only : solarabs_type
   use GridcellType      , only : grc                
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft
 
@@ -486,7 +486,7 @@ contains
           sabg(p)       = 0._r8
           sabv(p)       = 0._r8
           fsa(p)        = 0._r8
-          if (lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) then
+          if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
              fsa_r(p) = 0._r8
           end if
           sabg_lyr(p,:) = 0._r8
@@ -522,7 +522,7 @@ contains
              if (ib == 1) then
                 parveg(p) = cad(p,ib) + cai(p,ib)
              end if
-             if (lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) then
+             if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
                 fsa_r(p)  = fsa_r(p)  + cad(p,ib) + cai(p,ib)
              end if
 
@@ -539,7 +539,7 @@ contains
              absrad  = trd(p,ib)*(1._r8-albgrd(c,ib)) + tri(p,ib)*(1._r8-albgri(c,ib))
              sabg(p) = sabg(p) + absrad
              fsa(p)  = fsa(p)  + absrad
-             if (lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) then
+             if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
                 fsa_r(p)  = fsa_r(p)  + absrad
              end if
              if (snl(c) == 0) then
@@ -678,7 +678,7 @@ contains
           endif
 
           ! Diagnostic: shortwave penetrating ground (e.g. top layer)
-          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
              sabg_pen(p) = sabg(p) - sabg_lyr(p, snl(c)+1)
           end if
 

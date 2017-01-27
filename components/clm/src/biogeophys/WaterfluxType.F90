@@ -7,7 +7,7 @@ module WaterfluxType
   use shr_kind_mod , only: r8 => shr_kind_r8
   use decompMod    , only : bounds_type, get_proc_global
   use clm_varcon   , only : spval
-  use LandunitType , only : lun                
+  use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use PatchType    , only : pft                
   !
@@ -559,7 +559,7 @@ contains
     ! needed for CNNLeaching 
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%qflx_drain_col(c) = 0._r8
           this%qflx_surf_col(c)  = 0._r8
        end if
@@ -568,7 +568,7 @@ contains
     do p = bounds%begp, bounds%endp
        l = pft%landunit(p)
        
-       if (lun%itype(l)==istsoil) then
+       if (lun_pp%itype(l)==istsoil) then
           this%n_irrig_steps_left_patch(p) = 0
           this%irrig_rate_patch(p)         = 0.0_r8
        end if

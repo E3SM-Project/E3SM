@@ -14,7 +14,7 @@ module CNCarbonFluxType
   use CNDecompCascadeConType , only : decomp_cascade_con
   use PatchType              , only : pft                
   use ColumnType             , only : col_pp                
-  use LandunitType           , only : lun
+  use LandunitType           , only : lun_pp
   use clm_varctl             , only : nu_com
   ! bgc interface & pflotran
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, use_vertsoilc
@@ -3611,7 +3611,7 @@ contains
     num_special_col = 0
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -3623,7 +3623,7 @@ contains
     do p = bounds%begp,bounds%endp
        l = pft%landunit(p)
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if
@@ -3637,7 +3637,7 @@ contains
           this%gpp_patch(p)                      = 0._r8
           this%gpp_before_downreg_patch(p)       = 0._r8
 
-          if (lun%ifspecial(l)) then
+          if (lun_pp%ifspecial(l)) then
              this%tempsum_npp_patch(p)           = spval
              this%annsum_npp_patch(p)            = spval
              this%availc_patch(p)                = spval
@@ -3654,7 +3654,7 @@ contains
                 this%xsmrpool_c13ratio_patch(p)  = spval
              endif
           end if
-          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
              this%tempsum_npp_patch(p)           = 0._r8
              this%annsum_npp_patch(p)            = 0._r8
              this%availc_patch(p)                = 0._r8
@@ -3675,14 +3675,14 @@ contains
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
 
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           this%annsum_npp_col(c) = spval
        end if
 
        this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 !used to be in ch4Mod
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%fphr_col(c,nlevdecomp+1:nlevgrnd) = 0._r8 
-       else if (lun%itype(l) == istdlak .and. allowlakeprod) then
+       else if (lun_pp%itype(l) == istdlak .and. allowlakeprod) then
           this%fphr_col(c,:) = spval
        else  ! Inactive CH4 columns
           this%fphr_col(c,:) = spval
@@ -3690,7 +3690,7 @@ contains
 
        ! also initialize dynamic landcover fluxes so that they have
        ! real values on first timestep, prior to calling pftdyn_cnbal
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%lf_conv_cflux_col(c)         = 0._r8
           this%dwt_seedc_to_leaf_col(c)     = 0._r8
           this%dwt_seedc_to_deadstem_col(c) = 0._r8

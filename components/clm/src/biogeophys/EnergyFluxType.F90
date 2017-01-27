@@ -7,7 +7,7 @@ module EnergyFluxType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use clm_varcon     , only : spval
   use decompMod      , only : bounds_type
-  use LandunitType   , only : lun                
+  use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
   !
@@ -593,7 +593,7 @@ contains
       do c = bounds%begc, bounds%endc
          l = col_pp%landunit(c)
 
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             this%eflx_building_heat_col(c) = 0._r8
             this%eflx_urban_ac_col(c)      = 0._r8
             this%eflx_urban_heat_col(c)    = 0._r8
@@ -609,7 +609,7 @@ contains
          c = pft%column(p)
          l = pft%landunit(p)
 
-         if (.not. lun%urbpoi(l)) then ! non-urban
+         if (.not. lun_pp%urbpoi(l)) then ! non-urban
             this%eflx_lwrad_net_u_patch(p) = spval
             this%eflx_lwrad_out_u_patch(p) = spval
             this%eflx_lh_tot_u_patch(p)    = spval
@@ -625,7 +625,7 @@ contains
     do p = bounds%begp, bounds%endp 
        l = pft%landunit(p)
 
-       if (.not. lun%urbpoi(l)) then
+       if (.not. lun_pp%urbpoi(l)) then
           this%eflx_traffic_lun(l)        = spval
           this%eflx_wasteheat_lun(l)      = spval
 

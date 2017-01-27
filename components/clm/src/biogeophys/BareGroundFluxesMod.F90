@@ -17,7 +17,7 @@ module BareGroundFluxesMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use LandunitType         , only : lun                
+  use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
   use PatchType            , only : pft                
   !
@@ -333,7 +333,7 @@ contains
 
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
 
-         if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
          end if

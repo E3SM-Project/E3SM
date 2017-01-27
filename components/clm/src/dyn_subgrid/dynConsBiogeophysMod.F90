@@ -20,7 +20,7 @@ module dynConsBiogeophysMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft                
   !
@@ -218,9 +218,9 @@ contains
     end do
 
     do l = bounds%begl,bounds%endl
-       g = lun%gridcell(l)
-       ci = lun%coli(l)
-       cf = lun%colf(l)
+       g = lun_pp%gridcell(l)
+       ci = lun_pp%coli(l)
+       cf = lun_pp%colf(l)
        do c = ci,cf   ! loop over columns
 
           liq   = 0.0_r8 ! sum for one column
@@ -228,14 +228,14 @@ contains
           heat  = 0.0_r8
 
           !--- water & ice, above ground only ---
-          if ( (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop          )  &
-               .or. (lun%itype(l) == istwet                                   )  &
-               .or. (lun%itype(l) == istice                                   )  &
-               .or. (lun%itype(l) == istice_mec                               )  &           
-               .or. (lun%urbpoi(l)          .and. col_pp%itype(c) == icol_roof       )  &
-               .or. (lun%urbpoi(l)          .and. col_pp%itype(c) == icol_road_imperv)  &
-               .or. (lun%itype(l) == istdlak                                  )  &
-               .or. (lun%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
+          if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
+               .or. (lun_pp%itype(l) == istwet                                   )  &
+               .or. (lun_pp%itype(l) == istice                                   )  &
+               .or. (lun_pp%itype(l) == istice_mec                               )  &           
+               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_roof       )  &
+               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_imperv)  &
+               .or. (lun_pp%itype(l) == istdlak                                  )  &
+               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
 
              if ( snl(c) < 0 ) then
                 do k = snl(c)+1,0 ! loop over snow layers
@@ -248,12 +248,12 @@ contains
           end if
 
           !--- water & ice, below ground only ---
-          if ( (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop          )  &
-               .or. (lun%itype(l) == istwet                                   )  &
-               .or. (lun%itype(l) == istice                                   )  &
-               .or. (lun%itype(l) == istdlak                                  )  &
-               .or. (lun%itype(l) == istice_mec                               )  &           
-               .or. (lun%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
+          if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
+               .or. (lun_pp%itype(l) == istwet                                   )  &
+               .or. (lun_pp%itype(l) == istice                                   )  &
+               .or. (lun_pp%itype(l) == istdlak                                  )  &
+               .or. (lun_pp%itype(l) == istice_mec                               )  &           
+               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
              do k = 1,nlevgrnd
                 liq   = liq   + h2osoi_liq(c,k)
                 ice   = ice   + h2osoi_ice(c,k)
@@ -261,7 +261,7 @@ contains
           end if
 
           !--- water & ice, below ground, for lakes ---
-          if ( lun%itype(l) == istdlak ) then
+          if ( lun_pp%itype(l) == istdlak ) then
              do k = 1,nlevlak
                 liq   = liq   + (1 - lakestate_vars%lake_icefrac_col(c,k)) * col_pp%dz_lake(c,k) * denh2o
                 ice   = ice   +      lakestate_vars%lake_icefrac_col(c,k)  * col_pp%dz_lake(c,k) * denh2o
@@ -271,16 +271,16 @@ contains
           end if
 
           !--- water in aquifer ---
-          if ( (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop          )  &
-               .or. (lun%itype(l) == istwet                                   )  &
-               .or. (lun%itype(l) == istice                                   )  &
-               .or. (lun%itype(l) == istice_mec                               )  &           
-               .or. (lun%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
+          if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
+               .or. (lun_pp%itype(l) == istwet                                   )  &
+               .or. (lun_pp%itype(l) == istice                                   )  &
+               .or. (lun_pp%itype(l) == istice_mec                               )  &           
+               .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
              liq = liq + soilhydrology_vars%wa_col(c)
           end if
 
           !--- water in canopy (at pft level) ---
-          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then   ! note: soil specified at LU level
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then   ! note: soil specified at LU level
              do p = col_pp%pfti(c),col_pp%pftf(c) ! loop over patches
                 if (pft%active(p)) then
                    liq = liq + waterstate_vars%h2ocan_patch(p) * pft%wtcol(p)
@@ -305,7 +305,7 @@ contains
                   .and. col_pp%itype(c) /= icol_roof) then
                 if (col_pp%itype(c) == icol_road_imperv .and. k >= 1 .and. k <= nlev_improad(l)) then
                    cv = cv_improad(l,k) * dz(c,k)
-                else if (lun%itype(l) /= istwet .AND. lun%itype(l) /= istice .AND. lun%itype(l) /= istice_mec) then
+                else if (lun_pp%itype(l) /= istwet .AND. lun_pp%itype(l) /= istice .AND. lun_pp%itype(l) /= istice_mec) then
                    cv = csol(c,k)*(1-watsat(c,k))*dz(c,k) + (h2osoi_ice(c,k)*cpice + h2osoi_liq(c,k)*cpliq)
                 else
                    cv = (h2osoi_ice(c,k)*cpice + h2osoi_liq(c,k)*cpliq)
@@ -316,7 +316,7 @@ contains
 
           !--- heat content, below ground in lake water, for lakes ---
           do k = 1,nlevlak
-             if (lun%itype(l) == istdlak) then
+             if (lun_pp%itype(l) == istdlak) then
                 cv = denh2o*col_pp%dz_lake(c,k)*( lakestate_vars%lake_icefrac_col(c,k)*cpice + &
                      (1 - lakestate_vars%lake_icefrac_col(c,k))*cpliq )
                 heat = heat + cv*temperature_vars%t_lake_col(c,k) / 1.e6_r8
@@ -329,7 +329,7 @@ contains
                 cv = cpliq*h2osoi_liq(c,k) + cpice*h2osoi_ice(c,k)
                 heat = heat + cv*t_soisno(c,k) / 1.e6_r8
              end do
-          else if ( h2osno(c) > 0.0_r8 .and. lun%itype(l) /= istdlak) then
+          else if ( h2osno(c) > 0.0_r8 .and. lun_pp%itype(l) /= istdlak) then
              ! the heat capacity (not latent heat) of snow without snow layers
              ! is currently ignored in LakeTemperature, so it should be ignored here
              k = 1

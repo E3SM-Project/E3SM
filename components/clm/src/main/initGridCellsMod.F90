@@ -17,7 +17,7 @@ module initGridCellsMod
   use clm_varcon     , only : namep, namec, namel, nameg
   use decompMod      , only : bounds_type, ldecomp
   use GridcellType   , only : grc                
-  use LandunitType   , only : lun                
+  use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
   use initSubgridMod , only : clm_ptrs_compdown, clm_ptrs_check

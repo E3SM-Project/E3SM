@@ -16,7 +16,7 @@ module CNCarbonStateType
   use abortutils             , only : endrun
   use spmdMod                , only : masterproc 
   use subgridAveMod          , only : p2c
-  use LandunitType           , only : lun                
+  use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use PatchType              , only : pft
   use clm_varctl             , only : nu_com, use_ed
@@ -1086,7 +1086,7 @@ contains
     num_special_col = 0
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
        end if
@@ -1097,7 +1097,7 @@ contains
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
        l = pft%landunit(p)
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
        end if
@@ -1114,7 +1114,7 @@ contains
           this%leafcmax_patch(p) = 0._r8
 
           l = pft%landunit(p)
-          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              if (pft%itype(p) == noveg) then
                 this%leafc_patch(p)         = 0._r8
@@ -1232,7 +1232,7 @@ contains
     ! initialize column-level variables
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           if (.not. present(c12_carbonstate_vars)) then !c12
 

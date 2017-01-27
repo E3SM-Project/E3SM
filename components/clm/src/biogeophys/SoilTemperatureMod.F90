@@ -23,7 +23,7 @@ module SoilTemperatureMod
   use SoilStateType     , only : soilstate_type
   use EnergyFluxType    , only : energyflux_type
   use TemperatureType   , only : temperature_type
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft                
   !
@@ -300,7 +300,7 @@ contains
       ! and determine if heating or air conditioning is on
       do fl = 1,num_urbanl
          l = filter_urbanl(fl)
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             cool_on(l) = .false.
             heat_on(l) = .false.
             if (t_building(l) > t_building_max(l)) then
@@ -598,7 +598,7 @@ contains
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
                eflx_building_heat(c) = cnfac*fn(c,nlevurb) + (1._r8-cnfac)*fn1(c,nlevurb)
             else
@@ -659,7 +659,7 @@ contains
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
-         if (.not. lun%urbpoi(l)) then
+         if (.not. lun_pp%urbpoi(l)) then
             hc_soisno(c) = 0._r8
             hc_soi(c)    = 0._r8
          end if
@@ -676,13 +676,13 @@ contains
             if (j == 1) then ! this only needs to be done once
                eflx_fgr12(c) = -cnfac*fn(c,1) - (1._r8-cnfac)*fn1(c,1)
             end if
-            if (j > 0 .and. j < nlevgrnd .and. (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop)) then
+            if (j > 0 .and. j < nlevgrnd .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
                eflx_fgr(c,j) = -cnfac*fn(c,j) - (1._r8-cnfac)*fn1(c,j)
-            else if (j == nlevgrnd .and. (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop)) then
+            else if (j == nlevgrnd .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
                eflx_fgr(c,j) = 0._r8
             end if
 
-            if (.not. lun%urbpoi(l)) then
+            if (.not. lun_pp%urbpoi(l)) then
                if (j >= snl(c)+1) then
                   hc_soisno(c) = hc_soisno(c) + cv(c,j)*t_soisno(c,j) / 1.e6_r8
                endif
@@ -925,7 +925,7 @@ end subroutine SolveTemperature
                   thk(c,j) = tk_roof(l,j)
                else if (col_pp%itype(c) == icol_road_imperv .and. j >= 1 .and. j <= nlev_improad(l)) then
                   thk(c,j) = tk_improad(l,j)
-               else if (lun%itype(l) /= istwet .AND. lun%itype(l) /= istice .AND. lun%itype(l) /= istice_mec &
+               else if (lun_pp%itype(l) /= istwet .AND. lun_pp%itype(l) /= istice .AND. lun_pp%itype(l) /= istice_mec &
                     .AND. col_pp%itype(c) /= icol_sunwall .AND. col_pp%itype(c) /= icol_shadewall .AND. &
                     col_pp%itype(c) /= icol_roof) then
 
@@ -945,10 +945,10 @@ end subroutine SolveTemperature
                      thk(c,j) = tkdry(c,j)
                   endif
                   if (j > nlevsoi) thk(c,j) = thk_bedrock
-               else if (lun%itype(l) == istice .OR. lun%itype(l) == istice_mec) then
+               else if (lun_pp%itype(l) == istice .OR. lun_pp%itype(l) == istice_mec) then
                   thk(c,j) = tkwat
                   if (t_soisno(c,j) < tfrz) thk(c,j) = tkice
-               else if (lun%itype(l) == istwet) then                         
+               else if (lun_pp%itype(l) == istwet) then                         
                   if (j > nlevsoi) then 
                      thk(c,j) = thk_bedrock
                   else
@@ -1020,14 +1020,14 @@ end subroutine SolveTemperature
                cv(c,j) = cv_roof(l,j) * dz(c,j)
             else if (col_pp%itype(c) == icol_road_imperv .and. j >= 1 .and. j <= nlev_improad(l)) then
                cv(c,j) = cv_improad(l,j) * dz(c,j)
-            else if (lun%itype(l) /= istwet .AND. lun%itype(l) /= istice .AND. lun%itype(l) /= istice_mec &
+            else if (lun_pp%itype(l) /= istwet .AND. lun_pp%itype(l) /= istice .AND. lun_pp%itype(l) /= istice_mec &
                  .AND. col_pp%itype(c) /= icol_sunwall .AND. col_pp%itype(c) /= icol_shadewall .AND. &
                  col_pp%itype(c) /= icol_roof) then
                cv(c,j) = csol(c,j)*(1._r8-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
-            else if (lun%itype(l) == istwet) then 
+            else if (lun_pp%itype(l) == istwet) then 
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
                if (j > nlevsoi) cv(c,j) = csol(c,j)*dz(c,j)
-            else if (lun%itype(l) == istice .OR. lun%itype(l) == istice_mec) then
+            else if (lun_pp%itype(l) == istice .OR. lun_pp%itype(l) == istice_mec) then
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             endif
             if (j == 1) then
@@ -1422,7 +1422,7 @@ end subroutine SolveTemperature
 
                ! from Zhao (1997) and Koren (1999)
                supercool(c,j) = 0.0_r8
-               if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop .or. col_pp%itype(c) == icol_road_perv) then
+               if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. col_pp%itype(c) == icol_road_perv) then
                   if(t_soisno(c,j) < tfrz) then
                      smp = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
                      supercool(c,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
@@ -1593,7 +1593,7 @@ end subroutine SolveTemperature
             ! as computed in HydrologyDrainageMod.F90.
 
             l = col_pp%landunit(c)
-            if (lun%itype(l)==istice_mec) then
+            if (lun_pp%itype(l)==istice_mec) then
 
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
@@ -1616,9 +1616,9 @@ end subroutine SolveTemperature
          c = filter_nolakec(fc)
          eflx_snomelt(c) = qflx_snomelt(c) * hfus
          l = col_pp%landunit(c)
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             eflx_snomelt_u(c) = eflx_snomelt(c)
-         else if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             eflx_snomelt_r(c) = eflx_snomelt(c)
          end if
       end do
@@ -1775,7 +1775,7 @@ end subroutine SolveTemperature
                g = pft%gridcell(p)
 
                if (pft%active(p)) then
-                  if (.not. lun%urbpoi(l)) then
+                  if (.not. lun_pp%urbpoi(l)) then
                      eflx_gnet(p) = sabg(p) + dlrad(p) &
                           + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit(c) &
                           - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
@@ -1799,9 +1799,9 @@ end subroutine SolveTemperature
 
                      ! All wasteheat and traffic flux goes into canyon floor
                      if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
-                        eflx_wasteheat_patch(p) = eflx_wasteheat(l)/(1._r8-lun%wtlunit_roof(l))
-                        eflx_heat_from_ac_patch(p) = eflx_heat_from_ac(l)/(1._r8-lun%wtlunit_roof(l))
-                        eflx_traffic_patch(p) = eflx_traffic(l)/(1._r8-lun%wtlunit_roof(l))
+                        eflx_wasteheat_patch(p) = eflx_wasteheat(l)/(1._r8-lun_pp%wtlunit_roof(l))
+                        eflx_heat_from_ac_patch(p) = eflx_heat_from_ac(l)/(1._r8-lun_pp%wtlunit_roof(l))
+                        eflx_traffic_patch(p) = eflx_traffic(l)/(1._r8-lun_pp%wtlunit_roof(l))
                      else
                         eflx_wasteheat_patch(p) = 0._r8
                         eflx_heat_from_ac_patch(p) = 0._r8
@@ -1853,7 +1853,7 @@ end subroutine SolveTemperature
                if (pft%active(p)) then
                   g = pft%gridcell(p)
                   l = pft%landunit(p)
-                  if (.not. lun%urbpoi(l)) then
+                  if (.not. lun_pp%urbpoi(l)) then
 
                      eflx_gnet_top = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
                           - lwrad_emit(c) - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
@@ -2332,7 +2332,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
                     .or. col_pp%itype(c) == icol_roof)) then
                   if (j >= col_pp%snl(c)+1) then
@@ -2416,7 +2416,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
                   if (j >= col_pp%snl(c)+1) then
                      if (j == col_pp%snl(c)+1) then
@@ -2497,7 +2497,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (.not. lun%urbpoi(l)) then
+            if (.not. lun_pp%urbpoi(l)) then
                if (j >= col_pp%snl(c)+1) then
                   if (j == col_pp%snl(c)+1) then
                      dzp     = z(c,j+1)-z(c,j)
@@ -2832,7 +2832,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
                     .or. col_pp%itype(c) == icol_roof)) then
                   if (j >= col_pp%snl(c)+1) then
@@ -2925,7 +2925,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
                   if (j == col_pp%snl(c)+1) then
                      rt(c,j) = t_soisno(c,j) +  fact(c,j)*( hs_top_snow(c) &
@@ -3012,7 +3012,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (.not. lun%urbpoi(l)) then
+            if (.not. lun_pp%urbpoi(l)) then
                if (j == col_pp%snl(c)+1) then
                   rt(c,j) = t_soisno(c,j) +  fact(c,j)*( hs_top_snow(c) &
                        - dhsdT(c)*t_soisno(c,j) + cnfac*fn(c,j) )
@@ -3526,7 +3526,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
                     .or. col_pp%itype(c) == icol_roof)) then
                   if (j >= col_pp%snl(c)+1) then
@@ -3605,7 +3605,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
                   if (j >= col_pp%snl(c)+1) then
                      if (j == col_pp%snl(c)+1) then
@@ -3682,7 +3682,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (.not. lun%urbpoi(l)) then
+            if (.not. lun_pp%urbpoi(l)) then
                if (j >= col_pp%snl(c)+1) then
                   if (j == col_pp%snl(c)+1) then
                      dzp     = z(c,j+1)-z(c,j)
@@ -3854,7 +3854,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
                     .or. col_pp%itype(c) == icol_roof)) then
                   if (j >= col_pp%snl(c)+1) then
@@ -3922,7 +3922,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
                   if (j >= col_pp%snl(c)+1) then
                      if (j == col_pp%snl(c)+1) then
@@ -3989,7 +3989,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (.not. lun%urbpoi(l)) then
+            if (.not. lun_pp%urbpoi(l)) then
                if (j >= col_pp%snl(c)+1) then
                   if (j == col_pp%snl(c)+1) then
                      dzp     = z(c,j+1)-z(c,j)
@@ -4220,7 +4220,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
                     .or. col_pp%itype(c) == icol_roof)) then
                   if (j >= col_pp%snl(c)+1) then
@@ -4313,7 +4313,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
                   if (j >= col_pp%snl(c)+1) then
                      if (j == col_pp%snl(c)+1) then
@@ -4410,7 +4410,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (.not. lun%urbpoi(l)) then
+            if (.not. lun_pp%urbpoi(l)) then
                if (j >= col_pp%snl(c)+1) then
                   if (j == col_pp%snl(c)+1) then
                      dzp     = z(c,j+1)-z(c,j)
@@ -4605,7 +4605,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
                     .or. col_pp%itype(c) == icol_roof)) then
                   if (j >= col_pp%snl(c)+1) then
@@ -4675,7 +4675,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
                   if (j >= col_pp%snl(c)+1) then
                      if (j == col_pp%snl(c)+1) then
@@ -4747,7 +4747,7 @@ end subroutine SolveTemperature
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
-            if (.not. lun%urbpoi(l)) then
+            if (.not. lun_pp%urbpoi(l)) then
                if (j >= col_pp%snl(c)+1) then
                   if (j == col_pp%snl(c)+1) then
                      dzp     = z(c,j+1)-z(c,j)

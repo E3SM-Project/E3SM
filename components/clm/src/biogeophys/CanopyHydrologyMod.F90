@@ -16,7 +16,7 @@ module CanopyHydrologyMod
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
   use clm_varctl      , only : iulog
-  use LandunitType    , only : lun                
+  use LandunitType    , only : lun_pp                
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
   use CanopyStateType , only : canopystate_type
@@ -167,8 +167,8 @@ contains
           pgridcell            => pft%gridcell                             , & ! Input:  [integer  (:)   ]  pft's gridcell                           
           plandunit            => pft%landunit                             , & ! Input:  [integer  (:)   ]  pft's landunit                           
           pcolumn              => pft%column                               , & ! Input:  [integer  (:)   ]  pft's column                             
-          ltype                => lun%itype                                , & ! Input:  [integer  (:)   ]  landunit type                            
-          urbpoi               => lun%urbpoi                               , & ! Input:  [logical  (:)   ]  true => landunit is an urban point       
+          ltype                => lun_pp%itype                                , & ! Input:  [integer  (:)   ]  landunit type                            
+          urbpoi               => lun_pp%urbpoi                               , & ! Input:  [logical  (:)   ]  true => landunit is an urban point       
           cgridcell            => col_pp%gridcell                             , & ! Input:  [integer  (:)   ]  columns's gridcell                       
           clandunit            => col_pp%landunit                             , & ! Input:  [integer  (:)   ]  columns's landunit                       
           ctype                => col_pp%itype                                , & ! Input:  [integer  (:)   ]  column type                              
@@ -682,7 +682,7 @@ contains
           l = col_pp%landunit(c)
           qflx_h2osfc2topsoi(c) = 0._r8
           ! h2osfc only calculated for soil vegetated land units
-          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              !  Use newton-raphson method to iteratively determine frac_h20sfc
              !  based on amount of surface water storage (h2osfc) and 

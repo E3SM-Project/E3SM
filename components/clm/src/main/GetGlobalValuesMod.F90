@@ -75,7 +75,7 @@ contains
     use clm_varctl   , only : iulog
     use clm_varcon   , only : nameg, namel, namec, namep
     use GridcellType , only : grc                
-    use LandunitType , only : lun                
+    use LandunitType , only : lun_pp                
     use ColumnType   , only : col_pp                
     use PatchType    , only : pft                
     !
@@ -98,13 +98,13 @@ contains
     else if (trim(clmlevel) == namel) then
 
        ilun = decomp_index
-       igrc = lun%gridcell(ilun)
+       igrc = lun_pp%gridcell(ilun)
        write(iulog,*)'local  landunit index = ',ilun
        write(iulog,*)'global landunit index = ',GetGlobalIndex(decomp_index=ilun, clmlevel=namel)
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
        write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
-       write(iulog,*)'landunit type         = ',lun%itype(decomp_index)
+       write(iulog,*)'landunit type         = ',lun_pp%itype(decomp_index)
 
     else if (trim(clmlevel) == namec) then
 
@@ -118,7 +118,7 @@ contains
        write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
        write(iulog,*)'column   type         = ',col_pp%itype(icol)
-       write(iulog,*)'landunit type         = ',lun%itype(ilun)
+       write(iulog,*)'landunit type         = ',lun_pp%itype(ilun)
    
     else if (trim(clmlevel) == namep) then
 
@@ -135,7 +135,7 @@ contains
        write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
        write(iulog,*)'pft      type         = ',pft%itype(ipft)
        write(iulog,*)'column   type         = ',col_pp%itype(icol)
-       write(iulog,*)'landunit type         = ',lun%itype(ilun)
+       write(iulog,*)'landunit type         = ',lun_pp%itype(ilun)
 
     else		       
        call shr_sys_abort('clmlevel '//trim(clmlevel)//'not supported '//errmsg(__FILE__, __LINE__))

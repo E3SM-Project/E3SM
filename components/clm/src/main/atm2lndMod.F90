@@ -18,7 +18,7 @@ module atm2lndMod
   use abortutils     , only : endrun
   use decompMod      , only : bounds_type
   use atm2lndType    , only : atm2lnd_type
-  use LandunitType   , only : lun                
+  use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   !
   ! !PUBLIC TYPES:
@@ -426,7 +426,7 @@ contains
             l = col_pp%landunit(c)
             g = col_pp%gridcell(c)
 
-            if (lun%urbpoi(l)) then
+            if (lun_pp%urbpoi(l)) then
                if (forc_t_c(c)     /= forc_t_g(g)    .or. &
                     forc_th_c(c)    /= forc_th_g(g)   .or. &
                     forc_q_c(c)     /= forc_q_g(g)    .or. &

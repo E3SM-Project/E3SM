@@ -27,7 +27,7 @@ module DUSTMod
   use CanopyStateType      , only : canopystate_type
   use WaterstateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
-  use LandunitType         , only : lun
+  use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
   use PatchType            , only : pft
   !  
@@ -174,7 +174,7 @@ contains
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
 
-       if (.not.lun%lakpoi(l)) then
+       if (.not.lun_pp%lakpoi(l)) then
           this%mbl_bsn_fct_col(c) = 1.0_r8
        end if
     end do
@@ -313,7 +313,7 @@ contains
          ! linearly from 1 to 0 as VAI(=tlai+tsai) increases from 0 to vai_mbl_thr
          ! if ice sheet, wetland, or lake, no dust allowed
 
-         if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             if (tlai_lu(l) < vai_mbl_thr) then
                lnd_frc_mbl(p) = 1.0_r8 - (tlai_lu(l))/vai_mbl_thr
             else

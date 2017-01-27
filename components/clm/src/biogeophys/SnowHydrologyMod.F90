@@ -25,7 +25,7 @@ module SnowHydrologyMod
   use TemperatureType , only : temperature_type
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
-  use LandunitType    , only : lun                
+  use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   !
   ! !PUBLIC TYPES:
@@ -564,7 +564,7 @@ contains
      associate(                                              & 
           snl          => col_pp%snl                          , & ! Input:  [integer (:)    ] number of snow layers                     
           n_melt       => col_pp%n_melt                       , & ! Input:  [real(r8) (:)   ] SCA shape parameter                      
-          ltype        => lun%itype                        , & ! Input:  [integer (:)    ] landunit type                             
+          ltype        => lun_pp%itype                        , & ! Input:  [integer (:)    ] landunit type                             
 
           t_soisno     => temperature_vars%t_soisno_col    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
           imelt        => temperature_vars%imelt_col       , & ! Input:  [integer (:,:)  ] flag for melting (=1), freezing (=2), Not=0
@@ -711,8 +711,8 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                     & 
-          ltype            => lun%itype                           , & ! Input:  [integer  (:)   ] landunit type                             
-          urbpoi           => lun%urbpoi                          , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
+          ltype            => lun_pp%itype                           , & ! Input:  [integer  (:)   ] landunit type                             
+          urbpoi           => lun_pp%urbpoi                          , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
 
           t_soisno         => temperature_vars%t_soisno_col       , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
 

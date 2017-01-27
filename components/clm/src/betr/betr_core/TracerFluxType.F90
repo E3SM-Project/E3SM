@@ -5,7 +5,7 @@ module TracerFluxType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use decompMod      , only : bounds_type
-  use LandunitType   , only : lun
+  use LandunitType   , only : lun_pp
   use ColumnType     , only : col_pp
   use PatchType      , only : pft
   use clm_varcon     , only : spval, ispval
@@ -372,7 +372,7 @@ contains
 
     do p = bounds%begp,bounds%endp
        l = pft%landunit(p)
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
          this%tracer_flx_vtrans_patch(p,:)         = spval
          this%tracer_flx_snowfall_grnd_patch(p,:)  = spval
          this%tracer_flx_rainfall_grnd_patch(p,:)  = spval
@@ -381,7 +381,7 @@ contains
          this%tracer_flx_snwcp_liq_patch(p,:)      = spval
          this%tracer_flx_snwcp_ice_patch(p,:)      = spval
        endif
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
          this%tracer_flx_vtrans_patch(p,:)         = 0._r8
          this%tracer_flx_snowfall_grnd_patch(p,:)  = 0._r8
          this%tracer_flx_rainfall_grnd_patch(p,:)  = 0._r8
@@ -393,7 +393,7 @@ contains
     enddo
     do c = begc, endc
        l = col_pp%landunit(c)
-       if (lun%ifspecial(l)) then
+       if (lun_pp%ifspecial(l)) then
          this%tracer_flx_top_soil_col(c,:)    = spval
          this%tracer_flx_can_loss_col(c,:)    = spval
          this%tracer_flx_snowmelt_col (c,:)    = spval
@@ -418,7 +418,7 @@ contains
          this%tracer_flx_totleached_col(c,:)  = spval
        endif
 
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
          this%tracer_flx_top_soil_col(c,:)    = 0._r8
          this%tracer_flx_can_loss_col(c,:)    = 0._r8
          this%tracer_flx_snowmelt_col (c,:)   = 0._r8

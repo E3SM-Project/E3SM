@@ -21,7 +21,7 @@ module dynConsBiogeochemMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use LandunitType        , only : lun                
+  use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp                
   use PatchType           , only : pft                
   !
@@ -431,7 +431,7 @@ contains
        endif
        
        l = pft%landunit(p)
-       if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           
           ! calculate the change in weight for the timestep
           dwt = pft%wtcol(p)-prior_weights%pwtcol(p)

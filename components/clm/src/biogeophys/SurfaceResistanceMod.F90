@@ -55,7 +55,7 @@ contains
      use shr_const_mod , only : SHR_CONST_PI  
      use decompMod     , only : bounds_type
      use ColumnType    , only : col_pp
-     use LandunitType  , only : lun
+     use LandunitType  , only : lun_pp
      use abortutils    , only : endrun      
      !
      ! !ARGUMENTS:
@@ -104,7 +104,7 @@ contains
      use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon   , only : icol_road_imperv, icol_road_perv
      use ColumnType      , only : col_pp
-     use LandunitType    , only : lun
+     use LandunitType    , only : lun_pp
      use clm_varctl      , only : use_vsfm
      !
      implicit none
@@ -137,9 +137,9 @@ contains
        do fc = 1,num_nolakec
           c = filter_nolakec(fc)
           l = col_pp%landunit(c)   
-          if (lun%itype(l)/=istwet .AND. lun%itype(l)/=istice  &
-               .AND. lun%itype(l)/=istice_mec) then
-             if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+          if (lun_pp%itype(l)/=istwet .AND. lun_pp%itype(l)/=istice  &
+               .AND. lun_pp%itype(l)/=istice_mec) then
+             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                 wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/col_pp%dz(c,1)
                 fac  = min(1._r8, wx/watsat(c,1))
                 fac  = max( fac, 0.01_r8 )

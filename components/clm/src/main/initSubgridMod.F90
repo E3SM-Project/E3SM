@@ -14,7 +14,7 @@ module initSubgridMod
   use clm_varcon     , only : namep, namec, namel
   use decompMod      , only : bounds_type
   use GridcellType   , only : grc                
-  use LandunitType   , only : lun                
+  use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
   !
@@ -101,10 +101,10 @@ contains
              write(iulog,*) 'clm_ptrs_compdown ERROR: plandunit ',p,curl,bounds%begl,bounds%endl
              call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
           endif
-          lun%pfti(curl) = p
+          lun_pp%pfti(curl) = p
        endif
-       lun%pftf(curl) = p
-       lun%npfts(curl) = lun%pftf(curl) - lun%pfti(curl) + 1
+       lun_pp%pftf(curl) = p
+       lun_pp%npfts(curl) = lun_pp%pftf(curl) - lun_pp%pfti(curl) + 1
     enddo
 
     curl = 0
@@ -115,18 +115,18 @@ contains
              write(iulog,*) 'clm_ptrs_compdown ERROR: clandunit ',c,curl,bounds%begl,bounds%endl
              call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
           endif
-          lun%coli(curl) = c
+          lun_pp%coli(curl) = c
        endif
-       lun%colf(curl) = c
-       lun%ncolumns(curl) = lun%colf(curl) - lun%coli(curl) + 1
+       lun_pp%colf(curl) = c
+       lun_pp%ncolumns(curl) = lun_pp%colf(curl) - lun_pp%coli(curl) + 1
     enddo
 
     ! Determine landunit_indices: indices into landunit-level arrays for each grid cell.
     ! Note that landunits not present in a given grid cell are set to ispval.
     grc%landunit_indices(:,bounds%begg:bounds%endg) = ispval
     do l = bounds%begl,bounds%endl
-       ltype = lun%itype(l)
-       curg = lun%gridcell(l)
+       ltype = lun_pp%itype(l)
+       curg = lun_pp%gridcell(l)
        if (curg < bounds%begg .or. curg > bounds%endg) then
           write(iulog,*) 'clm_ptrs_compdown ERROR: landunit_indices ', l,curg,bounds%begg,bounds%endg
           call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
@@ -195,11 +195,11 @@ contains
     if (masterproc) write(iulog,*) '   clm_ptrs_check: g index ranges - OK'
 
     error = .false.
-    if (minval(lun%gridcell(begl:endl)) < begg .or. maxval(lun%gridcell(begl:endl)) > endg) error=.true.
-    if (minval(lun%coli(begl:endl)) < begc .or. maxval(lun%coli(begl:endl)) > endc) error=.true.
-    if (minval(lun%colf(begl:endl)) < begc .or. maxval(lun%colf(begl:endl)) > endc) error=.true.
-    if (minval(lun%pfti(begl:endl)) < begp .or. maxval(lun%pfti(begl:endl)) > endp) error=.true.
-    if (minval(lun%pftf(begl:endl)) < begp .or. maxval(lun%pftf(begl:endl)) > endp) error=.true.
+    if (minval(lun_pp%gridcell(begl:endl)) < begg .or. maxval(lun_pp%gridcell(begl:endl)) > endg) error=.true.
+    if (minval(lun_pp%coli(begl:endl)) < begc .or. maxval(lun_pp%coli(begl:endl)) > endc) error=.true.
+    if (minval(lun_pp%colf(begl:endl)) < begc .or. maxval(lun_pp%colf(begl:endl)) > endc) error=.true.
+    if (minval(lun_pp%pfti(begl:endl)) < begp .or. maxval(lun_pp%pfti(begl:endl)) > endp) error=.true.
+    if (minval(lun_pp%pftf(begl:endl)) < begp .or. maxval(lun_pp%pftf(begl:endl)) > endp) error=.true.
     if (error) then
        write(iulog,*) '   clm_ptrs_check: l index ranges - ERROR'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -230,15 +230,15 @@ contains
     !--- check that indices in arrays are monotonically increasing ---
     error = .false.
     do l=begl+1,endl
-      if ((lun%itype(l) == lun%itype(l-1)) .and. &
-           lun%gridcell(l) < lun%gridcell(l-1)) then
+      if ((lun_pp%itype(l) == lun_pp%itype(l-1)) .and. &
+           lun_pp%gridcell(l) < lun_pp%gridcell(l-1)) then
          ! grid cell indices should be monotonically increasing for a given landunit type
          error = .true.
       end if
-      if (lun%coli(l) < lun%coli(l-1)) error = .true.
-      if (lun%colf(l) < lun%colf(l-1)) error = .true.
-      if (lun%pfti(l) < lun%pfti(l-1)) error = .true.
-      if (lun%pftf(l) < lun%pftf(l-1)) error = .true.
+      if (lun_pp%coli(l) < lun_pp%coli(l-1)) error = .true.
+      if (lun_pp%colf(l) < lun_pp%colf(l-1)) error = .true.
+      if (lun_pp%pfti(l) < lun_pp%pfti(l-1)) error = .true.
+      if (lun_pp%pftf(l) < lun_pp%pftf(l-1)) error = .true.
       if (error) then
          write(iulog,*) '   clm_ptrs_check: l mono increasing - ERROR'
          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
@@ -250,7 +250,7 @@ contains
     do c=begc+1,endc
       l = col_pp%landunit(c)
       l_prev = col_pp%landunit(c-1)
-      if ((lun%itype(l) == lun%itype(l_prev)) .and. &
+      if ((lun_pp%itype(l) == lun_pp%itype(l_prev)) .and. &
            col_pp%gridcell(c) < col_pp%gridcell(c-1)) then
          ! grid cell indices should be monotonically increasing for a given landunit type
          error = .true.
@@ -269,7 +269,7 @@ contains
     do p=begp+1,endp
       l = pft%landunit(p)
       l_prev = pft%landunit(p-1)
-      if ((lun%itype(l) == lun%itype(l_prev)) .and. &
+      if ((lun_pp%itype(l) == lun_pp%itype(l_prev)) .and. &
            pft%gridcell(p) < pft%gridcell(p-1)) then
          ! grid cell indices should be monotonically increasing for a given landunit type
          error = .true.
@@ -291,13 +291,13 @@ contains
 
           ! skip l == ispval, which implies that this landunit type doesn't exist on this grid cell
           if (l /= ispval) then
-             if (lun%itype(l) /= ltype) error = .true.
-             if (lun%gridcell(l) /= g) error = .true.
+             if (lun_pp%itype(l) /= ltype) error = .true.
+             if (lun_pp%gridcell(l) /= g) error = .true.
              if (error) then
                 write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
                 call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
              endif
-             do c = lun%coli(l),lun%colf(l)
+             do c = lun_pp%coli(l),lun_pp%colf(l)
                 if (col_pp%gridcell(c) /= g) error = .true.
                 if (col_pp%landunit(c) /= l) error = .true.
                 if (error) then
@@ -348,32 +348,32 @@ contains
     
     li = li + 1
 
-    lun%gridcell(li) = gi
-    lun%wtgcell(li) = wtgcell
-    lun%itype(li) = ltype
+    lun_pp%gridcell(li) = gi
+    lun_pp%wtgcell(li) = wtgcell
+    lun_pp%itype(li) = ltype
     
     if (ltype == istsoil .or. ltype == istcrop) then
-       lun%ifspecial(li) = .false.
+       lun_pp%ifspecial(li) = .false.
     else
-       lun%ifspecial(li) = .true.
+       lun_pp%ifspecial(li) = .true.
     end if
 
     if (ltype == istice_mec) then
-       lun%glcmecpoi(li) = .true.
+       lun_pp%glcmecpoi(li) = .true.
     else
-       lun%glcmecpoi(li) = .false.
+       lun_pp%glcmecpoi(li) = .false.
     end if
 
     if (ltype == istdlak) then
-       lun%lakpoi(li) = .true.
+       lun_pp%lakpoi(li) = .true.
     else
-       lun%lakpoi(li) = .false.
+       lun_pp%lakpoi(li) = .false.
     end if
 
     if (ltype >= isturb_MIN .and. ltype <= isturb_MAX) then
-       lun%urbpoi(li) = .true.
+       lun_pp%urbpoi(li) = .true.
     else
-       lun%urbpoi(li) = .false.
+       lun_pp%urbpoi(li) = .false.
     end if
 
   end subroutine add_landunit
@@ -399,7 +399,7 @@ contains
     ci = ci + 1
 
     col_pp%landunit(ci) = li
-    col_pp%gridcell(ci) = lun%gridcell(li)
+    col_pp%gridcell(ci) = lun_pp%gridcell(li)
     col_pp%wtlunit(ci) = wtlunit
     col_pp%itype(ci) = ctype
     
@@ -441,7 +441,7 @@ contains
 
     pft%itype(pi) = ptype
 
-    if (lun%itype(li) == istsoil .or. lun%itype(li) == istcrop) then
+    if (lun_pp%itype(li) == istsoil .or. lun_pp%itype(li) == istcrop) then
        lb_offset = 1 - natpft_lb
        pft%mxy(pi) = ptype + lb_offset
     else

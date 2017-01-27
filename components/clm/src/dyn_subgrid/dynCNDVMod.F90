@@ -8,7 +8,7 @@ module dynCNDVMod
   ! !USES:
   use shr_kind_mod , only : r8 => shr_kind_r8
   use decompMod    , only : bounds_type
-  use LandunitType , only : lun                
+  use LandunitType , only : lun_pp                
   use PatchType    , only : pft                
   use CNDVType     , only : dgvs_type
   !
@@ -94,7 +94,7 @@ contains
        g = pft%gridcell(p)
        l = pft%landunit(p)
 
-       if (lun%itype(l) == istsoil .and. lun%wtgcell(l) > 0._r8) then ! CNDV incompatible with dynLU
+       if (lun_pp%itype(l) == istsoil .and. lun_pp%wtgcell(l) > 0._r8) then ! CNDV incompatible with dynLU
           pft%wtcol(p)   = dgvs_vars%fpcgrid_patch(p) + &
                     wt1 * (dgvs_vars%fpcgridold_patch(p) - dgvs_vars%fpcgrid_patch(p))
 

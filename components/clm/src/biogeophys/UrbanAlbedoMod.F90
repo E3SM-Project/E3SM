@@ -19,7 +19,7 @@ module UrbanAlbedoMod
   use WaterstateType    , only : waterstate_type
   use SolarAbsorbedType , only : solarabs_type
   use SurfaceAlbedoType , only : surfalb_type
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft                
   !
@@ -112,9 +112,9 @@ contains
 
     associate(                                                        &
          ctype              => col_pp%itype                            , & ! Input:  [integer (:)    ]  column type                                        
-         coli               => lun%coli                             , & ! Input:  [integer (:)    ]  beginning column index for landunit                
-         canyon_hwr         => lun%canyon_hwr                       , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         wtroad_perv        => lun%wtroad_perv                      , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
+         coli               => lun_pp%coli                             , & ! Input:  [integer (:)    ]  beginning column index for landunit                
+         canyon_hwr         => lun_pp%canyon_hwr                       , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
+         wtroad_perv        => lun_pp%wtroad_perv                      , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
          
          frac_sno           => waterstate_vars%frac_sno_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
          
@@ -163,7 +163,7 @@ contains
       
       do fl = 1,num_urbanl
          l = filter_urbanl(fl)
-         g = lun%gridcell(l)
+         g = lun_pp%gridcell(l)
          coszen(l) = surfalb_vars%coszen_col(coli(l))  ! Assumes coszen for each column are the same
          zen(l)    = acos(coszen(l))
       end do

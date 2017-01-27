@@ -129,7 +129,7 @@ module clm_driver
   use tracer_varcon          , only : is_active_betr_bgc, do_betr_leaching
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary, CNFluxStateBetrSummary
   use GridcellType           , only : grc                
-  use LandunitType           , only : lun                
+  use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use PatchType              , only : pft
   use shr_sys_mod            , only : shr_sys_flush
@@ -716,7 +716,7 @@ contains
 
        do c = bounds_clump%begc,bounds_clump%endc
           l = col_pp%landunit(c)
-          if (lun%urbpoi(l)) then
+          if (lun_pp%urbpoi(l)) then
              ! Urban landunit use Bonan 1996 (LSM Technical Note)
              waterstate_vars%frac_sno_col(c) = min( waterstate_vars%snow_depth_col(c)/0.05_r8, 1._r8)
           end if

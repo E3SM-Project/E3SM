@@ -13,7 +13,7 @@ module CNDVEstablishmentMod
   use CNDVType          , only : dgvs_type, dgv_ecophyscon
   use CNCarbonStateType , only : carbonstate_type
   use CNCarbonFluxType  , only : carbonflux_type
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use PatchType         , only : pft                
   !
   ! !PUBLIC TYPES:
@@ -197,7 +197,7 @@ contains
 
          ! Case 2 -- pft begins to exist - introduce newly "adapted" patches
 
-         if (lun%itype(l) == istsoil) then
+         if (lun_pp%itype(l) == istsoil) then
             if (.not. present(p) .and. prec365(p) >= prec_min_estab .and. estab(p)) then
                if (twmax(ivt(p)) > 999._r8 .or. agddtw(p) == 0._r8) then
 

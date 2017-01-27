@@ -1603,7 +1603,7 @@ contains
     ! !USES:
     use clm_time_manager      , only : get_step_size
     use ColumnType            , only : col_pp
-    use LandunitType          , only : lun
+    use LandunitType          , only : lun_pp
     use WaterfluxType         , only : waterflux_type
     use WaterstateType        , only : waterstate_type
     use tracerfluxType        , only : tracerflux_type
@@ -1640,7 +1640,7 @@ contains
          is_h2o             =>    betrtracer_vars%is_h2o                  ,  & !
          tracernames        =>    betrtracer_vars%tracernames             ,  &
          clandunit          =>    col_pp%landunit                             , & ! Input:  [integer  (:)   ]  columns's landunit
-         ltype              =>    lun%itype                                , & ! Input:  [integer  (:)   ]  landunit type
+         ltype              =>    lun_pp%itype                                , & ! Input:  [integer  (:)   ]  landunit type
          ngwmobile_tracers  =>    betrtracer_vars%ngwmobile_tracers          &
          )
 

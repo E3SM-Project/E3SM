@@ -11,7 +11,7 @@ module LakeStateType
   use decompMod    , only : bounds_type
   use spmdMod      , only : masterproc
   use abortUtils   , only : endrun
-  use LandunitType , only : lun                
+  use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   !
   implicit none
@@ -227,7 +227,7 @@ contains
          
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun%lakpoi(l)) then
+       if (lun_pp%lakpoi(l)) then
 
           ! Set lake ice fraction and top eddy conductivity from previous timestep
           ! Always initialize with no ice to prevent excessive ice sheets from forming when

@@ -21,7 +21,7 @@ module SnowSnicarMod
   use WaterFluxType   , only : waterflux_type
   use TemperatureType , only : temperature_type
   use GridcellType    , only : grc       
-  use LandunitType    , only : lun       
+  use LandunitType    , only : lun_pp       
   use ColumnType      , only : col_pp       
   !
   implicit none
@@ -444,7 +444,7 @@ contains
                ! for debugging only
                l_idx     = col_pp%landunit(c_idx)
                g_idx     = col_pp%gridcell(c_idx)
-               sfctype   = lun%itype(l_idx)
+               sfctype   = lun_pp%itype(l_idx)
                lat_coord = grc%latdeg(g_idx)
                lon_coord = grc%londeg(g_idx)
 
@@ -1031,7 +1031,7 @@ contains
                      write(iulog,*) "SNICAR STATS: dust4(0)= ", mss_cnc_aer_lcl(0,6)
                      l_idx     = col_pp%landunit(c_idx)
                      write(iulog,*) "column index: ", c_idx
-                     write(iulog,*) "landunit type", lun%itype(l_idx)
+                     write(iulog,*) "landunit type", lun_pp%itype(l_idx)
                      write(iulog,*) "frac_sno: ", frac_sno(c_idx)
                      call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                   else

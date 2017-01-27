@@ -16,7 +16,7 @@ module HydrologyDrainageMod
   use TemperatureType   , only : temperature_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   !
   ! !PUBLIC TYPES:
@@ -207,7 +207,7 @@ contains
          g = col_pp%gridcell(c)
          ! In the following, we convert glc_snow_persistence_max_days to r8 to avoid overflow
          if ( (snow_persistence(c) >= (real(glc_snow_persistence_max_days, r8) * secspday)) &
-              .or. lun%itype(l) == istice_mec) then
+              .or. lun_pp%itype(l) == istice_mec) then
             qflx_glcice_frz(c) = qflx_snwcp_ice(c)  
             qflx_glcice(c) = qflx_glcice(c) + qflx_glcice_frz(c)
             if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
@@ -222,8 +222,8 @@ contains
          l = col_pp%landunit(c)
          g = col_pp%gridcell(c)
 
-         if (lun%itype(l)==istwet .or. lun%itype(l)==istice      &
-                                  .or. lun%itype(l)==istice_mec) then
+         if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice      &
+                                  .or. lun_pp%itype(l)==istice_mec) then
 
             qflx_drain(c)         = 0._r8
             qflx_drain_perched(c) = 0._r8
@@ -240,7 +240,7 @@ contains
             ! snow is sent to CISM, where it is converted to ice. These corrections are
             ! done here: 
 
-            if (glc_dyn_runoff_routing(g) .and. lun%itype(l)==istice_mec) then
+            if (glc_dyn_runoff_routing(g) .and. lun_pp%itype(l)==istice_mec) then
                ! If glc_dyn_runoff_routing=T, add meltwater from istice_mec ice columns to the runoff.
                !    Note: The meltwater contribution is computed in PhaseChanges (part of Biogeophysics2)
                qflx_qrgwl(c) = qflx_qrgwl(c) + qflx_glcice_melt(c)
@@ -253,7 +253,7 @@ contains
                qflx_qrgwl(c) = qflx_qrgwl(c) - qflx_glcice_frz(c)
             endif
 
-         else if (lun%urbpoi(l) .and. ctype(c) /= icol_road_perv) then
+         else if (lun_pp%urbpoi(l) .and. ctype(c) /= icol_road_perv) then
 
             qflx_drain_perched(c) = 0._r8
             qflx_h2osfc_surf(c)   = 0._r8
@@ -263,12 +263,12 @@ contains
 
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
-         if ((lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) .and. col_pp%active(c)) then
+         if ((lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) .and. col_pp%active(c)) then
             qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c)
          end if
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)
-         else if (lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) then
+         else if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
             qflx_runoff_r(c) = qflx_runoff(c)
          end if
 

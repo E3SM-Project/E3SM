@@ -62,7 +62,7 @@ Module DryDepVelocity
   use PhotosynthesisType   , only : photosyns_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc                
-  use LandunitType         , only : lun                
+  use LandunitType         , only : lun_pp                
   use PatchType            , only : pft                
   !
   implicit none 
@@ -282,7 +282,7 @@ CONTAINS
             if (clmveg == nc3irrig                            ) wesveg = 2 
             if (clmveg >= npcropmin .and. clmveg <= npcropmax ) wesveg = 2 
             if (wesveg == wveg_unset )then
-               write(iulog,*) 'clmveg = ', clmveg, 'lun%itype = ', lun%itype(l)
+               write(iulog,*) 'clmveg = ', clmveg, 'lun_pp%itype = ', lun_pp%itype(l)
                call endrun(decomp_index=pi, clmlevel=namep, &
                     msg='ERROR: Not able to determine Wesley vegetation type'//&
                     errMsg(__FILE__, __LINE__))
@@ -312,17 +312,17 @@ CONTAINS
 
             index_season = -1
 
-            if ( lun%itype(l) /= istsoil )then
-               if ( lun%itype(l) == istice .or. lun%itype(l) == istice_mec ) then
+            if ( lun_pp%itype(l) /= istsoil )then
+               if ( lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec ) then
                   wesveg       = 8
                   index_season = 4
-               elseif ( lun%itype(l) == istdlak ) then
+               elseif ( lun_pp%itype(l) == istdlak ) then
                   wesveg       = 7
                   index_season = 4
-               elseif ( lun%itype(l) == istwet ) then
+               elseif ( lun_pp%itype(l) == istwet ) then
                   wesveg       = 9
                   index_season = 2
-               elseif ( lun%urbpoi(l) ) then
+               elseif ( lun_pp%urbpoi(l) ) then
                   wesveg       = 1
                   index_season = 2
                end if

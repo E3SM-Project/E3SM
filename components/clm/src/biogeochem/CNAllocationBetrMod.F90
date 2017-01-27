@@ -24,7 +24,7 @@ module CNAllocationBetrMod
   use PhotosynthesisType  , only : photosyns_type
   use CropType            , only : crop_type
   use EcophysConType      , only : ecophyscon
-  use LandunitType        , only : lun                
+  use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp                
   use PatchType           , only : pft                
   !

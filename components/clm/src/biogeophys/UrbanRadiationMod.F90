@@ -23,7 +23,7 @@ module UrbanRadiationMod
   use SurfaceAlbedoType , only : surfalb_type
   use UrbanParamsType   , only : urbanparams_type
   use EnergyFluxType    , only : energyflux_type
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft                
   !
@@ -113,10 +113,10 @@ contains
 
     associate(                                                                 & 
          ctype              =>    col_pp%itype                                  , & ! Input:  [integer (:)    ]  column type                                        
-         coli               =>    lun%coli                                   , & ! Input:  [integer (:)    ]  beginning column index for landunit                
-         colf               =>    lun%colf                                   , & ! Input:  [integer (:)    ]  ending column index for landunit                   
-         canyon_hwr         =>    lun%canyon_hwr                             , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         wtroad_perv        =>    lun%wtroad_perv                            , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
+         coli               =>    lun_pp%coli                                   , & ! Input:  [integer (:)    ]  beginning column index for landunit                
+         colf               =>    lun_pp%colf                                   , & ! Input:  [integer (:)    ]  ending column index for landunit                   
+         canyon_hwr         =>    lun_pp%canyon_hwr                             , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
+         wtroad_perv        =>    lun_pp%wtroad_perv                            , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
 
          forc_solad         =>    atm2lnd_vars%forc_solad_grc                , & ! Input:  [real(r8) (:,:) ]  direct beam radiation  (vis=forc_sols , nir=forc_soll ) (W/m**2)
          forc_solai         =>    atm2lnd_vars%forc_solai_grc                , & ! Input:  [real(r8) (:,:) ]  diffuse beam radiation (vis=forc_sols , nir=forc_soll ) (W/m**2)
@@ -178,7 +178,7 @@ contains
       ! Set input forcing fields
       do fl = 1,num_urbanl
          l = filter_urbanl(fl)
-         g = lun%gridcell(l) 
+         g = lun_pp%gridcell(l) 
 
          ! Need to set the following temperatures to some defined value even if it
          ! does not appear in the urban landunit for the net_longwave computation

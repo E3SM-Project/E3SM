@@ -14,7 +14,7 @@ module decompInitMod
   use clm_varctl      , only : iulog, use_ed
   use clm_varcon      , only : grlnd
   use GridcellType    , only : grc
-  use LandunitType    , only : lun                
+  use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
   use FatesInterfaceMod, only : fates_maxElementsPerSite
@@ -809,7 +809,7 @@ contains
     allocate(gindex(begl:endl))
     ioff(:) = 0
     do li = begl,endl
-       gi = lun%gridcell(li) !===this is determined internally from how landunits are spread out in memory
+       gi = lun_pp%gridcell(li) !===this is determined internally from how landunits are spread out in memory
        gindex(li) = lstart(gi) + ioff(gi) !=== the output gindex is ALWAYS the same regardless of how landuntis are spread out in memory
        ioff(gi)  = ioff(gi) + 1 
        ! check that this is less than [lstart(gi) + lcount(gi)]

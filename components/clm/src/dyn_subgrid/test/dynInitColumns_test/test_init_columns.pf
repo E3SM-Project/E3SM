@@ -6,7 +6,7 @@ module test_init_columns
   use unittestSubgridMod
   use dynInitColumnsMod
   use ColumnType      , only : col
-  use LandunitType    , only : lun
+  use LandunitType    , only : lun_pp
   use GridcellType    , only : grc 
   use decompMod       , only : bounds_type
   use clm_varcon      , only : ispval
@@ -105,7 +105,7 @@ contains
     integer :: template_col
     call setup()
     cactive_prior(:) = .true.
-    cactive_prior(lun%coli(l2):lun%colf(l2)) = .false.
+    cactive_prior(lun_pp%coli(l2):lun_pp%colf(l2)) = .false.
     @assertEqual(ispval, initial_template_col(bounds, c_new, 2, cactive_prior))
     call cleanup()
   end subroutine test_initial_template_no_active
@@ -115,7 +115,7 @@ contains
     ! all active columns on the given landunit type; should take the first
     call setup()
     cactive_prior(:) = .true.
-    @assertEqual(lun%coli(l2), initial_template_col(bounds, c_new, 2, cactive_prior))
+    @assertEqual(lun_pp%coli(l2), initial_template_col(bounds, c_new, 2, cactive_prior))
     call cleanup()
   end subroutine test_initial_template_all_active
 
@@ -125,8 +125,8 @@ contains
     ! second (ignoring the inactive column)
     call setup()
     cactive_prior(:) = .true.
-    cactive_prior(lun%coli(l2)) = .false.
-    @assertEqual(lun%coli(l2)+1, initial_template_col(bounds, c_new, 2, cactive_prior))
+    cactive_prior(lun_pp%coli(l2)) = .false.
+    @assertEqual(lun_pp%coli(l2)+1, initial_template_col(bounds, c_new, 2, cactive_prior))
     call cleanup()
   end subroutine test_initial_template_second_active
 
@@ -139,7 +139,7 @@ contains
     ! there are active columns both on the soil & crop landunits; should take the soil one
     call setup()
     cactive_prior(:) = .true.
-    @assertEqual(lun%coli(l1), initial_template_col_crop(bounds, c_new, cactive_prior))
+    @assertEqual(lun_pp%coli(l1), initial_template_col_crop(bounds, c_new, cactive_prior))
     call cleanup()
   end subroutine test_crop_active_in_soil_and_crop
 
@@ -149,7 +149,7 @@ contains
     call setup()
     cactive_prior(:) = .true.
     grc%landunit_indices(1,gi) = ispval
-    @assertEqual(lun%coli(l2), initial_template_col_crop(bounds, c_new, cactive_prior))
+    @assertEqual(lun_pp%coli(l2), initial_template_col_crop(bounds, c_new, cactive_prior))
     call cleanup()
   end subroutine test_crop_no_soil
 
@@ -179,9 +179,9 @@ contains
     ! there's nothing to initialize
     col%active(:) = .true.
     cactive_prior(:) = .true.
-    col%active(lun%coli(l2)+1) = .false.
-    cactive_prior(lun%coli(l2)+1) = .false.
-    col%active(lun%coli(l2)+2) = .false.
+    col%active(lun_pp%coli(l2)+1) = .false.
+    cactive_prior(lun_pp%coli(l2)+1) = .false.
+    col%active(lun_pp%coli(l2)+2) = .false.
     t_soisno_expected = temperature_vars%t_soisno_col
     call initialize_new_columns(bounds, cactive_prior, temperature_vars)
     @assertEqual(t_soisno_expected, temperature_vars%t_soisno_col)
@@ -195,7 +195,7 @@ contains
     real(r8), allocatable :: t_soisno_expected(:,:)
     call setup()
     col%active(:) = .false.
-    col%active(lun%coli(l2)+1) = .true.
+    col%active(lun_pp%coli(l2)+1) = .true.
     ! all cactive_prior points were false, so there's nothing to use as a template:
     cactive_prior(:) = .false.
     t_soisno_expected = temperature_vars%t_soisno_col
@@ -213,11 +213,11 @@ contains
     call setup()
 
     col%active(:) = .false.
-    dest_col = lun%coli(l2) + 1
+    dest_col = lun_pp%coli(l2) + 1
     col%active(dest_col) = .true.
 
     cactive_prior(:) = .false.
-    source_col = lun%coli(l1) + 1
+    source_col = lun_pp%coli(l1) + 1
     cactive_prior(source_col) = .true.
 
     t_soisno_expected = temperature_vars%t_soisno_col

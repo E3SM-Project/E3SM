@@ -36,8 +36,8 @@ module unittestSubgridMod
   use shr_kind_mod , only : r8 => shr_kind_r8
   use decompMod    , only : bounds_type
   use GridcellType , only : grc                
-  use LandunitType , only : lun                
-  use ColumnType   , only : col                
+  use LandunitType , only : lun_pp                
+  use ColumnType   , only : col_pp                
   use PatchType    , only : pft                
 
   implicit none
@@ -197,8 +197,8 @@ contains
     use landunit_varcon , only : max_lunit
     use clm_varcon      , only : ispval
     use GridcellType    , only : grc
-    use LandunitType    , only : lun
-    use ColumnType      , only : col
+    use LandunitType    , only : lun_pp
+    use ColumnType      , only : col_pp
     use PatchType       , only : pft
     !
     ! !ARGUMENTS:
@@ -209,8 +209,8 @@ contains
     !-----------------------------------------------------------------------
     
     call grc%Init(begg, endg)
-    call lun%Init(begl, endl)
-    call col%Init(begc, endc)
+    call lun_pp%Init(begl, endl)
+    call col_pp%Init(begc, endc)
     call pft%init(begp, endp)
 
   end subroutine initialize_arrays
@@ -234,8 +234,8 @@ contains
     ! initialization of arrays is done in the setup routine
 
     call grc%clean
-    call lun%clean
-    call col%clean
+    call lun_pp%clean
+    call col_pp%clean
     call pft%clean
 
   end subroutine unittest_subgrid_teardown

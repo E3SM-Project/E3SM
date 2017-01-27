@@ -16,7 +16,7 @@ module dynpftFileMod
   use abortutils          , only : endrun
   use spmdMod             , only : masterproc, mpicom
   use clm_varcon          , only : grlnd, nameg
-  use LandunitType        , only : lun                
+  use LandunitType        , only : lun_pp                
   !DW  not use at all     !   use ColumnType          , only : col                
   use PatchType           , only : pft                
   !
@@ -272,7 +272,7 @@ contains
        ! (if there is one)
        ! (However, currently [as of 5-9-13] the code won't let you run with transient
        ! Patches combined with create_crop_landunit anyway, so it's a moot point.)
-       if (lun%itype(l) == istsoil) then
+       if (lun_pp%itype(l) == istsoil) then
           m = pft%itype(p)
 
           ! Note that the following assignment assumes that all Patches share a single column

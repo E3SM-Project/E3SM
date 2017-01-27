@@ -17,7 +17,7 @@ Module HydrologyNoDrainageMod
   use SoilStateType     , only : soilstate_type
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
-  use LandunitType      , only : lun                
+  use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   !
   ! !PUBLIC TYPES:
@@ -324,7 +324,7 @@ contains
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
-         if (.not. lun%urbpoi(l)) then
+         if (.not. lun_pp%urbpoi(l)) then
             t_soi_10cm(c) = 0._r8
             tsoi17(c) = 0._r8
             h2osoi_liqice_10cm(c) = 0._r8
@@ -334,7 +334,7 @@ contains
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
             l = col_pp%landunit(c)
-            if (.not. lun%urbpoi(l)) then
+            if (.not. lun_pp%urbpoi(l)) then
                ! soil T at top 17 cm added by F. Li and S. Levis
                if (zi(c,j) <= 0.17_r8) then
                   fracl = 1._r8
@@ -382,13 +382,13 @@ contains
             t_grnd(c) = (1 - frac_h2osfc(c)) * t_soisno(c,1) + frac_h2osfc(c) * t_h2osfc(c)
          endif
 
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             t_grnd_u(c) = t_soisno(c,snl(c)+1)
          else
             t_soi_10cm(c) = t_soi_10cm(c)/0.1_r8
             tsoi17(c) =  tsoi17(c)/0.17_r8         ! F. Li and S. Levis
          end if
-         if (lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) then
+         if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
             t_grnd_r(c) = t_soisno(c,snl(c)+1)
          end if
 

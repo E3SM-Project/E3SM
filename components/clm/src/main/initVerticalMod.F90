@@ -21,7 +21,7 @@ module initVerticalMod
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec
   use fileutils      , only : getfil
-  use LandunitType   , only : lun                
+  use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use ncdio_pio
   !
@@ -183,7 +183,7 @@ contains
     do l = bounds%begl,bounds%endl
 
        ! "0" refers to urban wall/roof surface and "nlevsoi" refers to urban wall/roof bottom
-       if (lun%urbpoi(l)) then
+       if (lun_pp%urbpoi(l)) then
           if (use_vancouver) then       
              zurb_wall(l,1) = 0.010_r8/2._r8
              zurb_wall(l,2) = zurb_wall(l,1) + 0.010_r8/2._r8 + 0.020_r8/2._r8
@@ -306,7 +306,7 @@ contains
     do c = bounds%begc,bounds%endc
        l = col_pp%landunit(c)
 
-       if (lun%urbpoi(l)) then
+       if (lun_pp%urbpoi(l)) then
           if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall) then
              col_pp%z(c,1:nlevurb)  = zurb_wall(l,1:nlevurb)
              col_pp%zi(c,0:nlevurb) = ziurb_wall(l,0:nlevurb)
@@ -330,7 +330,7 @@ contains
              col_pp%zi(c,0:nlevgrnd) = zisoi(0:nlevgrnd)
              col_pp%dz(c,1:nlevgrnd) = dzsoi(1:nlevgrnd)
           end if
-       else if (lun%itype(l) /= istdlak) then
+       else if (lun_pp%itype(l) /= istdlak) then
           col_pp%z(c,1:nlevgrnd)  = zsoi(1:nlevgrnd)
           col_pp%zi(c,0:nlevgrnd) = zisoi(0:nlevgrnd)
           col_pp%dz(c,1:nlevgrnd) = dzsoi(1:nlevgrnd)
@@ -419,7 +419,7 @@ contains
     do c = bounds%begc,bounds%endc
        l = col_pp%landunit(c)
 
-       if (lun%itype(l) == istdlak) then
+       if (lun_pp%itype(l) == istdlak) then
 
           if (col_pp%lakedepth(c) == spval) then
              col_pp%lakedepth(c)         = zlak(nlevlak) + 0.5_r8*dzlak(nlevlak)
@@ -471,7 +471,7 @@ contains
          col_pp%z (c,-nlevsno+1: 0) = spval
          col_pp%zi(c,-nlevsno  :-1) = spval
 
-         if (.not. lun%lakpoi(l)) then
+         if (.not. lun_pp%lakpoi(l)) then
             if (snow_depth(c) < 0.01_r8) then
                snl(c)             = 0
                col_pp%dz(c,-nlevsno+1:0) = 0._r8
@@ -576,7 +576,7 @@ contains
       do c = begc,endc
          l = col_pp%landunit(c)
 
-         if (lun%itype(l)==istice_mec) then
+         if (lun_pp%itype(l)==istice_mec) then
             ! ice_mec columns already account for subgrid topographic variability through
             ! their use of multiple elevation classes; thus, to avoid double-accounting for
             ! topographic variability in these columns, we ignore topo_std and use a value

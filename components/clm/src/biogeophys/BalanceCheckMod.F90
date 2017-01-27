@@ -20,7 +20,7 @@ module BalanceCheckMod
   use WaterstateType     , only : waterstate_type
   use WaterfluxType      , only : waterflux_type
   use GridcellType       , only : grc                
-  use LandunitType       , only : lun                
+  use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use PatchType          , only : pft                
   !
@@ -423,7 +423,7 @@ contains
                 snow_sinks(c)  = qflx_sub_snow(c) + qflx_evap_grnd(c) + qflx_snow_melt(c) &
                      + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) + qflx_sl_top_soil(c)
 
-                if (lun%itype(l) == istdlak) then 
+                if (lun_pp%itype(l) == istdlak) then 
                    if ( do_capsnow(c) ) then
                       snow_sources(c) = qflx_snow_grnd_col(c) &
                            + frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
@@ -441,7 +441,7 @@ contains
                    endif
                 endif
 
-                if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop .or. lun%itype(l) == istwet ) then
+                if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. lun_pp%itype(l) == istwet ) then
                    if ( do_capsnow(c) ) then
                       snow_sources(c) = frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) &
                            + qflx_h2osfc_to_ice(c) + qflx_prec_grnd(c)
@@ -490,7 +490,7 @@ contains
                ' local indexc= ',indexc, &
                !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
                ' col_pp%itype= ',col_pp%itype(indexc), &
-               ' lun%itype= ',lun%itype(col_pp%landunit(indexc)), &
+               ' lun_pp%itype= ',lun_pp%itype(col_pp%landunit(indexc)), &
                ' errh2osno= ',errh2osno(indexc)
 
           if (abs(errh2osno(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
@@ -531,7 +531,7 @@ contains
              ! Do not do this check for an urban pft since it will not balance on a per-column
              ! level because of interactions between columns and since a separate check is done
              ! in the urban radiation module
-             if (.not. lun%urbpoi(l)) then
+             if (.not. lun_pp%urbpoi(l)) then
                 errsol(p) = fsa(p) + fsr(p) &
                      - (forc_solad(g,1) + forc_solad(g,2) + forc_solai(g,1) + forc_solai(g,2))
              else
@@ -542,7 +542,7 @@ contains
              ! Do not do this check for an urban pft since it will not balance on a per-column
              ! level because of interactions between columns and since a separate check is done
              ! in the urban radiation module
-             if (.not. lun%urbpoi(l)) then
+             if (.not. lun_pp%urbpoi(l)) then
                 errlon(p) = eflx_lwrad_out(p) - eflx_lwrad_net(p) - forc_lwrad(c)
              else
                 errlon(p) = spval
@@ -554,7 +554,7 @@ contains
              ! For surfaces other than urban, (eflx_lwrad_net) equals (forc_lwrad - eflx_lwrad_out),
              ! and a separate check is done above for these terms.
 
-             if (.not. lun%urbpoi(l)) then
+             if (.not. lun_pp%urbpoi(l)) then
                 errseb(p) = sabv(p) + sabg_chk(p) + forc_lwrad(c) - eflx_lwrad_out(p) &
                      - eflx_sh_tot(p) - eflx_lh_tot(p) - eflx_soil_grnd(p)
              else

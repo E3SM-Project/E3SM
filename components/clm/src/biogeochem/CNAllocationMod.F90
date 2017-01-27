@@ -26,7 +26,7 @@ module CNAllocationMod
   use PhotosynthesisType  , only : photosyns_type
   use CropType            , only : crop_type
   use EcophysConType      , only : ecophyscon
-  use LandunitType        , only : lun                
+  use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp                
   use PatchType           , only : pft
   ! bgc interface & pflotran module switches
@@ -1352,7 +1352,7 @@ contains
                      actual_immob_vr(c,j) = potential_immob_vr(c,j)
                      sminn_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
                   else if ( cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only() ) then !.or. &
-                     !                (crop_supln .and. (lun%itype(l) == istcrop) .and. &
+                     !                (crop_supln .and. (lun_pp%itype(l) == istcrop) .and. &
                      !                (ivt(col_pp%pfti(c)) >= npcropmin)) )then
                      ! this code block controls the addition of N to sminn pool
                      ! to eliminate any N limitation, when Carbon_Only is set.  This lets the
@@ -1453,7 +1453,7 @@ contains
                      actual_immob_vr(c,j) = potential_immob_vr(c,j)
                      sminn_to_plant_vr(c,j) = col_plant_ndemand_vr(c,j)
                   else if ( cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only() ) then !.or. &
-                     !                (crop_supln .and. (lun%itype(l) == istcrop) .and. &
+                     !                (crop_supln .and. (lun_pp%itype(l) == istcrop) .and. &
                      !                (ivt(col_pp%pfti(c)) >= npcropmin)) )then
                      ! this code block controls the addition of N to sminn pool
                      ! to eliminate any N limitation, when Carbon_Only is set.  This lets the

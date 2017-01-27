@@ -29,7 +29,7 @@ module clm_pflotran_interfaceMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use GridcellType        , only : grc
-  use LandunitType        , only : lun
+  use LandunitType        , only : lun_pp
   use ColumnType          , only : col_pp 
   use PatchType           , only : pft
 
@@ -449,7 +449,7 @@ contains
          area       =>  grc%area       , & !  [real(r8) (:)]  total land area per gridcell (km^2)
          gindex     =>  grc%gindex     , & !  [real(r8) (:)]  longitude (degree)
          ! Assign local pointers to derived subtypes components (landunit-level)
-         ltype      =>  lun%itype      , & !  [integer (:)]  landunit type index
+         ltype      =>  lun_pp%itype      , & !  [integer (:)]  landunit type index
          ! Assign local pointer to derived subtypes components (column-level)
          cgridcell  =>  col_pp%gridcell   , & !  [integer (:)]  gridcell index of column
          clandunit  =>  col_pp%landunit   , & !  [integer (:)]  landunit index of column
@@ -1483,7 +1483,7 @@ endif
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
-    ltype             => lun%itype             , & ! landunit type
+    ltype             => lun_pp%itype             , & ! landunit type
     cgridcell         => col_pp%gridcell          , & ! column's gridcell
     clandunit         => col_pp%landunit          , & ! column's landunit
     zi                => col_pp%zi                , & ! Input: (:,:) soil layer interface depth (m)
@@ -3553,7 +3553,7 @@ endif
 !
 !    associate(&
 !    clandunit         =>    col_pp%landunit          , & ! column's landunit
-!    ltype             =>    lun%itype             , & ! landunit type
+!    ltype             =>    lun_pp%itype             , & ! landunit type
 !    zi                =>    col_pp%zi                , & ! Input: (:,:) soil layer interface depth (m)
 !    dz                =>    col_pp%dz                , & ! Input: (:,:) soil layer thickness (m)
 !    !

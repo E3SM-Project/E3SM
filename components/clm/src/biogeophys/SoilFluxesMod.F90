@@ -19,7 +19,7 @@ module SoilFluxesMod
   use TemperatureType   , only : temperature_type
   use WaterstateType    , only : waterstate_type
   use WaterfluxType     , only : waterflux_type
-  use LandunitType	, only : lun                
+  use LandunitType	, only : lun_pp                
   use ColumnType	, only : col_pp                
   use PatchType		, only : pft                
   !
@@ -208,7 +208,7 @@ contains
 
          ! set ev_snow, ev_soil for urban landunits here
          l = pft%landunit(p)
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             qflx_ev_snow(p) = qflx_evap_soi(p)
             qflx_ev_soil(p) = 0._r8
             qflx_ev_h2osfc(p) = 0._r8
@@ -274,7 +274,7 @@ contains
 
          ! Ground heat flux
          
-         if (.not. lun%urbpoi(l)) then
+         if (.not. lun_pp%urbpoi(l)) then
             lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
                  +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
@@ -284,7 +284,7 @@ contains
                  - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
                  - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                eflx_soil_grnd_r(p) = eflx_soil_grnd(p)
             end if
          else
@@ -308,10 +308,10 @@ contains
          eflx_sh_tot(p) = eflx_sh_veg(p) + eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_veg(p) + qflx_evap_soi(p)
          eflx_lh_tot(p)= hvap*qflx_evap_veg(p) + htvp(c)*qflx_evap_soi(p)
-         if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             eflx_lh_tot_r(p)= eflx_lh_tot(p)
             eflx_sh_tot_r(p)= eflx_sh_tot(p)
-         else if (lun%urbpoi(l)) then
+         else if (lun_pp%urbpoi(l)) then
             eflx_lh_tot_u(p)= eflx_lh_tot(p)
             eflx_sh_tot_u(p)= eflx_sh_tot(p)
          end if
@@ -407,7 +407,7 @@ contains
          g = pft%gridcell(p)
          j = col_pp%snl(c)+1
 
-         if (.not. lun%urbpoi(l)) then
+         if (.not. lun_pp%urbpoi(l)) then
             lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
                  +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
@@ -418,7 +418,7 @@ contains
                  + 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
 
             eflx_lwrad_net(p) = eflx_lwrad_out(p) - forc_lwrad(c)
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                eflx_lwrad_net_r(p) = eflx_lwrad_out(p) - forc_lwrad(c)
                eflx_lwrad_out_r(p) = eflx_lwrad_out(p)
             end if

@@ -13,7 +13,7 @@ module WaterstateType
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog
   use clm_varpar     , only : nlevgrnd, nlevurb, nlevsno   
   use clm_varcon     , only : spval
-  use LandunitType   , only : lun                
+  use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   !
   implicit none
@@ -569,7 +569,7 @@ contains
     end do
 
     do l = bounds%begl, bounds%endl 
-       if (lun%urbpoi(l)) then
+       if (lun_pp%urbpoi(l)) then
           if (use_vancouver) then
              this%qaf_lun(l) = 0.0111_r8
           else if (use_mexicocity) then
@@ -606,7 +606,7 @@ contains
 
       do c = bounds%begc, bounds%endc
          l = col_pp%landunit(c)
-         if (lun%urbpoi(l)) then
+         if (lun_pp%urbpoi(l)) then
             ! From Bonan 1996 (LSM technical note)
             this%frac_sno_col(c) = min( this%snow_depth_col(c)/0.05_r8, 1._r8)
          else
@@ -653,10 +653,10 @@ contains
 
       do c = bounds%begc,bounds%endc
          l = col_pp%landunit(c)
-         if (.not. lun%lakpoi(l)) then  !not lake
+         if (.not. lun_pp%lakpoi(l)) then  !not lake
 
             ! volumetric water
-            if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                nlevs = nlevgrnd
                do j = 1, nlevs
                   if (j > nlevsoi) then
@@ -665,7 +665,7 @@ contains
                      this%h2osoi_vol_col(c,j) = 0.15_r8
                   endif
                end do
-            else if (lun%urbpoi(l)) then
+            else if (lun_pp%urbpoi(l)) then
                if (col_pp%itype(c) == icol_road_perv) then
                   nlevs = nlevgrnd
                   do j = 1, nlevs
@@ -686,7 +686,7 @@ contains
                      this%h2osoi_vol_col(c,j) = 0.0_r8
                   end do
                end if
-            else if (lun%itype(l) == istwet) then
+            else if (lun_pp%itype(l) == istwet) then
                nlevs = nlevgrnd
                do j = 1, nlevs
                   if (j > nlevsoi) then
@@ -695,7 +695,7 @@ contains
                      this%h2osoi_vol_col(c,j) = 1.0_r8
                   endif
                end do
-            else if (lun%itype(l) == istice .or. lun%itype(l) == istice_mec) then
+            else if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
                nlevs = nlevgrnd 
                do j = 1, nlevs
                   this%h2osoi_vol_col(c,j) = 1.0_r8
@@ -728,7 +728,7 @@ contains
       do c = bounds%begc, bounds%endc
          l = col_pp%landunit(c)
 
-         if (lun%lakpoi(l)) then
+         if (lun_pp%lakpoi(l)) then
             do j = -nlevsno+1, 0
                if (j > snl(c)) then
                   this%h2osoi_ice_col(c,j) = col_pp%dz(c,j)*bdsno
@@ -853,7 +853,7 @@ contains
           else
              nlevs = nlevgrnd
           end if
-          if ( lun%itype(l) /= istdlak ) then ! This calculation is now done for lakes in initLake.
+          if ( lun_pp%itype(l) /= istdlak ) then ! This calculation is now done for lakes in initLake.
              do j = 1,nlevs
                 this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col_pp%dz(c,j)*denh2o) &
                                          + this%h2osoi_ice_col(c,j)/(col_pp%dz(c,j)*denice)
@@ -875,7 +875,7 @@ contains
              end if
              do j = 1,nlevs
                 l = col_pp%landunit(c)
-                if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
+                if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                    this%h2osoi_liq_col(c,j) = max(0._r8,this%h2osoi_liq_col(c,j))
                    this%h2osoi_ice_col(c,j) = max(0._r8,this%h2osoi_ice_col(c,j))
                    this%h2osoi_vol_col(c,j) = this%h2osoi_liq_col(c,j)/(col_pp%dz(c,j)*denh2o) &

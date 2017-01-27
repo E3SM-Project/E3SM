@@ -27,7 +27,7 @@ module lnd2glcMod
   use abortutils      , only : endrun
   use WaterFluxType   , only : waterflux_type
   use TemperatureType , only : temperature_type
-  use LandunitType    , only : lun                
+  use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   !
   ! !PUBLIC TYPES:
@@ -183,10 +183,10 @@ contains
       g = col_pp%gridcell(c) 
 
       ! Set vertical index and a flux normalization, based on whether the column in question is glacier or vegetated.  
-      if (lun%itype(l) == istice_mec) then
+      if (lun_pp%itype(l) == istice_mec) then
          n = col_itype_to_icemec_class(col_pp%itype(c))
          flux_normalization = 1.0_r8
-      else if (lun%itype(l) == istsoil) then
+      else if (lun_pp%itype(l) == istsoil) then
          n = 0  !0-level index (bareland information)
          flux_normalization = bareland_normalization(c)
       else

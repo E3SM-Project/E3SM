@@ -29,7 +29,7 @@ module clm_bgc_interfaceMod
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use GridcellType          , only : grc
-  use LandunitType          , only : lun
+  use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp 
   use PatchType             , only : pft
 
