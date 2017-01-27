@@ -9818,8 +9818,8 @@ MODULE module_ra_rrtmg_sw
 
 #if defined(mpas)
 !MPAS specific (Laura D. Fowler):
-use mpas_atmphys_constants,only: cp,g=>gravity
-use mpas_atmphys_o3climatology,only: vinterp_ozn
+use mpas_atmphys_constants,only : cp,g=>gravity
+use module_ra_rrtmg_vinterp,only: vinterp_ozn
 
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
