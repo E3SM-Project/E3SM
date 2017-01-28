@@ -33,12 +33,13 @@ class ERS(SystemTestsCommon):
         stop_new = stop_n - rest_n
         expect(stop_new > 0, "ERROR: stop_n value %d too short %d %d"%(stop_new,stop_n,rest_n))
 
+        self._case.set_value("HIST_N", stop_n)
         self._case.set_value("STOP_N", stop_new)
         self._case.set_value("CONTINUE_RUN", True)
         self._case.set_value("REST_OPTION","never")
         self._case.flush()
         logger.info("doing an %s %s restart test"
-                    %(str(stop_n), stop_option))
+                    %(str(stop_new), stop_option))
         self.run_indv(suffix="rest")
 
         # Compare restart file
