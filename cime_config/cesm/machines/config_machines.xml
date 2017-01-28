@@ -202,7 +202,7 @@
     <MPILIBS>mpt</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
@@ -1619,7 +1619,7 @@
     <DESC>NCAR IBM, os is Linux, 16 pes/node, batch system is LSF</DESC>
     <NODENAME_REGEX>.*yellowstone</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,pgi,gnu</COMPILERS>
+    <COMPILERS>intel,pgi,gnu,intel15</COMPILERS>
     <MPILIBS>mpich2,pempi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
@@ -1667,7 +1667,7 @@
 	<command name="load">git</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/16.0.3</command>
+	<command name="load">intel/15.0.3</command>
 	<command name="load">mkl/11.1.2</command>
 	<command name="load">trilinos/11.10.2</command>
 	<command name="load">esmf</command>
@@ -1691,11 +1691,11 @@
 	<command name="load">gnu/5.2.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">netcdf/4.4.1</command>
+	<command name="load">netcdf/4.3.3.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">netcdf-mpi/4.4.1</command>
-	<command name="load">pnetcdf/1.7.0</command>
+	<command name="load">netcdf-mpi/4.3.3.1</command>
+	<command name="load">pnetcdf/1.6.1</command>
       </modules>
       <modules>
 	<command name="load">ncarcompilers/1.0</command>

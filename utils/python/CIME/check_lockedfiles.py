@@ -20,7 +20,7 @@ def lock_file(filename, caseroot=None, newname=None):
     fulllockdir = os.path.join(caseroot, LOCKED_DIR)
     if not os.path.exists(fulllockdir):
         os.mkdir(fulllockdir)
-    logging.warn("Locking file %s to %s"%(filename, newname))
+    logging.debug("Locking file %s to %s"%(filename, newname))
     shutil.copyfile(os.path.join(caseroot, filename), os.path.join(fulllockdir, newname))
 
 def unlock_file(filename, caseroot=None):
