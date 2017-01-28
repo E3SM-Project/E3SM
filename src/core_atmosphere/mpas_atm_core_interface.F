@@ -9,6 +9,10 @@ module atm_core_interface
 
    use mpas_attlist
    use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_dmpar
+   use mpas_io_units
 
    contains
 
