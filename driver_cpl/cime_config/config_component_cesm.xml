@@ -163,6 +163,8 @@
     <values>
       <value compset="_POP2">1</value>
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
+      <value compset="_POP2" grid="oi%gx1v6">24</value>
+      <value compset="_POP2" grid="oi%gx1v7">24</value>
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
@@ -275,6 +277,8 @@
     <values>
       <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
       <value compset="_POP2"                     >CESM1_MOD</value>
+      <value compset="_POP2" grid="oi%gx1v6"     >RASM_OPTION1</value>
+      <value compset="_POP2" grid="oi%gx1v7"     >RASM_OPTION1</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">CESM1_MOD</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
       <value compset="_SOCN"                     >CESM1_MOD</value>
