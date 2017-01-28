@@ -45,7 +45,7 @@ def restore(filename, caseroot=None, newname=None):
     shutil.copyfile(os.path.join(caseroot, LOCKED_DIR, filename), os.path.join(caseroot, newname))
     # relock the restored file if names diffs
     if newname != filename:
-        lock_file(filename, caseroot)
+        lock_file(newname, caseroot)
 
 def check_pelayouts_require_rebuild(case, models):
     """
@@ -82,7 +82,7 @@ def check_lockedfiles(caseroot=None):
     If caseroot is not specified, it is set to the current working directory
     """
     caseroot = os.getcwd() if caseroot is None else caseroot
-    lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "[^\.]*.xml"))
+    lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "[^.]*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
         cfile = os.path.join(caseroot, fpart)
