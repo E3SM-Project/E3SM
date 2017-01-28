@@ -193,7 +193,7 @@ class SystemTestsCommon(object):
         rest_n      = self._case.get_value("REST_N")
         infostr     = "doing an %d %s %s test" % (stop_n, stop_option,run_type)
 
-        if rest_option == "none":
+        if rest_option == "none" or rest_option == "never":
             infostr += ", no restarts written"
         else:
             infostr += ", with restarts every %d %s"%(rest_n, rest_option)

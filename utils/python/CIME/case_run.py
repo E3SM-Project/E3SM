@@ -11,7 +11,7 @@ import shutil, time, sys, os, glob
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def pre_run_check(case):
+def pre_run_check(case, lid):
 ###############################################################################
 
     # Pre run initialization code..
@@ -21,6 +21,11 @@ def pre_run_check(case):
     mpilib = case.get_value("MPILIB")
     rundir = case.get_value("RUNDIR")
     build_complete = case.get_value("BUILD_COMPLETE")
+
+    if case.get_value("TESTCASE") == "PFS":
+        env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
+        shutil.copy(env_mach_pes,"%s.%s"%(env_mach_pes,lid))
+
 
     # check for locked files.
     check_lockedfiles(case.get_value("CASEROOT"))
@@ -210,7 +215,7 @@ def case_run(case):
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
 
-        pre_run_check(case)
+        pre_run_check(case, lid)
         run_model(case)
         post_run_check(case, lid)
         save_logs(case, lid)       # Copy log files back to caseroot

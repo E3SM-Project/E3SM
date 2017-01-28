@@ -501,9 +501,11 @@ class TestScheduler(object):
         with Case(test_dir, read_only=False) as case:
             if self._output_root is None:
                 self._output_root = case.get_value("CIME_OUTPUT_ROOT")
-            case.set_value("SHAREDLIBROOT",
-                           os.path.join(self._output_root,
-                                        "sharedlibroot.%s"%self._test_id))
+            # if we are running a single test we don't need sharedlibroot
+            if len(self._tests) > 1:
+                case.set_value("SHAREDLIBROOT",
+                               os.path.join(self._output_root,
+                                            "sharedlibroot.%s"%self._test_id))
             envtest.set_initial_values(case)
             case.set_value("TEST", True)
             if self._save_timing:

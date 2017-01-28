@@ -20,6 +20,7 @@ def lock_file(filename, caseroot=None, newname=None):
     fulllockdir = os.path.join(caseroot, LOCKED_DIR)
     if not os.path.exists(fulllockdir):
         os.mkdir(fulllockdir)
+    logging.debug("Locking file %s to %s"%(filename, newname))
     shutil.copyfile(os.path.join(caseroot, filename), os.path.join(fulllockdir, newname))
 
 def unlock_file(filename, caseroot=None):
@@ -41,7 +42,7 @@ def restore(filename, caseroot=None, newname=None):
     expect("/" not in filename, "Please just provide basename of locked file")
     caseroot = os.getcwd() if caseroot is None else caseroot
     newname = filename if newname is None else newname
-    shutil.copyfile(os.path.join(caseroot, LOCKED_DIR, newname), os.path.join(caseroot, filename))
+    shutil.copyfile(os.path.join(caseroot, LOCKED_DIR, filename), os.path.join(caseroot, newname))
     # relock the restored file if names diffs
     if newname != filename:
         lock_file(newname, caseroot)
@@ -81,7 +82,7 @@ def check_lockedfiles(caseroot=None):
     If caseroot is not specified, it is set to the current working directory
     """
     caseroot = os.getcwd() if caseroot is None else caseroot
-    lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
+    lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "[^.]*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
         cfile = os.path.join(caseroot, fpart)
