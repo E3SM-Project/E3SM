@@ -57,8 +57,5 @@
 /* Enable persistent MPI comm */
 #cmakedefine MPI_PERSISTENT
 
-/* Using Accelerator */
-#cmakedefine IS_ACCELERATOR
-
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4

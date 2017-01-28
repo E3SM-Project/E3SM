@@ -85,7 +85,7 @@ module namelist_mod
     dcmip2_x_xi
 #endif
 
-  use thread_mod,     only: nthreads, nthreads_accel, omp_set_num_threads, omp_get_max_threads, vthreads
+  use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
   use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
 #ifdef CAM
   use time_mod,       only: nsplit, smooth, phys_tscale
@@ -185,7 +185,6 @@ module namelist_mod
 #else
       qsize,             &         ! number of SE tracers
       nthreads,          &         ! number of threads per process
-      nthreads_accel,    &         ! number of threads per an accelerator process
       limiter_option,    &
       smooth,            &         ! timestep Filter
       omega,             &
@@ -333,7 +332,6 @@ module namelist_mod
     ndays         = 0
     nmax          = 12
     nthreads = 1
-    nthreads_accel = -1
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
     phys_tscale=0
     nsplit = 1
@@ -600,7 +598,6 @@ module namelist_mod
     call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nmax,            1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(NTHREADS,        1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(nthreads_accel,  1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(ndays,           1, MPIinteger_t, par%root,par%comm,ierr)
     nEndStep = nmax
 
@@ -694,12 +691,6 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
-
-#ifdef IS_ACCELERATOR
-    if (nthreads_accel > 0) then
-        nthreads = nthreads_accel
-    end if
-#endif
 
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
@@ -857,7 +848,6 @@ module namelist_mod
           call abortmp('user specified qsize > qsize_d parameter in dimensions_mod.F90')
        endif
        write(iulog,*)"readnl: NThreads      = ",NTHREADS
-       write(iulog,*)"readnl: nthreads_accel = ",nthreads_accel
 #endif
 
        write(iulog,*)"readnl: ne,np         = ",NE,np
