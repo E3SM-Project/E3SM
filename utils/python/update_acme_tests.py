@@ -46,7 +46,7 @@ _TEST_SUITES = {
                              "ERS.ne30_g16_rx1.A",
                              "ERS_N2.f19_g16_rx1.A",
                              "ERR.f45_g37_rx1.A",
-                             "ERP.ne16_g37_rx1.A",
+                             "ERP.f45_g37_rx1.A",
                              "SMS_D_Ln9.f19_g16_rx1.A")
                             ),
 
