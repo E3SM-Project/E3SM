@@ -47,6 +47,13 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '-v', '--plev',
+            type=str,
+            dest='plev',
+            help='Selected pressure level',
+            required=False)
+
+        self.add_argument(
             '-s', '--season',
             type=str,
             nargs='+',
