@@ -12,7 +12,7 @@ def parse_command_line(args, cimeroot, description):
 ###############################################################################
     help_str = \
 """
-%s --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
+%s --case [CASE] --compset [COMPSET] --res [GRID] [--mach ...] [--compiler ...]
 OR
 %s --help
 """ % ((os.path.basename(args[0]), ) * 2)
