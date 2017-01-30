@@ -13,6 +13,27 @@ Brief Summary: new tfreeze_option setting for cesm, some system test refactoring
 
 User interface changes:
 
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+	
+feb28f3 Merge pull request #1076 from ESMCI/mvertens/fix_clm_usrdat
+853da02 Merge pull request #1069 from jtruesdal/cime_plus_defs
+38cc009 Merge pull request #1068 from jedwards4b/test_fixes
+3d0965a Merge pull request #1062 from ESMCI/mvertens/tfreeze_option
+19a104d Change over acme env usage to correct syntax
+8d92fa0 Merge pull request #1048 from jedwards4b/depends_file_precidence
+1e3008f Merge pull request #1054 from ESMCI/jgfouca/fix_eri_resub
+5de3b4d Merge pull request #1055 from ESMCI/jgfouca/add_support_for_shell_in_XML
+18479ce Merge pull request #1039 from ESMCI/jgfouca/lock_env_batch
+3a84a6e Merge pull request #1046 from jedwards4b/some_log_issues
+0489798 Fix Z_FullSystemTests on batch machines
+742c8dc Merge pull request #1036 from ESMCI/jgfouca/fix_resubmission_of_some_testcases
+49a7de6 fix pylint issue
+289e39e Merge pull request #1034 from ESMCI/jgfouca/better_support_for_custom_input_files
+869f904 Merge pull request #1025 from ESMCI/jgfouca/more_create_test_force_pecount_chgs
+25de83b update ChangeLog
+33d74c3 Merge pull request #1030 from jedwards4b/fix_drive_namelist_issue
+
+	
 Modified files: git diff --name-status
 M       cime_config/acme/machines/config_batch.xml
 M       cime_config/acme/machines/config_compilers.xml
