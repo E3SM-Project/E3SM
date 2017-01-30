@@ -54,6 +54,7 @@ class AnnualData:
         yVertex = f.variables['yVertex'][:]
         xEdge = f.variables['xEdge'][:]
         #yEdge = f.variables['yEdge'][:]
+        dcEdge = f.variables['dcEdge'][:]
         #areaCell = f.variables['areaCell'][:]
         #xtime= f.variables['xtime']
         days = f.variables['daysSinceStart'][:]
@@ -78,12 +79,12 @@ class AnnualData:
         self.h_mean = np.zeros((nTime,))
         self.h_min = np.zeros((nTime,))
         self.h_max = np.zeros((nTime,))
-        self.Q_mean = np.zeros((nTime,))
+        self.Q_sum = np.zeros((nTime,))
         self.Q_max = np.zeros((nTime,))
         for i in range(nTime):
             N_now = N[i,:]
             h_now = h[i,:]
-            Q_now = Q[i,:]
+            Q_now = np.absolute(Q[i,:])
             bigQ = np.where(Q_now>0.01)
         
             self.h_mean[i] = h_now[indIce].mean()
@@ -95,7 +96,7 @@ class AnnualData:
             self.N_max[i] = N_now[indIce].max()
         
             self.Q_max[i] = Q_now.max()
-            self.Q_mean[i] = Q_now[bigQ].mean()
+            self.Q_sum[i] = Q_now.sum()
       
      
 # Create objects for each year
@@ -142,7 +143,7 @@ for yr in years:
    
    # channel Q mean/max
    plt.sca(ax3)
-   plt.plot(yr.days, yr.Q_mean, '-', color=yr.color, label='Q_mean'+yr.yearStr)
+   plt.plot(yr.days, yr.Q_sum, '-', color=yr.color, label='Q_sum'+yr.yearStr)
    #plt.plot(days, Q_min, 'b--', label='h_min')
    plt.plot(yr.days, yr.Q_max, '--', color=yr.color, label='Q_max'+yr.yearStr)
    plt.xlabel('DOY')
@@ -167,7 +168,7 @@ if 1: #(thisYearData.days == lastYearData.days).all():
    plt.legend()
 
    ax6 = fig.add_subplot(326, sharex=ax1)
-   plt.plot(thisYearData.days, thisYearData.Q_mean - lastYearData.Q_mean, 'r-', label='Q_mean diff')
+   plt.plot(thisYearData.days, thisYearData.Q_sum - lastYearData.Q_sum, 'r-', label='Q_sum diff')
    plt.plot(thisYearData.days, thisYearData.Q_max - lastYearData.Q_max, 'r--', label='Q_max diff')
    plt.legend()
    plt.xlabel('DOY')

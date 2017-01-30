@@ -277,7 +277,7 @@ fig = plt.figure(2, facecolor='w')
 # thickness over time
 ax1 = fig.add_subplot(331)
 # plot n random cells
-n=100    # set number of random cells.  More is more expensive
+n=50    # set number of random cells.  More is more expensive
 #for i in ind:  # this version plots cells along the centerline only
 for i in random.sample(range(min(nCells,n)), n):
     plt.plot(days/365.0, f.variables['waterThickness'][:,i])
@@ -308,7 +308,6 @@ plt.grid(True)
 # Effective pressure over time
 ax = fig.add_subplot(332, sharex=ax1)
 # plot n random cells
-n=1000
 #for i in ind:  # this version plots cells along the centerline only
 for i in random.sample(range(min(nCells,n)), n):
     plt.plot(days/365.0, f.variables['effectivePressure'][:,i]/1.0e6)
@@ -339,9 +338,9 @@ plt.grid(True)
 
 # Channel area over time
 ax = fig.add_subplot(333, sharex=ax1)
-# plot n random edges
-n=2000
-for i in random.sample(range(min(nEdges,n)), n):
+# plot n largest channel edges
+largestChannels = np.argpartition(f.variables['channelArea'][-1,:], -n)[-n:]  # get indices to the n largest channels
+for i in largestChannels:
     plt.plot(days/365.0, f.variables['channelArea'][:,i])
 plt.plot(days[:]/365.0, f.variables['channelArea'][:,:].max(axis=1), linewidth=2)  #max
 plt.xlabel('Years since start')
