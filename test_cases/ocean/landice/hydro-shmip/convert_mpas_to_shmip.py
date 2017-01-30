@@ -12,7 +12,7 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename", type='string', help="MPAS output file", metavar="FILE")
 parser.add_option("-i", "--icfile", dest="icfilename", type='string', help="MPAS initial condition file", metavar="FILE")
-parser.add_option("-o", "--out", dest="outfile", type='string', help="name of SHMIP format file to create", metavar="FILE")
+parser.add_option("-s", "--scenario", dest="scenario", type='string', help="name of SHMIP scenario this run corresponds to, e.g., A1", metavar="SCENARIO")
 parser.add_option("-t", "--title", dest="title", type='string', help="string to use for title for this test, e.g. 'hoffman_mpas_A1'", metavar="TITLE")
 parser.add_option("-v", "--version", dest="hash", type='string', help="version of MPAS used", metavar="HASH")
 options, args = parser.parse_args()
@@ -22,11 +22,11 @@ if not options.filename:
 if not options.icfilename:
    options.icfilename = 'landice_grid.nc'
    print 'No file specified.  Attempting to use '+options.icfilename
-if not options.outfile:
-   options.outfile = 'SHMIP.nc'
-   print 'No output file specified.  Attempting to use '+options.outfile
+if not options.scenario:
+   print 'ERROR: Scenario has not been specified.  Please include this with the -s option.'
+   sys.exit()
 if not options.title:
-   options.title = 'hoffman_mpas'
+   options.title = 'hoffman_mpas_'+options.scenario
    print 'No title specified.  Using: '+options.title
 if not options.hash:
    options.hash = 'NA'
@@ -39,7 +39,8 @@ icfile = netCDF4.Dataset(options.icfilename,'r')
 
 # Create new file
 
-outfile = netCDF4.Dataset(options.outfile, 'w')
+outfilename = "{}_mhof.nc".format(options.scenario)
+outfile = netCDF4.Dataset(outfilename, 'w')
 
 # ============================================
 # Create all of the netcdf global attributes
@@ -67,13 +68,25 @@ outfile.createDimension('index_ch', len(infile.dimensions['nEdges']))
 
 
 # ============================================
+# Account for time depending on test
+# ============================================
+ntIn = len(infile.dimensions['Time'])
+if options.scenario[0] in ('C','D'):
+   times = np.arange(ntIn)  # use list of all time indices.  (Assuming file ONLY contains the required time levels (i.e. annual file with daily output for test D; daily file with hourly output for test C)
+else:
+   times = np.array([ntIn,])  # only index of final time
+print "Using time indices:", times
+
+
+
+# ============================================
 # Create variables
 # ============================================
 
 # DIMENSION VARIABLES
 
 thevar = outfile.createVariable('time', 'd', ('time',))
-thevar[0] = infile.variables['daysSinceStart'][-1] * 3600.0 * 24.0
+thevar[times-times.min()] = (infile.variables['daysSinceStart'][times] - infile.variables['daysSinceStart'][times[0]])* 3600.0 * 24.0
 setattr(thevar, 'units', 's')
 setattr(thevar, 'long_name', 'time')
 
@@ -115,14 +128,14 @@ setattr(thevar, 'long_name', 'bed elevation')
 setattr(thevar, 'units', 'm')
 
 thevar = outfile.createVariable('N', 'd', ('time', 'index1',))
-thevar[0,:] = infile.variables['effectivePressure'][-1,:]
+thevar[times-times.min(),:] = infile.variables['effectivePressure'][times,:]
 setattr(thevar, 'long_name', 'effective pressure')
 setattr(thevar, 'units', 'Pa')
 
 # Optional additional variables
 
 thevar = outfile.createVariable('h', 'd', ('time', 'index1',))
-thevar[0,:] = infile.variables['waterThickness'][-1,:]
+thevar[times-times.min(),:] = infile.variables['waterThickness'][times,:]
 setattr(thevar, 'long_name', 'water sheet thickness')
 setattr(thevar, 'units', 'm')
 
@@ -131,23 +144,23 @@ setattr(thevar, 'units', 'm')
 # Edge variables
 
 thevar = outfile.createVariable('q', 'd', ('time', 'index2',))
-thevar[0,:] = np.absolute(infile.variables['waterFlux'][-1,:])
+thevar[times-times.min(),:] = np.absolute(infile.variables['waterFlux'][times,:])
 setattr(thevar, 'long_name', 'water sheet discharge')
 setattr(thevar, 'units', 'm^2/s')
 
 # Channel variables
 
 thevar = outfile.createVariable('S', 'd', ('time', 'index_ch',))
-thevar[0,:] = infile.variables['channelArea'][-1,:]
+thevar[times-times.min(),:] = infile.variables['channelArea'][times,:]
 setattr(thevar, 'long_name', 'channel cross-sectional area')
 setattr(thevar, 'units', 'm^2')
 
 thevar = outfile.createVariable('Q', 'd', ('time', 'index_ch',))
-thevar[0,:] = np.absolute(infile.variables['channelDischarge'][-1,:])
+thevar[times-times.min(),:] = np.absolute(infile.variables['channelDischarge'][times,:])
 setattr(thevar, 'long_name', 'channel discharge')
 setattr(thevar, 'units', 'm^3/s')
 
 
 outfile.close()
 
-print '\nConversion complete.  Written to: '+options.outfile
+print '\nConversion complete.  Written to: '+outfilename
