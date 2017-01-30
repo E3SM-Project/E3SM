@@ -38,6 +38,7 @@
                         <attribute name="type">output</attribute>
                         <attribute name="filename_template">output.nc</attribute>
                         <attribute name="output_interval">0000-06-00_00:00:00</attribute>
+                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                         <attribute name="clobber_mode">overwrite</attribute>
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
@@ -52,6 +53,7 @@
                         <attribute name="type">output</attribute>
                         <attribute name="filename_template">output2.nc</attribute>
                         <attribute name="output_interval">0000-00-15_00:00:00</attribute>
+                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                         <attribute name="clobber_mode">overwrite</attribute>
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
@@ -83,6 +85,7 @@
                         <attribute name="filename_template">restart.$Y.$M.nc</attribute>
                         <attribute name="filename_interval">output_interval</attribute>
                         <attribute name="output_interval">0002-00-00_00:00:00</attribute>
+                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
                         <attribute name="precision">double</attribute>
                         <attribute name="input_interal">initial_only</attribute>
