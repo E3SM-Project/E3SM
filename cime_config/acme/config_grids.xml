@@ -1026,8 +1026,14 @@
 
     <domain name="T42">
       <nx>128</nx> <ny>64</ny>
+      <file atm_mask="usgs">domain.lnd.T42_USGS.111004.nc</file>
+      <file lnd_mask="usgs">domain.lnd.T42_USGS.111004.nc</file>
+      <file ocn_mask="usgs">domain.camocn.64x128_USGS_070807.nc</file>
+      <path atm_mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <path lnd_mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <path ocn_mask="usgs">$DIN_LOC_ROOT/atm/cam/ocnfrac</path>
       <desc>T42 is Gaussian grid:</desc>
-    </domain>
+    </domain> 
 
     <domain name="T31">
       <nx>96</nx> <ny>48</ny>
