@@ -1,6 +1,56 @@
 ======================================================================
 
 Originator: Jim Edwards
+Date: 01-30-2017
+Tag: cime5.2.0-alpha.23
+Answer Changes: None
+Tests: cesm_tests, scripts_regression_tests.py
+Dependencies:
+
+Brief Summary: new tfreeze_option setting for cesm, some system test refactoring for
+	improved reuse of tests, single test no longer has external SHAREDLIBROOT setting
+	New pop default settings.  Fix for clm test mapping file.
+
+User interface changes:
+
+Modified files: git diff --name-status
+M       cime_config/acme/machines/config_batch.xml
+M       cime_config/acme/machines/config_compilers.xml
+M       cime_config/acme/machines/config_machines.xml
+M       cime_config/cesm/config_grids.xml
+M       cime_config/cesm/machines/Makefile
+M       cime_config/cesm/machines/config_machines.xml
+M       cime_config/config_tests.xml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/cime_config/config_component_acme.xml
+M       driver_cpl/cime_config/config_component_cesm.xml
+M       driver_cpl/cime_config/namelist_definition_drv.xml
+M       scripts/create_newcase
+M       utils/python/CIME/BuildTools/configure.py
+M       utils/python/CIME/SystemTests/eri.py
+M       utils/python/CIME/SystemTests/erp.py
+M       utils/python/CIME/SystemTests/ers.py
+M       utils/python/CIME/SystemTests/ncr.py
+M       utils/python/CIME/SystemTests/seq.py
+M       utils/python/CIME/SystemTests/system_tests_common.py
+M       utils/python/CIME/XML/generic_xml.py
+M       utils/python/CIME/XML/namelist_definition.py
+M       utils/python/CIME/build.py
+M       utils/python/CIME/case.py
+M       utils/python/CIME/case_run.py
+M       utils/python/CIME/case_setup.py
+M       utils/python/CIME/check_input_data.py
+M       utils/python/CIME/check_lockedfiles.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/CIME/utils.py
+M       utils/python/tests/scripts_regression_tests.py
+M       utils/python/update_acme_tests.py
+
+======================================================================
+
+======================================================================
+
+Originator: Jim Edwards
 Date: 01-20-2017
 Tag: cime5.2.0-alpha.22
 Answer Changes: None
