@@ -1795,10 +1795,18 @@ class H_TestMakeMacros(unittest.TestCase):
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("LDFLAGS", "-L/path/to/netcdf -lnetcdf",
                                       env={"NETCDF": "/path/to/netcdf"})
+        # DO it again with $ENV{} style
+        xml1 = """<compiler><LDFLAGS><append>-L$ENV{NETCDF} -lnetcdf</append></LDFLAGS></compiler>"""
+        tester = self.xml_to_tester(xml1)
+        tester.assert_variable_equals("LDFLAGS", "-L/path/to/netcdf -lnetcdf",
+                                      env={"NETCDF": "/path/to/netcdf"})
 
     def test_shell_command_insertion(self):
         """Test that <shell> elements insert shell command output."""
         xml1 = """<compiler><FFLAGS><base>-O<shell>echo 2</shell> -fast</base></FFLAGS></compiler>"""
+        tester = self.xml_to_tester(xml1)
+        tester.assert_variable_equals("FFLAGS", "-O2 -fast")
+        xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo 2} -fast</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast")
 
@@ -1807,12 +1815,19 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><FFLAGS><base>-O<shell>echo 2</shell> -<shell>echo fast</shell></base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast")
+        xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo 2} -$SHELL{echo fast}</base></FFLAGS></compiler>"""
+        tester = self.xml_to_tester(xml1)
+        tester.assert_variable_equals("FFLAGS", "-O2 -fast")
 
     def test_env_and_shell_command(self):
         """Test that <env> elements work inside <shell> elements."""
         xml1 = """<compiler><FFLAGS><base>-O<shell>echo <env>OPT_LEVEL</env></shell> -fast</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1)
         tester.assert_variable_equals("FFLAGS", "-O2 -fast", env={"OPT_LEVEL": "2"})
+        xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo $ENV{OPT_LEVEL}} -fast</base></FFLAGS></compiler>"""
+        err_msg = "Nesting not allowed.*"
+        with self.assertRaisesRegexp(SystemExit, err_msg):
+             self.xml_to_tester(xml1)
 
     def test_config_variable_insertion(self):
         """Test that <var> elements insert variables from config_build."""
@@ -1827,11 +1842,24 @@ class H_TestMakeMacros(unittest.TestCase):
         tester = self.xml_to_tester("<compiler>"+xml1+xml2+xml3+xml4+xml5+"</compiler>")
         tester.assert_variable_equals("MPI_LIB_NAME", "stuff-mpicc-stuff")
 
+        xml1 = """<MPI_LIB_NAME>stuff-${MPI_PATH}-stuff</MPI_LIB_NAME>"""
+        xml2 = """<MPI_PATH>${MPICC}</MPI_PATH>"""
+        xml3 = """<MPICC>${MPICXX}</MPICC>"""
+        xml4 = """<MPICXX>${MPIFC}</MPICXX>"""
+        xml5 = """<MPIFC>mpicc</MPIFC>"""
+        tester = self.xml_to_tester("<compiler>"+xml1+xml2+xml3+xml4+xml5+"</compiler>")
+        tester.assert_variable_equals("MPI_LIB_NAME", "stuff-mpicc-stuff")
+
     def test_config_reject_self_references(self):
         """Test that <var> self-references are rejected."""
         # This is a special case of the next test, which also checks circular
         # references.
         xml1 = """<MPI_LIB_NAME><var>MPI_LIB_NAME</var></MPI_LIB_NAME>"""
+        err_msg = ".* has bad <var> references."
+        with self.assertRaisesRegexp(SystemExit, err_msg):
+            self.xml_to_tester("<compiler>"+xml1+"</compiler>")
+
+        xml1 = """<MPI_LIB_NAME>${MPI_LIB_NAME}</MPI_LIB_NAME>"""
         err_msg = ".* has bad <var> references."
         with self.assertRaisesRegexp(SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+"</compiler>")
@@ -1843,12 +1871,24 @@ class H_TestMakeMacros(unittest.TestCase):
         err_msg = ".* has bad <var> references."
         with self.assertRaisesRegexp(SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
+        xml1 = """<MPI_LIB_NAME>${MPI_PATH}</MPI_LIB_NAME>"""
+        xml2 = """<MPI_PATH>${MPI_LIB_NAME}</MPI_PATH>"""
+        err_msg = ".* has bad <var> references."
+        with self.assertRaisesRegexp(SystemExit, err_msg):
+            self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
 
     def test_variable_insertion_with_machine_specific_setting(self):
         """Test that machine-specific <var> dependencies are correct."""
         xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
         xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
         xml3 = """<compiler><MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH></compiler>"""
+        err_msg = ".* has bad <var> references."
+        with self.assertRaisesRegexp(SystemExit, err_msg):
+            self.xml_to_tester(xml1+xml2+xml3)
+
+        xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
+        xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
+        xml3 = """<compiler><MPI_PATH>${MPI_LIB_NAME}</MPI_PATH></compiler>"""
         err_msg = ".* has bad <var> references."
         with self.assertRaisesRegexp(SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
