@@ -12,7 +12,7 @@ SET(UTILS_TIMING_DIR  ${CMAKE_BINARY_DIR}/utils/cime/share/timing)
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 
 # Find F90 files in target directory
-FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
+FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90 ${SRC_SHARE_DIR}/sb81/*.F90 )
 
 SET(PREQX_SRCS_F90
   ${TARGET_F90}
@@ -37,49 +37,6 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/restart_io_mod.F90
   ${SRC_DIR}/surfaces_mod.F90
   ${SRC_DIR}/test_mod.F90
-  ${SRC_SHARE_DIR}/bndry_mod_base.F90
-  ${SRC_SHARE_DIR}/derivative_mod_base.F90
-  ${SRC_SHARE_DIR}/edge_mod_base.F90
-  ${SRC_SHARE_DIR}/prim_advection_mod_base.F90 
-  ${SRC_SHARE_DIR}/solver_init_mod_base.F90
-  ${SRC_SHARE_DIR}/vertremap_mod_base.F90
-  ${SRC_SHARE_DIR}/viscosity_mod_base.F90
-  ${SRC_SHARE_DIR}/kinds.F90
-  ${SRC_SHARE_DIR}/dimensions_mod.F90
-  ${SRC_SHARE_DIR}/control_mod.F90
-  ${SRC_SHARE_DIR}/physical_constants.F90
-  ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
-  ${SRC_SHARE_DIR}/params_mod.F90
-  ${SRC_SHARE_DIR}/gridgraph_mod.F90
-  ${SRC_SHARE_DIR}/element_mod.F90
-  ${SRC_SHARE_DIR}/parallel_mod.F90
-  ${SRC_SHARE_DIR}/hybrid_mod.F90
-  ${SRC_SHARE_DIR}/reduction_mod.F90
-  ${SRC_SHARE_DIR}/quadrature_mod.F90
-  ${SRC_SHARE_DIR}/global_norms_mod.F90
-  ${SRC_SHARE_DIR}/ll_mod.F90
-  ${SRC_SHARE_DIR}/metagraph_mod.F90
-  ${SRC_SHARE_DIR}/schedule_mod.F90
-  ${SRC_SHARE_DIR}/schedtype_mod.F90 
-  ${SRC_SHARE_DIR}/edgetype_mod.F90
-  ${SRC_SHARE_DIR}/thread_mod.F90
-  ${SRC_SHARE_DIR}/unit_tests_mod.F90
-  ${SRC_SHARE_DIR}/spacecurve_mod.F90
-  ${SRC_SHARE_DIR}/cube_mod.F90
-  ${SRC_SHARE_DIR}/interpolate_mod.F90
-  ${SRC_SHARE_DIR}/dof_mod.F90
-  ${SRC_SHARE_DIR}/time_mod.F90 
-  ${SRC_SHARE_DIR}/physics_mod.F90 
-  ${SRC_SHARE_DIR}/hybvcoord_mod.F90
-  ${SRC_SHARE_DIR}/domain_mod.F90 
-  ${SRC_SHARE_DIR}/cg_mod.F90
-  ${SRC_SHARE_DIR}/solver_mod.F90 
-  ${SRC_SHARE_DIR}/namelist_mod.F90
-  ${SRC_SHARE_DIR}/mass_matrix_mod.F90 
-  ${SRC_SHARE_DIR}/prim_si_mod.F90 
-  ${SRC_SHARE_DIR}/metis_mod.F90
-  ${SRC_SHARE_DIR}/prim_driver_mod.F90
-  ${SRC_SHARE_DIR}/mesh_mod.F90 
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
