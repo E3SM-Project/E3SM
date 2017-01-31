@@ -49,7 +49,7 @@ AC_ARG_VAR(FCFLAGS,User-defined Fortran compiler flags)
 AC_ARG_VAR(PROGFCFLAGS,User-defined Fortran compiler flags for example programs)
 AC_ARG_VAR(CFLAGS,Customized C source compilation flags)
 AC_ARG_VAR(DEBUG,Fortran compiler flag for generating symbolic debugging information)
-AC_ARG_VAR(OPT,Fortran compiler flag for optimization level) 
+AC_ARG_VAR(OPT,Fortran compiler flag for optimization level)
 AC_ARG_VAR(REAL8,[Fortran compiler flag for setting the default REAL size to REAL(KIND=8)])
 AC_ARG_VAR(BIT64,Fortran compiler flag for generating 64-bit objects)
 AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endian)
@@ -82,14 +82,14 @@ ES="NO"
 if echo $osname | grep -i esos >/dev/null 2>&1; then
    ES="YES"
 fi
-if echo $osname | grep -i hp-ux >/dev/null 2>&1; then   
-   if test "$ac_hostname" = "moon"; then 
+if echo $osname | grep -i hp-ux >/dev/null 2>&1; then
+   if test "$ac_hostname" = "moon"; then
       ES="YES"
       # TELLS CONFIGURE NOT TO RUN ANY TESTS THAT REQUIRE EXECUTION
       cross_compiling="yes"
    fi
 fi
-if test "$ES" = "YES"; then   
+if test "$ES" = "YES"; then
    echo "Using preset configuration values for the Earth Simulator"
    if test -z "$CC"; then
       CC="escc"
@@ -111,7 +111,7 @@ if test "$ES" = "YES"; then
    fi
    if test -z "$OPT"; then
       OPT="-C vopt"
-   fi      
+   fi
    if test -z "$CPPDEFS"; then
       CPPDEFS="-DESVEC"
    fi
@@ -119,7 +119,7 @@ fi
 
 # Check if we are on the ANL BG/P
 
-if echo $fullhostname | egrep -q '.\.(challenger|intrepid)\.alcf\.anl\.gov' 
+if echo $fullhostname | egrep -q '.\.(challenger|intrepid)\.alcf\.anl\.gov'
   then if test -z "$FC"; then
          FC=bgxlf90_r
        fi
@@ -170,7 +170,7 @@ if test -n "$DONOTCHECKMPI"; then
    if test -z "$FORT_SIZE"; then
       FORT_SIZE="real4double8"
       echo "FORT_SIZE IS PRESET TO $FORT_SIZE"
-   fi   
+   fi
    abs_top_builddir=`pwd`
    MPISERPATH=$abs_top_builddir/mpi-serial
    AC_SUBST(MPISERPATH)
@@ -201,7 +201,7 @@ FC="$FC"
 
 AC_COMPILE_IFELSE(
   [       subroutine oof()
-             return 
+             return
           end], [],
   [AC_MSG_WARN([$FC FAILED TO COMPILE FILENAME EXTENSION $ac_ext])
   ])
@@ -235,7 +235,7 @@ OLDFC="$FC"
 defineflag="-Daardvark"
 if test "$OLDFC" = "xlf90"; then
    defineflag="-WF,-Daardvark"
-fi   
+fi
 if test "$OLDFC" = "frt"; then
    defineflag="-Wp,-Daardvark"
 fi
@@ -313,19 +313,19 @@ elif echo $FC | grep pgf >/dev/null 2>&1; then
    CPRDEF="PGI"
    if test -z "$REAL8"; then
       REAL8="-r8"
-   fi  
+   fi
    if test -z "$BIT64"; then
       BIT64="-pc 64"
-   fi  
+   fi
    if test "$FCFLAGS" = "$DEFFCFLAGS"; then
       FCFLAGS=""
-   fi  
+   fi
    if test -z "$ENDIAN"; then
       ENDIAN="-byteswapio"
-   fi  
+   fi
    if test -z "$OPT"; then
       OPT="-O2"
-   fi  
+   fi
    if test -z "$DEBUG"; then
       DEBUG="-g"
    fi
@@ -336,16 +336,16 @@ elif echo $FC | grep ftn >/dev/null 2>&1; then
    SYSDEF="CNLINUX"
    if test -z "$REAL8"; then
       REAL8="-r8"
-   fi  
+   fi
    if test -z "$BIT64"; then
       BIT64="-pc 64"
-   fi  
+   fi
    if test "$FCFLAGS" = "$DEFFCFLAGS"; then
       FCFLAGS=""
-   fi  
+   fi
    if test -z "$ENDIAN"; then
       ENDIAN="-byteswapio"
-   fi  
+   fi
    if test -z "$OPT"; then
       OPT="-O2"
    fi
@@ -358,10 +358,10 @@ elif echo $FC | grep ifort >/dev/null 2>&1; then
    CPRDEF="INTEL"
    if test -z "$REAL8"; then
       REAL8="-r8"
-   fi  
+   fi
    if test "$FCFLAGS" = "$DEFFCFLAGS"; then
       FCFLAGS="-w -ftz"
-   fi  
+   fi
    if test -z "$PROGFCFLAGS"; then
       PROGFCFLAGS="-assume byterecl"
    fi
@@ -383,7 +383,7 @@ elif echo $FC | grep gfortran >/dev/null 2>&1; then
 # For gfortran, default flags are different
    if test "$FCFLAGS" = "-g -O2"; then
       FCFLAGS=""
-   fi  
+   fi
    if test -z "$DEBUG"; then
       DEBUG="-g"
    fi
@@ -565,7 +565,7 @@ if test -z "$INCLUDEFLAG"; then
    INCLUDEFLAG="-I"
 fi
 
-# ARCHIVE COMMAND SIMILAR ACROSS ALL PLATFORMS 
+# ARCHIVE COMMAND SIMILAR ACROSS ALL PLATFORMS
 if test -z "$AR"; then
    AR="ar cq"
 fi
