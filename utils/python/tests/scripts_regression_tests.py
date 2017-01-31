@@ -1832,7 +1832,7 @@ class H_TestMakeMacros(unittest.TestCase):
         # This is a special case of the next test, which also checks circular
         # references.
         xml1 = """<MPI_LIB_NAME><var>MPI_LIB_NAME</var></MPI_LIB_NAME>"""
-        err_msg = "The config_build XML has bad <var> references."
+        err_msg = ".* has bad <var> references."
         with self.assertRaisesRegexp(SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+"</compiler>")
 
@@ -1840,7 +1840,7 @@ class H_TestMakeMacros(unittest.TestCase):
         """Test that cyclical <var> references are rejected."""
         xml1 = """<MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME>"""
         xml2 = """<MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH>"""
-        err_msg = "The config_build XML has bad <var> references."
+        err_msg = ".* has bad <var> references."
         with self.assertRaisesRegexp(SystemExit, err_msg):
             self.xml_to_tester("<compiler>"+xml1+xml2+"</compiler>")
 
@@ -1849,7 +1849,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><MPI_LIB_NAME>something</MPI_LIB_NAME></compiler>"""
         xml2 = """<compiler MACH="{}"><MPI_LIB_NAME><var>MPI_PATH</var></MPI_LIB_NAME></compiler>""".format(self.test_machine)
         xml3 = """<compiler><MPI_PATH><var>MPI_LIB_NAME</var></MPI_PATH></compiler>"""
-        err_msg = "The config_build XML has bad <var> references."
+        err_msg = ".* has bad <var> references."
         with self.assertRaisesRegexp(SystemExit, err_msg):
             self.xml_to_tester(xml1+xml2+xml3)
 
