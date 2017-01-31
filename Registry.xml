@@ -2699,14 +2699,14 @@
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
-		<var_array name="filteredSSHGradient" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
-			<var name="filteredSSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
-				 description="Time filtered zonal gradient of SSH"
-			/>
-			<var name="filteredSSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
-				 description="Time filtered meridional gradient of SSH"
-			/>
-		</var_array>
+		<var name="filteredSSHGradientZonal" type="real" dimensions="nCells Time" units="m m^{-1}"
+			description="Time filtered zonal gradient of SSH"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="filteredSSHGradientMeridional" type="real" dimensions="nCells Time" units="m m^{-1}"
+			description="Time filtered meridional gradient of SSH"
+			packages="forwardMode;analysisMode"
+		/>
 
 		<!-- Input fields from coupler or initial condition for forcing under land ice -->
 		<var name="landIceFraction" type="real" dimensions="nCells Time" units="unitless"
