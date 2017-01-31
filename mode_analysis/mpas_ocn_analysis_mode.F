@@ -30,6 +30,7 @@ module ocn_analysis_mode
    use mpas_timer
    use mpas_io_units
    use mpas_decomp
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use ocn_analysis_driver
    use ocn_init_routines
