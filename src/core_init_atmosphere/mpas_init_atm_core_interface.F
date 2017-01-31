@@ -8,6 +8,10 @@
 module init_atm_core_interface
 
    use mpas_attlist
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_dmpar
+   use mpas_io_units
 
    contains
 
@@ -51,6 +55,14 @@ module init_atm_core_interface
       core % source = 'MPAS'
 
 #include "inc/core_variables.inc"
+
+write(0,*) ''
+#ifdef SINGLE_PRECISION
+write(0,'(a)') 'Using default single-precision reals'
+#else
+write(0,'(a)') 'Using default double-precision reals'
+#endif
+write(0,*) ''
 
    end subroutine init_atm_setup_core
 
@@ -107,8 +119,9 @@ module init_atm_core_interface
       type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
-      logical, pointer :: initial_conds, sfc_update, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
-      logical, pointer :: config_static_interp, config_vertical_grid, config_met_interp
+      logical, pointer :: initial_conds, sfc_update
+      logical, pointer :: gwd_stage_in, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
+      logical, pointer :: config_native_gwd_static, config_static_interp, config_vertical_grid, config_met_interp
       integer, pointer :: config_init_case
 
 
@@ -116,6 +129,7 @@ module init_atm_core_interface
 
       call mpas_pool_get_config(configs, 'config_init_case', config_init_case)
       call mpas_pool_get_config(configs, 'config_static_interp', config_static_interp)
+      call mpas_pool_get_config(configs, 'config_native_gwd_static', config_native_gwd_static)
       call mpas_pool_get_config(configs, 'config_vertical_grid', config_vertical_grid)
       call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
 
@@ -124,6 +138,9 @@ module init_atm_core_interface
 
       nullify(sfc_update)
       call mpas_pool_get_package(packages, 'sfc_updateActive', sfc_update)
+
+      nullify(gwd_stage_in)
+      call mpas_pool_get_package(packages, 'gwd_stage_inActive', gwd_stage_in)
 
       nullify(vertical_stage_in)
       call mpas_pool_get_package(packages, 'vertical_stage_inActive', vertical_stage_in)
@@ -139,6 +156,7 @@ module init_atm_core_interface
 
       if (.not. associated(initial_conds) .or. &
           .not. associated(sfc_update) .or. &
+          .not. associated(gwd_stage_in) .or. &
           .not. associated(vertical_stage_in) .or. &
           .not. associated(vertical_stage_out) .or. &
           .not. associated(met_stage_in) .or. &
@@ -159,11 +177,19 @@ module init_atm_core_interface
       end if
 
       if (config_init_case == 7) then
-         vertical_stage_in = (config_vertical_grid .and. .not.  config_static_interp)
-         vertical_stage_out = (config_vertical_grid .and. .not.  config_met_interp)
+         gwd_stage_in = (config_native_gwd_static .and. .not. config_static_interp)
+         vertical_stage_in = (config_vertical_grid .and. .not. config_static_interp)
+         vertical_stage_out = (config_vertical_grid .and. .not. config_met_interp)
          met_stage_in = (config_met_interp .and. .not. config_vertical_grid)
          met_stage_out = config_met_interp
+      else if (config_init_case == 8) then
+         gwd_stage_in = .false.
+         vertical_stage_in = .true.
+         vertical_stage_out = .false.
+         met_stage_in = .false.
+         met_stage_out = .false.
       else
+         gwd_stage_in = .false.
          vertical_stage_in = .false.
          vertical_stage_out = .false.
          met_stage_in = .false.

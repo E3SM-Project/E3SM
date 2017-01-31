@@ -9,6 +9,7 @@ module mpas_subdriver
 
    use mpas_framework
    use mpas_kind_types
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use mpas_derived_types, only: dm_info, domain_type
 

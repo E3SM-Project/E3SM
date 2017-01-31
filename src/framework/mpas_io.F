@@ -11,6 +11,7 @@ module mpas_io
    use mpas_attlist
    use mpas_dmpar
    use mpas_io_units
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use pio
    use piolib_mod

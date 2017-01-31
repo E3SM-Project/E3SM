@@ -26,6 +26,7 @@
         use mpas_io_units
         use mpas_dmpar
         use mpas_threading
+        use mpas_abort, only : mpas_dmpar_global_abort
 
 #ifdef MPAS_PERF_MOD_TIMERS
         use perf_mod
