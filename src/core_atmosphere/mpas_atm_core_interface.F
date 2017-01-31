@@ -8,6 +8,11 @@
 module atm_core_interface
 
    use mpas_attlist
+   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_dmpar
+   use mpas_io_units
 
    contains
 
@@ -51,6 +56,14 @@ module atm_core_interface
       core % source = 'MPAS'
 
 #include "inc/core_variables.inc"
+
+write(0,*) ''
+#ifdef SINGLE_PRECISION
+write(0,'(a)') 'Using default single-precision reals'
+#else
+write(0,'(a)') 'Using default double-precision reals'
+#endif
+write(0,*) ''
 
    end subroutine atm_setup_core
 
@@ -96,8 +109,14 @@ module atm_core_interface
    !-----------------------------------------------------------------------
    function atm_setup_packages(configs, packages, iocontext) result(ierr)
 
+      use mpas_dmpar
       use mpas_derived_types, only : mpas_pool_type, mpas_io_context_type
       use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
+
+#ifdef DO_PHYSICS
+      use mpas_atmphys_control
+      use mpas_atmphys_packages
+#endif
 
       implicit none
 
@@ -106,7 +125,34 @@ module atm_core_interface
       type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
+      logical, pointer :: iauActive
+      character(len=StrKIND), pointer :: config_iau_option
+
       ierr = 0
+
+      nullify(config_iau_option)
+      call mpas_pool_get_config(configs, 'config_IAU_option', config_iau_option)
+
+      nullify(iauActive)
+      call mpas_pool_get_package(packages, 'iauActive', iauActive)
+
+      if (trim(config_iau_option) /= 'off') then
+         iauActive = .true.
+      else
+         iauActive = .false.
+      end if
+
+#ifdef DO_PHYSICS
+      !check that all the physics options are correctly defined and that at
+      !least one physics parameterization is called (using the logical moist_physics):
+      call physics_namelist_check(configs)
+
+      ierr = atmphys_setup_packages(configs,packages,iocontext)
+      if(ierr /= 0) then
+         call mpas_dmpar_global_abort('ERROR: Package setup failed for atmphys in core_atmosphere', &
+                                      deferredAbort=.true.)
+      endif
+#endif
 
    end function atm_setup_packages
 
@@ -179,7 +225,8 @@ module atm_core_interface
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 
       if (.not. associated(config_do_restart)) then
-         call mpas_dmpar_global_abort('ERROR: config_do_restart was not found when defining mesh stream.')
+         call mpas_dmpar_global_abort('ERROR: config_do_restart was not found when defining mesh stream.', deferredAbort=.true.)
+         ierr = 1
       else if (config_do_restart) then
          write(stream,'(a)') 'restart'
       else

@@ -23,6 +23,7 @@ module mpas_pool_routines
    use mpas_io_units
    use mpas_field_routines
    use mpas_threading
+   use mpas_abort, only : mpas_dmpar_global_abort
    
    interface mpas_pool_add_field
       module procedure mpas_pool_add_field_0d_real

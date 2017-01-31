@@ -5,61 +5,83 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_control
+ use mpas_dmpar
  use mpas_kind_types
  use mpas_derived_types
  use mpas_pool_routines
 
  use mpas_atmphys_utilities
+ use mpas_atmphys_vars, only: l_mp_tables
 
  implicit none
  private
  public:: physics_namelist_check, &
-          physics_registry_init
+          physics_registry_init,  &
+          physics_tables_init
 
  logical,public:: moist_physics
 
 
-!>\brief MPAS control and initialization routines.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!> mpas_atmphys_control contains subroutines called during the initialization.
-!>
-!> subroutines called in mpas_atmphys_control:
-!> -------------------------------------------
-!> physics_namelist_check: checks that physics namelist parameters are defined correctly.
-!> physics_registry_init : initializes thicknesses of soil layers for NOAH land-surface scheme.
-!> physics_idealized_init: initializes physics variables needed to run idealized cases.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * removed the namelist option config_eddy_scheme and associated sourcecode.
-!>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
-!>    * removed controls to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in 
-!>      core_init_atmosphere.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
-!>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!MPAS control and initialization routines.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines called in mpas_atmphys_control:
+! -------------------------------------------
+! * physics_namelist_check: checks that physics namelist parameters are defined correctly.
+! * physics_registry_init : initializes thicknesses of soil layers for NOAH land-surface scheme.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * removed the namelist option config_eddy_scheme and associated sourcecode.
+! * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
+! * removed controls to the updated Kain-Fritsch convection scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in core_init_atmosphere.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
+! * renamed config_conv_deep_scheme to config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+! * renamed "wsm6" to "mp_wsm6" and "kessler" to "mp_kessler".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-09.
+! * renamed "kain_fritsch" to "cu_kain_fritsch" and "tiedtke" to "cu_tiedtke".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
+! * renamed "ysu" to "bl_ysu", "ysu_gwdo" to "bl_gwdo_ysu", and "monin_obukhov" to "sf_monin_obukhov".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
+! * added the option mp_thompson.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
+! * added the option cu_grell_freitas.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
+! * added the options sf_mynn and bl_mynn and for the MYNN parameterization from WRF version 3.6.1.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
+! * added the option cu_ntiedtke for the "new" Tiedtke parameterization of convection from WRF version 3.8.1.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-09-19.
+! * added the physics suite "convection_scale_aware" (see below for the physics options used in the suite).
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-28.
+! * added the subroutine physics_tables_init which checks if the files containing the lokk-up tables for the
+!   Thompson cloud microphysics are available or not.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-11-01.
+! * modified checking the config_gwdo_scheme option to allow bl_ysu_gwdo to be run when the MYNN pbl and surface
+!   layer scheme options are chosen.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-12-22.
+! * modified logic in subroutine physics_tables_init so that the Thompson microphysics tables are read in each
+!   MPI task.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-12-30.
 
 
  contains
 
 
-!==================================================================================================
- subroutine physics_namelist_check(mesh,configs)
-!==================================================================================================
+!=================================================================================================================
+ subroutine physics_namelist_check(configs)
+!=================================================================================================================
 
 !input arguments:
- type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
 
 !local pointers:
@@ -74,7 +96,9 @@
                                   config_radt_sw_scheme,    &
                                   config_sfclayer_scheme
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine physics_namelist_check:'
 
  call mpas_pool_get_config(configs,'config_physics_suite'    ,config_physics_suite    )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
@@ -87,32 +111,47 @@
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
  call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
+ write(0,*)
+ write(0,*) '----- Setting up physics suite '''//trim(config_physics_suite)//''' -----'
+
  !
- ! Setup schemes according to the selected physics suite
+ !setup schemes according to the selected physics suite:
  !
  if (trim(config_physics_suite) == 'mesoscale_reference') then
 
-    if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'wsm6'
-    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'tiedtke'
-    if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'ysu'
-    if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
-    if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'rrtmg_lw'
-    if (trim(config_radt_sw_scheme) == 'suite')    config_radt_sw_scheme    = 'rrtmg_sw'
-    if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'cld_fraction'
-    if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'monin_obukhov'
-    if (trim(config_lsm_scheme) == 'suite')        config_lsm_scheme        = 'noah'
+    if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'mp_wsm6'
+    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_ntiedtke'
+    if (trim(config_pbl_scheme)        == 'suite') config_pbl_scheme        = 'bl_ysu'
+    if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'bl_ysu_gwdo'
+    if (trim(config_radt_lw_scheme)    == 'suite') config_radt_lw_scheme    = 'rrtmg_lw'
+    if (trim(config_radt_sw_scheme)    == 'suite') config_radt_sw_scheme    = 'rrtmg_sw'
+    if (trim(config_radt_cld_scheme)   == 'suite') config_radt_cld_scheme   = 'cld_fraction'
+    if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'sf_monin_obukhov'
+    if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'noah'
+
+ else if (trim(config_physics_suite) == 'convection_permitting') then
+
+    if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'mp_thompson'
+    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_grell_freitas'
+    if (trim(config_pbl_scheme)        == 'suite') config_pbl_scheme        = 'bl_mynn'
+    if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'bl_ysu_gwdo'
+    if (trim(config_radt_lw_scheme)    == 'suite') config_radt_lw_scheme    = 'rrtmg_lw'
+    if (trim(config_radt_sw_scheme)    == 'suite') config_radt_sw_scheme    = 'rrtmg_sw'
+    if (trim(config_radt_cld_scheme)   == 'suite') config_radt_cld_scheme   = 'cld_fraction'
+    if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'sf_mynn'
+    if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'noah'
 
  else if (trim(config_physics_suite) == 'none') then
 
-    if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'off'
+    if (trim(config_microp_scheme)     == 'suite') config_microp_scheme     = 'off'
     if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'off'
-    if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'off'
-    if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
-    if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'off'
-    if (trim(config_radt_sw_scheme) == 'suite')    config_radt_sw_scheme    = 'off'
-    if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'off'
-    if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'off'
-    if (trim(config_lsm_scheme) == 'suite')        config_lsm_scheme        = 'off'
+    if (trim(config_pbl_scheme)        == 'suite') config_pbl_scheme        = 'off'
+    if (trim(config_gwdo_scheme)       == 'suite') config_gwdo_scheme       = 'off'
+    if (trim(config_radt_lw_scheme)    == 'suite') config_radt_lw_scheme    = 'off'
+    if (trim(config_radt_sw_scheme)    == 'suite') config_radt_sw_scheme    = 'off'
+    if (trim(config_radt_cld_scheme)   == 'suite') config_radt_cld_scheme   = 'off'
+    if (trim(config_sfclayer_scheme)   == 'suite') config_sfclayer_scheme   = 'off'
+    if (trim(config_lsm_scheme)        == 'suite') config_lsm_scheme        = 'off'
 
  else
 
@@ -121,13 +160,13 @@
     call physics_error_fatal(mpas_err_message)
 
  end if
- 
 
 !cloud microphysics scheme:
- if(.not. (config_microp_scheme .eq. 'off'      .or. &
-           config_microp_scheme .eq. 'kessler'  .or. &
-           config_microp_scheme .eq. 'wsm6'     )) then
-          
+ if(.not. (config_microp_scheme .eq. 'off'         .or. &
+           config_microp_scheme .eq. 'mp_kessler'  .or. &
+           config_microp_scheme .eq. 'mp_thompson' .or. &
+           config_microp_scheme .eq. 'mp_wsm6')) then
+
     write(mpas_err_message,'(A,A10)') 'illegal value for config_microp_scheme:', &
           trim(config_microp_scheme)
     call physics_error_fatal(mpas_err_message)
@@ -135,9 +174,11 @@
  endif
 
 !convection scheme:
- if(.not. (config_convection_scheme .eq. 'off'          .or. &
-           config_convection_scheme .eq. 'kain_fritsch' .or. &
-           config_convection_scheme .eq. 'tiedtke'      )) then
+ if(.not. (config_convection_scheme .eq. 'off'              .or. &
+           config_convection_scheme .eq. 'cu_grell_freitas' .or. &
+           config_convection_scheme .eq. 'cu_kain_fritsch'  .or. &
+           config_convection_scheme .eq. 'cu_tiedtke'       .or. &
+           config_convection_scheme .eq. 'cu_ntiedtke')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
           trim(config_convection_scheme)
@@ -146,8 +187,9 @@
  endif
 
 !pbl scheme:
- if(.not. (config_pbl_scheme .eq. 'off' .or. &
-           config_pbl_scheme .eq. 'ysu')) then
+ if(.not. (config_pbl_scheme .eq. 'off'     .or. &
+           config_pbl_scheme .eq. 'bl_mynn' .or. &
+           config_pbl_scheme .eq. 'bl_ysu')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for pbl_scheme: ', &
           trim(config_pbl_scheme)
@@ -157,15 +199,9 @@
 
 !gravity wave drag over orography scheme:
  if(.not. (config_gwdo_scheme .eq. 'off' .or. &
-           config_gwdo_scheme .eq. 'ysu_gwdo')) then
+           config_gwdo_scheme .eq. 'bl_ysu_gwdo')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for gwdo_scheme: ', &
-          trim(config_gwdo_scheme)
-    call physics_error_fatal(mpas_err_message)
-
- elseif(config_gwdo_scheme .eq. 'ysu_gwdo' .and. config_pbl_scheme .ne. 'ysu') then
-
-    write(mpas_err_message,'(A,A10)') 'turn YSU PBL scheme on with config_gwdo = ysu_gwdo:', &
           trim(config_gwdo_scheme)
     call physics_error_fatal(mpas_err_message)
 
@@ -196,7 +232,8 @@
 !cloud fraction for radiation schemes:
  if(.not. (config_radt_cld_scheme .eq. 'off'           .or. &
            config_radt_cld_scheme .eq. 'cld_incidence' .or. &
-           config_radt_cld_scheme .eq. 'cld_fraction')) then
+           config_radt_cld_scheme .eq. 'cld_fraction'  .or. &
+           config_radt_cld_scheme .eq. 'cld_fraction_thompson')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for calculation of cloud fraction: ', &
           trim(config_radt_cld_scheme)
@@ -218,13 +255,19 @@
  endif
 
 !surface-layer scheme:
- if(.not. (config_sfclayer_scheme .eq. 'off'  .or. &
-           config_sfclayer_scheme .eq. 'monin_obukhov')) then
+ if(.not. (config_sfclayer_scheme .eq. 'off'     .or. &
+           config_sfclayer_scheme .eq. 'sf_mynn' .or. &
+           config_sfclayer_scheme .eq. 'sf_monin_obukhov')) then
  
     write(mpas_err_message,'(A,A10)') 'illegal value for surface layer scheme: ', &
           trim(config_sfclayer_scheme)
     call physics_error_fatal(mpas_err_message)
-
+ else
+    if(config_pbl_scheme == 'bl_mynn') then
+       config_sfclayer_scheme = 'sf_mynn'
+    elseif(config_pbl_scheme == 'bl_ysu') then
+       config_sfclayer_scheme = 'sf_monin_obukhov'
+    endif
  endif
 
 !land-surface scheme: note that config_sfclayer_scheme must be defined for the land-surface
@@ -257,25 +300,26 @@
  write(0,*) ' '
  write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
  write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
- write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
  write(0,*) '    config_pbl_scheme          = ', trim(config_pbl_scheme)
  write(0,*) '    config_gwdo_scheme         = ', trim(config_gwdo_scheme)
  write(0,*) '    config_radt_cld_scheme     = ', trim(config_radt_cld_scheme)
  write(0,*) '    config_radt_lw_scheme      = ', trim(config_radt_lw_scheme)
  write(0,*) '    config_radt_sw_scheme      = ', trim(config_radt_sw_scheme)
  write(0,*) '    config_sfclayer_scheme     = ', trim(config_sfclayer_scheme)
-
-! write(0,*) '--- end subroutine physics_namelist_check:'
+ write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
+ write(0,*)
 
  end subroutine physics_namelist_check
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_registry_init(mesh,configs,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
-!input and inout arguments:
+!input arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
+
+!inout arguments:
  type(mpas_pool_type),intent(inout):: sfc_input
 
 !local pointers:
@@ -289,7 +333,7 @@
 !local variables:
  integer:: iCell
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
  call mpas_pool_get_config(configs,'config_lsm_scheme',config_lsm_scheme)
@@ -308,12 +352,10 @@
        case("noah")
        !initialize the thickness of the soil layers for the Noah scheme:
           do iCell = 1, nCells
-             if(landmask(iCell) == 1) then  
-                dzs(1,iCell) = 0.10_RKIND
-                dzs(2,iCell) = 0.30_RKIND
-                dzs(3,iCell) = 0.60_RKIND
-                dzs(4,iCell) = 1.00_RKIND
-             endif
+             dzs(1,iCell) = 0.10_RKIND
+             dzs(2,iCell) = 0.30_RKIND
+             dzs(3,iCell) = 0.60_RKIND
+             dzs(4,iCell) = 1.00_RKIND
           enddo
 
        case default
@@ -322,10 +364,61 @@
     
  endif
 
+!write(0,*) '--- enter subroutine physics_namelist_check.'
+!write(0,*)
+
  end subroutine physics_registry_init
 
-!==================================================================================================
- end module mpas_atmphys_control
-!==================================================================================================
+!=================================================================================================================
+ subroutine physics_tables_init(dminfo,configs)
+!=================================================================================================================
 
+!input arguments:
+ type(dm_info),intent(in):: dminfo
+ type(mpas_pool_type),intent(in):: configs
+
+!local variables:
+ character(len=StrKIND),pointer:: config_microp_scheme
+ logical:: l_qr_acr_qg,l_qr_acr_qs,l_qi_aut_qs,l_freezeH2O
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ l_mp_tables = .true.
+
+ if(dminfo % my_proc_id == IO_NODE) then
+
+    call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
+    if(config_microp_scheme /= "mp_thompson") return
+
+    l_qr_acr_qg = .false.
+    l_qr_acr_qs = .false.
+    l_qi_aut_qs = .false.
+    l_freezeH2O = .false.
+
+    inquire(file='MP_THOMPSON_QRacrQG_DATA.DBL'  ,exist=l_qr_acr_qg)
+    inquire(file='MP_THOMPSON_QRacrQS_DATA.DBL'  ,exist=l_qr_acr_qs)
+    inquire(file='MP_THOMPSON_QIautQS_DATA.DBL'  ,exist=l_qi_aut_qs)
+    inquire(file='MP_THOMPSON_freezeH2O_DATA.DBL',exist=l_freezeH2O)
+
+!   write(0,*)
+!   write(0,*) '--- enter subroutine physics_tables_init:'
+!   write(0,*) 'l_qr_acr_qg = ',l_qr_acr_qg
+!   write(0,*) 'l_qr_acr_qs = ',l_qr_acr_qs
+!   write(0,*) 'l_qi_aut_qs = ',l_qi_aut_qs
+!   write(0,*) 'l_freezeH2O = ',l_freezeH2O
+
+    if(.not. (l_qr_acr_qg .and. l_qr_acr_qs .and. l_qi_aut_qs .and. l_freezeH2O)) then
+       write(mpas_err_message,'(A)') &
+          '--- tables to run the Thompson cloud microphysics scheme do not exist: run build_tables first.'
+       call physics_error_fatal(mpas_err_message)
+    endif
+!   write(0,*) 'l_mp_tables = ',l_mp_tables
+
+ endif
+
+ end subroutine physics_tables_init
+
+!=================================================================================================================
+ end module mpas_atmphys_control
+!=================================================================================================================
 

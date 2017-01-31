@@ -12,6 +12,7 @@ module mpas_timekeeping
    use mpas_io_units
    use mpas_dmpar
    use mpas_threading
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    use ESMF
    use ESMF_BaseMod
@@ -1315,6 +1316,8 @@ module mpas_timekeeping
             if (present(ierr)) ierr = 1
             write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
             return
+         else ! no second decimals are present - do nothing here
+            deallocate(subStrings)
          end if
 
          call mpas_split_string(timeString_, "_", subStrings)
@@ -2121,7 +2124,7 @@ end module mpas_timekeeping
 
 subroutine wrf_error_fatal(msg)
 
-   use mpas_dmpar
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    implicit none
 

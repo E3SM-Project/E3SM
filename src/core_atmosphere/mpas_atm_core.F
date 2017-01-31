@@ -10,6 +10,7 @@ module atm_core
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    type (MPAS_Clock_type), pointer :: clock
 
@@ -22,6 +23,9 @@ module atm_core
       use mpas_timekeeping
       use mpas_kind_types
       use mpas_stream_manager
+      use mpas_atm_dimensions, only : mpas_atm_set_dims
+      use mpas_atm_diagnostics_manager, only : mpas_atm_diag_setup
+      use mpas_atm_threading, only : mpas_atm_threading_init
 
       implicit none
 
@@ -35,7 +39,7 @@ module atm_core
       character(len=StrKIND) :: timeStamp
       integer :: i
       logical, pointer :: config_do_restart
-     
+
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: mesh
       type (mpas_pool_type), pointer :: diag
@@ -43,8 +47,29 @@ module atm_core
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
 
+      integer, pointer :: nVertLevels, maxEdges, maxEdges2, num_scalars
+
       ierr = 0
 
+
+      !
+      ! Setup threading
+      !
+      call mpas_atm_threading_init(domain % blocklist, ierr)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Threading setup failed for core '//trim(domain % core % coreName))
+      end if
+
+
+      !
+      ! Set up inner dimensions used by arrays in optimized dynamics routines
+      !
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+      call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(state, 'maxEdges', maxEdges)
+      call mpas_pool_get_dimension(state, 'maxEdges2', maxEdges2)
+      call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
+      call mpas_atm_set_dims(nVertLevels, maxEdges, maxEdges2, num_scalars)
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
@@ -55,7 +80,7 @@ module atm_core
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
 
-      
+
       !
       ! If this is a restart run, read the restart stream, else read the input
       ! stream.
@@ -69,9 +94,10 @@ module atm_core
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
       end if
       if (ierr /= MPAS_STREAM_MGR_NOERR) then
-         write(0,*) ' '
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error reading initial conditions'
+         call mpas_dmpar_global_abort('********************************************************************************', &
+                                      deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error reading initial conditions', &
+                                      deferredAbort=.true.)
          call mpas_dmpar_global_abort('********************************************************************************')
       end if
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
@@ -94,6 +120,21 @@ module atm_core
          end do
       end if
 
+      !
+      ! Read a new data stream for Incremental Analysis Update (IAU), if config_IAU_option /= 'off'    : HA (June-15-2016)
+      ! FIXME: should I check xtime for the IAU fields? Maybe not.
+      ! Note: Because the 'iau' stream has the 'iau' package attached to it, the MPAS_stream_mgr_read( )
+      !       call here will actually try to read the stream only if IAU is being used in the run.
+      !
+      call MPAS_stream_mgr_read(domain % streamManager, streamID='iau', whence=MPAS_STREAM_NEAREST, ierr=ierr)
+      if (ierr /= MPAS_STREAM_MGR_NOERR) then
+         call mpas_dmpar_global_abort('********************************************************************************', &
+                                      deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error reading IAU files', &
+                                      deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
+      end if
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='iau', ierr=ierr)
 
       !
       ! Set startTimeStamp based on the start time of the simulation clock
@@ -128,6 +169,9 @@ module atm_core
 
       call mpas_pool_get_field(diag, 'rw', rw_field)
       call mpas_dmpar_exch_halo_field(rw_field)
+
+      call mpas_atm_diag_setup(domain % streamManager, domain % blocklist % configs, &
+                               domain % blocklist % structs, domain % clock, domain % dminfo)
 
    end function atm_core_init
 
@@ -178,7 +222,7 @@ module atm_core
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
-               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsistent: using config_run_duration.'
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
@@ -208,7 +252,7 @@ module atm_core
       use mpas_atmphys_init
       use mpas_atmphys_manager
 #endif
-   
+
       implicit none
    
       type (dm_info), intent(in) :: dminfo
@@ -224,35 +268,124 @@ module atm_core
       type (mpas_pool_type), pointer :: diag_physics
       type (mpas_pool_type), pointer :: atm_input
 
-      integer :: iCell
+      integer :: iCell,iEdge,iVertex
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
-      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4, areaCell, invAreaCell
+      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+      real (kind=RKIND), dimension(:), pointer :: areaCell, invAreaCell
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, invDvEdge
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, invDcEdge
+      real (kind=RKIND), dimension(:), pointer :: areaTriangle, invAreaTriangle
+      integer, pointer :: nCells, nEdges, nVertices, nVertLevels, nEdgesSolve
+      integer :: thread
       character(len=StrKIND), pointer :: mminlu
 
-      integer, pointer :: nEdgesSolve, nCells
-   
+      integer, pointer :: nThreads
+      integer, dimension(:), pointer :: cellThreadStart, cellThreadEnd
+      integer, dimension(:), pointer :: cellSolveThreadStart, cellSolveThreadEnd
+      integer, dimension(:), pointer :: edgeThreadStart, edgeThreadEnd
+      integer, dimension(:), pointer :: edgeSolveThreadStart, edgeSolveThreadEnd
+      integer, dimension(:), pointer :: vertexThreadStart, vertexThreadEnd
+      integer, dimension(:), pointer :: vertexSolveThreadStart, vertexSolveThreadEnd
+
+
       logical, pointer :: config_do_restart, config_do_DAcycling
 
+      call atm_compute_signs(mesh)
    
       call mpas_pool_get_subpool(block % structs, 'diag', diag)
+      call mpas_pool_get_subpool(block % structs, 'state', state)
+
       call mpas_pool_get_subpool(block % structs, 'state', state)
 
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(block % configs, 'config_do_DAcycling', config_do_DAcycling)
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!! Compute inverses to avoid divides later
+      
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-  
+      
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)      
+      call mpas_pool_get_array(mesh, 'invDvEdge', invDvEdge)
+      call mpas_pool_get_array(mesh, 'invDcEdge', invDcEdge)      
+      
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'invAreaTriangle', invAreaTriangle)
+      
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)      
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+ 
       do iCell=1,nCells 
          invAreaCell(iCell) = 1.0_RKIND / areaCell(iCell)
       end do
+        
+      do iEdge=1,nEdges 
+         invDvEdge(iEdge) = 1.0_RKIND / dvEdge(iEdge)
+      end do
+      
+      do iEdge=1,nEdges 
+         invDcEdge(iEdge) = 1.0_RKIND / dcEdge(iEdge)
+      end do
+      
+      do iVertex=1,nVertices
+         invAreaTriangle(iVertex) = 1.0_RKIND / areaTriangle(iVertex)
+      end do
+      
+      !!!!! End compute inverses
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
-         call atm_init_coupled_diagnostics( state, 1, diag, mesh, block % configs)
-      end if
-      call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs)
+      call atm_adv_coef_compression(mesh)
+
+      call atm_couple_coef_3rd_order(mesh, block % configs)
+      
+      call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+
+      allocate(ke_vertex(nVertLevels,nVertices+1))  ! ke_vertex is a module variable defined in mpas_atm_time_integration.F
+      allocate(ke_edge(nVertLevels,nEdges+1))       ! ke_edge is a module variable defined in mpas_atm_time_integration.F
+
+      call mpas_pool_get_dimension(block % dimensions, 'nThreads', nThreads)
+
+      call mpas_pool_get_dimension(block % dimensions, 'cellThreadStart', cellThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'cellThreadEnd', cellThreadEnd)
+      call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadStart', cellSolveThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
+
+      call mpas_pool_get_dimension(block % dimensions, 'vertexThreadStart', vertexThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'vertexThreadEnd', vertexThreadEnd)
+      call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadStart', vertexSolveThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'vertexSolveThreadEnd', vertexSolveThreadEnd)
+
+      call mpas_pool_get_dimension(block % dimensions, 'edgeThreadStart', edgeThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'edgeThreadEnd', edgeThreadEnd)
+      call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadStart', edgeSolveThreadStart)
+      call mpas_pool_get_dimension(block % dimensions, 'edgeSolveThreadEnd', edgeSolveThreadEnd)
+
+!$OMP PARALLEL DO
+      do thread=1,nThreads
+         if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
+            call atm_init_coupled_diagnostics(state, 1, diag, mesh, block % configs, &
+                                              cellThreadStart(thread), cellThreadEnd(thread), &
+                                              vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                              edgeThreadStart(thread), edgeThreadEnd(thread), &
+                                              cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
+                                              vertexSolveThreadStart(thread), vertexSolveThreadEnd(thread), &
+                                              edgeSolveThreadStart(thread), edgeSolveThreadEnd(thread))
+         end if
+
+         call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs, &
+                                            cellThreadStart(thread), cellThreadEnd(thread), &
+                                            vertexThreadStart(thread), vertexThreadEnd(thread), &
+                                            edgeThreadStart(thread), edgeThreadEnd(thread))
+      end do
+!$OMP END PARALLEL DO
+
+      deallocate(ke_vertex)
+      deallocate(ke_edge)
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
@@ -272,10 +405,6 @@ module atm_core
                            )
    
 #ifdef DO_PHYSICS
-      !check that all the physics options are correctly defined and that at least one physics
-      !parameterization is called (using the logical moist_physics):
-      call physics_namelist_check(mesh, block % configs)
-
       !proceed with initialization of physics parameterization if moist_physics is set to true:
       call mpas_pool_get_subpool(block % structs, 'sfc_input', sfc_input)
 
@@ -295,6 +424,7 @@ module atm_core
          call mpas_pool_get_subpool(block % structs, 'tend', tend)
          call mpas_pool_get_subpool(block % structs, 'diag_physics', diag_physics)
          call mpas_pool_get_subpool(block % structs, 'atm_input', atm_input)
+         call physics_tables_init(dminfo, block % configs)
          call physics_registry_init(mesh, block % configs, sfc_input)
          call physics_run_init(block % configs, mesh, state, clock, stream_manager)
 
@@ -308,8 +438,6 @@ module atm_core
 
       call atm_compute_damping_coefs(mesh, block % configs)
 
-      call atm_compute_pgf_coefs(mesh, block % configs)
-
       call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
@@ -318,8 +446,6 @@ module atm_core
                                                   maxval(meshScalingDel2(1:nEdgesSolve))
       write(0,*) 'min/max of meshScalingDel4 = ', minval(meshScalingDel4(1:nEdgesSolve)), &
                                                   maxval(meshScalingDel4(1:nEdgesSolve))
-
-      call atm_adv_coef_compression(mesh)
 
    end subroutine atm_mpas_init_block
    
@@ -331,6 +457,7 @@ module atm_core
       use mpas_stream_manager
       use mpas_derived_types, only : MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_INPUT, MPAS_STREAM_INPUT_OUTPUT
       use mpas_timer
+      use mpas_atm_diagnostics_manager, only : mpas_atm_diag_update, mpas_atm_diag_compute, mpas_atm_diag_reset
    
       implicit none
    
@@ -349,13 +476,19 @@ module atm_core
       integer :: stream_dir
       character(len=StrKIND) :: input_stream, read_time
 
-      type (mpas_pool_type), pointer :: state, diag, diag_physics, mesh
+      type (mpas_pool_type), pointer :: state, diag, mesh, diag_physics, tend, tend_physics
 
       ! For high-frequency diagnostics output
       character (len=StrKIND) :: tempfilename
 
+      ! For timing information
+      real (kind=R8KIND) :: integ_start_time, integ_stop_time
+      real (kind=R8KIND) :: diag_start_time, diag_stop_time
+      real (kind=R8KIND) :: input_start_time, input_stop_time
+      real (kind=R8KIND) :: output_start_time, output_stop_time
+      
       ierr = 0
-
+      
       ! Eventually, dt should be domain specific
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
@@ -370,6 +503,8 @@ module atm_core
          call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='diagnostics', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
       end if
 
+      call mpas_dmpar_get_time(diag_start_time)
+
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
@@ -382,17 +517,38 @@ module atm_core
             block_ptr => block_ptr % next
          end do
       end if
+      call mpas_atm_diag_reset()
+      call mpas_atm_diag_update()
+      call mpas_atm_diag_compute()
+
+      call mpas_dmpar_get_time(diag_stop_time)
+
+      call mpas_dmpar_get_time(output_start_time)
       call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+      call mpas_dmpar_get_time(output_stop_time)
       if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
-         write(0,*) ' '
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error writing one or more output streams'
+         call mpas_dmpar_global_abort('********************************************************************************', &
+                                      deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error writing one or more output streams', &
+                                      deferredAbort=.true.)
          call mpas_dmpar_global_abort('********************************************************************************')
       end if
+      if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+         write(0,'(a,f9.4,a)') ' Timing for diagnostic computation: ', (diag_stop_time - diag_start_time), ' s'
+         write(0,'(a,f9.4,a)') ' Timing for stream output: ', (output_stop_time - output_start_time), ' s'
+      end if
+
+      call mpas_atm_diag_reset()
+
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
+      block_ptr => domain % blocklist
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+      call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+      call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+      call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -413,17 +569,21 @@ module atm_core
             if (stream_dir == MPAS_STREAM_INPUT .or. stream_dir == MPAS_STREAM_INPUT_OUTPUT) then
                if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID=input_stream, &
                                                   direction=MPAS_STREAM_INPUT, ierr=ierr)) then
+                  call mpas_dmpar_get_time(input_start_time)
                   call MPAS_stream_mgr_read(domain % streamManager, streamID=input_stream, whence=MPAS_STREAM_LATEST_BEFORE, &
                                             actualWhen=read_time, ierr=ierr)
+                  call mpas_dmpar_get_time(input_stop_time)
                   if (ierr /= MPAS_STREAM_MGR_NOERR) then
-                     write(0,*) ' '
-                     write(0,*) '********************************************************************************'
-                     write(0,*) 'Error reading input stream '//trim(input_stream)
+                     call mpas_dmpar_global_abort('********************************************************************************', &
+                                                  deferredAbort=.true.)
+                     call mpas_dmpar_global_abort('Error reading input stream '//trim(input_stream), &
+                                                  deferredAbort=.true.)
                      call mpas_dmpar_global_abort('********************************************************************************')
                   end if
 
                   write(0,*) '----------------------------------------------------------------------'
                   write(0,*) '  Read '''//trim(input_stream)//''' input stream valid at '//trim(read_time)
+                  write(0,'(a,f9.4,a)') '   Timing for stream input: ', (input_stop_time - input_start_time), ' s'
                   write(0,*) '----------------------------------------------------------------------'
 
                   call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID=input_stream, direction=MPAS_STREAM_INPUT, ierr=ierr)
@@ -432,8 +592,11 @@ module atm_core
          end do
 
          call mpas_timer_start("time integration")
+         call mpas_dmpar_get_time(integ_start_time)
          call atm_do_timestep(domain, dt, itimestep)
+         call mpas_dmpar_get_time(integ_stop_time)
          call mpas_timer_stop("time integration")   
+         write(0,'(a,f9.4,a)') ' Timing for integration step: ', (integ_stop_time - integ_start_time), ' s'
 
          ! Move time level 2 fields back into time level 1 for next time step
          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
@@ -444,23 +607,31 @@ module atm_core
          call mpas_advance_clock(clock)
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
 
+
+         call mpas_dmpar_get_time(diag_start_time)
+
          !
          ! Write any output streams that have alarms ringing, after computing diagnostics fields
          !
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-            block_ptr => domain % blocklist
-            do while (associated(block_ptr))
+           block_ptr => domain % blocklist
+           do while (associated(block_ptr))
+              call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+              call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+              call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+              call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+              call mpas_pool_get_subpool(block_ptr % structs, 'tend', tend)
+              call mpas_pool_get_subpool(block_ptr % structs, 'tend_physics', tend_physics)
+              call atm_compute_output_diagnostics(state, 1, diag, mesh)
 
-               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
-               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
-               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-               call atm_compute_output_diagnostics(state, 1, diag, mesh)
-
-               block_ptr => block_ptr % next
-            end do
+              block_ptr => block_ptr % next
+           end do
          end if
+
+         call mpas_atm_diag_update()
+         call mpas_atm_diag_compute()
+
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
@@ -474,16 +645,39 @@ module atm_core
                block_ptr => block_ptr % next
             end do
          end if
+         call mpas_dmpar_get_time(diag_stop_time)
 
+         call mpas_dmpar_get_time(output_start_time)
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+         call mpas_dmpar_get_time(output_stop_time)
          if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
-            write(0,*) ' '
-            write(0,*) '********************************************************************************'
-            write(0,*) 'Error writing one or more output streams'
+            call mpas_dmpar_global_abort('********************************************************************************', &
+                                         deferredAbort=.true.)
+            call mpas_dmpar_global_abort('Error writing one or more output streams', &
+                                         deferredAbort=.true.)
             call mpas_dmpar_global_abort('********************************************************************************')
          end if
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+            write(0,'(a,f9.4,a)') ' Timing for diagnostic computation: ', (diag_stop_time - diag_start_time), ' s'
+            write(0,'(a,f9.4,a)') ' Timing for stream output: ', (output_stop_time - output_start_time), ' s'
+         end if
+
+         ! reset any diagnostics here
+
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='diagnostics', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+            block_ptr => domain % blocklist
+            do while (associated(block_ptr))
+
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+               call atm_reset_diagnostics(diag, diag_physics)
+
+               block_ptr => block_ptr % next
+            end do
+         end if
+
 
          ! Only after we've successfully written the restart file should we we
          !    write the restart_timestamp file
@@ -495,12 +689,19 @@ module atm_core
             end if
          end if
 
+         call mpas_atm_diag_reset()
+
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+
+         block_ptr => domain % blocklist
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
 
       end do
    
    end function atm_core_run
-   
    
    subroutine atm_compute_output_diagnostics(state, time_lev, diag, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -513,7 +714,6 @@ module atm_core
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
       use mpas_constants
-      use mpas_atm_interp_diagnostics
    
       implicit none
    
@@ -552,8 +752,6 @@ module atm_core
          end do
       end do
 
-      call interp_diagnostics(mesh, state, time_lev, diag)
-   
    end subroutine atm_compute_output_diagnostics
    
    
@@ -602,6 +800,30 @@ module atm_core
       end do
    
    end subroutine atm_compute_restart_diagnostics
+
+   subroutine atm_reset_diagnostics(diag, diag_physics)
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! reset some diagnostics after output
+   !
+   ! Input: diag          - contains dynamics diagnostic fields
+   !        daig_physics  - contains physics diagnostic fields
+   !
+   ! Output: whatever diagnostics need resetting after output
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+      implicit none
+   
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: diag_physics
+   
+      real (kind=RKIND), dimension(:), pointer :: refl10cm_1km_max
+
+      call mpas_pool_get_array(diag_physics, 'refl10cm_1km_max', refl10cm_1km_max)
+      if(associated(refl10cm_1km_max)) then
+         refl10cm_1km_max(:) = 0.
+      endif
+   
+   end subroutine atm_reset_diagnostics
 
 
    subroutine atm_do_timestep(domain, dt, itimestep)
@@ -656,16 +878,45 @@ module atm_core
    
       use mpas_decomp
       use mpas_timekeeping
+      use mpas_atm_diagnostics_manager, only : mpas_atm_diag_cleanup
+      use mpas_atm_threading, only : mpas_atm_threading_finalize
+      use mpas_io_units, only : stderrUnit
    
+#ifdef DO_PHYSICS
+      use mpas_atmphys_finalize
+#endif
+
       implicit none
    
-      type (domain_type), intent(inout) :: domain 
+      type (domain_type), intent(inout) :: domain
+      type (block_type), pointer :: block_ptr 
       integer :: ierr
 
       ierr = 0
 
+      call mpas_atm_diag_cleanup()
+
       call mpas_destroy_clock(clock, ierr)
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
+
+#ifdef DO_PHYSICS
+         block_ptr => domain % blocklist
+         do while (associated(block_ptr))
+            call atmphys_finalize(block_ptr%configs)
+
+            block_ptr => block_ptr%next
+         end do
+#endif
+
+      !
+      ! Finalize threading
+      !
+      call mpas_atm_threading_finalize(domain % blocklist)
+
+      write(stderrUnit,'(a)') ''
+      write(stderrUnit,'(a)') '********************************************************'
+      write(stderrUnit,'(a)') '   Finished running the atmosphere core'
+      write(stderrUnit,'(a)') '********************************************************'
    
    end function atm_core_finalize
 
@@ -709,6 +960,96 @@ module atm_core
    end subroutine atm_compute_mesh_scaling
 
 
+   subroutine atm_compute_signs(mesh)
+
+      implicit none
+
+      type (mpas_pool_type), intent(inout) :: mesh
+
+      integer :: i, j, iCell, iVtx
+      integer, pointer :: nCells, nVertices, nEdges, vertexDegree
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnVertex, verticesOnEdge, cellsOnEdge, edgesOnCell
+      integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, kiteForCell
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnVertex_sign, edgesOnCell_sign
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
+
+
+      call mpas_pool_get_array(mesh, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'verticesOnCell', verticesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(mesh, 'edgesOnVertex_sign', edgesOnVertex_sign)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
+      call mpas_pool_get_array(mesh, 'kiteForCell', kiteForCell)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'zb_cell', zb_cell)
+      call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
+
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
+
+
+      do iVtx=1,nVertices
+         do i=1,vertexDegree
+            if (edgesOnVertex(i,iVtx) <= nEdges) then
+               if (iVtx == verticesOnEdge(2,edgesOnVertex(i,iVtx))) then
+                  edgesOnVertex_sign(i,iVtx) = 1.0
+               else
+                  edgesOnVertex_sign(i,iVtx) = -1.0
+               end if
+            else
+               edgesOnVertex_sign(i,iVtx) = 0.0
+            end if
+         end do
+      end do
+
+      do iCell=1,nCells
+         do i=1,nEdgesOnCell(iCell)
+            if (edgesOnCell(i,iCell) <= nEdges) then
+               if (iCell == cellsOnEdge(1,edgesOnCell(i,iCell))) then
+                  edgesOnCell_sign(i,iCell) = 1.0
+                  zb_cell(:,i,iCell) = zb(:,1,edgesOnCell(i,iCell))
+                  zb3_cell(:,i,iCell) = zb3(:,1,edgesOnCell(i,iCell))
+               else
+                  edgesOnCell_sign(i,iCell) = -1.0
+                  zb_cell(:,i,iCell) = zb(:,2,edgesOnCell(i,iCell))
+                  zb3_cell(:,i,iCell) = zb3(:,2,edgesOnCell(i,iCell))
+               end if
+            else
+               edgesOnCell_sign(i,iCell) = 0.0
+            end if
+         end do
+      end do
+
+      do iCell=1,nCells
+         do i=1,nEdgesOnCell(iCell)
+            iVtx = verticesOnCell(i,iCell)
+            if (iVtx <= nVertices) then
+               do j=1,vertexDegree
+                  if (iCell == cellsOnVertex(j,iVtx)) then
+                     kiteForCell(i,iCell) = j
+                     exit
+                  end if
+               end do
+               if (j > vertexDegree) then
+                  write(stderrUnit,*) 'Unexpected error while identifying kiteForCell'
+               end if
+            else
+               kiteForCell(i,iCell) = 1
+            end if
+         end do
+      end do
+
+   end subroutine atm_compute_signs
+
+
    subroutine atm_compute_damping_coefs(mesh, configs)
 
       implicit none
@@ -748,109 +1089,6 @@ module atm_core
    end subroutine atm_compute_damping_coefs
 
 
-   subroutine atm_compute_pgf_coefs(mesh, configs)
-
-      implicit none
-
-      type (mpas_pool_type), intent(inout) :: mesh
-      type (mpas_pool_type), intent(in) :: configs
-
-      integer :: iEdge, iCell1, iCell2, k, iCell, nz, nz1
-      real (kind=RKIND) :: d1, d2, d3
-      real (kind=RKIND), dimension(:,:), pointer :: cpr, cpl, zgrid, pzp, pzm
-      integer, dimension(:,:), pointer :: cellsOnEdge
-      integer, pointer :: nCells, nEdges, nVertLevels
-      logical, pointer :: config_newpx
-
-      call mpas_pool_get_array(mesh, 'cpr', cpr)
-      call mpas_pool_get_array(mesh, 'cpl', cpl)
-      call mpas_pool_get_array(mesh, 'pzp', pzp)
-      call mpas_pool_get_array(mesh, 'pzm', pzm)
-      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
-      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
-
-      call mpas_pool_get_config(configs, 'config_newpx', config_newpx)
-
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
-
-!**** coefficient arrays for new pressure gradient calculation
-
-      cpr(:,:) = 0.0
-      cpl(:,:) = 0.0
-
-      if (config_newpx) then
-         do iEdge=1,nEdges
-
-            iCell1 = cellsOnEdge(1,iEdge)
-            iCell2 = cellsOnEdge(2,iEdge)
-
-            d1       = .25*(zgrid(1,iCell2)+zgrid(2,iCell2)-zgrid(1,iCell1)-zgrid(2,iCell1))
-            d2       = d1+.5*(zgrid(3,iCell2)-zgrid(1,iCell2))
-            d3       = d2+.5*(zgrid(4,iCell2)-zgrid(2,iCell2))
-!            cpr(1,iEdge) = d2*d3*(d3-d2)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpr(2,iEdge) = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpr(3,iEdge) = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-
-            cpr(1,iEdge) =  d2/(d2-d1)
-            cpr(2,iEdge) = -d1/(d2-d1)
-            cpr(3,iEdge) =  0.
-
-            d1       = .25*(zgrid(1,iCell1)+zgrid(2,iCell1)-zgrid(1,iCell2)-zgrid(2,iCell2))
-            d2       = d1+.5*(zgrid(3,iCell1)-zgrid(1,iCell1))
-            d3       = d2+.5*(zgrid(4,iCell1)-zgrid(2,iCell1))
-!            cpl(1,iEdge) = d2*d3*(d3-d2)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpl(2,iEdge) = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpl(3,iEdge) = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-
-            cpl(1,iEdge) =  d2/(d2-d1)
-            cpl(2,iEdge) = -d1/(d2-d1)
-            cpl(3,iEdge) =  0.
-
-         end do
-
-!         write(6,*) 'cpr1 = ',cpr(1,1),'  cpl1 = ',cpl(1,1)
-!         write(6,*) 'cpr2 = ',cpr(2,1),'  cpl2 = ',cpl(2,1)
-!         write(6,*) 'cpr3 = ',cpr(3,1),'  cpl3 = ',cpl(3,1)
-
-      else
-
-!        Coefficients for computing vertical pressure gradient dp/dz
-!        dp/dz (k,iCell) = pzp(k,iCell) * (p(k+1,iCell) - p(k,iCell)) +pzm(k,iCell) * (p(k,iCell) - p(k-1,iCell))
-
-         nz1 = nVertLevels
-         nz = nz1 + 1
-
-         do iCell=1, nCells
-
-            d1 = zgrid(3,iCell)-zgrid(1,iCell)
-            d2 = zgrid(4,iCell)-zgrid(2,iCell)
-            d3 = d1+d2
-            pzm(1,iCell) =  2.*d3/(d1*d2)
-            pzp(1,iCell) = -2.*d1/(d2*d3)
-
-            do k=2,nz1-1
-               pzp(k,iCell) = 2.*(zgrid(k+1,iCell)-zgrid(k-1,iCell))/     &
-     &                      ((zgrid(k+2,iCell)-zgrid(k  ,iCell))*     &
-     &                       (zgrid(k+2,iCell)-zgrid(k  ,iCell)       &
-     &                       +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
-               pzm(k,iCell) = 2.*(zgrid(k+2,iCell)-zgrid(k  ,iCell))/     &
-     &                      ((zgrid(k+1,iCell)-zgrid(k-1,iCell))*     &
-     &                       (zgrid(k+2,iCell)-zgrid(k  ,iCell)       &
-     &                       +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
-            end do
-
-            pzp(nz1,iCell) = 0.
-            pzm(nz1,iCell) = 2./(zgrid(nz,iCell)-zgrid(nz1-1,iCell))
-
-         end do
-
-      end if
-
-   end subroutine atm_compute_pgf_coefs
-
-
    subroutine atm_adv_coef_compression( mesh )
 
       implicit none
@@ -866,7 +1104,7 @@ module atm_core
 
       integer :: cell1, cell2, iEdge, n, i, j, j_in, iCell
       integer, pointer :: nCells, nEdges
-      integer :: cell_list(20), ordered_cell_list(20)
+      integer :: cell_list(20)
       logical :: addcell
 
 
@@ -917,24 +1155,10 @@ module atm_core
                end if
             end do
   
-          ! order the list by increasing cell number (brute force approach)
-  
-            do i=1,n
-               ordered_cell_list(i) = nCells + 2
-               j_in = 1
-               do j=1,n
-                  if (ordered_cell_list(i) > cell_list(j) ) then
-                     j_in = j
-                     ordered_cell_list(i) = cell_list(j)
-                  end if
-               end do
-!               ordered_cell_list(i) = cell_list(j_in)
-               cell_list(j_in) = nCells + 3
-            end do
   
             nAdvCellsForEdge(iEdge) = n
             do iCell = 1, nAdvCellsForEdge(iEdge)
-               advCellsForEdge(iCell,iEdge) = ordered_cell_list(iCell)
+               advCellsForEdge(iCell,iEdge) = cell_list(iCell)
             end do
   
           ! we have the ordered list, now construct coefficients
@@ -947,7 +1171,7 @@ module atm_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell1 ) j_in = j
+               if( cell_list(j) == cell1 ) j_in = j
             end do
             adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(1,1,iEdge)
             adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) + deriv_two(1,1,iEdge)
@@ -955,7 +1179,7 @@ module atm_core
             do iCell = 1, nEdgesOnCell(cell1)
                j_in = 0
                do j=1, n
-                 if( ordered_cell_list(j) == cellsOnCell(iCell,cell1) ) j_in = j
+                 if( cell_list(j) == cellsOnCell(iCell,cell1) ) j_in = j
                end do
                adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(iCell+1,1,iEdge)
                adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) + deriv_two(iCell+1,1,iEdge)
@@ -966,7 +1190,7 @@ module atm_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell2 ) j_in = j
+               if( cell_list(j) == cell2 ) j_in = j
             end do
             adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(1,2,iEdge)
             adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) - deriv_two(1,2,iEdge)
@@ -974,7 +1198,7 @@ module atm_core
             do iCell = 1, nEdgesOnCell(cell2)
                j_in = 0
                do j=1, n
-                  if( ordered_cell_list(j) == cellsOnCell(iCell,cell2) ) j_in = j
+                  if( cell_list(j) == cellsOnCell(iCell,cell2) ) j_in = j
                end do
                adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(iCell+1,2,iEdge)
                adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) - deriv_two(iCell+1,2,iEdge)
@@ -989,13 +1213,13 @@ module atm_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell1 ) j_in = j
+               if( cell_list(j) == cell1 ) j_in = j
             end do
             adv_coefs(j_in,iEdge) = adv_coefs(j_in,iEdge) + 0.5
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell2 ) j_in = j
+               if( cell_list(j) == cell2 ) j_in = j
             end do
             adv_coefs(j_in,iEdge) = adv_coefs(j_in,iEdge) + 0.5
   
@@ -1012,4 +1236,28 @@ module atm_core
 
    end subroutine atm_adv_coef_compression
 
+
+   subroutine atm_couple_coef_3rd_order(mesh, configs)
+
+      implicit none
+
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
+
+      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs_3rd
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb3_cell
+      real (kind=RKIND), pointer :: config_coef_3rd_order
+
+      call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
+      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
+
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
+
+      adv_coefs_3rd(:,:) = config_coef_3rd_order * adv_coefs_3rd(:,:)
+      zb3_cell(:,:,:) = config_coef_3rd_order * zb3_cell(:,:,:)
+
+   end subroutine atm_couple_coef_3rd_order
+
+
 end module atm_core
+

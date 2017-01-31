@@ -27,6 +27,7 @@ module mpas_tensor_operations
    use mpas_matrix_operations
    use mpas_dmpar
    use mpas_io_units
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    implicit none
    private

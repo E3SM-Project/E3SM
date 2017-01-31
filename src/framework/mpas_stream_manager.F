@@ -15,6 +15,7 @@ module mpas_stream_manager
     use mpas_stream_list
     use mpas_sort
     use mpas_threading
+    use mpas_abort, only : mpas_dmpar_global_abort
 
 
     public :: MPAS_stream_mgr_init, &
@@ -2139,7 +2140,7 @@ module mpas_stream_manager
         if (present(streamID)) then
             addedAttribute = .false.
             nullify(stream_cursor)
-            do while (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
+            do while (MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local))
                 addedAttribute = .true.
                 att_pool => stream_cursor % att_pool
                 err_level = mpas_pool_get_error_level()
