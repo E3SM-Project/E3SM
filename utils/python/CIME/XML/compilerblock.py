@@ -118,7 +118,6 @@ class CompilerBlock(object):
         if output is None:
             output = ""
         logger.debug("Initial output=%s"%output)
-        #Brackets are manditory in this file
         reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
