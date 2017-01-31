@@ -255,7 +255,7 @@ module mpas_stream_list
 
         ! Return if no streams exist in stream list
         if ( list % nItems == 0 ) then
-            LIST_DEBUG_WRITE(' -- Not items matching '//trim(streamPattern)//' found in list.')
+            LIST_DEBUG_WRITE(' -- No items matching '//trim(streamPattern)//' found in list.')
             nullify(stream)
             return
         end if

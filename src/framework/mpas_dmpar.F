@@ -79,6 +79,8 @@ include 'mpif.h'
    public :: mpas_dmpar_minloc_real
    public :: mpas_dmpar_maxloc_int
    public :: mpas_dmpar_maxloc_real
+   public :: mpas_dmpar_minattributes_real
+   public :: mpas_dmpar_maxattributes_real
    public :: mpas_dmpar_sum_int_array
    public :: mpas_dmpar_min_int_array
    public :: mpas_dmpar_max_int_array
@@ -256,13 +258,6 @@ include 'mpif.h'
 
       dminfo % nprocs = mpi_size
       dminfo % my_proc_id = mpi_rank
-
-      if ( dminfo % initialized_mpi ) then
-         write(stderrUnit,'(a,i5,a,i5,a)') 'task ', mpi_rank, ' of ', mpi_size, &
-           ' is running'
-
-         call open_streams(dminfo % my_proc_id)
-      end if
 
       dminfo % info = MPI_INFO_NULL
 #else
@@ -1036,6 +1031,103 @@ include 'mpif.h'
       end if
 
    end subroutine mpas_dmpar_maxloc_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_minattributes_real
+!
+!> \brief Returns the array associated with the global minimum value
+!> \author Michael Duda
+!> \date   12 February 2016
+!> \details
+!>  This routine takes as input a real value, plus a real-valued array  
+!>  associated with that value, and returns the array from the task with 
+!>  the minimum value of the variable being reduced.
+!>  
+!>  One possible application of this routine might be to return the latitude,
+!>  longitude, and model level associated with the global minimum of a field
+!>  using a call like:
+!>  call mpas_dmpar_minattributes_real(dminfo, localMinValue, &
+!>                                     (/latOfLocalMin, lonOfLocalMin, levOfLocalMin/) &
+!>                                     globalAttributes)
+!>  latOfGlobalMin = globalAttributes(1)
+!>  lonOfGlobalMin = globalAttributes(2)
+!>  levOfGlobalMin = globalAttributes(3)
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_minattributes_real(dminfo, localValue, localAttributes, globalAttributes)
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo
+      real(kind=RKIND), intent(in) :: localValue
+      real(kind=RKIND), dimension(:), intent(in) :: localAttributes
+      real(kind=RKIND), dimension(:), intent(out) :: globalAttributes
+
+      integer :: mpi_ierr
+      real(kind=RKIND), dimension(2,size(localAttributes)) :: recvbuf, sendbuf
+
+#ifdef _MPI
+      sendbuf(1,:) = localValue
+      sendbuf(2,:) = localAttributes(:)
+
+      call MPI_Allreduce(sendbuf, recvbuf, size(recvbuf,dim=2), MPI_2REALKIND, MPI_MINLOC, dminfo % comm, mpi_ierr)
+
+      globalAttributes(:) = recvbuf(2,:)
+#else
+      globalAttributes(:) = localAttributes(:)
+#endif
+
+   end subroutine mpas_dmpar_minattributes_real
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_maxattributes_real
+!
+!> \brief Returns the array associated with the global maximum value
+!> \author Michael Duda
+!> \date   12 February 2016
+!> \details
+!>  This routine takes as input a real value, plus a real-valued array  
+!>  associated with that value, and returns the array from the task with 
+!>  the maximum value of the variable being reduced.
+!>  
+!>  One possible application of this routine might be to return the latitude,
+!>  longitude, and model level associated with the global maximum of a field
+!>  using a call like:
+!>  call mpas_dmpar_maxattributes_real(dminfo, localMaxValue, &
+!>                                     (/latOfLocalMax, lonOfLocalMax, levOfLocalMax/) &
+!>                                     globalAttributes)
+!>  latOfGlobalMax = globalAttributes(1)
+!>  lonOfGlobalMax = globalAttributes(2)
+!>  levOfGlobalMax = globalAttributes(3)
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_maxattributes_real(dminfo, localValue, localAttributes, globalAttributes)
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo
+      real(kind=RKIND), intent(in) :: localValue
+      real(kind=RKIND), dimension(:), intent(in) :: localAttributes
+      real(kind=RKIND), dimension(:), intent(out) :: globalAttributes
+
+      integer :: mpi_ierr
+      real(kind=RKIND), dimension(2,size(localAttributes)) :: recvbuf, sendbuf
+
+#ifdef _MPI
+      sendbuf(1,:) = localValue
+      sendbuf(2,:) = localAttributes(:)
+
+      call MPI_Allreduce(sendbuf, recvbuf, size(recvbuf,dim=2), MPI_2REALKIND, MPI_MAXLOC, dminfo % comm, mpi_ierr)
+
+      globalAttributes(:) = recvbuf(2,:)
+#else
+      globalAttributes(:) = localAttributes(:)
+#endif
+
+   end subroutine mpas_dmpar_maxattributes_real
+
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_sum_int_array
@@ -9691,77 +9783,4 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
 
 end module mpas_dmpar
-
-
-!-----------------------------------------------------------------------
-!  routine mpas_dmpar_global_abort
-!
-!> \brief MPAS dmpar global abort routine.
-!> \author Michael Duda
-!> \date   03/26/13
-!> \details
-!>  This routine aborts MPI. A call to it kills the model through the use of
-!>  MPI_Abort on the world communicator, and outputs a message.
-!
-!-----------------------------------------------------------------------
-subroutine mpas_dmpar_global_abort(mesg)!{{{
-
-   use mpas_kind_types, only : StrKIND
-   use mpas_io_units, only : stderrUnit, stdoutUnit
-   use mpas_threading, only : mpas_threading_get_thread_num
-
-#ifdef _MPI
-#ifndef NOMPIMOD
-   use mpi
-#endif
-#endif
-
-   implicit none
-
-#ifdef _MPI
-#ifdef NOMPIMOD
-include 'mpif.h'
-#endif
-#endif
-
-   character (len=*), intent(in) :: mesg !< Input: Abort message
-   integer :: threadNum
-
-#ifdef _MPI
-   integer :: mpi_ierr, mpi_errcode, my_proc_id
-#endif
-
-   character(len=StrKIND) :: errorfile
-
-   threadNum = mpas_threading_get_thread_num()
-
-   if ( threadNum == 0 ) then
-     write(stderrUnit,*) trim(mesg)
-   end if
-
-   ! close log units
-   close(stderrUnit)
-   close(stdoutUnit)
-
-   ! write out error message to critical error message file
-#ifdef _MPI
-   call MPI_COMM_RANK(MPI_COMM_WORLD, my_proc_id, mpi_ierr)
-   write(errorfile,fmt='(a,i6.6,a)') 'mpas_critical_error.', my_proc_id, '.log'
-#else
-   errorfile = 'mpas_critical_error.log'
-#endif
-
-   open(unit=stderrUnit,file=trim(errorfile))
-   write(stderrUnit,*) 'MPAS critical error'
-   write(stderrUnit,*) trim(mesg)
-   close(stderrUnit)
-
-   ! stop the code
-#ifdef _MPI
-   call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
-#else
-   stop
-#endif
-
-end subroutine mpas_dmpar_global_abort!}}}
 

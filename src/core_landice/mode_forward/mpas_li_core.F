@@ -10,6 +10,7 @@ module li_core
    use mpas_framework
    use mpas_timekeeping
    use li_analysis_driver
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    implicit none
    private
