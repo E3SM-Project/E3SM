@@ -589,10 +589,6 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 		// Start defining new subroutine for namelist record.
 		fortprintf(fd, "   subroutine %s_setup_nmlrec_%s(configPool, unitNumber, dminfo)\n", core_string, nmlrecname);
-		fortprintf(fd, "      use mpas_derived_types\n");
-		fortprintf(fd, "      use mpas_dmpar\n");
-		fortprintf(fd, "      use mpas_pool_routines\n");
-		fortprintf(fd, "      use mpas_io_units\n");
 		fortprintf(fd, "      implicit none\n");
 		fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 		fortprintf(fd, "      integer, intent(in) :: unitNumber\n");
