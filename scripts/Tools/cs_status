@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+"""
+List test results based on TestStatus files. Returns True if
+no errors occured (not based on test statuses).
+"""
+
+from standard_script_setup import *
+import argparse, sys, os, logging
+from CIME.utils import expect
+from CIME.test_status import *
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s <Glob of TestStatus> [<Path/Glob to TestStatus> ...]  [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Wait for all tests in a test area\033[0m
+    > %s path/to/testarea/*/TestStatus
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("paths", nargs="+", help="Paths to TestStatus files.")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.paths
+
+###############################################################################
+def cs_status(test_paths, model):
+###############################################################################
+    for test_path in test_paths:
+        ts = TestStatus(test_dir=os.path.dirname(test_path))
+        test_name = ts.get_name()
+        summary = ts.get_overall_test_status()
+        print "%s (Overall: %s), details:" % (test_name, summary)
+        for phase, status in ts:
+            print "  %s %s" % (status, phase)
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    test_paths = parse_command_line(sys.argv, description)
+    cs_status(test_paths,CIME.utils.get_model())
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
