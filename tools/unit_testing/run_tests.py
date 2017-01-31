@@ -3,20 +3,18 @@
 # Python 3 compatible printing in Python 2.
 from __future__ import print_function
 
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "utils", "python"))
+
+from standard_script_setup import *
+from CIME.BuildTools.configure import configure
 #=================================================
 # Standard library modules.
 #=================================================
 
-# Use optparse, because many machines seem to have an old Python without
-# the newer argparse.
-# In short: ditch this for argparse when everyone has Python 2.7 or later.
-from optparse import OptionParser
-
-import os
 from shutil import rmtree
 import subprocess
-import sys
-from xml.etree.ElementTree import ElementTree
 
 #=================================================
 # Utility functions for finding files.
@@ -58,259 +56,111 @@ from machine_setup import MachineCompilerSettings
 from printer import Printer
 from xml_test_list import *
 
-#=================================================
-# Parse options and set up output Printer.
-#=================================================
-
-parser = OptionParser(
-    usage="%prog [options]",
+def parse_command_line(args):
+    """Command line argument parser for configure."""
     description="""Within build_directory (--build-dir), runs cmake on test
 specification directories (from --test-spec-dir or --xml-test-list), then
 builds and runs the tests defined via CMake."""
-    )
-parser.add_option(
-    "--build-dir", dest="build_dir", default=".",
-    help="""Directory where tests are built and run. Will be created if it
-does not exist."""
-    )
-parser.add_option(
-    "--build-type", dest="build_type", default="CESM_DEBUG",
-    help="""Value defined for CMAKE_BUILD_TYPE."""
-    )
-parser.add_option(
-    "--cesm-cmake", dest="cesm_cmake_dir",
-    help="""Location of CESM CMake modules.
+    parser = argparse.ArgumentParser(description=description)
 
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("--build-dir", default=".",
+                        help="""Directory where tests are built and run. Will be created if it does not exist."""
+                        )
+    parser.add_argument("--build-type", default="CIME_DEBUG",
+                        help="""Value defined for CMAKE_BUILD_TYPE."""
+                        )
+    parser.add_argument("--cime-cmake",
+                        help="""Location of CESM CMake modules.
 Usually this option is unnecessary, because this script can autodetect this
 location."""
     )
-parser.add_option(
-    "--cesm-root", dest="cesm_root_dir",
-    help="""Location of CESM root directory.
 
-Usually this option is unnecessary, because this script can autodetect this
-location. If this option is set, it changes the locations used to
-autodetect all other paths."""
-    )
-parser.add_option(
-    "--clean", dest="clean", action="store_true",
-    default=False,
-    help="""Clean build directory before building. Removes CMake cache and
+    parser.add_argument("--clean", action="store_true",
+                        help="""Clean build directory before building. Removes CMake cache and
 runs "make clean"."""
+                        )
+    parser.add_argument("--cmake-args",
+                        help="""Additional arguments to pass to CMake."""
+                        )
+    parser.add_argument("--color", action="store_true",
+                        default=sys.stdout.isatty(),
+                        help="""Turn on colorized output."""
+                        )
+    parser.add_option("--no-color",  action="store_false",
+                      help="""Turn off colorized output."""
     )
-parser.add_option(
-    "--cmake-args", dest="cmake_args",
-    help="""Additional arguments to pass to CMake."""
-    )
-parser.add_option(
-    "--color", dest="color", action="store_true",
-    default=sys.stdout.isatty(),
-    help="""Turn on colorized output."""
-    )
-parser.add_option(
-    "--no-color", dest="color", action="store_false",
-    help="""Turn off colorized output."""
-    )
-parser.add_option(
-    "--compiler", dest="compiler", default="gnu",
-    help="""Compiler vendor for build (gnu, ibm, intel, nag, or pgi).
-
-Only used for lookup in CESM Machines files."""
-    )
-parser.add_option(
-    "--enable-genf90", dest="genf90", action="store_true",
-    default=True,
-    help="""Use genf90.pl to regenerate out-of-date sources from .F90.in
+    parser.add_argument("--compiler",  default="gnu",
+                        help="""Compiler vendor for build (supported depends on machine).
+Only used for lookup in CIME Machines files."""
+                        )
+    parser.add_argument("--enable-genf90", action="store_true",
+                        default=True,
+                        help="""Use genf90.pl to regenerate out-of-date sources from .F90.in
 templates.
 
 Not enabled by default because it creates in-source output, and because it
 requires genf90.pl to be in the user's path."""
-    )
-parser.add_option(
-    "--machines-dir", dest="machines_dir",
-    help="""Location of CESM Machines directory.
+                        )
 
-In a CESM checkout this option is unnecessary, because this script can
+    parser.add_argument("--machines-dir",
+        help="""Location of CIME Machines directory.
+In a CIME checkout this option is unnecessary, because this script can
 autodetect this location."""
     )
-parser.add_option(
-    "--mpilib", dest="mpilib",
+    parser.add_argument("--mpilib",
     help="""MPI Library to use in build.
-
 Required argument (until we can get this from config_machines)
 Must match an MPILIB option in config_compilers.xml.
 e.g., for yellowstone, can use 'mpich2'."""
     )
-parser.add_option(
-    "--mpirun-command", dest="mpirun_command", default="",
-    help="""Command to use to run an MPI executable.
+    parser.add_argument(
+        "--mpirun-command", default="",
+        help="""Command to use to run an MPI executable.
 
 If not specified, does not use any mpirun prefix to run executables."""
-    )
-parser.add_option(
-    "--test-spec-dir", dest="test_spec_dir",
-    help="""Location where tests are specified."""
-    )
-parser.add_option(
-    "-T", "--ctest-args", dest="ctest_args",
+        )
+    parser.add_argument(
+        "--test-spec-dir",
+        help="""Location where tests are specified."""
+        )
+    parser.add_argument(
+    "-T", "--ctest-args",
     help="""Additional arguments to pass to CTest."""
     )
-parser.add_option(
-    "--use-env-compiler", dest="use_env_compiler", action="store_true",
-    default=False,
-    help="""Always use environment settings to set compiler commands.
+    parser.add_argument(
+        "--use-env-compiler",  action="store_true",
+        default=False,
+        help="""Always use environment settings to set compiler commands.
 
-This is only necessary if using a CESM build type, if the user wants to
+This is only necessary if using a CIME build type, if the user wants to
 override the command provided by Machines."""
     )
-parser.add_option(
-    "--use-openmp", dest="use_openmp", action="store_true",
-    default=False,
-    help="""Turn on OPENMP support for tests."""
+    parser.add_argument(
+        "--use-openmp",  action="store_true",
+        default=False,
+        help="""Turn on OPENMP support for tests."""
     )
-parser.add_option(
-    "-v", "--verbose", dest="verbose", action="store_true",
-    default=False,
-    help="""Print verbose output."""
-    )
-parser.add_option(
-    "--xml-test-list", dest="xml_test_list",
-    help="""Path to an XML file listing directories to run tests from."""
-    )
-
-(options, args) = parser.parse_args()
-
-output = Printer(color=options.color)
-
-if len(args) != 0:
-    parser.print_help()
-    error_string = "\n".join(["Unrecognized argument(s) detected:"]+
-                             args)
-    output.print_error(error_string)
-    raise Exception("Bad command-line argument.")
-
-if options.test_spec_dir is None and options.xml_test_list is None:
-    parser.print_help()
-    output.print_error(
-        "You must specify either --test-spec-dir or --xml-test-list."
+    parser.add_argument(
+        "--xml-test-list",
+        help="""Path to an XML file listing directories to run tests from."""
         )
-    raise Exception("Missing required argument.")
+    args = parser.parse_args()
+    CIME.utils.handle_standard_logging_options(args)
+    output = Printer(color=args.color)
 
-if options.mpilib is None:
-    parser.print_help()
-    output.print_error(
-        "You must specify --mpilib."
-        )
-    raise Exception("Missing required argument.")
-
-#=================================================
-# Find directory and file paths.
-#=================================================
-
-# Search for the CESM root directory.
-# First check the option. If not specified, look to see if there's a tools
-# directory two levels up (just as a sanity check).
-if options.cesm_root_dir is not None:
-    cesm_root_dir = os.path.abspath(options.cesm_root_dir)
-else:
-    cesm_root_guess = os.path.join(this_script_dir, "..", "..","..")
-    if file_exists(os.path.join(cesm_root_guess, "cime")):
-        cesm_root_dir = os.path.abspath(cesm_root_guess)
-    else:
-        cesm_root_dir = None
-
-# CMake modules.
-if options.cesm_cmake_dir is not None:
-    cesm_cmake_dir = os.path.abspath(options.cesm_cmake_dir)
-else:
-    cesm_cmake_guesses = [
-        os.getcwd(),
-        os.path.abspath("cmake"),
-        this_script_dir,
-        os.path.join(this_script_dir, "cmake"),
-        ]
-
-    if cesm_root_dir is not None:
-        cesm_cmake_guesses.append(
-            os.path.join(cesm_root_dir, "cime", "externals", "CMake")
+    if args.xml_test_list is None and args.test_spec_dir is None:
+        output.print_error(
+            "You must specify either --test-spec-dir or --xml-test-list."
             )
+        raise Exception("Missing required argument.")
 
-    cesm_cmake_dir = search_paths("CESM_utils.cmake", cesm_cmake_guesses)
+    return output, args.build_dir, args.build_type, args.cime_cmake, args.clean,\
+        args.cmake_args, args.compiler, args.enable_genf90, args.machines_dir,\
+        args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
+        args.use_env_compiler, args.use_openmp, args.xml_test_list
 
-# CESM Machines directory.
-if options.machines_dir is not None:
-    machines_dir = os.path.abspath(options.machines_dir)
-else:
-    machines_guesses = []
-
-    if cesm_root_dir is not None:
-        machines_guesses.append(os.path.join(cesm_root_dir, "cime", "cime_config", "cesm", "machines"))
-
-    machines_guesses.append(os.path.abspath("machines"))
-
-    # We may not need Machines depending on build type and environment, so
-    # don't necessarily.
-    try:
-        machines_dir = search_paths("config_compilers.xml",
-                                    machines_guesses)
-    except AssertionError:
-        if options.build_type.startswith("CESM"):
-            raise Exception(
-                "CESM build type selected, but could not find Machines."
-                )
-        else:
-            machines_dir = None
-
-if machines_dir is None:
-    compiler_xml = None
-else:
-    compiler_xml = os.path.join(machines_dir, "config_compilers.xml")
-    assert file_exists(compiler_xml), "Machines directory should be "+ \
-        machines_dir+" but no config_compilers.xml is there!"
-
-# Get test specification directories from command line options.
-suite_specs = []
-
-if options.xml_test_list is not None:
-    test_xml_tree = ElementTree()
-    test_xml_tree.parse(options.xml_test_list)
-    known_paths = {
-        "here": os.path.abspath(os.path.dirname(options.xml_test_list)),
-        }
-    suite_specs.extend(suites_from_xml(test_xml_tree, known_paths))
-
-if options.test_spec_dir is not None:
-    suite_specs.append(
-        TestSuiteSpec("__command_line_test__",
-                      ["__command_line_test__"],
-                      [os.path.abspath(options.test_spec_dir)])
-        )
-
-# Create build directory if necessary.
-build_dir = os.path.abspath(options.build_dir)
-
-if not file_exists(build_dir):
-    os.mkdir(build_dir)
-
-# Switch to the build directory.
-os.chdir(build_dir)
-
-#=================================================
-# Set the machine/compiler specific environment.
-#=================================================
-
-if machines_dir is not None:
-
-    mach_settings = MachineCompilerSettings(options.compiler.lower(),
-                                            compiler_xml,
-                                            mpilib=options.mpilib,
-                                            use_env_compiler=options.use_env_compiler,
-                                            use_openmp=options.use_openmp)
-    mach_settings.set_compiler_env()
-
-#=================================================
-# Functions to perform various stages of build.
-#=================================================
 
 def cmake_stage(name, test_spec_dir):
     """Run cmake in the current working directory.
@@ -411,6 +261,123 @@ for spec in suite_specs:
 
     os.chdir(build_dir)
 
+
+def _main():
+    output, build_dir, build_type, cime_cmake, clean,\
+        cmake_args, compiler, enable_genf90, machines_dir,\
+        mpilib, mpirun_command, test_spec_dir, ctest_args,\
+        use_env_compiler, use_openmp, xml_test_list \
+        = parse_command_line(sys.argv)
+
+#=================================================
+# Find directory and file paths.
+#=================================================
+
+# Search for the CESM root directory.
+# First check the option. If not specified, look to see if there's a tools
+# directory two levels up (just as a sanity check).
+    if options.cesm_root_dir is not None:
+        cesm_root_dir = os.path.abspath(options.cesm_root_dir)
+    else:
+        cesm_root_guess = os.path.join(this_script_dir, "..", "..","..")
+        if file_exists(os.path.join(cesm_root_guess, "cime")):
+            cesm_root_dir = os.path.abspath(cesm_root_guess)
+        else:
+            cesm_root_dir = None
+
+# CMake modules.
+        if options.cesm_cmake_dir is not None:
+            cesm_cmake_dir = os.path.abspath(options.cesm_cmake_dir)
+        else:
+            cesm_cmake_guesses = [
+                os.getcwd(),
+                os.path.abspath("cmake"),
+                this_script_dir,
+                os.path.join(this_script_dir, "cmake"),
+                ]
+
+        if cesm_root_dir is not None:
+            cesm_cmake_guesses.append(
+                os.path.join(cesm_root_dir, "cime", "externals", "CMake")
+                )
+
+    cesm_cmake_dir = search_paths("CESM_utils.cmake", cesm_cmake_guesses)
+
+# CESM Machines directory.
+    if options.machines_dir is not None:
+        machines_dir = os.path.abspath(options.machines_dir)
+    else:
+        machines_guesses = []
+
+        if cesm_root_dir is not None:
+            machines_guesses.append(os.path.join(cesm_root_dir, "cime", "cime_config", "cesm", "machines"))
+
+            machines_guesses.append(os.path.abspath("machines"))
+
+            # We may not need Machines depending on build type and environment, so
+            # don't necessarily.
+            try:
+                machines_dir = search_paths("config_compilers.xml",
+                                            machines_guesses)
+            except AssertionError:
+                if options.build_type.startswith("CESM"):
+                    raise Exception(
+                        "CESM build type selected, but could not find Machines."
+                        )
+                else:
+                    machines_dir = None
+
+            if machines_dir is None:
+                compiler_xml = None
+            else:
+                compiler_xml = os.path.join(machines_dir, "config_compilers.xml")
+                assert file_exists(compiler_xml), "Machines directory should be "+ \
+                    machines_dir+" but no config_compilers.xml is there!"
+
+# Get test specification directories from command line options.
+            suite_specs = []
+
+            if options.xml_test_list is not None:
+                test_xml_tree = ElementTree()
+                test_xml_tree.parse(options.xml_test_list)
+    known_paths = {
+        "here": os.path.abspath(os.path.dirname(options.xml_test_list)),
+        }
+    suite_specs.extend(suites_from_xml(test_xml_tree, known_paths))
+
+if options.test_spec_dir is not None:
+    suite_specs.append(
+        TestSuiteSpec("__command_line_test__",
+                      ["__command_line_test__"],
+                      [os.path.abspath(options.test_spec_dir)])
+        )
+
+# Create build directory if necessary.
+build_dir = os.path.abspath(options.build_dir)
+
+if not file_exists(build_dir):
+    os.mkdir(build_dir)
+
+# Switch to the build directory.
+os.chdir(build_dir)
+
+#=================================================
+# Set the machine/compiler specific environment.
+#=================================================
+
+if machines_dir is not None:
+
+    mach_settings = MachineCompilerSettings(options.compiler.lower(),
+                                            compiler_xml,
+                                            mpilib=options.mpilib,
+                                            use_env_compiler=options.use_env_compiler,
+                                            use_openmp=options.use_openmp)
+    mach_settings.set_compiler_env()
+
+#=================================================
+# Functions to perform various stages of build.
+#=================================================
+
 #=================================================
 # Run tests.
 #=================================================
@@ -440,3 +407,9 @@ for spec in suite_specs:
         os.chdir("..")
 
     os.chdir(build_dir)
+
+
+
+
+if __name__ == "__main__":
+    _main()
