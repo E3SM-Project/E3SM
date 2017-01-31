@@ -67,6 +67,8 @@ from CIME.XML.standard_module_setup import *
 from CIME.BuildTools.valuesetting import ValueSetting
 from CIME.BuildTools.possiblevalues import PossibleValues
 
+logger = logging.getLogger(__name__)
+
 class CompilerBlock(object):
 
     """Data used to translate a single <compiler> element.
@@ -115,6 +117,7 @@ class CompilerBlock(object):
         output = elem.text
         if output is None:
             output = ""
+
         for child in elem:
             if child.tag == "env":
                 # <env> tags just need to be expanded by the writer.
@@ -143,6 +146,35 @@ class CompilerBlock(object):
                        "according to the schema.")
             if child.tail is not None:
                 output += child.tail
+
+        reference_re = re.compile(r'\${?(\w+)}?')
+        env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
+        shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
+
+        for m in env_ref_re.finditer(output):
+            logger.debug("look for %s in env" % output)
+            output = output.replace(m.group(),
+                                    writer.environment_variable_string(m.groups()[0]))
+
+        for s in shell_ref_re.finditer(output):
+            logger.debug("execute %s in shell" % output)
+            command = s.groups()[0]
+            new_set_up, inline, new_tear_down = \
+                writer.shell_command_strings(command)
+
+            output = output.replace(s.group(), inline)
+            if new_set_up is not None:
+                set_up.append(new_set_up)
+            if new_tear_down is not None:
+                tear_down.append(new_tear_down)
+
+        for m in reference_re.finditer(output):
+            var_name = m.groups()[0]
+            output = output.replace(m.group(), writer.variable_string(var_name))
+            depends.add(var_name)
+
+
+
         return output
 
     def _elem_to_setting(self, elem):

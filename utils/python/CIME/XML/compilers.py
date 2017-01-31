@@ -208,9 +208,9 @@ class Compilers(GenericXML):
                 if value_lists[var_name].depends <= vars_written
             ]
             expect(len(ready_variables) > 0,
-                   "The config_build XML has bad <var> references. "
+                   "The file %s has bad <var> references. "
                    "Check for circular references or variables that "
-                   "are in a <var> tag but not actually defined.")
+                   "are in a <var> tag but not actually defined."%self.filename)
             big_normal_tree = None
             big_append_tree = None
             for var_name in ready_variables:
