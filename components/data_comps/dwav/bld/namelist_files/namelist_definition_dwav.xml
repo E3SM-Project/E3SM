@@ -1,0 +1,252 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+<!-- ========================================================================================  -->
+<!-- DWAV Namelists                                                                            -->
+<!-- ========================================================================================  -->
+
+<!-- =========================================  -->
+<!--- shr_strmdata_nml (file dwav_wav_in)       -->
+<!-- =========================================  -->
+
+<entry id="datamode"
+type="char*256"
+category="streams"
+group="shr_strdata_nml"
+valid_values="null,copyall">
+valid values: null,copyall
+The wave data is associated with the wave model
+and is normally on a different grid than the ocean data.
+
+datamode = "null"
+  null is always a valid option and means no data will be generated.
+  Turns off the data model as a provider of data to the coupler.
+datamode = "copyall"
+  Copies all fields directly from the input data streams Any required
+  fields not found on an input stream will be set to zero.
+
+Set by the following xml variables in env_run.xml
+DWAV_MODE
+   specifies values for wav mode: copyall,null
+   default value: copyall
+</entry>
+
+<entry id="domainfile"
+type="char*256"
+category="streams"
+input_pathname="abs"
+group="shr_strdata_nml" >
+spatial gridfile associated with the strdata.  grid information will
+be read from this file and that grid will serve as the target grid
+for all input data for this strdata input.
+</entry>
+
+<entry id="fillalgo"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml"
+valid_values="copy,bilinear,nn,nnoni,nnonj,spval">
+array (up to 30 elements) of fill algorithms associated with the array
+of streams.  valid options are just copy (ie. no fill), special value,
+nearest neighbor, nearest neighbor in "i" direction, or nearest
+neighbor in "j" direction.
+valid values:  'copy','spval','nn','nnoni','nnonj'
+default: "nn".
+</entry>
+
+<entry id="fillmask"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml"
+valid_values="nomask,srcmask,dstmask,bothmask">
+plays no role is fill algorithm at the present time.
+valid values: "nomask,srcmask,dstmask,bothmask"
+default: "nomask"
+</entry>
+
+<entry id="fillread"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml" >
+array (up to 30 elements) of filenames associated with the array of
+streams.  specifies the weights file to read in instead of computing the
+weights on the fly for the fill operation.  if this is set, fillalgo
+and fillmask are ignored.
+default: unset
+</entry>
+
+<entry id="fillwrite"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml">
+array (up to 30 elements)  of filenames associated with the array of
+streams.  specifies the weights file to generate after weights are
+computed on the fly for the fill operation.  this allows a user to
+save and reuse a set of weights later.
+default="unset".
+</entry>
+
+<entry id="mapmask"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml"
+valid_values="nomask,srcmask,dstmask,bothmask">
+array (up to 30 elements) of masking algorithms for mapping input data
+associated with the array of streams.  valid options are map only from
+valid src points, map only to valid destination points, ignore all
+masks, map only from valid src points to valid destination points.
+valid values: srcmask, dstmask, nomask,bothmask
+default: dstmask
+</entry>
+
+<entry id="mapalgo"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml"
+valid_values="copy,bilinear,nn,nnoni,nnonj,spval">
+array (up to 30 elements) of fill algorithms associated with the array
+of streams.  valid options are copy by index, set to special value,
+nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
+in "j" direction, or bilinear.
+valid values: copy,spval,nn,nnoni,nnonj,bilinear
+default: bilinear
+</entry>
+
+<entry id="mapread"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml">
+array (up to 30 elements) of filenames associated with the array of
+streams.  specifies the weights file to read instead of computing
+weights on the fly for the mapping (interpolation) operation.  if this
+is set, mapalgo and mapmask are ignored.  default="unset".
+</entry>
+
+<entry id="mapwrite"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml" >
+array (up to 30 elements) of filenames associated with the array of
+streams.  specifies the weights file to generate after weights are
+computed on the fly for the mapping (interpolation) operation.  this
+allows a user to save and reuse a set of weights later.
+default="unset".
+</entry>
+
+<entry id="tintalgo"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml"
+valid_values="coszen,nearest,linear,lower,upper">
+array (up to 30 elements) of time interpolation options associated with the array of
+streams.
+valid values: lower,upper,nearest,linear,coszen
+  lower   = Use lower time-value
+  upper   = Use upper time-value
+  nearest = Use the nearest time-value
+  linear  = Linearly interpolate between the two time-values
+  coszen  = Scale according to the cosine of the solar zenith angle (for solar)
+default="linear".
+</entry>
+
+<entry id="taxmode"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml"
+valid_values="extend,cycle,limit">
+array of time axis modes associated with the array of streams for
+handling data outside the specified stream time axis.
+valid options are to cycle the data based on the first, last, and
+align settings associated with the stream dataset, to extend the first
+and last valid value indefinitely, or to limit the interpolated data
+to fall only between the least and greatest valid value of the time array.
+valid values: cycle,extend,limit
+    extend = extrapolate before and after the period by using the first or last value.
+    cycle  = cycle between the range of data
+    limit  = restrict to the period for which the data is valid
+default="cycle".
+</entry>
+
+<entry id="dtlimit"
+type="real(30)"
+category="streams"
+group="shr_strdata_nml" >
+array (up to 30 elements) of delta time ratio limits placed on the
+time interpolation associated with the array of streams.  this real
+value causes the model to stop if the ratio of the running maximum
+delta time divided by the minimum delta time is greater than the
+dtlimit for that stream.  for instance, with daily data, the delta
+time should be exactly one day throughout the dataset and the computed
+maximum divided by minimum delta time should always be 1.0.  for
+monthly data, the delta time should be between 28 and 31 days and the
+maximum ratio should be about 1.1.  the running value of the delta
+time is computed as data is read and any wraparound or cycling is also
+included.  this input helps trap missing data or errors in cycling.
+to turn off trapping, set the value to 1.0e30 or something similar.
+default=1.5.
+</entry>
+
+<entry id="streams"
+type="char*256(30)"
+category="streams"
+group="shr_strdata_nml" >
+character array (up to 30 elements) of stream input files.  this
+string is actually parsed by a stream method and so the format is
+specified by the stream module.  this string consists of a
+"stream_input_filename year_align year_first year_last".  the
+stream_input_filename is a stream text input file and the format and
+options are described elsewhere.  year_align, year_first, and
+year_last provide information about the time axis of the file and how
+to relate the input time axis to the model time axis.
+default="null".
+</entry>
+
+<!-- =========================================  -->
+<!--- dwav_nml (in file dwav_in)                -->
+<!-- =========================================  -->
+
+<entry id="wav_in"
+type="char*256"
+category="dwav"
+group="dwav_nml"
+valid_values="">
+Namelist filename for data model wav share stream data namelist
+</entry>
+
+<entry id="decomp"
+type="char*4"
+category="dwav"
+group="dwav_nml"
+valid_values="1d,root" >
+DWAV Decomposition strategy
+    1d   = Vector decomposition
+    root = run only on the master task
+</entry>
+
+<entry id="restfilm"
+type="char*256"
+category="dwav"
+group="dwav_nml"
+valid_values="">
+Master restart file name for dwav model
+</entry>
+
+<entry id="restfilsr"
+type="char*256"
+category="dwav"
+group="dwav_nml"
+valid_values="">
+Stream restart file name for dwav model, needed for branch simulations
+</entry>
+
+<entry id="force_prognostic_true"
+type="logical"
+category="drof"
+group="drof_nml">
+If TRUE, prognostic is forced to true.
+default=false
+</entry>
+</namelist_definition>
