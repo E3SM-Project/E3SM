@@ -1,0 +1,484 @@
+<?xml version="1.0"?>
+
+<!--
+
+The following are the test functionality categories:
+  1) smoke tests
+  2) basic reproducibility tests
+  3) restart tests
+  4) threading/pe-count modification tests
+  5) sequencing (layout) modification tests
+  6) multi-instance tests
+  7) archiving (short-term and long-term) tests
+  8) performance tests
+  9) spinup tests
+  10) other component-specific tests
+
+NOTES:
+- unless otherwise noted everything is run in one executable directory
+- suffix: denotes the component history file suffixes that are added as part of the test
+- IOP test is done along with regular tests - not as a separate test
+- IOP test is only currently valid for SMS, ERS and PET
+
+======================================================================
+    Smoke Tests
+======================================================================
+
+SMS    smoke startup test (default length)
+       do a 5 day initial test (suffix: base)
+       if $IOP_ON is set then suffix is base_iop
+       success for non-iop is just a successful coupler
+
+SBN    smoke build-namelist test (just run preview_namelist and check_input_data)
+
+======================================================================
+    Basic reproducibility Tests
+======================================================================
+
+REP    reproducibility: do two identical runs give the same results?
+
+======================================================================
+    Restart Tests
+======================================================================
+
+ERS    exact restart from startup (default 6 days + 5 days)
+       do an 11 day initial test - write a restart at day 6     (suffix: base)
+       if $IOP_ON is set then suffix is base_iop
+       do a  5  day restart test starting from restart at day 6 (suffix: rest)
+       if $IOP_ON is set then suffix is rest_iop
+       compare component history files ".base" and ".rest" at day 11
+
+ERP    pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days (previousy PER)
+       initial pes set up out of the box
+       do an 11 day initial test - write a restart at day 6     (suffix base)
+       half the number of tasks and threads for each component
+       do a  5  day restart test starting from restart at day 6 (suffix rest)
+       this is just like an ERS test but the pe-counts/threading count are modified on retart
+
+ERI    hybrid/branch/exact restart test, default (by default STOP_N is 22 days)
+       (1) ref1case
+           do an initial for ${STOP_N}/6 writing restarts at ${STOP_N}/6
+           ref1 case is a clone of the main case (by default this will be 4 days)
+           short term archiving is on
+       (2) ref2case
+           do a hybrid for ${STOP_N}-${STOP_N}/6 running with ref1 restarts from ${STOP_N}/6
+           and writing restarts at ( ${STOP_N} - ${STOP_N}/6 )/2 +1
+	   (by default will run for 18 days and write a restart after 10 days)
+           ref2 case is a clone of the main case
+           short term archiving is on
+       (3) case
+           do a branch run starting from restart written in ref2 case
+           and run for ???  days
+       (4) case do a restart run from the branch case
+
+======================================================================
+    Threading/PE-Counts/Pe-Sequencing Tests
+======================================================================
+
+PET    modified threading openmp bfb test (seq tests)
+       do an initial run where all components are threaded by default (suffix: base)
+       do another initial run with nthrds=1 for all components        (suffix: single_thread)
+       compare base and single_thread
+
+PEM    modified pe counts mpi bfb test (seq tests)
+       do an initial run with default pe layout                               (suffix: base)
+       do another initial run with modified pes (NTASKS_XXX => NTASKS_XXX/2)  (suffix: modpes)
+       compare base and single_thread
+
+PMT    modified-task and modified-thread count bfb test (previousy OEM)
+       do an initial run                              (suffix: base)
+       do a second run with half tasks, twice threads (suffix: modpes)
+       (***note that PTM_script and PEM_script are the same - but PEM_build.csh and PTM_build.csh are different***)
+       *** REMOVING  this test in the pythonized version ***
+
+PEA    single pe bfb test
+       do an initial run on 1 pe with mpi     (suffix: base)
+       do the same run on 1 pe with mpiserial (suffix: mpiserial)
+
+======================================================================
+    Sequencing (layout) Tests (smoke)
+======================================================================
+
+SEQ    different sequencing bfb test
+       do an initial run test with out-of-box PE-layout (suffix: base)
+       do a second run where all root pes are at pe-0   (suffix: seq)
+       compare base and seq
+
+======================================================================
+    Multi-Instance Tests (smoke)
+======================================================================
+
+NCK    multi-instance validation vs single instance - sequential PE for instances (default length)
+       do an initial run test with NINST 1 (suffix: base)
+       do an initial run test with NINST 2 (suffix: multiinst for both _0001 and _0002)
+       compare base and _0001 and _0002
+
+NCR    multi-instance validation vs single instance - concurrent PE for instances  (default length)
+       do an initial run test with NINST 1 (suffix: base)
+       do an initial run test with NINST 2 (suffix: multiinst for both _0001 and _0002)
+        compare base and _0001 and _0002
+       (***note that NCR_script and NCK_script are the same - but NCR_build.csh and NCK_build.csh are different***)
+
+NOC    multi-instance validation for single instance ocean (default length)
+       do an initial run test with NINST 2 (other than ocn), with mod to instance 1 (suffix: inst1_base, inst2_mod)
+       do an initial run test with NINST 2 (other than ocn), with mod to instance 2 (suffix: inst1_base, inst2_mod)
+       compare inst1_base with inst2_base
+       compare inst1_mod  with inst2_mod
+
+======================================================================
+    Performance Tests
+======================================================================
+
+PFS    system performance test
+ICP    cice performance test
+OCP    pop performance test
+
+======================================================================
+    SPINUP tests
+======================================================================
+
+SSP    smoke CLM spinup test (only valid for CLM compsets with CLM45)
+       do an initial spin test (setting CLM_ACCELERATED_SPINUP to on)
+         write restarts at the end of the run
+         short term archiving is on
+       do a hybrid non-spinup simulation run from the restart files generated in the first phase
+
+SPO    smoke spinup-ocean test
+
+======================================================================
+    Archiving Tests
+======================================================================
+
+LAR    long term archive test
+
+======================================================================
+    Other component-specific tests
+======================================================================
+
+LII    CLM initial condition interpolation test
+
+
+-->
+
+<config_test>
+
+  <test NAME="ERI">
+    <DESC>hybrid/branch/exact restart test, default 3+19/10+9/5+4 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>22</STOP_N>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+    <BUILD_THREADED>TRUE</BUILD_THREADED>
+  </test>
+
+  <test NAME="ERP">
+    <DESC>pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <BFBFLAG>TRUE</BFBFLAG>
+    <CCSM_TCOST>1</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <DOUT_S>FALSE</DOUT_S>
+    <BUILD_THREADED>TRUE</BUILD_THREADED>
+  </test>
+
+  <test NAME="ERS">
+    <DESC>exact restart from startup, default 6 days + 5 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
+  <test NAME="ERR">
+    <DESC>exact restart from startup with resubmit, default 4 days + 3 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>7</STOP_N>
+    <DOUT_S>TRUE</DOUT_S>
+    <RESUBMIT>1</RESUBMIT>
+  </test>
+
+  <test NAME="ERT">
+    <DESC>exact restart from startup, default 2 month + 1 month (ERS with info dbug = 1)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>nmonths</STOP_OPTION>
+    <STOP_N></STOP_N>
+    <AVGHIST_OPTION>nmonths</AVGHIST_OPTION>
+    <AVGHIST_N>1</AVGHIST_N>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="HOMME">
+    <DESC>Run homme tests.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTBUILDFAIL">
+    <DESC>For testing infra only. Insta-fail build step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTBUILDFAILEXC">
+    <DESC>For testing infra only. Insta-fail build step by failing to init.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNFAIL">
+    <DESC>For testing infra only. Insta-fail run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNFAILEXC">
+    <DESC>For testing infra only. Insta-fail run step via exception.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNPASS">
+    <DESC>For testing infra only. Insta-pass run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTMEMLEAKFAIL">
+    <DESC>For testing infra only. Insta-fail memleak step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTMEMLEAKPASS">
+    <DESC>For testing infra only. Insta-pass memleak step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNDIFF">
+    <DESC>For testing infra only. Produces a canned hist file.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNSLOWPASS">
+    <DESC>For testing infra only. After 5 minutes of sleep, pass run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="ICP">
+    <DESC>cice performance test</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>0</STOP_N>
+    <REST_OPTION>none</REST_OPTION>
+    <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
+    <TIMER_LEVEL>12</TIMER_LEVEL>
+    <CCSM_TCOST>4</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="LAR">
+    <DESC>long term archive test</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>nmonths</STOP_OPTION>
+    <STOP_N></STOP_N>
+    <CCSM_TCOST>4</CCSM_TCOST>
+    <DOUT_L_MS>TRUE</DOUT_L_MS>
+    <DOUT_S>TRUE</DOUT_S>
+  </test>
+
+  <test NAME="LII">
+    <DESC>CLM initial condition interpolation test (requires configuration with non-blank finidat)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+  </test>
+
+  <test NAME="PEA">
+    <DESC>single pe bfb test (default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>1</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+  </test>
+
+  <test NAME="PEM">
+    <DESC>pes counts mpi bfb test (seq tests; default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <BFBFLAG>TRUE</BFBFLAG>
+    <REST_OPTION>never</REST_OPTION>
+    <CCSM_TCOST>1</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="PET">
+    <DESC>openmp bfb test (seq tests; default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <BFBFLAG>TRUE</BFBFLAG>
+    <BUILD_THREADED>TRUE</BUILD_THREADED>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <CCSM_TCOST>1</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="PFS">
+    <DESC>performance test setup</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>20</STOP_N>
+    <REST_OPTION>none</REST_OPTION>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+  </test>
+
+  <test NAME="NCK">
+    <DESC>multi-instance validation vs single instance (default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>-1</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+  </test>
+
+  <test NAME="NCR">
+    <DESC>multi-instance validation sequential vs concurrent (default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>-1</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="NOC">
+    <DESC>multi-instance validation for single instance ocean (default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>-1</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="OCP">
+    <DESC>pop performance test</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>10</STOP_N>
+    <REST_OPTION>none</REST_OPTION>
+    <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
+    <TIMER_LEVEL>12</TIMER_LEVEL>
+    <CCSM_TCOST>4</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="REP">
+    <DESC>reproducibility test: do two runs give the same answers?</DESC>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>never</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+  </test>
+
+  <test NAME="SBN">
+    <DESC>smoke build-namelist test (just run preview_namelist and check_input_data)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>-1</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="SEQ">
+    <DESC>sequencing bfb test (10 day seq,conc tests)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <BFBFLAG>TRUE</BFBFLAG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>10</STOP_N>
+    <REST_OPTION>never</REST_OPTION>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+  </test>
+
+  <test NAME="SMS">
+    <DESC>smoke startup test (default length)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>-1</CCSM_TCOST>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <REST_OPTION>none</REST_OPTION>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+  </test>
+
+  <test NAME="SSP">
+    <DESC>smoke CLM spinup test (only valid for CLM45 or CLM50 compsets)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>-1</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <RUN_TYPE>startup</RUN_TYPE>
+    <STOP_N>4</STOP_N>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+</config_test>
