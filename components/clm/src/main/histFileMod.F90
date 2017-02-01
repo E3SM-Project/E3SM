@@ -16,7 +16,7 @@ module histFileMod
   use clm_varcon     , only : spval, ispval, dzsoi_decomp 
   use clm_varcon     , only : grlnd, nameg, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
-  use GridcellType   , only : grc                
+  use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
@@ -2896,8 +2896,8 @@ contains
 
        ! Write gridcell info
 
-       call ncd_io(varname='grid1d_lon', data=grc%londeg, dim1name=nameg, ncid=ncid, flag='write')
-       call ncd_io(varname='grid1d_lat', data=grc%latdeg, dim1name=nameg, ncid=ncid, flag='write')
+       call ncd_io(varname='grid1d_lon', data=grc_pp%londeg, dim1name=nameg, ncid=ncid, flag='write')
+       call ncd_io(varname='grid1d_lat', data=grc_pp%latdeg, dim1name=nameg, ncid=ncid, flag='write')
        do g = bounds%begg,bounds%endg
          igarr(g)= mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1
        enddo
@@ -2910,11 +2910,11 @@ contains
        ! Write landunit info
 
        do l = bounds%begl,bounds%endl
-         rlarr(l) = grc%londeg(lun_pp%gridcell(l))
+         rlarr(l) = grc_pp%londeg(lun_pp%gridcell(l))
        enddo
        call ncd_io(varname='land1d_lon', data=rlarr, dim1name=namel, ncid=ncid, flag='write')
        do l = bounds%begl,bounds%endl
-         rlarr(l) = grc%latdeg(lun_pp%gridcell(l))
+         rlarr(l) = grc_pp%latdeg(lun_pp%gridcell(l))
        enddo
        call ncd_io(varname='land1d_lat', data=rlarr, dim1name=namel, ncid=ncid, flag='write')
        do l= bounds%begl,bounds%endl
@@ -2935,11 +2935,11 @@ contains
        ! Write column info
 
        do c = bounds%begc,bounds%endc
-         rcarr(c) = grc%londeg(col_pp%gridcell(c))
+         rcarr(c) = grc_pp%londeg(col_pp%gridcell(c))
        enddo
        call ncd_io(varname='cols1d_lon', data=rcarr, dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
-         rcarr(c) = grc%latdeg(col_pp%gridcell(c))
+         rcarr(c) = grc_pp%latdeg(col_pp%gridcell(c))
        enddo
        call ncd_io(varname='cols1d_lat', data=rcarr, dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
@@ -2965,11 +2965,11 @@ contains
        ! Write pft info
 
        do p = bounds%begp,bounds%endp
-         rparr(p) = grc%londeg(pft%gridcell(p))
+         rparr(p) = grc_pp%londeg(pft%gridcell(p))
        enddo
        call ncd_io(varname='pfts1d_lon', data=rparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         rparr(p) = grc%latdeg(pft%gridcell(p))
+         rparr(p) = grc_pp%latdeg(pft%gridcell(p))
        enddo
        call ncd_io(varname='pfts1d_lat', data=rparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp

@@ -315,7 +315,7 @@ module PlantSoilnutrientFluxType
   !
   ! !USES:
   use subgridAveMod       , only : p2c
-  use GridcellType        , only : grc
+  use GridcellType        , only : grc_pp
 
   !
   ! !ARGUMENTS:
@@ -350,7 +350,7 @@ module PlantSoilnutrientFluxType
     p = filter_soilp(fp)
     c = pft%column(p)
     this%plant_minn_uptake_potential_patch(p) = Vmax_minn*max(frootc_patch(p),10._r8)
-    if(abs(grc%latdeg(col_pp%gridcell(c)))<20._r8)this%plant_minn_uptake_potential_patch(p) = this%plant_minn_uptake_potential_patch(p) * 1.e3_r8
+    if(abs(grc_pp%latdeg(col_pp%gridcell(c)))<20._r8)this%plant_minn_uptake_potential_patch(p) = this%plant_minn_uptake_potential_patch(p) * 1.e3_r8
   enddo
 
   ! now use the p2c routine to get the column-averaged plant_ndemand

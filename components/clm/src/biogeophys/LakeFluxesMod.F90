@@ -17,7 +17,7 @@ module LakeFluxesMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc                
+  use GridcellType         , only : grc_pp                
   use ColumnType           , only : col_pp                
   use PatchType            , only : pft                
   !    
@@ -597,7 +597,7 @@ contains
          u2m = max(0.1_r8,ustar(p)/vkc*log(2._r8/z0mg(p)))
 
          ws(c) = 1.2e-03_r8 * u2m
-         ks(c) = 6.6_r8*sqrt(abs(sin(grc%lat(g))))*(u2m**(-1.84_r8))
+         ks(c) = 6.6_r8*sqrt(abs(sin(grc_pp%lat(g))))*(u2m**(-1.84_r8))
 
          ! Update column roughness lengths and friction velocity
          z0mg_col(c) = z0mg(p)

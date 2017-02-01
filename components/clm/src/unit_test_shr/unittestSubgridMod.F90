@@ -35,7 +35,7 @@ module unittestSubgridMod
 
   use shr_kind_mod , only : r8 => shr_kind_r8
   use decompMod    , only : bounds_type
-  use GridcellType , only : grc                
+  use GridcellType , only : grc_pp                
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use PatchType    , only : pft                
@@ -196,7 +196,7 @@ contains
     ! !USES:
     use landunit_varcon , only : max_lunit
     use clm_varcon      , only : ispval
-    use GridcellType    , only : grc
+    use GridcellType    , only : grc_pp
     use LandunitType    , only : lun_pp
     use ColumnType      , only : col_pp
     use PatchType       , only : pft
@@ -208,7 +208,7 @@ contains
     character(len=*), parameter :: subname = 'initialize_arrays'
     !-----------------------------------------------------------------------
     
-    call grc%Init(begg, endg)
+    call grc_pp%Init(begg, endg)
     call lun_pp%Init(begl, endl)
     call col_pp%Init(begc, endc)
     call pft%init(begp, endp)
@@ -233,7 +233,7 @@ contains
     ! For now, nothing is needed... we currently don't bother with deallocation, and the
     ! initialization of arrays is done in the setup routine
 
-    call grc%clean
+    call grc_pp%clean
     call lun_pp%clean
     call col_pp%clean
     call pft%clean

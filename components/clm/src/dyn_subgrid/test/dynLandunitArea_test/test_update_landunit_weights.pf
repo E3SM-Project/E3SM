@@ -8,7 +8,7 @@ module test_update_landunit_weights
   use shr_kind_mod	, only : r8 => shr_kind_r8
   use landunit_varcon	, only : istsoil, istcrop, istice, istice_mec, istdlak, istwet
   use landunit_varcon	, only : isturb_tbd, isturb_hd, isturb_md
-  use GridcellType	, only : grc
+  use GridcellType	, only : grc_pp
   use LandunitType	, only : lun_pp
   use decompMod		, only : bounds_type
 
@@ -58,10 +58,10 @@ contains
     ! istsoil, istcrop, isturb_md
 
     ! First increase the area of istice_mec: weights of istice_mec + istsoil + istcrop + 0.01
-    index_soil = grc%landunit_indices(istsoil,gi)
-    index_crop = grc%landunit_indices(istcrop,gi)
-    index_icemec = grc%landunit_indices(istice_mec,gi)
-    index_urbmd = grc%landunit_indices(isturb_md,gi)
+    index_soil = grc_pp%landunit_indices(istsoil,gi)
+    index_crop = grc_pp%landunit_indices(istcrop,gi)
+    index_icemec = grc_pp%landunit_indices(istice_mec,gi)
+    index_urbmd = grc_pp%landunit_indices(isturb_md,gi)
     lun_pp%wtgcell(index_icemec) = lun_pp%wtgcell(index_icemec) + lun_pp%wtgcell(index_soil) + lun_pp%wtgcell(index_crop) + 0.01_r8
 
     ! Now set the expected outcome
@@ -135,8 +135,8 @@ contains
     ! grid cell 2 needs increase in soil
     ! grid cell 3 stays the same
     expected = lun_pp%wtgcell
-    expected(grc%landunit_indices(istcrop,g1)) = 0.55_r8
-    expected(grc%landunit_indices(istsoil,g2)) = 0.2_r8
+    expected(grc_pp%landunit_indices(istcrop,g1)) = 0.55_r8
+    expected(grc_pp%landunit_indices(istsoil,g2)) = 0.2_r8
 
     call update_landunit_weights(bounds)
     @assertEqual(expected(bounds%begl:bounds%endl), lun_pp%wtgcell(bounds%begl:bounds%endl), tolerance=tol)

@@ -7,7 +7,7 @@ module test_init_columns
   use dynInitColumnsMod
   use ColumnType      , only : col_pp
   use LandunitType    , only : lun_pp
-  use GridcellType    , only : grc 
+  use GridcellType    , only : grc_pp 
   use decompMod       , only : bounds_type
   use clm_varcon      , only : ispval
   use clm_varpar      , only : nlevsno, nlevgrnd
@@ -94,7 +94,7 @@ contains
     ! no landunit of the given landunit_type on this grid cell
     call setup()
     cactive_prior(:) = .true.
-    grc%landunit_indices(2,gi) = ispval
+    grc_pp%landunit_indices(2,gi) = ispval
     @assertEqual(ispval, initial_template_col(bounds, c_new, 2, cactive_prior))
     call cleanup()
   end subroutine test_initial_template_no_landunit
@@ -148,7 +148,7 @@ contains
     ! no soil landunit, should take a crop column
     call setup()
     cactive_prior(:) = .true.
-    grc%landunit_indices(1,gi) = ispval
+    grc_pp%landunit_indices(1,gi) = ispval
     @assertEqual(lun_pp%coli(l2), initial_template_col_crop(bounds, c_new, cactive_prior))
     call cleanup()
   end subroutine test_crop_no_soil
@@ -158,7 +158,7 @@ contains
     ! no soil or crop landunits, should give ispval
     call setup()
     cactive_prior(:) = .true.
-    grc%landunit_indices(1:2,gi) = ispval
+    grc_pp%landunit_indices(1:2,gi) = ispval
     @assertEqual(ispval, initial_template_col_crop(bounds, c_new, cactive_prior))
     call cleanup()
   end subroutine test_crop_no_soil_or_crop

@@ -10,7 +10,7 @@ module ActiveLayerMod
   use clm_varctl      , only : iulog
   use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
-  use GridcellType    , only : grc       
+  use GridcellType    , only : grc_pp       
   use ColumnType      , only : col_pp       
   !
   implicit none
@@ -86,7 +86,7 @@ contains
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             g = col_pp%gridcell(c)
-            if ( grc%lat(g) > 0. ) then 
+            if ( grc_pp%lat(g) > 0. ) then 
                altmax_lastyear(c) = altmax(c)
                altmax_lastyear_indx(c) = altmax_indx(c)
                altmax(c) = 0.
@@ -98,7 +98,7 @@ contains
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             g = col_pp%gridcell(c)
-            if ( grc%lat(g) <= 0. ) then 
+            if ( grc_pp%lat(g) <= 0. ) then 
                altmax_lastyear(c) = altmax(c)
                altmax_lastyear_indx(c) = altmax_indx(c)
                altmax(c) = 0.

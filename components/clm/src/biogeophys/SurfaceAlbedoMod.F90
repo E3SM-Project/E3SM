@@ -23,7 +23,7 @@ module SurfaceAlbedoMod
   use SurfaceAlbedoType , only : surfalb_type
   use TemperatureType   , only : temperature_type
   use WaterstateType    , only : waterstate_type
-  use GridcellType      , only : grc                
+  use GridcellType      , only : grc_pp                
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft                
@@ -346,7 +346,7 @@ contains
     ! Cosine solar zenith angle for next time step
 
     do g = bounds%begg,bounds%endg
-       coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc%lat(g), grc%lon(g), declinp1)
+       coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
     end do
     do c = bounds%begc,bounds%endc
        g = col_pp%gridcell(c)

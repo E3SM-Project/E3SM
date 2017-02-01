@@ -61,7 +61,7 @@ Module DryDepVelocity
   use FrictionVelocityType , only : frictionvel_type
   use PhotosynthesisType   , only : photosyns_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc                
+  use GridcellType         , only : grc_pp                
   use LandunitType         , only : lun_pp                
   use PatchType            , only : pft                
   !
@@ -256,8 +256,8 @@ CONTAINS
             rain       = forc_rain(c) 
             sfc_temp   = forc_t(c) 
             solar_flux = forc_solad(g,1) 
-            lat        = grc%latdeg(g) 
-            lon        = grc%londeg(g) 
+            lat        = grc_pp%latdeg(g) 
+            lon        = grc_pp%londeg(g) 
             clmveg     = pft%itype(pi) 
             soilw      = h2osoi_vol(c,1)
 

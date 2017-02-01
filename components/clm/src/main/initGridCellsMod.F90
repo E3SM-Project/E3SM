@@ -16,7 +16,7 @@ module initGridCellsMod
   use clm_varctl     , only : iulog
   use clm_varcon     , only : namep, namec, namel, nameg
   use decompMod      , only : bounds_type, ldecomp
-  use GridcellType   , only : grc                
+  use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
@@ -193,12 +193,12 @@ contains
        ! Set some other gridcell-level variables
 
        do gdc = bounds_clump%begg,bounds_clump%endg
-          grc%gindex(gdc) = ldecomp%gdc2glo(gdc)
-          grc%area(gdc)   = ldomain%area(gdc)
-          grc%latdeg(gdc) = ldomain%latc(gdc) 
-          grc%londeg(gdc) = ldomain%lonc(gdc) 
-          grc%lat(gdc)    = grc%latdeg(gdc) * SHR_CONST_PI/180._r8  
-          grc%lon(gdc)    = grc%londeg(gdc) * SHR_CONST_PI/180._r8
+          grc_pp%gindex(gdc) = ldecomp%gdc2glo(gdc)
+          grc_pp%area(gdc)   = ldomain%area(gdc)
+          grc_pp%latdeg(gdc) = ldomain%latc(gdc) 
+          grc_pp%londeg(gdc) = ldomain%lonc(gdc) 
+          grc_pp%lat(gdc)    = grc_pp%latdeg(gdc) * SHR_CONST_PI/180._r8  
+          grc_pp%lon(gdc)    = grc_pp%londeg(gdc) * SHR_CONST_PI/180._r8
        enddo
 
        ! Fill in subgrid datatypes

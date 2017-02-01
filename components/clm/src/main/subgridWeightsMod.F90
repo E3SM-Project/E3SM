@@ -95,7 +95,7 @@ module subgridWeightsMod
   use clm_varctl   , only : iulog, all_active
   use clm_varcon   , only : nameg, namel, namec, namep
   use decompMod    , only : bounds_type
-  use GridcellType , only : grc                
+  use GridcellType , only : grc_pp                
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use PatchType    , only : pft                
@@ -472,7 +472,7 @@ contains
     character(len=*), parameter :: subname = 'get_landunit_weight'
     !-----------------------------------------------------------------------
     
-    l = grc%landunit_indices(ltype, g)
+    l = grc_pp%landunit_indices(ltype, g)
     if (l == ispval) then
        weight = 0._r8
     else
@@ -501,7 +501,7 @@ contains
     character(len=*), parameter :: subname = 'set_landunit_weight'
     !-----------------------------------------------------------------------
 
-    l = grc%landunit_indices(ltype, g)
+    l = grc_pp%landunit_indices(ltype, g)
     if (l /= ispval) then
        lun_pp%wtgcell(l) = weight
     else if (weight > 0._r8) then

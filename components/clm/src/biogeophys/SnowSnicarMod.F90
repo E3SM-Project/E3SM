@@ -20,7 +20,7 @@ module SnowSnicarMod
   use WaterStateType  , only : waterstate_type
   use WaterFluxType   , only : waterflux_type
   use TemperatureType , only : temperature_type
-  use GridcellType    , only : grc       
+  use GridcellType    , only : grc_pp       
   use LandunitType    , only : lun_pp       
   use ColumnType      , only : col_pp       
   !
@@ -445,8 +445,8 @@ contains
                l_idx     = col_pp%landunit(c_idx)
                g_idx     = col_pp%gridcell(c_idx)
                sfctype   = lun_pp%itype(l_idx)
-               lat_coord = grc%latdeg(g_idx)
-               lon_coord = grc%londeg(g_idx)
+               lat_coord = grc_pp%latdeg(g_idx)
+               lon_coord = grc_pp%londeg(g_idx)
 
 
                ! Set variables specific to CSIM

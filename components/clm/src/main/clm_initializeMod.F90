@@ -22,7 +22,7 @@ module clm_initializeMod
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
-  use GridcellType           , only : grc
+  use GridcellType           , only : grc_pp
   use TopounitType           , only : top_pp, top_es, top_ws
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
@@ -277,7 +277,7 @@ contains
     ! Note that the assumption is made that none of the subgrid initialization
     ! can depend on other elements of the subgrid in the calls below
 
-    call grc%Init (bounds_proc%begg_all, bounds_proc%endg_all)
+    call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
     ! --ALM-v1: add initialization for topographic unit data types. 
     ! For preliminary testing, use the same dimensions as gridcell (one topounit per gridcell)
     call top_pp%Init (bounds_proc%begg, bounds_proc%endg) ! topology and physical properties
@@ -494,8 +494,8 @@ contains
 
     do g = bounds_proc%begg,bounds_proc%endg
        max_decl = 0.409571
-       if (grc%lat(g) < 0._r8) max_decl = -max_decl
-       grc%max_dayl(g) = daylength(grc%lat(g), max_decl)
+       if (grc_pp%lat(g) < 0._r8) max_decl = -max_decl
+       grc_pp%max_dayl(g) = daylength(grc_pp%lat(g), max_decl)
     end do
 
     ! History file variables
@@ -503,11 +503,11 @@ contains
     if (use_cn) then
        call hist_addfld1d (fname='DAYL',  units='s', &
             avgflag='A', long_name='daylength', &
-            ptr_gcell=grc%dayl, default='inactive')
+            ptr_gcell=grc_pp%dayl, default='inactive')
 
        call hist_addfld1d (fname='PREV_DAYL', units='s', &
             avgflag='A', long_name='daylength from previous timestep', &
-            ptr_gcell=grc%prev_dayl, default='inactive')
+            ptr_gcell=grc_pp%prev_dayl, default='inactive')
     end if
 
     ! ------------------------------------------------------------------------

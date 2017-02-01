@@ -16,7 +16,7 @@ module SurfaceRadiationMod
   use CanopyStateType   , only : canopystate_type
   use SurfaceAlbedoType , only : surfalb_type
   use SolarAbsorbedType , only : solarabs_type
-  use GridcellType      , only : grc                
+  use GridcellType      , only : grc_pp                
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
   use PatchType         , only : pft
@@ -736,7 +736,7 @@ contains
           fsr_vis_i(p)  = albi(p,1)*forc_solai(g,1)
           fsr_nir_i(p)  = albi(p,2)*forc_solai(g,2)
 
-          local_secp1 = secs + nint((grc%londeg(g)/degpsec)/dtime)*dtime
+          local_secp1 = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
           local_secp1 = mod(local_secp1,isecspday)
           if (local_secp1 == isecspday/2) then
              fsds_vis_d_ln(p) = forc_solad(g,1)
@@ -784,7 +784,7 @@ contains
           p = filter_urbanp(fp)
           g = pft%gridcell(p)
 
-          local_secp1 = secs + nint((grc%londeg(g)/degpsec)/dtime)*dtime
+          local_secp1 = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
           local_secp1 = mod(local_secp1,isecspday)
 
         if(elai(p)==0.0_r8.and.fabd(p,1)>0._r8)then

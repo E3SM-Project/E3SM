@@ -15,7 +15,7 @@ module subgridRestMod
   use pio                , only : file_desc_t
   use ncdio_pio          , only : ncd_int, ncd_double
   use GetGlobalValuesMod , only : GetGlobalIndex
-  use GridcellType       , only : grc                
+  use GridcellType       , only : grc_pp                
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use PatchType          , only : pft                
@@ -108,12 +108,12 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='grid1d_lon', xtype=ncd_double, &
          dim1name='gridcell',                                          &
          long_name='gridcell longitude', units='degrees_east',         &
-         interpinic_flag='skip', readvar=readvar, data=grc%londeg)
+         interpinic_flag='skip', readvar=readvar, data=grc_pp%londeg)
 
     call restartvar(ncid=ncid, flag=flag, varname='grid1d_lat', xtype=ncd_double, &
          dim1name='gridcell',                                          &
          long_name='gridcell latitude', units='degrees_north',         &
-         interpinic_flag='skip', readvar=readvar, data=grc%latdeg)
+         interpinic_flag='skip', readvar=readvar, data=grc_pp%latdeg)
 
     do g=bounds%begg,bounds%endg
        igarr(g)= mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1
@@ -140,7 +140,7 @@ contains
     allocate(rlarr(bounds%begl:bounds%endl), ilarr(bounds%begl:bounds%endl))
 
     do l=bounds%begl,bounds%endl
-       rlarr(l) = grc%londeg(lun_pp%gridcell(l))
+       rlarr(l) = grc_pp%londeg(lun_pp%gridcell(l))
     enddo
 
     call restartvar(ncid=ncid, flag=flag, varname='land1d_lon', xtype=ncd_double,  &
@@ -149,7 +149,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rlarr)
     
     do l=bounds%begl,bounds%endl
-       rlarr(l) = grc%latdeg(lun_pp%gridcell(l))
+       rlarr(l) = grc_pp%latdeg(lun_pp%gridcell(l))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='land1d_lat', xtype=ncd_double,  &
          dim1name='landunit',                                                      &
@@ -206,7 +206,7 @@ contains
     allocate(rcarr(bounds%begc:bounds%endc), icarr(bounds%begc:bounds%endc))
 
     do c= bounds%begc, bounds%endc
-       rcarr(c) = grc%londeg(col_pp%gridcell(c))
+       rcarr(c) = grc_pp%londeg(col_pp%gridcell(c))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_lon', xtype=ncd_double,   &
          dim1name='column',                                                         &
@@ -214,7 +214,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rcarr)
 
     do c= bounds%begc, bounds%endc
-       rcarr(c) = grc%latdeg(col_pp%gridcell(c))
+       rcarr(c) = grc_pp%latdeg(col_pp%gridcell(c))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_lat', xtype=ncd_double,   &
          dim1name='column',                                                         &
@@ -287,7 +287,7 @@ contains
     allocate(rparr(bounds%begp:bounds%endp), iparr(bounds%begp:bounds%endp))
 
     do p=bounds%begp,bounds%endp
-       rparr(p) = grc%londeg(pft%gridcell(p))
+       rparr(p) = grc_pp%londeg(pft%gridcell(p))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_lon', xtype=ncd_double, &
          dim1name='pft',                                                          &
@@ -295,7 +295,7 @@ contains
          interpinic_flag='skip', readvar=readvar, data=rparr)
 
     do p=bounds%begp,bounds%endp
-       rparr(p) = grc%latdeg(pft%gridcell(p))
+       rparr(p) = grc_pp%latdeg(pft%gridcell(p))
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_lat', xtype=ncd_double, &
          dim1name='pft',                                                          &

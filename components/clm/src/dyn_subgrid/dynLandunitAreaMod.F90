@@ -16,7 +16,7 @@ module dynLandunitAreaMod
   use landunit_varcon, only : istsoil, istcrop, istice, istdlak, istwet, max_lunit 
   use decompMod      , only : bounds_type
   use abortutils     , only : endrun
-  use GridcellType   , only : grc
+  use GridcellType   , only : grc_pp
   use LandunitType   , only : lun_pp                
   !
   implicit none

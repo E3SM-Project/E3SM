@@ -21,7 +21,7 @@ module glc2lndMod
   use clm_varpar     , only : maxpatch_glcmec
   use clm_varctl     , only : iulog, glc_smb
   use abortutils     , only : endrun
-  use GridcellType   , only : grc 
+  use GridcellType   , only : grc_pp 
   use LandunitType   , only : lun_pp
   use ColumnType     , only : col_pp 
   !
@@ -406,7 +406,7 @@ contains
           ! (If new landunit area is 0, col_pp%wtlunit is arbitrary, so we might as well keep the existing values)
           if (area_ice_mec > 0) then
              ! Determine index of the glc_mec landunit
-             l_ice_mec = grc%landunit_indices(istice_mec, g)
+             l_ice_mec = grc_pp%landunit_indices(istice_mec, g)
              if (l_ice_mec == ispval) then
                 write(iulog,*) subname//' ERROR: no ice_mec landunit found within the icemask, for g = ', g
                 call endrun()

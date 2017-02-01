@@ -13,7 +13,7 @@ module decompInitMod
   use abortutils      , only : endrun
   use clm_varctl      , only : iulog, use_ed
   use clm_varcon      , only : grlnd
-  use GridcellType    , only : grc
+  use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   use PatchType       , only : pft                

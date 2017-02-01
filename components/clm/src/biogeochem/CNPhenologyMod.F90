@@ -30,7 +30,7 @@ module CNPhenologyMod
   use TemperatureType     , only : temperature_type
   use WaterstateType      , only : waterstate_type
   use ColumnType          , only : col_pp                
-  use GridcellType        , only : grc                
+  use GridcellType        , only : grc_pp                
   use PatchType           , only : pft                
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -515,8 +515,8 @@ contains
 
     associate(                                                                                             & 
          ivt                                 =>    pft%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
-         dayl                                =>    grc%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
-         prev_dayl                           =>    grc%prev_dayl                                         , & ! Input:  [real(r8)  (:)   ]  daylength from previous time step (s)
+         dayl                                =>    grc_pp%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
+         prev_dayl                           =>    grc_pp%prev_dayl                                         , & ! Input:  [real(r8)  (:)   ]  daylength from previous time step (s)
          
          season_decid                        =>    ecophyscon%season_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for seasonal-deciduous leaf habit (0 or 1)
          woody                               =>    ecophyscon%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -881,7 +881,7 @@ contains
 
     associate(                                                                                             & 
          ivt                                 =>    pft%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
-         dayl                                =>    grc%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
+         dayl                                =>    grc_pp%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
          
          leaf_long                           =>    ecophyscon%leaf_long                                  , & ! Input:  [real(r8)  (:)   ]  leaf longevity (yrs)                              
          woody                               =>    ecophyscon%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -1842,7 +1842,7 @@ contains
     do p = bounds%begp, bounds%endp
        g = pft%gridcell(p)
        ! Northern hemisphere
-       if ( grc%latdeg(g) > 0.0_r8 )then
+       if ( grc_pp%latdeg(g) > 0.0_r8 )then
           inhemi(p) = inNH
        else
           inhemi(p) = inSH

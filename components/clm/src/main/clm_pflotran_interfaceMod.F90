@@ -28,7 +28,7 @@ module clm_pflotran_interfaceMod
   ! clm g/l/c/p constants
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  use GridcellType        , only : grc
+  use GridcellType        , only : grc_pp
   use LandunitType        , only : lun_pp
   use ColumnType          , only : col_pp 
   use PatchType           , only : pft
@@ -444,10 +444,10 @@ contains
 
     associate( &
          ! Assign local pointers to derived subtypes components (gridcell-level)
-         latdeg     =>  grc%latdeg     , & !  [real(r8) (:)]  latitude (degree)
-         londeg     =>  grc%londeg     , & !  [real(r8) (:)]  longitude (degree)
-         area       =>  grc%area       , & !  [real(r8) (:)]  total land area per gridcell (km^2)
-         gindex     =>  grc%gindex     , & !  [real(r8) (:)]  longitude (degree)
+         latdeg     =>  grc_pp%latdeg     , & !  [real(r8) (:)]  latitude (degree)
+         londeg     =>  grc_pp%londeg     , & !  [real(r8) (:)]  longitude (degree)
+         area       =>  grc_pp%area       , & !  [real(r8) (:)]  total land area per gridcell (km^2)
+         gindex     =>  grc_pp%gindex     , & !  [real(r8) (:)]  longitude (degree)
          ! Assign local pointers to derived subtypes components (landunit-level)
          ltype      =>  lun_pp%itype      , & !  [integer (:)]  landunit type index
          ! Assign local pointer to derived subtypes components (column-level)

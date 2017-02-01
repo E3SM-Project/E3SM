@@ -43,7 +43,7 @@ module CNFireMod
   use SoilHydrologyType      , only : soilhydrology_type  
   use TemperatureType        , only : temperature_type
   use WaterstateType         , only : waterstate_type
-  use GridcellType           , only : grc                
+  use GridcellType           , only : grc_pp                
   use ColumnType             , only : col_pp                
   use PatchType              , only : pft                
   use mct_mod
@@ -526,7 +526,7 @@ contains
      do fc = 1, num_soilc
         c = filter_soilc(fc)
         g= col_pp%gridcell(c)
-        if(grc%latdeg(g) < borealat )then
+        if(grc_pp%latdeg(g) < borealat )then
            baf_peatf(c) = non_boreal_peatfire_c/secsphr*max(0._r8, &
                 min(1._r8,(4.0_r8-prec60_col(c)*secspday)/ &
                 4.0_r8))**2*peatf_lf(c)*(1._r8-fsat(c))
@@ -584,7 +584,7 @@ contains
                    min(1._r8,exp(SHR_CONST_PI*(forc_t(c)-SHR_CONST_TKFRZ)/10._r8))
               lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
-              ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c)) 
+              ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc_pp%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c)) 
               nfire(c) = ig/secsphr*fb*fire_m*lgdp_col(c) !fire counts/km2/sec
               Lb_lf    = 1._r8+10.0_r8*(1._r8-EXP(-0.06_r8*forc_wind(g)))
               if ( wtlf(c) > 0.0_r8 )then
@@ -1470,7 +1470,7 @@ contains
      do fc = 1,num_soilc
         c = filter_soilc(fc)
         g = col_pp%gridcell(c)
-        if( grc%latdeg(g)  <  borealat)then
+        if( grc_pp%latdeg(g)  <  borealat)then
            somc_fire(c)= totsomc(c)*baf_peatf(c)*6.0_r8/33.9_r8
         else
            somc_fire(c)= baf_peatf(c)*2.2e3_r8

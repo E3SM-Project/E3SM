@@ -14,7 +14,7 @@ module dynInitColumnsMod
   use clm_varctl      , only : iulog  
   use clm_varcon      , only : ispval, namec
   use TemperatureType , only : temperature_type
-  use GridcellType    , only : grc
+  use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
   !
@@ -246,7 +246,7 @@ contains
 
     found = .false.
     g = col_pp%gridcell(c_new)
-    l = grc%landunit_indices(landunit_type, g)
+    l = grc_pp%landunit_indices(landunit_type, g)
 
     ! If this landunit exists on this grid cell...
     if (l /= ispval) then

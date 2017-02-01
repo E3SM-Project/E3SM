@@ -13,7 +13,7 @@ module initSubgridMod
   use clm_varctl     , only : iulog
   use clm_varcon     , only : namep, namec, namel
   use decompMod      , only : bounds_type
-  use GridcellType   , only : grc                
+  use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use PatchType      , only : pft                
@@ -44,7 +44,7 @@ contains
     ! This algorithm assumes all indices besides grid cell are monotonically
     ! increasing.  (Note that grid cell index is NOT monotonically increasing,
     ! hence we cannot set initial & final indices at the grid cell level - 
-    ! grc%luni, grc%lunf, etc.)
+    ! grc_pp%luni, grc_pp%lunf, etc.)
     !
     ! Algorithm works as follows.  The p, c, and l loops march through
     ! the full arrays (nump, numc, and numl) checking the "up" indexes.
@@ -123,7 +123,7 @@ contains
 
     ! Determine landunit_indices: indices into landunit-level arrays for each grid cell.
     ! Note that landunits not present in a given grid cell are set to ispval.
-    grc%landunit_indices(:,bounds%begg:bounds%endg) = ispval
+    grc_pp%landunit_indices(:,bounds%begg:bounds%endg) = ispval
     do l = bounds%begl,bounds%endl
        ltype = lun_pp%itype(l)
        curg = lun_pp%gridcell(l)
@@ -132,8 +132,8 @@ contains
           call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
 
-       if (grc%landunit_indices(ltype, curg) == ispval) then
-          grc%landunit_indices(ltype, curg) = l
+       if (grc_pp%landunit_indices(ltype, curg) == ispval) then
+          grc_pp%landunit_indices(ltype, curg) = l
        else
           write(iulog,*) 'clm_ptrs_compdown ERROR: This landunit type has already been set for this gridcell'
           write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
@@ -182,7 +182,7 @@ contains
     error = .false.
     do g = begg, endg
        do ltype = 1, max_lunit
-          l = grc%landunit_indices(ltype, g)
+          l = grc_pp%landunit_indices(ltype, g)
           if (l /= ispval) then
              if (l < begl .or. l > endl) error = .true.
           end if
@@ -287,7 +287,7 @@ contains
     error = .false.
     do g = begg, endg
        do ltype = 1, max_lunit
-          l = grc%landunit_indices(ltype, g)
+          l = grc_pp%landunit_indices(ltype, g)
 
           ! skip l == ispval, which implies that this landunit type doesn't exist on this grid cell
           if (l /= ispval) then

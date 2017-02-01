@@ -22,7 +22,7 @@ module UrbanFluxesMod
   use FrictionVelocityType , only : frictionvel_type
   use EnergyFluxType       , only : energyflux_type
   use WaterfluxType        , only : waterflux_type
-  use GridcellType         , only : grc                
+  use GridcellType         , only : grc_pp                
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
   use PatchType            , only : pft                
@@ -284,7 +284,7 @@ contains
          l = filter_urbanl(fl)
          g = lun_pp%gridcell(l)
 
-         local_secp1(l)        = secs + nint((grc%londeg(g)/degpsec)/dtime)*dtime
+         local_secp1(l)        = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
          local_secp1(l)        = mod(local_secp1(l),isecspday)
 
          ! Error checks

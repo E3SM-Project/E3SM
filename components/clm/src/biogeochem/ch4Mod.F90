@@ -34,7 +34,7 @@ module ch4Mod
   use TemperatureType    , only : temperature_type
   use WaterfluxType      , only : waterflux_type
   use WaterstateType     , only : waterstate_type
-  use GridcellType       , only : grc                
+  use GridcellType       , only : grc_pp                
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use PatchType          , only : pft                
@@ -1456,7 +1456,7 @@ contains
 
          ! Update lagged surface runoff
 
-         if (grc%latdeg(g) < 45._r8) then
+         if (grc_pp%latdeg(g) < 45._r8) then
             qflxlags = qflxlagd * secspday ! 30 days
          else
             qflxlags = qflxlagd * secspday * highlatfact ! 60 days
@@ -1825,7 +1825,7 @@ contains
                   write(iulog,*)'CH4 Conservation Error in CH4Mod driver, nstep, c, errch4 (gC /m^2.timestep)', &
                        nstep,c,errch4
                   g = col_pp%gridcell(c)
-                  write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
+                  write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                   call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
                end if
             end if
@@ -1845,7 +1845,7 @@ contains
                      write(iulog,*)'CH4 Conservation Error in CH4Mod driver for lake column, nstep, c, errch4 (gC/m^2.timestep)', &
                           nstep,c,errch4
                      g = col_pp%gridcell(c)
-                     write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
+                     write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                      call endrun(msg=' ERROR: Methane conservation error, allowlakeprod'//&
                           errMsg(__FILE__, __LINE__))
                   end if
@@ -3068,14 +3068,14 @@ contains
                write(iulog,*) 'Methane demands exceed methane available. Error in methane competition (mol/m^3/s), c,j:', &
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
-               write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
+               write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Methane demands exceed methane available.'&
                     //errMsg(__FILE__, __LINE__))
             else if (ch4stress(c,j) < 1._r8 .and. source(c,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*) 'Methane limited, yet some left over. Error in methane competition (mol/m^3/s), c,j:', &
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
-               write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
+               write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
                     errMsg(__FILE__, __LINE__))
             end if
@@ -3085,14 +3085,14 @@ contains
                write(iulog,*) 'Oxygen demands exceed oxygen available. Error in oxygen competition (mol/m^3/s), c,j:', &
                     source(c,j,2) + conc_o2(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
-               write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
+               write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Oxygen demands exceed oxygen available.'//&
                     errMsg(__FILE__, __LINE__) )
             else if (o2stress(c,j) < 1._r8 .and. source(c,j,2) + conc_o2(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*) 'Oxygen limited, yet some left over. Error in oxygen competition (mol/m^3/s), c,j:', &
                     source(c,j,2) + conc_o2(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
-               write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
+               write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Oxygen limited, yet some left over.'//errMsg(__FILE__, __LINE__))
             end if
 
@@ -3435,7 +3435,7 @@ contains
                            write(iulog,*)'Note: sink > source in ch4_tran, sources are changing '// &
                                 ' quickly relative to diffusion timestep, and/or diffusion is rapid.'
                            g = col_pp%gridcell(c)
-                           write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
+                           write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                            write(iulog,*)'This typically occurs when there is a larger than normal '// &
                                 ' diffusive flux.'
                            write(iulog,*)'If this occurs frequently, consider reducing land model (or '// &
@@ -3558,7 +3558,7 @@ contains
             write(iulog,*)'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)', &
                  nstep,c,errch4(c)
             g = col_pp%gridcell(c)
-            write(iulog,*)'Latdeg,Londeg=',grc%latdeg(g),grc%londeg(g)
+            write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
             call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
                  errMsg(__FILE__, __LINE__))
          end if

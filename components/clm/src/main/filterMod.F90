@@ -14,7 +14,7 @@ module filterMod
   use abortutils     , only : endrun
   use clm_varctl     , only : iulog
   use decompMod      , only : bounds_type  
-  use GridcellType   , only : grc
+  use GridcellType   , only : grc_pp
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use PatchType      , only : pft                

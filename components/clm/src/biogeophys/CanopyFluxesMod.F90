@@ -37,7 +37,7 @@ module CanopyFluxesMod
   use WaterstateType        , only : waterstate_type
   use ch4Mod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
-  use GridcellType          , only : grc                
+  use GridcellType          , only : grc_pp                
   use ColumnType            , only : col_pp                
   use PatchType             , only : pft                
   use PhosphorusStateType   , only : phosphorusstate_type
@@ -318,8 +318,8 @@ contains
 
     associate(                                                               & 
          snl                  => col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                                                  
-         dayl                 => grc%dayl                                  , & ! Input:  [real(r8) (:)   ]  daylength (s)
-         max_dayl             => grc%max_dayl                              , & ! Input:  [real(r8) (:)   ]  maximum daylength for this grid cell (s)
+         dayl                 => grc_pp%dayl                                  , & ! Input:  [real(r8) (:)   ]  daylength (s)
+         max_dayl             => grc_pp%max_dayl                              , & ! Input:  [real(r8) (:)   ]  maximum daylength for this grid cell (s)
 
          forc_lwrad           => atm2lnd_vars%forc_lwrad_downscaled_col    , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
          forc_q               => atm2lnd_vars%forc_q_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
@@ -599,7 +599,7 @@ contains
               btran(p) < irrig_btran_thresh ) then
             
             ! see if it's the right time of day to start irrigating:
-            local_time = modulo(time + nint(grc%londeg(g)/degpsec), isecspday)
+            local_time = modulo(time + nint(grc_pp%londeg(g)/degpsec), isecspday)
             seconds_since_irrig_start_time = modulo(local_time - irrig_start_time, isecspday)
             if (seconds_since_irrig_start_time < dtime) then
                ! it's time to start irrigating

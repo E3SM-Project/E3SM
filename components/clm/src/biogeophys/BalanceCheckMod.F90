@@ -19,7 +19,7 @@ module BalanceCheckMod
   use SoilHydrologyType  , only : soilhydrology_type  
   use WaterstateType     , only : waterstate_type
   use WaterfluxType      , only : waterflux_type
-  use GridcellType       , only : grc                
+  use GridcellType       , only : grc_pp                
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
   use PatchType          , only : pft                

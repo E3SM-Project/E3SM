@@ -128,7 +128,7 @@ module clm_driver
   use TracerBalanceMod       , only : begin_betr_tracer_massbalance
   use tracer_varcon          , only : is_active_betr_bgc, do_betr_leaching
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary, CNFluxStateBetrSummary
-  use GridcellType           , only : grc                
+  use GridcellType           , only : grc_pp                
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use PatchType              , only : pft

@@ -10,7 +10,7 @@ module TemperatureType
   use clm_varctl      , only : use_cndv, iulog
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevlak, nlevurb, crop_prog 
   use clm_varcon      , only : spval
-  use GridcellType    , only : grc
+  use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
   use PatchType       , only : pft                
@@ -1221,8 +1221,8 @@ contains
           g = pft%gridcell(p)
           if (month==1 .and. day==1 .and. secs==int(dtime)) then
              rbufslp(p) = accumResetVal ! reset gdd
-          else if (( month > 3 .and. month < 10 .and. grc%latdeg(g) >= 0._r8) .or. &
-                   ((month > 9 .or.  month < 4) .and. grc%latdeg(g) <  0._r8)     ) then
+          else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
+                   ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
              rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m_patch(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
           else
              rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
@@ -1238,8 +1238,8 @@ contains
           g = pft%gridcell(p)
           if (month==1 .and. day==1 .and. secs==int(dtime)) then
              rbufslp(p) = accumResetVal ! reset gdd
-          else if (( month > 3 .and. month < 10 .and. grc%latdeg(g) >= 0._r8) .or. &
-                   ((month > 9 .or.  month < 4) .and. grc%latdeg(g) <  0._r8)     ) then
+          else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
+                   ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
              rbufslp(p) = max(0._r8, min(30._r8, &
                   this%t_ref2m_patch(p)-(SHR_CONST_TKFRZ + 8._r8))) * dtime/SHR_CONST_CDAY
           else
@@ -1255,8 +1255,8 @@ contains
           g = pft%gridcell(p)
           if (month==1 .and. day==1 .and. secs==int(dtime)) then
              rbufslp(p) = accumResetVal ! reset gdd
-          else if (( month > 3 .and. month < 10 .and. grc%latdeg(g) >= 0._r8) .or. &
-                   ((month > 9 .or.  month < 4) .and. grc%latdeg(g) <  0._r8)     ) then
+          else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
+                   ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
              rbufslp(p) = max(0._r8, min(30._r8, &
                   this%t_ref2m_patch(p)-(SHR_CONST_TKFRZ + 10._r8))) * dtime/SHR_CONST_CDAY
           else

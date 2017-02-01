@@ -25,7 +25,7 @@ module BGCReactionsCenturyType
   use BGCCenturySubCoreMod
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
-  use GridcellType          , only : grc
+  use GridcellType          , only : grc_pp
   use landunit_varcon       , only : istsoil, istcrop
   implicit none
 
@@ -678,7 +678,7 @@ contains
                time, dtime, yf(:,c,j), pscal)
 
           if(pscal<5.e-1_r8)then
-             write(iulog,*)'lat, lon=',grc%latdeg(col_pp%gridcell(c)),grc%londeg(col_pp%gridcell(c))
+             write(iulog,*)'lat, lon=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
              write(iulog,*)'col, lev, pscal=',c, j, pscal
              write(iulog,*)'nstep =',get_nstep()
              call endrun()
