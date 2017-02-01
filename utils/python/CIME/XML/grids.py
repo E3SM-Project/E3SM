@@ -35,6 +35,8 @@ class Grids(GenericXML):
                 gn = node.get("name")
                 if gn not in gridnames:
                     gridnames.append(gn)
+            if "mask" not in gridnames:
+                gridnames.append("mask")
         else:
             expect(False,"Did not recognize config_grids.xml file version")
 
@@ -215,7 +217,7 @@ class Grids(GenericXML):
         """ determine domains dictionary for config_grids.xml v2 schema"""
         # use component_grids to create grids dictionary
         # TODO: this should be in XML, not here
-        grids = [("atm", "a%"), ("lnd", "l%"), ("ocn", "o%"), \
+        grids = [("atm", "a%"), ("lnd", "l%"), ("ocn", "o%"), ("mask", "m%"),\
                  ("ice", "i%"), ("rof", "r%"), ("glc", "g%"), ("wav", "w%")]
         domains = {}
         mask_name = None
