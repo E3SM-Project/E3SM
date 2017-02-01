@@ -33,6 +33,7 @@ elif var == 'T':
 
 #    plev = 850
     plev = parameter.plev
+    print plev
 
     for filename in [filename1,filename2]:
         f_in = cdms2.open(filename)
