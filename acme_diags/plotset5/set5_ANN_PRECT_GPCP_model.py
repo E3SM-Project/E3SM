@@ -33,14 +33,15 @@ elif var == 'T':
 
 #    plev = 850
     plev = parameter.plev
-    print plev
+    print 'selected pressure level', plev
 
     for filename in [filename1,filename2]:
         f_in = cdms2.open(filename)
-        mv = f_in(var)
+        mv = f_in[var] # Square brackets for metadata preview
         mv_plv = mv.getLevel()
 
         if mv_plv.long_name.lower().find('hybrid') != -1: # var(time,lev,lon,lat) convert from hybrid level to pressure
+            mv = f_in (var) # Parentheses actually load the transient variable     
             hyam = f_in('hyam')
             hybm = f_in('hybm')
             ps = f_in('PS')/100.    #convert unit from 'Pa' to mb
@@ -50,15 +51,21 @@ elif var == 'T':
             mv_p=cdutil.vertical.logLinearInterpolation(mv, levels_orig, plev)
 
         elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
-            #Construct pressure level for interpolation
-            levels_orig = mv.clone()
-            levels_orig.units = 'mb'
-            levels_orig.id = 'pressure'
-
-            for ilev in range(len(mv_plv[:])):
-                levels_orig.data[:,ilev,:,:]=mv_plv[ilev]
-
-            mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,:,:], levels_orig[:,::-1,:,:], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
+            # if desired plev exists, read from input file, otherwise, interpolate
+            try:
+                plev_ind = mv_plv.tolist().index(plev)
+                mv_p = f_in(var,level= plev)
+            except:
+                mv = f_in (var)
+                #Construct pressure level for interpolation
+                levels_orig = mv.clone()
+                levels_orig.units = 'mb'
+                levels_orig.id = 'pressure'
+    
+                for ilev in range(len(mv_plv[:])):
+                    levels_orig[:,ilev,:,:]=mv_plv[ilev]
+    
+                mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,:,:], levels_orig[:,::-1,:,:], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
 
         else:
             print( 'Vertical level is neither hybrid nor pressure. Abort')
