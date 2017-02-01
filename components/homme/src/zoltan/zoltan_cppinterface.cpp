@@ -4,7 +4,7 @@
 #endif
 
 #include "zoltan_cppinterface.hpp"
-
+//#define VISUALIZE_MAPPING
 
 #if TRILINOS_HAVE_ZOLTAN2
 #include <Zoltan2_XpetraCrsGraphAdapter.hpp>
@@ -305,15 +305,6 @@ void zoltan_map_problem(
     zgno_t end = xadj[gblRow + 1];
     const ArrayView< const zgno_t > indices(adjncy+begin, end-begin);
     TpetraCrsGraph->insertGlobalIndices(gblRow, indices);
-
-    /*
-    if (global_comm->getRank() == 0){
-      std::cout << "gblRow:" << gblRow;
-      for (int i = begin; i < end; ++i){
-        std::cout << "\tneighbor:" << adjncy[i] << " w:" << adjwgt[i] << std::endl;
-      }
-    }
-    */
   }
   TpetraCrsGraph->fillComplete ();
   env->timerStop(Zoltan2::MACRO_TIMERS, "TpetraGraphCreate");
@@ -389,7 +380,7 @@ void zoltan_map_problem(
     //the optimization parameters that are specific to architecture is set here.
 
     //this is for BGQ
-    problemParams.set("machine_coord_transformation", "EIGNORE");
+    problemParams.set("Machine_Optimization_Level", 10);
   }
 
   env->timerStart(Zoltan2::MACRO_TIMERS, "MachineCreate");
@@ -523,10 +514,6 @@ void zoltan_mapping_problem(
   //int *parts = result_parts;
 
 
-
-
-
-
   //partitioning performed using sf curve, or metis and so on.
   //this was not handled in zoltan part, therefore, for mapping we need to shift the part numbers by 1.
   if (*partmethod <= 4){
@@ -549,15 +536,44 @@ void zoltan_mapping_problem(
   //we do not need to shift them.
 
 
-  if (*mapmethod == 3){
+  if (*mapmethod >= 2){
     //the optimization parameters that are specific to architecture is set here.
     //this is for BGQ
-    problemParams.set("machine_coord_transformation", "EIGNORE");
+    problemParams.set("Machine_Optimization_Level", *mapmethod - 2);
+    //problemParams.set("machine_coord_transformation", "EIGNORE");
   }
 
   problemParams.set("mapping_algorithm", "geometric");
   problemParams.set("distributed_input_adapter", false);
 
+#ifdef VISUALIZE_MAPPING
+  problemParams.set("Input_RCA_Machine_Coords", "titan_alloc.txt");
+#endif
+  char* dpf=NULL;
+  dpf = getenv ("DIVIDEPRIMEFIRST");
+  if (dpf != NULL){
+    int val = atoi(dpf);
+    if (val) {
+      problemParams.set("divide_prime_first", true);
+    }
+    else {
+      problemParams.set("divide_prime_first", false);
+    }
+  }
+  else {
+    problemParams.set("divide_prime_first", true);
+  }
+
+  dpf = getenv ("REDUCEBESTMAPPING");
+  if (dpf != NULL){
+    int val = atoi(dpf);
+    if (val) {
+      problemParams.set("reduce_best_mapping", true);
+    }
+    else {
+      problemParams.set("reduce_best_mapping", false);
+    }
+  }
   env->timerStart(Zoltan2::MACRO_TIMERS, "MappingProblemCreate");
   Zoltan2::MappingProblem<adapter_t> serial_map_problem(
       ia.getRawPtr(),
@@ -618,7 +634,6 @@ void zoltan2_print_metrics(
   int myRank = tcomm->getRank();
 
   Zoltan2::MachineRepresentation<double, int> mach(*tcomm);
-
   double **proc_coords;
   int mach_coord_dim = mach.getMachineDim();
   int *machine_extent = new int [mach_coord_dim];
@@ -700,9 +715,12 @@ void zoltan2_print_metrics(
               << "\tGLOBAL EDGE CUT:    " << global_edge_cut << std::endl
               << "\tMAX EDGE CUT:       " << global_max_edge_cut << std::endl
               << "\tTOTAL WEIGHTED HOPS:" << total_weighted_hops << std::endl;
+
   }
   delete [] machine_extent_wrap_around;
   delete [] machine_extent;
+
+
 }
 
 
@@ -782,13 +800,28 @@ void zoltan2_print_metrics2(
   single_phase_mapping_solution.setParts(initial_part_ids);
   typedef Zoltan2::EvaluateMapping<adapter_t> quality_t;
   Teuchos::ParameterList distributed_problemParams;
+
+#ifdef VISUALIZE_MAPPING
+  Teuchos::ParameterList serial_problemParams_2;
+  serial_problemParams_2.set("Input_RCA_Machine_Coords", "titan_alloc.txt");
+  Zoltan2::MachineRepresentation<double, int> mach(*global_comm, serial_problemParams_2);
+#else
   Zoltan2::MachineRepresentation<double, int> mach(*global_comm);
+#endif
 
   RCP<quality_t> metricObject_1 = rcp(new quality_t(ia.getRawPtr(),&distributed_problemParams,tcomm,
       &single_phase_mapping_solution, &mach));
-
   if (global_comm->getRank() == 0){
     metricObject_1->printMetrics(std::cout);
+
+#ifdef VISUALIZE_MAPPING
+    double ** coords;
+    mach.getAllMachineCoordinatesView(coords);
+
+    Zoltan2::visualize_mapping<double, int> (
+        0, mach.getMachineDim(), mach.getNumRanks(), coords,
+        *nelem, xadj,adjncy, result_parts);
+#endif
   }
 }
 

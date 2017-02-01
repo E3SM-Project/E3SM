@@ -1,6 +1,9 @@
 Use of Zoltan2 within HOMME.
 
-- Compile/install Trilinos with Zoltan2 enabled.
+- Compile/install Trilinos with Zoltan2 enabled. 
+  Make sure CMAKE config files are installed.
+  Trilinos_ENABLE_INSTALL_CMAKE_CONFIG_FILES:BOOL=ON
+
 - When configuring HOMME, provide HOMME_USE_TRILINOS=TRUE, 
 and Trilinos_DIR=<path_to_trilinos_installation>
 

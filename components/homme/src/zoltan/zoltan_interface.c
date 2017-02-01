@@ -14,6 +14,8 @@
 #endif
 #include "stdio.h"
 
+
+#define WRITE_INPUT_FILE
 //#define VISUALIZEOUTPUT
 //#define VISUALIZEINPUT
 void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, int *nparts, MPI_Fint *comm,
@@ -64,8 +66,8 @@ void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, 
     if (mype2 == 0) {
       int i = 0, j = 0;
       FILE *f2 = fopen("homme_graph.bin", "wb");
-      fwrite(nelem,sizeof(int),1,f2); // write 10 bytes to our buffer
-      fwrite(xadj+ *nelem,sizeof(int),1,f2); // write 10 bytes to our buffer
+      fwrite(nelem,sizeof(int),1,f2);
+      fwrite(xadj+ *nelem,sizeof(int),1,f2);
       fwrite(xadj,sizeof(int),*nelem + 1,f2); // write 10 bytes to our buffer
       fwrite(adjncy,sizeof(int),xadj[*nelem],f2); // write 10 bytes to our buffer
       fwrite(adjwgt,sizeof(double),xadj[*nelem],f2); // write 10 bytes to our buffer
@@ -202,6 +204,8 @@ void z2printmetrics_(
 
 #if HAVE_TRILINOS
 #if TRILINOS_HAVE_ZOLTAN2
+  sort_graph(nelem,xadj,adjncy,adjwgt,vwgt);
+
 #ifdef COMPARESOLUTIONS
   zoltan2_print_metrics(
       nelem,
@@ -209,7 +213,7 @@ void z2printmetrics_(
       nparts, c_comm,
       result_parts);
 #endif
-
+    
   zoltan2_print_metrics2(
       nelem,
       xadj,adjncy,adjwgt,vwgt,
