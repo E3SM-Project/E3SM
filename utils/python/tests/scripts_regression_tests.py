@@ -1827,7 +1827,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><FFLAGS><base>-O$SHELL{echo $ENV{OPT_LEVEL}} -fast</base></FFLAGS></compiler>"""
         err_msg = "Nesting not allowed.*"
         with self.assertRaisesRegexp(SystemExit, err_msg):
-             self.xml_to_tester(xml1)
+            self.xml_to_tester(xml1)
 
     def test_config_variable_insertion(self):
         """Test that <var> elements insert variables from config_build."""
