@@ -121,6 +121,10 @@ class CompilerBlock(object):
         reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
+        nesting_ref_re = re.compile(r'\$SHELL\{[^}]+\$\w*\{')
+
+        expect(nesting_ref_re.search(output) is None,
+               "Nesting not allowed in this syntax, use xml syntax <shell> <env> if nesting is required")
 
         for m in reference_re.finditer(output):
             var_name = m.groups()[0]
@@ -140,8 +144,6 @@ class CompilerBlock(object):
 
         for s in shell_ref_re.finditer(output):
             command = s.groups()[0]
-            if "{" in command and not "}" in command:
-                expect(False, "Nesting not allowed in this syntax, use the xml form <shell> and <env> for nesting")
             logger.debug("execute %s in shell, command %s" % (output, command))
             new_set_up, inline, new_tear_down = \
                 writer.shell_command_strings(command)
