@@ -1,107 +1,107 @@
-        <nml_record name="cvmix_WSwSBF" mode="init" configuration="cvmix_WSwSBF">
-                <nml_option name="config_cvmix_WSwSBF_vert_levels" type="integer" default_value="100" units="unitless"
-                                        description="Number of vertical levels in cvmix WSwSBF unit test case."
-                                        possible_values="Any positive integer number greater than 0."
-                />
-                <nml_option name="config_cvmix_WSwSBF_surface_temperature" type="real" default_value="15.0" units="deg C"
-                                        description="Temperature of the surface of the ocean."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_surface_salinity" type="real" default_value="35.0" units="PSU"
-                                        description="Salinity of the surface of the ocean."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_surface_restoring_temperature" type="real" default_value="15.0" units="C"
-                                        description="Temperature to restore towards when surface restoring is turned on."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_surface_restoring_salinity" type="real" default_value="35.0" units="PSU"
-                                        description="Salinity to restore towards when surface restoring is turned on."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_temperature_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
-                                        description="Piston velocity to control rate of restoring toward config_cvmix_WSwSBF_surface_restoring_temperature."
-                                        possible_values="Any non-negative real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_salinity_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
-                                        description="Piston velocity to control rate of restoring toward config_cvmix_WSwSBF_surface_restoring_salinity."
-                                        possible_values="Any non-negative real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_sensible_heat_flux" type="real" default_value="0.0" units="W m^{-2}"
-                                        description="Net sensible heat flux applied when bulk forcing is used. Positive values indicate a net input of heat to ocean."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_latent_heat_flux" type="real" default_value="0.0" units="W m^{-2}"
-                                        description="Net latent heat flux applied when bulk forcing is used. Positive values indicate a net input of heat to ocean."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_shortwave_heat_flux" type="real" default_value="0.0" units="W m^{-2}"
-                                        description="Net solar shortwave heat flux applied when bulk forcing is used. Positive values indicate a net input of heat to ocean."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_rain_flux" type="real" default_value="0.0" units="kg m^{-2} s^{-1}"
-                                        description="Net surface rain flux when bulk forcing is used. Positive values indicate a net input of water to ocean."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_evaporation_flux" type="real" default_value="0.0" units="kg m^{-2} s^{-1}"
-                                        description="Net surface evaporation when bulk forcing is used. Positive values indicate a net input of water to ocean."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_interior_temperature_restoring_rate" type="real" default_value="1.0e-6" units="{s}^-1"
-                                        description="Rate at which temperature is restored toward the initial condition."
-                                        possible_values="Any non-negative real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_interior_salinity_restoring_rate" type="real" default_value="1.0e-6" units="{s}^-2"
-                                        description="Rate at which salinity is restored toward the initial condition."
-                                        possible_values="Any non-negative real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_temperature_gradient" type="real" default_value="0.01" units="deg C m^{-1}"
-                                        description="d/dz of temperature."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_cvmix_WSwSBF_salinity_gradient" type="real" default_value="0.0" units="PSU m^{-1}"
-                                        description="d/dz of salinity."
-                                        possible_values="Any real number"
+	<nml_record name="cvmix_WSwSBF" mode="init" configuration="cvmix_WSwSBF">
+		<nml_option name="config_cvmix_WSwSBF_vert_levels" type="integer" default_value="100" units="unitless"
+			description="Number of vertical levels in cvmix WSwSBF unit test case."
+			possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_cvmix_WSwSBF_surface_temperature" type="real" default_value="15.0" units="deg C"
+			description="Temperature of the surface of the ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_surface_salinity" type="real" default_value="35.0" units="PSU"
+			description="Salinity of the surface of the ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_surface_restoring_temperature" type="real" default_value="15.0" units="C"
+			description="Temperature to restore towards when surface restoring is turned on."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_surface_restoring_salinity" type="real" default_value="35.0" units="PSU"
+			description="Salinity to restore towards when surface restoring is turned on."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_temperature_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
+			description="Piston velocity to control rate of restoring toward config_cvmix_WSwSBF_surface_restoring_temperature."
+			possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_salinity_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
+			description="Piston velocity to control rate of restoring toward config_cvmix_WSwSBF_surface_restoring_salinity."
+			possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_sensible_heat_flux" type="real" default_value="0.0" units="W m^{-2}"
+			description="Net sensible heat flux applied when bulk forcing is used. Positive values indicate a net input of heat to ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_latent_heat_flux" type="real" default_value="0.0" units="W m^{-2}"
+			description="Net latent heat flux applied when bulk forcing is used. Positive values indicate a net input of heat to ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_shortwave_heat_flux" type="real" default_value="0.0" units="W m^{-2}"
+			description="Net solar shortwave heat flux applied when bulk forcing is used. Positive values indicate a net input of heat to ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_rain_flux" type="real" default_value="0.0" units="kg m^{-2} s^{-1}"
+			description="Net surface rain flux when bulk forcing is used. Positive values indicate a net input of water to ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_evaporation_flux" type="real" default_value="0.0" units="kg m^{-2} s^{-1}"
+			description="Net surface evaporation when bulk forcing is used. Positive values indicate a net input of water to ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_interior_temperature_restoring_rate" type="real" default_value="1.0e-6" units="{s}^-1"
+			description="Rate at which temperature is restored toward the initial condition."
+			possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_interior_salinity_restoring_rate" type="real" default_value="1.0e-6" units="{s}^-2"
+			description="Rate at which salinity is restored toward the initial condition."
+			possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_temperature_gradient" type="real" default_value="0.01" units="deg C m^{-1}"
+			description="d/dz of temperature."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_salinity_gradient" type="real" default_value="0.0" units="PSU m^{-1}"
+			description="d/dz of salinity."
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_cvmix_WSwSBF_temperature_gradient_mixed_layer" type="real" default_value="0.0" units="deg C m^{-1}"
-			                description="d/dz of temperature in mixed temperature layer"
-					possible_values="Any real number"
+			description="d/dz of temperature in mixed temperature layer"
+			possible_values="Any real number"
 		/>
-	        <nml_option name="config_cvmix_WSwSBF_salinity_gradient_mixed_layer" type="real" default_value="0.0" units="PSU m^{-1}"
-			                description="d/dz of salinity in mixed salinity layer"
-					possible_values="Any real number"
+		<nml_option name="config_cvmix_WSwSBF_salinity_gradient_mixed_layer" type="real" default_value="0.0" units="PSU m^{-1}"
+			description="d/dz of salinity in mixed salinity layer"
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_cvmix_WSwSBF_mixed_layer_depth_temperature" type="real" default_value="0.0" units="m"
-					description="depth mixed temperature layer"
-					possible_values="Any positive real number but must be less than bottom depth"
+			description="depth mixed temperature layer"
+			possible_values="Any positive real number but must be less than bottom depth"
 		/>
 		<nml_option name="config_cvmix_WSwSBF_mixed_layer_depth_salinity" type="real" default_value="0.0" units="m"
-					description="depth mixed salinity layer"
-					possible_values="Any positive real number but less than bottom depth"
+			description="depth mixed salinity layer"
+			possible_values="Any positive real number but less than bottom depth"
 		/>
 		<nml_option name="config_cvmix_WSwSBF_mixed_layer_temperature_change" type="real" default_value="0.0" units="deg C"
-					description="temperature jump when moving downward across the mixed layer interface"
-					possible_values="Any real number"
+			description="temperature jump when moving downward across the mixed layer interface"
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_cvmix_WSwSBF_mixed_layer_salinity_change" type="real" default_value="0.0" units="PSU"
-					description="salinity jump when moving downward across the mixed layer interface"
-					possible_values="Any real number"
+			description="salinity jump when moving downward across the mixed layer interface"
+			possible_values="Any real number"
 		/>
-                <nml_option name="config_cvmix_WSwSBF_vertical_grid" type="character" default_value="uniform" units="unitless"
-                                        description="prescription of setting the vertical resolution of the test case"
-                                        possible_values="'uniform' and 'stretched100'"
-                />
-                <nml_option name="config_cvmix_WSwSBF_bottom_depth" type="real" default_value="400.0" units="m"
-                                        description="Depth of the bottom of the ocean for the CVMix WSwSBF unit test case."
-                                        possible_values="Any positive real number."
-                />
-                <nml_option name="config_cvmix_WSwSBF_max_windstress" type="real" default_value="0.10" units="N m^{-2}"
-                                        description="Maximum surface windstress over the domain."
-                                        possible_values="Any real number."
-                />
-                <nml_option name="config_cvmix_WSwSBF_coriolis_parameter" type="real" default_value="1.0e-4" units="s^{-1}"
-                                        description="Coriolis parameter for WSwSBF test case"
-                                        possible_values="Any real number."
-                />
+		<nml_option name="config_cvmix_WSwSBF_vertical_grid" type="character" default_value="uniform" units="unitless"
+			description="prescription of setting the vertical resolution of the test case"
+			possible_values="'uniform' and 'stretched100'"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_bottom_depth" type="real" default_value="400.0" units="m"
+			description="Depth of the bottom of the ocean for the CVMix WSwSBF unit test case."
+			possible_values="Any positive real number."
+		/>
+		<nml_option name="config_cvmix_WSwSBF_max_windstress" type="real" default_value="0.10" units="N m^{-2}"
+			description="Maximum surface windstress over the domain."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_cvmix_WSwSBF_coriolis_parameter" type="real" default_value="1.0e-4" units="s^{-1}"
+			description="Coriolis parameter for WSwSBF test case"
+			possible_values="Any real number."
+		/>
 
-        </nml_record>
+	</nml_record>

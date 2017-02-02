@@ -1,47 +1,47 @@
 	<nml_record name="internal_waves" mode="init" configuration="internal_waves">
 		<nml_option name="config_internal_waves_vert_levels" type="integer" default_value="20" units="unitless"
-					description="Number of vertical levels in internal waves test case. Typical value is 20."
-					possible_values="Any positive integer number greater than 0."
+			description="Number of vertical levels in internal waves test case. Typical value is 20."
+			possible_values="Any positive integer number greater than 0."
 		/>
 		<nml_option name="config_internal_waves_use_distances" type="logical" default_value="false" units="unitless"
-					description="Logical flag that determines if locations of features are defined by distances of fractions. False means fractions."
-					possible_values=".true. or .false."
+			description="Logical flag that determines if locations of features are defined by distances of fractions. False means fractions."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_internal_waves_surface_temperature" type="real" default_value="20.1" units="deg C"
-					description="Temperature of the surface in the northern half of the domain."
-					possible_values="Any real number"
+			description="Temperature of the surface in the northern half of the domain."
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_internal_waves_bottom_temperature" type="real" default_value="10.1" units="deg C"
-					description="Temperature of the bottom in the northern half of the domain."
-					possible_values="Any real number"
+			description="Temperature of the bottom in the northern half of the domain."
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_internal_waves_temperature_difference" type="real" default_value="2.0" units="deg C"
-					description="Maximum temperature difference in the amplitude."
-					possible_values="Any real number"
+			description="Maximum temperature difference in the amplitude."
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_internal_waves_amplitude_width_frac" type="real" default_value="0.33" units="fraction"
-					description="Percent of domain in Y direction the initial amplitude should exist over."
-					possible_values="Any real number between 0 and 1."
+			description="Percent of domain in Y direction the initial amplitude should exist over."
+			possible_values="Any real number between 0 and 1."
 		/>
 		<nml_option name="config_internal_waves_amplitude_width_dist" type="real" default_value="50e3" units="m"
-					description="Width in Y direction the initial amplitude should exist over. Default is relative to a 250km domain."
-					possible_values="Any positive real number."
+			description="Width in Y direction the initial amplitude should exist over. Default is relative to a 250km domain."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_internal_waves_bottom_depth" type="real" default_value="500.0" units="m"
-					description="Depth of the bottom of the ocean for the internal waves test case."
-					possible_values="Any positive real number."
+			description="Depth of the bottom of the ocean for the internal waves test case."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_internal_waves_salinity" type="real" default_value="35.0" units="PSU"
-					description="Salinity of the water in the entire domain."
-					possible_values="Any real number greater than 0."
+			description="Salinity of the water in the entire domain."
+			possible_values="Any real number greater than 0."
 		/>
 		<nml_option name="config_internal_waves_layer_type" type="character" default_value="z-level" units="unitless"
-					description="Logical flag that controls how the initial conditions should be generated."
-					possible_values="'z-level', 'isopycnal'"
+			description="Logical flag that controls how the initial conditions should be generated."
+			possible_values="'z-level', 'isopycnal'"
 		/>
 		<nml_option name="config_internal_waves_isopycnal_displacement" type="real" default_value="125.0" units="m"
-					description="Max distance isopycnal layers are displaced upwards."
-					possible_values="Any positive real number, typically 10 to 100."
+			description="Max distance isopycnal layers are displaced upwards."
+			possible_values="Any positive real number, typically 10 to 100."
 		/>
 	</nml_record>
 

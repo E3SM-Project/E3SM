@@ -1,43 +1,43 @@
 	<nml_record name="sub_ice_shelf_2D" mode="init" test_case="sub_ice_shelf_2D">
 		<nml_option name="config_sub_ice_shelf_2D_vert_levels" type="integer" default_value="20" units="unitless"
-					description="Number of vertical levels in sub_ice_shelf_2D. Typical value is 22."
-					possible_values="Any positive integer number greater than 0."
+			description="Number of vertical levels in sub_ice_shelf_2D. Typical value is 22."
+			possible_values="Any positive integer number greater than 0."
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_bottom_depth" type="real" default_value="2000.0" units="m"
-					description="Depth of the bottom of the ocean for the this test case."
-					possible_values="Any positive real number."
+			description="Depth of the bottom of the ocean for the this test case."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_cavity_thickness" type="real" default_value="25.0" units="m"
-					description="Vertical thickness of ocean sub-ice cavity."
-					possible_values="Any positive real number."
+			description="Vertical thickness of ocean sub-ice cavity."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_slope_height" type="real" default_value="500.0" units="m"
-					description="Vertical thickness of fixed slope."
-					possible_values="Any positive real number."
+			description="Vertical thickness of fixed slope."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_edge_width" type="real" default_value="15.0e3" units="m"
-					description="Horizontal width of angled part of the ice."
-					possible_values="Any positive real number."
+			description="Horizontal width of angled part of the ice."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_y1" type="real" default_value="30.0e3" units="m"
-					description="cavity edge in y"
-					possible_values="Any positive real number."
+			description="cavity edge in y"
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_y2" type="real" default_value="60.0e3" units="m"
-					description="shelf edge in y"
-					possible_values="Any positive real number."
+			description="shelf edge in y"
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_temperature" type="real" default_value="1.0" units="deg C"
-					description="Temperature of the surface in the northern half of the domain."
-					possible_values="Any real number"
+			description="Temperature of the surface in the northern half of the domain."
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_surface_salinity" type="real" default_value="34.5" units="PSU"
-					description="Salinity of the water in the entire domain."
-					possible_values="Any real number greater than 0."
+			description="Salinity of the water in the entire domain."
+			possible_values="Any real number greater than 0."
 		/>
 		<nml_option name="config_sub_ice_shelf_2D_bottom_salinity" type="real" default_value="34.7" units="PSU"
-					description="Salinity of the water in the entire domain."
-					possible_values="Any real number greater than 0."
+			description="Salinity of the water in the entire domain."
+			possible_values="Any real number greater than 0."
 		/>
 	</nml_record>
 

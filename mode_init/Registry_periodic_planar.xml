@@ -1,15 +1,15 @@
 	<nml_record name="periodic_planar" mode="init" configuration="periodic_planar">
 		<nml_option name="config_periodic_planar_vert_levels" type="integer" default_value="100" units="unitless"
-					description="Number of vertical levels in periodic_planar. Typical value is 1."
-					possible_values="Any positive integer number greater than 0."
+			description="Number of vertical levels in periodic_planar. Typical value is 1."
+			possible_values="Any positive integer number greater than 0."
 		/>
 		<nml_option name="config_periodic_planar_bottom_depth" type="real" default_value="2500.0" units="unitless"
-					description="Bottom depth."
-					possible_values="Any real number"
+			description="Bottom depth."
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_periodic_planar_velocity_strength" type="real" default_value="1.0" units="m$^2$ s$^{-1}$"
-					description="Strenght of velocity field."
-					possible_values="Any real number"
+			description="Strenght of velocity field."
+			possible_values="Any real number"
 		/>
 	</nml_record>
 	<var_struct name="scratch" time_levs="0">

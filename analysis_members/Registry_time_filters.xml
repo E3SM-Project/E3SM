@@ -1,39 +1,39 @@
 	<nml_record name="AM_timeFilters" mode="forward;analysis">
 		<nml_option name="config_AM_timeFilters_enable" type="logical" default_value=".false." units="unitless"
-					description="If true, ocean analysis member timeFilters is called."
-					possible_values=".true. or .false."
+			description="If true, ocean analysis member timeFilters is called."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_timeFilters_compute_interval" type="character" default_value="dt" units="unitless"
-					description="Timestamp determining how often analysis member computation should be performed."
-					possible_values="'dt' because filtering should be performed at each time step."
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="'dt' because filtering should be performed at each time step."
 		/>
 		<nml_option name="config_AM_timeFilters_output_stream" type="character" default_value="timeFiltersOutput" units="unitless"
-					description="Name of the stream that the timeFilters analysis member should be tied to."
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the stream that the timeFilters analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_timeFilters_restart_stream" type="character" default_value="timeFiltersRestart" units="unitless"
-					description="Name of the stream that the timeFilters analysis member should use to perform restarts."
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the stream that the timeFilters analysis member should use to perform restarts."
+			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_timeFilters_compute_on_startup" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if an analysis member computation occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_timeFilters_write_on_startup" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if an analysis member write occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_timeFilters_initialize_filters" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if filters should be initialized on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if filters should be initialized on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_timeFilters_tau" type="character" default_value="90_00:00:00" units="unitless"
-					description="Cutoff time scale $\tau$ for high and low pass filtering (default is 90 days)."
-					possible_values="Any time stamp in 'DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
+			description="Cutoff time scale $\tau$ for high and low pass filtering (default is 90 days)."
+			possible_values="Any time stamp in 'DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
 		<nml_option name="config_AM_timeFilters_compute_cell_centered_values" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if cell centered values should be computed."
-					possible_values=".true. or .false."
+			description="Logical flag determining if cell centered values should be computed."
+			possible_values=".true. or .false."
 		/>
 	</nml_record>
 	<packages>

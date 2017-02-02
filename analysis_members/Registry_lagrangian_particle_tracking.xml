@@ -1,55 +1,55 @@
 	<nml_record name="AM_lagrPartTrack" mode="forward;analysis">
 		<nml_option name="config_AM_lagrPartTrack_enable" type="logical" default_value=".false." units="unitless"
-					description="If true, ocean analysis member lagrPartTrack is called."
-					possible_values=".true. or .false."
+			description="If true, ocean analysis member lagrPartTrack is called."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_lagrPartTrack_compute_interval" type="character" default_value="dt" units="unitless"
-					description="Timestamp determining how often analysis member computation should be performed."
-					possible_values="'DDDD_HH:MM:SS', 'output', 'dt'"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="'DDDD_HH:MM:SS', 'output', 'dt'"
 		/>
 		<nml_option name="config_AM_lagrPartTrack_compute_on_startup" type="logical" default_value=".false." units="unitless"
-					description="Logical flag determining if an analysis member computation occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_lagrPartTrack_output_stream" type="character" default_value="lagrPartTrackOutput" units="unitless"
-					description="Name of the stream that the lagrPartTrack analysis member should be tied to."
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the stream that the lagrPartTrack analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_lagrPartTrack_restart_stream" type="character" default_value="lagrPartTrackRestart" units="unitless"
-					description="Name of the stream that the lagrPartTrack analysis member should use to perform restarts."
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the stream that the lagrPartTrack analysis member should use to perform restarts."
+			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_lagrPartTrack_input_stream" type="character" default_value="lagrPartTrackInput" units="unitless"
-					description="Name of the stream that the lagrPartTrack analysis member should read only in a non-restart run."
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the stream that the lagrPartTrack analysis member should read only in a non-restart run."
+			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_lagrPartTrack_write_on_startup" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if an analysis member write occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_lagrPartTrack_filter_number" type="integer" default_value="0" units="unitless"
-					description="Number of times to apply filtering operation."
-					possible_values="0, 1, 2, ..."
+			description="Number of times to apply filtering operation."
+			possible_values="0, 1, 2, ..."
 		/>
 		<nml_option name="config_AM_lagrPartTrack_reset_criteria" type="character" default_value="none" units="unitless"
-					description="Specify whether particles should not be reset ('none'), be reset on a timer for each particle ('particle_time'), be reset on config_AM_lagrPartTrack_reset_time_globally value ('global_time'), be reset based on regions ('region'), or be reset for all conditions ('all')."
-					possible_values="'none','particle_time','global_time', 'region','all'"
+			description="Specify whether particles should not be reset ('none'), be reset on a timer for each particle ('particle_time'), be reset on config_AM_lagrPartTrack_reset_time_globally value ('global_time'), be reset based on regions ('region'), or be reset for all conditions ('all')."
+			possible_values="'none','particle_time','global_time', 'region','all'"
 		/>
 		<nml_option name="config_AM_lagrPartTrack_reset_global_timestamp" type="character" default_value="0000_00:00:00" units="unitless"
-					description="Specify reset global timestamp interval."
-					possible_values="timestamps of form 0000_00:00:00"
+			description="Specify reset global timestamp interval."
+			possible_values="timestamps of form 0000_00:00:00"
 		/>
 		<nml_option name="config_AM_lagrPartTrack_region_stream" type="character" default_value="lagrPartTrackRegions" units="unitless"
-					description="Name of the stream that has region arrays resetOutsideRegionMaskValue1 and resetInsideRegionMaskValue1 for region-based particle resets."
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the stream that has region arrays resetOutsideRegionMaskValue1 and resetInsideRegionMaskValue1 for region-based particle resets."
+			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_lagrPartTrack_reset_if_outside_region" type="logical" default_value=".false." units="unitless"
-					description="Specify whether particles should be reset when they leave the resetOutsideRegionMaskValue1 mask."
-					possible_values=".false. or .true."
+			description="Specify whether particles should be reset when they leave the resetOutsideRegionMaskValue1 mask."
+			possible_values=".false. or .true."
 		/>
 		<nml_option name="config_AM_lagrPartTrack_reset_if_inside_region" type="logical" default_value=".false." units="unitless"
-					description="Specify whether particles should be reset when they enter the resetInsideRegionMaskValue1 mask."
-					possible_values=".false. or .true."
+			description="Specify whether particles should be reset when they enter the resetInsideRegionMaskValue1 mask."
+			possible_values=".false. or .true."
 		/>
 	</nml_record>
 
@@ -153,12 +153,12 @@
 		</stream>
 
 		<stream name="lagrPartTrackInput" type="input"
-						runtime_format="single_file"
-						mode="forward;analysis"
-						filename_template="analysis_members/lagrangianParticleTrackingInput.nc"
-						input_interval="initial_only"
-						packages="lagrPartTrackAMPKG"
-						immutable="false">
+				runtime_format="single_file"
+				mode="forward;analysis"
+				filename_template="analysis_members/lagrangianParticleTrackingInput.nc"
+				input_interval="initial_only"
+				packages="lagrPartTrackAMPKG"
+				immutable="false">
 			<var name="indexToParticleID"/>
 			<var name="currentBlock"/>
 			<var name="currentCell"/>
@@ -185,12 +185,12 @@
 		</stream>
 
 		<stream name="lagrPartTrackRegions" type="input"
-						runtime_format="single_file"
-						mode="forward;analysis"
-						filename_template="analysis_members/lagrangianParticleTrackingRegions.nc"
-						input_interval="initial_only"
-						packages="lagrPartTrackAMPKG"
-						immutable="false">
+				runtime_format="single_file"
+				mode="forward;analysis"
+				filename_template="analysis_members/lagrangianParticleTrackingRegions.nc"
+				input_interval="initial_only"
+				packages="lagrPartTrackAMPKG"
+				immutable="false">
 			<var name="resetOutsideRegionMaskValue1"/>
 			<var name="resetInsideRegionMaskValue1"/>
 		</stream>
