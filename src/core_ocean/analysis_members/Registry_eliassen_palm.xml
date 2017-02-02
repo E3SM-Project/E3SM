@@ -53,639 +53,635 @@
 		/>
 	</nml_record>
 	<dims>
-	  <dim name="nBuoyancyLayers"
-	       definition="namelist:config_AM_eliassenPalm_nBuoyancyLayers"
-	       description="The number of buoyancy layers used for buoyancy coordinates."
-	       />
-	  <dim name="nBuoyancyLayersP1"
-	       definition="nBuoyancyLayers+1"
-	       description="The number of interfaces between buoyancy layers used for buoyancy coordinates."
-	       />
+		<dim name="nBuoyancyLayers"
+			definition="namelist:config_AM_eliassenPalm_nBuoyancyLayers"
+			description="The number of buoyancy layers used for buoyancy coordinates."
+			/>
+		<dim name="nBuoyancyLayersP1"
+			definition="nBuoyancyLayers+1"
+			description="The number of interfaces between buoyancy layers used for buoyancy coordinates."
+			/>
 	</dims>
 	<packages>
-	  <package name="eliassenPalmAMPKG" description="This package includes variables required for the eliassenPalm analysis member."/>
+		<package name="eliassenPalmAMPKG" description="This package includes variables required for the eliassenPalm analysis member."/>
 	</packages>
 
 	<var_struct name="eliassenPalmAM" time_levs="1" packages="eliassenPalmAMPKG">
-	  <var name="potentialDensityMidRef"
-	       type="real"
-	       dimensions="nBuoyancyLayers"
-	       units="kg m^{-3}"
-	       description="Potential density target values of buoyancy coordinate layers"
-	       />
-	  <var name="potentialDensityTopRef"
-	       type="real"
-	       dimensions="nBuoyancyLayers"
-	       units="kg m^{-3}"
-	       description="Potential density at top of buoyancy coordinate layers"
-	       />
-	  <var name="buoyancyMidRef"
-	       type="real"
-	       dimensions="nBuoyancyLayers"
-	       units="m s^{-2}"
-	       description="Buoyancy of buoyancy coordinate layers"
-	       />
-	  <var name="buoyancyInterfaceRef"
-	       type="real"
-	       dimensions="nBuoyancyLayersP1"
-	       units="m s^{-2}"
-	       description="Buoyancy at interfaces of buoyancy coordinate layers"
-	       />
-	  <var name="buoyancyMaskEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="ensemble average of the buoyancy mask"
-	       />
-	  <var name="sigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="s^{-2}"
-	       description="Inverse of the derivative of buoyancy wrt z, or thickness per unit buoyancy, aka thickness, in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="nSamplesEA"
-	       type="integer"
-	       dimensions="Time"
-	       units="-"
-	       description="Number of samples used in the ensamble average"
-	       />
-	  <var name="heightMidBuoyCoorEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m"
-	       description="z-coordinate of each buoyancy layer, ensemble average"
-	       />
-	  <var name="montgPotGradZonalEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m"
-	       description="Zonal gradient of montgomery potential at cell center in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="montgPotGradMeridEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m"
-	       description="Meridional gradient of montgomery potential at cell center in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="heightMidBuoyCoorSqEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2"
-	       description="z-coordinate of each buoyancy layer, squared, ensemble average"
-	       />
-	  <var name="montgPotBuoyCoorEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Montgomery potential in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="heightMGradZonalEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Height times zonal gradient of Montgomery potential in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="heightMGradMeridEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Height times meridional gradient of Montgomery potential in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="usigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Zonal velocity times sigma, ensemble average"
-	       />
-	  <var name="vsigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Meridional velocity times sigma, ensemble average"
-	       />
-	  <var name="varpisigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s{-1}"
-	       description="Vertical velocity in buoyancy coordinates times sigma, ensemble average"
-	       />
-	  <var name="uusigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Zonal velocity times zonal velocity times sigma, ensemble average"
-	       />
-	  <var name="vvsigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Meridional velocity times meridional velocity times sigma, ensemble average"
-	       />
-	  <var name="uvsigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Zonal velocity times meridional velocity times sigma, ensemble average"
-	       />
-	  <var name="uvarpisigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Zonal velocity times vertical velocity in buoyancy coordinates times sigma, ensemble average"
-	       />
-	  <var name="vvarpisigmaEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Meridional velocity times vertical velocity in buoyancy coordinates times sigma, ensemble average"
-	       />
-	  <var name="uTWA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-1}"
-	       description="Zonal velocity, thickness weighted"
-	       />
-	  <var name="vTWA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-1}"
-	       description="Meridional velocity, thickness weighted"
-	       />
-	  <var name="varpiTWA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-3}"
-	       description="Vertical velocity, thickness weighted"
-	       />
-	  <var name="duTWAdz"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="s^{-1}"
-	       description="Derivative of thickness weighted zonal velocity with respect to z (vertical coordinate)."
-	       />
-	  <var name="dvTWAdz"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="s^{-1}"
-	       description="Derivative of thickness weighted meridional velocity with respect to z (vertical coordinate)."
-	       />
+		<var name="potentialDensityMidRef"
+			type="real"
+			dimensions="nBuoyancyLayers"
+			units="kg m^{-3}"
+			description="Potential density target values of buoyancy coordinate layers"
+			/>
+		<var name="potentialDensityTopRef"
+			type="real"
+			dimensions="nBuoyancyLayers"
+			units="kg m^{-3}"
+			description="Potential density at top of buoyancy coordinate layers"
+			/>
+		<var name="buoyancyMidRef"
+			type="real"
+			dimensions="nBuoyancyLayers"
+			units="m s^{-2}"
+			description="Buoyancy of buoyancy coordinate layers"
+			/>
+		<var name="buoyancyInterfaceRef"
+			type="real"
+			dimensions="nBuoyancyLayersP1"
+			units="m s^{-2}"
+			description="Buoyancy at interfaces of buoyancy coordinate layers"
+			/>
+		<var name="buoyancyMaskEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="ensemble average of the buoyancy mask"
+			/>
+		<var name="sigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="s^{-2}"
+			description="Inverse of the derivative of buoyancy wrt z, or thickness per unit buoyancy, aka thickness, in buoyancy coordinates, ensemble average"
+			/>
+		<var name="nSamplesEA"
+			type="integer"
+			dimensions="Time"
+			units="-"
+			description="Number of samples used in the ensamble average"
+			/>
+		<var name="heightMidBuoyCoorEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m"
+			description="z-coordinate of each buoyancy layer, ensemble average"
+			/>
+		<var name="montgPotGradZonalEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m"
+			description="Zonal gradient of montgomery potential at cell center in buoyancy coordinates, ensemble average"
+			/>
+		<var name="montgPotGradMeridEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m"
+			description="Meridional gradient of montgomery potential at cell center in buoyancy coordinates, ensemble average"
+			/>
+		<var name="heightMidBuoyCoorSqEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2"
+			description="z-coordinate of each buoyancy layer, squared, ensemble average"
+			/>
+		<var name="montgPotBuoyCoorEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Montgomery potential in buoyancy coordinates, ensemble average"
+			/>
+		<var name="heightMGradZonalEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Height times zonal gradient of Montgomery potential in buoyancy coordinates, ensemble average"
+			/>
+		<var name="heightMGradMeridEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Height times meridional gradient of Montgomery potential in buoyancy coordinates, ensemble average"
+			/>
+		<var name="usigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Zonal velocity times sigma, ensemble average"
+			/>
+		<var name="vsigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Meridional velocity times sigma, ensemble average"
+			/>
+		<var name="varpisigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s{-1}"
+			description="Vertical velocity in buoyancy coordinates times sigma, ensemble average"
+			/>
+		<var name="uusigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Zonal velocity times zonal velocity times sigma, ensemble average"
+			/>
+		<var name="vvsigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Meridional velocity times meridional velocity times sigma, ensemble average"
+			/>
+		<var name="uvsigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Zonal velocity times meridional velocity times sigma, ensemble average"
+			/>
+		<var name="uvarpisigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Zonal velocity times vertical velocity in buoyancy coordinates times sigma, ensemble average"
+			/>
+		<var name="vvarpisigmaEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Meridional velocity times vertical velocity in buoyancy coordinates times sigma, ensemble average"
+			/>
+		<var name="uTWA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-1}"
+			description="Zonal velocity, thickness weighted"
+			/>
+		<var name="vTWA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-1}"
+			description="Meridional velocity, thickness weighted"
+			/>
+		<var name="varpiTWA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-3}"
+			description="Vertical velocity, thickness weighted"
+			/>
+		<var name="duTWAdz"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="s^{-1}"
+			description="Derivative of thickness weighted zonal velocity with respect to z (vertical coordinate)."
+			/>
+		<var name="dvTWAdz"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="s^{-1}"
+			description="Derivative of thickness weighted meridional velocity with respect to z (vertical coordinate)."
+			/>
+		<var name="EPFT"
+			type="real"
+			dimensions="R3 R3 nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Eliassen-Palm flux tensor"
+			/>
+		<var name="uuTWACorr"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Thickness-weighted averaged eddy u-u correlation."
+			/>
+		<var name="vvTWACorr"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Thickness-weighted averaged eddy v-v correlation."
+			/>
+		<var name="uvTWACorr"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Thickness-weighted averaged eddy u-v correlation."
+			/>
+		<var name="epeTWA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Thickness-weighted averaged eddy potential energy."
+			/>
+		<var name="eddyFormDragZonal"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Thickness-weighted averaged eddy form drag in x"
+			/>
+		<var name="eddyFormDragMerid"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Thickness-weighted averaged eddy form drag in y"
+			/>
+		<var name="divEPFT"
+			type="real"
+			dimensions="R3 nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="Divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+			/>
+		<var name="divEPFT1"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="First component of the divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+			/>
+		<var name="divEPFT2"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="Second component of the divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+			/>
+		<var name="divEPFTshear1"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="First component of divergence of shear components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+			/>
+		<var name="divEPFTshear2"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="Second component of divergence of shear components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+			/>
+		<var name="divEPFTdrag1"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="First component of divergence of form drag components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+			/>
+		<var name="divEPFTdrag2"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="Second component of divergence of form drag components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+			/>
 
+		<var name="ErtelPVFlux"
+			type="real"
+			dimensions="R3 nBuoyancyLayers nCells Time"
+			units="m s^{-4}"
+			description="Ertel potential vorticity flux in buoyancy coordinates"
+			/>
+		<var name="ErtelPVFlux1"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-4}"
+			description="First component of the Ertel potential vorticity flux in buoyancy coordinates"
+			/>
+		<var name="ErtelPVFlux2"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-4}"
+			description="Second component of the Ertel potential vorticity flux in buoyancy coordinates"
+			/>
 
-
-	  <var name="EPFT"
-	       type="real"
-	       dimensions="R3 R3 nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Eliassen-Palm flux tensor"
-	       />
-	  <var name="uuTWACorr"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Thickness-weighted averaged eddy u-u correlation."
-	       />
-	  <var name="vvTWACorr"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Thickness-weighted averaged eddy v-v correlation."
-	       />
-	  <var name="uvTWACorr"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Thickness-weighted averaged eddy u-v correlation."
-	       />
-	  <var name="epeTWA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Thickness-weighted averaged eddy potential energy."
-	       />
-	  <var name="eddyFormDragZonal"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Thickness-weighted averaged eddy form drag in x"
-	       />
-	  <var name="eddyFormDragMerid"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Thickness-weighted averaged eddy form drag in y"
-	       />
-	
-	  <var name="divEPFT"
-	       type="real"
-	       dimensions="R3 nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="Divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
-	       />
-	  <var name="divEPFT1"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="First component of the divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
-	       />
-	  <var name="divEPFT2"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="Second component of the divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
-	       />
-	  <var name="divEPFTshear1"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="First component of divergence of shear components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
-	       />
-	  <var name="divEPFTshear2"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="Second component of divergence of shear components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
-	       />
-	  <var name="divEPFTdrag1"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="First component of divergence of form drag components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
-	       />
-	  <var name="divEPFTdrag2"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="Second component of divergence of form drag components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
-	       />
-
-	  <var name="ErtelPVFlux"
-	       type="real"
-	       dimensions="R3 nBuoyancyLayers nCells Time"
-	       units="m s^{-4}"
-	       description="Ertel potential vorticity flux in buoyancy coordinates"
-	       />
-	  <var name="ErtelPVFlux1"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-4}"
-	       description="First component of the Ertel potential vorticity flux in buoyancy coordinates"
-	       />
-	  <var name="ErtelPVFlux2"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-4}"
-	       description="Second component of the Ertel potential vorticity flux in buoyancy coordinates"
-	       />
-
-	  <var name="ErtelPVTendency"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="s^{-4}"
-	       description="Tendency of Ertel PV due to divergence of eddy PV fluxes"
-	       />
-	  <var name="ErtelPV"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="s^{-3}"
-	       description="Ertel PV on buoyancy surfaces"
-	       />
-	  <var name="ErtelPVGradZonal"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^{-1} s^{-3}"
-	       description="Ertel PV on buoyancy surfaces"
-	       />
-	  <var name="ErtelPVGradMerid"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^{-1} s^{-3}"
-	       description="Ertel PV on buoyancy surfaces"
-	       />
+		<var name="ErtelPVTendency"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="s^{-4}"
+			description="Tendency of Ertel PV due to divergence of eddy PV fluxes"
+			/>
+		<var name="ErtelPV"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="s^{-3}"
+			description="Ertel PV on buoyancy surfaces"
+			/>
+		<var name="ErtelPVGradZonal"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^{-1} s^{-3}"
+			description="Ertel PV on buoyancy surfaces"
+			/>
+		<var name="ErtelPVGradMerid"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^{-1} s^{-3}"
+			description="Ertel PV on buoyancy surfaces"
+			/>
 
 	</var_struct>
 	<var_struct name="eliassenPalmAMPKGScratch" time_levs="1">
-	  <var name="firstLayerBuoyCoor"
-	       type="integer"
-	       dimensions="nCells Time"
-	       units="-"
-	       description="index, in buoyancy coordinates, of the first layer in column for a given cell"
-	       />
-	  <var name="lastLayerBuoyCoor"
-	       type="integer"
-	       dimensions="nCells Time"
-	       units="-"
-	       description="index, in buoyancy coordinates, of the last layer in column for a given cell"
-	       />
-	  <var name="heightMidBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m"
-	       description="Height (z-coordinate) of buoyancy layer"
-	       />
-	  <var name="heightTopBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m"
-	       description="Height (z-coordinate) at top of buoyancy layer"
-	       />
-	  <var name="heightInterfaceBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayersP1 nCells Time"
-	       units="m"
-	       description="Height (z-coordinate) of the interfaces of buoyancy layer"
-	       />
-	  <var name="sigma"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="s^{-2}"
-	       description="Inverse of the derivative of buoyancy wrt z, aka thickness, in buoyancy coordinates"
-	       />
-	  <var name="montgPotBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m^2 s^{-2}"
-	       description="Montgomery potential in buoyancy coordinates"
-	       />
-	  <var name="montgPotNormalGradOnEdge"
-	       type="real"
-	       dimensions="nBuoyancyLayers nEdges Time"
-	       units="m s^{-2}"
-	       description="Normal gradient of the montgomery potential in buoyancy coordinates"
-	       />
-	  <var name="uMidBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-1}"
-	       description="Longitudinal velocity at middle of layers in buoyancy coordinates"
-	       />
-	  <var name="vMidBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-1}"
-	       description="Meridional velocity at the middle of layers in buoyancy coordinates"
-	       />
-	  <var name="densityMidBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-1}"
-	       description="In-situ density at middle of layers in buoyancy coordinates"
-	       />
-	  <var name="densityTopBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-1}"
-	       description="In-situ density at top of layers in buoyancy coordinates"
-	       />
-	  <var name="buoyancyMask"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="mask in buoyancy coordinates, ocean cells are 1"
-	       />
-	  <var name="montgPotGradX"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="x component of gradient of montgomery potential at cell center in buoyancy coordinates"
-	       />
-	  <var name="montgPotGradY"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="y component of gradient of montgomery potential at cell center in buoyancy coordinates"
-	       />
-	  <var name="montgPotGradZ"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="z component of gradient of montgomery potential at cell center in buoyancy coordinates"
-	       />
-	  <var name="montgPotGradZonal"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="Zonal component of gradient of montgomery potential at cell center in buoyancy coordinates"
-	       />
-	  <var name="montgPotGradMerid"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="m s^{-2}"
-	       description="Meridional component of gradient of montgomery potential at cell center in buoyancy coordinates"
-	       />
-	  <var name="wrk3DnVertLevelsP1"
-	       type="real"
-	       dimensions="nVertLevelsP1 nCells"
-	       units="unitless"
-	       description="work array"
-	       />
-	  <var name="wrk3DnVertLevels"
-	       type="real"
-	       dimensions="nVertLevels nCells"
-	       units="unitless"
-	       description="work array"
-	       />
-	  <var name="wrk3DBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells"
-	       units="unitless"
-	       description="work array"
-	       />
-	  <var name="ErtelPVNormalGradOnEdge"
-	       type="real"
-	       dimensions="nBuoyancyLayers nEdges"
-	       units="s^{-4}"
-	       description="Normal gradient of EPV in buoyancy coordinates"
-	       />
-	  <var name="ErtelPVGradX"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells"
-	       units="s^{-4}"
-	       description="X component of gradient of EPV in buoyancy coordinates"
-	       />
-	  <var name="ErtelPVGradY"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells"
-	       units="s^{-4}"
-	       description="Y component of gradient of EPV in buoyancy coordinates"
-	       />
-	  <var name="ErtelPVGradZ"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells"
-	       units="s^{-4}"
-	       description="Z component of gradient of EPV in buoyancy coordinates"
-	       />
-	  <var name="wrkVector"
-	       type="real"
-	       dimensions="R3 nBuoyancyLayers nCells"
-	       units="unitless"
-	       description="Work vector array"
-	       />
-	  <var name="wrkTensor"
-	       type="real"
-	       dimensions="R3 R3 nBuoyancyLayers nCells"
-	       units="unitless"
-	       description="Work tensor array"
-	       />
-	  <!--
-	     Test variables
-	    -->
-	  <var name="array1_3D"
-	       type="real"
-	       dimensions="nVertLevels nCells Time"
-	       units="-"
-	       description="test array 1, in depth coordinates"
-	       />
-	  <var name="array2_3D"
-	       type="real"
-	       dimensions="nVertLevels nCells Time"
-	       units="-"
-	       description="test array 2, in depth coordinates"
-	       />
-	  <var name="array3_3D"
-	       type="real"
-	       dimensions="nVertLevels nCells Time"
-	       units="-"
-	       description="test array 3, in depth coordinates"
-	       />
-	  <var name="array1_3Dbuoy"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="test array 1, in buoyancy coordinates"
-	       />
-	  <var name="array2_3Dbuoy"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="test array 2, in buoyancy coordinates"
-	       />
-	  <var name="PVMidBuoyCoor"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="Potential vorticity at cell center, in buoyancy coordinates"
-	       />
-	  <var name="PVMidBuoyCoorEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="Potential vorticity at cell center, in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="uMidBuoyCoorEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="Zonal velocity at cell center, in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="vMidBuoyCoorEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="Meridional velocity at cell center, in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="uPVMidBuoyCoorEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="Zonal velocity times Potential vorticity at cell center, in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="vPVMidBuoyCoorEA"
-	       type="real"
-	       dimensions="nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="Meridional velocity times Potential vorticity at cell center, in buoyancy coordinates, ensemble average"
-	       />
-	  <var name="PVFluxTest"
-	       type="real"
-	       dimensions="TWO nBuoyancyLayers nCells Time"
-	       units="-"
-	       description="Potential vorticity flux test vector, in buoyancy coordinates"
-	       />
+		<var name="firstLayerBuoyCoor"
+			type="integer"
+			dimensions="nCells Time"
+			units="-"
+			description="index, in buoyancy coordinates, of the first layer in column for a given cell"
+			/>
+		<var name="lastLayerBuoyCoor"
+			type="integer"
+			dimensions="nCells Time"
+			units="-"
+			description="index, in buoyancy coordinates, of the last layer in column for a given cell"
+			/>
+		<var name="heightMidBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m"
+			description="Height (z-coordinate) of buoyancy layer"
+			/>
+		<var name="heightTopBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m"
+			description="Height (z-coordinate) at top of buoyancy layer"
+			/>
+		<var name="heightInterfaceBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayersP1 nCells Time"
+			units="m"
+			description="Height (z-coordinate) of the interfaces of buoyancy layer"
+			/>
+		<var name="sigma"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="s^{-2}"
+			description="Inverse of the derivative of buoyancy wrt z, aka thickness, in buoyancy coordinates"
+			/>
+		<var name="montgPotBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m^2 s^{-2}"
+			description="Montgomery potential in buoyancy coordinates"
+			/>
+		<var name="montgPotNormalGradOnEdge"
+			type="real"
+			dimensions="nBuoyancyLayers nEdges Time"
+			units="m s^{-2}"
+			description="Normal gradient of the montgomery potential in buoyancy coordinates"
+			/>
+		<var name="uMidBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-1}"
+			description="Longitudinal velocity at middle of layers in buoyancy coordinates"
+			/>
+		<var name="vMidBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-1}"
+			description="Meridional velocity at the middle of layers in buoyancy coordinates"
+			/>
+		<var name="densityMidBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-1}"
+			description="In-situ density at middle of layers in buoyancy coordinates"
+			/>
+		<var name="densityTopBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-1}"
+			description="In-situ density at top of layers in buoyancy coordinates"
+			/>
+		<var name="buoyancyMask"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="mask in buoyancy coordinates, ocean cells are 1"
+			/>
+		<var name="montgPotGradX"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="x component of gradient of montgomery potential at cell center in buoyancy coordinates"
+			/>
+		<var name="montgPotGradY"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="y component of gradient of montgomery potential at cell center in buoyancy coordinates"
+			/>
+		<var name="montgPotGradZ"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="z component of gradient of montgomery potential at cell center in buoyancy coordinates"
+			/>
+		<var name="montgPotGradZonal"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="Zonal component of gradient of montgomery potential at cell center in buoyancy coordinates"
+			/>
+		<var name="montgPotGradMerid"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="m s^{-2}"
+			description="Meridional component of gradient of montgomery potential at cell center in buoyancy coordinates"
+			/>
+		<var name="wrk3DnVertLevelsP1"
+			type="real"
+			dimensions="nVertLevelsP1 nCells"
+			units="unitless"
+			description="work array"
+			/>
+		<var name="wrk3DnVertLevels"
+			type="real"
+			dimensions="nVertLevels nCells"
+			units="unitless"
+			description="work array"
+			/>
+		<var name="wrk3DBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells"
+			units="unitless"
+			description="work array"
+			/>
+		<var name="ErtelPVNormalGradOnEdge"
+			type="real"
+			dimensions="nBuoyancyLayers nEdges"
+			units="s^{-4}"
+			description="Normal gradient of EPV in buoyancy coordinates"
+			/>
+		<var name="ErtelPVGradX"
+			type="real"
+			dimensions="nBuoyancyLayers nCells"
+			units="s^{-4}"
+			description="X component of gradient of EPV in buoyancy coordinates"
+			/>
+		<var name="ErtelPVGradY"
+			type="real"
+			dimensions="nBuoyancyLayers nCells"
+			units="s^{-4}"
+			description="Y component of gradient of EPV in buoyancy coordinates"
+			/>
+		<var name="ErtelPVGradZ"
+			type="real"
+			dimensions="nBuoyancyLayers nCells"
+			units="s^{-4}"
+			description="Z component of gradient of EPV in buoyancy coordinates"
+			/>
+		<var name="wrkVector"
+			type="real"
+			dimensions="R3 nBuoyancyLayers nCells"
+			units="unitless"
+			description="Work vector array"
+			/>
+		<var name="wrkTensor"
+			type="real"
+			dimensions="R3 R3 nBuoyancyLayers nCells"
+			units="unitless"
+			description="Work tensor array"
+			/>
+		<!--
+			Test variables
+		-->
+		<var name="array1_3D"
+			type="real"
+			dimensions="nVertLevels nCells Time"
+			units="-"
+			description="test array 1, in depth coordinates"
+			/>
+		<var name="array2_3D"
+			type="real"
+			dimensions="nVertLevels nCells Time"
+			units="-"
+			description="test array 2, in depth coordinates"
+			/>
+		<var name="array3_3D"
+			type="real"
+			dimensions="nVertLevels nCells Time"
+			units="-"
+			description="test array 3, in depth coordinates"
+			/>
+		<var name="array1_3Dbuoy"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="test array 1, in buoyancy coordinates"
+			/>
+		<var name="array2_3Dbuoy"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="test array 2, in buoyancy coordinates"
+			/>
+		<var name="PVMidBuoyCoor"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="Potential vorticity at cell center, in buoyancy coordinates"
+			/>
+		<var name="PVMidBuoyCoorEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="Potential vorticity at cell center, in buoyancy coordinates, ensemble average"
+			/>
+		<var name="uMidBuoyCoorEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="Zonal velocity at cell center, in buoyancy coordinates, ensemble average"
+			/>
+		<var name="vMidBuoyCoorEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="Meridional velocity at cell center, in buoyancy coordinates, ensemble average"
+			/>
+		<var name="uPVMidBuoyCoorEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="Zonal velocity times Potential vorticity at cell center, in buoyancy coordinates, ensemble average"
+			/>
+		<var name="vPVMidBuoyCoorEA"
+			type="real"
+			dimensions="nBuoyancyLayers nCells Time"
+			units="-"
+			description="Meridional velocity times Potential vorticity at cell center, in buoyancy coordinates, ensemble average"
+			/>
+		<var name="PVFluxTest"
+			type="real"
+			dimensions="TWO nBuoyancyLayers nCells Time"
+			units="-"
+			description="Potential vorticity flux test vector, in buoyancy coordinates"
+			/>
 	</var_struct>
 
 
 	<streams>
-	  <stream name="eliassenPalmOutput" type="output"
-		  mode="forward;analysis"
-		  filename_template="analysis_members/eliassenPalm.$Y-$M-$D.nc"
-		  filename_interval="01-00-00_00:00:00"
-		  output_interval="00-00-01_00:00:00"
-		  reference_time="0001-01-01_00:00:00"
-		  packages="eliassenPalmAMPKG"
-		  clobber_mode="truncate"
-		  runtime_format="single_file">
-	    <var name="xtime"/>
-	    <var name="potentialDensityMidRef"/>
-	    <var name="potentialDensityTopRef"/>
-	    <var name="nSamplesEA"/>
-	    <var name="buoyancyMaskEA"/>
-	    <var name="sigmaEA"/>
-	    <var name="heightMidBuoyCoorEA"/>
-	    <var name="heightMidBuoyCoorSqEA"/>
-	    <var name="montgPotBuoyCoorEA"/>
-	    <var name="montgPotGradZonalEA"/>
-	    <var name="montgPotGradMeridEA"/>
-	    <var name="heightMGradZonalEA"/>
-	    <var name="heightMGradMeridEA"/>
-	    <var name="uusigmaEA"/>
-	    <var name="vvsigmaEA"/>
-	    <var name="uvsigmaEA"/>
-	    <var name="uvarpisigmaEA"/>
-	    <var name="vvarpisigmaEA"/>
-	    <var name="uTWA"/>
-	    <var name="vTWA"/>
-	    <var name="varpiTWA"/>
-	    <var name="EPFT"/>
-	    <var name="divEPFT"/>
-	    <var name="ErtelPVFlux"/>
-	    <var name="ErtelPVTendency"/>
-	    <var name="ErtelPV"/>
-	  </stream>
+		<stream name="eliassenPalmOutput" type="output"
+			mode="forward;analysis"
+			filename_template="analysis_members/eliassenPalm.$Y-$M-$D.nc"
+			filename_interval="01-00-00_00:00:00"
+			output_interval="00-00-01_00:00:00"
+			reference_time="0001-01-01_00:00:00"
+			packages="eliassenPalmAMPKG"
+			clobber_mode="truncate"
+			runtime_format="single_file">
+		<var name="xtime"/>
+		<var name="potentialDensityMidRef"/>
+		<var name="potentialDensityTopRef"/>
+		<var name="nSamplesEA"/>
+		<var name="buoyancyMaskEA"/>
+		<var name="sigmaEA"/>
+		<var name="heightMidBuoyCoorEA"/>
+		<var name="heightMidBuoyCoorSqEA"/>
+		<var name="montgPotBuoyCoorEA"/>
+		<var name="montgPotGradZonalEA"/>
+		<var name="montgPotGradMeridEA"/>
+		<var name="heightMGradZonalEA"/>
+		<var name="heightMGradMeridEA"/>
+		<var name="uusigmaEA"/>
+		<var name="vvsigmaEA"/>
+		<var name="uvsigmaEA"/>
+		<var name="uvarpisigmaEA"/>
+		<var name="vvarpisigmaEA"/>
+		<var name="uTWA"/>
+		<var name="vTWA"/>
+		<var name="varpiTWA"/>
+		<var name="EPFT"/>
+		<var name="divEPFT"/>
+		<var name="ErtelPVFlux"/>
+		<var name="ErtelPVTendency"/>
+		<var name="ErtelPV"/>
+		</stream>
 
-	  <stream name="eliassenPalmRestart"
-		  type="input;output"
-		  mode="forward;analysis"
-		  filename_template="restarts/eliassenPalm_restart.$Y-$M-$D.nc"
-		  filename_interval="01-00-00_00:00:00"
-		  input_interval="initial_only"
-		  output_interval="stream:restart:output_interval"
-		  packages="eliassenPalmAMPKG"
-		  clobber_mode="truncate"
-		  runtime_format="single_file">
-	    <var name="xtime"/>
-	    <var name="nSamplesEA"/>
-	    <var name="buoyancyMaskEA"/>
-	    <var name="sigmaEA"/>
-	    <var name="heightMidBuoyCoorEA"/>
-	    <var name="heightMidBuoyCoorSqEA"/>
-	    <var name="montgPotBuoyCoorEA"/>
-	    <var name="montgPotGradZonalEA"/>
-	    <var name="montgPotGradMeridEA"/>
-	    <var name="heightMGradZonalEA"/>
-	    <var name="heightMGradMeridEA"/>
-	    <var name="usigmaEA"/>
-	    <var name="vsigmaEA"/>
-	    <var name="varpisigmaEA"/>
-	    <var name="uusigmaEA"/>
-	    <var name="vvsigmaEA"/>
-	    <var name="uvsigmaEA"/>
-	    <var name="uvarpisigmaEA"/>
-	    <var name="vvarpisigmaEA"/>
-	  </stream>
-	  <!--
-	     <stream name="eliassenPalmInput"
-		     type="input"
-		     mode="forward;analysis"
-		     filename_template="eliassen_palm_input.$Y-$M-$D.nc"
-		     filename_interval="01-00-00_00:00:00"
-		     input_interval="initial_only"
-		     packages="eliassenPalmAMPKG"
-		     clobber_mode="truncate"
-		     runtime_format="single_file">
-	       <var name="xtime"/>
-	       <var name="potentialDensityMidRef"/>
-	     </stream>
-	     -->
+		<stream name="eliassenPalmRestart"
+			type="input;output"
+			mode="forward;analysis"
+			filename_template="restarts/eliassenPalm_restart.$Y-$M-$D.nc"
+			filename_interval="01-00-00_00:00:00"
+			input_interval="initial_only"
+			output_interval="stream:restart:output_interval"
+			packages="eliassenPalmAMPKG"
+			clobber_mode="truncate"
+			runtime_format="single_file">
+		<var name="xtime"/>
+		<var name="nSamplesEA"/>
+		<var name="buoyancyMaskEA"/>
+		<var name="sigmaEA"/>
+		<var name="heightMidBuoyCoorEA"/>
+		<var name="heightMidBuoyCoorSqEA"/>
+		<var name="montgPotBuoyCoorEA"/>
+		<var name="montgPotGradZonalEA"/>
+		<var name="montgPotGradMeridEA"/>
+		<var name="heightMGradZonalEA"/>
+		<var name="heightMGradMeridEA"/>
+		<var name="usigmaEA"/>
+		<var name="vsigmaEA"/>
+		<var name="varpisigmaEA"/>
+		<var name="uusigmaEA"/>
+		<var name="vvsigmaEA"/>
+		<var name="uvsigmaEA"/>
+		<var name="uvarpisigmaEA"/>
+		<var name="vvarpisigmaEA"/>
+		</stream>
+		<!--
+			<stream name="eliassenPalmInput"
+				type="input"
+				mode="forward;analysis"
+				filename_template="eliassen_palm_input.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				input_interval="initial_only"
+				packages="eliassenPalmAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="potentialDensityMidRef"/>
+			</stream>
+			-->
 	</streams>
 
 

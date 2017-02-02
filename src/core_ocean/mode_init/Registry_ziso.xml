@@ -1,114 +1,114 @@
 <nml_record name="ziso" mode="init" configuration="ziso">
-  <nml_option name="config_ziso_vert_levels" type="integer" default_value="100" units="unitless"
-    description="Number of vertical levels in ziso. Typical value is 100."
-    possible_values="Any positive integer number greater than 0."
-    />
-  <nml_option name="config_ziso_add_easterly_wind_stress_ASF" type="logical" default_value="false" units="unitless"
-    description="Logical flag to determine if an easterly windstress is added"
-    possible_values=".true. or .false."
-    />
-  <nml_option name="config_ziso_wind_transition_position" type="real" default_value="800000.0" units="m"
-    description="meridional position where windstress switches to easterly"
-    possible_values="Any positive real number, less than config_ziso_meridional_extent"
-    />
-  <nml_option name="config_ziso_antarctic_shelf_front_width" type="real" default_value="600000" units="m"
-    description="meridional extent over which the easterly wind stress is applied"
-    possible_values="any positive real number less than the meridional domain extent"
-    />
-  <nml_option name="config_ziso_wind_stress_shelf_front_max" type="real" default_value="-0.05" units="N m^{-2}"
-    description="Maximum zonal windstress value in the shelf front region, following Stewart et al. 2013"
-    possible_values="Any real number less than 0"
-    />
-  <nml_option name="config_ziso_use_slopping_bathymetry" type="logical" default_value="false" units="unitless"
-    description="Logical flag that determines if sloping bathymetery is used."
-    possible_values=".true. or .false."
-    />
-  <nml_option name="config_ziso_meridional_extent" type="real" default_value="2.0e6" units="m"
-    description="Meridional extent of the domain ($L$)."
-    possible_values="Any real number larger than zero."
-    />
-  <nml_option name="config_ziso_zonal_extent" type="real" default_value="1.0e6" units="m"
-    description="Zonal extent of the domain ($W$)."
-    possible_values="Any real number larger than zero."
-    />
-  <nml_option name="config_ziso_bottom_depth" type="real" default_value="2500.0" units="m"
-    description="Depth of the domain ($H$)."
-    possible_values="Any real number larger than zero."
-    />
-  <nml_option name="config_ziso_shelf_depth" type="real" default_value="500.0" units="m"
-    description="Shelf depth in the domain ($H_s$)."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_slope_half_width" type="real" default_value="1.0e5" units="m"
-    description="Shelf half width ($W_s$)."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_slope_center_position" type="real" default_value="5.0e5" units="m"
-    description="Slope center posiiton ($Y_s$)."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_reference_coriolis" type="real" default_value="-1e-4" units="s^{-1}"
-    description="Reference coriolis parameter $f_0$. Note $f = f_0 + \beta * y$."
-    possible_values="Any real number larger."
-    />
-  <nml_option name="config_ziso_coriolis_gradient" type="real" default_value="1e-11" units="m^{-1} s^{-1}"
-    description="Meridional gradient of coriolis parameter $\beta$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_wind_stress_max" type="real" default_value="0.2" units="N m^{2}"
-    description="Maximum zonal windstress value in $\tau(y) = \tau_0 \exp\left[-\left(\frac{y-L/2}{L/2}\right)^2\right]\cos\left(\frac{\pi}{2}\frac{y-L/2}{L/2}right)$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_mean_restoring_temp" type="real" default_value="3.0" units="^{circ} C"
-    description="Mean restoring temperature $T_m$ in $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_restoring_temp_dev_ta" type="real" default_value="2.0" units="^{circ} C"
-    description="Temperature deviation $T_a$ in surface temp. $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_restoring_temp_dev_tb" type="real" default_value="2.0" units="^{circ} C"
-    description="Linear temperature deviation $T_b$ in surface temp. $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_restoring_temp_tau" type="real" default_value="30.0" units="days"
-    description="Time scale for interior restoring of temperature."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_restoring_temp_piston_vel" type="real" default_value="1.93e-5" units="m s^{-1}"
-    description="Restoring piston velocity for surface temperature."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_restoring_temp_ze" type="real" default_value="1250.0" units="m"
-    description="Vertical $e-$folding scale in $T_s$ for northern wall: $T_s \exp(z/z_e)$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_restoring_sponge_l" type="real" default_value="8.0e4" units="m"
-    description="E-folding distance parameter for the sponge vertical temperature profile."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_initial_temp_t1" type="real" default_value="6.0" units="^{circ} C"
-    description="Initial temperature profile constant $T_1$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_initial_temp_t2" type="real" default_value="3.6" units="^{circ} C"
-    description="Initial temperature profile constant $T_2$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_initial_temp_h1" type="real" default_value="300.0" units="m"
-    description="Initial temperature profile constant $h_1$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_initial_temp_mt" type="real" default_value="7.5e-5" units="^{circ} C m^{-1}"
-    description="Initial temperature profile constant $m_T$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
-    possible_values="Any real number."
-    />
-  <nml_option name="config_ziso_frazil_enable" type="logical" default_value="false" units="logical"
-    description="A logical to overload (and largely overwrite) this test case to evaluate frazil. In almost all uses of this test case, this configure option should be false."
-    possible_values="true or false"
-    />
-  <nml_option name="config_ziso_frazil_temperature_anomaly" type="real" default_value="-3.0" units="^{circ} C"
-    description="Temperature anomaly to produce frazil"
-    possible_values="Any real number."
-    />
+	<nml_option name="config_ziso_vert_levels" type="integer" default_value="100" units="unitless"
+		description="Number of vertical levels in ziso. Typical value is 100."
+		possible_values="Any positive integer number greater than 0."
+		/>
+	<nml_option name="config_ziso_add_easterly_wind_stress_ASF" type="logical" default_value="false" units="unitless"
+		description="Logical flag to determine if an easterly windstress is added"
+		possible_values=".true. or .false."
+		/>
+	<nml_option name="config_ziso_wind_transition_position" type="real" default_value="800000.0" units="m"
+		description="meridional position where windstress switches to easterly"
+		possible_values="Any positive real number, less than config_ziso_meridional_extent"
+		/>
+	<nml_option name="config_ziso_antarctic_shelf_front_width" type="real" default_value="600000" units="m"
+		description="meridional extent over which the easterly wind stress is applied"
+		possible_values="any positive real number less than the meridional domain extent"
+		/>
+	<nml_option name="config_ziso_wind_stress_shelf_front_max" type="real" default_value="-0.05" units="N m^{-2}"
+		description="Maximum zonal windstress value in the shelf front region, following Stewart et al. 2013"
+		possible_values="Any real number less than 0"
+		/>
+	<nml_option name="config_ziso_use_slopping_bathymetry" type="logical" default_value="false" units="unitless"
+		description="Logical flag that determines if sloping bathymetery is used."
+		possible_values=".true. or .false."
+		/>
+	<nml_option name="config_ziso_meridional_extent" type="real" default_value="2.0e6" units="m"
+		description="Meridional extent of the domain ($L$)."
+		possible_values="Any real number larger than zero."
+		/>
+	<nml_option name="config_ziso_zonal_extent" type="real" default_value="1.0e6" units="m"
+		description="Zonal extent of the domain ($W$)."
+		possible_values="Any real number larger than zero."
+		/>
+	<nml_option name="config_ziso_bottom_depth" type="real" default_value="2500.0" units="m"
+		description="Depth of the domain ($H$)."
+		possible_values="Any real number larger than zero."
+		/>
+	<nml_option name="config_ziso_shelf_depth" type="real" default_value="500.0" units="m"
+		description="Shelf depth in the domain ($H_s$)."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_slope_half_width" type="real" default_value="1.0e5" units="m"
+		description="Shelf half width ($W_s$)."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_slope_center_position" type="real" default_value="5.0e5" units="m"
+		description="Slope center posiiton ($Y_s$)."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_reference_coriolis" type="real" default_value="-1e-4" units="s^{-1}"
+		description="Reference coriolis parameter $f_0$. Note $f = f_0 + \beta * y$."
+		possible_values="Any real number larger."
+		/>
+	<nml_option name="config_ziso_coriolis_gradient" type="real" default_value="1e-11" units="m^{-1} s^{-1}"
+		description="Meridional gradient of coriolis parameter $\beta$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_wind_stress_max" type="real" default_value="0.2" units="N m^{2}"
+		description="Maximum zonal windstress value in $\tau(y) = \tau_0 \exp\left[-\left(\frac{y-L/2}{L/2}\right)^2\right]\cos\left(\frac{\pi}{2}\frac{y-L/2}{L/2}right)$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_mean_restoring_temp" type="real" default_value="3.0" units="^{circ} C"
+		description="Mean restoring temperature $T_m$ in $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_restoring_temp_dev_ta" type="real" default_value="2.0" units="^{circ} C"
+		description="Temperature deviation $T_a$ in surface temp. $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_restoring_temp_dev_tb" type="real" default_value="2.0" units="^{circ} C"
+		description="Linear temperature deviation $T_b$ in surface temp. $T_r(y) = T_m + T_a \tanh\left(2\frac{y-L/2}{L/2}\right) + T_b \frac{y-L/2}{L/2}$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_restoring_temp_tau" type="real" default_value="30.0" units="days"
+		description="Time scale for interior restoring of temperature."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_restoring_temp_piston_vel" type="real" default_value="1.93e-5" units="m s^{-1}"
+		description="Restoring piston velocity for surface temperature."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_restoring_temp_ze" type="real" default_value="1250.0" units="m"
+		description="Vertical $e-$folding scale in $T_s$ for northern wall: $T_s \exp(z/z_e)$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_restoring_sponge_l" type="real" default_value="8.0e4" units="m"
+		description="E-folding distance parameter for the sponge vertical temperature profile."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_initial_temp_t1" type="real" default_value="6.0" units="^{circ} C"
+		description="Initial temperature profile constant $T_1$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_initial_temp_t2" type="real" default_value="3.6" units="^{circ} C"
+		description="Initial temperature profile constant $T_2$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_initial_temp_h1" type="real" default_value="300.0" units="m"
+		description="Initial temperature profile constant $h_1$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_initial_temp_mt" type="real" default_value="7.5e-5" units="^{circ} C m^{-1}"
+		description="Initial temperature profile constant $m_T$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
+		possible_values="Any real number."
+		/>
+	<nml_option name="config_ziso_frazil_enable" type="logical" default_value="false" units="logical"
+		description="A logical to overload (and largely overwrite) this test case to evaluate frazil. In almost all uses of this test case, this configure option should be false."
+		possible_values="true or false"
+		/>
+	<nml_option name="config_ziso_frazil_temperature_anomaly" type="real" default_value="-3.0" units="^{circ} C"
+		description="Temperature anomaly to produce frazil"
+		possible_values="Any real number."
+		/>
 </nml_record>

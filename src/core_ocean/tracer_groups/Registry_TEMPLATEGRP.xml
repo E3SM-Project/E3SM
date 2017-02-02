@@ -47,7 +47,7 @@
 		<var_struct name="tracers" time_levs="2">
 			<var_array name="TEMPLATEGRP" dimensions="nVertLevels nCells Time" type="real" packages="TEMPLATEGRPPKG" >
 				<!-- Add constituents of tracer group -->
-		   </var_array>
+			</var_array>
 		</var_struct>
 	</var_struct>
 
