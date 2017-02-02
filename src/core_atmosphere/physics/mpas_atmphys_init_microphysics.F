@@ -5,7 +5,6 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-#define DM_BCAST_MACRO(A) call mpas_dmpar_bcast_singles(dminfo,size(A),A)
 
 !=================================================================================================================
  module mpas_atmphys_init_microphysics
@@ -15,17 +14,17 @@
  use mpas_pool_routines
 
  use mpas_atmphys_utilities
- use module_mp_thompson, only: is_aerosol_aware,naCCN0,naCCN1,naIN0,naIN1,ntb_arc,ntb_arw,ntb_art,ntb_arr, &
-                               ntb_ark,tnccn_act
+!use module_mp_thompson, only: is_aerosol_aware,naCCN0,naCCN1,naIN0,naIN1,ntb_arc,ntb_arw,ntb_art,ntb_arr, &
+!                              ntb_ark,tnccn_act
 
  implicit none
  private
  public:: init_thompson_clouddroplets_forMPAS
 
-! MPAS main initialization of the Thompson parameterization of cloud microphysics with nucleation of cloud
-! droplets based on distributions of CCNs and INs (aerosol-aware parameterization).
-! Laura D. Fowler (send comments to laura@ucar.edu).
-! 2016-03-28.
+!MPAS main initialization of the Thompson parameterization of cloud microphysics with nucleation of cloud
+!droplets based on distributions of CCNs and INs (aerosol-aware parameterization).
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2016-03-28.
 !
 ! add-ons and modifications to sourcecode:
 ! ----------------------------------------
@@ -56,8 +55,8 @@
  integer:: iCell
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine init_thompson_clouddroplets_forMPAS:'
+!write(0,*)
+!write(0,*) '--- enter subroutine init_thompson_clouddroplets_forMPAS:'
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
@@ -77,7 +76,7 @@
     mu_c(iCell) = MIN(15., (1000.e6/nt_c(iCell) + 2.))
  enddo
 
-! write(0,*) '--- end subroutine init_thompson_clouddroplets_forMPAS.'
+!write(0,*) '--- end subroutine init_thompson_clouddroplets_forMPAS.'
 
  end subroutine init_thompson_clouddroplets_forMPAS 
 

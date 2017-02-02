@@ -52,8 +52,8 @@
 !=================================================================================================================
  subroutine mp_thompson_deallocate
 !=================================================================================================================
-! write(0,*)
-! write(0,*) '--- enter subroutine mp_thompson_deallocate:'
+!write(0,*)
+!write(0,*) '--- enter subroutine mp_thompson_deallocate:'
 
  if(allocated(tcg_racg) ) deallocate(tcg_racg ) 
  if(allocated(tmr_racg) ) deallocate(tmr_racg )
@@ -89,7 +89,7 @@
  if(allocated(tnc_wev)  ) deallocate(tnc_wev  )
  if(allocated(tnccn_act)) deallocate(tnccn_act)
 
-! write(0,*) '--- end subroutine mp_thompson_deallocate'
+!write(0,*) '--- end subroutine mp_thompson_deallocate'
 
  end subroutine mp_thompson_deallocate
 

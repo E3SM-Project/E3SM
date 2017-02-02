@@ -1,5 +1,17 @@
 !=================================================================================================================
+!module_mp_thompson was originally copied from./phys/module_mp_thompson.F from WRF version 3.8. Modifications made
+!to the original sourcecode are mostly confined to subroutine thompson_init.
+!Laura D. Fowler (laura@ucar.edu) / 2016-06-04.
 
+!modifications to sourcecode for MPAS:
+!   * changed all the lines #if ( WRF_CHEM == 1 ) with #if defined(mpas).
+!   * commented out all the lines CALL wrf_debug(..., mp_debug).
+!     Laura D. Fowler (laura@ucar.edu) / 2016-06-04.
+!   * in subroutine mp_thompson, added corrections made by Greg for WRF version 3.8.1.
+!     Laura D. Fowler (laura@ucar.edu) / 2016-10-29.
+!   * in subroutine mp_gt_driver, moved the initialization of variables Nt_c and mu_c
+!     before initialization of local mixing ratios and number concentrations.
+!     Laura D. Fowler (lara@ucar.edu) / 2916-12-30.
 
 
 !+---+-----------------------------------------------------------------+
@@ -40,7 +52,7 @@
 !.. Remaining values should probably be left alone.
 !..
 !..Author: Greg Thompson, NCAR-RAL, gthompsn@ucar.edu, 303-497-2805
-!..Last modified: 09 Nov 2015   Aerosol additions to v3.5.1 code 9/2013
+!..Last modified: 01 Aug 2016   Aerosol additions to v3.5.1 code 9/2013
 !..                 Cloud fraction additions 11/2014 part of pre-v3.7
 !+---+-----------------------------------------------------------------+
 !wrft:model_layer:physics
@@ -84,10 +96,10 @@
 !..Declaration of constants for assumed CCN/IN aerosols when none in
 !.. the input data.  Look inside the init routine for modifications
 !.. due to surface land-sea points or vegetation characteristics.
-      REAL, PARAMETER, PUBLIC:: naIN0 = 1.5E6
-      REAL, PARAMETER, PUBLIC:: naIN1 = 0.5E6
-      REAL, PARAMETER, PUBLIC:: naCCN0 = 300.0E6
-      REAL, PARAMETER, PUBLIC:: naCCN1 = 50.0E6
+      REAL, PARAMETER, PRIVATE:: naIN0 = 1.5E6
+      REAL, PARAMETER, PRIVATE:: naIN1 = 0.5E6
+      REAL, PARAMETER, PRIVATE:: naCCN0 = 300.0E6
+      REAL, PARAMETER, PRIVATE:: naCCN1 = 50.0E6
 
 !..Generalized gamma distributions for rain, graupel and cloud ice.
 !.. N(D) = N_0 * D**mu * exp(-lamda*D);  mu=0 is exponential.
@@ -143,7 +155,7 @@
 
 !..Capacitance of sphere and plates/aggregates: D**3, D**2
       REAL, PARAMETER, PRIVATE:: C_cube = 0.5
-      REAL, PARAMETER, PRIVATE:: C_sqrd = 0.3
+      REAL, PARAMETER, PRIVATE:: C_sqrd = 0.15
 
 !..Collection efficiencies.  Rain/snow/graupel collection of cloud
 !.. droplets use variables (Ef_rw, Ef_sw, Ef_gw respectively) and
@@ -222,12 +234,12 @@
       INTEGER, PARAMETER, PRIVATE:: ntb_i1 = 55
       INTEGER, PARAMETER, PRIVATE:: ntb_t = 9
       INTEGER, PRIVATE:: nic1, nic2, nii2, nii3, nir2, nir3, nis2, nig2, nig3
-      INTEGER, PARAMETER, PUBLIC:: ntb_arc = 7
-      INTEGER, PARAMETER, PUBLIC:: ntb_arw = 9
-      INTEGER, PARAMETER, PUBLIC:: ntb_art = 7
-      INTEGER, PARAMETER, PUBLIC:: ntb_arr = 5
-      INTEGER, PARAMETER, PUBLIC:: ntb_ark = 4
-      INTEGER, PARAMETER, PUBLIC:: ntb_IN = 55
+      INTEGER, PARAMETER, PRIVATE:: ntb_arc = 7
+      INTEGER, PARAMETER, PRIVATE:: ntb_arw = 9
+      INTEGER, PARAMETER, PRIVATE:: ntb_art = 7
+      INTEGER, PARAMETER, PRIVATE:: ntb_arr = 5
+      INTEGER, PARAMETER, PRIVATE:: ntb_ark = 4
+      INTEGER, PARAMETER, PRIVATE:: ntb_IN = 55
       INTEGER, PRIVATE:: niIN2
 
       DOUBLE PRECISION, DIMENSION(nbins+1):: xDx
@@ -398,8 +410,12 @@
       CONTAINS
 
 !=================================================================================================================
- subroutine thompson_init
+ subroutine thompson_init(l_mp_tables)
  implicit none
+!=================================================================================================================
+
+!input arguments:
+ logical,intent(in):: l_mp_tables
  
  integer,parameter:: open_OK = 0
  integer:: i,j,k,l,m,n
@@ -804,13 +820,16 @@
          enddo
       enddo
 
+!..Check that the look-up tables are available.
+      if(.not. l_mp_tables) return
+
 !..Collision efficiency between rain/snow and cloud water.
-      call physics_message('--- creating qc collision eff tables')
+!     call physics_message('--- creating qc collision eff tables')
       call table_Efrw
       call table_Efsw
 
 !..Drop evaporation.
-      call physics_message('--- creating rain evap table')
+!     call physics_message('--- creating rain evap table')
       call table_dropEvap
 
 !..Rain collecting graupel & graupel collecting rain.
@@ -826,19 +845,19 @@
       read(11) tnr_racg
       read(11) tnr_gacr
       close(unit=11)
-!      write(0,*) '--- end read MP_THOMPSON_QRacrQG.DBL'
-!      write(0,*) 'max tcg_racg =',maxval(tcg_racg)
-!      write(0,*) 'min tcg_racg =',minval(tcg_racg)
-!      write(0,*) 'max tmr_racg =',maxval(tmr_racg)
-!      write(0,*) 'min tmr_racg =',minval(tmr_racg)
-!      write(0,*) 'max tcr_gacr =',maxval(tcr_gacr)
-!      write(0,*) 'min tcr_gacr =',minval(tcr_gacr)
-!      write(0,*) 'max tmg_gacr =',maxval(tmg_gacr)
-!      write(0,*) 'min tmg_gacr =',minval(tmg_gacr)
-!      write(0,*) 'max tnr_racg =',maxval(tnr_racg)
-!      write(0,*) 'min tnr_racg =',minval(tnr_racg)
-!      write(0,*) 'max tnr_gacr =',maxval(tnr_gacr)
-!      write(0,*) 'min tnr_gacr =',minval(tnr_gacr)
+!     write(0,*) '--- end read MP_THOMPSON_QRacrQG.DBL'
+!     write(0,*) 'max tcg_racg =',maxval(tcg_racg)
+!     write(0,*) 'min tcg_racg =',minval(tcg_racg)
+!     write(0,*) 'max tmr_racg =',maxval(tmr_racg)
+!     write(0,*) 'min tmr_racg =',minval(tmr_racg)
+!     write(0,*) 'max tcr_gacr =',maxval(tcr_gacr)
+!     write(0,*) 'min tcr_gacr =',minval(tcr_gacr)
+!     write(0,*) 'max tmg_gacr =',maxval(tmg_gacr)
+!     write(0,*) 'min tmg_gacr =',minval(tmg_gacr)
+!     write(0,*) 'max tnr_racg =',maxval(tnr_racg)
+!     write(0,*) 'min tnr_racg =',minval(tnr_racg)
+!     write(0,*) 'max tnr_gacr =',maxval(tnr_gacr)
+!     write(0,*) 'min tnr_gacr =',minval(tnr_gacr)
 
 !..Rain collecting snow & snow collecting rain.
       open(unit=11,file='MP_THOMPSON_QRacrQS_DATA.DBL',form='UNFORMATTED',status='OLD',action='READ', &
@@ -859,31 +878,31 @@
       read(11) tnr_sacr1
       read(11) tnr_sacr2
       close(unit=11)
-!      write(0,*) '--- end read MP_THOMPSON_QRacrQS.DBL'
-!      write(0,*) 'max tcs_racs1 =',maxval(tcs_racs1)
-!      write(0,*) 'min tcs_racs1 =',minval(tcs_racs1)
-!      write(0,*) 'max tmr_racs1 =',maxval(tmr_racs1)
-!      write(0,*) 'min tmr_racs1 =',minval(tmr_racs1)
-!      write(0,*) 'max tcs_racs2 =',maxval(tcs_racs2)
-!      write(0,*) 'min tcs_racs2 =',minval(tcs_racs2)
-!      write(0,*) 'max tmr_racs2 =',maxval(tmr_racs2)
-!      write(0,*) 'min tmr_racs2 =',minval(tmr_racs2)
-!      write(0,*) 'max tcr_sacr1 =',maxval(tcr_sacr1)
-!      write(0,*) 'min tcr_sacr1 =',minval(tcr_sacr1)
-!      write(0,*) 'max tms_sacr1 =',maxval(tms_sacr1)
-!      write(0,*) 'min tms_sacr1 =',minval(tms_sacr1)
-!      write(0,*) 'max tcr_sacr2 =',maxval(tcr_sacr2)
-!      write(0,*) 'min tcr_sacr2 =',minval(tcr_sacr2)
-!      write(0,*) 'max tms_sacr2 =',maxval(tms_sacr2)
-!      write(0,*) 'min tms_sacr2 =',minval(tms_sacr2)
-!      write(0,*) 'max tnr_racs1 =',maxval(tnr_racs1)
-!      write(0,*) 'min tnr_racs1 =',minval(tnr_racs1)
-!      write(0,*) 'max tnr_racs2 =',maxval(tnr_racs2)
-!      write(0,*) 'min tnr_racs2 =',minval(tnr_racs2)
-!      write(0,*) 'max tnr_sacr1 =',maxval(tnr_sacr1)
-!      write(0,*) 'min tnr_sacr1 =',minval(tnr_sacr1)
-!      write(0,*) 'max tnr_sacr2 =',maxval(tnr_sacr2)
-!      write(0,*) 'min tnr_sacr2 =',minval(tnr_sacr2)
+!     write(0,*) '--- end read MP_THOMPSON_QRacrQS.DBL'
+!     write(0,*) 'max tcs_racs1 =',maxval(tcs_racs1)
+!     write(0,*) 'min tcs_racs1 =',minval(tcs_racs1)
+!     write(0,*) 'max tmr_racs1 =',maxval(tmr_racs1)
+!     write(0,*) 'min tmr_racs1 =',minval(tmr_racs1)
+!     write(0,*) 'max tcs_racs2 =',maxval(tcs_racs2)
+!     write(0,*) 'min tcs_racs2 =',minval(tcs_racs2)
+!     write(0,*) 'max tmr_racs2 =',maxval(tmr_racs2)
+!     write(0,*) 'min tmr_racs2 =',minval(tmr_racs2)
+!     write(0,*) 'max tcr_sacr1 =',maxval(tcr_sacr1)
+!     write(0,*) 'min tcr_sacr1 =',minval(tcr_sacr1)
+!     write(0,*) 'max tms_sacr1 =',maxval(tms_sacr1)
+!     write(0,*) 'min tms_sacr1 =',minval(tms_sacr1)
+!     write(0,*) 'max tcr_sacr2 =',maxval(tcr_sacr2)
+!     write(0,*) 'min tcr_sacr2 =',minval(tcr_sacr2)
+!     write(0,*) 'max tms_sacr2 =',maxval(tms_sacr2)
+!     write(0,*) 'min tms_sacr2 =',minval(tms_sacr2)
+!     write(0,*) 'max tnr_racs1 =',maxval(tnr_racs1)
+!     write(0,*) 'min tnr_racs1 =',minval(tnr_racs1)
+!     write(0,*) 'max tnr_racs2 =',maxval(tnr_racs2)
+!     write(0,*) 'min tnr_racs2 =',minval(tnr_racs2)
+!     write(0,*) 'max tnr_sacr1 =',maxval(tnr_sacr1)
+!     write(0,*) 'min tnr_sacr1 =',minval(tnr_sacr1)
+!     write(0,*) 'max tnr_sacr2 =',maxval(tnr_sacr2)
+!     write(0,*) 'min tnr_sacr2 =',minval(tnr_sacr2)
 
 !..Cloud water and rain freezing (Bigg, 1953).
       open(unit=11,file='MP_THOMPSON_freezeH2O_DATA.DBL',form='UNFORMATTED',status='OLD',action='READ', &
@@ -898,19 +917,19 @@
       read(11) tpi_qcfz
       read(11) tni_qcfz
       close(unit=11)
-!      write(0,*) '--- end read MP_THOMPSON_freezeH2O.DBL:'
-!      write(0,*) 'max tpi_qrfz =',maxval(tpi_qrfz)
-!      write(0,*) 'min tpi_qrfz =',minval(tpi_qrfz)
-!      write(0,*) 'max tni_qrfz =',maxval(tni_qrfz)
-!      write(0,*) 'min tni_qrfz =',minval(tni_qrfz)
-!      write(0,*) 'max tpg_qrfz =',maxval(tpg_qrfz)
-!      write(0,*) 'min tpg_qrfz =',minval(tpg_qrfz)
-!      write(0,*) 'max tnr_qrfz =',maxval(tnr_qrfz)
-!      write(0,*) 'min tnr_qrfz =',minval(tnr_qrfz)
-!      write(0,*) 'max tpi_qcfz =',maxval(tpi_qcfz)
-!      write(0,*) 'min tpi_qcfz =',minval(tpi_qcfz)
-!      write(0,*) 'max tni_qcfz =',maxval(tni_qcfz)
-!      write(0,*) 'min tni_qcfz =',minval(tni_qcfz)
+!     write(0,*) '--- end read MP_THOMPSON_freezeH2O.DBL:'
+!     write(0,*) 'max tpi_qrfz =',maxval(tpi_qrfz)
+!     write(0,*) 'min tpi_qrfz =',minval(tpi_qrfz)
+!     write(0,*) 'max tni_qrfz =',maxval(tni_qrfz)
+!     write(0,*) 'min tni_qrfz =',minval(tni_qrfz)
+!     write(0,*) 'max tpg_qrfz =',maxval(tpg_qrfz)
+!     write(0,*) 'min tpg_qrfz =',minval(tpg_qrfz)
+!     write(0,*) 'max tnr_qrfz =',maxval(tnr_qrfz)
+!     write(0,*) 'min tnr_qrfz =',minval(tnr_qrfz)
+!     write(0,*) 'max tpi_qcfz =',maxval(tpi_qcfz)
+!     write(0,*) 'min tpi_qcfz =',minval(tpi_qcfz)
+!     write(0,*) 'max tni_qcfz =',maxval(tni_qcfz)
+!     write(0,*) 'min tni_qcfz =',minval(tni_qcfz)
 
 !..Conversion of some ice mass into snow category.
       open(unit=11,file='MP_THOMPSON_QIautQS_DATA.DBL',form='UNFORMATTED',status='OLD',action='READ', &
@@ -922,11 +941,11 @@
       read(11) tps_iaus
       read(11) tni_iaus
       close(unit=11)
-!      write(0,*) '--- end read MP_THOMPSON_QIautQS.DBL '
-!      write(0,*) 'max tps_iaus =',maxval(tps_iaus)
-!      write(0,*) 'min tps_iaus =',minval(tps_iaus)
-!      write(0,*) 'max tni_iaus =',maxval(tni_iaus)
-!      write(0,*) 'min tni_iaus =',minval(tni_iaus)
+!     write(0,*) '--- end read MP_THOMPSON_QIautQS.DBL '
+!     write(0,*) 'max tps_iaus =',maxval(tps_iaus)
+!     write(0,*) 'min tps_iaus =',minval(tps_iaus)
+!     write(0,*) 'max tni_iaus =',maxval(tni_iaus)
+!     write(0,*) 'min tni_iaus =',minval(tni_iaus)
 
 !..Initialize various constants for computing radar reflectivity.
       xam_r = am_r
@@ -1095,6 +1114,10 @@
          ENDIF
          SR(i,j) = 0.
 
+#if defined(mpas)
+         Nt_c = ntc(i,j)
+         mu_c = muc(i,j)
+#endif
          do k = kts, kte
             t1d(k) = th(i,k,j)*pii(i,k,j)
             p1d(k) = p(i,k,j)
@@ -1125,10 +1148,7 @@
             enddo
             nwfa1 = 11.1E6
          endif
-#if defined(mpas)
-         Nt_c = ntc(i,j)
-         mu_c = muc(i,j)
-#endif
+
          call mp_thompson(qv1d, qc1d, qi1d, qr1d, qs1d, qg1d, ni1d,     &
                       nr1d, nc1d, nwfa1d, nifa1d, t1d, p1d, w1d, dz1d,  &
                       pptrain, pptsnow, pptgraul, pptice, &
@@ -1553,6 +1573,18 @@
       enddo
 #endif
 
+!..Bug fix (2016Jun15), prevent use of uninitialized value(s) of snow moments.
+      do k = kts, kte
+         smo0(k) = 0.
+         smo1(k) = 0.
+         smo2(k) = 0.
+         smob(k) = 0.
+         smoc(k) = 0.
+         smod(k) = 0.
+         smoe(k) = 0.
+         smof(k) = 0.
+      enddo
+
 !+---+-----------------------------------------------------------------+
 !..Put column of data into local arrays.
 !+---+-----------------------------------------------------------------+
@@ -1592,6 +1624,10 @@
             no_micro = .false.
             ri(k) = qi1d(k)*rho(k)
             ni(k) = MAX(R2, ni1d(k)*rho(k))
+            if (ni(k).le. R2) then
+               lami = cie(2)/25.E-6
+               ni(k) = MIN(499.D3, cig(1)*oig2*ri(k)/am_i*lami**bm_i)
+            endif
             L_qi(k) = .true.
             lami = (am_i*cig(2)*oig1*ni(k)/ri(k))**obmi
             ilami = 1./lami
@@ -1615,6 +1651,11 @@
             no_micro = .false.
             rr(k) = qr1d(k)*rho(k)
             nr(k) = MAX(R2, nr1d(k)*rho(k))
+            if (nr(k).le. R2) then
+               mvd_r(k) = 1.0E-3
+               lamr = (3.0 + mu_r + 0.672) / mvd_r(k)
+               nr(k) = crg(2)*org3*rr(k)*lamr**bm_r / am_r
+            endif
             L_qr(k) = .true.
             lamr = (am_r*crg(3)*org2*nr(k)/rr(k))**obmr
             mvd_r(k) = (3.0 + mu_r + 0.672) / lamr
@@ -1801,8 +1842,12 @@
 !..Calculate y-intercept, slope values for graupel.
 !+---+-----------------------------------------------------------------+
       N0_min = gonv_max
+      k_0 = kts
       do k = kte, kts, -1
-         if (temp(k).lt.270.65 .and. L_qr(k) .and. mvd_r(k).gt.100.E-6) then
+         if (temp(k).ge.270.65) k_0 = MAX(k_0, k)
+      enddo
+      do k = kte, kts, -1
+         if (k.gt.k_0 .and. L_qr(k) .and. mvd_r(k).gt.100.E-6) then
             xslw1 = 4.01 + alog10(mvd_r(k))
          else
             xslw1 = 0.01
@@ -1842,9 +1887,9 @@
          if (L_qr(k) .and. mvd_r(k).gt. D0r) then
 !-GT      Ef_rr = 1.0
 !-GT      if (mvd_r(k) .gt. 1500.0E-6) then
-             Ef_rr = 2.0 - EXP(2300.0*(mvd_r(k)-1600.0E-6))
+             Ef_rr = 1.0 - EXP(2300.0*(mvd_r(k)-1950.0E-6))
 !-GT      endif
-          pnr_rcr(k) = Ef_rr * 0.5*nr(k)*rr(k)
+          pnr_rcr(k) = Ef_rr * 2.0*nr(k)*rr(k)
          endif
 
          mvd_c(k) = D0c
@@ -2248,7 +2293,7 @@
 !..Deposition nucleation of dust/mineral from DeMott et al (2010)
 !.. we may need to relax the temperature and ssati constraints.
           if ( (ssati(k).ge. 0.25) .or. (ssatw(k).gt. eps &
-                                .and. temp(k).lt.261.15) ) then
+                                .and. temp(k).lt.253.15) ) then
            if (dustyIce .AND. is_aerosol_aware) then
             xnc = iceDeMott(tempc,qv(k),qvs(k),qvsi(k),rho(k),nifa(k))
            else
@@ -2311,7 +2356,7 @@
 !..Deposition/sublimation of snow/graupel follows Srivastava & Coen
 !.. (1992).
           if (L_qs(k)) then
-           C_snow = C_sqrd + (tempc+15.)*(C_cube-C_sqrd)/(-30.+15.)
+           C_snow = C_sqrd + (tempc+1.5)*(C_cube-C_sqrd)/(-30.+1.5)
            C_snow = MAX(C_sqrd, MIN(C_snow, C_cube))
            prs_sde(k) = C_snow*t1_subl*diffu(k)*ssati(k)*rvs &
                         * (t1_qs_sd*smo1(k) &
@@ -2378,14 +2423,14 @@
           endif
 
 !..A portion of rimed snow converts to graupel but some remains snow.
-!.. Interp from 5 to 75% as riming factor increases from 5.0 to 30.0
-!.. 0.028 came from (.75-.05)/(30.-5.).  This remains ad-hoc and should
+!.. Interp from 15 to 95% as riming factor increases from 2.0 to 30.0
+!.. 0.028 came from (.95-.15)/(30.-2.).  This remains ad-hoc and should
 !.. be revisited.
-          if (prs_scw(k).gt.5.0*prs_sde(k) .and. &
+          if (prs_scw(k).gt.2.0*prs_sde(k) .and. &
                          prs_sde(k).gt.eps) then
            r_frac = MIN(30.0D0, prs_scw(k)/prs_sde(k))
-           g_frac = MIN(0.75, 0.05 + (r_frac-5.)*.028)
-           vts_boost(k) = MIN(1.5, 1.1 + (r_frac-5.)*.016)
+           g_frac = MIN(0.95, 0.15 + (r_frac-2.)*.028)
+           vts_boost(k) = MIN(1.5, 1.1 + (r_frac-2.)*.016)
            prg_scw(k) = g_frac*prs_scw(k)
            prs_scw(k) = (1. - g_frac)*prs_scw(k)
           endif
@@ -2400,9 +2445,9 @@
            prr_sml(k) = prr_sml(k) + 4218.*olfus*tempc &
                                    * (prr_rcs(k)+prs_scw(k))
            prr_sml(k) = MIN(DBLE(rs(k)*odts), MAX(0.D0, prr_sml(k)))
-           pnr_sml(k) = smo0(k)/rs(k)*prr_sml(k) * 10.0**(-0.75*tempc)      ! RAIN2M
+           pnr_sml(k) = smo0(k)/rs(k)*prr_sml(k) * 10.0**(-0.25*tempc)      ! RAIN2M
            pnr_sml(k) = MIN(DBLE(smo0(k)*odts), pnr_sml(k))
-           if (tempc.gt.3.5 .or. rs(k).lt.0.005E-3) pnr_sml(k)=0.0
+!          if (tempc.gt.3.5 .or. rs(k).lt.0.005E-3) pnr_sml(k)=0.0
 
            if (ssati(k).lt. 0.) then
             prs_sde(k) = C_cube*t1_subl*diffu(k)*ssati(k)*rvs &
@@ -2420,8 +2465,8 @@
 !-GT                               * (prr_rcg(k)+prg_gcw(k))
            prr_gml(k) = MIN(DBLE(rg(k)*odts), MAX(0.D0, prr_gml(k)))
            pnr_gml(k) = N0_g(k)*cgg(2)*ilamg(k)**cge(2) / rg(k)         &   ! RAIN2M
-                      * prr_gml(k) * 10.0**(-0.25*tempc)
-           if (tempc.gt.7.5 .or. rg(k).lt.0.005E-3) pnr_gml(k)=0.0
+                      * prr_gml(k) * 10.0**(-0.5*tempc)
+!          if (tempc.gt.7.5 .or. rg(k).lt.0.005E-3) pnr_gml(k)=0.0
 
            if (ssati(k).lt. 0.) then
             prg_gde(k) = C_cube*t1_subl*diffu(k)*ssati(k)*rvs &
@@ -2621,7 +2666,7 @@
                       * orho
 
 !..Cloud ice mass/number balance; keep mass-wt mean size between
-!.. 20 and 300 microns.  Also no more than 250 xtals per liter.
+!.. 5 and 300 microns.  Also no more than 500 xtals per liter.
          xri=MAX(R1,(qi1d(k) + qiten(k)*dtsave)*rho(k))
          xni=MAX(R2,(ni1d(k) + niten(k)*dtsave)*rho(k))
          if (xri.gt. R1) then
@@ -2862,8 +2907,12 @@
 !..Calculate y-intercept, slope values for graupel.
 !+---+-----------------------------------------------------------------+
       N0_min = gonv_max
+      k_0 = kts
       do k = kte, kts, -1
-         if (temp(k).lt.270.65 .and. L_qr(k) .and. mvd_r(k).gt.100.E-6) then
+         if (temp(k).ge.270.65) k_0 = MAX(k_0, k)
+      enddo
+      do k = kte, kts, -1
+         if (k.gt.k_0 .and. L_qr(k) .and. mvd_r(k).gt.100.E-6) then
             xslw1 = 4.01 + alog10(mvd_r(k))
          else
             xslw1 = 0.01
@@ -3491,7 +3540,6 @@
       enddo
 
       end subroutine mp_thompson
-#if !defined(mpas)
 !+---+-----------------------------------------------------------------+
 !ctrlL
 !+---+-----------------------------------------------------------------+
@@ -3511,69 +3559,9 @@
       DOUBLE PRECISION, DIMENSION(nbr):: vr, N_r
       DOUBLE PRECISION:: N0_r, N0_g, lam_exp, lamg, lamr
       DOUBLE PRECISION:: massg, massr, dvg, dvr, t1, t2, z1, z2, y1, y2
-      LOGICAL force_read_thompson, write_thompson_tables
-      LOGICAL lexist,lopen
-      INTEGER good
-      LOGICAL, EXTERNAL :: wrf_dm_on_monitor
 
 !+---+
 
-      CALL nl_get_force_read_thompson(1,force_read_thompson)
-      CALL nl_get_write_thompson_tables(1,write_thompson_tables)
-
-      good = 0
-      IF ( wrf_dm_on_monitor() ) THEN
-        INQUIRE(FILE="qr_acr_qg.dat",EXIST=lexist)
-        IF ( lexist ) THEN
-          CALL wrf_message("ThompMP: read qr_acr_qg.dat stead of computing")
-          OPEN(63,file="qr_acr_qg.dat",form="unformatted",err=1234)
-          READ(63,err=1234) tcg_racg
-          READ(63,err=1234) tmr_racg
-          READ(63,err=1234) tcr_gacr
-          READ(63,err=1234) tmg_gacr
-          READ(63,err=1234) tnr_racg
-          READ(63,err=1234) tnr_gacr
-          good = 1
- 1234     CONTINUE
-          IF ( good .NE. 1 ) THEN
-            INQUIRE(63,opened=lopen)
-            IF (lopen) THEN
-              IF( force_read_thompson ) THEN
-                CALL wrf_error_fatal("Error reading qr_acr_qg.dat. Aborting because force_read_thompson is .true.")
-              ENDIF
-              CLOSE(63)
-            ELSE
-              IF( force_read_thompson ) THEN
-                CALL wrf_error_fatal("Error opening qr_acr_qg.dat. Aborting because force_read_thompson is .true.")
-              ENDIF
-            ENDIF
-         ELSE
-            INQUIRE(63,opened=lopen)
-            IF (lopen) THEN
-              CLOSE(63)
-            ENDIF
-          ENDIF
-        ELSE
-          IF( force_read_thompson ) THEN
-            CALL wrf_error_fatal("Non-existent qr_acr_qg.dat. Aborting because force_read_thompson is .true.")
-          ENDIF
-        ENDIF
-      ENDIF
-#if defined(DM_PARALLEL) && !defined(STUBMPI)
-      CALL wrf_dm_bcast_integer(good,1)
-#endif
-
-      IF ( good .EQ. 1 ) THEN
-#if defined(DM_PARALLEL) && !defined(STUBMPI)
-        CALL wrf_dm_bcast_double(tcg_racg,SIZE(tcg_racg))
-        CALL wrf_dm_bcast_double(tmr_racg,SIZE(tmr_racg))
-        CALL wrf_dm_bcast_double(tcr_gacr,SIZE(tcr_gacr))
-        CALL wrf_dm_bcast_double(tmg_gacr,SIZE(tmg_gacr))
-        CALL wrf_dm_bcast_double(tnr_racg,SIZE(tnr_racg))
-        CALL wrf_dm_bcast_double(tnr_gacr,SIZE(tnr_gacr))
-#endif
-      ELSE
-        CALL wrf_message("ThompMP: computing qr_acr_qg")
         do n2 = 1, nbr
 !        vr(n2) = av_r*Dr(n2)**bv_r * DEXP(-fv_r*Dr(n2))
          vr(n2) = -0.1021 + 4.932E3*Dr(n2) - 0.9551E6*Dr(n2)*Dr(n2)     &
@@ -3584,15 +3572,8 @@
          vg(n) = av_g*Dg(n)**bv_g
         enddo
 
-!..Note values returned from wrf_dm_decomp1d are zero-based, add 1 for
-!.. fortran indices.  J. Michalakes, 2009Oct30.
-
-#if ( defined( DM_PARALLEL ) && ( ! defined( STUBMPI ) ) )
-        CALL wrf_dm_decomp1d ( ntb_r*ntb_r1, km_s, km_e )
-#else
         km_s = 0
         km_e = ntb_r*ntb_r1 - 1
-#endif
 
         do km = km_s, km_e
          m = km / ntb_r1 + 1
@@ -3654,33 +3635,6 @@
          enddo
         enddo
 
-!..Note wrf_dm_gatherv expects zero-based km_s, km_e (J. Michalakes, 2009Oct30).
-
-#if ( defined( DM_PARALLEL ) && ( ! defined( STUBMPI ) ) )
-        CALL wrf_dm_gatherv(tcg_racg, ntb_g*ntb_g1, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tmr_racg, ntb_g*ntb_g1, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tcr_gacr, ntb_g*ntb_g1, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tmg_gacr, ntb_g*ntb_g1, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tnr_racg, ntb_g*ntb_g1, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tnr_gacr, ntb_g*ntb_g1, km_s, km_e, R8SIZE)
-#endif
-
-        IF ( write_thompson_tables .AND. wrf_dm_on_monitor() ) THEN
-          CALL wrf_message("Writing qr_acr_qg.dat in Thompson MP init")
-          OPEN(63,file="qr_acr_qg.dat",form="unformatted",err=9234)
-          WRITE(63,err=9234) tcg_racg
-          WRITE(63,err=9234) tmr_racg
-          WRITE(63,err=9234) tcr_gacr
-          WRITE(63,err=9234) tmg_gacr
-          WRITE(63,err=9234) tnr_racg
-          WRITE(63,err=9234) tnr_gacr
-          CLOSE(63)
-          RETURN    ! ----- RETURN
- 9234     CONTINUE
-          CALL wrf_error_fatal("Error writing qr_acr_qg.dat")
-        ENDIF
-      ENDIF
-
       end subroutine qr_acr_qg
 !+---+-----------------------------------------------------------------+
 !ctrlL
@@ -3702,81 +3656,9 @@
       DOUBLE PRECISION:: dvs, dvr, masss, massr
       DOUBLE PRECISION:: t1, t2, t3, t4, z1, z2, z3, z4
       DOUBLE PRECISION:: y1, y2, y3, y4
-      LOGICAL force_read_thompson, write_thompson_tables
-      LOGICAL lexist,lopen
-      INTEGER good
-      LOGICAL, EXTERNAL :: wrf_dm_on_monitor
 
 !+---+
 
-      CALL nl_get_force_read_thompson(1,force_read_thompson)
-      CALL nl_get_write_thompson_tables(1,write_thompson_tables)
-
-      good = 0
-      IF ( wrf_dm_on_monitor() ) THEN
-        INQUIRE(FILE="qr_acr_qs.dat",EXIST=lexist)
-        IF ( lexist ) THEN
-          CALL wrf_message("ThompMP: read qr_acr_qs.dat instead of computing")
-          OPEN(63,file="qr_acr_qs.dat",form="unformatted",err=1234)
-          READ(63,err=1234)tcs_racs1
-          READ(63,err=1234)tmr_racs1
-          READ(63,err=1234)tcs_racs2
-          READ(63,err=1234)tmr_racs2
-          READ(63,err=1234)tcr_sacr1
-          READ(63,err=1234)tms_sacr1
-          READ(63,err=1234)tcr_sacr2
-          READ(63,err=1234)tms_sacr2
-          READ(63,err=1234)tnr_racs1
-          READ(63,err=1234)tnr_racs2
-          READ(63,err=1234)tnr_sacr1
-          READ(63,err=1234)tnr_sacr2
-          good = 1
- 1234     CONTINUE
-          IF ( good .NE. 1 ) THEN
-            INQUIRE(63,opened=lopen)
-            IF (lopen) THEN
-              IF( force_read_thompson ) THEN
-                CALL wrf_error_fatal("Error reading qr_acr_qs.dat. Aborting because force_read_thompson is .true.")
-              ENDIF
-              CLOSE(63)
-            ELSE
-              IF( force_read_thompson ) THEN
-                CALL wrf_error_fatal("Error opening qr_acr_qs.dat. Aborting because force_read_thompson is .true.")
-              ENDIF
-            ENDIF
-          ELSE
-            INQUIRE(63,opened=lopen)
-            IF (lopen) THEN
-              CLOSE(63)
-            ENDIF
-          ENDIF
-        ELSE
-          IF( force_read_thompson ) THEN
-            CALL wrf_error_fatal("Non-existent qr_acr_qs.dat. Aborting because force_read_thompson is .true.")
-          ENDIF
-        ENDIF
-      ENDIF
-#if defined(DM_PARALLEL) && !defined(STUBMPI)
-      CALL wrf_dm_bcast_integer(good,1)
-#endif
-
-      IF ( good .EQ. 1 ) THEN
-#if defined(DM_PARALLEL) && !defined(STUBMPI)
-        CALL wrf_dm_bcast_double(tcs_racs1,SIZE(tcs_racs1))
-        CALL wrf_dm_bcast_double(tmr_racs1,SIZE(tmr_racs1))
-        CALL wrf_dm_bcast_double(tcs_racs2,SIZE(tcs_racs2))
-        CALL wrf_dm_bcast_double(tmr_racs2,SIZE(tmr_racs2))
-        CALL wrf_dm_bcast_double(tcr_sacr1,SIZE(tcr_sacr1))
-        CALL wrf_dm_bcast_double(tms_sacr1,SIZE(tms_sacr1))
-        CALL wrf_dm_bcast_double(tcr_sacr2,SIZE(tcr_sacr2))
-        CALL wrf_dm_bcast_double(tms_sacr2,SIZE(tms_sacr2))
-        CALL wrf_dm_bcast_double(tnr_racs1,SIZE(tnr_racs1))
-        CALL wrf_dm_bcast_double(tnr_racs2,SIZE(tnr_racs2))
-        CALL wrf_dm_bcast_double(tnr_sacr1,SIZE(tnr_sacr1))
-        CALL wrf_dm_bcast_double(tnr_sacr2,SIZE(tnr_sacr2))
-#endif
-      ELSE
-        CALL wrf_message("ThompMP: computing qr_acr_qs")
         do n2 = 1, nbr
 !        vr(n2) = av_r*Dr(n2)**bv_r * DEXP(-fv_r*Dr(n2))
          vr(n2) = -0.1021 + 4.932E3*Dr(n2) - 0.9551E6*Dr(n2)*Dr(n2)     &
@@ -3788,15 +3670,8 @@
          vs(n) = 1.5*av_s*Ds(n)**bv_s * DEXP(-fv_s*Ds(n))
         enddo
 
-!..Note values returned from wrf_dm_decomp1d are zero-based, add 1 for
-!.. fortran indices.  J. Michalakes, 2009Oct30.
-
-#if ( defined( DM_PARALLEL ) && ( ! defined( STUBMPI ) ) )
-        CALL wrf_dm_decomp1d ( ntb_r*ntb_r1, km_s, km_e )
-#else
         km_s = 0
         km_e = ntb_r*ntb_r1 - 1
-#endif
 
         do km = km_s, km_e
          m = km / ntb_r1 + 1
@@ -3927,45 +3802,6 @@
          enddo
         enddo
 
-!..Note wrf_dm_gatherv expects zero-based km_s, km_e (J. Michalakes, 2009Oct30).
-
-#if ( defined( DM_PARALLEL ) && ( ! defined( STUBMPI ) ) )
-        CALL wrf_dm_gatherv(tcs_racs1, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tmr_racs1, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tcs_racs2, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tmr_racs2, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tcr_sacr1, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tms_sacr1, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tcr_sacr2, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tms_sacr2, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tnr_racs1, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tnr_racs2, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tnr_sacr1, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-        CALL wrf_dm_gatherv(tnr_sacr2, ntb_s*ntb_t, km_s, km_e, R8SIZE)
-#endif
-
-        IF ( write_thompson_tables .AND. wrf_dm_on_monitor() ) THEN
-          CALL wrf_message("Writing qr_acr_qs.dat in Thompson MP init")
-          OPEN(63,file="qr_acr_qs.dat",form="unformatted",err=9234)
-          WRITE(63,err=9234)tcs_racs1
-          WRITE(63,err=9234)tmr_racs1
-          WRITE(63,err=9234)tcs_racs2
-          WRITE(63,err=9234)tmr_racs2
-          WRITE(63,err=9234)tcr_sacr1
-          WRITE(63,err=9234)tms_sacr1
-          WRITE(63,err=9234)tcr_sacr2
-          WRITE(63,err=9234)tms_sacr2
-          WRITE(63,err=9234)tnr_racs1
-          WRITE(63,err=9234)tnr_racs2
-          WRITE(63,err=9234)tnr_sacr1
-          WRITE(63,err=9234)tnr_sacr2
-          CLOSE(63)
-          RETURN    ! ----- RETURN
- 9234     CONTINUE
-          CALL wrf_error_fatal("Error writing qr_acr_qs.dat")
-        ENDIF
-      ENDIF
-
       end subroutine qr_acr_qs
 !+---+-----------------------------------------------------------------+
 !ctrlL
@@ -3988,69 +3824,8 @@
                          lam_exp, lamr, N0_r, lamc, N0_c, y
       INTEGER:: nu_c
       REAL:: T_adjust
-      LOGICAL force_read_thompson, write_thompson_tables
-      LOGICAL lexist,lopen
-      INTEGER good
-      LOGICAL, EXTERNAL :: wrf_dm_on_monitor
 
 !+---+
-      CALL nl_get_force_read_thompson(1,force_read_thompson)
-      CALL nl_get_write_thompson_tables(1,write_thompson_tables)
-
-      good = 0
-      IF ( wrf_dm_on_monitor() ) THEN
-        INQUIRE(FILE="freezeH2O.dat",EXIST=lexist)
-        IF ( lexist ) THEN
-          CALL wrf_message("ThompMP: read freezeH2O.dat stead of computing")
-          OPEN(63,file="freezeH2O.dat",form="unformatted",err=1234)
-          READ(63,err=1234)tpi_qrfz
-          READ(63,err=1234)tni_qrfz
-          READ(63,err=1234)tpg_qrfz
-          READ(63,err=1234)tnr_qrfz
-          READ(63,err=1234)tpi_qcfz
-          READ(63,err=1234)tni_qcfz
-          good = 1
- 1234     CONTINUE
-          IF ( good .NE. 1 ) THEN
-            INQUIRE(63,opened=lopen)
-            IF (lopen) THEN
-              IF( force_read_thompson ) THEN
-                CALL wrf_error_fatal("Error reading freezeH2O.dat. Aborting because force_read_thompson is .true.")
-              ENDIF
-              CLOSE(63)
-            ELSE
-              IF( force_read_thompson ) THEN
-                CALL wrf_error_fatal("Error opening freezeH2O.dat. Aborting because force_read_thompson is .true.")
-              ENDIF
-            ENDIF
-          ELSE
-            INQUIRE(63,opened=lopen)
-            IF (lopen) THEN
-              CLOSE(63)
-            ENDIF
-          ENDIF
-        ELSE
-          IF( force_read_thompson ) THEN
-            CALL wrf_error_fatal("Non-existent freezeH2O.dat. Aborting because force_read_thompson is .true.")
-          ENDIF
-        ENDIF
-      ENDIF
-
-#if defined(DM_PARALLEL) && !defined(STUBMPI)
-      CALL wrf_dm_bcast_integer(good,1)
-#endif
-
-      IF ( good .EQ. 1 ) THEN
-#if defined(DM_PARALLEL) && !defined(STUBMPI)
-        CALL wrf_dm_bcast_double(tpi_qrfz,SIZE(tpi_qrfz))
-        CALL wrf_dm_bcast_double(tni_qrfz,SIZE(tni_qrfz))
-        CALL wrf_dm_bcast_double(tpg_qrfz,SIZE(tpg_qrfz))
-        CALL wrf_dm_bcast_double(tnr_qrfz,SIZE(tnr_qrfz))
-        CALL wrf_dm_bcast_double(tpi_qcfz,SIZE(tpi_qcfz))
-        CALL wrf_dm_bcast_double(tni_qcfz,SIZE(tni_qcfz))
-#endif
-      ELSE
-        CALL wrf_message("ThompMP: computing freezeH2O")
 
         orho_w = 1./rho_w
 
@@ -4118,24 +3893,7 @@
         enddo
         enddo
 
-        IF ( write_thompson_tables .AND. wrf_dm_on_monitor() ) THEN
-          CALL wrf_message("Writing freezeH2O.dat in Thompson MP init")
-          OPEN(63,file="freezeH2O.dat",form="unformatted",err=9234)
-          WRITE(63,err=9234)tpi_qrfz
-          WRITE(63,err=9234)tni_qrfz
-          WRITE(63,err=9234)tpg_qrfz
-          WRITE(63,err=9234)tnr_qrfz
-          WRITE(63,err=9234)tpi_qcfz
-          WRITE(63,err=9234)tni_qcfz
-          CLOSE(63)
-          RETURN    ! ----- RETURN
- 9234     CONTINUE
-          CALL wrf_error_fatal("Error writing freezeH2O.dat")
-        ENDIF
-      ENDIF
-
       end subroutine freezeH2O
-#endif
 !+---+-----------------------------------------------------------------+
 !ctrlL
 !+---+-----------------------------------------------------------------+
@@ -4600,6 +4358,7 @@
 
       end function activ_ncloud
 
+#if !defined(mpas)
 !+---+-----------------------------------------------------------------+
 !+---+-----------------------------------------------------------------+
       SUBROUTINE GCF(GAMMCF,A,X,GLN)
@@ -4669,7 +4428,6 @@
  1    GAMSER=SUM*EXP(-X+A*LOG(X)-GLN)
       END SUBROUTINE GSER
 !  (C) Copr. 1986-92 Numerical Recipes Software 2.02
-#if !defined(mpas)
 !+---+-----------------------------------------------------------------+
       REAL FUNCTION GAMMLN(XX)
 !     --- RETURNS THE VALUE LN(GAMMA(XX)) FOR XX > 0.
@@ -4748,6 +4506,7 @@
 
 !      ESL=612.2*EXP(17.67*X/(T-29.65))
       ESL=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))
+      ESL=MIN(ESL, P*0.15)        ! Even with P=1050mb and T=55C, the sat. vap. pres only contributes to ~15% of total pres.
       RSLF=.622*ESL/(P-ESL)
 
 !    ALTERNATIVE
@@ -4780,6 +4539,7 @@
 
       X=MAX(-80.,T-273.16)
       ESI=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))
+      ESI=MIN(ESI, P*0.15)
       RSIF=.622*ESI/(P-ESI)
 
 !    ALTERNATIVE
@@ -4789,6 +4549,7 @@
 !     ESI = EXP(9.550426 - 5723.265/T + 3.53068*ALOG(T) - 0.00728332*T)
 
       END FUNCTION RSIF
+
 #endif
 !+---+-----------------------------------------------------------------+
       real function iceDeMott(tempc, qv, qvs, qvsi, rho, nifa)
@@ -4818,43 +4579,43 @@
 !+---+
 
       xni = 0.0
-      satw = qv/qvs
-      sati = qv/qvsi
-      siw = qvs/qvsi
-      p_x = -1.0261+(3.1656e-3*tempc)+(5.3938e-4*(tempc*tempc))         &
-                 +  (8.2584e-6*(tempc*tempc*tempc))
-      si0x = 1.+(10.**p_x)
-      if (sati.ge.si0x .and. satw.lt.0.985) then
-         dtt = delta_p (tempc, T0x, T0x+delT, 1., hdm)
-         dsi = delta_p (sati, Si0x, Si0x+delSi, 0., 1.)
-         dsw = delta_p (satw, Sw0x, 1., 0., 1.)
-         fc = dtt*dsi*0.5
-         hx = min(fc+((1.-fc)*dsw), 1.)
-         ntilde = p_c1*p_gam*((exp(12.96*(sati-1.1)))**0.3) / p_rho_c
-         if (tempc .le. y1p) then
-            n_in = ntilde
-         elseif (tempc .ge. y2p) then
-            n_in = p_psi*p_c1*exp(12.96*(sati-1.)-0.639)
-         else
-            if (tempc .le. -30.) then
-               nmax = p_c1*p_gam*(exp(12.96*(siw-1.1)))**0.3/p_rho_c
-            else
-               nmax = p_psi*p_c1*exp(12.96*(siw-1.)-0.639)
-            endif
-            ntilde = MIN(ntilde, nmax)
-            nhat = MIN(p_psi*p_c1*exp(12.96*(sati-1.)-0.639), nmax)
-            dab = delta_p (tempc, y1p, y2p, aap, bbp)
-            n_in = MIN(nhat*(ntilde/nhat)**dab, nmax)
-         endif
-         mux = hx*p_alpha*n_in*rho
-         xni = mux*((6700.*nifa)-200.)/((6700.*5.E5)-200.)
-      elseif (satw.ge.0.985 .and. tempc.gt.HGFR-273.15) then
+!     satw = qv/qvs
+!     sati = qv/qvsi
+!     siw = qvs/qvsi
+!     p_x = -1.0261+(3.1656e-3*tempc)+(5.3938e-4*(tempc*tempc))         &
+!                +  (8.2584e-6*(tempc*tempc*tempc))
+!     si0x = 1.+(10.**p_x)
+!     if (sati.ge.si0x .and. satw.lt.0.985) then
+!        dtt = delta_p (tempc, T0x, T0x+delT, 1., hdm)
+!        dsi = delta_p (sati, Si0x, Si0x+delSi, 0., 1.)
+!        dsw = delta_p (satw, Sw0x, 1., 0., 1.)
+!        fc = dtt*dsi*0.5
+!        hx = min(fc+((1.-fc)*dsw), 1.)
+!        ntilde = p_c1*p_gam*((exp(12.96*(sati-1.1)))**0.3) / p_rho_c
+!        if (tempc .le. y1p) then
+!           n_in = ntilde
+!        elseif (tempc .ge. y2p) then
+!           n_in = p_psi*p_c1*exp(12.96*(sati-1.)-0.639)
+!        else
+!           if (tempc .le. -30.) then
+!              nmax = p_c1*p_gam*(exp(12.96*(siw-1.1)))**0.3/p_rho_c
+!           else
+!              nmax = p_psi*p_c1*exp(12.96*(siw-1.)-0.639)
+!           endif
+!           ntilde = MIN(ntilde, nmax)
+!           nhat = MIN(p_psi*p_c1*exp(12.96*(sati-1.)-0.639), nmax)
+!           dab = delta_p (tempc, y1p, y2p, aap, bbp)
+!           n_in = MIN(nhat*(ntilde/nhat)**dab, nmax)
+!        endif
+!        mux = hx*p_alpha*n_in*rho
+!        xni = mux*((6700.*nifa)-200.)/((6700.*5.E5)-200.)
+!     elseif (satw.ge.0.985 .and. tempc.gt.HGFR-273.15) then
          nifa_cc = nifa*RHO_NOT0*1.E-6/rho
-         xni  = 3.*nifa_cc**(1.25)*exp((0.46*(-tempc))-11.6)             !  [DeMott, 2015]
-!        xni = (5.94e-5*(-tempc)**3.33)                                 &
-!                   * (nifa_cc**((-0.0264*(tempc))+0.0033))
+!        xni  = 3.*nifa_cc**(1.25)*exp((0.46*(-tempc))-11.6)              !  [DeMott, 2015]
+         xni = (5.94e-5*(-tempc)**3.33)                                 & !  [DeMott, 2010]
+                    * (nifa_cc**((-0.0264*(tempc))+0.0033))
          xni = xni*rho/RHO_NOT0 * 1000.
-      endif
+!     endif
 
       iceDeMott = MAX(0., xni)
 
@@ -4882,7 +4643,7 @@
      &           - (26924.0*delta_aw*delta_aw)                          &
      &           + (29180.0*delta_aw*delta_aw*delta_aw)
       log_J_rate = MIN(20.0, log_J_rate)
-      J_rate     = 0.01*(10.**log_J_rate)                                ! cm-3 s-1
+      J_rate     = 10.**log_J_rate                                       ! cm-3 s-1
       prob_h     = MIN(1.-exp(-J_rate*ar_volume*DT), 1.)
       if (prob_h .gt. 0.) then
          xni     = MIN(prob_h*naero, 1000.E3)
@@ -5190,8 +4951,12 @@
 !+---+-----------------------------------------------------------------+
 
       N0_min = gonv_max
+      k_0 = kts
       do k = kte, kts, -1
-         if (temp(k).lt.270.65 .and. L_qr(k) .and. mvd_r(k).gt.100.E-6) then
+         if (temp(k).ge.270.65) k_0 = MAX(k_0, k)
+      enddo
+      do k = kte, kts, -1
+         if (k.gt.k_0 .and. L_qr(k) .and. mvd_r(k).gt.100.E-6) then
             xslw1 = 4.01 + alog10(mvd_r(k))
          else
             xslw1 = 0.01
@@ -5300,6 +5065,7 @@
       do k = kte, kts, -1
          dBZ(k) = 10.*log10((ze_rain(k)+ze_snow(k)+ze_graupel(k))*1.d18)
       enddo
+
 
 !..Reflectivity-weighted terminal velocity (snow, rain, graupel, mix).
 !     do k = kte, kts, -1

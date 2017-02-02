@@ -50,6 +50,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * added the option bl_mynn for the calculation of the tendency for the cloud ice number concentration.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
+! * in subroutine physics_get_tend_work, added the option cu_ntiedtke in the calculation of rucuten_Edge.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-28.
 
 
  contains
@@ -214,7 +216,7 @@
 
 !=================================================================================================================
  subroutine physics_get_tend( block, mesh, state, diag, tend, tend_physics, configs, rk_step, dynamics_substep, &
-                              tend_ru_physics, tend_rtheta_physics )
+                              tend_ru_physics, tend_rtheta_physics, tend_rho_physics )
 !=================================================================================================================
    
  use mpas_atm_dimensions
@@ -232,7 +234,7 @@
  type(mpas_pool_type),intent(inout):: tend
  type(mpas_pool_type),intent(inout):: tend_physics
 
- real(kind=RKIND),dimension(:,:) :: tend_ru_physics, tend_rtheta_physics
+ real(kind=RKIND),dimension(:,:) :: tend_ru_physics, tend_rtheta_physics, tend_rho_physics
 
 !local variables:
  character(len=StrKIND), pointer :: config_pbl_scheme, config_convection_scheme, &
@@ -336,6 +338,8 @@
 
  tend_ru_physics(:,:) = 0._RKIND
  tend_rtheta_physics(:,:) = 0._RKIND
+ tend_rho_physics(:,:) = 0._RKIND       ! NB: rho tendency is not currently supplied by physics, but this
+                                        !     field may be later filled with IAU or other tendencies
 
  !
  ! In case some variables are not allocated due to their associated packages,
@@ -577,6 +581,9 @@
            case('cu_tiedtke')
               if (rk_step == 1 .and. dynamics_substep == 1) then
                  call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
+                 
+                 tend_u_phys(1:nVertLevels,1:nEdges) = tend_u_phys(1:nVertLevels,1:nEdges) &
+                                                     + rucuten_Edge(1:nVertLevels,1:nEdges)
               end if
               do i = 1, nEdgesSolve
               do k  = 1, nVertLevels
@@ -744,9 +751,12 @@
               enddo
               enddo
     
-           case('cu_tiedtke')
+           case('cu_tiedtke','cu_ntiedtke')
               if (rk_step == 1 .and. dynamics_substep == 1) then
                  call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
+                 
+                 tend_u_phys(1:nVertLevels,1:nEdges) = tend_u_phys(1:nVertLevels,1:nEdges) &
+                                                     + rucuten_Edge(1:nVertLevels,1:nEdges)
               end if
               do i = 1, nEdgesSolve
               do k  = 1, nVertLevels

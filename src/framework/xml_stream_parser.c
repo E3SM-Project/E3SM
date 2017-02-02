@@ -427,7 +427,7 @@ int attribute_check(ezxml_t stream)
 	nextchar = 0;
 	for (i=(len-1); i>=0; nextchar=s_filename[i--]) {
 		if (s_filename[i] == '$') {
-			if (strchr("YMDdhmsG",nextchar) == NULL) {
+			if (strchr("YMDdhmsGSB",nextchar) == NULL) {
 				snprintf(msgbuf, MSGSIZE, "filename_template for stream \"%s\" contains unrecognized variable \"$%c\".", s_name, nextchar);
 				fmt_err(msgbuf);
 				return 1;

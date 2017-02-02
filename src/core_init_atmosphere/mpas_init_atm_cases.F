@@ -12,6 +12,7 @@ module init_atm_cases
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_abort, only : mpas_dmpar_global_abort
    use mpas_sort
    use atm_advection
    use mpas_RBF_interpolation
@@ -42,6 +43,7 @@ module init_atm_cases
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       use mpas_stream_manager
+      use mpas_init_atm_gwd, only : compute_gwd_fields
 
       implicit none
 
@@ -50,6 +52,7 @@ module init_atm_cases
 
 
       integer :: i
+      integer :: ierr
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: mesh
@@ -60,6 +63,7 @@ module init_atm_cases
 
       integer, pointer :: config_init_case
       logical, pointer :: config_static_interp
+      logical, pointer :: config_native_gwd_static
       logical, pointer :: config_met_interp
 
       character(len=StrKIND), pointer :: mminlu
@@ -76,21 +80,19 @@ module init_atm_cases
       !
       if (config_init_case == 6) then
 #ifndef ROTATED_GRID
-         write(0,*) '*****************************************************************'
-         write(0,*) 'To initialize and run the mountain wave test case (case 6),'
-         write(0,*) '   please clean and re-compile init_atmosphere with -DROTATED_GRID'
-         write(0,*) '   added to the specification of MODEL_FORMULATION'
-         write(0,*) '   at the top of the Makefile.'
-         write(0,*) '*****************************************************************'
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_dmpar_global_abort('*****************************************************************',  deferredAbort=.true.)
+         call mpas_dmpar_global_abort('To initialize and run the mountain wave test case (case 6),',        deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   please clean and re-compile init_atmosphere with -DROTATED_GRID', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   added to the specification of MODEL_FORMULATION',                 deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   at the top of the Makefile.',                                     deferredAbort=.true.)
+         call mpas_dmpar_global_abort('*****************************************************************')
 #endif
       else
 #ifdef ROTATED_GRID
-         write(0,*) '*****************************************************************'
-         write(0,*) 'Only test case 6 should use code compiled with -DROTATED_GRID'
-         write(0,*) '   specified in the Makefile.'
-         write(0,*) '*****************************************************************'
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Only test case 6 should use code compiled with -DROTATED_GRID',     deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   specified in the Makefile.',                                     deferredAbort=.true.)
+         call mpas_dmpar_global_abort('*****************************************************************')
 #endif
       end if
 
@@ -173,6 +175,7 @@ module init_atm_cases
          do while (associated(block_ptr))
 
             call mpas_pool_get_config(block_ptr % configs, 'config_static_interp', config_static_interp)
+            call mpas_pool_get_config(block_ptr % configs, 'config_native_gwd_static', config_native_gwd_static)
             call mpas_pool_get_config(block_ptr % configs, 'config_met_interp', config_met_interp)
 
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
@@ -194,17 +197,27 @@ module init_atm_cases
                !     detected when performing the static_interp step.
                !  
                if (domain % dminfo % nprocs > 1) then
-                 write(0,*) ' '
-                 write(0,*) '****************************************************************'
-                 write(0,*) 'Error: Interpolation of static fields does not work in parallel.'
-                 write(0,*) 'Please run the static_interp step using only a single MPI task.'
-                 write(0,*) '****************************************************************'
-                 write(0,*) ' '
-                 call mpas_dmpar_abort(domain % dminfo)
+                 call mpas_dmpar_global_abort('****************************************************************', deferredAbort=.true.)
+                 call mpas_dmpar_global_abort('Error: Interpolation of static fields does not work in parallel.', deferredAbort=.true.)
+                 call mpas_dmpar_global_abort('Please run the static_interp step using only a single MPI task.',  deferredAbort=.true.)
+                 call mpas_dmpar_global_abort('****************************************************************')
                end if
 
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
                call init_atm_static_orogwd(mesh, block_ptr % dimensions, block_ptr % configs)
+            end if
+
+            if (config_native_gwd_static) then
+               write(0,*) ' '
+               write(0,*) 'Computing GWDO static fields on the native MPAS mesh'
+               write(0,*) ' '
+               ierr = compute_gwd_fields(domain)
+               if (ierr /= 0) then
+                  call mpas_dmpar_global_abort('****************************************************************', deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('Error while trying to compute sub-grid-scale orography',           deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('statistics for use with the GWDO scheme.',                         deferredAbort=.true.)
+                  call mpas_dmpar_global_abort('****************************************************************')
+               end if
             end if
 
             !
@@ -223,7 +236,10 @@ module init_atm_cases
 
             call init_atm_case_gfs(block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
                                    diag, diag_physics, config_init_case, block_ptr % dimensions, block_ptr % configs)
-            if (config_met_interp) call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)
+            
+            if (config_met_interp) then
+               call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)
+            end if
 
             block_ptr => block_ptr % next
          end do
@@ -244,12 +260,9 @@ module init_atm_cases
 
       else
 
-         write(0,*) ' '
-         write(0,*) ' ****************************************************'
-         write(0,*) ' Only test cases 1 through 8 are currently supported.'
-         write(0,*) ' ****************************************************'
-         write(0,*) ' '
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_dmpar_global_abort(' ****************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort(' Only test cases 1 through 8 are currently supported.', deferredAbort=.true.)
+         call mpas_dmpar_global_abort(' ****************************************************')
 
       end if
 
@@ -2098,12 +2111,11 @@ module init_atm_cases
       write(0,*) ' hx computation complete '
 
       if (terrain_smooth) then
-         write(0,*) '***************************************************************************'
-         write(0,*) 'Please contact the MPAS-A developers for up-to-date terrain-smoothing code.'
-         write(0,*) 'Otherwise, set terrain_smooth=.false. in the mountain wave test case'
-         write(0,*) '   initialization routine and re-compile.'
-         write(0,*) '***************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('***************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Please contact the MPAS-A developers for up-to-date terrain-smoothing code.', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Otherwise, set terrain_smooth=.false. in the mountain wave test case',        deferredAbort=.true.)
+         call mpas_dmpar_global_abort('   initialization routine and re-compile.',                                   deferredAbort=.true.)
+         call mpas_dmpar_global_abort('***************************************************************************')
       end if
 
       do iCell=1,nCells
@@ -2641,6 +2653,8 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: rh2
       real (kind=RKIND), dimension(:), pointer :: t2m
 
+      character (len=StrKIND) :: errstring
+
       call mpas_pool_get_config(configs, 'config_met_prefix', config_met_prefix)
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
@@ -2772,11 +2786,10 @@ module init_atm_cases
       call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
 
       if (istatus /= 0) then
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error opening initial meteorological data file '//   &
-                     trim(config_met_prefix)//':'//config_start_time(1:13)
-         write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error opening initial meteorological data file ' &
+                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
 
       call read_next_met_field(field, istatus)
@@ -3233,11 +3246,10 @@ write(0,*) 'USING ECMWF TERRAIN...'
       call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
 
       if (istatus /= 0) then
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error opening initial meteorological data file '//   &
-                     trim(config_met_prefix)//':'//config_start_time(1:13)
-         write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error opening initial meteorological data file ' &
+                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
 
       call read_next_met_field(field, istatus)
@@ -3264,11 +3276,10 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
       call read_met_close()
 
       if (.not. allocated(maskslab)) then
-         write(0,*) '********************************************************************************'
-         write(0,*) 'LANDSEA field not found in  meteorological data file '//   &
-                     trim(config_met_prefix)//':'//config_start_time(1:13)
-         write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('LANDSEA field not found in meteorological data file ' &
+                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
 
       edge_mask(:) = 1
@@ -3283,11 +3294,10 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
       call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
 
       if (istatus /= 0) then
-         write(0,*) '********************************************************************************'
-         write(0,*) 'Error opening initial meteorological data file '//   &
-                     trim(config_met_prefix)//':'//config_start_time(1:13)
-         write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_global_abort('********************************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error opening initial meteorological data file ' &
+                                      //trim(config_met_prefix)//':'//config_start_time(1:13),                            deferredAbort=.true.)
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
 
       call mpas_hash_init(level_hash)
@@ -4043,12 +4053,12 @@ write(0,*) 'Interpolating SKINTEMP'
       call mpas_hash_destroy(level_hash)
 
       if (too_many_fg_levs) then
-         write(0,*) '*******************************************************************'
-         write(0,*) 'Error: The meteorological data file has more than config_nfglevels.'
-         write(0,*) '       Please increase config_nfglevels to at least ', level_value
-         write(0,*) '       in the namelist and re-run.'
-         write(0,*) '*******************************************************************'
-         call mpas_dmpar_abort(dminfo)
+         write(errstring,'(a,i4)') '       Please increase config_nfglevels to at least ', level_value
+         call mpas_dmpar_global_abort('*******************************************************************', deferredAbort=.true.)
+         call mpas_dmpar_global_abort('Error: The meteorological data file has more than config_nfglevels.', deferredAbort=.true.)
+         call mpas_dmpar_global_abort(trim(errstring),                                                       deferredAbort=.true.)
+         call mpas_dmpar_global_abort('       in the namelist and re-run.',                                  deferredAbort=.true.)
+         call mpas_dmpar_global_abort('*******************************************************************')
       end if
 
 
@@ -4557,9 +4567,11 @@ write(0,*) 'PROCESSING OMLD'
 
          do k = 1, nVertLevels
             do iCell = 1, nCells
-               es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
-               es = min(es,0.99*0.01*pressure(k,iCell))
-               rs = 0.622*es*100. / (pressure(k,iCell)-es*100.)
+!              es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
+!              es = min(es,0.99*0.01*pressure(k,iCell))
+!              rs = 0.622*es*100. / (pressure(k,iCell)-es*100.)
+               rs = rslf(pressure(k,iCell),t(k,iCell))
+               if(t(k,iCell) .lt. svpt0) rs = rsif(pressure(k,iCell),t(k,iCell))
                scalars(index_qv,k,iCell) = 0.01_RKIND*rs*relhum(k,iCell)
              enddo
          enddo

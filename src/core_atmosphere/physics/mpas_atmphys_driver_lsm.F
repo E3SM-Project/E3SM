@@ -26,6 +26,7 @@
           allocate_lsm,   &
           deallocate_lsm, &
           driver_lsm
+
  
  logical,parameter:: rdmaxalb = .false. !use snow albedo from geogrid;false use table values
  logical,parameter:: myj      = .false. !true if using Mellor-Yamada PBL scheme.
@@ -34,6 +35,7 @@
 
 !urban physics: MPAS does not plan to run the urban physics option.
  integer,parameter:: sf_urban_physics = 0 !activate urban canopy model (=0: no urban canopy) 
+
 
 !MPAS driver for parameterization of land surface processes.
 !Laura D. Fowler (send comments to laura@ucar.edu).
@@ -78,6 +80,8 @@
 ! * added call to the subroutine sfcdiags to update the 2-meter temperature, potential temperature, and
 !   water vapor mixing ratio after call to lsm.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-05-11.
+! * added the calculation of surface variables over seaice cells when config_frac_seaice is set to true.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-03.
 
 !
 ! DOCUMENTATION:
@@ -93,8 +97,11 @@
 
 
 !=================================================================================================================
- subroutine allocate_lsm
+ subroutine allocate_lsm(config_frac_seaice)
 !=================================================================================================================
+
+ logical,intent(in):: config_frac_seaice
+!-----------------------------------------------------------------------------------------------------------------
 
 !arrays for soil layer properties:
  if(.not.allocated(dzs_p)   ) allocate(dzs_p(1:num_soils)                   )
@@ -157,11 +164,19 @@
  if(.not.allocated(th2m_p)      ) allocate(th2m_p(ims:ime,jms:jme)      )
  if(.not.allocated(q2_p)        ) allocate(q2_p(ims:ime,jms:jme)        )
 
+ if(config_frac_seaice) then
+    if(.not.allocated(tsk_sea)) allocate(tsk_sea(ims:ime,jms:jme))
+    if(.not.allocated(tsk_ice)) allocate(tsk_ice(ims:ime,jms:jme))
+ endif
+
  end subroutine allocate_lsm
 
 !=================================================================================================================
- subroutine deallocate_lsm
+ subroutine deallocate_lsm(config_frac_seaice)
 !=================================================================================================================
+
+ logical,intent(in):: config_frac_seaice
+!-----------------------------------------------------------------------------------------------------------------
 
 !arrays for soil layer properties:
  if(allocated(dzs_p)   ) deallocate(dzs_p   )
@@ -224,6 +239,20 @@
  if(allocated(th2m_p)      ) deallocate(th2m_p      )
  if(allocated(q2_p)        ) deallocate(q2_p        )
 
+ if(config_frac_seaice) then
+    if(allocated(chs_sea) ) deallocate(chs_sea )
+    if(allocated(chs2_sea)) deallocate(chs2_sea)
+    if(allocated(cqs2_sea)) deallocate(cqs2_sea)
+    if(allocated(cpm_sea) ) deallocate(cpm_sea )
+    if(allocated(hfx_sea) ) deallocate(hfx_sea )
+    if(allocated(qfx_sea) ) deallocate(qfx_sea )
+    if(allocated(qgh_sea) ) deallocate(qgh_sea )
+    if(allocated(qsfc_sea)) deallocate(qsfc_sea)
+    if(allocated(lh_sea)  ) deallocate(lh_sea  )
+    if(allocated(tsk_sea) ) deallocate(tsk_sea )
+    if(allocated(tsk_ice) ) deallocate(tsk_ice )
+ endif
+
  end subroutine deallocate_lsm
 
 !=================================================================================================================
@@ -238,6 +267,8 @@
  integer,intent(in):: its,ite
 
 !local pointers:
+ logical,pointer:: config_frac_seaice
+
  character(len=StrKIND),pointer:: config_microp_scheme,    &
                                   config_convection_scheme
 
@@ -260,6 +291,7 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_config(configs,'config_frac_seaice'      ,config_frac_seaice      )
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
 
@@ -391,6 +423,31 @@
  enddo
  enddo
 
+!modify the surface albedo and surface emissivity, and surface temperatures over sea-ice points:
+ if(config_frac_seaice) then
+    do j = jts,jte
+    do i = its,ite
+       if(xice(i).ge.xice_threshold .and. xice(i).le.1._RKIND) then
+          sfc_albedo_p(i,j) = (sfc_albedo(i) - 0.08_RKIND*(1._RKIND-xice(i))) / xice(i)
+          sfc_emiss_p(i,j)  = (sfc_emiss(i) - 0.98_RKIND*(1._RKIND-xice(i))) / xice(i)
+       else
+          sfc_albedo_p(i,j) = sfc_albedo(i)
+          sfc_emiss_p(i,j)  = sfc_emiss(i)
+       endif
+    enddo
+    enddo
+
+    !calculate sea-surface and sea-ice temperatures over sea-ice grid cells:
+    call correct_tsk_over_seaice(ims,ime,jms,jme,its,ite,jts,jte,xice_threshold,xice_p, &
+                                 tsk_p,tsk_sea,tsk_ice)
+
+    do j = jts,jte
+    do i = its,ite
+       tsk_p(i,j) = tsk_ice(i,j)
+    enddo
+    enddo
+ endif
+
  do j = jts,jte
  do i = its,ite
     sr_p(i,j)     = 0._RKIND
@@ -436,9 +493,12 @@
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: sfc_input
+
  integer,intent(in):: its,ite
 
 !local pointers:
+ logical,pointer:: config_frac_seaice
+
  character(len=StrKIND),pointer:: config_microp_scheme
 
  integer,dimension(:),pointer:: isltyp,ivgtyp
@@ -459,6 +519,7 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_config(configs,'config_frac_seaice'  ,config_frac_seaice  )
  call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
 
  call mpas_pool_get_array(diag_physics,'acsnom'    ,acsnom    )
@@ -578,6 +639,27 @@
  enddo
  enddo
 
+ if(config_frac_seaice) then
+    do j = jts,jte
+    do i = its,ite
+       if(xice_p(i,j).ge.xice_threshold .and. xice_p(i,j).le.1._RKIND) then
+          chs(i)        = xice_p(i,j)*chs_p(i,j)  + (1._RKIND-xice_p(i,j))*chs_sea(i,j)
+          chs2(i)       = xice_p(i,j)*chs2_p(i,j) + (1._RKIND-xice_p(i,j))*chs2_sea(i,j)
+          cqs2(i)       = xice_p(i,j)*cqs2_p(i,j) + (1._RKIND-xice_p(i,j))*cqs2_sea(i,j)
+          cpm(i)        = xice_p(i,j)*cpm_p(i,j)  + (1._RKIND-xice_p(i,j))*cpm_sea(i,j)
+          hfx(i)        = xice_p(i,j)*hfx_p(i,j)  + (1._RKIND-xice_p(i,j))*hfx_sea(i,j)
+          lh(i)         = xice_p(i,j)*lh_p(i,j)   + (1._RKIND-xice_p(i,j))*lh_sea(i,j)
+          qfx(i)        = xice_p(i,j)*qfx_p(i,j)  + (1._RKIND-xice_p(i,j))*qfx_sea(i,j)
+          qgh(i)        = xice_p(i,j)*qgh_p(i,j)  + (1._RKIND-xice_p(i,j))*qgh_sea(i,j)
+          qsfc(i)       = xice_p(i,j)*qsfc_p(i,j) + (1._RKIND-xice_p(i,j))*qsfc_sea(i,j)
+          skintemp(i)   = xice_p(i,j)*tsk_p(i,j)  + (1._RKIND-xice_p(i,j))*tsk_sea(i,j)
+          sfc_albedo(i) = xice_p(i,j)*sfc_albedo_p(i,j) + (1._RKIND-xice_p(i,j))*0.08_RKIND
+          sfc_emiss(i)  = xice_p(i,j)*sfc_emiss_p(i,j)  + (1._RKIND-xice_p(i,j))*0.98_RKIND
+       endif
+    enddo
+    enddo
+ endif
+
  if(config_microp_scheme .ne. 'off') then
     call mpas_pool_get_array(diag_physics,'sr',sr) 
 
@@ -604,21 +686,15 @@
  type(mpas_pool_type),intent(inout):: sfc_input
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter land surface model initialization:'
 
  lsm_select: select case (trim(lsm_scheme))
 
     case ("noah")
-!       write(0,*) '    enter subroutine noah_init_forMPAS:'
        call noah_init_forMPAS(dminfo,mesh,configs,diag_physics,sfc_input)
-!       write(0,*) '    end subroutine noah_init_forMPAS'
     
     case default
  
  end select lsm_select
-
-! write(0,*) '--- end land surface model initialization'
 
  end subroutine init_lsm
 
@@ -627,10 +703,11 @@
 !=================================================================================================================
 
 !input arguments:
- integer,intent(in):: itimestep
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
+
  integer,intent(in):: its,ite
+ integer,intent(in):: itimestep
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -641,11 +718,8 @@
  character(len=StrKIND),pointer:: mminlu
 
 !-----------------------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine driver_lsm:'
-! write(0,*) '--- isice   = ',isice
-! write(0,*) '--- iswater = ', iswater
-! write(0,*) '--- isurban = ', isurban
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_lsm:'
 
  call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
  call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
@@ -716,9 +790,48 @@
 
 !copy local arrays to MPAS grid:
  call lsm_to_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
-! write(0,*) '--- end subroutine driver_lsm'
+
+!write(0,*) '--- end subroutine driver_lsm.'
 
  end subroutine driver_lsm
+
+!=================================================================================================================
+ subroutine correct_tsk_over_seaice(ims,ime,jms,jme,its,ite,jts,jte,xice_thresh,xice,tsk,tsk_sea,tsk_ice)
+!=================================================================================================================
+
+!input arguments:
+ integer,intent(in):: ims,ime,its,ite,jms,jme,jts,jte
+ real(kind=RKIND),intent(in):: xice_thresh
+ real(kind=RKIND),intent(in),dimension(ims:ime,jms:jme):: tsk,xice
+
+!inout arguments:
+ real(kind=RKIND),intent(inout),dimension(ims:ime,jms:jme):: tsk_sea,tsk_ice
+
+!local variables:
+ integer:: i,j
+
+!-----------------------------------------------------------------------------------------------------------------
+
+!initialize the local sea-surface temperature and local sea-ice temperature to the local surface
+!temperature:
+ do j = jts,jte
+ do i = its,ite
+    tsk_sea(i,j) = tsk(i,j)
+    tsk_ice(i,j) = tsk(i,j)
+
+    if(xice(i,j).ge.xice_thresh .and. xice(i,j).le.1._RKIND) then
+       !over sea-ice grid cells, limit sea-surface temperatures to temperatures warmer than 271.4:
+       tsk_sea(i,j) = max(tsk_sea(i,j),271.4_RKIND)
+
+       !over sea-ice grid cells, avoids unphysically too cold sea-ice temperatures for grid cells
+       !with small sea-ice fractions:
+       if(xice(i,j).lt.0.2_RKIND .and. tsk_ice(i,j).lt.253.15_RKIND) tsk_ice(i,j) = 253.15_RKIND
+       if(xice(i,j).lt.0.1_RKIND .and. tsk_ice(i,j).lt.263.15_RKIND) tsk_ice(i,j) = 263.15_RKIND
+    endif
+ enddo
+ enddo
+
+ end subroutine correct_tsk_over_seaice
 
 !=================================================================================================================
  end module mpas_atmphys_driver_lsm

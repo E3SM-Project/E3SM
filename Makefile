@@ -1,4 +1,4 @@
-MODEL_FORMULATION =
+MODEL_FORMULATION = 
 
 
 dummy:
@@ -27,7 +27,6 @@ xlf:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
  
 ftn:
@@ -49,7 +48,6 @@ ftn:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 titan-cray:
@@ -68,7 +66,6 @@ titan-cray:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi:
@@ -94,7 +91,6 @@ pgi:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-nersc:
@@ -116,7 +112,6 @@ pgi-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-llnl:
@@ -138,7 +133,6 @@ pgi-llnl:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort:
@@ -155,16 +149,40 @@ ifort:
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"CXXFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"FFLAGS_OMP = -openmp" \
-	"CFLAGS_OMP = -openmp" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+
+ifort-scorep:
+	( $(MAKE) all \
+	"FC_PARALLEL = scorep --compiler mpif90" \
+	"CC_PARALLEL = scorep --compiler mpicc" \
+	"CXX_PARALLEL = scorep --compiler mpicxx" \
+	"FC_SERIAL = ifort" \
+	"CC_SERIAL = icc" \
+	"CXX_SERIAL = icpc" \
+	"FFLAGS_PROMOTION = -real-size 64" \
+	"FFLAGS_OPT = -O3 -g -convert big_endian -FR" \
+	"CFLAGS_OPT = -O3 -g" \
+	"CXXFLAGS_OPT = -O3 -g" \
+	"LDFLAGS_OPT = -O3 -g" \
+	"FFLAGS_DEBUG = -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
+	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort-gcc:
@@ -184,13 +202,12 @@ ifort-gcc:
 	"CFLAGS_DEBUG = -g" \
 	"CXXFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"FFLAGS_OMP = -openmp" \
+	"FFLAGS_OMP = -qopenmp" \
 	"CFLAGS_OMP = -fopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gfortran:
@@ -216,7 +233,31 @@ gfortran:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+
+gfortran-clang:
+	( $(MAKE) all \
+	"FC_PARALLEL = mpif90" \
+	"CC_PARALLEL = mpicc -cc=clang" \
+	"CXX_PARALLEL = mpicxx -cxx=clang++" \
+	"FC_SERIAL = gfortran" \
+	"CC_SERIAL = clang" \
+	"CXX_SERIAL = clang++" \
+	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
+	"CFLAGS_OPT = -O3 -m64" \
+	"CXXFLAGS_OPT = -O3 -m64" \
+	"LDFLAGS_OPT = -O3 -m64" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"CFLAGS_DEBUG = -g -m64" \
+	"CXXFLAGS_DEBUG = -O3 -m64" \
+	"LDFLAGS_DEBUG = -g -m64" \
+	"FFLAGS_OMP = -fopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 g95:
@@ -238,7 +279,6 @@ g95:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pathscale-nersc:
@@ -260,7 +300,6 @@ pathscale-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 cray-nersc:
@@ -282,7 +321,6 @@ cray-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gnu-nersc:
@@ -306,7 +344,6 @@ gnu-nersc:
 	"DEBUG = $(DEBUG)" \
 	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
 
 intel-nersc:
@@ -322,8 +359,8 @@ intel-nersc:
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = -openmp" \
-	"CFLAGS_OMP = -openmp" \
+	"FFLAGS_OMP = -qopenmp" \
+	"CFLAGS_OMP = -qopenmp" \
 	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -gen-interfaces -warn interfaces -traceback" \
 	"CFLAGS_DEBUG = -g -traceback" \
 	"CXXFLAGS_DEBUG = -g -traceback" \
@@ -332,7 +369,6 @@ intel-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 bluegene:
@@ -358,7 +394,6 @@ bluegene:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 CPPINCLUDES = 
@@ -401,6 +436,11 @@ ifneq "$(NETCDF)" ""
 	ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
 		LIBS += $(NCLIBF)
 	endif # CHECK FOR NETCDF4
+	ifneq "$(NETCDFF)" ""
+		FCINCLUDES += -I$(NETCDFF)/include
+		LIBS += -L$(NETCDFF)/lib
+		LIBS += $(NCLIBF)
+	endif
 	LIBS += $(NCLIB)
 endif
 
@@ -519,15 +559,6 @@ else # else ifdef $(TIMER_LIB)
 
 endif # endif ifdef $(TIMER_LIB)
 
-ifeq "$(USE_GPTL)" "true"
-	CPPINCLUDES += -I$(GPTL)/include -D_GPTL
-	FCINCLUDES += -I$(GPTL)/include
-	LIBS += -L$(GPTL)/lib -lgptl
-	GPTL_MESSAGE="GPTL libraries are enabled."
-else
-	GPTL_MESSAGE="GPTL libraries are disabled."
-endif
-
 ifeq "$(TAU)" "true"
 	LINKER=tau_f90.sh
 	CPPINCLUDES += -DMPAS_TAU -DMPAS_TAU_TIMERS
@@ -634,7 +665,24 @@ endif
 endif
 
 
-mpas_main:
+compiler_test:
+ifeq "$(OPENMP)" "true"
+	@echo "Testing compiler for OpenMP support"
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
+		(echo "$(SCC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
+		(echo "$(CC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
+		(echo "$(CXX) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
+		(echo "$(SFC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
+		(echo "$(FC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
+	@rm -fr conftest.*
+endif
+
+
+mpas_main: compiler_test
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
@@ -668,7 +716,6 @@ endif
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
 	@echo $(PAPI_MESSAGE)
-	@echo $(GPTL_MESSAGE)
 	@echo $(TAU_MESSAGE)
 	@echo $(OPENMP_MESSAGE)
 ifeq "$(AUTOCLEAN)" "true"
@@ -744,7 +791,6 @@ errmsg:
 	@echo "Available Options:"
 	@echo "    DEBUG=true    - builds debug version. Default is optimized version."
 	@echo "    USE_PAPI=true - builds version using PAPI for timers. Default is off."
-	@echo "    USE_GPTL=true - builds version that initialized GPTL library. Default is off."
 	@echo "    TAU=true      - builds version using TAU hooks for profiling. Default is off."
 	@echo "    AUTOCLEAN=true    - forces a clean of infrastructure prior to build new core."
 	@echo "    GEN_F90=true  - Generates intermediate .f90 files through CPP, and builds with them."
@@ -756,7 +802,7 @@ errmsg:
 	@echo "    USE_PIO2=true - links with the PIO 2 library. Default is to use the PIO 1.x library."
 	@echo "    PRECISION=single - builds with default single-precision real kind. Default is to use double-precision."
 	@echo ""
-	@echo "Ensure that NETCDF, PNETCDF, PIO, PAPI (if USE_PAPI=true), and GPTL (if USE_GTPL=true) are environment variables"
+	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
 	@echo ""
 ifdef CORE

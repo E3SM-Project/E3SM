@@ -11,7 +11,9 @@ OBJS =  \
  	mpas_init_atm_queue.o \
 	mpas_init_atm_hinterp.o \
 	mpas_init_atm_static.o \
+	mpas_init_atm_gwd.o \
 	mpas_init_atm_surface.o \
+	mpas_init_atm_vinterp.o \
 	read_geogrid.o \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_date_time.o \
@@ -49,7 +51,9 @@ mpas_init_atm_cases.o: \
 	mpas_init_atm_llxy.o \
 	mpas_init_atm_hinterp.o \
 	mpas_init_atm_static.o \
+	mpas_init_atm_gwd.o \
 	mpas_init_atm_surface.o \
+	mpas_init_atm_vinterp.o \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_functions.o \
 	mpas_atmphys_initialize_real.o

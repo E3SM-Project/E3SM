@@ -13,6 +13,7 @@ module mpas_geometry_utils
    use mpas_constants
    use mpas_io_units
    use mpas_vector_operations
+   use mpas_abort, only : mpas_dmpar_global_abort
 
    implicit none
 

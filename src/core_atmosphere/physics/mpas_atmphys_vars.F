@@ -14,9 +14,9 @@
  save
 
 
-! mpas_atmphys_vars contains all local variables and arrays used in the physics parameterizations.
-! Laura D. Fowler (send comments to laura@ucar.edu).
-! 2013-05-01.
+!mpas_atmphys_vars contains all local variables and arrays used in the physics parameterizations.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
 !
 ! add-ons and modifications:
 ! --------------------------
@@ -40,10 +40,34 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-28.
 ! * added local variables needed for the Grell-Freitas parameterization of deep and shallow convection.
 ! * Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
-! * added local arrays needed in the MYNN surface layer scheme and PBL scheme for version WRF 3.6.1.
+! * added local arrays needed in the MYNN surface layer scheme and PBL scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
 ! * added the logical ua_phys needed in the call to subroutine sfcdiags. ua_phys is set to false.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-05-13.
+! * added the integers has_reqc,has_reqi,and has_reqs. when initialized to zero, the effective radii for cloud
+!   water,cloud ice,and snow are calculated using the subroutines relcalc and ricalc in subroutines rrtmg_lwrad
+!   and rrtmg_swrad. when initialized to 1, the effective radii are calculated in the Thompson cloud microphysics
+!   scheme instead. has_reqc,has_reqi,and has_reqs are initialized depending on the logical config_microp_re.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+! * added diagnostics of the effective radii for cloud water, cloud ice, and snow used in rrtmg_lwrad.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+! * added the variables qvrad_p,qcrad_p,qirad_p, and qsrad_p which are the water vapor,cloud water,cloud ice,
+!   and snow mixing ratios local to the calculation of the cloud fraction, and used in the radiation codes.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+! * added the variables rqvften and rthften which are the forcing tendencies needed to run the "new" Tiedtke
+!   parameterization of convection.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-09-20.
+! * added local "_sea" arrays that are needed in the surface layer scheme and land surface scheme for handling
+!   grid cells with fractional seaice when config_frac_seaice is set to true. also added local tsk_ice variable
+!   needed in the land surface scheme for handling grid cells with fractional seaice when config_frac_seaice is
+!   set to true.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-03.
+! * added local variable regime_hold to save the original value of variable regime over seaice grid cells when
+!   config_frac_seaice is set to true.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-10-21.
+! * moved the declarations of arrays delta_p,wstar_p,uoce_p,and voce_p since they are now used in both modules
+!   module_bl_ysu.F and module_bl_mynn.F.
+!   Laura D. Fowler (laura@ucar.edu) / 20016-10-27.
 
 
 !=================================================================================================================
@@ -72,6 +96,7 @@
  logical:: l_diags                    !controls when to calculate physics diagnostics.
  logical:: l_acrain                   !when .true., limit to accumulated rain is applied.
  logical:: l_acradt                   !when .true., limit to lw and sw radiation is applied.
+ logical:: l_mp_tables                !when .true., read look-up tables for Thompson cloud microphysics scheme.
 
  integer,public:: ids,ide,jds,jde,kds,kde
  integer,public:: ims,ime,jms,jme,kms,kme
@@ -197,10 +222,11 @@
     graupelncv_p,     &!
     sr_p
 
-!... added for the thompson cloud microphysics with or without aerosols:
- integer,parameter:: has_reqc = 1
- integer,parameter:: has_reqi = 1
- integer,parameter:: has_reqs = 1
+!... added for the thompson and wsm6 cloud microphysics:
+ integer:: & 
+    has_reqc,         &!
+    has_reqi,         &!
+    has_reqs
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
     ntc_p,            &!
@@ -280,9 +306,16 @@
     rqvdynblten_p,    &!
     rthdynblten_p      !
 
+!... ntiedtke specific arrays:
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rqvften_p,        &!
+    rthften_p          !
+
 !=================================================================================================================
 !... variables and arrays related to parameterization of pbl:
 !=================================================================================================================
+
+ integer:: ysu_pblmix
 
  integer,dimension(:,:),allocatable:: &
     kpbl_p             !index of PBL top                                                                       [-]
@@ -292,7 +325,11 @@
  real(kind=RKIND),dimension(:,:),allocatable:: &
     ctopo_p,          &!correction to topography                                                               [-]
     ctopo2_p,         &!correction to topography 2                                                             [-]
-    hpbl_p             !PBL height                                                                             [m]
+    hpbl_p,           &!PBL height                                                                             [m]
+    delta_p,          &!
+    wstar_p,          &!
+    uoce_p,           &!
+    voce_p             !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     exch_p             !exchange coefficient                                                                   [-]
@@ -318,11 +355,7 @@
  integer,parameter:: bl_mynn_cloudpdf  = 0      !
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    delta_p,          &
-    uoce_p,           &!
-    voce_p,           &!
-    vdfg_p,           &!
-    wstar_p            !
+    vdfg_p             !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     dqke_p,           &!
@@ -486,7 +519,10 @@
     lwupflxc_p         !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    rthratenlw_p       !uncoupled theta tendency due to longwave radiation                  [K s-1]
+    rthratenlw_p,     &!uncoupled theta tendency due to longwave radiation                  [K s-1]
+    rrecloud_p,       &!effective radius for cloud water calculated in rrtmg_lwrad             [mu]
+    rreice_p,         &!effective radius for cloud ice calculated in rrmtg_lwrad               [mu]
+    rresnow_p         !effective radius for snow calculated in rrtmg_lwrad                    [mu]
 
 !=================================================================================================================
 !... variables and arrays related to parameterization of long- and short-wave radiation needed
@@ -533,7 +569,11 @@
     icloud= 1          !used in WRF only.
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    cldfrac_p          !cloud fraction                                                                         [-]
+    cldfrac_p,        &!cloud fraction                                                                         [-]
+    qvrad_p,          &!water vapor mixing ratio local to cloudiness and radiation                         [kg/kg]
+    qcrad_p,          &!cloud liquid water mixing ratio local to cloudiness and radiation                  [kg/kg]
+    qirad_p,          &!cloud ice mixing ratio local to cloudiness and radiation                           [kg/kg]
+    qsrad_p            !snow mixing ratio local to cloudiness and radiation                                [kg/kg]
 
 !=================================================================================================================
 !.. variables and arrays related to land-surface parameterization:
@@ -611,11 +651,28 @@
     snoalb_p,         &!annual max snow albedo                                                                 [-]
     snow_p,           &!snow water equivalent                                                             [kg m-2]
     tsk_p,            &!surface-skin temperature                                                               [K]
+    sst_p,            &!sea-surface temperature                                                                [K]
     xice_p,           &!ice mask                                                                               [-]
     xland_p            !land mask    (1 for land; 2 for water)                                                 [-]
 
+!=================================================================================================================
+!.. variables needed for the surface layer scheme and land surface scheme when config_frac_seaice
+!   is set to true. the arrays below have the same definition as the corresponding "_p" arrays:
+!=================================================================================================================
+
+ real(kind=RKIND),dimension(:,:),allocatable:: br_sea,ch_sea,chs_sea,chs2_sea,cpm_sea,cqs2_sea,      &
+                                flhc_sea,flqc_sea,gz1oz0_sea,hfx_sea,lh_sea,mavail_sea,mol_sea,      &
+                                psih_sea,psim_sea,fh_sea,fm_sea,qfx_sea,qgh_sea,qsfc_sea,regime_sea, &
+                                rmol_sea,ust_sea,wspd_sea,znt_sea,zol_sea,tsk_sea,xland_sea
+ real(kind=RKIND),dimension(:,:),allocatable:: t2m_sea,th2m_sea,q2_sea,u10_sea,v10_sea
+ real(kind=RKIND),dimension(:,:),allocatable:: cd_sea,cda_sea,ck_sea,cka_sea,ustm_sea
+
+ real(kind=RKIND),dimension(:,:),allocatable:: regime_hold
+ real(kind=RKIND),dimension(:,:),allocatable:: tsk_ice
+
 
  contains
+
 
 !=================================================================================================================
  subroutine atmphys_vars_init()
