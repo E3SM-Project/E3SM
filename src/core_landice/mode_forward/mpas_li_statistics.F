@@ -1,4 +1,3 @@
-
 ! Copyright (c) 2015,  Los Alamos National Security, LLC (LANS)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
@@ -67,7 +66,7 @@ module li_statistics
 !> \details
 !>  This routine computes global statistics for the full domain, along with
 !>  local statistics and diagnostic info for a user-specified grid cell.
-!> 
+!>
 !-----------------------------------------------------------------------
 
    subroutine li_compute_statistics(domain, itimestep)
@@ -92,7 +91,7 @@ module li_statistics
      type (mpas_pool_type), pointer :: thermalPool
      type (mpas_pool_type), pointer :: scratchPool
 
-     ! mesh dimensions 
+     ! mesh dimensions
      integer, pointer :: nVertLevels, nVertInterfaces, nCellsSolve, nEdgesSolve
 
      ! mesh arrays
@@ -100,7 +99,7 @@ module li_statistics
      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
      real (kind=RKIND), dimension(:), pointer ::  areaCell
      real (kind=RKIND), dimension(:), pointer :: layerCenterSigma
-     real (kind=RKIND), dimension(:), pointer :: bedTopography, sfcMassBal  
+     real (kind=RKIND), dimension(:), pointer :: bedTopography, sfcMassBal
 
      ! state variables
      character (len=StrKIND),             pointer :: xtime
@@ -155,7 +154,7 @@ module li_statistics
      real (kind=RKIND) :: globalThicknessMax, globalThicknessMin, globalThicknessMean
      real (kind=RKIND) :: globalTemperatureMax, globalTemperatureMin, globalTemperatureMean
      real (kind=RKIND) :: globalVelocityMax, globalBasalVelocityMax
-     
+
      ! diagnostic info for user-specified grid cell
      integer :: diagnosticCellLocal, diagnosticBlockIDLocal, diagnosticProcIDLocal
      real (kind=RKIND) :: diagnosticUpperSurfaceLocal, diagnosticThicknessLocal, diagnosticBedTopographyLocal
@@ -335,7 +334,7 @@ module li_statistics
                                           (dminfo,                                        &
                                            nVertLevels,                     nCellsSolve,  &
                                            areaCell(1:nCellsSolve),                       &
-                                           layerThickness(:,1:nCellsSolve),               & 
+                                           layerThickness(:,1:nCellsSolve),               &
                                            workLevelCell(:,1:nCellsSolve),                &
                                            iceCellMask(1:nCellsSolve),                    &
                                            localSum,                                      &
@@ -376,7 +375,7 @@ module li_statistics
                                           (dminfo,                                        &
                                            nVertLevels,                     nCellsSolve,  &
                                            areaCell(1:nCellsSolve),                       &
-                                           layerThickness(:,1:nCellsSolve),               & 
+                                           layerThickness(:,1:nCellsSolve),               &
                                            temperature(:,1:nCellsSolve),                  &
                                            iceCellMask(1:nCellsSolve),                    &
                                            localSum,                                      &
@@ -411,7 +410,7 @@ module li_statistics
         endif
 
         ! basal velocity at cell edges; find the maximum magnitude
-        ! Note: If velocity is located at layer midpoints, this is actually the 
+        ! Note: If velocity is located at layer midpoints, this is actually the
         !       velocity in the lowest layer
 
         call li_compute_field_local_stats(dminfo,                                    &
@@ -423,9 +422,9 @@ module li_statistics
                                           localVertSumMin,    localVertSumMax,       &
                                           localMinlocElement, localMinlocLevel,      &
                                           localMaxlocElement, localMaxlocLevel)
-         
+
         localAbsoluteMax = max(localMax, -localMin)   ! take maximum magnitude, independent of sign
-        
+
         if (localAbsoluteMax > basalVelocityMax) then
            basalVelocityMax = localAbsoluteMax
            if (localMax > abs(localMin)) then
@@ -435,7 +434,7 @@ module li_statistics
            endif
         endif
 
-        ! allocate and initialize some diagnostic arrays if not done already 
+        ! allocate and initialize some diagnostic arrays if not done already
         if (.not. allocated(diagnosticSpeed)) then
            allocate(diagnosticSpeed(nVertInterfaces))
            diagnosticSpeed(:) = 0.0_RKIND
@@ -467,7 +466,7 @@ module li_statistics
               diagnosticTemperature(:) = temperature(:,iCell)
            endif
         enddo
-        
+
         ! clean up
         call mpas_deallocate_scratch_field(iceCellMaskField, .true.)
         call mpas_deallocate_scratch_field(iceEdgeMaskField, .true.)
@@ -479,7 +478,7 @@ module li_statistics
      ! Compute global statistics
      ! TODO: Reduce the number of global reductions in this subroutine?
      !       This could be done by packing quantities into arrays.
- 
+
      ! global sums
      call mpas_dmpar_sum_real(dminfo, iceAreaSum, globalIceAreaSum)
      call mpas_dmpar_sum_real(dminfo, iceVolumeSum, globalIceVolumeSum)
@@ -507,11 +506,11 @@ module li_statistics
      call mpas_dmpar_minloc_real(dminfo, thicknessMin, globalThicknessMin, proc)
      call mpas_dmpar_bcast_real (dminfo, globalThicknessMin, proc)
      call mpas_dmpar_bcast_int  (dminfo, thicknessMinlocCell, proc)
-     
+
      call mpas_dmpar_maxloc_real(dminfo, thicknessMax, globalThicknessMax, proc)
      call mpas_dmpar_bcast_real (dminfo, globalThicknessMax, proc)
      call mpas_dmpar_bcast_int  (dminfo, thicknessMaxlocCell, proc)
-     
+
      call mpas_dmpar_minloc_real(dminfo, temperatureMin, globalTemperatureMin, proc)
      call mpas_dmpar_bcast_real (dminfo, globalTemperatureMin, proc)
      call mpas_dmpar_bcast_int  (dminfo, temperatureMinlocCell, proc)
@@ -521,12 +520,12 @@ module li_statistics
      call mpas_dmpar_bcast_real (dminfo, globalTemperatureMax, proc)
      call mpas_dmpar_bcast_int  (dminfo, temperatureMaxlocCell, proc)
      call mpas_dmpar_bcast_int  (dminfo, temperatureMaxlocLevel, proc)
-     
+
      call mpas_dmpar_maxloc_real(dminfo, velocityMax, globalVelocityMax, proc)
      call mpas_dmpar_bcast_real (dminfo, globalVelocityMax, proc)
      call mpas_dmpar_bcast_int  (dminfo, velocityMaxlocEdge, proc)
      call mpas_dmpar_bcast_int  (dminfo, velocityMaxlocLevel, proc)
-     
+
      call mpas_dmpar_maxloc_real(dminfo, basalVelocityMax, globalBasalVelocityMax, proc)
      call mpas_dmpar_bcast_real (dminfo, globalBasalVelocityMax, proc)
      call mpas_dmpar_bcast_int  (dminfo, basalVelocityMaxlocEdge, proc)
@@ -566,9 +565,9 @@ module li_statistics
      call mpas_dmpar_sum_real_array(dminfo, nVertLevels, diagnosticTemperature, workLevel)
      diagnosticTemperature(:) = workLevel(:)
      deallocate(workLevel)
-     
+
      ! Write global and local stats to the log file
- 
+
      if (dminfo % my_proc_id == IO_NODE) then
         write(stdoutUnit,*) ' '
         write(stdoutUnit,'(a60)') '------------------------------------------------------------'
@@ -577,9 +576,9 @@ module li_statistics
         write(stdoutUnit,'(a25,i8)')           '               timestep =', itimestep
         write(stdoutUnit,*) ' '
         write(stdoutUnit,'(a32,e24.16)')       'Total ice area (km^2)           ',   &
-                                       globalIceAreaSum*1.0d-6       ! convert from m^2 to km^2
+                                       globalIceAreaSum*1.0e-6_RKIND       ! convert from m^2 to km^2
         write(stdoutUnit,'(a32,e24.16)')       'Total ice volume (km^3)         ',   &
-                                       globalIceVolumeSum*1.0d-9     ! convert from m^3 to km^3
+                                       globalIceVolumeSum*1.0e-9_RKIND     ! convert from m^3 to km^3
         write(stdoutUnit,'(a32,e24.16)')       'Total ice energy (J)            ',   &
                                        globalIceEnergySum
         write(stdoutUnit,'(a32,f24.16,i8)')    'Max thickness (m), cell         ',   &
@@ -648,7 +647,7 @@ module li_statistics
                                            localVertSumMaxlocElement)
 
      ! Compute field statistics without area or volume weighting
-     
+
      implicit none
 
      ! Input/output arguments
@@ -678,7 +677,7 @@ module li_statistics
      end do
 
      if (present(localMinlocElement) .and. present(localMinlocLevel)) then
-        localMin = 1.0e34
+        localMin = 1.0e34_RKIND
         localMinlocElement = 0
         localMinlocLevel = 0
         do i = 1, nElements
@@ -695,7 +694,7 @@ module li_statistics
      endif
 
      if (present(localMaxlocElement) .and. present(localMaxlocLevel)) then
-        localMax = -1.0e34
+        localMax = -1.0e34_RKIND
         localMaxlocElement = 0
         localMaxlocLevel = 0
         do i = 1, nElements
@@ -712,7 +711,7 @@ module li_statistics
      endif
 
      if (present(localVertSumMinlocElement)) then
-        localVertSumMin = 1.0e34
+        localVertSumMin = 1.0e34_RKIND
         localVertSumMinlocElement = 0
         do i = 1, nElements
            if (sum(field(:,i)) < localVertSumMin) then
@@ -725,7 +724,7 @@ module li_statistics
      endif
 
      if (present(localVertSumMaxlocElement)) then
-        localVertSumMax = -1.0e34
+        localVertSumMax = -1.0e34_RKIND
         localVertSumMaxlocElement = 0
         do i = 1, nElements
            if (sum(field(:,i)) > localVertSumMax) then
@@ -870,8 +869,9 @@ module li_statistics
 !             open(fileID, file='GlobalIntegrals.txt',STATUS='unknown')
 !         else
 !             open(fileID, file='GlobalIntegrals.txt',POSITION='append')
-!         endif 
-!!         write(fileID,'(1i0, 100es24.16)') timeIndex, timeIndex*dt, globalFluidThickness, globalPotentialVorticity, globalPotentialEnstrophy, &
+!         endif
+!!         write(fileID,'(1i0, 100es24.16)') timeIndex, timeIndex*dt, globalFluidThickness, &
+!!             globalPotentialVorticity, globalPotentialEnstrophy, &
 !!                        globalEnergy, globalCoriolisEnergyTendency, globalKineticEnergyTendency+globalPotentialEnergyTendency, &
 !!                        globalKineticEnergy, globalPotentialEnergy
 !

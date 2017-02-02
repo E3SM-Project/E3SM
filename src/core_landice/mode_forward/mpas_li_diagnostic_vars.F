@@ -16,7 +16,7 @@
 !> \details
 !>  This module contains various subroutines for
 !>  calculating diagnostic (time-independent) variables
-!>  for the land ice core.  
+!>  for the land ice core.
 !>  These calculations should be general so as to be independent
 !>  of time integration scheme.
 !
@@ -61,14 +61,14 @@ contains
 !
 !  routine li_calculate_diagnostic_vars
 !
-!> \brief   Calculates diagnostic variables 
+!> \brief   Calculates diagnostic variables
 !> \author  Matthew Hoffman
 !> \date    12 September 2013
 !> \details
 !>  This routine calculates diagnostic variables using the current prognostic
 !>  variables.  This is done in 3 parts:
 !>  1. diagnostic solve part 1;  2. solve velocity;  3. diagnostic solve part 2
-!>  Note: If the velocity solver requires an initial guess, it will be taken 
+!>  Note: If the velocity solver requires an initial guess, it will be taken
 !>  from the current value.  Therefore the normalVelocity in that time level
 !>  should be updated with the guess prior to calling this subroutine, if necessary.
 !
@@ -150,14 +150,15 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call diagnostic_solve_after_velocity(meshPool, geometryPool, velocityPool, err_tmp)  ! Some diagnostic variables require velocity to compute
+         ! Some diagnostic variables require velocity to compute
+         call diagnostic_solve_after_velocity(meshPool, geometryPool, velocityPool, err_tmp)
          err = ior(err, err_tmp)
 
          block => block % next
       end do
 
       ! Calculate the heating terms needed by the thermal solver during the next time step.
-      ! Note: The SIA heat dissipation could be computed before velocity, but for other approximations, 
+      ! Note: The SIA heat dissipation could be computed before velocity, but for other approximations,
       !       heat dissipation generally must be computed after velocity.
       !TODO - Make sure the heatDissipation and basalFriction fields are computed for the FO solver.
 
@@ -205,7 +206,7 @@ contains
 !> \brief   Computes apparent diffusivity
 !> \author  Matt Hoffman
 !> \date    19 April 2012
-!> \details 
+!> \details
 !> This routine computes the apparent diffusivity.
 !> Estimate diffusivity using the relation that the 2-d flux Q=-D grad h and Q=UH,
 !> where h is surface elevation, D is diffusivity, U is 2-d velocity vector, and H is thickness
@@ -244,7 +245,8 @@ contains
       !-----------------------------------------------------------------
       logical, pointer :: config_print_thickness_advection_info
       real (kind=RKIND), dimension(:), pointer :: normalSlopeEdge
-      type (field1dReal), pointer :: slopeReconstructXField, slopeReconstructYField, slopeReconstructZField  !< Only needed for calling mpas_reconstruct, but not actually used here
+      type (field1dReal), pointer :: slopeReconstructXField, slopeReconstructYField, slopeReconstructZField
+      !< Only needed for calling mpas_reconstruct, but not actually used here
       type (field1dReal), pointer :: slopeCellAxis1Field
       type (field1dReal), pointer :: slopeCellAxis2Field
       real (kind=RKIND), dimension(:), pointer :: slopeCellAxis1, slopeCellAxis2
@@ -263,8 +265,9 @@ contains
       real (kind=RKIND) :: slopeCellMagnitude
       real (kind=RKIND) :: dCell
       integer :: iCell, iEdge, iLevel
-      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
-      real (kind=RKIND), parameter :: smallNumber = 1.0e-36
+      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND
+      !<- This is ~300 million years in seconds, but it is small enough not too overflow
+      real (kind=RKIND), parameter :: smallNumber = 1.0e-36_RKIND
       logical :: divideSingularityFound
 
       ! Note: This routine could be broken into 2: one to calculate diffusivity
@@ -323,7 +326,8 @@ contains
          slopeCellMagnitude = sqrt(slopeCellAxis1(iCell)**2 + slopeCellAxis2(iCell)**2) + smallNumber
 
          if ( (slopeCellMagnitude < 1.0e-4_RKIND) .and. &
-              (max(maxval(uReconstructAxis1(:,iCell)), maxval(uReconstructAxis2(:,iCell))) < 3.18e-8_RKIND) ) then  ! 3.18e-8=1 m/yr in m/s
+              (max(maxval(uReconstructAxis1(:,iCell)), maxval(uReconstructAxis2(:,iCell))) < 3.18e-8_RKIND) ) then
+              ! 3.18e-8=1 m/yr in m/s
             ! Ignore diffusivity near 'divide-singularities'
             apparentDiffusivity(iCell) = 0.0_RKIND
             divideSingularityFound = .true.
@@ -351,7 +355,8 @@ contains
       enddo
 
       if (divideSingularityFound .and. config_print_thickness_advection_info) then
-         write (stderrUnit,*) 'Notice: In calculating apparentDiffusivity, one or more cells have been ignored due to flat slope and low velocity (assumed to be a divide where diffusivity is undefined).'
+         write (stderrUnit,*) 'Notice: In calculating apparentDiffusivity, one or more cells have been ignored ', &
+            'due to flat slope and low velocity (assumed to be a divide where diffusivity is undefined).'
       endif
 
       call mpas_deallocate_scratch_field(slopeReconstructXField, .true.)
@@ -555,7 +560,8 @@ contains
 
 
           ! Calculate SIA-related variables, if needed
-          !   This first block for calculating normalSlopeEdge is also needed for the DCFL calculation that could occur with any velocity solver
+          !   This first block for calculating normalSlopeEdge is also needed for the DCFL calculation
+          !   that could occur with any velocity solver
           if ( (trim(config_velocity_solver) == 'sia') .or. (config_adaptive_timestep_include_DCFL) ) then
              call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
              call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -630,7 +636,8 @@ contains
              ! Now calculate the slope magnitude
              slopeEdge = sqrt(normalSlopeEdge**2 + tangentSlopeEdge**2)
 
-             ! Note: the outer halo may be wrong, but that's ok as long as numhalos>1 because the velocity on the 0-halo will still be correct.
+             ! Note: the outer halo may be wrong, but that's ok as long as numhalos>1
+             ! because the velocity on the 0-halo will still be correct.
 
           end if ! SIA variables
 
@@ -654,7 +661,8 @@ contains
       if ( (trim(config_velocity_solver) == 'L1L2') .or. &
            (trim(config_velocity_solver) == 'FO') .or. &
            (trim(config_velocity_solver) == 'Stokes') ) then
-         ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
+         ! Update halos on masks - the outermost cells/edges/vertices may be wrong for
+         ! mask components that need neighbor information
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'floatingEdges')
          call mpas_timer_stop("halo updates")
@@ -674,7 +682,8 @@ contains
             call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
             call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
             ! Determine if the vertex mask changed during this time step for this block (needed for external dycores)
-            ! TODO:  there may be some aspects of the mask that are ok change for external dycores, but for now just check the whole thing.
+            ! TODO:  There may be some aspects of the mask that are ok change for external dycores,
+            !        but for now just check the whole thing.
             ! TODO: if we ever have more than one time level, then this logic should be revisited.
             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMaskOld, timeLevel=2)
             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMaskNew, timeLevel=1)
@@ -712,7 +721,8 @@ contains
             block => block % next
          end do
 
-         ! Determine if the vertex mask has changed on any processor and store the value for later use (need to exit the block loop to do so)
+         ! Determine if the vertex mask has changed on any processor and store the value for later use
+         ! (need to exit the block loop to do so)
          call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged)
          call mpas_dmpar_max_int(domain % dminfo, procDynamicVertexMaskChanged, anyDynamicVertexMaskChanged)
          !print *,'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged
@@ -739,7 +749,7 @@ contains
 !> \brief   Computes diagnostic variables that require knowing velocity
 !> \author  Matt Hoffman
 !> \date    19 April 2012
-!> \details 
+!> \details
 !> This routine computes the diagnostic variables that require knowing velocity for land ice
 !
 !-----------------------------------------------------------------------
@@ -808,10 +818,10 @@ contains
 !      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 !      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
-      ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.  
+      ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.
       ! Note: FO-Upwind thickness advection does not explicitly use h_edge but a FO h_edge is implied.
       ! Note: SIA velocity solver uses its own local calculation of h_edge that is always 2nd order.
-      ! Note: ocn_diagnostic_solve in mpas_ocn_tendency.F has 2, 3, & 4th order calculations for h_edge that can be used.  
+      ! Note: ocn_diagnostic_solve in mpas_ocn_tendency.F has 2, 3, & 4th order calculations for h_edge that can be used.
       ! NOTE: This calculates FO upwind h edge
 
       ! given thickness, compute layerThickness
@@ -826,21 +836,23 @@ contains
             do k=1, nVertLevels
                ! Calculate h on edges using first order
                VelSign = sign(1.0_RKIND, normalVelocity(k, iEdge))
-               layerThicknessEdge(k,iEdge) = max(VelSign * layerThickness(k, cell1), VelSign * (-1.0_RKIND) * layerThickness(k, cell2)) 
-               ! + velocity goes from index 1 to 2 in the cellsOnEdge array.  
+               layerThicknessEdge(k,iEdge) = max(VelSign * layerThickness(k, cell1), &
+                  VelSign * (-1.0_RKIND) * layerThickness(k, cell2))
+               ! + velocity goes from index 1 to 2 in the cellsOnEdge array.
                !  Doug does the calculation as: h_edge = max(VelSign, 0.0) * h1 - min(VelSign, 0.0) * h2
                !!! ! Calculate h on edges using second order
                !!! layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k, cell1) + layerThickness(k, cell2))
             end do
             ! thickness_edge is not currently in registry and not currenly needed.  If it is, uncomment the next line
             !h_edge = max(thickness(cell1), thickness(cell2))
-            !!!h_edge = (thickness(k) + thickness(k) ) / 2.0  ! 2nd order 
+            !!!h_edge = (thickness(k) + thickness(k) ) / 2.0  ! 2nd order
          end do
       else
           !write(stdoutUnit,*) 'layerThicknessEdge not calculated!'
       endif
 
-      ! Note: the outmost layerThicknessEdge may be wrong if its upwind cell is off this block - halo update should be done if this variable will be used.
+      ! Note: The outmost layerThicknessEdge may be wrong if its upwind cell is off this block -
+      !       halo update should be done if this variable will be used.
       !       This halo update is done near the end of subroutine li_calculate_diagnostic_vars.
 
       !WHL - debug - Commented out, but might be useful for future debugging
@@ -915,7 +927,7 @@ contains
           cellIndex = cellsOnVertex(iCell, iVertex)
           baryweight = 0.0_RKIND
           do iCell2 = 1, vertexDegree
-            if (iCell2 /= icell) baryweight = baryweight + 0.5 * kiteAreasOnVertex(iCell2, iVertex)
+            if (iCell2 /= icell) baryweight = baryweight + 0.5_RKIND * kiteAreasOnVertex(iCell2, iVertex)
           enddo
           fVertexAccum = fVertexAccum + baryweight * fieldCells(cellIndex)  ! add the contribution from this cell's kite
           weightAccum = weightAccum + kiteAreasOnVertex(iCell, iVertex)  ! This doesn't match areaTriangle for obtuse triangles!!!
@@ -1059,7 +1071,8 @@ contains
       case('CP2010')
           pressureMeltPointSlope = 7.0e-8_RKIND
           do iCell = 1, nCells
-            if (thickness(iCell) > 0.0_RKIND) then  ! SIA solver could make use of A on thin ice if doing 2nd order averaging of flwa onto edges (otherwise this could be the dynamic thickness limit)
+            if (thickness(iCell) > 0.0_RKIND) then  ! SIA solver could make use of A on thin ice
+              ! if doing 2nd order averaging of flwa onto edges (otherwise this could be the dynamic thickness limit)
               do iLevel = 1, nVertLevels
                 ! Calculate the pressure-corrected temperature
                 temperatureCorrected = min(273.15_RKIND, temperature(iLevel,iCell) + pressureMeltPointSlope * &
@@ -1074,7 +1087,8 @@ contains
                 else
                   Q  = 6.0e4_RKIND
                 endif
-                flowParamA(iLevel,iCell) = A0 * exp(-1.0_RKIND * Q / idealGasConstant * (1.0_RKIND/temperatureCorrected - 1.0_RKIND/transitionTemperatureCorrected))
+                flowParamA(iLevel,iCell) = A0 * exp(-1.0_RKIND * Q / idealGasConstant * &
+                   (1.0_RKIND/temperatureCorrected - 1.0_RKIND/transitionTemperatureCorrected))
               enddo ! levels
             else
               flowParamA(:,iCell) = 0.0_RKIND  ! non-ice cells get 0
@@ -1103,7 +1117,7 @@ contains
 !> \details
 !> This routine calculates layerThickness in each cell and column,
 !> given thickness in each cell. The calculation is very simple, but is
-!> packaged in a subroutine to ensure that it is done the same way 
+!> packaged in a subroutine to ensure that it is done the same way
 !> in different parts of the code.
 !-----------------------------------------------------------------------
 
@@ -1112,7 +1126,7 @@ contains
      !-----------------------------------------------------------------
      !
      ! input variables
-     ! 
+     !
      !-----------------------------------------------------------------
 
      type (mpas_pool_type), intent(in) :: &

@@ -7,7 +7,7 @@
 !> \date   3 October 2013
 !> \version SVN:$Id:$
 !> \details
-!>  This module contains the routines for interfacing with 
+!>  This module contains the routines for interfacing with
 !>  external velocity solvers.  These currently are LifeV (L1L2, First order),
 !>  Albany (First order), and PHG (Stokes).
 !>
@@ -48,10 +48,13 @@ module li_velocity_external
    interface
       ! Note: Could add all interface routines to this interface...
       ! For now, just trying it with this new routine.
-      subroutine velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, config_enhancementFactor, &
-                         config_flowLawExponent, config_dynamic_thickness, li_mask_ValueDynamicIce, li_mask_ValueIce) bind(C, name="velocity_solver_set_parameters")
+      subroutine velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
+         config_default_flowParamA, config_enhancementFactor, &
+         config_flowLawExponent, config_dynamic_thickness, li_mask_ValueDynamicIce, li_mask_ValueIce) &
+         bind(C, name="velocity_solver_set_parameters")
+
          use iso_c_binding, only: C_INT, C_DOUBLE
-         
+
          INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
          REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
                            config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness, gravity
@@ -334,8 +337,9 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
-      call velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, config_enhancementFactor, &
-                                          config_flowLawExponent, config_dynamic_thickness, li_mask_ValueAlbanyActive, li_mask_ValueIce)
+      call velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
+         config_default_flowParamA, config_enhancementFactor, &
+         config_flowLawExponent, config_dynamic_thickness, li_mask_ValueAlbanyActive, li_mask_ValueIce)
 #endif
 
 
@@ -419,14 +423,16 @@ contains
       integer, pointer :: dirichletMaskChanged
       integer, pointer :: nEdges
       integer :: iEdge
-      real(kind=RKIND), parameter :: secondsInYear = 365.0 * 24.0 * 3600.0  !< The value of seconds in a year assumed by external dycores
+      real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
+         !< The value of seconds in a year assumed by external dycores
 
       err = 0
 
       ! configs
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(liConfigs, 'config_always_compute_fem_grid', config_always_compute_fem_grid)
-      call mpas_pool_get_config(liConfigs, 'config_output_external_velocity_solver_data', config_output_external_velocity_solver_data)
+      call mpas_pool_get_config(liConfigs, 'config_output_external_velocity_solver_data', &
+         config_output_external_velocity_solver_data)
 
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
@@ -516,7 +522,9 @@ contains
                 betaSolve, sfcMassBal, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, deltat)  ! return values
-!	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
+!	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)
+          ! this was used only for some ice2sea experiments, and is not a general routine to use
+
           call mpas_timer_stop("velocity_solver_solve_FO")
 
           if (config_output_external_velocity_solver_data) then
@@ -536,7 +544,7 @@ contains
           call velocity_solver_solve_stokes(lowerSurface, thickness, betaSolve, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, uReconstructZ)  ! return values
-          uReconstructZ = uReconstructZ / (365.0*24.0*3600.0)  ! convert from m/yr to m/s
+          uReconstructZ = uReconstructZ / (365.0_RKIND * 24.0_RKIND * 3600.0_RKIND)  ! convert from m/yr to m/s
           call mpas_timer_stop("velocity_solver_solve_stokes")
 #else
           write(stderrUnit,*) "Error: External Stokes library needed to run stokes dycore."
@@ -559,7 +567,7 @@ contains
       !  b.c., that became unwieldly.  Look in the mask routine to see the logic
       !  for which edges are dynamic.)
       do iEdge = 1, nEdges
-         if (.not. li_mask_is_dynamic_ice(edgeMask(iEdge)) ) normalVelocity(:,iEdge) = 0.0d0
+         if (.not. li_mask_is_dynamic_ice(edgeMask(iEdge)) ) normalVelocity(:,iEdge) = 0.0e0_RKIND
       end do
 
 
@@ -810,8 +818,10 @@ contains
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
-      integer, dimension(:), pointer :: sendArray !< Input/Output: the flat array of elements to send, should be unallocated on input
-      integer, dimension(:), pointer :: recvArray !< Input/Output: the flat array of elements to receive, should be unallocated on input
+      integer, dimension(:), pointer :: sendArray !< Input/Output: the flat array of elements to send,
+                                                  !< should be unallocated on input
+      integer, dimension(:), pointer :: recvArray !< Input/Output: the flat array of elements to receive,
+                                                  !< should be unallocated on input
 
       !-----------------------------------------------------------------
       ! output variables
@@ -821,7 +831,8 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      type (mpas_communication_list), pointer :: sendCommList, recvCommList  ! Communication lists that will be setup from mpas_multihalo_exchange_list's as an intermediate step to flat arrays
+      type (mpas_communication_list), pointer :: sendCommList, recvCommList  ! Communication lists that will be setup
+         !from mpas_multihalo_exchange_list's as an intermediate step to flat arrays
       type (mpas_communication_list), pointer :: commListPtr  ! A temporary comm list pointer
       integer :: nHaloLayers, iHalo
       integer, dimension(:), pointer :: haloLayers  ! an array of halo layers, needed to setup comm lists - we want all of them
@@ -845,7 +856,8 @@ contains
          haloLayers(iHalo) = iHalo
       end do
       ! Built new send/receive communication lists that have procID & nList filled out.
-      call mpas_dmpar_build_comm_lists(field % sendList, field % recvList, haloLayers, field % dimsizes, sendCommList, recvCommList)
+      call mpas_dmpar_build_comm_lists(field % sendList, field % recvList, haloLayers, &
+         field % dimsizes, sendCommList, recvCommList)
 
 
       ! == Next populate the commLists' ibuffer field with the element indices to communicate
@@ -877,7 +889,9 @@ contains
             do while(associated(exchListPtr))
               if (exchListPtr % endPointID == commListPtr % procID) then
                 do  i = 1, exchListPtr % nList
-                  commListPtr % ibuffer(exchListPtr % destList(i) + bufferOffset) = exchListPtr % srcList(i)  ! local indices to go into the send communication list
+                  commListPtr % ibuffer(exchListPtr % destList(i) + bufferOffset) = exchListPtr % srcList(i)
+                     ! local indices to go into the send communication list
+
                   nAdded = nAdded + 1
 
                 end do
@@ -909,7 +923,9 @@ contains
             do while(associated(exchListPtr))
               if (exchListPtr % endPointID == commListPtr % procID) then
                 do i = 1, exchListPtr % nList
-                  commListPtr % ibuffer( exchListPtr % srcList(i) + bufferOffset ) = exchListPtr % destList(i)  ! buffer index to go into the receive communication list
+                  commListPtr % ibuffer( exchListPtr % srcList(i) + bufferOffset ) = exchListPtr % destList(i)
+                     ! buffer index to go into the receive communication list
+
                 end do
                 nAdded = max(nAdded, maxval(exchListPtr % srcList))
               end if
@@ -968,7 +984,8 @@ contains
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
-      integer, dimension(:), pointer :: commArray !< Input/Output: the flat array of elements to communicate, should be unallocated on input
+      integer, dimension(:), pointer :: commArray !< Input/Output: the flat array of elements to communicate,
+                                                  !< should be unallocated on input
 
       !-----------------------------------------------------------------
       ! output variables
@@ -981,12 +998,14 @@ contains
       integer :: arraySize ! size of array to house the send or receive list (sendArray, recvArray)
       integer :: offset !  offset for adding metadata about each processor into the flat commArray
       integer :: i
-      type (mpas_communication_list), pointer :: commListPtr  ! A temporary comm list pointer for traversing linked lists
+      type (mpas_communication_list), pointer :: commListPtr
+         !< A temporary comm list pointer for traversing linked lists
 
       arraySize = 1 !in first position we will store the size of the array
       commListPtr => commList
       do while (associated(commListPtr))
-         ! for each processor to be communicated with, we will store the procID, nList, and then the list of local indices to be communicated
+         ! for each processor to be communicated with, we will store the procID, nList,
+         ! and then the list of local indices to be communicated
          arraySize = arraySize + commListPtr % nlist + 2
          commListPtr => commListPtr % next
       end do
@@ -1001,7 +1020,8 @@ contains
          offset = offset + 1
          commArray(offset) = commListPtr % nlist   ! store nList
          do i = 1 , commListPtr % nlist
-            commArray(i+offset) = commListPtr % ibuffer(i) -1  ! add the list of elements to be communicated, switching to 0-based indexing for C/C++
+            commArray(i+offset) = commListPtr % ibuffer(i) -1
+              ! add the list of elements to be communicated, switching to 0-based indexing for C/C++
          end do
          offset = offset + commListPtr % nlist + 1
 

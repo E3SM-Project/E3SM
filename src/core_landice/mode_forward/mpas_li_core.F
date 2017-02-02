@@ -56,7 +56,7 @@ module li_core
 !-----------------------------------------------------------------------
 
    function li_core_init(domain, startTimeStamp) result(err)
-   
+
       use mpas_derived_types
       use mpas_pool_routines
       use mpas_stream_manager
@@ -67,9 +67,9 @@ module li_core
       use li_subglacial_hydro
 !!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
-   
+
       implicit none
-   
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -81,7 +81,7 @@ module li_core
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (domain_type), intent(inout) :: domain  !< Input/output: Domain 
+      type (domain_type), intent(inout) :: domain  !< Input/output: Domain
 
       !-----------------------------------------------------------------
       !
@@ -89,7 +89,7 @@ module li_core
       !
       !-----------------------------------------------------------------
       character(len=*), intent(out) :: startTimeStamp   !< Output: starting time stamp
-   
+
       !-----------------------------------------------------------------
       !
       ! local variables
@@ -172,11 +172,13 @@ module li_core
          call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
          if (trim(simulationStartTime)=="no_date_available") then
             if (config_do_restart) then
-               write(stderrUnit,*) "Warning: simulationStartTime is undefined but this is a restart, so setting its value to the current start time which may be incorrect."
+               write(stderrUnit,*) "Warning: simulationStartTime is undefined but this is a restart, ", &
+                  "so setting its value to the current start time which may be incorrect."
             endif
             simulationStartTime = startTimeStamp
          elseif ((trim(simulationStartTime)/="no_date_available") .and. (.not. config_do_restart)) then
-            write(stderrUnit,*) "Warning: This is a cold start but simulationStartTime is already defined, so its value may be incorrect."
+            write(stderrUnit,*) "Warning: This is a cold start but simulationStartTime is already defined, ", &
+               "so its value may be incorrect."
          endif
 
          ! compute time since start of simulation, in days
@@ -231,7 +233,7 @@ module li_core
       call li_analysis_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
-      ! halo update for reconstruction coefficients      
+      ! halo update for reconstruction coefficients
       ! Note: Results on multiple processors may be incorrect without this update
 
       call mpas_timer_start("halo updates")
@@ -263,7 +265,7 @@ module li_core
 !-----------------------------------------------------------------------
 
    function li_core_run(domain) result(err)
-   
+
       use mpas_derived_types
       use mpas_pool_routines
       use mpas_kind_types
@@ -288,7 +290,7 @@ module li_core
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
+      type (domain_type), intent(inout) :: domain   !< Input/output: Domain
 
       !-----------------------------------------------------------------
       !
@@ -379,7 +381,8 @@ module li_core
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
 
-         ! call analysis driver compute, restart, write subroutines (note: alarms and timers are handled by the analysis member code)
+         ! call analysis driver compute, restart, write subroutines
+         ! (note: alarms and timers are handled by the analysis member code)
          call li_analysis_compute(domain, err_tmp)
          err = ior(err, err_tmp)
          call li_analysis_restart(domain, err_tmp)
@@ -392,7 +395,8 @@ module li_core
          ! ===
          call mpas_timer_start("write output")
          ! Update the restart_timestamp file with the new time, if needed.
-         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', &
+                direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
             ! Need updated timestamp for writing restart timestamp
             currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
             err = ior(err, err_tmp)
@@ -456,12 +460,12 @@ module li_core
 !
 !-----------------------------------------------------------------------
    function li_core_finalize(domain) result(err)
-   
+
       use mpas_derived_types
       use mpas_decomp
       use li_velocity, only: li_velocity_finalize
       use li_subglacial_hydro, only: li_SGH_finalize
-   
+
       implicit none
 
       !-----------------------------------------------------------------
@@ -475,7 +479,7 @@ module li_core
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (domain_type), intent(inout) :: domain    !< Input/output: Domain 
+      type (domain_type), intent(inout) :: domain    !< Input/output: Domain
 
       !-----------------------------------------------------------------
       !
@@ -489,7 +493,7 @@ module li_core
       !
       !-----------------------------------------------------------------
       integer :: err, err_tmp, globalErr
- 
+
       call mpas_timer_start("land ice finalize")
 
       err = 0
@@ -504,7 +508,7 @@ module li_core
       call li_SGH_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
-      ! call finalize subroutine in analysis driver 
+      ! call finalize subroutine in analysis driver
       call li_analysis_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
@@ -567,7 +571,7 @@ module li_core
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
+      type (domain_type), intent(inout) :: domain   !< Input/output: Domain
 
       !-----------------------------------------------------------------
       !
@@ -618,15 +622,15 @@ module li_core
       ! ===
       call mpas_timer_start("initial state calculation")
 
-      ! On a restart, we already have the exact velocity field we need, 
+      ! On a restart, we already have the exact velocity field we need,
       ! so don't do the expensive calculation again.
       if (config_do_restart) then
          solveVelo = .false.
       else
       ! Otherwise, we need to calculate velocity for the initial state
       !  (Note: even if the velocity is supplied, we should still calculate it
-      !   to ensure it is consistent with the current geometry/B.C.  If the 
-      !   velocity solver is iterative, the supplied field will be used as an 
+      !   to ensure it is consistent with the current geometry/B.C.  If the
+      !   velocity solver is iterative, the supplied field will be used as an
       !   initial guess, so the solution should be quick.
          solveVelo = .true.
       endif
@@ -722,9 +726,9 @@ module li_core
       use li_setup
       use li_mask
       use li_velocity
-   
+
       implicit none
-   
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -766,13 +770,15 @@ module li_core
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
+      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', &
+         config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       ! Copy data from first time level into all other time levels
       call mpas_pool_initialize_time_levels(geometryPool)
 
-      ! Initialize vertexMask on time level 2 to 0, so diagnostic_solve_before_velocity in li_diagnostic_vars says that the vertexMask has changed (needed by external dycore)
+      ! Initialize vertexMask on time level 2 to 0, so diagnostic_solve_before_velocity in li_diagnostic_vars
+      ! says that the vertexMask has changed (needed by external dycore)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 2)
       vertexMask = 0
 
@@ -854,7 +860,7 @@ module li_core
       ! input variables
       !
       !-----------------------------------------------------------------
-      
+
 
       !-----------------------------------------------------------------
       !
@@ -879,7 +885,8 @@ module li_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       type (MPAS_TimeInterval_type) :: adaptDtForceInterval
-      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval ! MPAS standard configs
+      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, &
+         config_output_interval, config_restart_interval ! MPAS standard configs
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_restart_timestamp_name
@@ -952,7 +959,8 @@ module li_core
       ! This is only needed if the adaptive time stepper is being used, but can be set up regardless.
       call mpas_set_timeInterval(adaptDtForceInterval, timeString=config_adaptive_timestep_force_interval, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
-      call mpas_add_clock_alarm(core_clock, 'adaptiveTimestepForceInterval', alarmTime=startTime, alarmTimeInterval=adaptDtForceInterval, ierr=err_tmp)
+      call mpas_add_clock_alarm(core_clock, 'adaptiveTimestepForceInterval', alarmTime=startTime, &
+              alarmTimeInterval=adaptDtForceInterval, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
       ! Reset the alarm for checking for force setting of the adaptive timestep interval
       if (mpas_is_alarm_ringing(core_clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)) then

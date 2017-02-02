@@ -15,7 +15,7 @@
 !> \date   10 January 2012
 !> \details
 !>  This module contains the routines for calling dycores
-!>  for calculating ice velocity. 
+!>  for calculating ice velocity.
 !>
 !
 !-----------------------------------------------------------------------
@@ -142,7 +142,7 @@ contains
 !> \brief   Initializes velocity solver
 !> \author  William Lipscomb
 !> \date    10 January 2012
-!> \details 
+!> \details
 !>  This routine initializes each block of the ice velocity solver.
 !
 !-----------------------------------------------------------------------
@@ -161,7 +161,7 @@ contains
       !-----------------------------------------------------------------
 
       type (block_type), intent(inout) :: &
-         block          !< Input/Output: block object 
+         block          !< Input/Output: block object
 
       !-----------------------------------------------------------------
       !
@@ -212,10 +212,10 @@ contains
 !
 !  routine li_velocity_solve
 !
-!> \brief   Solver for calculating ice velocity 
+!> \brief   Solver for calculating ice velocity
 !> \author  William Lipscomb
 !> \date    10 January 2012
-!> \details 
+!> \details
 !>  This routine calls velocity solvers.
 !
 !-----------------------------------------------------------------------
@@ -262,7 +262,8 @@ contains
       integer, pointer :: nVertInterfaces
       integer, dimension(:), pointer :: edgeMask, cellMask
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityInitial
-      real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY, uReconstructZ, &
+         uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
@@ -289,7 +290,8 @@ contains
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
+      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', &
+         config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_print_velocity_cleanup_details', config_print_velocity_cleanup_details)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 
@@ -304,7 +306,7 @@ contains
       ! Don't bother checking this with SIA because it requires an extra global reduce
       if ( (trim(config_velocity_solver) == 'L1L2') .or. (trim(config_velocity_solver) == 'FO') .or. &
            (trim(config_velocity_solver) == 'Stokes') ) then
-         maxThicknessOnProc = 0.0  ! initialize to 0
+         maxThicknessOnProc = 0.0_RKIND  ! initialize to 0
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -368,7 +370,7 @@ contains
          case('simple')
 
             ! Set the normal velocities to the values computed at initialization
-            ! Note: The reason these velocities are reset to the initial values during each time step is that 
+            ! Note: The reason these velocities are reset to the initial values during each time step is that
             !       they may have been altered during the previous time step (e.g., set to zero for non-dynamic edges).
             call mpas_pool_get_array(velocityPool, 'normalVelocityInitial', normalVelocityInitial)
             normalVelocity = normalVelocityInitial
@@ -412,7 +414,8 @@ contains
                     ( li_mask_is_dynamic_ice(cellMask(cell2)) .and.     &
                       upperSurface(cell1) > upperSurface(cell2) ) ) then
                   if (config_print_velocity_cleanup_details) then
-                     write (stderrUnit,*) "Notice: Nonzero velocity has been calculated on an 'uphill' margin edge.  normalVelocity here has been set to 0.  Location is edge index:", indexToEdgeID(iEdge)
+                     write (stderrUnit,*) "Notice: Nonzero velocity has been calculated on an 'uphill' margin edge.  ", &
+                        "normalVelocity here has been set to 0.  Location is edge index:", indexToEdgeID(iEdge)
                   endif
                   normalVelocity(:, iEdge) = 0.0_RKIND
                   uphillMarginEdgesFixed = uphillMarginEdgesFixed + 1
@@ -472,7 +475,8 @@ contains
                              uReconstructX, uReconstructY, uReconstructZ, &
                              uReconstructZonal, uReconstructMeridional )
          elseif (trim(config_velocity_solver) == 'none') then
-            ! The none velocity solver may have data velocity in uReconstructX/Y.  Fill out normalVelocity in case we want to advect with this field
+            ! The none velocity solver may have data velocity in uReconstructX/Y.
+            ! Fill out normalVelocity in case we want to advect with this field
             call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
             call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
             call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
