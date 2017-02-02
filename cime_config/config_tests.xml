@@ -239,6 +239,7 @@ LII    CLM initial condition interpolation test
     <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <DOUT_S>TRUE</DOUT_S>
     <RESUBMIT>1</RESUBMIT>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
 
   <test NAME="ERT">
