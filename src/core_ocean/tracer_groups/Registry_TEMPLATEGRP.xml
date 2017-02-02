@@ -1,35 +1,35 @@
 	<nml_record name="tracer_forcing_TEMPLATEGRP">
 		<nml_option name="config_use_TEMPLATEGRP" type="logical" default_value=".false." units="unitless"
-					description="if true, the 'TEMPLATEGRP' category is enabled for the run"
-					possible_values=".true. or .false."
+			description="if true, the 'TEMPLATEGRP' category is enabled for the run"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_TEMPLATEGRP_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'TEMPLATEGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_TEMPLATEGRP_surface_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, surface restoring source is applied to tracers in 'TEMPLATEGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface restoring source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_TEMPLATEGRP_interior_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, interior restoring source is applied to tracers in 'TEMPLATEGRP' category"
-					possible_values=".true. or .false."
+			description="if true, interior restoring source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_TEMPLATEGRP_exponential_decay" type="logical" default_value=".false." units="unitless"
-					description="if true, exponential decay source is applied to tracers in 'TEMPLATEGRP' category"
-					possible_values=".true. or .false."
+			description="if true, exponential decay source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_TEMPLATEGRP_idealAge_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, idealAge forcing source is applied to tracers in 'TEMPLATEGRP' category"
-					possible_values=".true. or .false."
+			description="if true, idealAge forcing source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_TEMPLATEGRP_ttd_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, transit time distribution forcing source is applied to tracers in 'TEMPLATEGRP' category"
-					possible_values=".true. or .false."
+			description="if true, transit time distribution forcing source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_TEMPLATEGRP_surface_value" type="logical" default_value=".false." units="unitless"
-					description="if true, surface value is computed for 'TEMPLATEGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface value is computed for 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
 		/>
 	</nml_record>
 

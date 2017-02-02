@@ -1,39 +1,39 @@
 	<nml_record name="tracer_forcing_MacroMoleculesTracers">
 		<nml_option name="config_use_MacroMoleculesTracers" type="logical" default_value=".false." units="unitless"
-					description="if true, the 'MacroMoleculesGRP' category is enabled for the run"
-					possible_values=".true. or .false."
+			description="if true, the 'MacroMoleculesGRP' category is enabled for the run"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_MacroMoleculesTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'MacroMoleculesGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'MacroMoleculesGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_MacroMoleculesTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, surface restoring source is applied to tracers in 'MacroMoleculesGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface restoring source is applied to tracers in 'MacroMoleculesGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_MacroMoleculesTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, interior restoring source is applied to tracers in 'MacroMoleculesGRP' category"
-					possible_values=".true. or .false."
+			description="if true, interior restoring source is applied to tracers in 'MacroMoleculesGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_MacroMoleculesTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
-					description="if true, exponential decay source is applied to tracers in 'MacroMoleculesGRP' category"
-					possible_values=".true. or .false."
+			description="if true, exponential decay source is applied to tracers in 'MacroMoleculesGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_MacroMoleculesTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, idealAge forcing source is applied to tracers in 'MacroMoleculesGRP' category"
-					possible_values=".true. or .false."
+			description="if true, idealAge forcing source is applied to tracers in 'MacroMoleculesGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_MacroMoleculesTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, transit time distribution forcing source is applied to tracers in 'MacroMoleculesGRP' category"
-					possible_values=".true. or .false."
+			description="if true, transit time distribution forcing source is applied to tracers in 'MacroMoleculesGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_MacroMoleculesTracers_surface_value" type="logical" default_value=".false." units="unitless"
-					description="if true, surface value is computed for 'MacroMoleculesGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface value is computed for 'MacroMoleculesGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_MacroMoleculesTracers_sea_ice_coupling" type="logical" default_value=".false." units="unitless"
-					description="if true, couple MacroMolecules fields with sea ice"
-					possible_values=".true. or .false."
+			description="if true, couple MacroMolecules fields with sea ice"
+			possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -86,13 +86,13 @@
 			<var_array name="MacroMoleculesTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersPKG">
 				<!-- Add constituents of tracer group -->
 				<var name="PROTSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
-					description="Proteins Surface Flux"
+			description="Proteins Surface Flux"
 				/>
 				<var name="POLYSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
-					description="Polysaccharides Surface Flux"
+			description="Polysaccharides Surface Flux"
 				/>
 				<var name="LIPSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
-					description="Lipids Surface Flux"
+			description="Lipids Surface Flux"
 				/>
 			</var_array>
 		</var_struct>
@@ -107,87 +107,87 @@
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
 			<var_array name="MacroMoleculesTracersPistonVelocity" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersSurfaceRestoringPKG">
 				<var name="PROTPistonVelocity" array_group="MacroMoleculesPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which PROT is restored to PROTSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which PROT is restored to PROTSurfaceRestoringValue"
 				/>
 				<var name="POLYPistonVelocity" array_group="MacroMoleculesPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which POLY is restored to POLYSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which POLY is restored to POLYSurfaceRestoringValue"
 				/>
 				<var name="LIPPistonVelocity" array_group="MacroMoleculesPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which LIP is restored to LIPSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which LIP is restored to LIPSurfaceRestoringValue"
 				/>
 			</var_array>
 			<var_array name="MacroMoleculesTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersSurfaceRestoringPKG">
 				<var name="PROTSurfaceRestoringValue" array_group="MacroMoleculesSRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by PROTPistonVelocity."
+			 description="Temperature is restored toward this field at a rate controlled by PROTPistonVelocity."
 				/>
 				<var name="POLYSurfaceRestoringValue" array_group="MacroMoleculesSRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by POLYPistonVelocity."
+			 description="Temperature is restored toward this field at a rate controlled by POLYPistonVelocity."
 				/>
 				<var name="LIPSurfaceRestoringValue" array_group="MacroMoleculesSRVGRP" units="mmol m^{3}"
-					 description="Salinity is restored toward this field at a rate controlled by LIPPistonVelocity."
+			 description="Salinity is restored toward this field at a rate controlled by LIPPistonVelocity."
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
 			<var_array name="MacroMoleculesTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="MacroMoleculesTracersInteriorRestoringPKG">
 				<var name="PROTInteriorRestoringRate" array_group="MacroMoleculesIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which PROT is restored to PROTInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which PROT is restored to PROTInteriorRestoringValue"
 				/>
 				<var name="POLYInteriorRestoringRate" array_group="MacroMoleculesIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which POLY is restored to POLYInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which POLY is restored to POLYInteriorRestoringValue"
 				/>
 				<var name="LIPInteriorRestoringRate" array_group="MacroMoleculesIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which LIP is restored to LIPInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which LIP is restored to LIPInteriorRestoringValue"
 				/>
 			</var_array>
 			<var_array name="MacroMoleculesTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="MacroMoleculesTracersInteriorRestoringPKG">
 				<var name="PROTInteriorRestoringValue" array_group="MacroMoleculesIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by PROTInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by PROTInteriorRestoringRate."
 				/>
 				<var name="POLYInteriorRestoringValue" array_group="MacroMoleculesIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by POLYInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by POLYInteriorRestoringRate."
 				/>
 				<var name="LIPInteriorRestoringValue" array_group="MacroMoleculesIRVGRP" units="mmol m^{3}"
-					 description="Salinity is restored toward this field at a rate controlled by LIPInteriorRestoringRate."
+			 description="Salinity is restored toward this field at a rate controlled by LIPInteriorRestoringRate."
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersExponentialDecayFields" time_levs="1">
 			<var_array name="MacroMoleculesTracersExponentialDecayRate" type="real" dimensions="Time" packages="MacroMoleculesTracersExponentialDecayPKG">
 				<var name="PROTExponentialDecayRate" array_group="MacroMoleculesGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of PROT"
+			 description="A non-negative field controlling the exponential decay of PROT"
 				/>
 				<var name="POLYExponentialDecayRate" array_group="MacroMoleculesGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of POLY"
+			 description="A non-negative field controlling the exponential decay of POLY"
 				/>
 				<var name="LIPExponentialDecayRate" array_group="MacroMoleculesGRP" units="s"
-					 description="A non-negative field controlling the exponential decay of LIP"
+			 description="A non-negative field controlling the exponential decay of LIP"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersIdealAgeFields" time_levs="1">
 			<var_array name="MacroMoleculesTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersIdealAgePKG">
 				<var name="PROTIdealAgeMask" array_group="MacroMoleculesGRP" units="unitless"
-					 description="In top layer, PROT is reset to PROT * PROTIdealAgeMask, valid values of PROTIdealAgeMask or 0 and 1"
+			 description="In top layer, PROT is reset to PROT * PROTIdealAgeMask, valid values of PROTIdealAgeMask or 0 and 1"
 				/>
 				<var name="POLYIdealAgeMask" array_group="MacroMoleculesGRP" units="unitless"
-					 description="In top layer, POLY is reset to POLY * POLYIdealAgeMask, valid values of POLYIdealAgeMask or 0 and 1"
+			 description="In top layer, POLY is reset to POLY * POLYIdealAgeMask, valid values of POLYIdealAgeMask or 0 and 1"
 				/>
 				<var name="LIPIdealAgeMask" array_group="MacroMoleculesGRP" units="unitless"
-					 description="In top layer, LIP is reset to LIP * LIPIdealAgeMask, valid values of LIPIdealAgeMask or 0 and 1"
+			 description="In top layer, LIP is reset to LIP * LIPIdealAgeMask, valid values of LIPIdealAgeMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersTTDFields" time_levs="1">
 			<var_array name="MacroMoleculesTracersTTDMask" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersTTDPKG">
 				<var name="PROTTTDMask" array_group="MacroMoleculesGRP" units="unitless"
-					 description="In top layer, PROT is reset to TTDMask, valid values of PROTTTDMask or 0 and 1"
+			 description="In top layer, PROT is reset to TTDMask, valid values of PROTTTDMask or 0 and 1"
 				/>
 				<var name="POLYTTDMask" array_group="MacroMoleculesGRP" units="unitless"
-					 description="In top layer, POLY is reset to TTDMask, valid values of POLYTTDMask or 0 and 1"
+			 description="In top layer, POLY is reset to TTDMask, valid values of POLYTTDMask or 0 and 1"
 				/>
 				<var name="LIPTTDMask" array_group="MacroMoleculesGRP" units="unitless"
-					 description="In top layer, LIP is reset to LIPTTDMask, valid values of LIPTTDMask or 0 and 1"
+			 description="In top layer, LIP is reset to LIPTTDMask, valid values of LIPTTDMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>

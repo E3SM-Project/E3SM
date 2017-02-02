@@ -1,63 +1,63 @@
 	<nml_record name="overflow" mode="init" configuration="overflow">
 		<nml_option name="config_overflow_vert_levels" type="integer" default_value="100" units="unitless"
-					description="Number of vertical levels in overflow test case. Typical values are 40 and 100."
-					possible_values="Any positive integer number greater than 0."
+			description="Number of vertical levels in overflow test case. Typical values are 40 and 100."
+			possible_values="Any positive integer number greater than 0."
 		/>
 		<nml_option name="config_overflow_use_distances" type="logical" default_value="false" units="unitless"
-					description="Logical flag that determines if locations of features are defined by distances of fractions. False means fractions."
-					possible_values=".true. or .false."
+			description="Logical flag that determines if locations of features are defined by distances of fractions. False means fractions."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_overflow_bottom_depth" type="real" default_value="2000.0" units="m"
-					description="Depth of the bottom of the ocean in the overflow test case."
-					possible_values="Any positive real value greater than 0."
+			description="Depth of the bottom of the ocean in the overflow test case."
+			possible_values="Any positive real value greater than 0."
 		/>
 		<nml_option name="config_overflow_ridge_depth" type="real" default_value="500.0" units="m"
-					description="Depth of the bottom of the ocean on the ridge in the over flow test case."
-					possible_values="Any positive real value greater than 0."
+			description="Depth of the bottom of the ocean on the ridge in the over flow test case."
+			possible_values="Any positive real value greater than 0."
 		/>
 		<nml_option name="config_overflow_plug_temperature" type="real" default_value="10.0" units="deg C"
-					description="Temperature of water in plug at the southern end of the domain."
-					possible_values="Any real number"
+			description="Temperature of water in plug at the southern end of the domain."
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_overflow_domain_temperature" type="real" default_value="20.0" units="deg C"
-					description="Temperature of water outside of the plug."
-					possible_values="Any real number"
+			description="Temperature of water outside of the plug."
+			possible_values="Any real number"
 		/>
 		<nml_option name="config_overflow_salinity" type="real" default_value="35.0" units="PSU"
-					description="Salinity of the water in the entire domain."
-					possible_values="Any real number greater than 0."
+			description="Salinity of the water in the entire domain."
+			possible_values="Any real number greater than 0."
 		/>
 		<nml_option name="config_overflow_plug_width_frac" type="real" default_value="0.10" units="fraction"
-					description="Fraction of the domain the plug should take up initially. Only in the y direction."
-					possible_values="Any real number between 0 and 1."
+			description="Fraction of the domain the plug should take up initially. Only in the y direction."
+			possible_values="Any real number between 0 and 1."
 		/>
 		<nml_option name="config_overflow_slope_center_frac" type="real" default_value="0.20" units="fraction"
-					description="Location of the center of the slope. Given as a fraction of the total y domain range. Position is relative to the minimum y value."
-					possible_values="Any real number between 0 and 1."
+			description="Location of the center of the slope. Given as a fraction of the total y domain range. Position is relative to the minimum y value."
+			possible_values="Any real number between 0 and 1."
 		/>
 		<nml_option name="config_overflow_slope_width_frac" type="real" default_value="0.05" units="fraction"
-					description="Half width of the slope. Given as a fraction of the total y domain range."
-					possible_values="Any real number between 0 and 1."
+			description="Half width of the slope. Given as a fraction of the total y domain range."
+			possible_values="Any real number between 0 and 1."
 		/>
 		<nml_option name="config_overflow_plug_width_dist" type="real" default_value="20e3" units="m"
-					description="Distance from the minimum Y value of the domain the plug should take up initially. Default is relative to a 200km domain."
-					possible_values="Any positive real number."
+			description="Distance from the minimum Y value of the domain the plug should take up initially. Default is relative to a 200km domain."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_overflow_slope_center_dist" type="real" default_value="40e3" units="m"
-					description="Location of the center of the slope. Given as a distance from the minimum y value. Default is relative to a 200km domain."
-					possible_values="Any positive real number."
+			description="Location of the center of the slope. Given as a distance from the minimum y value. Default is relative to a 200km domain."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_overflow_slope_width_dist" type="real" default_value="7e3" units="m"
-					description="Half width of the slope. Default is relative to a 200km domain."
-					possible_values="Any positive real number."
+			description="Half width of the slope. Default is relative to a 200km domain."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_overflow_layer_type" type="character" default_value="z-level" units="unitless"
-					description="Logical flag that controls how the initial conditions should be generated."
-					possible_values="'z-level', 'sigma', 'isopycnal'"
+			description="Logical flag that controls how the initial conditions should be generated."
+			possible_values="'z-level', 'sigma', 'isopycnal'"
 		/>
 		<nml_option name="config_overflow_isopycnal_min_thickness" type="real" default_value="0.01" units="m"
-					description="minimum layer thickness"
-					possible_values="Any positive real number, typically 0.01 to 1.0"
+			description="minimum layer thickness"
+			possible_values="Any positive real number, typically 0.01 to 1.0"
 		/>
 	</nml_record>
 

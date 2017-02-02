@@ -1,11 +1,11 @@
 	<!-- A note about names (remove this when creating a new analysis member)
-		 A camel case name should be selected for the analysis member. This should be something like: globalStats, or zonalMean
-                 Replace temPlate in this file with your camel case name.
-		 All namelist options should be named: config_AM_[name]_[opt]. In this
-		     case [name] would be replaced with the camel case name, and [opt] is
-		     the specific option (like enable) (e.g. config_AM_globalStats_enable)
-		 The package should be named: [name]AMPKG where again [name] is the camel case name (e.g. globalStatsAMPKG)
-		 Pools and streams should be named with the camel case name as well (e.g. globalStatsOutput and globalStatsAM)
+		A camel case name should be selected for the analysis member. This should be something like: globalStats, or zonalMean
+		Replace temPlate in this file with your camel case name.
+		All namelist options should be named: config_AM_[name]_[opt]. In this
+		case [name] would be replaced with the camel case name, and [opt] is
+		the specific option (like enable) (e.g. config_AM_globalStats_enable)
+		The package should be named: [name]AMPKG where again [name] is the camel case name (e.g. globalStatsAMPKG)
+		Pools and streams should be named with the camel case name as well (e.g. globalStatsOutput and globalStatsAM)
 	-->
 	<nml_record name="AM_temPlate" mode="forward;analysis">
 		<nml_option name="config_AM_temPlate_enable" type="logical" default_value=".false." units="unitless"

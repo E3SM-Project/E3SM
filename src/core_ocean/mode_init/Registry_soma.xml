@@ -1,75 +1,75 @@
-        <nml_record name="soma" mode="init" configuration="soma">
-                <nml_option name="config_soma_vert_levels" type="integer" default_value="100" units="unitless"
-                                        description="Number of vertical levels in SOMA."
-                                        possible_values="Any positive integer. Typically 40 or larger."
-                />
-                <nml_option name="config_soma_domain_width" type="real" default_value="1.25e6" units="m"
-                                        description="Approximate radius of the SOMA domain."
-                                        possible_values="Any real positive number"
-                />
-                <nml_option name="config_soma_center_latitude" type="real" default_value="35.0" units="degrees"
-                                        description="Latitude for the center of the SOMA basin."
-                                        possible_values="Any real number between -90.0 and 90.0."
-                />
-                <nml_option name="config_soma_center_longitude" type="real" default_value="0.0" units="degrees"
-                                        description="Longitude for the center of the SOMA basin."
-                                        possible_values="Any real number between 0.0 and 360.0."
-                />
-                <nml_option name="config_soma_phi" type="real" default_value="0.1" units="non-dimensional"
-                                        description="Scale factor controlling width of continential slope. Typically around 0.1"
-                                        possible_values="Any real positive number"
-                />
-                <nml_option name="config_soma_bottom_depth" type="real" default_value="2500.0" units="m"
-                                        description="Depth of the bottom of the ocean for the SOMA test case."
-                                        possible_values="Any real positive number."
-                />
-                <nml_option name="config_soma_shelf_width" type="real" default_value="-0.4" units="non-dimensional"
-                                        description="Non-dimensional measure of continential shelf. Typically negative."
-                                        possible_values="Any real number"
-                />
-                <nml_option name="config_soma_shelf_depth" type="real" default_value="100.0" units="m"
-                                        description="Depth of the continential shelf."
-                                        possible_values="Any real positive number"
-                />
-                <nml_option name="config_soma_ref_density" type="real" default_value="1000.0" units="kg m^{-3}"
-                                        description="Reference density for the SOMA test case."
-                                        possible_values="Any real number."
-                />
-                <nml_option name="config_soma_density_difference" type="real" default_value="4.0" units="kg m^{-3}"
-                                        description="Density difference between surface and bottom waters for the SOMA test case."
-                                        possible_values="Any real number."
-                />
-                <nml_option name="config_soma_thermocline_depth" type="real" default_value="300.0" units="m"
-                                        description="Depth over which majority of initial stratification is placed."
-                                        possible_values="Any real positive number."
-                />
-                <nml_option name="config_soma_density_difference_linear" type="real" default_value="0.05" units="non-dimensional"
-                                        description="Fraction of stratification put into linear profile extending from surface to bottom."
-                                        possible_values="Any real positive number."
-                />
-                <nml_option name="config_soma_surface_temperature" type="real" default_value="20.0" units="C"
-                                        description="Surface temperature value used in initial condition."
-                                        possible_values="Any real positive number."
-                />
-                <nml_option name="config_soma_surface_salinity" type="real" default_value="33.0" units="PSU"
-                                        description="Surface salinity value used in initial condition."
-                                        possible_values="Any real positive number."
-                />
-              <nml_option name="config_soma_use_surface_temp_restoring" type="logical" default_value="false" units="unitless"
-                                        description="Logical flag that determines if surface temperature restoring is to be used."
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="config_soma_surface_temp_restoring_at_center_latitude" type="real" default_value="7.5" units="degrees"
-                                        description="Surface restoring temperature value at center latitutde."
-                                        possible_values="Any real positive number."
-                />
-              <nml_option name="config_soma_surface_temp_restoring_latitude_gradient" type="real" default_value="0.5"
-                                        units="degrees C / degrees latitude"
-                                        description="Surface restoring temperature gradient in latitudal direction."
-                                        possible_values="Any real positive number."
-                />
-              <nml_option name="config_soma_restoring_temp_piston_vel" type="real" default_value="1.0e-5" units="m s^{-1}"
-                                        description="Restoring piston velocity for surface temperature."
-                                        possible_values="Any real number."
-                />
-        </nml_record>
+	<nml_record name="soma" mode="init" configuration="soma">
+		<nml_option name="config_soma_vert_levels" type="integer" default_value="100" units="unitless"
+			description="Number of vertical levels in SOMA."
+			possible_values="Any positive integer. Typically 40 or larger."
+		/>
+		<nml_option name="config_soma_domain_width" type="real" default_value="1.25e6" units="m"
+			description="Approximate radius of the SOMA domain."
+			possible_values="Any real positive number"
+		/>
+		<nml_option name="config_soma_center_latitude" type="real" default_value="35.0" units="degrees"
+			description="Latitude for the center of the SOMA basin."
+			possible_values="Any real number between -90.0 and 90.0."
+		/>
+		<nml_option name="config_soma_center_longitude" type="real" default_value="0.0" units="degrees"
+			description="Longitude for the center of the SOMA basin."
+			possible_values="Any real number between 0.0 and 360.0."
+		/>
+		<nml_option name="config_soma_phi" type="real" default_value="0.1" units="non-dimensional"
+			description="Scale factor controlling width of continential slope. Typically around 0.1"
+			possible_values="Any real positive number"
+		/>
+		<nml_option name="config_soma_bottom_depth" type="real" default_value="2500.0" units="m"
+			description="Depth of the bottom of the ocean for the SOMA test case."
+			possible_values="Any real positive number."
+		/>
+		<nml_option name="config_soma_shelf_width" type="real" default_value="-0.4" units="non-dimensional"
+			description="Non-dimensional measure of continential shelf. Typically negative."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_soma_shelf_depth" type="real" default_value="100.0" units="m"
+			description="Depth of the continential shelf."
+			possible_values="Any real positive number"
+		/>
+		<nml_option name="config_soma_ref_density" type="real" default_value="1000.0" units="kg m^{-3}"
+			description="Reference density for the SOMA test case."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_soma_density_difference" type="real" default_value="4.0" units="kg m^{-3}"
+			description="Density difference between surface and bottom waters for the SOMA test case."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_soma_thermocline_depth" type="real" default_value="300.0" units="m"
+			description="Depth over which majority of initial stratification is placed."
+			possible_values="Any real positive number."
+		/>
+		<nml_option name="config_soma_density_difference_linear" type="real" default_value="0.05" units="non-dimensional"
+			description="Fraction of stratification put into linear profile extending from surface to bottom."
+			possible_values="Any real positive number."
+		/>
+		<nml_option name="config_soma_surface_temperature" type="real" default_value="20.0" units="C"
+			description="Surface temperature value used in initial condition."
+			possible_values="Any real positive number."
+		/>
+		<nml_option name="config_soma_surface_salinity" type="real" default_value="33.0" units="PSU"
+			description="Surface salinity value used in initial condition."
+			possible_values="Any real positive number."
+		/>
+	      <nml_option name="config_soma_use_surface_temp_restoring" type="logical" default_value="false" units="unitless"
+			description="Logical flag that determines if surface temperature restoring is to be used."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_soma_surface_temp_restoring_at_center_latitude" type="real" default_value="7.5" units="degrees"
+			description="Surface restoring temperature value at center latitutde."
+			possible_values="Any real positive number."
+		/>
+	      <nml_option name="config_soma_surface_temp_restoring_latitude_gradient" type="real" default_value="0.5"
+			units="degrees C / degrees latitude"
+			description="Surface restoring temperature gradient in latitudal direction."
+			possible_values="Any real positive number."
+		/>
+	      <nml_option name="config_soma_restoring_temp_piston_vel" type="real" default_value="1.0e-5" units="m s^{-1}"
+			description="Restoring piston velocity for surface temperature."
+			possible_values="Any real number."
+		/>
+	</nml_record>

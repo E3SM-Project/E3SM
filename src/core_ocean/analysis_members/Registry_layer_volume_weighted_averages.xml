@@ -8,24 +8,24 @@
 	</dims>
 	<nml_record name="AM_layerVolumeWeightedAverage" mode="forward;analysis">
 		<nml_option name="config_AM_layerVolumeWeightedAverage_enable" type="logical" default_value=".false." units="unitless"
-					description="If true, ocean analysis member layer-volume weighted is called."
-					possible_values=".true. or .false."
+			description="If true, ocean analysis member layer-volume weighted is called."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_layerVolumeWeightedAverage_compute_interval" type="character" default_value="output_interval" units="unitless"
-					description="Timestamp determining how often analysis member computation should be performed."
-					possible_values="'DDDD_HH:MM:SS'"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="'DDDD_HH:MM:SS'"
 		/>
 		<nml_option name="config_AM_layerVolumeWeightedAverage_compute_on_startup" type="logical" default_value=".false." units="unitless"
-					description="Logical flag determining if an analysis member computation occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_layerVolumeWeightedAverage_write_on_startup" type="logical" default_value=".false." units="unitless"
-					description="Logical flag determining if an analysis member output write occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member output write occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_layerVolumeWeightedAverage_output_stream" type="character" default_value="layerVolumeWeightedAverageOutput" units="unitless"
-					description="Name of the string that should be tied to the layer volume weighted average analysis member"
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the string that should be tied to the layer volume weighted average analysis member"
+			possible_values="Any existing stream name or 'none'"
 		/>
 	</nml_record>
 	<packages>
