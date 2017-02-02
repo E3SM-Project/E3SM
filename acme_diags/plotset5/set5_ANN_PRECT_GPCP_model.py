@@ -21,17 +21,22 @@ filename1=test_data_path + test_data_set
 filename2=reference_data_path + reference_data_set
 
 if var == 'PRECT':
-
     f_obs = cdms2.open(reference_data_path + reference_data_set)
     f_mod = cdms2.open(test_data_path + test_data_set)
-    obs_pr = f_obs(var, longitude=(-180, 540))
-    mod_pr = (f_mod('PRECC', longitude=(-180, 540)) + f_mod('PRECL', longitude=(-180, 540)))*3600.0*24.0*1000.0
+    print reference_data_set.find('TRMM')
+    if reference_data_set.find('TRMM') != -1: #TRMM region following AMWG  latitude=(-38,38)
+        obs_pr = f_obs(var, longitude=(-180, 540),latitude=(-38,38))
+        mod_pr = (f_mod('PRECC', longitude=(-180, 540),latitude=(-38,38)) + f_mod('PRECL', longitude=(-180, 540),latitude=(-38,38)))*3600.0*24.0*1000.0
+    else: 
+        obs_pr = f_obs(var, longitude=(-180, 540))
+        mod_pr = (f_mod('PRECC', longitude=(-180, 540)) + f_mod('PRECL', longitude=(-180, 540)))*3600.0*24.0*1000.0
+    print obs_pr.count(),obs_pr.shape
+    print mod_pr.count(),mod_pr.shape
+    print mod_pr[:,:,1],obs_pr[:,:,1]
     mod_pr.units = 'mm/day'
-    obs_name = 'GPCP (yrs1979-2009)'
 
 elif var == 'T':
 
-#    plev = 850
     plev = parameter.plev
     print 'selected pressure level', plev
 
@@ -80,6 +85,7 @@ elif var == 'T':
 
 axes1 = mod_pr.getAxisList()
 axes2 = obs_pr.getAxisList()
+
 
 # For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
 if len(axes1[1]) <= len(axes2[1]): # use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
