@@ -238,15 +238,15 @@
 			<var name="avgSeaIceHeatFlux" array_group="avg" units="W m^{-2}"
 				 description="Surface area-weighted average of sea ice heat flux in each region"
 			/>
-			<var name="avgShortWaveHeatFlux" array_group="avg" units="W m^{-2}" 
+			<var name="avgShortWaveHeatFlux" array_group="avg" units="W m^{-2}"
 				 description="Surface area-weighted average of short wave heat flux in each region"
-			/>       
+			/>
 			<var name="avgEvaporationFlux" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Surface area-weighted average of evaporation in each region"
-			/>       
+			/>
 			<var name="avgSeaIceFreshWaterFlux" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Surface area-weighted average of sea ice melt rate in each region"
-			/>       
+			/>
 			<var name="avgRiverRunoffFlux" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Surface area-weighted average of river run off in each region"
 			/>

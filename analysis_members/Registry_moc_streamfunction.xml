@@ -84,7 +84,7 @@
 			packages="mocStreamfunctionAMPKG"
 			clobber_mode="truncate"
 			runtime_format="single_file">
-			
+
 			<var name="xtime"/>
 			<var name="mocStreamvalLatAndDepth"/>
 			<var name="mocStreamvalLatAndDepthRegion"/>
