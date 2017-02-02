@@ -386,7 +386,7 @@ module ocn_time_integration_split
          call mpas_timer_start("se halo diag")
 
          call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
-         if (config_mom_del4 > 0.0) then
+         if (config_mom_del4 > 0.0_RKIND) then
            call mpas_dmpar_field_halo_exch(domain, 'divergence')
            call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
          end if
@@ -1155,7 +1155,8 @@ module ocn_time_integration_split
                call mpas_timer_start("se halo subcycle")
                call mpas_dmpar_exch_group_create(domain, subcycleGroupName)
                call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, 'sshSubcycle', timeLevel=newBtrSubcycleTime)
-               call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
+               call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, 'normalBarotropicVelocitySubcycle', &
+                  timeLevel=newBtrSubcycleTime)
 
                call mpas_threading_barrier()
                call mpas_dmpar_exch_group_full_halo_exch(domain, subcycleGroupName)
@@ -1905,7 +1906,8 @@ module ocn_time_integration_split
       if (trim(config_time_integrator) == 'split_explicit') then
          write(stderrUnit, *) ''
          write(stderrUnit, *) '*******************************************************************************'
-         write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, ' barotropic subcycles'
+         write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, &
+            'barotropic subcycles'
          write(stderrUnit, *) '*******************************************************************************'
          write(stderrUnit, *) ''
       end if
@@ -1947,7 +1949,8 @@ module ocn_time_integration_split
 
                write(stderrUnit, *) ''
                write(stderrUnit, *) '*******************************************************************************'
-               write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, ' barotropic subcycles'
+               write(stderrUnit, *) 'INFO: The split explicit time integration is configured to use: ', nBtrSubcycles, &
+                  ' barotropic subcycles'
                write(stderrUnit, *) '*******************************************************************************'
                write(stderrUnit, *) ''
 

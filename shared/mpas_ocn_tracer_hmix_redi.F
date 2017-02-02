@@ -354,7 +354,8 @@ contains
                iEdge = edgesOnCell(i, iCell)
                areaEdge = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
                do k = 1, maxLevelEdgeTop(iEdge)
-                  r_tmp = areaEdge * relativeSlopeTapering(k, iEdge) * relativeSlopeTopOfEdge(k,iEdge) * gradTracerTopOfEdge(k,iEdge)
+                  r_tmp = areaEdge * relativeSlopeTapering(k, iEdge) * relativeSlopeTopOfEdge(k,iEdge) &
+                        * gradTracerTopOfEdge(k,iEdge)
                   gradHTracerSlopedTopOfCell(k, iCell) = gradHTracerSlopedTopOfCell(k, iCell) + r_tmp
                   areaCellSum(k, iCell) = areaCellSum(k, iCell) + areaEdge
                end do

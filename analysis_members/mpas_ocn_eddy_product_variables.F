@@ -214,7 +214,8 @@ contains
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityZonalSquared', velocityZonalSquared)
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityMeridionalSquared', velocityMeridionalSquared)
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityZonalTimesTemperature', velocityZonalTimesTemperature)
-         call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityMeridionalTimesTemperature', velocityMeridionalTimesTemperature)
+         call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityMeridionalTimesTemperature', &
+            velocityMeridionalTimesTemperature)
 
          do iCell = 1,nCellsSolve
             SSHSquared(iCell) = ssh(iCell)**2

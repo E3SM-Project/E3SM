@@ -2046,7 +2046,8 @@ contains
             write(debugUnit, *) '  -- Statistics information for block fields'
 
             if ( mpas_stream_mgr_stream_exists(domain % streamManager, 'block_.*') ) then
-               call mpas_stream_mgr_block_Write(domain % streamManager, writeBlock=block, streamID='block_.*', forceWriteNow=.true.)
+               call mpas_stream_mgr_block_Write(domain % streamManager, writeBlock=block, streamID='block_.*', &
+                  forceWriteNow=.true.)
             end if
 
             ! Also, write general block information, like lat/lon bounds
