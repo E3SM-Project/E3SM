@@ -1670,7 +1670,7 @@
 	<DESC>LANL Linux Cluster, 36 pes/node, batch system Moab</DESC>
         <NODENAME_REGEX>gr-fe.*.lanl.gov</NODENAME_REGEX>
         <TESTS>acme_developer</TESTS>
-        <COMPILERS>gnu</COMPILERS>
+        <COMPILERS>gnu,intel</COMPILERS>
         <MPILIBS>openmpi</MPILIBS>
 	<OS>LINUX</OS>
 	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
@@ -1681,6 +1681,7 @@
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<CCSM_BASELINE>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
 	<CESMSCRATCHROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CESMSCRATCHROOT>
+	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
 		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
@@ -1701,8 +1702,11 @@
 		<modules compiler="gnu">
 			<command name="load">gcc/5.3.0</command>
 		</modules>
+		<modules compiler="intel">
+			<command name="load">intel/17.0.1</command>
+		</modules>
 		<modules mpilib="openmpi">
-			<command name="load">openmpi/1.10.3</command>
+			<command name="load">openmpi/1.10.5</command>
 		</modules>
 
 		<modules>
@@ -1714,6 +1718,7 @@
 	</module_system>
 	<environment_variables>
 		<env name="LD_LIBRARY_PATH">$LD_LIBRARY_PATH:$NETCDF_ROOT/lib</env>
+		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable</env>
 	</environment_variables>
 
 	<BATCH_SYSTEM>moab</BATCH_SYSTEM>
@@ -1721,24 +1726,20 @@
 		<executable>mpirun</executable>
 		<arguments>
 			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
-			<arg name="bind_option"> --bind-to core</arg>
-			<arg name="map_option"> --map-by node</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
 			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
-			<arg name="map_option"> --map-by node</arg>
-			<arg name="bind_option"> --bind-to core</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mpi-serial">
 		<executable></executable>
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
-	<MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
-	<PES_PER_NODE>36</PES_PER_NODE>
+	<MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+	<PES_PER_NODE>32</PES_PER_NODE>
 	<PROJECT>climateacme</PROJECT>
     	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     	<SUPPORTED_BY>luke.vanroekel @ gmail.com</SUPPORTED_BY>
