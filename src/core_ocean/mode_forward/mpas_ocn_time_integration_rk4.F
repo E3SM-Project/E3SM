@@ -367,7 +367,7 @@ module ocn_time_integration_rk4
 
 
         call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
-        if (config_mom_del4 > 0.0) then
+        if (config_mom_del4 > 0.0_RKIND) then
            call mpas_dmpar_field_halo_exch(domain, 'divergence')
            call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
         end if
@@ -424,7 +424,8 @@ module ocn_time_integration_rk4
 
               !$omp do schedule(runtime)
               do iCell = 1, nCells
-                 highFreqThicknessProvis(:, iCell) = highFreqThicknessCur(:, iCell) + rk_substep_weights(rk_step) * highFreqThicknessTend(:, iCell)
+                 highFreqThicknessProvis(:, iCell) = highFreqThicknessCur(:, iCell) + rk_substep_weights(rk_step) &
+                    * highFreqThicknessTend(:, iCell)
               end do
               !$omp end do
               call mpas_threading_barrier()

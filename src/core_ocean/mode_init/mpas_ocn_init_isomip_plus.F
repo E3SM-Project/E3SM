@@ -154,9 +154,10 @@ contains
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The ISOMIP+ configuration can only be applied to a planar mesh. Exiting...')
+      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: ISOMIP+ can only be applied to a planar mesh.  Exiting...')
 
-      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_vertical_level_distribution', config_isomip_plus_vertical_level_distribution)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_vertical_level_distribution', &
+         config_isomip_plus_vertical_level_distribution)
       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_max_bottom_depth', config_isomip_plus_max_bottom_depth)
       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_init_top_temp', config_isomip_plus_init_top_temp)
       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_init_bot_temp', config_isomip_plus_init_bot_temp)
@@ -176,7 +177,7 @@ contains
 
       allocate(columnThicknessFraction(nVertLevels))
       if(trim(config_isomip_plus_vertical_level_distribution) == "constant") then
-         columnThicknessFraction(:) = 1.0/nVertLevels
+         columnThicknessFraction(:) = 1.0_RKIND/nVertLevels
       end if
 
       block_ptr => domain % blocklist
@@ -282,8 +283,10 @@ contains
         call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
         call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', &
+                activeTracersInteriorRestoringRate, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', &
+                activeTracersInteriorRestoringValue, 1)
 
         call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
         call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
@@ -389,7 +392,8 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_isomip_plus_topography_file', config_isomip_plus_topography_file)
 
        ! Define stream for depth levels
-       call MPAS_createStream(topographyStream, domain % iocontext, config_isomip_plus_topography_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(topographyStream, domain % iocontext, config_isomip_plus_topography_file, &
+          MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup topoY, topoX, bedTopoIC and iceTopoIC fields for stream to be read in
        topoY % fieldName = 'y'
@@ -540,8 +544,10 @@ contains
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_minimum_levels', config_isomip_plus_minimum_levels)
-       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_min_column_thickness', config_isomip_plus_min_column_thickness)
+       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_minimum_levels', &
+          config_isomip_plus_minimum_levels)
+       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_min_column_thickness', &
+          config_isomip_plus_min_column_thickness)
        call mpas_pool_get_config(domain % configs, 'config_isomip_plus_min_ocean_fraction', config_isomip_plus_min_ocean_fraction)
 
        ! weight bed topo and ice draft by the fraction of ocean before interpolating
@@ -728,7 +734,8 @@ contains
 
       call mpas_pool_get_config(configPool, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
       if(config_land_ice_flux_mode .ne. 'standalone' .and. config_land_ice_flux_mode .ne. 'coupled') then
-         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. config_land_ice_flux_mode must either be standalone or coupled.'
+         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. config_land_ice_flux_mode must either',&
+            ' be standalone or coupled.'
          iErr = 1
          return
       end if
@@ -744,7 +751,8 @@ contains
          return
       end if
 
-      call mpas_pool_get_config(configPool, 'config_isomip_plus_vertical_level_distribution', config_isomip_plus_vertical_level_distribution)
+      call mpas_pool_get_config(configPool, 'config_isomip_plus_vertical_level_distribution', &
+         config_isomip_plus_vertical_level_distribution)
 
       if(trim(config_isomip_plus_vertical_level_distribution) .ne. "constant") then
          write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Bad vertical level distribution.'
@@ -763,25 +771,29 @@ contains
 
       inputFile = MPAS_io_open(config_isomip_plus_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
       if(iErr > 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Could not open file:', trim(config_isomip_plus_topography_file)
+         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Could not open file:', &
+            trim(config_isomip_plus_topography_file)
          return
       end if
 
       call MPAS_io_inq_dim(inputFile, 'x', nxTopo, iErr)
       if(iErr /= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Could not find dim x in file:', trim(config_isomip_plus_topography_file)
+         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Could not find dim x in file:', &
+            trim(config_isomip_plus_topography_file)
          return
       end if
 
       call MPAS_io_inq_dim(inputFile, 'y', nyTopo, iErr)
       if(iErr /= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Could not find dim y in file:', trim(config_isomip_plus_topography_file)
+         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Could not find dim y in file:', &
+            trim(config_isomip_plus_topography_file)
          return
       end if
 
       call MPAS_io_close(inputFile, iErr)
       if(iErr /= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Could not close file:', trim(config_isomip_plus_topography_file)
+         write(stderrUnit,*) 'ERROR: Validation failed for isomip_plus. Could not close file:', &
+            trim(config_isomip_plus_topography_file)
          return
       end if
 

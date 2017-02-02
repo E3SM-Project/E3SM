@@ -504,7 +504,8 @@ contains
                  end do
 
                  do kIndexOBL = 1, maxLevelCell(iCell)
-                    normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
+                    normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
+                        real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
                     delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
                     deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + factor * delU2
                  end do

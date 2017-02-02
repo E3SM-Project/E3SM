@@ -172,8 +172,8 @@ contains
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 1, 'relative', displacedDensity, err, &
-                                         timeLevelIn=timeLevel)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, nCells, 1, 'relative', &
+         displacedDensity, err, timeLevelIn=timeLevel)
 
       call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, &
                                      layerThicknessEdge, density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err1)

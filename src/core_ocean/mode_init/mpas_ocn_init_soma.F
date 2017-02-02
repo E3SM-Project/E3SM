@@ -155,8 +155,10 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_soma_phi', config_soma_phi)
       call mpas_pool_get_config(domain % configs, 'config_soma_ref_density', config_soma_ref_density)
       call mpas_pool_get_config(domain % configs, 'config_soma_density_difference', config_soma_density_difference)
-      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temp_restoring_at_center_latitude', config_soma_surface_temp_restoring_at_center_latitude)
-      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temp_restoring_latitude_gradient', config_soma_surface_temp_restoring_latitude_gradient)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temp_restoring_at_center_latitude', &
+         config_soma_surface_temp_restoring_at_center_latitude)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temp_restoring_latitude_gradient', &
+         config_soma_surface_temp_restoring_latitude_gradient)
       call mpas_pool_get_config(domain % configs, 'config_soma_restoring_temp_piston_vel', config_soma_restoring_temp_piston_vel)
       call mpas_pool_get_config(domain % configs, 'config_soma_use_surface_temp_restoring', config_soma_use_surface_temp_restoring)
 

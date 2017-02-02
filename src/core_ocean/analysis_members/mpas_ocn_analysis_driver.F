@@ -899,7 +899,8 @@ contains
 
                if ( associated(config_AM_backwardOffset) ) then
                   if ( associated(config_AM_forwardOffset) ) then
-                     write(stderrUnit, *) 'WARNING: Both backward and forward offsets are set for AM ' // poolItr % memberName(1:nameLength)
+                     write(stderrUnit, *) 'WARNING: Both backward and forward offsets are set for AM ' // &
+                        poolItr % memberName(1:nameLength)
                      write(stderrUnit, *) '         will only use backward offset. Forward offset will be ignored.'
                   end if
                   call mpas_set_timeinterval(offsetInt, timeString=config_AM_backwardOffset, ierr=err_tmp)
@@ -914,7 +915,8 @@ contains
                end if
 
                call mpas_get_time(outputTime, dateTimeString=outputTimeString, ierr=err_tmp)
-               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, writeTime=outputTimeString, ierr=err_tmp)
+               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, &
+                  writeTime=outputTimeString, ierr=err_tmp)
                call mpas_timer_stop(timerName)
                timerName = trim(alarmTimerPrefix) // poolItr % memberName(1:nameLength)
                call mpas_timer_start(timerName)

@@ -206,7 +206,7 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
          call mpas_pool_get_array(regionPool, 'regionCellMasks', regionCellMasks)
-         call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)	!!!! this could probably NOT be pulled before the loop.
+         call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
          ! Bin by latitude on a sphere, by yCell otherwise.
          if (on_a_sphere) then
