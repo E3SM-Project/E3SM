@@ -88,11 +88,11 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
-			<stream name="mesh"/>	
-			<var name="xtime"/> 
-			<var name="tThreshMLD"/> 
+			<stream name="mesh"/>
+			<var name="xtime"/>
+			<var name="tThreshMLD"/>
 			<var name="dThreshMLD"/>
-			<var name="tGradMLD"/> 
+			<var name="tGradMLD"/>
 			<var name="dGradMLD"/>
 		</stream>
 	</streams>
