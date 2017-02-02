@@ -70,6 +70,7 @@ using a fortran linker.
 <compiler>
   <CPPDEFS>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
+    <append> -D$(OS) </append>
   </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
@@ -465,6 +466,12 @@ using a fortran linker.
   <FFLAGS>
     <append compile_threaded="false"> -heap-arrays </append>
   </FFLAGS>
+</compiler>
+
+<compiler OS="Linux">
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
 </compiler>
 
 <compiler MACH="bluewaters">
@@ -956,7 +963,6 @@ using a fortran linker.
   <CPPDEFS>
     <!-- these flags enable nano timers -->
     <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-    <append> -DLINUX </append>
   </CPPDEFS>
   <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
