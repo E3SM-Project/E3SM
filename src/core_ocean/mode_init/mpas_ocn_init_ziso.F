@@ -409,7 +409,7 @@ contains
                 debugTracers(idx, k, iCell) = 1.0_RKIND + &
                    100000.0_RKIND*exp(-(refZMid(k)+1250.0_RKIND)**2/100.0_RKIND**2) * &
                    exp(-(yCell(iCell)-1250.0_RKIND*1000.0_RKIND)**2/(50.0_RKIND*1000.0_RKIND)**2)
-             enddo 
+             enddo
           endif
 
           ! set windstress

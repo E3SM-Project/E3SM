@@ -13,8 +13,8 @@
 !> \author Xylar Asay-Davis
 !> \date   07/21/2015
 !> \details
-!>  This module contains the routines for initializing the 
-!>  the ISOMIP+ experiments 
+!>  This module contains the routines for initializing the
+!>  the ISOMIP+ experiments
 !
 !-----------------------------------------------------------------------
 
@@ -78,7 +78,7 @@ contains
 !> \brief   Setup for ISOMIP+ experiments
 !> \author  Xylar Asay-Davis
 !> \date    07/21/2015
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the ISOMIP+ experiments
 !
 !-----------------------------------------------------------------------
@@ -127,7 +127,7 @@ contains
       real(kind=RKIND), dimension(:), pointer :: refBottomDepth, &
                                                  fCell, fEdge, fVertex, effectiveDensityInLandIce, xCell, &
                                                  refZMid, refLayerThickness
-                                                 
+
       real(kind=RKIND), dimension(:,:), pointer :: zMid
       real(kind=RKIND), dimension(:,:), pointer :: layerThickness
       real(kind=RKIND), dimension(:,:,:), pointer :: activeTracers
@@ -210,7 +210,7 @@ contains
 
       ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) bottomDepth and refBottomDepth
       call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
-           
+
       if(iErr .ne. 0) then
         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_landIcePressure_vertical_grid failed.'
         return
@@ -299,7 +299,7 @@ contains
                 = (1.0_RKIND - frac)*config_isomip_plus_restore_top_temp &
                 + frac*config_isomip_plus_restore_bot_temp
               activeTracersInteriorRestoringValue(index_salinity, k, iCell) &
-                = (1.0_RKIND - frac)*config_isomip_plus_restore_top_sal & 
+                = (1.0_RKIND - frac)*config_isomip_plus_restore_top_sal &
                 + frac*config_isomip_plus_restore_bot_sal
             end do
             ! fraction of the way between southern and northern boundaries of restoring region
@@ -367,7 +367,7 @@ contains
 !> \brief   Read the topography IC file
 !> \author  Xylar Asay-Davis
 !> \date    07/21/2015
-!> \details 
+!> \details
 !>  This routine reads the topography IC file, including x and y coordinates.
 !
 !-----------------------------------------------------------------------
@@ -507,7 +507,7 @@ contains
 !> \brief   Interpolate the topography IC to MPAS mesh
 !> \author  Xylar Asay-Davis
 !> \date    07/21/2015
-!> \details 
+!> \details
 !>  This routine interpolates topography data to the MPAS mesh. Currently it
 !>   uses a bilinear interpolation
 !
@@ -603,7 +603,7 @@ contains
                                                      xCell, yCell, ssh, nCells)
 
           do iCell = 1,nCells
-            if(oceanFracObserved(iCell) > config_isomip_plus_min_ocean_fraction) then 
+            if(oceanFracObserved(iCell) > config_isomip_plus_min_ocean_fraction) then
               ! we multiplied by the fraction of ocean before; divide by the interpolated ocean fraction
               bottomDepthObserved(iCell) = bottomDepthObserved(iCell)/oceanFracObserved(iCell)
             else
@@ -672,7 +672,7 @@ contains
 !> \brief   Topography field cleanup routine
 !> \author  Xylar Asay-Davis
 !> \date    07/21/2015
-!> \details 
+!> \details
 !>  This routine destroys the fields that were created to hold topography
 !>  initial condition information
 !
@@ -694,7 +694,7 @@ contains
 !> \brief   Validation for ISOMIP+ experiments
 !> \author  Xylar Asay-Davis
 !> \date    07/21/2015
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the ISOMIP+ experiments.
 !
 !-----------------------------------------------------------------------
@@ -732,7 +732,7 @@ contains
          iErr = 1
          return
       end if
-         
+
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
       call mpas_pool_get_config(configPool, 'config_isomip_plus_vert_levels', config_isomip_plus_vert_levels)
 

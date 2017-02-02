@@ -247,7 +247,7 @@ contains
          ! copy the SSH into the landIceDraft so we can use it later to remove it when
          ! computing sea-surface tilt
          landIceDraft(:) = ssh(:)
- 
+
          block_ptr => block_ptr % next
        end do !block_ptr
 
@@ -339,7 +339,7 @@ contains
        ! copy the SSH into the landIceDraft so we can use it later to remove it when
        ! computing sea-surface tilt
        landIceDraft(:) = ssh(:)
-  
+
        block_ptr => block_ptr % next
      end do !block_ptr
 
