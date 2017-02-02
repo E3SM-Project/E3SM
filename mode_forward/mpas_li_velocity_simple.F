@@ -116,7 +116,7 @@ contains
 !> \brief   Initializes blocks for simple velocity
 !> \author  William Lipscomb
 !> \date    October 2015
-!> \details 
+!> \details
 !>  This routine initializes each block with a simple velocity field
 !>  (uniform velocity in a straight line, or radially symmetric).
 !>  NOTE: This subroutine assumes flow in a plane with all z components = 0.
@@ -182,7 +182,7 @@ contains
            normalVelocityInitial,                         & ! normal component of velocity on edges
            uReconstructX, uReconstructY, uReconstructZ,   & ! x/y/z velocity components at cell center
            uReconstructZonal, uReconstructMeridional        ! zonal and meridional velocity components at cell center
- 
+
       integer, dimension(:,:), pointer :: cellsOnEdge     ! indices for the 2 cells on each edge
 
       real (kind=RKIND), dimension(2) :: unitNormalVector   ! x/y components of normal vector on an edge
@@ -196,7 +196,7 @@ contains
       integer :: iLevel, iEdge, iCell, iCell1, iCell2
 
       real (kind=RKIND), parameter :: flowSpeed = 1000._RKIND/scyr  ! flow speed (m/s)
-                                                                    ! applies to uniform flow 
+                                                                    ! applies to uniform flow
       real (kind=RKIND), parameter :: flowTheta = 0.0_RKIND         ! direction of flow (0 < theta < 2*pi)
                                                                     ! applied to uniform flow (not radial)
 
@@ -209,7 +209,7 @@ contains
       !WHL - debug diagnostics only
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell  ! index for each edge on a cell
-      real(kind=RKIND), dimension(:,:,:), pointer ::  & 
+      real(kind=RKIND), dimension(:,:,:), pointer ::  &
            coeffsReconstruct        ! coefficients for reconstructing edge-based fields at cell centers
       integer :: iEdgeOnCell
 
@@ -332,17 +332,18 @@ contains
          uEdgeY = 0.5_RKIND * (uVelocityY(iCell1) + uVelocityY(iCell2))
 
          ! Compute the components of the normal vector on the edge
-         
+
          unitNormalVector(1) = xEdge(iEdge) - xCell(iCell1)
          unitNormalVector(2) = yEdge(iEdge) - yCell(iCell1)
          magnitude = sqrt(unitNormalVector(1)**2 + unitNormalVector(2)**2)
 
-         ! Note: The magnitude should be dcEdge/2. 
+         ! Note: The magnitude should be dcEdge/2.
          !       But this may not be the case for edges at the border of a periodic domain;
          !        for these cells, the magnitude may be comparable to the domain size.
          !       For such edges, create the normal vector from iCell2 instead.
          if (magnitude > dcEdge(iEdge)) then
-!            write(stderrUnit,*) 'Use iCell2 instead: iEdge, iCell1, iCell2, magnitude, dcEdge =', iEdge, iCell1, iCell2, magnitude, dcEdge(iEdge)
+!            write(stderrUnit,*) 'Use iCell2 instead: iEdge, iCell1, iCell2, magnitude, dcEdge =', &
+!                iEdge, iCell1, iCell2, magnitude, dcEdge(iEdge)
             unitNormalVector(1) = -(xEdge(iEdge) - xCell(iCell2))
             unitNormalVector(2) = -(yEdge(iEdge) - yCell(iCell2))
             magnitude = sqrt(unitNormalVector(1)**2 + unitNormalVector(2)**2)
@@ -367,7 +368,7 @@ contains
          iEdge = edgesOnCell(iEdgeOnCell,iCell)
          write(stderrUnit,*) iEdgeOnCell, cellsOnEdge(:,iEdge), normalVelocityInitial(iLevel,iEdge)*scyr
       enddo
-      
+
       if (velocity_simple_bug_check) then
 
          ! Make sure we can recover the cell-center velocity to a good approximation
@@ -379,9 +380,9 @@ contains
          ! Note: Currently, the reconstruction coefficients are not correct for cells at the edge of a periodic domain,
          !        so errors will be generated even though the normal velocities are correct.
          !       For this reason I have commented out the warning messages.
-         
+
          do iCell = 1, nCellsSolve
-            
+
             speed = sqrt(uVelocityX(iCell)**2 + uVelocityY(iCell)**2)
 
             if (iCell == config_stats_cell_ID) then
@@ -402,7 +403,7 @@ contains
                   write(stderrUnit,*) iEdgeOnCell, cellsOnEdge(:,iEdge), normalVelocityInitial(iLevel,iEdge)
                enddo
             endif
-            
+
             iLevel = 1   ! Check at one level only, since the velocity is vertically uniform
 
             if (abs(uReconstructX(iLevel,iCell) - uVelocityX(iCell)) > 1.e-8_RKIND*speed .or.  &
@@ -410,9 +411,10 @@ contains
 
                xDiff = abs(uReconstructX(iLevel,iCell) - uVelocityX(iCell)) / speed
                yDiff = abs(uReconstructY(iLevel,iCell) - uVelocityY(iCell)) / speed
-               
+
                write(stderrUnit,*) ' '
-               write(stderrUnit,*) 'WARNING: Reconstructed velocity not equal to uniform velocity, iCell, xDiff, yDiff=', iCell, xDiff, yDiff
+               write(stderrUnit,*) 'WARNING: Reconstructed velocity not equal to uniform velocity, iCell, xDiff, yDiff=', &
+                  iCell, xDiff, yDiff
                write(stderrUnit,*) 'Prescribed velocity:   ', uVelocityX(iCell), uVelocityY(iCell)
                write(stderrUnit,*) 'Reconstructed velocity:', uReconstructX(iLevel,iCell), uReconstructY(iLevel,iCell)
                write(stderrUnit,*) 'iEdgeOnCell, cellsOnEdge, normal velocity:'
@@ -422,7 +424,7 @@ contains
                enddo
                err = 1
             endif
-            
+
          enddo   ! iCell
 
       endif   ! bug check
@@ -436,16 +438,16 @@ contains
       if (radialMelting) then   ! force the calving front to retreat
 
          write(stderrUnit,*) 'Setting up radially symmetric melting'
-         write(stderrUnit,*) 'Melt rate at periphery (m/yr) =', maxMelt * scyr / 910.0_RKIND 
+         write(stderrUnit,*) 'Melt rate at periphery (m/yr) =', maxMelt * scyr / 910.0_RKIND
 
          ! Zero out the normal velocities, since we are testing ice retreat
          normalVelocityInitial(:,:) = 0.0_RKIND
-         
+
          ! Set the thickness and melt rate
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
-         
+
          do iCell = 1, nCells
             xDiff = xCell(iCell) - xCenter
             yDiff = yCell(iCell) - yCenter
@@ -455,7 +457,7 @@ contains
             ! set melting to increase away from the center
             sfcMassBal(iCell) = maxMelt * (-radius/maxRadius)
          enddo
-         
+
          write(stderrUnit,*) ' '
          write(stderrUnit,*) 'thickness (m):'
          do iRow = nRows, 1, -1
@@ -468,7 +470,7 @@ contains
             enddo
             write(stderrUnit,*) ' '
          enddo
-         
+
          write(stderrUnit,*) ' '
          write(stderrUnit,*) 'melt rate (m/yr):'
          do iRow = nRows, 1, -1
@@ -481,7 +483,7 @@ contains
             enddo
             write(stderrUnit,*) ' '
          enddo
-         
+
       endif   ! radialMelting
 
       if (trim(config_calving) == 'topographic_threshold') then
@@ -614,7 +616,7 @@ contains
 
    ! private subroutines
 
- 
+
 
 
 !***********************************************************************

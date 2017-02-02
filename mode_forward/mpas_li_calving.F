@@ -84,7 +84,7 @@ module li_calving
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: &
-         domain          !< Input/Output: domain object 
+         domain          !< Input/Output: domain object
 
       !-----------------------------------------------------------------
       ! output variables
@@ -98,9 +98,9 @@ module li_calving
       type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
 
-      type (mpas_pool_type), pointer :: meshPool 
+      type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: geometryPool
-      type (mpas_pool_type), pointer :: scratchPool 
+      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: velocityPool
 
       ! calving-relevant config options
@@ -128,7 +128,8 @@ module li_calving
                                                                ! = 0 elsewhere
 
       type (field1dInteger), pointer :: inactiveMarginMaskField
-      integer, dimension(:), pointer :: inactiveMarginMask  ! = 1 for inactive cells (thin or no ice) that have 1 or more active neighbors
+      integer, dimension(:), pointer :: inactiveMarginMask
+      ! = 1 for inactive cells (thin or no ice) that have 1 or more active neighbors
 
       type (field1dInteger), pointer :: oceanMaskField
       integer, dimension(:), pointer :: oceanMask   ! = 1 for cells that are not land and do not have active ice
@@ -141,7 +142,7 @@ module li_calving
       integer, dimension(:), pointer :: &
            nEdgesOnCell,     & ! number of cells that border each cell
            cellMask            ! bit mask describing whether ice is floating, dynamically active, etc.
-      
+
       integer, dimension(:), pointer :: &
            indexToCellID       ! list of global cell IDs
 
@@ -158,7 +159,8 @@ module li_calving
 
       real (kind=RKIND), dimension(:), pointer :: &
            calvingThickness    ! thickness of ice that calves (computed in this subroutine)
-                               ! typically the entire ice thickness, but will be a fraction of the thickness if calving_timescale > dt
+                               ! typically the entire ice thickness, but will be a fraction of the thickness
+                               ! if calving_timescale > dt
 
       integer :: iCell, iCellOnCell, iCellNeighbor
 
@@ -270,11 +272,11 @@ module li_calving
             !        (e.g., ice is floating, or the topography lies below a given level).
             !        If a cell meets the criteria and lies in the calving domain (e.g., at the margin), it is calved.
             !       For the thickness-threshold option, ice thinner than config_calving_thickness is calved,
-            !        but only if it lies beyond a protected ring of thin ice at the floating margin. 
+            !        but only if it lies beyond a protected ring of thin ice at the floating margin.
             !       The reason for this more complicated approach is that we do not want to remove all floating ice
-            !         thinner than the calving thickness, because then we would remove thin ice that has just 
+            !         thinner than the calving thickness, because then we would remove thin ice that has just
             !         been advected from active cells at the margin, and the calving front would be unable to advance.
-            !       By protecting a ring of inactive ice (thickness < config_calving_thickness) at the margin, 
+            !       By protecting a ring of inactive ice (thickness < config_calving_thickness) at the margin,
             !        we allow ice in these cells to thicken and become active, thus advancing the calving front.
             !       The calving front retreats when active floating ice thins to become inactive, removing protection
             !        from previously protected cells.
@@ -351,7 +353,7 @@ module li_calving
                if (activeForCalvingMask(iCell) == 0) then   ! inactive
 
                   ! check whether any neighbor cells are active
-                  do iCellOnCell = 1, nEdgesOnCell(iCell)    
+                  do iCellOnCell = 1, nEdgesOnCell(iCell)
                      iCellNeighbor = cellsOnCell(iCellOnCell,iCell)
                      if (activeForCalvingMask(iCellNeighbor) == 1) then  ! neighbor cell is active
                         inactiveMarginMask(iCell) = 1
@@ -420,13 +422,13 @@ module li_calving
             call mpas_pool_get_field(scratchPool, 'iceCellMask',  calvingLawMaskField)
             call mpas_allocate_scratch_field(calvingLawMaskField, .true.)
             calvingLawMask => calvingLawMaskField % array
-            
+
             if (trim(config_calving) == 'floating') then
 
                ! calculate masks - so we know where the ice is floating
                call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
                err = ior(err, err_tmp)
-               
+
                ! calve floating ice
                ! Note: The floating_ice mask includes all floating ice, both inactive and active
 
@@ -437,13 +439,13 @@ module li_calving
                endwhere
 
             elseif (trim(config_calving) == 'topographic_threshold') then
-            
+
                ! calve ice where the bed topography lies below a threshold depth
 
                if (config_print_calving_info) then
                   write(stdoutUnit,*) 'Calving topographic threshold (m) =', config_calving_topography
                endif
-            
+
                where (bedTopography < config_calving_topography + config_sea_level)
                   calvingLawMask = 1
                elsewhere
@@ -476,9 +478,9 @@ module li_calving
 
 
          ! Optionally, print a list of cells with calving
-            
+
          if (config_print_calving_info) then
-               
+
             write(stdoutUnit,*) ' '
             write(stdoutUnit,*) 'Global cell ID, bedTopography, calvingThickness:'
             do iCell = 1, nCells
@@ -486,7 +488,7 @@ module li_calving
                   write(stdoutUnit,*) indexToCellID(iCell), bedTopography(iCell), calvingThickness(iCell)
                endif
             enddo
-            
+
             !WHL - debug - for circular shelf test case
             if (circular_shelf) then
                write(stdoutUnit,*) ' '
@@ -506,11 +508,11 @@ module li_calving
             endif   ! circular_shelf
 
          endif   ! config_print_calving_info
-            
+
          block => block % next
       enddo
 
-               
+
       ! === error check
       if (err > 0) then
           write (stderrUnit,*) "An error has occurred in li_calve_ice."
@@ -546,7 +548,7 @@ module li_calving
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: &
-         domain          !< Input/Output: domain object 
+         domain          !< Input/Output: domain object
 
       !-----------------------------------------------------------------
       ! output variables
@@ -560,10 +562,10 @@ module li_calving
       type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
 
-      type (mpas_pool_type), pointer :: meshPool 
+      type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool
-      type (mpas_pool_type), pointer :: scratchPool 
+      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: velocityPool
 
       integer, pointer :: nCellsSolve, nVertLevels
@@ -574,10 +576,10 @@ module li_calving
       real (kind=RKIND), pointer ::   &
            config_sea_level,          &
            config_dynamic_thickness
-      
+
       integer, dimension(:), pointer :: &
            cellMask            ! bit mask describing whether ice is floating, dynamically active, etc.
-      
+
       real(kind=RKIND), dimension(:), pointer :: &
            layerCenterSigma    ! vertical sigma coordinate at layer midpoints
 
@@ -603,7 +605,7 @@ module li_calving
            surfaceAirTemperature, &   ! surface air temperature
            surfaceTemperature,    &   ! surface ice temperature
            basalTemperature           ! basal ice temperature
-                                
+
       integer :: iCell, err_tmp
 
       !WHL - debug
@@ -678,7 +680,7 @@ module li_calving
          !  even with a certain amount of natural variability.
          ! It should also be large enough to permit stable thermal calculations.
          ! For now, setting it to 1/10 of config_dynamic_thickness
-         
+
          restoreThicknessMin = 0.1_RKIND * config_dynamic_thickness
 
          ! calculate masks - so we know where the calving front was located initially
@@ -693,7 +695,7 @@ module li_calving
          do iCell = 1, nCellsSolve
 
             if (bedTopography(iCell) < config_sea_level) then
-                                                                           
+
                ! The bed is below sea level; test for calving-front advance and retreat.
 
                if (li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) < restoreThicknessMin) then
@@ -738,7 +740,7 @@ module li_calving
                endif   ! li_mask_is_initial_ice
 
             endif    ! bedTopography < config_sea_level
-             
+
          enddo   ! iCell
 
          block => block % next
@@ -746,7 +748,7 @@ module li_calving
 
       if (config_print_calving_info) then
          write(stdoutUnit,*) 'Restored the initial calving front'
-         
+
          !WHL - debug - for circular shelf test case
          if (circular_shelf) then
             write(stdoutUnit,*) 'Final ice thickness'
@@ -781,7 +783,7 @@ module li_calving
 !***********************************************************************
 
 ! No private subroutines so far
-   
+
 end module li_calving
 
 

@@ -180,23 +180,28 @@ contains
 
       ! Check that layerThicknessFractions are valid
       ! TODO - switch to having the user input the sigma levels instead???
-      if (.not. config_do_restart) then   ! This would be applied an additional time on each restart, messing up the vertical levels (very, very slightly)
+      if (.not. config_do_restart) then   ! This would be applied an additional time on each restart,
+                                          ! messing up the vertical levels (very, very slightly)
       fractionTotal = sum(layerThicknessFractions)
       if (fractionTotal /= 1.0_RKIND) then
          if (abs(fractionTotal - 1.0_RKIND) > 0.001_RKIND) then
             write(stderrUnit,*) 'Error: The sum of layerThicknessFractions is different from 1.0 by more than 0.001.'
             err = 1
          end if
-         write (stdoutUnit,*) 'Adjusting upper layerThicknessFrac by small amount because sum of layerThicknessFractions is slightly different from 1.0.'
+         write (stdoutUnit,*) 'Adjusting upper layerThicknessFrac by small amount because sum of ', &
+            'layerThicknessFractions is slightly different from 1.0.'
          layerThicknessFractions(1) = layerThicknessFractions(1) - (fractionTotal - 1.0_RKIND)
       endif
       endif
 
-      ! layerCenterSigma is the fractional vertical position (0-1) of each layer center, with 0.0 at the ice surface and 1.0 at the ice bed
-      ! layerInterfaceSigma is the fractional vertical position (0-1) of each layer interface, with 0.0 at the ice surface and 1.0 at the ice bed.  Interface 1 is the surface, interface 2 is between layers 1 and 2, etc., and interface nVertLevels+1 is the bed.
+      ! layerCenterSigma is the fractional vertical position (0-1) of each layer center,
+      ! with 0.0 at the ice surface and 1.0 at the ice bed
+      ! layerInterfaceSigma is the fractional vertical position (0-1) of each layer interface,
+      ! with 0.0 at the ice surface and 1.0 at the ice bed.
+      ! Interface 1 is the surface, interface 2 is between layers 1 and 2, etc., and interface nVertLevels+1 is the bed.
       layerCenterSigma(1) = 0.5_RKIND * layerThicknessFractions(1)
       layerInterfaceSigma(1) = 0.0_RKIND
-      do k = 2, nVertLevels 
+      do k = 2, nVertLevels
          layerCenterSigma(k) = layerCenterSigma(k-1) + 0.5_RKIND * layerThicknessFractions(k-1) &
             + 0.5_RKIND * layerThicknessFractions(k)
          layerInterfaceSigma(k) = layerInterfaceSigma(k-1) + layerThicknessFractions(k-1)

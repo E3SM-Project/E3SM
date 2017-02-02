@@ -34,7 +34,8 @@ module li_mask
    ! Public parameters
    !
    !--------------------------------------------------------------------
-   integer, parameter :: li_mask_ValueIce                   =  32  ! Giving this the highest current value so it is obvious during visualization
+   integer, parameter :: li_mask_ValueIce                   =  32
+      !< Giving this the highest current value so it is obvious during visualization
    integer, parameter :: li_mask_ValueDynamicIce            =   2
    integer, parameter :: li_mask_ValueFloating              =   4
    integer, parameter :: li_mask_ValueMargin                =   8  ! This is the last cell with ice.
@@ -42,7 +43,8 @@ module li_mask
    integer, parameter :: li_mask_ValueInitialIceExtent      =   1
    integer, parameter :: li_mask_ValueAlbanyActive          =  64  ! These are locations that Albany includes in its solution
    integer, parameter :: li_mask_ValueAlbanyMarginNeighbor  = 128  ! This the first cell beyond the last active albany cell
-   integer, parameter :: li_mask_ValueGroundingLine         = 256  ! This is grounded cell that has a floating neighbor, or vertex/edge on that boundary
+   integer, parameter :: li_mask_ValueGroundingLine         = 256
+      !< This is grounded cell that has a floating neighbor, or vertex/edge on that boundary
 
    !--------------------------------------------------------------------
    !
@@ -125,7 +127,7 @@ module li_mask
       module procedure li_mask_is_initial_ice_logout_0d
    end interface
 
-!! SFP: the 1d versions below have not been tested yet - activate and use at your own risk! 
+!! SFP: the 1d versions below have not been tested yet - activate and use at your own risk!
 !! Also check the corresponding function below.
    interface li_mask_is_grounded_ice_int
       module procedure li_mask_is_grounded_ice_intout_1d
@@ -199,10 +201,11 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
 
-      if (config_do_restart .eqv. .false.) then  ! We only want to set this bit of the mask when a new simulation starts, but not during a restart.
+      if (config_do_restart .eqv. .false.) then  ! We only want to set this bit of the mask when a new simulation starts,
+                                                 ! but not during a restart.
          ! Initialize cell mask to 0 everywhere before we assign anything to it.
          cellMask = 0
-         where (thickness > 0.0)
+         where (thickness > 0.0_RKIND)
             cellMask = ior(cellMask, li_mask_ValueInitialIceExtent)
          end where
       endif
@@ -272,9 +275,11 @@ contains
       integer :: i, j, iCell
       logical :: isMargin
       logical :: isAlbanyMarginNeighbor
-      logical :: aCellOnVertexHasIce, aCellOnVertexHasNoIce, aCellOnVertexHasDynamicIce, aCellOnVertexHasNoDynamicIce, aCellOnVertexIsFloating, aCellOnVertexIsAlbanyActive
+      logical :: aCellOnVertexHasIce, aCellOnVertexHasNoIce, aCellOnVertexHasDynamicIce, aCellOnVertexHasNoDynamicIce, &
+         aCellOnVertexIsFloating, aCellOnVertexIsAlbanyActive
       logical :: aCellOnVertexIsGrounded
-      logical :: aCellOnEdgeHasIce, aCellOnEdgeHasNoIce, aCellOnEdgeHasDynamicIce, aCellOnEdgeHasNoDynamicIce, aCellOnEdgeIsFloating 
+      logical :: aCellOnEdgeHasIce, aCellOnEdgeHasNoIce, aCellOnEdgeHasDynamicIce, aCellOnEdgeHasNoDynamicIce, &
+         aCellOnEdgeIsFloating
       logical :: aCellOnEdgeIsGrounded
       integer :: numCellsOnVertex
       integer :: numDiriDynamicCells, numDiriNondynamicCells, numExtendedCells
@@ -321,7 +326,7 @@ contains
       do i=1, nCells
         cellMask(i) = iand(cellMask(i), li_mask_ValueInitialIceExtent)
       enddo
-      
+
       ! Identify cells with ice
       where (thickness > 0)
           cellMask = ior(cellMask, li_mask_ValueIce)
@@ -339,21 +344,24 @@ contains
          ! HO external FEM dycore
          ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
          where ( (thickness > config_dynamic_thickness) .and.    &  ! same as for SIA case
-                 (maxval(dirichletVelocityMask(1:nVertInterfaces-1, :), dim=1) == 0) )   ! but exclude dirichletVelocityMask locations set as lateral b.c.  We don't want to consider dirichlet b.c. on the basal boundary, so we ignore the basal level
+                 (maxval(dirichletVelocityMask(1:nVertInterfaces-1, :), dim=1) == 0) )  ! but exclude dirichletVelocityMask
+                    ! locations set as lateral b.c.  We don't want to consider dirichlet b.c. on the basal boundary,
+                    ! so we ignore the basal level
             cellMask = ior(cellMask, li_mask_ValueAlbanyActive)
          end where
       endif
 
       ! Is it floating? (ice thickness equal to floatation is considered floating)
-      ! For now floating ice and grounded ice are mutually exclusive.  
+      ! For now floating ice and grounded ice are mutually exclusive.
       ! This may change if a grounding line parameterization is added.
-      where (  li_mask_is_ice(cellMask) .and. (config_ice_density / config_ocean_density * thickness) <= (config_sea_level - bedTopography) )
+      where (  li_mask_is_ice(cellMask) .and. (config_ice_density / config_ocean_density * thickness) <= &
+               (config_sea_level - bedTopography) )
           cellMask = ior(cellMask, li_mask_ValueFloating)
       end where
 
       ! Identify the margin
       ! For a cell, we define the margin as the last cell with ice (the cell has ice and at least one neighbor is a non-ice cell)
-      do i=1,nCells      
+      do i=1,nCells
           if (li_mask_is_ice(cellMask(i))) then
               isMargin = .false.
               do j=1,nEdgesOnCell(i) ! Check if any neighbors are non-ice
@@ -366,8 +374,9 @@ contains
       enddo
 
       ! Identify the dynamic margin
-      ! For a cell, we define the dynamic margin as the last cell with dynamic ice (the cell is dynamic and at least one neighboring cell is not dynamic)
-      do i=1,nCells      
+      ! For a cell, we define the dynamic margin as the last cell with dynamic ice
+      ! (the cell is dynamic and at least one neighboring cell is not dynamic)
+      do i=1,nCells
           if (li_mask_is_dynamic_ice(cellMask(i))) then
               isMargin = .false.
               do j=1,nEdgesOnCell(i) ! Check if any neighbors are not dynamic
@@ -416,10 +425,12 @@ contains
       ! Bit: Vertices with ice are ones with at least one adjacent cell with ice
       ! Bit: Vertices with dynamic ice are ones with at least one adjacent cell with dynamic ice
       ! Bit: Floating vertices have at least one neighboring cell floating
-      ! Bit: Vertices on margin are vertices with at least one neighboring cell with ice and at least one neighboring cell without ice
-      ! Bit: Vertices on dynamic margin are vertices with at least one neighboring cell with dynamic ice and at least one neighboring cell without dynamic ice
-      ! NOTE: Vertices are only considered 'valid' if they have three valid neighboring 
-      !       cells (i.e., the cells exist in the mesh).  This allows external dycores to use the 
+      ! Bit: Vertices on margin are vertices with at least one neighboring cell with ice
+      !      and at least one neighboring cell without ice
+      ! Bit: Vertices on dynamic margin are vertices with at least one neighboring cell with
+      !      dynamic ice and at least one neighboring cell without dynamic ice
+      ! NOTE: Vertices are only considered 'valid' if they have three valid neighboring
+      !       cells (i.e., the cells exist in the mesh).  This allows external dycores to use the
       !       vertexMask to get information about triangles in the Delaunay triangulation.
       !       (This is done in a way which does not assume vertexMask==3.)
       ! Bit: GL is a vertex with at least one neighboring cell grounded ice and at least one neighboring cell floating ice
@@ -456,10 +467,12 @@ contains
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueGroundingLine)
           endif
           if (aCellOnVertexHasIce .and. aCellOnVertexHasNoIce) then
-             vertexMask(i) = ior(vertexMask(i), li_mask_ValueMargin)     ! vertex with both 1+ ice cell and 1+ non-ice cell as neighbors
+             vertexMask(i) = ior(vertexMask(i), li_mask_ValueMargin)
+             ! vertex with both 1+ ice cell and 1+ non-ice cell as neighbors
           endif
           if (aCellOnVertexHasDynamicIce .and. aCellOnVertexHasNoDynamicIce) then
-             vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicMargin)     ! vertex with both 1+ dynamic ice cell(s) and 1+ non-dynamic cell(s) as neighbors
+             vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicMargin)
+             ! vertex with both 1+ dynamic ice cell(s) and 1+ non-dynamic cell(s) as neighbors
           endif
       end do
 
@@ -483,7 +496,9 @@ contains
                endif
                aCellOnVertexIsAlbanyActive = (aCellOnVertexIsAlbanyActive .or. li_mask_is_albany_active(cellMask(iCell)))
 
-               !if (li_mask_is_dynamic_ice(cellMask(iCell)) .and. .not. li_mask_is_albany_active(cellMask(iCell))) then ! this finds diri cells
+               !if (li_mask_is_dynamic_ice(cellMask(iCell)) .and. .not. li_mask_is_albany_active(cellMask(iCell))) then
+               !!< this finds diri cells
+
                if ( (maxval(dirichletVelocityMask(1:nVertInterfaces-1, iCell)) > 0) .and. &
                        (li_mask_is_dynamic_ice(cellMask(iCell)) ) ) then
                        numDiriDynamicCells = numDiriDynamicCells + 1
@@ -514,7 +529,8 @@ contains
       ! Bit: Edges with dynamic ice are ones with at least one adjacent cell with dynamic ice
       ! Bit: Floating Edges have at least one neighboring cell floating
       ! Bit: Edges on margin are edges with one neighboring cell with ice and one neighboring cell without ice
-      ! Bit: Edges on dynamic margin are edges with one neighboring cell with dynamic ice and one neighboring cell without dynamic ice
+      ! Bit: Edges on dynamic margin are edges with one neighboring cell with dynamic ice and
+      !      one neighboring cell without dynamic ice
       ! Bit: GL is an edge with one cell grounded ice and one cell floating ice
 
       !call mpas_timer_start('calculate mask edge')
@@ -541,7 +557,8 @@ contains
           endif
           if (aCellOnEdgeHasDynamicIce) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueDynamicIce)
-             edgeMask(i) = ior(edgeMask(i), li_mask_ValueAlbanyActive)  ! Note: Albany does not use edgeMask, but setting this anyway.
+             edgeMask(i) = ior(edgeMask(i), li_mask_ValueAlbanyActive)
+             !< Note: Albany does not use edgeMask, but setting this anyway.
           endif
           if (aCellOnEdgeIsFloating) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueFloating)
@@ -559,7 +576,7 @@ contains
       end do
       !call mpas_timer_stop('calculate mask edge')
 
-      ! vertexMask and edgeMask needs halo updates before they can be used.  Halo updates need to occur outside of block loops.  
+      ! vertexMask and edgeMask needs halo updates before they can be used.  Halo updates need to occur outside of block loops.
 
       ! === error check
       if (err > 0) then
@@ -754,14 +771,16 @@ contains
       integer, dimension(:), intent(in) :: mask
       logical, dimension(size(mask)) :: li_mask_is_albany_margin_neighbor_logout_1d
 
-      li_mask_is_albany_margin_neighbor_logout_1d = (iand(mask, li_mask_ValueAlbanyMarginNeighbor) == li_mask_ValueAlbanyMarginNeighbor)
+      li_mask_is_albany_margin_neighbor_logout_1d = (iand(mask, li_mask_ValueAlbanyMarginNeighbor) == &
+         li_mask_ValueAlbanyMarginNeighbor)
    end function li_mask_is_albany_margin_neighbor_logout_1d
 
    function li_mask_is_albany_margin_neighbor_logout_0d(mask)
       integer, intent(in) :: mask
       logical :: li_mask_is_albany_margin_neighbor_logout_0d
 
-      li_mask_is_albany_margin_neighbor_logout_0d = (iand(mask, li_mask_ValueAlbanyMarginNeighbor) == li_mask_ValueAlbanyMarginNeighbor)
+      li_mask_is_albany_margin_neighbor_logout_0d = (iand(mask, li_mask_ValueAlbanyMarginNeighbor) == &
+         li_mask_ValueAlbanyMarginNeighbor)
    end function li_mask_is_albany_margin_neighbor_logout_0d
 
 
@@ -827,7 +846,7 @@ contains
       integer :: li_mask_is_grounded_ice_intout_0d
 
       if( li_mask_is_ice(mask) )then
-        li_mask_is_grounded_ice_intout_0d = 1 - ( iand(mask, li_mask_ValueFloating) / li_mask_ValueFloating ) 
+        li_mask_is_grounded_ice_intout_0d = 1 - ( iand(mask, li_mask_ValueFloating) / li_mask_ValueFloating )
       else
         li_mask_is_grounded_ice_intout_0d = 0
       endif

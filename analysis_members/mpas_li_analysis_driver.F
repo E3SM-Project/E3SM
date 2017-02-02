@@ -11,7 +11,7 @@
 !
 !> \brief Driver for MPAS Land Ice analysis members
 !> \author S. Price
-!> \date   9/10/2015    
+!> \date   9/10/2015
 !> \details
 !>  This is the driver for the MPAS Land Ice members.
 !
@@ -79,7 +79,7 @@ contains
 !
 !> \brief   Setup packages for MPAS-Land Ice analysis driver
 !> \author S. Price
-!> \date   9/10/2015    
+!> \date   9/10/2015
 !> \details
 !>  This routine is intended to configure the packages for all
 !>   Land Ice analysis members.
@@ -155,7 +155,7 @@ contains
 !
 !> \brief   Initialize MPAS-Land Ice analysis driver
 !> \author S. Price
-!> \date   9/10/2015    
+!> \date   9/10/2015
 !> \details
 !>  This routine calls all initializations required for the
 !>  MPAS-Land Ice analysis driver.
@@ -202,7 +202,7 @@ contains
 
       logical :: streamFound
       character  (len=StrKIND) :: referenceTimeString, outputIntervalString
-      type (MPAS_Time_Type) :: referenceTime 
+      type (MPAS_Time_Type) :: referenceTime
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
       err = 0
@@ -235,24 +235,26 @@ contains
             ! Verify stream exists before trying to use output_interval
             if ( config_AM_stream_name /= 'none' ) then
                streamFound = .false.
-   
+
                call mpas_stream_mgr_begin_iteration(domain % streamManager)
                do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamName) )
                   if ( trim(streamName) == trim(config_AM_stream_name) ) then
                      streamFound = .true.
                   end if
                end do
-   
+
                if ( .not. streamFound ) then
-                  call mpas_dmpar_global_abort('MPAS-landice: ERROR: Stream ' // trim(config_AM_stream_name) // ' does not exist. Exiting...')
+                  call mpas_dmpar_global_abort('MPAS-landice: ERROR: Stream ' &
+                    // trim(config_AM_stream_name) // ' does not exist. Exiting...')
                end if
             end if
-            
+
 
             if ( config_AM_compute_interval /= 'output_interval' .and. config_AM_stream_name /= 'none') then
                alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
                call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_compute_interval, ierr=err_tmp)
-               call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_stream_name, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+               call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_stream_name, &
+               MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
                call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
                call mpas_add_clock_alarm(domain % clock, alarmName, referenceTime, alarmTimeStep, ierr=err_tmp)
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
@@ -271,7 +273,7 @@ contains
 !
 !> \brief   Driver for MPAS-Land Ice analysis computations
 !> \author S. Price
-!> \date   9/10/2015    
+!> \date   9/10/2015
 !> \details
 !>  This routine calls all computation subroutines required for the
 !>  MPAS-Land Ice analysis driver.
@@ -345,7 +347,8 @@ contains
                   configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
                   call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
                   if ( config_AM_stream_name /= 'none' ) then
-                     call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_stream_name, forceWriteNow=.true., ierr=err_tmp)
+                     call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_stream_name, &
+                     forceWriteNow=.true., ierr=err_tmp)
                   end if
                end if
             else
@@ -367,7 +370,7 @@ contains
 !
 !> \brief   Driver for MPAS-Land Ice analysis computations
 !> \author S. Price
-!> \date   9/10/2015    
+!> \date   9/10/2015
 !> \details
 !>  This routine calls all computation subroutines required for the
 !>  MPAS-Land Ice analysis driver.
@@ -436,7 +439,8 @@ contains
 
             ! Compute analysis member just before output
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_stream_name /= 'none') then
-               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_stream_name, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_stream_name, &
+                  direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
                   call mpas_timer_start(timerName, .false.)
                   call li_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                   call mpas_timer_stop(timerName)
@@ -460,7 +464,7 @@ contains
 !
 !> \brief   Save restart for MPAS-Land Ice analysis driver
 !> \author S. Price
-!> \date   9/10/2015    
+!> \date   9/10/2015
 !> \details
 !>  This routine calls all subroutines required to prepare to save
 !>  the restart state for the MPAS-Land Ice analysis driver.
@@ -533,7 +537,7 @@ contains
 !
 !> \brief   Driver for MPAS-Land Ice analysis output
 !> \author S. Price
-!> \date   9/10/2015    
+!> \date   9/10/2015
 !> \details
 !>  This routine calls all output writing subroutines required for the
 !>  MPAS-Land Ice analysis driver.
@@ -614,7 +618,7 @@ contains
 !
 !> \brief   Finalize MPAS-Land Ice analysis driver
 !> \author S. Price
-!> \date   9/10/2015    
+!> \date   9/10/2015
 !> \details
 !>  This routine calls all finalize routines required for the
 !>  MPAS-Land Ice analysis driver.
