@@ -19,7 +19,7 @@ module initGridCellsMod
   use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
-  use PatchType      , only : pft                
+  use PatchType      , only : pft_pp                
   use initSubgridMod , only : clm_ptrs_compdown, clm_ptrs_check
   use initSubgridMod , only : add_landunit, add_column, add_patch
   !
@@ -210,7 +210,7 @@ contains
        ! responsible for all columns and pfts in L.
        call clm_ptrs_check(bounds_clump)
 
-       ! Set pft%wtlunit, pft%wtgcell and col_pp%wtgcell
+       ! Set pft_pp%wtlunit, pft_pp%wtgcell and col_pp%wtgcell
        call compute_higher_order_weights(bounds_clump)
 
     end do

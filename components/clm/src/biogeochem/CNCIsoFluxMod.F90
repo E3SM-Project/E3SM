@@ -15,7 +15,7 @@ module CNCIsoFluxMod
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
   use ColumnType             , only : col_pp                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft_pp                
   !
   implicit none
   save
@@ -831,14 +831,14 @@ contains
                cc = filter_soilc(fc)
                if ( pi <=  col_pp%npfts(cc) ) then
                   pp = col_pp%pfti(cc) + pi - 1
-                  if (pft%active(pp)) then
+                  if (pft_pp%active(pp)) then
                      do j = 1, nlevdecomp
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
                              isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_deadstemc_to_litter_fire_patch(pp) * pft%wtcol(pp) * stem_prof(pp,j)
+                             isotopeflux_vars%m_deadstemc_to_litter_fire_patch(pp) * pft_pp%wtcol(pp) * stem_prof(pp,j)
                         isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) = &
                              isotopeflux_vars%fire_mortality_c_to_cwdc_col(cc,j) + &
-                             isotopeflux_vars%m_deadcrootc_to_litter_fire_patch(pp) * pft%wtcol(pp) * croot_prof(pp,j)
+                             isotopeflux_vars%m_deadcrootc_to_litter_fire_patch(pp) * pft_pp%wtcol(pp) * croot_prof(pp,j)
                      end do
                   end if
                end if
@@ -883,8 +883,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                           & 
-         ivt                       =>    pft%itype                                     , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-         wtcol                     =>    pft%wtcol                                     , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
+         ivt                       =>    pft_pp%itype                                     , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+         wtcol                     =>    pft_pp%wtcol                                     , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
          
          lf_flab                   =>    ecophyscon%lf_flab                            , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
          lf_fcel                   =>    ecophyscon%lf_fcel                            , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
@@ -910,7 +910,7 @@ contains
 
                if ( pi <=  col_pp%npfts(c) ) then
                   p = col_pp%pfti(c) + pi - 1
-                  if (pft%active(p)) then
+                  if (pft_pp%active(p)) then
                      ! leaf litter carbon fluxes
                      phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
                           + leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
@@ -956,8 +956,8 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                                                       & 
-          ivt                            =>    pft%itype                                            , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-          wtcol                          =>    pft%wtcol                                            , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
+          ivt                            =>    pft_pp%itype                                            , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+          wtcol                          =>    pft_pp%wtcol                                            , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
           
           lf_flab                        =>    ecophyscon%lf_flab                                   , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
           lf_fcel                        =>    ecophyscon%lf_fcel                                   , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
@@ -1006,7 +1006,7 @@ contains
                 if (pi <=  col_pp%npfts(c)) then
                    p = col_pp%pfti(c) + pi - 1
 
-                   if (pft%active(p)) then
+                   if (pft_pp%active(p)) then
 
                       ! leaf gap mortality carbon fluxes
                       gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + &
@@ -1098,8 +1098,8 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                                                           & 
-          ivt                              =>    pft%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-          wtcol                            =>    pft%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
+          ivt                              =>    pft_pp%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+          wtcol                            =>    pft_pp%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
           
           lf_flab                          =>    ecophyscon%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
           lf_fcel                          =>    ecophyscon%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
@@ -1151,7 +1151,7 @@ contains
                 if (pi <=  col_pp%npfts(c)) then
                    p = col_pp%pfti(c) + pi - 1
 
-                   if (pft%active(p)) then
+                   if (pft_pp%active(p)) then
 
                       ! leaf harvest mortality carbon fluxes
                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
@@ -1222,7 +1222,7 @@ contains
              if (pi <=  col_pp%npfts(c)) then
                 p = col_pp%pfti(c) + pi - 1
 
-                if (pft%active(p)) then
+                if (pft_pp%active(p)) then
                    chrv_deadstemc_to_prod10c(c)  = chrv_deadstemc_to_prod10c(c)  + &
                         phrv_deadstemc_to_prod10c(p)  * wtcol(p)
                    chrv_deadstemc_to_prod100c(c)  = chrv_deadstemc_to_prod100c(c)  + &

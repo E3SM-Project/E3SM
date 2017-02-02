@@ -26,7 +26,7 @@ module CNAllocationBetrMod
   use EcophysConType      , only : ecophyscon
   use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp                
-  use PatchType           , only : pft                
+  use PatchType           , only : pft_pp                
   !
   implicit none
   save
@@ -234,7 +234,7 @@ contains
     !-----------------------------------------------------------------------
 
   associate(                                                                               &
-     ivt                          => pft%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                
+     ivt                          => pft_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
      woody                        => ecophyscon%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
      froot_leaf                   => ecophyscon%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
@@ -318,7 +318,7 @@ contains
 
    do fp=1,num_soilp
       p = filter_soilp(fp)
-      c = pft%column(p)
+      c = pft_pp%column(p)
 
          ! set some local allocation variables
       f1 = froot_leaf(ivt(p))
@@ -580,7 +580,7 @@ contains
   real(r8)                                 :: dayscrecover                                       !
   
   associate(                                                                              &
-    ivt                          => pft%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                       
+    ivt                          => pft_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                       
     woody                        => ecophyscon%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
     froot_leaf                   => ecophyscon%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
     croot_stem                   => ecophyscon%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)

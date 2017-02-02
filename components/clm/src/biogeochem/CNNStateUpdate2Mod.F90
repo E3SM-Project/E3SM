@@ -12,7 +12,7 @@ module CNNStateUpdate2Mod
   use clm_varctl          , only : iulog
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
-  use PatchType           , only : pft
+  use PatchType           , only : pft_pp
   use pftvarcon           , only : npcropmin
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
@@ -160,7 +160,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                      & 
-         ivt => pft%itype         , & ! Input:  [integer  (:) ]  pft vegetation type
+         ivt => pft_pp%itype         , & ! Input:  [integer  (:) ]  pft vegetation type
          nf => nitrogenflux_vars  , &
          ns => nitrogenstate_vars   &
          )

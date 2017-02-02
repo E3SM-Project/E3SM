@@ -7,7 +7,7 @@ module TracerFluxType
   use decompMod      , only : bounds_type
   use LandunitType   , only : lun_pp
   use ColumnType     , only : col_pp
-  use PatchType      , only : pft
+  use PatchType      , only : pft_pp
   use clm_varcon     , only : spval, ispval
   use clm_varpar     , only : nlevtrc_soil
   use landunit_varcon, only : istsoil, istcrop
@@ -371,7 +371,7 @@ contains
     begp = bounds%begp; endp= bounds%endp
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = pft_pp%landunit(p)
        if (lun_pp%ifspecial(l)) then
          this%tracer_flx_vtrans_patch(p,:)         = spval
          this%tracer_flx_snowfall_grnd_patch(p,:)  = spval

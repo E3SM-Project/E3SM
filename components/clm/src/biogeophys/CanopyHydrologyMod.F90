@@ -24,7 +24,7 @@ module CanopyHydrologyMod
   use WaterfluxType   , only : waterflux_type
   use WaterstateType  , only : waterstate_type
   use ColumnType      , only : col_pp                
-  use PatchType       , only : pft                
+  use PatchType       , only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -164,9 +164,9 @@ contains
      !-----------------------------------------------------------------------
 
      associate(                                                     & 
-          pgridcell            => pft%gridcell                             , & ! Input:  [integer  (:)   ]  pft's gridcell                           
-          plandunit            => pft%landunit                             , & ! Input:  [integer  (:)   ]  pft's landunit                           
-          pcolumn              => pft%column                               , & ! Input:  [integer  (:)   ]  pft's column                             
+          pgridcell            => pft_pp%gridcell                             , & ! Input:  [integer  (:)   ]  pft's gridcell                           
+          plandunit            => pft_pp%landunit                             , & ! Input:  [integer  (:)   ]  pft's landunit                           
+          pcolumn              => pft_pp%column                               , & ! Input:  [integer  (:)   ]  pft's column                             
           ltype                => lun_pp%itype                                , & ! Input:  [integer  (:)   ]  landunit type                            
           urbpoi               => lun_pp%urbpoi                               , & ! Input:  [logical  (:)   ]  true => landunit is an urban point       
           cgridcell            => col_pp%gridcell                             , & ! Input:  [integer  (:)   ]  columns's gridcell                       

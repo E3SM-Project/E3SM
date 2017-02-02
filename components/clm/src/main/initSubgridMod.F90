@@ -16,7 +16,7 @@ module initSubgridMod
   use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
-  use PatchType      , only : pft                
+  use PatchType      , only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -85,8 +85,8 @@ contains
     curc = 0
     curl = 0
     do p = bounds%begp,bounds%endp
-       if (pft%column(p) /= curc) then
-          curc = pft%column(p)
+       if (pft_pp%column(p) /= curc) then
+          curc = pft_pp%column(p)
           if (curc < bounds%begc .or. curc > bounds%endc) then
              write(iulog,*) 'clm_ptrs_compdown ERROR: pcolumn ',p,curc,bounds%begc,bounds%endc
              call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
@@ -95,8 +95,8 @@ contains
        endif
        col_pp%pftf(curc) = p
        col_pp%npfts(curc) = col_pp%pftf(curc) - col_pp%pfti(curc) + 1
-       if (pft%landunit(p) /= curl) then
-          curl = pft%landunit(p)
+       if (pft_pp%landunit(p) /= curl) then
+          curl = pft_pp%landunit(p)
           if (curl < bounds%begl .or. curl > bounds%endl) then
              write(iulog,*) 'clm_ptrs_compdown ERROR: plandunit ',p,curl,bounds%begl,bounds%endl
              call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
@@ -218,9 +218,9 @@ contains
     if (masterproc) write(iulog,*) '   clm_ptrs_check: c index ranges - OK'
 
     error = .false.
-    if (minval(pft%gridcell(begp:endp)) < begg .or. maxval(pft%gridcell(begp:endp)) > endg) error=.true.
-    if (minval(pft%landunit(begp:endp)) < begl .or. maxval(pft%landunit(begp:endp)) > endl) error=.true.
-    if (minval(pft%column(begp:endp)) < begc .or. maxval(pft%column(begp:endp)) > endc) error=.true.
+    if (minval(pft_pp%gridcell(begp:endp)) < begg .or. maxval(pft_pp%gridcell(begp:endp)) > endg) error=.true.
+    if (minval(pft_pp%landunit(begp:endp)) < begl .or. maxval(pft_pp%landunit(begp:endp)) > endl) error=.true.
+    if (minval(pft_pp%column(begp:endp)) < begc .or. maxval(pft_pp%column(begp:endp)) > endc) error=.true.
     if (error) then
        write(iulog,*) '   clm_ptrs_check: p index ranges - ERROR'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -267,15 +267,15 @@ contains
 
     error = .false.
     do p=begp+1,endp
-      l = pft%landunit(p)
-      l_prev = pft%landunit(p-1)
+      l = pft_pp%landunit(p)
+      l_prev = pft_pp%landunit(p-1)
       if ((lun_pp%itype(l) == lun_pp%itype(l_prev)) .and. &
-           pft%gridcell(p) < pft%gridcell(p-1)) then
+           pft_pp%gridcell(p) < pft_pp%gridcell(p-1)) then
          ! grid cell indices should be monotonically increasing for a given landunit type
          error = .true.
       end if
-      if (pft%landunit(p) < pft%landunit(p-1)) error = .true.
-      if (pft%column  (p) < pft%column  (p-1)) error = .true.
+      if (pft_pp%landunit(p) < pft_pp%landunit(p-1)) error = .true.
+      if (pft_pp%column  (p) < pft_pp%column  (p-1)) error = .true.
       if (error) then
          write(iulog,*) '   clm_ptrs_check: p mono increasing - ERROR'
          call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
@@ -305,9 +305,9 @@ contains
                    call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
                 endif
                 do p = col_pp%pfti(c),col_pp%pftf(c)
-                   if (pft%gridcell(p) /= g) error = .true.
-                   if (pft%landunit(p) /= l) error = .true.
-                   if (pft%column(p)   /= c) error = .true.
+                   if (pft_pp%gridcell(p) /= g) error = .true.
+                   if (pft_pp%landunit(p) /= l) error = .true.
+                   if (pft_pp%column(p)   /= c) error = .true.
                    if (error) then
                       write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
                       call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
@@ -432,20 +432,20 @@ contains
     
     pi = pi + 1
 
-    pft%column(pi) = ci
+    pft_pp%column(pi) = ci
     li = col_pp%landunit(ci)
-    pft%landunit(pi) = li
-    pft%gridcell(pi) = col_pp%gridcell(ci)
+    pft_pp%landunit(pi) = li
+    pft_pp%gridcell(pi) = col_pp%gridcell(ci)
 
-    pft%wtcol(pi) = wtcol
+    pft_pp%wtcol(pi) = wtcol
 
-    pft%itype(pi) = ptype
+    pft_pp%itype(pi) = ptype
 
     if (lun_pp%itype(li) == istsoil .or. lun_pp%itype(li) == istcrop) then
        lb_offset = 1 - natpft_lb
-       pft%mxy(pi) = ptype + lb_offset
+       pft_pp%mxy(pi) = ptype + lb_offset
     else
-       pft%mxy(pi) = ispval
+       pft_pp%mxy(pi) = ispval
     end if
     
 

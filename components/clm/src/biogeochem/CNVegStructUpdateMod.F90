@@ -16,7 +16,7 @@ module CNVegStructUpdateMod
   use CNStateType          , only : cnstate_type
   use CNCarbonStateType    , only : carbonstate_type
   use CanopyStateType      , only : canopystate_type
-  use PatchType            , only : pft                
+  use PatchType            , only : pft_pp                
   !
   implicit none
   save
@@ -84,7 +84,7 @@ contains
     !-------------------------------------------------------------------------------
     
     associate(                                                            & 
-         ivt                =>  pft%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type                                
+         ivt                =>  pft_pp%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type                                
          woody              =>  ecophyscon%woody                  ,       & ! Input:  [real(r8) (:) ] binary flag for woody lifeform (1=woody, 0=not woody)
          slatop             =>  ecophyscon%slatop                 ,       & ! Input:  [real(r8) (:) ] specific leaf area at top of canopy, projected area basis [m^2/gC]
          dsladlai           =>  ecophyscon%dsladlai               ,       & ! Input:  [real(r8) (:) ] dSLA/dLAI, projected area basis [m^2/gC]           
@@ -131,8 +131,8 @@ contains
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft%column(p)
-         g = pft%gridcell(p)
+         c = pft_pp%column(p)
+         g = pft_pp%gridcell(p)
 
          if (ivt(p) /= noveg) then
 

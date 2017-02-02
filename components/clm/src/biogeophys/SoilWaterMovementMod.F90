@@ -258,7 +258,7 @@ contains
     use WaterFluxType        , only : waterflux_type
     use WaterStateType       , only : waterstate_type
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    use PatchType            , only : pft
+    use PatchType            , only : pft_pp
     use ColumnType           , only : col_pp
     !
     ! !ARGUMENTS:
@@ -757,7 +757,7 @@ contains
     use TemperatureType           , only : temperature_type
     use WaterFluxType             , only : waterflux_type
     use WaterStateType            , only : waterstate_type
-    use PatchType                 , only : pft
+    use PatchType                 , only : pft_pp
     use ColumnType                , only : col_pp
     use clm_varcon                , only : watmin
     use LandunitType              , only : lun_pp

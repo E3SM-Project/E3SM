@@ -10,7 +10,7 @@ module CNGRespMod
   use pftvarcon        , only : grperc, grpnow, npcropmin
   use EcophysContype   , only : ecophyscon
   use CNCarbonFluxType , only : carbonflux_type
-  use PatchType        , only : pft                
+  use PatchType        , only : pft_pp                
   !
   implicit none
   save
@@ -42,7 +42,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                     & 
-         ivt                           =>    pft%itype                                           , & ! Input:  [integer (:)]  pft vegetation type                                
+         ivt                           =>    pft_pp%itype                                           , & ! Input:  [integer (:)]  pft vegetation type                                
 
          woody                         =>    ecophyscon%woody                                    , & ! Input:  [real(r8) (:)]  binary flag for woody lifeform (1=woody, 0=not woody)
 

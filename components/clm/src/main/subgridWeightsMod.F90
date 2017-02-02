@@ -98,7 +98,7 @@ module subgridWeightsMod
   use GridcellType , only : grc_pp                
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
-  use PatchType    , only : pft                
+  use PatchType    , only : pft_pp                
   !
   ! PUBLIC TYPES:
   implicit none
@@ -214,8 +214,8 @@ contains
   subroutine compute_higher_order_weights(bounds)
     !
     ! !DESCRIPTION:
-    ! Assuming pft%wtcol, col_pp%wtlunit and lun_pp%wtgcell have already been computed, compute
-    ! the "higher-order" weights: pft%wtlunit, pft%wtgcell and col_pp%wtgcell, for all p and c
+    ! Assuming pft_pp%wtcol, col_pp%wtlunit and lun_pp%wtgcell have already been computed, compute
+    ! the "higher-order" weights: pft_pp%wtlunit, pft_pp%wtgcell and col_pp%wtgcell, for all p and c
     !
     ! !USES:
     !
@@ -233,9 +233,9 @@ contains
     end do
 
     do p = bounds%begp, bounds%endp
-       c = pft%column(p)
-       pft%wtlunit(p) = pft%wtcol(p) * col_pp%wtlunit(c)
-       pft%wtgcell(p) = pft%wtcol(p) * col_pp%wtgcell(c)
+       c = pft_pp%column(p)
+       pft_pp%wtlunit(p) = pft_pp%wtcol(p) * col_pp%wtlunit(c)
+       pft_pp%wtgcell(p) = pft_pp%wtcol(p) * col_pp%wtgcell(c)
     end do
   end subroutine compute_higher_order_weights
 
@@ -279,9 +279,9 @@ contains
     end do
 
     do p = bounds%begp,bounds%endp
-       c = pft%column(p)
-       pft%active(p) = is_active_p(p)
-       if (pft%active(p) .and. .not. col_pp%active(c)) then
+       c = pft_pp%column(p)
+       pft_pp%active(p) = is_active_p(p)
+       if (pft_pp%active(p) .and. .not. col_pp%active(c)) then
           write(iulog,*) trim(subname),' ERROR: active pft found on inactive column', &
                          'at p = ', p, ', c = ', c
           call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
@@ -438,7 +438,7 @@ contains
        is_active_p = .true.
 
     else
-       c =pft%column(p)
+       c =pft_pp%column(p)
     
        is_active_p = .false.
 
@@ -446,7 +446,7 @@ contains
        ! General conditions under which is_active_p NEEDS to be true in order to satisfy
        ! the requirements laid out at the top of this module:
        ! ------------------------------------------------------------------------
-       if (col_pp%active(c) .and. pft%wtcol(p) > 0._r8) is_active_p = .true.
+       if (col_pp%active(c) .and. pft_pp%wtcol(p) > 0._r8) is_active_p = .true.
 
     end if
 
@@ -583,14 +583,14 @@ contains
     sumwtgcell(bounds%begg : bounds%endg) = 0._r8
 
     do p = bounds%begp,bounds%endp
-       c = pft%column(p)
-       l = pft%landunit(p)
-       g = pft%gridcell(p)
+       c = pft_pp%column(p)
+       l = pft_pp%landunit(p)
+       g = pft_pp%gridcell(p)
 
-       if ((active_only .and. pft%active(p)) .or. .not. active_only) then 
-          sumwtcol(c) = sumwtcol(c) + pft%wtcol(p)
-          sumwtlunit(l) = sumwtlunit(l) + pft%wtlunit(p)
-          sumwtgcell(g) = sumwtgcell(g) + pft%wtgcell(p)
+       if ((active_only .and. pft_pp%active(p)) .or. .not. active_only) then 
+          sumwtcol(c) = sumwtcol(c) + pft_pp%wtcol(p)
+          sumwtlunit(l) = sumwtlunit(l) + pft_pp%wtlunit(p)
+          sumwtgcell(g) = sumwtgcell(g) + pft_pp%wtgcell(p)
        end if
     end do
 
@@ -839,15 +839,15 @@ contains
     subgrid_weights_diagnostics%pct_cft(bounds%begg:bounds%endg, :) = 0._r8
     
     do p = bounds%begp,bounds%endp
-       g = pft%gridcell(p)
-       l = pft%landunit(p)
-       ptype = pft%itype(p)
+       g = pft_pp%gridcell(p)
+       l = pft_pp%landunit(p)
+       ptype = pft_pp%itype(p)
        if (lun_pp%itype(l) == istsoil) then
           ptype_1indexing = ptype + (1 - natpft_lb)
-          subgrid_weights_diagnostics%pct_nat_pft(g, ptype_1indexing) = pft%wtlunit(p) * 100._r8
+          subgrid_weights_diagnostics%pct_nat_pft(g, ptype_1indexing) = pft_pp%wtlunit(p) * 100._r8
        else if (lun_pp%itype(l) == istcrop) then
           ptype_1indexing = ptype + (1 - cft_lb)
-          subgrid_weights_diagnostics%pct_cft(g, ptype_1indexing) = pft%wtlunit(p) * 100._r8
+          subgrid_weights_diagnostics%pct_cft(g, ptype_1indexing) = pft_pp%wtlunit(p) * 100._r8
        end if
     end do
 

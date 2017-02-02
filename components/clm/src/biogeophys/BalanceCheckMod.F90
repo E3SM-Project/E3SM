@@ -22,7 +22,7 @@ module BalanceCheckMod
   use GridcellType       , only : grc_pp                
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
-  use PatchType          , only : pft                
+  use PatchType          , only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -522,10 +522,10 @@ contains
        ! Energy balance checks
 
        do p = bounds%begp, bounds%endp
-          if (pft%active(p)) then
-             c = pft%column(p)
-             l = pft%landunit(p)
-             g = pft%gridcell(p)
+          if (pft_pp%active(p)) then
+             c = pft_pp%column(p)
+             l = pft_pp%landunit(p)
+             g = pft_pp%gridcell(p)
 
              ! Solar radiation energy balance
              ! Do not do this check for an urban pft since it will not balance on a per-column
@@ -572,11 +572,11 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft%active(p)) then
+          if (pft_pp%active(p)) then
              if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-3_r8) ) then
                 found = .true.
                 indexp = p
-                indexg = pft%gridcell(indexp)
+                indexg = pft_pp%gridcell(indexp)
              end if
           end if
        end do
@@ -600,7 +600,7 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft%active(p)) then
+          if (pft_pp%active(p)) then
              if ( (errlon(p) /= spval) .and. (abs(errlon(p)) > 1.e-3_r8) ) then
                 found = .true.
                 indexp = p
@@ -618,11 +618,11 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft%active(p)) then
+          if (pft_pp%active(p)) then
              if (abs(errseb(p)) > 1.e-3_r8 ) then
                 found = .true.
                 indexp = p
-                indexc = pft%column(indexp)
+                indexc = pft_pp%column(indexp)
              end if
           end if
        end do

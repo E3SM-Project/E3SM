@@ -12,7 +12,7 @@ module CNNitrogenFluxType
   use abortutils             , only : endrun
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
-  use PatchType              , only : pft
+  use PatchType              , only : pft_pp
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
@@ -2010,7 +2010,7 @@ contains
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = pft_pp%landunit(p)
        if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
@@ -2022,7 +2022,7 @@ contains
     !-----------------------------------------------
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = pft_pp%landunit(p)
        
        this%prev_leafn_to_litter_patch(p)  = 0._r8 
        this%prev_frootn_to_litter_patch(p) = 0._r8 
@@ -2723,7 +2723,7 @@ contains
        this%wood_harvestn_patch(p) = &
             this%hrv_deadstemn_to_prod10n_patch(p) + &
             this%hrv_deadstemn_to_prod100n_patch(p)
-       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+       if ( crop_prog .and. pft_pp%itype(p) >= npcropmin )then
             this%wood_harvestn_patch(p) = &
             this%wood_harvestn_patch(p) + &
             this%hrv_cropn_to_prod1n_patch(p)

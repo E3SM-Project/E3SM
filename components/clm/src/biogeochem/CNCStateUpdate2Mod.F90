@@ -12,10 +12,10 @@ module CNCStateUpdate2Mod
   use clm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
-  use PatchType        , only : pft
+  use PatchType        , only : pft_pp
   use pftvarcon        , only : npcropmin
   use clm_varctl       , only : use_pflotran, pf_cmode
-  use PatchType           , only : pft   
+  use PatchType           , only : pft_pp   
   !
   implicit none
   save
@@ -159,7 +159,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                   & 
-         ivt => pft%itype      , & ! Input:  [integer (:)]  pft vegetation type
+         ivt => pft_pp%itype      , & ! Input:  [integer (:)]  pft vegetation type
          cf => carbonflux_vars , &
          cs => carbonstate_vars  &
          )

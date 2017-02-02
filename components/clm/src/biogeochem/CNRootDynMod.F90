@@ -13,7 +13,7 @@ module CNRootDynMod
   use decompMod           , only : bounds_type
   use pftvarcon           , only : noveg, npcropmin, roota_par, rootb_par,root_dmx
   use ColumnType          , only : col_pp 
-  use PatchType           , only : pft
+  use PatchType           , only : pft_pp
   use CNStateType         , only : cnstate_type
   use CNCarbonStateType   , only : carbonstate_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -79,8 +79,8 @@ contains
     !-----------------------------------------------------------------------
     ! Assign local pointers to derived type arrays (in)
     associate(&
-         ivt                    => pft%itype                                   , & ! Input  :  [integer (:)]  pft vegetation type
-         pcolumn                => pft%column                                  , & ! Input  :  [integer (:)]  pft's column index
+         ivt                    => pft_pp%itype                                   , & ! Input  :  [integer (:)]  pft vegetation type
+         pcolumn                => pft_pp%column                                  , & ! Input  :  [integer (:)]  pft's column index
          croplive               => cnstate_vars%croplive_patch                 , & ! Input  :  [logical (:)]  flag, true if planted, not harvested
          cpool_to_frootc        => carbonflux_vars%cpool_to_frootc_patch       , & ! Input  :  [real(r8) (:)] allocation to fine root C (gC/m2/s)
          frootc_xfer_to_frootc  => carbonflux_vars%frootc_xfer_to_frootc_patch , & ! Input  :  [real(r8) (:)] fine root C growth from storage (gC/m2/s)
@@ -234,13 +234,13 @@ contains
                ! but, need an initial frootr so crops can start root production
                ! default is just the exponential over the top two soil layers
                if (lev <  2) then
-                  rootfr(p,lev) = .5_r8*( exp(-roota_par(pft%itype(p)) * zi(c,lev-1))  &
-                       + exp(-rootb_par(pft%itype(p)) * zi(c,lev-1))  &
-                       - exp(-roota_par(pft%itype(p)) * zi(c,lev  ))  &
-                       - exp(-rootb_par(pft%itype(p)) * zi(c,lev  )) )
+                  rootfr(p,lev) = .5_r8*( exp(-roota_par(pft_pp%itype(p)) * zi(c,lev-1))  &
+                       + exp(-rootb_par(pft_pp%itype(p)) * zi(c,lev-1))  &
+                       - exp(-roota_par(pft_pp%itype(p)) * zi(c,lev  ))  &
+                       - exp(-rootb_par(pft_pp%itype(p)) * zi(c,lev  )) )
                elseif (lev == 2) then
-                  rootfr(p,lev) = .5_r8*( exp(-roota_par(pft%itype(p)) * zi(c,lev-1))  &
-                       + exp(-rootb_par(pft%itype(p)) * zi(c,lev-1)) )
+                  rootfr(p,lev) = .5_r8*( exp(-roota_par(pft_pp%itype(p)) * zi(c,lev-1))  &
+                       + exp(-rootb_par(pft_pp%itype(p)) * zi(c,lev-1)) )
                else
                   rootfr(p,lev) =  0.0_r8
                end if

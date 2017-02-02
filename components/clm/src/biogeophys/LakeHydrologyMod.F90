@@ -20,7 +20,7 @@ module LakeHydrologyMod
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use decompMod            , only : bounds_type
   use ColumnType           , only : col_pp                
-  use PatchType            , only : pft                
+  use PatchType            , only : pft_pp                
   use atm2lndType          , only : atm2lnd_type
   use AerosolType          , only : aerosol_type
   use EnergyFluxType       , only : energyflux_type
@@ -117,8 +117,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                            & 
-         pcolumn              =>  pft%column                            , & ! Input:  [integer  (:)   ]  pft's column index                       
-         pgridcell            =>  pft%gridcell                          , & ! Input:  [integer  (:)   ]  pft's gridcell index                     
+         pcolumn              =>  pft_pp%column                            , & ! Input:  [integer  (:)   ]  pft's column index                       
+         pgridcell            =>  pft_pp%gridcell                          , & ! Input:  [integer  (:)   ]  pft's gridcell index                     
          cgridcell            =>  col_pp%gridcell                          , & ! Input:  [integer  (:)   ]  column's gridcell                        
          clandunit            =>  col_pp%landunit                          , & ! Input:  [integer  (:)   ]  column's landunit                        
          dz_lake              =>  col_pp%dz_lake                           , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)          

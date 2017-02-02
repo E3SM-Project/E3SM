@@ -15,7 +15,7 @@ module CNStateType
   use clm_varctl     , only : iulog, fsurdat
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
-  use PatchType      , only : pft                
+  use PatchType      , only : pft_pp                
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -812,7 +812,7 @@ contains
     ! phenology variables
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = pft_pp%landunit(p)
        this%rc14_atm_patch(p)              = c14ratio 
 
        if (lun_pp%ifspecial(l)) then
@@ -853,7 +853,7 @@ contains
     ! ecophysiological variables
 
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = pft_pp%landunit(p)
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
           this%rc14_atm_patch(p) = c14ratio

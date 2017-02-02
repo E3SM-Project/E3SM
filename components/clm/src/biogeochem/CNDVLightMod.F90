@@ -14,7 +14,7 @@ module CNDVLightMod
   use CNDVType          , only : dgv_ecophyscon
   use CNDVType          , only : dgvs_type
   use CNCarbonStateType , only : carbonstate_type
-  use PatchType         , only : pft                
+  use PatchType         , only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -64,7 +64,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                  & 
-         ivt           =>    pft%itype                        , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt           =>    pft_pp%itype                        , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
          crownarea_max =>    dgv_ecophyscon%crownarea_max     , & ! Input:  [real(r8) (:) ]  ecophys const - tree maximum crown a              
          reinickerp    =>    dgv_ecophyscon%reinickerp        , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allomet              
@@ -98,7 +98,7 @@ contains
 
       do fp = 1,num_natvegp
          p = filter_natvegp(fp)
-         g = pft%gridcell(p)
+         g = pft_pp%gridcell(p)
 
          ! Update LAI and FPC as in the last lines of DGVMAllocation
 
@@ -160,7 +160,7 @@ contains
 
       do fp = 1,num_natvegp
          p = filter_natvegp(fp)
-         g = pft%gridcell(p)
+         g = pft_pp%gridcell(p)
 
          ! light competition
 

@@ -17,7 +17,7 @@ module SoilHydrologyMod
   use TemperatureType   , only : temperature_type
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
-  use PatchType         , only : pft                
+  use PatchType         , only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none

@@ -53,7 +53,7 @@ module clm_instMod
 
   use LandunitType               , only : lun_pp
   use ColumnType                 , only : col_pp
-  use PatchType                  , only : pft
+  use PatchType                  , only : pft_pp
 
   use clm_bgc_interface_data     , only : clm_bgc_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh

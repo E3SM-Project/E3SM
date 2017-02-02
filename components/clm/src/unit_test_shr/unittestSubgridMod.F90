@@ -38,7 +38,7 @@ module unittestSubgridMod
   use GridcellType , only : grc_pp                
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
-  use PatchType    , only : pft                
+  use PatchType    , only : pft_pp                
 
   implicit none
   private
@@ -199,7 +199,7 @@ contains
     use GridcellType    , only : grc_pp
     use LandunitType    , only : lun_pp
     use ColumnType      , only : col_pp
-    use PatchType       , only : pft
+    use PatchType       , only : pft_pp
     !
     ! !ARGUMENTS:
     !
@@ -211,7 +211,7 @@ contains
     call grc_pp%Init(begg, endg)
     call lun_pp%Init(begl, endl)
     call col_pp%Init(begc, endc)
-    call pft%init(begp, endp)
+    call pft_pp%init(begp, endp)
 
   end subroutine initialize_arrays
 
@@ -236,7 +236,7 @@ contains
     call grc_pp%clean
     call lun_pp%clean
     call col_pp%clean
-    call pft%clean
+    call pft_pp%clean
 
   end subroutine unittest_subgrid_teardown
 

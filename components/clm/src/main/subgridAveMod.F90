@@ -17,7 +17,7 @@ module subgridAveMod
   use decompMod     , only : bounds_type
   use LandunitType  , only : lun_pp                
   use ColumnType    , only : col_pp                
-  use PatchType     , only : pft                
+  use PatchType     , only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -116,12 +116,12 @@ contains
     carr(bounds%begc:bounds%endc) = spval
     sumwt(bounds%begc:bounds%endc) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtcol(p) /= 0._r8) then
+       if (pft_pp%active(p) .and. pft_pp%wtcol(p) /= 0._r8) then
           if (parr(p) /= spval) then
-             c = pft%column(p)
+             c = pft_pp%column(p)
              if (sumwt(c) == 0._r8) carr(c) = 0._r8
-             carr(c) = carr(c) + parr(p) * scale_p2c(p) * pft%wtcol(p)
-             sumwt(c) = sumwt(c) + pft%wtcol(p)
+             carr(c) = carr(c) + parr(p) * scale_p2c(p) * pft_pp%wtcol(p)
+             sumwt(c) = sumwt(c) + pft_pp%wtcol(p)
           end if
        end if
     end do
@@ -179,12 +179,12 @@ contains
     do j = 1,num2d
        sumwt(bounds%begc : bounds%endc) = 0._r8
        do p = bounds%begp,bounds%endp
-          if (pft%active(p) .and. pft%wtcol(p) /= 0._r8) then
+          if (pft_pp%active(p) .and. pft_pp%wtcol(p) /= 0._r8) then
              if (parr(p,j) /= spval) then
-                c = pft%column(p)
+                c = pft_pp%column(p)
                 if (sumwt(c) == 0._r8) carr(c,j) = 0._r8
-                carr(c,j) = carr(c,j) + parr(p,j) * scale_p2c(p) * pft%wtcol(p)
-                sumwt(c) = sumwt(c) + pft%wtcol(p)
+                carr(c,j) = carr(c,j) + parr(p,j) * scale_p2c(p) * pft_pp%wtcol(p)
+                sumwt(c) = sumwt(c) + pft_pp%wtcol(p)
              end if
           end if
        end do
@@ -229,7 +229,7 @@ contains
        c = filterc(fc)
        colarr(c) = 0._r8
        do p = col_pp%pfti(c), col_pp%pftf(c)
-          if (pft%active(p)) colarr(c) = colarr(c) + pftarr(p) * pft%wtcol(p)
+          if (pft_pp%active(p)) colarr(c) = colarr(c) + pftarr(p) * pft_pp%wtcol(p)
        end do
     end do
 
@@ -257,7 +257,7 @@ contains
           c = filterc(fc)
           colarr(c,j) = 0._r8
           do p = col_pp%pfti(c), col_pp%pftf(c)
-             if (pft%active(p)) colarr(c,j) = colarr(c,j) + pftarr(p,j) * pft%wtcol(p)
+             if (pft_pp%active(p)) colarr(c,j) = colarr(c,j) + pftarr(p,j) * pft_pp%wtcol(p)
           end do
        end do
     end do
@@ -345,13 +345,13 @@ contains
     larr(bounds%begl : bounds%endl) = spval
     sumwt(bounds%begl : bounds%endl) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtlunit(p) /= 0._r8) then
-          c = pft%column(p)
+       if (pft_pp%active(p) .and. pft_pp%wtlunit(p) /= 0._r8) then
+          c = pft_pp%column(p)
           if (parr(p) /= spval .and. scale_c2l(c) /= spval) then
-             l = pft%landunit(p)
+             l = pft_pp%landunit(p)
              if (sumwt(l) == 0._r8) larr(l) = 0._r8
-             larr(l) = larr(l) + parr(p) * scale_p2c(p) * scale_c2l(c) * pft%wtlunit(p)
-             sumwt(l) = sumwt(l) + pft%wtlunit(p)
+             larr(l) = larr(l) + parr(p) * scale_p2c(p) * scale_c2l(c) * pft_pp%wtlunit(p)
+             sumwt(l) = sumwt(l) + pft_pp%wtlunit(p)
           end if
        end if
     end do
@@ -454,13 +454,13 @@ contains
     do j = 1,num2d
        sumwt(bounds%begl : bounds%endl) = 0._r8
        do p = bounds%begp,bounds%endp
-          if (pft%active(p) .and. pft%wtlunit(p) /= 0._r8) then
-             c = pft%column(p)
+          if (pft_pp%active(p) .and. pft_pp%wtlunit(p) /= 0._r8) then
+             c = pft_pp%column(p)
              if (parr(p,j) /= spval .and. scale_c2l(c) /= spval) then
-                l = pft%landunit(p)
+                l = pft_pp%landunit(p)
                 if (sumwt(l) == 0._r8) larr(l,j) = 0._r8
-                larr(l,j) = larr(l,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * pft%wtlunit(p)
-                sumwt(l) = sumwt(l) + pft%wtlunit(p)
+                larr(l,j) = larr(l,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * pft_pp%wtlunit(p)
+                sumwt(l) = sumwt(l) + pft_pp%wtlunit(p)
              end if
           end if
        end do
@@ -567,14 +567,14 @@ contains
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtgcell(p) /= 0._r8) then
-          c = pft%column(p)
-          l = pft%landunit(p)
+       if (pft_pp%active(p) .and. pft_pp%wtgcell(p) /= 0._r8) then
+          c = pft_pp%column(p)
+          l = pft_pp%landunit(p)
           if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-             g = pft%gridcell(p)
+             g = pft_pp%gridcell(p)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * pft%wtgcell(p)
-             sumwt(g) = sumwt(g) + pft%wtgcell(p)
+             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * pft_pp%wtgcell(p)
+             sumwt(g) = sumwt(g) + pft_pp%wtgcell(p)
           end if
        end if
     end do
@@ -684,14 +684,14 @@ contains
     do j = 1,num2d
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do p = bounds%begp,bounds%endp 
-          if (pft%active(p) .and. pft%wtgcell(p) /= 0._r8) then
-             c = pft%column(p)
-             l = pft%landunit(p)
+          if (pft_pp%active(p) .and. pft_pp%wtgcell(p) /= 0._r8) then
+             c = pft_pp%column(p)
+             l = pft_pp%landunit(p)
              if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-                g = pft%gridcell(p)
+                g = pft_pp%gridcell(p)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * pft%wtgcell(p)
-                sumwt(g) = sumwt(g) + pft%wtgcell(p)
+                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * pft_pp%wtgcell(p)
+                sumwt(g) = sumwt(g) + pft_pp%wtgcell(p)
              end if
           end if
        end do

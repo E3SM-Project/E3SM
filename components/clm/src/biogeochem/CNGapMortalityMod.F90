@@ -18,7 +18,7 @@ module CNGapMortalityMod
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnType          , only : col_pp                
-  use PatchType           , only : pft                
+  use PatchType           , only : pft_pp                
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -117,7 +117,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                              & 
-         ivt                                 =>    pft%itype                                              , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt                                 =>    pft_pp%itype                                              , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
          woody                               =>    ecophyscon%woody                                       , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform                    
          
@@ -319,8 +319,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                              & 
-         ivt                                 =>    pft%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-         wtcol                               =>    pft%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
+         ivt                                 =>    pft_pp%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+         wtcol                               =>    pft_pp%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
          
          lf_flab                             =>    ecophyscon%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
          lf_fcel                             =>    ecophyscon%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
@@ -421,7 +421,7 @@ contains
                if (pi <=  col_pp%npfts(c)) then
                   p = col_pp%pfti(c) + pi - 1
 
-                  if (pft%active(p)) then
+                  if (pft_pp%active(p)) then
 
                      ! leaf gap mortality carbon fluxes
                      gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + &

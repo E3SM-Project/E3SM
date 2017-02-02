@@ -22,7 +22,7 @@ module dynConsBiogeophysMod
   use WaterstateType    , only : waterstate_type
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
-  use PatchType         , only : pft                
+  use PatchType         , only : pft_pp                
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -282,8 +282,8 @@ contains
           !--- water in canopy (at pft level) ---
           if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then   ! note: soil specified at LU level
              do p = col_pp%pfti(c),col_pp%pftf(c) ! loop over patches
-                if (pft%active(p)) then
-                   liq = liq + waterstate_vars%h2ocan_patch(p) * pft%wtcol(p)
+                if (pft_pp%active(p)) then
+                   liq = liq + waterstate_vars%h2ocan_patch(p) * pft_pp%wtcol(p)
                 end if
              end do
           end if

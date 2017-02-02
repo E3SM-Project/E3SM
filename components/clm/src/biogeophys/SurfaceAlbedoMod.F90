@@ -26,7 +26,7 @@ module SurfaceAlbedoMod
   use GridcellType      , only : grc_pp                
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
-  use PatchType         , only : pft                
+  use PatchType         , only : pft_pp                
 
   !
   implicit none
@@ -354,7 +354,7 @@ contains
     end do
     do fp = 1,num_nourbanp
        p = filter_nourbanp(fp)
-       g = pft%gridcell(p)
+       g = pft_pp%gridcell(p)
           coszen_patch(p) = coszen_gcell(g)
     end do
 
@@ -721,8 +721,8 @@ contains
     do fp = 1,num_nourbanp
        p = filter_nourbanp(fp)
           if (coszen_patch(p) > 0._r8) then
-             if ((lun_pp%itype(pft%landunit(p)) == istsoil .or.  &
-                  lun_pp%itype(pft%landunit(p)) == istcrop     ) &
+             if ((lun_pp%itype(pft_pp%landunit(p)) == istsoil .or.  &
+                  lun_pp%itype(pft_pp%landunit(p)) == istcrop     ) &
                  .and. (elai(p) + esai(p)) > 0._r8) then
                     num_vegsol = num_vegsol + 1
                     filter_vegsol(num_vegsol) = p
@@ -745,8 +745,8 @@ contains
     do ib = 1, numrad
        do fp = 1,num_vegsol
           p = filter_vegsol(fp)
-          rho(p,ib) = max( rhol(pft%itype(p),ib)*wl(p) + rhos(pft%itype(p),ib)*ws(p), mpe )
-          tau(p,ib) = max( taul(pft%itype(p),ib)*wl(p) + taus(pft%itype(p),ib)*ws(p), mpe )
+          rho(p,ib) = max( rhol(pft_pp%itype(p),ib)*wl(p) + rhos(pft_pp%itype(p),ib)*ws(p), mpe )
+          tau(p,ib) = max( taul(pft_pp%itype(p),ib)*wl(p) + taus(pft_pp%itype(p),ib)*ws(p), mpe )
        end do
     end do
 
@@ -934,7 +934,7 @@ contains
     do ib = 1,numrad
        do fp = 1,num_novegsol
           p = filter_novegsol(fp)
-          c = pft%column(p)
+          c = pft_pp%column(p)
           fabd(p,ib) = 0._r8
           fabd_sun(p,ib) = 0._r8
           fabd_sha(p,ib) = 0._r8
@@ -1206,7 +1206,7 @@ contains
        ! out in filter_vegsol
        cosz = max(0.001_r8, coszen(p))
 
-       chil(p) = min( max(xl(pft%itype(p)), -0.4_r8), 0.6_r8 )
+       chil(p) = min( max(xl(pft_pp%itype(p)), -0.4_r8), 0.6_r8 )
        if (abs(chil(p)) <= 0.01_r8) chil(p) = 0.01_r8
        phi1 = 0.5_r8 - 0.633_r8*chil(p) - 0.330_r8*chil(p)*chil(p)
        phi2 = 0.877_r8 * (1._r8-2._r8*phi1)
@@ -1249,7 +1249,7 @@ contains
     do ib = 1, numrad
        do fp = 1,num_vegsol
           p = filter_vegsol(fp)
-          c = pft%column(p)
+          c = pft_pp%column(p)
 
           ! Calculate two-stream parameters omega, betad, and betai.
           ! Omega, betad, betai are adjusted for snow. Values for omega*betad

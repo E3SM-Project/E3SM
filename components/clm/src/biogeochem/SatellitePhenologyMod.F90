@@ -21,7 +21,7 @@ module SatellitePhenologyMod
   use decompMod       , only : gsmap_lnd_gdc2glo
   use domainMod       , only : ldomain
   use fileutils       , only : getavu, relavu
-  use PatchType       , only : pft                
+  use PatchType       , only : pft_pp                
   use CanopyStateType , only : canopystate_type
   use WaterstateType  , only : waterstate_type
   use perf_mod        , only : t_startf, t_stopf
@@ -221,13 +221,13 @@ contains
     call shr_strdata_advance(sdat_lai, mcdate, sec, mpicom, 'laidyn')
 
     do p = bounds%begp, bounds%endp
-       ivt = pft%itype(p)
+       ivt = pft_pp%itype(p)
        if (ivt /= noveg) then     ! vegetated pft
           write(stream_var_name,"(i6)") ivt
           stream_var_name = 'LAI_'//trim(adjustl(stream_var_name))
           ip = mct_aVect_indexRA(sdat_lai%avs(1),trim(stream_var_name))
        endif
-       gpft = pft%gridcell(p)
+       gpft = pft_pp%gridcell(p)
 
        !
        ! Determine vector index corresponding to gpft
@@ -333,7 +333,7 @@ contains
 
       do fp = 1, num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = pft_pp%column(p)
 
          ! need to update elai and esai only every albedo time step so do not
          ! have any inconsistency in lai and sai between SurfaceAlbedo calls (i.e.,
@@ -366,7 +366,7 @@ contains
          ! snow burial fraction for short vegetation (e.g. grasses) as in
          ! Wang and Zeng, 2007. 
 
-         if (pft%itype(p) > noveg .and. pft%itype(p) <= nbrdlf_dcd_brl_shrub ) then
+         if (pft_pp%itype(p) > noveg .and. pft_pp%itype(p) <= nbrdlf_dcd_brl_shrub ) then
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
          else
@@ -528,10 +528,10 @@ contains
        !! as determined in subroutine surfrd
 
        do p = bounds%begp,bounds%endp
-          g =pft%gridcell(p)
-          if (pft%itype(p) /= noveg) then     !! vegetated pft
+          g =pft_pp%gridcell(p)
+          if (pft_pp%itype(p) /= noveg) then     !! vegetated pft
              do l = 0, numpft
-                if (l == pft%itype(p)) then
+                if (l == pft_pp%itype(p)) then
                    annlai(k,p) = mlai(g,l)
                 end if
              end do
@@ -639,10 +639,10 @@ contains
        ! as determined in subroutine surfrd
 
        do p = bounds%begp,bounds%endp
-          g =pft%gridcell(p)
-          if (pft%itype(p) /= noveg) then     ! vegetated pft
+          g =pft_pp%gridcell(p)
+          if (pft_pp%itype(p) /= noveg) then     ! vegetated pft
              do l = 0, numpft
-                if (l == pft%itype(p)) then
+                if (l == pft_pp%itype(p)) then
                    mlai2t(p,k) = mlai(g,l)
                    msai2t(p,k) = msai(g,l)
                    mhvt2t(p,k) = mhgtt(g,l)

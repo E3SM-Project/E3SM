@@ -5,7 +5,7 @@ module dynEDMod
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use decompMod      , only : bounds_type
   use landunit_varcon, only : istsoil
-  use PatchType      , only : pft
+  use PatchType      , only : pft_pp
   use ColumnType     , only : col_pp
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -29,12 +29,12 @@ contains
     !------------------------------------------------------------------------
     
     do p = bounds%begp,bounds%endp
-       c = pft%column(p)
+       c = pft_pp%column(p)
        if (col_pp%itype(c) == istsoil) then 
-          if ( pft%is_veg(p) .or. pft%is_bareground(p)) then
-             pft%wtcol(p) = pft%wt_ed(p)
+          if ( pft_pp%is_veg(p) .or. pft_pp%is_bareground(p)) then
+             pft_pp%wtcol(p) = pft_pp%wt_ed(p)
           else
-             pft%wtcol(p) = 0.0_r8 
+             pft_pp%wtcol(p) = 0.0_r8 
           end if
        end if
     end do

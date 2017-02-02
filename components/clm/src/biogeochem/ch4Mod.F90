@@ -37,7 +37,7 @@ module ch4Mod
   use GridcellType       , only : grc_pp                
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
-  use PatchType          , only : pft                
+  use PatchType          , only : pft_pp                
   !
   implicit none
   save
@@ -1534,16 +1534,16 @@ contains
 
       if (nlevdecomp == 1) then
 
-         ! Set rootfraction to spval for non-veg points, unless pft%wtcol > 0.99, 
+         ! Set rootfraction to spval for non-veg points, unless pft_pp%wtcol > 0.99, 
          ! in which case set it equal to uniform dist.
          do j=1, nlevsoi
             do fp = 1, num_soilp
                p = filter_soilp(fp)
-               c = pft%column(p)
+               c = pft_pp%column(p)
 
-               if (pft%itype(p) /= noveg) then
+               if (pft_pp%itype(p) /= noveg) then
                   rootfraction(p,j) = rootfr(p,j)
-               else if (pft%wtcol(p) < 0.99_r8) then
+               else if (pft_pp%wtcol(p) < 0.99_r8) then
                   rootfraction(p,j) = spval
                else
                   rootfraction(p,j) = dz(c,j) / zi(c,nlevsoi)   ! Set equal to uniform distribution
@@ -1950,7 +1950,7 @@ contains
     SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     associate(                                                     & 
-         wtcol          =>    pft%wtcol                          , & ! Input:  [real(r8) (:)    ]  weight (relative to column)                       
+         wtcol          =>    pft_pp%wtcol                          , & ! Input:  [real(r8) (:)    ]  weight (relative to column)                       
          dz             =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
          z              =>    col_pp%z                              , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)            
          zi             =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:)  ]  interface level below a "z" level (m)           
@@ -2023,9 +2023,9 @@ contains
          do j=1,nlevsoi
             do fp = 1, num_methp
                p = filter_methp(fp)
-               c = pft%column(p)
+               c = pft_pp%column(p)
 
-               if (wtcol(p) > 0._r8 .and. pft%itype(p) /= noveg) then
+               if (wtcol(p) > 0._r8 .and. pft_pp%itype(p) /= noveg) then
                   rr_vr(c,j) = rr_vr(c,j) + rr(p)*rootfr(p,j)*wtcol(p)
                end if
             end do
@@ -2443,7 +2443,7 @@ contains
     associate(                                                     & 
          z             =>    col_pp%z                               , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)            
          dz            =>    col_pp%dz                              , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
-         wtcol         =>    pft%wtcol                           , & ! Input:  [real(r8) (:)    ]  weight (relative to column)                       
+         wtcol         =>    pft_pp%wtcol                           , & ! Input:  [real(r8) (:)    ]  weight (relative to column)                       
 
          elai          =>    canopystate_vars%elai_patch         , & ! Input:  [real(r8) (:)    ]  one-sided leaf area index with burying by snow    
 
@@ -2518,11 +2518,11 @@ contains
          do j=1,nlevsoi
             do fp = 1, num_methp
                p = filter_methp (fp)
-               c = pft%column(p)
+               c = pft_pp%column(p)
                g = col_pp%gridcell(c)
 
                ! Calculate transpiration loss
-               if (transpirationloss .and. pft%itype(p) /= noveg) then !allow tloss above WT ! .and. j > jwt(c)) then
+               if (transpirationloss .and. pft_pp%itype(p) /= noveg) then !allow tloss above WT ! .and. j > jwt(c)) then
                   ! Calculate water concentration
                   h2osoi_vol_min = min(watsat(c,j), h2osoi_vol(c,j))
                   k_h_inv = exp(-c_h_inv(1) * (1._r8 / t_soisno(c,j) - 1._r8 / kh_tbase) + log (kh_theta(1)))
@@ -2538,7 +2538,7 @@ contains
                end if
 
                ! Calculate aerenchyma diffusion
-               if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. pft%itype(p) /= noveg) then
+               if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. pft_pp%itype(p) /= noveg) then
                   ! Attn EK: This calculation of aerenchyma properties is very uncertain. Let's check in once all
                   ! the new components are in; if there is any tuning to be done to get a realistic global flux,
                   ! this would probably be the place.  We will have to document clearly in the Tech Note
@@ -2568,8 +2568,8 @@ contains
 
                   n_tiller = m_tiller / 0.22_r8
 
-                  if (pft%itype(p) == nc3_arctic_grass .or. crop(pft%itype(p)) == 1 .or. &
-                       pft%itype(p) == nc3_nonarctic_grass .or. pft%itype(p) == nc4_grass) then
+                  if (pft_pp%itype(p) == nc3_arctic_grass .or. crop(pft_pp%itype(p)) == 1 .or. &
+                       pft_pp%itype(p) == nc3_nonarctic_grass .or. pft_pp%itype(p) == nc4_grass) then
                      poros_tiller = 0.3_r8  ! Colmer 2003
                   else
                      poros_tiller = 0.3_r8 * nongrassporosratio
@@ -3735,7 +3735,7 @@ contains
 
       do fp = 1,num_methp
          p = filter_methp(fp)
-         c = pft%column(p)
+         c = pft_pp%column(p)
          if (annsum_counter(c) >= secsperyear) then
 
             annavg_agnpp(p) = tempavg_agnpp(p)

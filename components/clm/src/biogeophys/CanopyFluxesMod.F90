@@ -39,7 +39,7 @@ module CanopyFluxesMod
   use PhotosynthesisType    , only : photosyns_type
   use GridcellType          , only : grc_pp                
   use ColumnType            , only : col_pp                
-  use PatchType             , only : pft                
+  use PatchType             , only : pft_pp                
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type
   use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
@@ -448,7 +448,7 @@ contains
 
       do fp = 1,num_nolakeurbanp
          p = filter_nolakeurbanp(fp)
-         c = pft%column(p)
+         c = pft_pp%column(p)
          if (frac_veg_nosno(p) == 0) then
             btran(p) = 0._r8     
             t_veg(p) = forc_t(c) 
@@ -507,7 +507,7 @@ contains
       ! calculate daylength control for Vcmax
       do f = 1, fn
          p=filterp(f)
-         g=pft%gridcell(p)
+         g=pft_pp%gridcell(p)
          ! calculate dayl_factor as the ratio of (current:max dayl)^2
          ! set a minimum of 0.01 (1%) for the dayl_factor
          dayl_factor(p)=min(1._r8,max(0.01_r8,(dayl(g)*dayl(g))/(max_dayl(g)*max_dayl(g))))
@@ -591,10 +591,10 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         c = pft%column(p)
-         g = pft%gridcell(p)
-         if ( .not.pft%is_fates(p)             .and. &
-              irrigated(pft%itype(p)) == 1._r8 .and. &
+         c = pft_pp%column(p)
+         g = pft_pp%gridcell(p)
+         if ( .not.pft_pp%is_fates(p)             .and. &
+              irrigated(pft_pp%itype(p)) == 1._r8 .and. &
               elai(p) > irrig_min_lai          .and. &
               btran(p) < irrig_btran_thresh ) then
             
@@ -626,7 +626,7 @@ contains
       do j = 1,nlevgrnd
          do f = 1, fn
             p = filterp(f)
-            c = pft%column(p)
+            c = pft_pp%column(p)
             if (check_for_irrig(p) .and. .not. frozen_soil(p)) then
                ! if level L was frozen, then we don't look at any levels below L
                if (t_soisno(c,j) <= SHR_CONST_TKFRZ) then
@@ -636,7 +636,7 @@ contains
 
                   ! Calculate vol_liq_so - i.e., vol_liq at which smp_node = smpso - by inverting the above equations 
                   ! for the root resistance factors
-                  vol_liq_so   = eff_porosity(c,j) * (-smpso(pft%itype(p))/sucsat(c,j))**(-1/bsw(c,j))
+                  vol_liq_so   = eff_porosity(c,j) * (-smpso(pft_pp%itype(p))/sucsat(c,j))**(-1/bsw(c,j))
 
                   ! Translate vol_liq_so and eff_porosity into h2osoi_liq_so and h2osoi_liq_sat and calculate deficit
                   h2osoi_liq_so  = vol_liq_so * denh2o * col_pp%dz(c,j)
@@ -654,7 +654,7 @@ contains
       ! Modify aerodynamic parameters for sparse/dense canopy (X. Zeng)
       do f = 1, fn
          p = filterp(f)
-         c = pft%column(p)
+         c = pft_pp%column(p)
 
          lt = min(elai(p)+esai(p), tlsai_crit)
          egvf =(1._r8 - alpha_aero * exp(-lt)) / (1._r8 - alpha_aero * exp(-tlsai_crit))
@@ -668,8 +668,8 @@ contains
       found = .false.
       do f = 1, fn
          p = filterp(f)
-         c = pft%column(p)
-         g = pft%gridcell(p)
+         c = pft_pp%column(p)
+         g = pft_pp%gridcell(p)
 
          ! Net absorbed longwave radiation by canopy and ground
          ! =air+bir*t_veg**4+cir*t_grnd(c)**4
@@ -723,7 +723,7 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         c = pft%column(p)
+         c = pft_pp%column(p)
 
          ! Initialize Monin-Obukhov length and wind speed
 
@@ -753,8 +753,8 @@ contains
 
          do f = 1, fn
             p = filterp(f)
-            c = pft%column(p)
-            g = pft%gridcell(p)
+            c = pft_pp%column(p)
+            g = pft_pp%gridcell(p)
 
             tlbef(p) = t_veg(p)
             del2(p) = del(p)
@@ -773,8 +773,8 @@ contains
             ! dleaf_patch if this is not an ed patch.
             ! Otherwise, the value has already been loaded
             ! during the FATES dynamics and/or initialization call
-            if(.not.pft%is_fates(p)) then  
-               dleaf_patch(p) = dleaf(pft%itype(p))
+            if(.not.pft_pp%is_fates(p)) then  
+               dleaf_patch(p) = dleaf(pft_pp%itype(p))
             end if
             
             
@@ -834,14 +834,14 @@ contains
          
          do f = 1, fn
             p = filterp(f)
-            c = pft%column(p)
+            c = pft_pp%column(p)
             if (use_cndv) then
-               if (pft%itype(p) == nbrdlf_dcd_tmp_shrub) then
+               if (pft_pp%itype(p) == nbrdlf_dcd_tmp_shrub) then
                   btran(p) = min(1._r8, btran(p) * 3.33_r8)
                end if
             end if
-            if(.not.pft%is_fates(p)) then
-               if (pft%itype(p) == nsoybean .or. pft%itype(p) == nsoybeanirrig) then
+            if(.not.pft_pp%is_fates(p)) then
+               if (pft_pp%itype(p) == nsoybean .or. pft_pp%itype(p) == nsoybeanirrig) then
                   btran(p) = min(1._r8, btran(p) * 1.25_r8)
                end if
             end if
@@ -869,13 +869,13 @@ contains
 
             do f = 1, fn
                p = filterp(f)
-               c = pft%column(p)
+               c = pft_pp%column(p)
                if (use_cndv) then
-                  if (pft%itype(p) == nbrdlf_dcd_tmp_shrub) then
+                  if (pft_pp%itype(p) == nbrdlf_dcd_tmp_shrub) then
                      btran(p) = min(1._r8, btran(p) * 3.33_r8)
                   end if
                end if
-               if (pft%itype(p) == nsoybean .or. pft%itype(p) == nsoybeanirrig) then
+               if (pft_pp%itype(p) == nsoybean .or. pft_pp%itype(p) == nsoybeanirrig) then
                   btran(p) = min(1._r8, btran(p) * 1.25_r8)
                end if
             end do
@@ -895,8 +895,8 @@ contains
 
          do f = 1, fn
             p = filterp(f)
-            c = pft%column(p)
-            g = pft%gridcell(p)
+            c = pft_pp%column(p)
+            g = pft_pp%gridcell(p)
 
             ! Sensible heat conductance for air, leaf and ground
             ! Moved the original subroutine in-line...
@@ -1117,8 +1117,8 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         c = pft%column(p)
-         g = pft%gridcell(p)
+         c = pft_pp%column(p)
+         g = pft_pp%gridcell(p)
 
          ! Energy balance check in canopy
 

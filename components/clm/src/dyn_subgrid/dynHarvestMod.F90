@@ -26,7 +26,7 @@ module dynHarvestMod
   use EcophysConType        , only : ecophyscon
   use clm_varcon            , only : grlnd
   use ColumnType            , only : col_pp                
-  use PatchType             , only : pft                
+  use PatchType             , only : pft_pp                
 
   use PhosphorusStateType   , only : phosphorusstate_type
   use PhosphorusFluxType    , only : phosphorusflux_type
@@ -204,8 +204,8 @@ contains
     !-----------------------------------------------------------------------
 
    associate(& 
-   pgridcell                           =>    pft%gridcell                                , & ! Input:  [integer (:)]  pft-level index into gridcell-level quantities     
-   ivt                                 =>    pft%itype                                   , & ! Input:  [integer (:)]  pft vegetation type                                
+   pgridcell                           =>    pft_pp%gridcell                                , & ! Input:  [integer (:)]  pft-level index into gridcell-level quantities     
+   ivt                                 =>    pft_pp%itype                                   , & ! Input:  [integer (:)]  pft vegetation type                                
 
    leafc                               =>    carbonstate_vars%leafc_patch                                   , & ! Input:  [real(r8) (:)]  (gC/m2) leaf C                                    
    frootc                              =>    carbonstate_vars%frootc_patch                                  , & ! Input:  [real(r8) (:)]  (gC/m2) fine root C                               
@@ -488,8 +488,8 @@ contains
    !-----------------------------------------------------------------------
 
    associate(                                                                                        & 
-        ivt                              =>    pft%itype                                                , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-        wtcol                            =>    pft%wtcol                                                , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
+        ivt                              =>    pft_pp%itype                                                , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+        wtcol                            =>    pft_pp%wtcol                                                , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
         
         lf_flab                          =>    ecophyscon%lf_flab                                       , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
         lf_fcel                          =>    ecophyscon%lf_fcel                                       , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
@@ -596,7 +596,7 @@ contains
               if (pi <=  col_pp%npfts(c)) then
                  p = col_pp%pfti(c) + pi - 1
 
-                 if (pft%active(p)) then
+                 if (pft_pp%active(p)) then
 
                     ! leaf harvest mortality carbon fluxes
                     harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
@@ -782,7 +782,7 @@ contains
            if (pi <=  col_pp%npfts(c)) then
               p = col_pp%pfti(c) + pi - 1
 
-              if (pft%active(p)) then
+              if (pft_pp%active(p)) then
 
 
                  ! wood harvest mortality carbon fluxes to product pools

@@ -9,7 +9,7 @@ module WaterfluxType
   use clm_varcon   , only : spval
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
-  use PatchType    , only : pft                
+  use PatchType    , only : pft_pp                
   !
   implicit none
   save
@@ -566,7 +566,7 @@ contains
     end do
 
     do p = bounds%begp, bounds%endp
-       l = pft%landunit(p)
+       l = pft_pp%landunit(p)
        
        if (lun_pp%itype(l)==istsoil) then
           this%n_irrig_steps_left_patch(p) = 0

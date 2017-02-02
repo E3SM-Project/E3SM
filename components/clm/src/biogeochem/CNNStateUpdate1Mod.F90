@@ -16,7 +16,7 @@ module CNNStateUpdate1Mod
   use CNStateType            , only : cnstate_type
   use CNNitrogenFluxType     , only : nitrogenflux_type
   use CNNitrogenStateType    , only : nitrogenstate_type
-  use PatchType              , only : pft
+  use PatchType              , only : pft_pp
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   !
@@ -56,7 +56,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                           & 
-         ivt                   => pft%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
+         ivt                   => pft_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
 
          woody                 => ecophyscon%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
 

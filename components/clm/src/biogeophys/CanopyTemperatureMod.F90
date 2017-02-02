@@ -31,7 +31,7 @@ module CanopyTemperatureMod
   use WaterstateType       , only : waterstate_type
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
-  use PatchType            , only : pft                
+  use PatchType            , only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -420,7 +420,7 @@ contains
          ! Initial set (needed for history tape fields)
 
          eflx_sh_tot(p) = 0._r8
-         l = pft%landunit(p)
+         l = pft_pp%landunit(p)
          if (urbpoi(l)) then
             eflx_sh_tot_u(p) = 0._r8
          else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then 
@@ -456,10 +456,10 @@ contains
       ! Make forcing height a pft-level quantity that is the atmospheric forcing 
       ! height plus each pft's z0m+displa
       do p = bounds%begp,bounds%endp
-         if (pft%active(p)) then
-            g = pft%gridcell(p)
-            l = pft%landunit(p)
-            c = pft%column(p)
+         if (pft_pp%active(p)) then
+            g = pft_pp%gridcell(p)
+            l = pft_pp%landunit(p)
+            c = pft_pp%column(p)
             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                if (frac_veg_nosno(p) == 0) then
                   forc_hgt_u_patch(p) = forc_hgt_u(g) + z0mg(c) + displa(p)
@@ -490,7 +490,7 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = pft_pp%column(p)
 
          thm(p)  = forc_t(c) + 0.0098_r8*forc_hgt_t_patch(p)
       end do

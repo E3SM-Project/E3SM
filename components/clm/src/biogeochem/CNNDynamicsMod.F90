@@ -22,7 +22,7 @@ module CNNDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp                
-  use PatchType           , only : pft
+  use PatchType           , only : pft_pp
   use EcophysConType      , only : ecophyscon
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
@@ -531,11 +531,11 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft%column(p)
+         c = pft_pp%column(p)
 
          ! if soybean currently growing then calculate fixation
 
-         if (pft%itype(p) == nsoybean .and. croplive(p)) then
+         if (pft_pp%itype(p) == nsoybean .and. croplive(p)) then
 
             ! difference between supply and demand
 
@@ -648,7 +648,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-         ivt                   => pft%itype                            , & ! input:  [integer  (:) ]  pft vegetation type  
+         ivt                   => pft_pp%itype                            , & ! input:  [integer  (:) ]  pft vegetation type  
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
          vmax_nfix             => ecophyscon%vmax_nfix                 , &
@@ -665,7 +665,7 @@ contains
           c = filter_soilc(fc)
           nfix_to_sminn(c) = 0.0_r8
           do p = col_pp%pfti(c), col_pp%pftf(c)
-              if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
+              if (pft_pp%active(p).and. (pft_pp%itype(p) .ne. noveg)) then
                   ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
                   r_fix = -6.25_r8*(exp(-3.62_r8 + 0.27_r8*(t_soi10cm_col(c)-273.15_r8)*(1.0_r8-0.5_r8*(t_soi10cm_col(c)-273.15_r8)/25.15_r8))-2.0_r8) 
                   ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
@@ -680,7 +680,7 @@ contains
                   km_n2 = 5 ! calibrated value
                   ! calculate n2 fixation rate for each pft and add it to column total
                   nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix * frootc(p) * cn_scalar(p) *f_nodule * &
-                     N2_aq/ (N2_aq + km_n2) * pft%wtcol(p)
+                     N2_aq/ (N2_aq + km_n2) * pft_pp%wtcol(p)
               end if
           end do
       end do

@@ -17,7 +17,7 @@ module filterMod
   use GridcellType   , only : grc_pp
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
-  use PatchType      , only : pft                
+  use PatchType      , only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -314,8 +314,8 @@ contains
     fnl = 0
     fnlu = 0
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .or. include_inactive) then
-          l =pft%landunit(p)
+       if (pft_pp%active(p) .or. include_inactive) then
+          l =pft_pp%landunit(p)
           if (lun_pp%lakpoi(l) ) then
              fl = fl + 1
              this_filter(nc)%lakep(fl) = p
@@ -351,8 +351,8 @@ contains
 
     fs = 0
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .or. include_inactive) then
-          l =pft%landunit(p)
+       if (pft_pp%active(p) .or. include_inactive) then
+          l =pft_pp%landunit(p)
           if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
              fs = fs + 1
              this_filter(nc)%soilp(fs) = p
@@ -382,12 +382,12 @@ contains
     fl  = 0
     fnl = 0
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .or. include_inactive) then
-          if (pft%itype(p) >= npcropmin) then !skips 2 generic crop types
+       if (pft_pp%active(p) .or. include_inactive) then
+          if (pft_pp%itype(p) >= npcropmin) then !skips 2 generic crop types
              fl = fl + 1
              this_filter(nc)%pcropp(fl) = p
           else
-             l =pft%landunit(p)
+             l =pft_pp%landunit(p)
              if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
                 fnl = fnl + 1
                 this_filter(nc)%soilnopcropp(fnl) = p
@@ -440,8 +440,8 @@ contains
     f = 0
     fn = 0
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .or. include_inactive) then
-          l = pft%landunit(p)
+       if (pft_pp%active(p) .or. include_inactive) then
+          l = pft_pp%landunit(p)
           if (lun_pp%urbpoi(l)) then
              f = f + 1
              this_filter(nc)%urbanp(f) = p

@@ -26,7 +26,7 @@ module clm_initializeMod
   use TopounitType           , only : top_pp, top_es, top_ws
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft_pp                
   use clm_instMod
   !
   implicit none
@@ -286,7 +286,7 @@ contains
     ! --end ALM-v1 block
     call lun_pp%Init (bounds_proc%begl_all, bounds_proc%endl_all)
     call col_pp%Init (bounds_proc%begc_all, bounds_proc%endc_all)
-    call pft%Init (bounds_proc%begp_all, bounds_proc%endp_all)
+    call pft_pp%Init (bounds_proc%begp_all, bounds_proc%endp_all)
 
     ! Determine the number of active external models.
     call EMI_Determine_Active_EMs()

@@ -31,7 +31,7 @@ module clm_bgc_interfaceMod
   use GridcellType          , only : grc_pp
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp 
-  use PatchType             , only : pft
+  use PatchType             , only : pft_pp
 
   use decompMod             , only : bounds_type
 
@@ -436,9 +436,9 @@ contains
             if (pftindex <= col_pp%npfts(c)) then
                 p = col_pp%pfti(c) + pftindex - 1
                 clm_bgc_data%eflx_soil_grnd_col(c)  = clm_bgc_data%eflx_soil_grnd_col(c) &
-                                                    + eflx_soil_grnd_patch(p) * pft%wtcol(p)           ! W/m2
+                                                    + eflx_soil_grnd_patch(p) * pft_pp%wtcol(p)           ! W/m2
                 clm_bgc_data%eflx_gnet_col(c)       = clm_bgc_data%eflx_gnet_col(c) &
-                                                    + eflx_gnet_patch(p) * pft%wtcol(p)
+                                                    + eflx_gnet_patch(p) * pft_pp%wtcol(p)
             end if
        end do
     end do

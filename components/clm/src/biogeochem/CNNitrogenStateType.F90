@@ -19,7 +19,7 @@ module CNNitrogenStateType
   use spmdMod                , only : masterproc 
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
-  use PatchType              , only : pft
+  use PatchType              , only : pft_pp
   use clm_varctl             , only : use_pflotran, pf_cmode
   use clm_varctl             , only : nu_com
                
@@ -756,7 +756,7 @@ contains
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft%landunit(p)
+       l = pft_pp%landunit(p)
        if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
@@ -780,14 +780,14 @@ contains
     
     do p = bounds%begp,bounds%endp
 
-       l = pft%landunit(p)
+       l = pft_pp%landunit(p)
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then       
-          if (pft%itype(p) == noveg) then
+          if (pft_pp%itype(p) == noveg) then
              this%leafn_patch(p) = 0._r8
              this%leafn_storage_patch(p) = 0._r8
           else
-             this%leafn_patch(p)         = leafc_patch(p)         / ecophyscon%leafcn(pft%itype(p))
-             this%leafn_storage_patch(p) = leafc_storage_patch(p) / ecophyscon%leafcn(pft%itype(p))
+             this%leafn_patch(p)         = leafc_patch(p)         / ecophyscon%leafcn(pft_pp%itype(p))
+             this%leafn_storage_patch(p) = leafc_storage_patch(p) / ecophyscon%leafcn(pft_pp%itype(p))
           end if
 
           this%leafn_xfer_patch(p)        = 0._r8
@@ -806,8 +806,8 @@ contains
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (ecophyscon%woody(pft%itype(p)) == 1._r8) then
-             this%deadstemn_patch(p) = deadstemc_patch(p) / ecophyscon%deadwdcn(pft%itype(p))
+          if (ecophyscon%woody(pft_pp%itype(p)) == 1._r8) then
+             this%deadstemn_patch(p) = deadstemc_patch(p) / ecophyscon%deadwdcn(pft_pp%itype(p))
           else
              this%deadstemn_patch(p) = 0._r8
           end if
@@ -815,9 +815,9 @@ contains
           if (nu_com .ne. 'RD') then
               ! ECA competition calculate root NP uptake as a function of fine root biomass
               ! better to initialize root CNP pools with a non-zero value
-              if (pft%itype(p) .ne. noveg) then
-                 this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft%itype(p))
-                 this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft%itype(p))
+              if (pft_pp%itype(p) .ne. noveg) then
+                 this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft_pp%itype(p))
+                 this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft_pp%itype(p))
               end if
           end if
 
@@ -1547,7 +1547,7 @@ contains
            this%npool_patch(p)              + &
            this%retransn_patch(p)
 
-      if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+      if ( crop_prog .and. pft_pp%itype(p) >= npcropmin )then
          this%dispvegn_patch(p) = &
               this%dispvegn_patch(p) + &
               this%grainn_patch(p)

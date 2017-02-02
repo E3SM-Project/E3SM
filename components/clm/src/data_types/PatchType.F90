@@ -43,7 +43,7 @@ module PatchType
   save
   private
   !
-  type, public :: patch_type
+  type, public :: patch_physical_properties_type
      ! g/l/c/p hierarchy, local g/l/c/p cells only
      integer , pointer :: column   (:) ! index into column level quantities
      real(r8), pointer :: wtcol    (:) ! weight (relative to column) 
@@ -70,20 +70,20 @@ module PatchType
 
    contains
 
-     procedure, public :: Init
-     procedure, public :: Clean
+     procedure, public :: Init => patch_pp_init
+     procedure, public :: Clean => patch_pp_clean
      
-  end type patch_type
-  type(patch_type), public, target :: pft  ! patch type data structure !***TODO*** - change the data instance to patch from pft
+  end type patch_physical_properties_type
+  type(patch_physical_properties_type), public, target :: pft_pp  ! patch type data structure !***TODO*** - change the data instance to patch from pft
   !------------------------------------------------------------------------
 
 contains
   
   !------------------------------------------------------------------------
-  subroutine Init(this, begp, endp)
+  subroutine patch_pp_init(this, begp, endp)
     !
     ! !ARGUMENTS:
-    class(patch_type)   :: this
+    class(patch_physical_properties_type)   :: this
     integer, intent(in) :: begp,endp
     !
     ! LOCAL VARAIBLES:
@@ -108,13 +108,13 @@ contains
     end if
 
 
-  end subroutine Init
+  end subroutine patch_pp_init
 
   !------------------------------------------------------------------------
-  subroutine Clean(this)
+  subroutine patch_pp_clean(this)
     !
     ! !ARGUMENTS:
-    class(patch_type) :: this
+    class(patch_physical_properties_type) :: this
     !------------------------------------------------------------------------
 
     deallocate(this%gridcell)
@@ -134,6 +134,6 @@ contains
        deallocate(this%wt_ed)
     end if
 
-  end subroutine Clean
+  end subroutine path_pp_Clean
 
 end module PatchType

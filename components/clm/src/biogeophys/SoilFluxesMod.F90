@@ -21,7 +21,7 @@ module SoilFluxesMod
   use WaterfluxType     , only : waterflux_type
   use LandunitType	, only : lun_pp                
   use ColumnType	, only : col_pp                
-  use PatchType		, only : pft                
+  use PatchType		, only : pft_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -202,12 +202,12 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = pft_pp%column(p)
          eflx_sh_grnd(p) = eflx_sh_grnd(p) + tinc(c)*cgrnds(p)
          qflx_evap_soi(p) = qflx_evap_soi(p) + tinc(c)*cgrndl(p)
 
          ! set ev_snow, ev_soil for urban landunits here
-         l = pft%landunit(p)
+         l = pft_pp%landunit(p)
          if (lun_pp%urbpoi(l)) then
             qflx_ev_snow(p) = qflx_evap_soi(p)
             qflx_ev_soil(p) = 0._r8
@@ -233,8 +233,8 @@ contains
             c = filter_nolakec(fc)
             if ( pi <= col_pp%npfts(c) ) then
                p = col_pp%pfti(c) + pi - 1
-               if (pft%active(p)) then
-                  topsoil_evap_tot(c) = topsoil_evap_tot(c) + qflx_evap_soi(p) * pft%wtcol(p)
+               if (pft_pp%active(p)) then
+                  topsoil_evap_tot(c) = topsoil_evap_tot(c) + qflx_evap_soi(p) * pft_pp%wtcol(p)
                end if
             end if
          end do
@@ -255,9 +255,9 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
-         l = pft%landunit(p)
-         g = pft%gridcell(p)
+         c = pft_pp%column(p)
+         l = pft_pp%landunit(p)
+         g = pft_pp%gridcell(p)
          j = col_pp%snl(c)+1
 
          ! Correct soil fluxes for possible evaporation in excess of top layer water
@@ -365,7 +365,7 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = pft_pp%column(p)
          errsoi_patch(p) = eflx_soil_grnd(p) - xmf(c) - xmf_h2osfc(c) &
               - frac_h2osfc(c)*(t_h2osfc(c)-t_h2osfc_bef(c)) &
               *(c_h2osfc(c)/dtime)
@@ -379,7 +379,7 @@ contains
       do j = -nlevsno+1,nlevgrnd
          do fp = 1,num_nolakep
             p = filter_nolakep(fp)
-            c = pft%column(p)
+            c = pft_pp%column(p)
 
             if ((col_pp%itype(c) /= icol_sunwall .and. col_pp%itype(c) /= icol_shadewall &
                  .and. col_pp%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
@@ -402,9 +402,9 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
-         l = pft%landunit(p)
-         g = pft%gridcell(p)
+         c = pft_pp%column(p)
+         l = pft_pp%landunit(p)
+         g = pft_pp%gridcell(p)
          j = col_pp%snl(c)+1
 
          if (.not. lun_pp%urbpoi(l)) then
