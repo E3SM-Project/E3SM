@@ -1,0 +1,227 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of DOCN model docn namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  The recognized attributes
+are: grid, docn_presaero and all configuration
+attributes from the config_cache.xml file (with keys converted to upper-case).
+
+strm_year_first is the first year of the stream data that will be used
+strm_year_last  is the last  year of the stream data that will be used
+strm_year_align is the model year that will be aligned with stream data for year_first
+
+Replace any instance of the following substring indicators with the appropriate values:
+    %y    = year from the range yearfirst to yearlast
+    %ym   = year-month from the range yearfirst to yearlast with all 12 months
+    %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
+
+In docn_atm_in,  streams namelist input has the form
+     streams = 'stream1.txt year_align year_first year_last ',
+               'stream2.txt year_align year_first year_last ',
+               ...
+               'streamN.txt year_align year_first year_last '
+
+Each mode below, except for presaero, has a set of streams associated with it
+The presaero stream, is associated with all modes
+
+Currently the following docn modes are supported
+    docn_mode      datamode
+   (env_run.xml)  (build-namelist)
+    ------------  ----------------
+    prescribed    SSTDATA     (Run with prescribed SST, ICE_COV)
+    som           SOM         (Slab ocean model)
+    null          NULL        (NULL mode)
+    copyall       COPYALL     (Copy fields only)
+
+-->
+
+<!-- =========================================  -->
+<!--- datamode                                  -->
+<!-- =========================================  -->
+
+<datamode docn_mode="null"       >NULL</datamode>
+<datamode docn_mode="prescribed" >SSTDATA</datamode>
+<datamode docn_mode="som"        >SOM</datamode>
+<datamode docn_mode="interannual">IAF</datamode>
+<datamode docn_mode="copyall"    >COPYALL</datamode>
+
+<!-- =========================================  -->
+<!--- streams                                   -->
+<!-- =========================================  -->
+
+<streamslist docn_mode="prescribed" >prescribed</streamslist>
+<streamslist docn_mode="som"        >som</streamslist>
+<streamslist docn_mode="interannual">interannual</streamslist>
+<streamslist docn_mode="copyall"    >copyall</streamslist>
+
+<!-- ===================================================  -->
+<!--- stream: prescribed                                  -->
+<!--- note that strm_domdir and strm_domfil               -->
+<!--- are obtained from strm_grid_file in build-namelist  -->
+<!--- note that strm_datdir and strm_datfil               -->
+<!--- are obtained from strm_data_file  in build-namelist -->
+<!-- ===================================================  -->
+
+<strm_year_align stream="prescribed">$SSTICE_YEAR_ALIGN</strm_year_align>
+<strm_year_start stream="prescribed">$SSTICE_YEAR_START</strm_year_start>
+<strm_year_end   stream="prescribed">$SSTICE_YEAR_END</strm_year_end>
+<strm_grid_file  stream="prescribed">$SSTICE_GRID_FILENAME</strm_grid_file>
+<strm_data_file  stream="prescribed">$SSTICE_DATA_FILENAME</strm_data_file>
+
+<strm_domvar stream="prescribed" sstice_stream="CAMDATA">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar stream="prescribed" sstice_stream="CAMDATA">
+  SST_cpl    t
+</strm_datvar>
+
+<strm_domvar stream="prescribed" sstice_stream="HURRELL">
+  time time
+  lon  lon
+  lat  lat
+  area area
+  mask mask
+</strm_domvar>
+<strm_datvar stream="prescribed" sstice_stream="HURRELL">
+  sst    t
+</strm_datvar>
+
+<strm_domvar stream="prescribed" sstice_stream="WRFDATA_wus12">
+  time time
+  xc  lon
+  yc  lat
+  area area
+  mask mask
+</strm_domvar>
+<strm_datvar stream="prescribed" sstice_stream="WRFDATA_wus12">
+  SST    t
+</strm_datvar>
+<strm_datfil  stream="prescribed" sstice_stream="WRFDATA_wus12">
+  sst_wus12_110111.2003-10.nc
+  sst_wus12_110111.2003-11.nc
+  sst_wus12_110111.2003-12.nc
+  sst_wus12_110111.2004-01.nc
+  sst_wus12_110111.2004-02.nc
+  sst_wus12_110111.2004-03.nc
+  sst_wus12_110111.2004-04.nc
+  sst_wus12_110111.2004-05.nc
+  sst_wus12_110111.2004-06.nc
+  sst_wus12_110111.2004-07.nc
+  sst_wus12_110111.2004-08.nc
+  sst_wus12_110111.2004-09.nc
+</strm_datfil>
+<strm_taxmode stream="prescribed" sstice_stream="WRFDATA_wus12">limit</strm_taxmode>
+
+<strm_domvar stream="prescribed" sstice_stream="WRFDATA">
+  time time
+  xc  lon
+  yc  lat
+  area area
+  mask mask
+</strm_domvar>
+<strm_datvar stream="prescribed" sstice_stream="WRFDATA">
+  SST    t
+</strm_datvar>
+<strm_taxmode stream="prescribed" sstice_stream="WRFDATA">limit</strm_taxmode>
+
+<!-- ===================================================  -->
+<!--- stream: copyall                                 -->
+<!--- note that strm_domdir and strm_domfil               -->
+<!--- are obtained from strm_grid_file in build-namelist  -->
+<!--- note that strm_datdir and strm_datfil               -->
+<!--- are obtained from strm_data_file  in build-namelist -->
+<!-- ===================================================  -->
+
+<strm_year_align stream="copyall">$SSTICE_YEAR_ALIGN</strm_year_align>
+<strm_year_start stream="copyall">$SSTICE_YEAR_START</strm_year_start>
+<strm_year_end   stream="copyall">$SSTICE_YEAR_END</strm_year_end>
+<strm_grid_file  stream="copyall">$SSTICE_GRID_FILENAME</strm_grid_file>
+<strm_data_file  stream="copyall">$SSTICE_DATA_FILENAME</strm_data_file>
+
+<strm_domvar     stream="copyall" sstice_stream="WW3">
+  time    time
+  gridLon lon
+  gridLat lat
+</strm_domvar>
+<strm_datvar     stream="copyall" sstice_stream="WW3">
+  iceCon  s
+</strm_datvar>
+
+<!-- ===================================================  -->
+<!--- stream: som                                         -->
+<!-- ===================================================  -->
+
+<strm_year_align stream="som">1</strm_year_align>
+<strm_year_start stream="som">1</strm_year_start>
+<strm_year_end   stream="som">1</strm_year_end>
+<strm_domdir     stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</strm_domdir>
+<strm_domfil     stream="som">$DOCN_SOM_FILENAME</strm_domfil>
+<strm_datdir     stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</strm_datdir>
+<strm_datfil     stream="som">$DOCN_SOM_FILENAME</strm_datfil>
+<strm_domvar     stream="som">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="som">
+  T     t
+  S     s
+  U     u
+  V     v
+  dhdx  dhdx
+  dhdy  dhdy
+  hblt  h
+  qdp   qbot
+</strm_datvar>
+
+<!-- ===================================================  -->
+<!--- stream: interannual                                         -->
+<!-- ===================================================  -->
+
+<strm_year_align stream="interannual">1</strm_year_align>
+<strm_year_start stream="interannual">1850</strm_year_start>
+<strm_year_end   stream="interannual">2014</strm_year_end>
+<strm_domdir     stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</strm_domdir>
+<strm_domfil     stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</strm_domfil>
+<strm_datdir     stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</strm_datdir>
+<strm_datfil     stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</strm_datfil>
+<strm_domvar     stream="interannual">
+  time    time
+  lon      lon
+  lat      lat
+</strm_domvar>
+<strm_datvar     stream="interannual">
+  SST_cpl  t
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- non stream-specific vars (for now)        -->
+<!-- =========================================  -->
+
+<decomp>1d</decomp>
+
+<strm_fillalgo>nn</strm_fillalgo>
+
+<strm_fillmask>nomask</strm_fillmask>
+
+<strm_mapalgo>bilinear</strm_mapalgo>
+
+<strm_mapmask>dstmask</strm_mapmask>
+
+<strm_tintalgo>linear</strm_tintalgo>
+
+<strm_taxmode>cycle</strm_taxmode>
+
+</namelist_defaults>
