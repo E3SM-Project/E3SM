@@ -788,6 +788,9 @@ contains
       ! Import state from coupler
       call ocn_import_mct(x2o_o, ierr)
 
+      ! Ensures MPAS AM write/compute startup steps are performed
+      call ocn_analysis_compute_startup(domain_ptr, ierr)
+
       ! Handle writing initial state
       call mpas_pool_get_config(domain_ptr % configs, 'config_write_output_on_startup', config_write_output_on_startup)
       if (config_write_output_on_startup) then
