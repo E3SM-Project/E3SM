@@ -223,7 +223,7 @@ contains
     real (kind=RKIND) function ocn_freezing_temperature(salinity, pressure, inLandIceCavity)!{{{
       real (kind=RKIND), intent(in) :: salinity !< Input: Salinity value of water for freezing temperature
       real (kind=RKIND), intent(in) :: pressure !< Input: Pressure value for freezing temperature
-      logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed 
+      logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed
                                              !         in land ice cavities or in open ocean
 
       real (kind=RKIND), pointer :: coeff_0
@@ -276,14 +276,14 @@ contains
 !> \date    11/16/2016
 !> \details
 !>  This routine computes the derivative of the freezing temperature of the ocean with
-!>  respect to salinity at a given salinity and pressure. Different coefficients are 
+!>  respect to salinity at a given salinity and pressure. Different coefficients are
 !>  used in the open ocean (and under sea ice) than in land-ice cavities.
 !
 !-----------------------------------------------------------------------
     real (kind=RKIND) function ocn_freezing_temperature_salinity_deriv(salinity, pressure, inLandIceCavity)!{{{
       real (kind=RKIND), intent(in) :: salinity !< Input: Salinity value of water for freezing temperature
       real (kind=RKIND), intent(in) :: pressure !< Input: Pressure value for freezing temperature
-      logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed 
+      logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed
                                              !         in land ice cavities or in open ocean
 
       real (kind=RKIND), pointer :: coeff_S

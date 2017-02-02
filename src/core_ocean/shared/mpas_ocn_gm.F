@@ -417,7 +417,7 @@ contains
       relativeSlopeTaperingCell = relativeSlopeTopOfCell
       do iter = 1, 5
          !$omp barrier
-         
+
          nCells = nCellsArray( 2 )
 
          !$omp do schedule(runtime) private(k, rtmp)
