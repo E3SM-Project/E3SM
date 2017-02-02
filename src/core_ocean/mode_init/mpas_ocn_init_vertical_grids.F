@@ -1150,7 +1150,7 @@ contains
                 end if
                 ! relax toward bottomDepth with increasing strength with each iteration
                 if(moveInterface) then
-                  zInterface(k+1,iCell) = min((1.0 - weight)*zInterface(k+1,iCell) + weight*(-bottomDepth(iCell)), &
+                  zInterface(k+1,iCell) = min((1.0_RKIND - weight)*zInterface(k+1,iCell) + weight*(-bottomDepth(iCell)), &
                                               zInterface(k,iCell) - config_rx1_min_layer_thickness)
                   maxLevelCell(iCell) = k
                 end if

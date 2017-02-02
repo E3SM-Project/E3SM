@@ -1,43 +1,43 @@
 	<nml_record name="tracer_forcing_activeTracers">
 		<nml_option name="config_use_activeTracers" type="logical" default_value=".true." units="unitless"
-					description="if true, the 'activeTracers' category is enabled for the run"
-					possible_values=".true. or .false."
+			description="if true, the 'activeTracers' category is enabled for the run"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_activeTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'activeTracers' category"
-					possible_values=".true. or .false."
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'activeTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_activeTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, surface restoring source is applied to tracers in 'activeTracers' category"
-					possible_values=".true. or .false."
+			description="if true, surface restoring source is applied to tracers in 'activeTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_activeTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, interior restoring source is applied to tracers in 'activeTracers' category"
-					possible_values=".true. or .false."
+			description="if true, interior restoring source is applied to tracers in 'activeTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_activeTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
-					description="if true, exponential decay source is applied to tracers in 'activeTracers' category"
-					possible_values=".true. or .false."
+			description="if true, exponential decay source is applied to tracers in 'activeTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_activeTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, idealAge forcing source is applied to tracers in 'activeTracers' category"
-					possible_values=".true. or .false."
+			description="if true, idealAge forcing source is applied to tracers in 'activeTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_activeTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, transit time distribution forcing source is applied to tracers in 'activeTracers' category"
-					possible_values=".true. or .false."
+			description="if true, transit time distribution forcing source is applied to tracers in 'activeTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_surface_salinity_monthly_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, apply monthly salinity restoring"
-					possible_values=".true. or .false."
+			description="if true, apply monthly salinity restoring"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_salinity_restoring_constant_piston_velocity" type="real" default_value="0.0" units="m/year"
-					description="maximum allowable difference between surface salinity and climatology"
-					possible_values="any non-negative number"
+			description="maximum allowable difference between surface salinity and climatology"
+			possible_values="any non-negative number"
 		/>
 		<nml_option name="config_salinity_restoring_max_difference" type="real" default_value="0.5" units="psu"
-					description="maximum allowable difference between surface salinity and climatology"
-					possible_values="any non-negative number"
+			description="maximum allowable difference between surface salinity and climatology"
+			possible_values="any non-negative number"
 		/>
 	</nml_record>
 
@@ -55,10 +55,10 @@
 		<var_struct name="tracers" time_levs="2">
 			<var_array name="activeTracers" dimensions="nVertLevels nCells Time" type="real" packages="activeTracersPKG" >
 				<var name="temperature" array_group="activeGRP" units="degrees Celsius"
-					 description="potential temperature"
+			 description="potential temperature"
 				/>
 				<var name="salinity" array_group="activeGRP" units="grams salt per kilogram seawater"
-					 description="salinity"
+			 description="salinity"
 				/>
 			</var_array>
 		</var_struct>
@@ -68,10 +68,10 @@
 		<var_struct name="tracersTend" time_levs="1">
 			<var_array name="activeTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersPKG">
 				<var name="temperatureTend" array_group="activeGRP" units="^\circ C s^{-1}"
-					 description="time tendency of potential temperature"
+			 description="time tendency of potential temperature"
 				/>
 				<var name="salinityTend" array_group="activeGRP" units="PSU s^{-1}"
-					 description="time tendency of salinity measured as change in practical salinity units per second"
+			 description="time tendency of salinity measured as change in practical salinity units per second"
 				/>
 			</var_array>
 		</var_struct>
@@ -81,100 +81,100 @@
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="activeTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="activeTracersPKG">
 				<var name="temperatureSurfaceFlux" array_group="activeTracerFluxGRP" units="^\circ C m s^{-1}"
-					 description="Flux of temperature through the ocean surface. Positive into ocean."
+			 description="Flux of temperature through the ocean surface. Positive into ocean."
 				/>
 				<var name="salinitySurfaceFlux" array_group="activeTracerFluxGRP" units="PSU m s^{-1}"
-					 description="Flux of salinity through the ocean surface. Positive into ocean."
+			 description="Flux of salinity through the ocean surface. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="activeTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="activeTracersPKG">
 				<var name="temperatureSurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="^\circ C m s^{-1}"
-					 description="Flux of temperature through the ocean surface due to river runoff. Positive into ocean."
+			 description="Flux of temperature through the ocean surface due to river runoff. Positive into ocean."
 				/>
 				<var name="salinitySurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="PSU m s^{-1}"
-					 description="Flux of salinity through the ocean surface due to river runoff. Positive into ocean."
+			 description="Flux of salinity through the ocean surface due to river runoff. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="activeTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="activeTracersPKG">
 				<var name="temperatureSurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="^\circ C m s^{-1}"
-					 description="Flux of temperature that is ignored coming into the ocean. Positive into ocean."
+			 description="Flux of temperature that is ignored coming into the ocean. Positive into ocean."
 				/>
 				<var name="salinitySurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="PSU m s^{-1}"
-					 description="Flux of salinity that is ignroed coming into the ocean. Positive into ocean."
+			 description="Flux of salinity that is ignroed coming into the ocean. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="nonLocalSurfaceTracerFlux" type="real" dimensions="nCells Time" packages="activeTracersPKG">
 				<var name="nonLocalTemperatureSurfaceFlux" array_group="activeNonLocalGRP" units="^\circ C m s^{-1}"
-					description="total flux of temperature (including thickness contributions) through ocean surface"
+			description="total flux of temperature (including thickness contributions) through ocean surface"
 				/>
 				<var name="nonLocalSalinitySurfaceFlux" array_group="activeNonLocalGRP" units="PSU m s^{-1}"
-					description="total flux of salinity (including thickness contributions) through ocean surface"
+			description="total flux of salinity (including thickness contributions) through ocean surface"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
 			<var_array name="activeTracersPistonVelocity" type="real" dimensions="nCells Time" packages="activeTracersSurfaceRestoringPKG">
 				<var name="temperaturePistonVelocity" array_group="activeGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which temperature is restored to temperatureSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which temperature is restored to temperatureSurfaceRestoringValue"
 				/>
 				<var name="salinityPistonVelocity" array_group="activeGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which salinity is restored to salinitySurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which salinity is restored to salinitySurfaceRestoringValue"
 				/>
 			</var_array>
 			<var_array name="activeTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="activeTracersSurfaceRestoringPKG">
 				<var name="temperatureSurfaceRestoringValue" array_group="activeGRP" units="^\circ C"
-					 description="Temperature is restored toward this field at a rate controlled by temperaturePistonVelocity."
+			 description="Temperature is restored toward this field at a rate controlled by temperaturePistonVelocity."
 				/>
 				<var name="salinitySurfaceRestoringValue" array_group="activeGRP" units="PSU"
-					 description="Salinity is restored toward this field at a rate controlled by salinityPistonVelocity."
+			 description="Salinity is restored toward this field at a rate controlled by salinityPistonVelocity."
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
 			<var_array name="activeTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersInteriorRestoringPKG">
 				<var name="temperatureInteriorRestoringRate" array_group="activeGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which temperature is restored to temperatureInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which temperature is restored to temperatureInteriorRestoringValue"
 				/>
 				<var name="salinityInteriorRestoringRate" array_group="activeGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which salinity is restored to salinityInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which salinity is restored to salinityInteriorRestoringValue"
 				/>
 			</var_array>
 			<var_array name="activeTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersInteriorRestoringPKG">
 				<var name="temperatureInteriorRestoringValue" array_group="activeGRP" units="^\circ C"
-					 description="Temperature is restored toward this field at a rate controlled by temperatureInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by temperatureInteriorRestoringRate."
 				/>
 				<var name="salinityInteriorRestoringValue" array_group="activeGRP" units="PSU"
-					 description="Salinity is restored toward this field at a rate controlled by salinityInteriorRestoringRate."
+			 description="Salinity is restored toward this field at a rate controlled by salinityInteriorRestoringRate."
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersExponentialDecayFields" time_levs="1">
 			<var_array name="activeTracersExponentialDecayRate" type="real" dimensions="Time" packages="activeTracersExponentialDecayPKG">
 				<var name="temperatureExponentialDecayRate" array_group="activeGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of temperature"
+			 description="A non-negative field controlling the exponential decay of temperature"
 				/>
 				<var name="salinityExponentialDecayRate" array_group="activeGRP" units="s"
-					 description="A non-negative field controlling the exponential decay of salinity"
+			 description="A non-negative field controlling the exponential decay of salinity"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersIdealAgeFields" time_levs="1">
 			<var_array name="activeTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="activeTracersIdealAgePKG">
 				<var name="temperatureIdealAgeMask" array_group="activeGRP" units="unitless"
-					 description="In top layer, temperature is reset to temperature * temperatureIdealAgeMask, valid values of temperatureIdealAgeMask or 0 and 1"
+			 description="In top layer, temperature is reset to temperature * temperatureIdealAgeMask, valid values of temperatureIdealAgeMask or 0 and 1"
 				/>
 				<var name="salinityIdealAgeMask" array_group="activeGRP" units="unitless"
-					 description="In top layer, salinity is reset to salinity * salinityIdealAgeMask, valid values of salinityIdealAgeMask or 0 and 1"
+			 description="In top layer, salinity is reset to salinity * salinityIdealAgeMask, valid values of salinityIdealAgeMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersTTDFields" time_levs="1">
 			<var_array name="activeTracersTTDMask" type="real" dimensions="nCells Time" packages="activeTracersTTDPKG">
 				<var name="temperatureTTDMask" array_group="activeGRP" units="unitless"
-					 description="In top layer, temperature is reset to TTDMask, valid values of temperatureTTDMask or 0 and 1"
+			 description="In top layer, temperature is reset to TTDMask, valid values of temperatureTTDMask or 0 and 1"
 				/>
 				<var name="salinityTTDMask" array_group="activeGRP" units="unitless"
-					 description="In top layer, salinity is reset to salinityTTDMask, valid values of salinityTTDMask or 0 and 1"
+			 description="In top layer, salinity is reset to salinityTTDMask, valid values of salinityTTDMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>

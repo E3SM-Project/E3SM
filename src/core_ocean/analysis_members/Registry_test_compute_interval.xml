@@ -37,8 +37,8 @@
 				packages="testComputeIntervalAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-			<var name="xtime"/> 
-			<var name="testComputeIntervalCounter"/> 
+			<var name="xtime"/>
+			<var name="testComputeIntervalCounter"/>
 		</stream>
 	</streams>
 

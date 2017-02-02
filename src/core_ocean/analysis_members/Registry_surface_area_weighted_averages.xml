@@ -8,24 +8,24 @@
 	</dims>
 	<nml_record name="AM_surfaceAreaWeightedAverages" mode="forward;analysis">
 		<nml_option name="config_AM_surfaceAreaWeightedAverages_enable" type="logical" default_value=".false." units="unitless"
-					description="If true, ocean analysis member surface_area_weighted_average is called."
-					possible_values=".true. or .false."
+			description="If true, ocean analysis member surface_area_weighted_average is called."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_surfaceAreaWeightedAverages_compute_on_startup" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if an analysis member computation occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_surfaceAreaWeightedAverages_write_on_startup" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if an analysis member computation occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_surfaceAreaWeightedAverages_compute_interval" type="character" default_value="output_interval" units="unitless"
-					description="Time interval the determines how frequently the surface area weighted averages analysis member should be computed."
-					possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+			description="Time interval the determines how frequently the surface area weighted averages analysis member should be computed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
 		<nml_option name="config_AM_surfaceAreaWeightedAverages_output_stream" type="character" default_value="surfaceAreaWeightedAveragesOutput" units="unitless"
-					description="Name of the stream the surface area weighted averages analysis member should be tied to."
-					possible_values="Any existing stream or 'none'"
+			description="Name of the stream the surface area weighted averages analysis member should be tied to."
+			possible_values="Any existing stream or 'none'"
 		/>
 	</nml_record>
 	<packages>
@@ -238,15 +238,15 @@
 			<var name="avgSeaIceHeatFlux" array_group="avg" units="W m^{-2}"
 				 description="Surface area-weighted average of sea ice heat flux in each region"
 			/>
-			<var name="avgShortWaveHeatFlux" array_group="avg" units="W m^{-2}" 
+			<var name="avgShortWaveHeatFlux" array_group="avg" units="W m^{-2}"
 				 description="Surface area-weighted average of short wave heat flux in each region"
-			/>       
+			/>
 			<var name="avgEvaporationFlux" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Surface area-weighted average of evaporation in each region"
-			/>       
+			/>
 			<var name="avgSeaIceFreshWaterFlux" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Surface area-weighted average of sea ice melt rate in each region"
-			/>       
+			/>
 			<var name="avgRiverRunoffFlux" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Surface area-weighted average of river run off in each region"
 			/>

@@ -1,23 +1,23 @@
-        <nml_record name="ecosys_column" mode="init" configuration="ecosys_column">
-                <nml_option name="config_ecosys_column_vert_levels" type="integer" default_value="100" units="unitless"
-                                        description="Number of vertical levels in ecosys column unit test case."
-                                        possible_values="100"
-                />
-                <nml_option name="config_ecosys_column_vertical_grid" type="character" default_value="100layerACMEv1" units="unitless"
-                                        description="prescription of setting the vertical resolution of the test case"
-                                        possible_values="'100layerACMEv1'"
-                />
-                <nml_option name="config_ecosys_column_TS_filename" type="character" default_value="unknown" units="unitless"
-                                        description="Name of file containing column values of temperature and salinity"
-                                        possible_values="path/PTandS.mpas100levs.singleColumn.forMPASO.renamed.nc"
-                />
-                <nml_option name="config_ecosys_column_ecosys_filename" type="character" default_value="unknown" units="unitless"
-                                        description="Name of file containing column values of ecosys variables"
-                                        possible_values="path/ecoIC+phaeo.mpas100levs.singleColumn.forMPASO.renamed.nc"
-                />
-                <nml_option name="config_ecosys_column_bottom_depth" type="real" default_value="6000.0" units="m"
-                                        description="Depth of the bottom of the ocean for the ecosys column unit test case."
-                                        possible_values="6000."
-                />
+	<nml_record name="ecosys_column" mode="init" configuration="ecosys_column">
+		<nml_option name="config_ecosys_column_vert_levels" type="integer" default_value="100" units="unitless"
+			description="Number of vertical levels in ecosys column unit test case."
+			possible_values="100"
+		/>
+		<nml_option name="config_ecosys_column_vertical_grid" type="character" default_value="100layerACMEv1" units="unitless"
+			description="prescription of setting the vertical resolution of the test case"
+			possible_values="'100layerACMEv1'"
+		/>
+		<nml_option name="config_ecosys_column_TS_filename" type="character" default_value="unknown" units="unitless"
+			description="Name of file containing column values of temperature and salinity"
+			possible_values="path/PTandS.mpas100levs.singleColumn.forMPASO.renamed.nc"
+		/>
+		<nml_option name="config_ecosys_column_ecosys_filename" type="character" default_value="unknown" units="unitless"
+			description="Name of file containing column values of ecosys variables"
+			possible_values="path/ecoIC+phaeo.mpas100levs.singleColumn.forMPASO.renamed.nc"
+		/>
+		<nml_option name="config_ecosys_column_bottom_depth" type="real" default_value="6000.0" units="m"
+			description="Depth of the bottom of the ocean for the ecosys column unit test case."
+			possible_values="6000."
+		/>
 
-        </nml_record>
+	</nml_record>

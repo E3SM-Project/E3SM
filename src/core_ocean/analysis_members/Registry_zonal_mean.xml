@@ -57,7 +57,7 @@
 			 description="Zonal mean of component of horizontal velocity in the northward direction"
 		/>
 		<var_array name="tracersZonalMean" type="real" dimensions="nVertLevels nZonalMeanBins Time">
-			<var name="temperatureZonalMean" array_group="dynamics" units="degrees Celsius" 
+			<var name="temperatureZonalMean" array_group="dynamics" units="degrees Celsius"
 			 description="Zonal mean of potential temperature"
 			/>
 			<var name="salinityZonalMean" array_group="dynamics" units="grams salt per kilogram seawater"

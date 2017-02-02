@@ -243,7 +243,7 @@ contains
 
         character(len=strKind), pointer :: &
            config_forcing_restart_file
-  
+
         logical, pointer :: &
            config_do_restart
 
@@ -335,7 +335,8 @@ contains
         call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
                                                                  surfaceSalinityMonthlyClimatologyValue)
 
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
+           activeTracersSurfaceRestoringValue)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity)
 
         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
@@ -388,7 +389,8 @@ contains
         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
+           activeTracersSurfaceRestoringValue)
         call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
                                                                          indexSalinitySurfaceRestoringValue)
 

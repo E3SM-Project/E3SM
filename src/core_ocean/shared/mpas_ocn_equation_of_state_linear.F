@@ -75,9 +75,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_linear_density(meshPool, nCells, k_displaced, displacement_type, indexT, indexS, tracers, & !{{{
-                                                   density, err, tracersSurfaceLayerValue, thermalExpansionCoeff, &
-                                                   salineContractionCoeff)
+   subroutine ocn_equation_of_state_linear_density(meshPool, nCells, k_displaced, displacement_type, & !{{{
+       indexT, indexS, tracers, density, err, tracersSurfaceLayerValue, thermalExpansionCoeff, &
+       salineContractionCoeff)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.

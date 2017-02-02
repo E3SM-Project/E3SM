@@ -1,39 +1,39 @@
 	<nml_record name="tracer_forcing_ecosysTracers">
 		<nml_option name="config_use_ecosysTracers" type="logical" default_value=".false." units="unitless"
-					description="if true, the 'ecosysGRP' category is enabled for the run"
-					possible_values=".true. or .false."
+			description="if true, the 'ecosysGRP' category is enabled for the run"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_ecosysTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'ecosysGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'ecosysGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_ecosysTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, surface restoring source is applied to tracers in 'ecosysGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface restoring source is applied to tracers in 'ecosysGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_ecosysTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, interior restoring source is applied to tracers in 'ecosysGRP' category"
-					possible_values=".true. or .false."
+			description="if true, interior restoring source is applied to tracers in 'ecosysGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_ecosysTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
-					description="if true, exponential decay source is applied to tracers in 'ecosysGRP' category"
-					possible_values=".true. or .false."
+			description="if true, exponential decay source is applied to tracers in 'ecosysGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_ecosysTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, idealAge forcing source is applied to tracers in 'ecosysGRP' category"
-					possible_values=".true. or .false."
+			description="if true, idealAge forcing source is applied to tracers in 'ecosysGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_ecosysTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, transit time distribution forcing source is applied to tracers in 'ecosysGRP' category"
-					possible_values=".true. or .false."
+			description="if true, transit time distribution forcing source is applied to tracers in 'ecosysGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_ecosysTracers_surface_value" type="logical" default_value=".false." units="unitless"
-					description="if true, surface value is computed for 'ecosysGRP' category"
-					possible_values=".true. or .false."
+			description="if true, surface value is computed for 'ecosysGRP' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_ecosysTracers_sea_ice_coupling" type="logical" default_value=".false." units="unitless"
-					description="if true, couple ecosys fields with sea ice"
-					possible_values=".true. or .false."
+			description="if true, couple ecosys fields with sea ice"
+			possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -52,94 +52,94 @@
 			<var_array name="ecosysTracers" dimensions="nVertLevels nCells Time" type="real" packages="ecosysTracersPKG" >
 				<!-- Add constituents of tracer group -->
 				<var name="PO4" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Inorganic Phosphate"
+			description="Dissolved Inorganic Phosphate"
 				/>
 				<var name="NO3" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Inorganic Nitrate"
+			description="Dissolved Inorganic Nitrate"
 				/>
 				<var name="SiO3" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Inorganic Silicate"
+			description="Dissolved Inorganic Silicate"
 				/>
 				<var name="NH4" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Ammonia"
+			description="Dissolved Ammonia"
 				/>
 				<var name="Fe" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Inorganic Iron"
+			description="Dissolved Inorganic Iron"
 				/>
 				<var name="O2" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Oxygen"
+			description="Dissolved Oxygen"
 				/>
 				<var name="DIC" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Inorganic Carbon"
+			description="Dissolved Inorganic Carbon"
 				/>
 				<var name="DIC_ALT_CO2" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Inorganic Carbon, Alternative CO2"
+			description="Dissolved Inorganic Carbon, Alternative CO2"
 				/>
 				<var name="ALK" array_group="ecosysGRP" units="meq m^{-3}"
-					description="Alkalinity"
+			description="Alkalinity"
 				/>
 				<var name="DOC" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Organic Carbon"
+			description="Dissolved Organic Carbon"
 				/>
 				<var name="DON" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Organic Nitrogen"
+			description="Dissolved Organic Nitrogen"
 				/>
 				<var name="DOFe" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Organic Iron"
+			description="Dissolved Organic Iron"
 				/>
 				<var name="DOP" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Dissolved Organic Phosphorus"
+			description="Dissolved Organic Phosphorus"
 				/>
 				<var name="DOPr" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Refractory DOP"
+			description="Refractory DOP"
 				/>
 				<var name="DONr" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Refractory DON"
+			description="Refractory DON"
 				/>
 				<var name="zooC" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Zooplankton Carbon"
+			description="Zooplankton Carbon"
 				/>
 				<var name="spChl" array_group="ecosysGRP" units="mg m^{-3}"
-					description="Small Phytoplankton Chlorophyll"
+			description="Small Phytoplankton Chlorophyll"
 				/>
 				<var name="spC" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Small Phytoplankton Carbon"
+			description="Small Phytoplankton Carbon"
 				/>
 				<var name="spFe" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Small Phytoplankton Iron"
+			description="Small Phytoplankton Iron"
 				/>
 				<var name="spCaCO3" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Small Phytoplankton Calcium Carbonate"
+			description="Small Phytoplankton Calcium Carbonate"
 				/>
 				<var name="diatChl" array_group="ecosysGRP" units="mg m^{-3}"
-					description="Diatom Chlorophyll"
+			description="Diatom Chlorophyll"
 				/>
 				<var name="diatC" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Diatom Carbon"
+			description="Diatom Carbon"
 				/>
 				<var name="diatFe" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Diatom Iron"
+			description="Diatom Iron"
 				/>
 				<var name="diatSi" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Diatom Silicate"
+			description="Diatom Silicate"
 				/>
 				<var name="diazChl" array_group="ecosysGRP" units="mg m^{-3}"
-					description="Diazotroph Chlorophyll"
+			description="Diazotroph Chlorophyll"
 				/>
 				<var name="diazC" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Diazotroph Carbon"
+			description="Diazotroph Carbon"
 				/>
 				<var name="diazFe" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Diazotroph Iron"
+			description="Diazotroph Iron"
 				/>
 				<var name="phaeoChl" array_group="ecosysGRP" units="mg m^{-3}"
-					description="Phaeocystis Chlorophyll"
+			description="Phaeocystis Chlorophyll"
 				/>
 				<var name="phaeoC" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Phaeocystis Carbon"
+			description="Phaeocystis Carbon"
 				/>
 				<var name="phaeoFe" array_group="ecosysGRP" units="mmol m^{-3}"
-					description="Phaeocystis Iron"
+			description="Phaeocystis Iron"
 				/>
 			</var_array>
 		</var_struct>
@@ -150,94 +150,94 @@
 			<var_array name="ecosysTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="ecosysTracersPKG">
 				<!-- Add constituents of tracer group -->
 				<var name="PO4Tend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Inorganic Phosphate Tendency"
+			description="Dissolved Inorganic Phosphate Tendency"
 				/>
 				<var name="NO3Tend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Inorganic Nitrate Tendency"
+			description="Dissolved Inorganic Nitrate Tendency"
 				/>
 				<var name="SiO3Tend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Inorganic Silicate Tendency"
+			description="Dissolved Inorganic Silicate Tendency"
 				/>
 				<var name="NH4Tend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Ammonia Tendency"
+			description="Dissolved Ammonia Tendency"
 				/>
 				<var name="FeTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Inorganic Iron Tendency"
+			description="Dissolved Inorganic Iron Tendency"
 				/>
 				<var name="O2Tend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Oxygen Tendency"
+			description="Dissolved Oxygen Tendency"
 				/>
 				<var name="DICTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Inorganic Carbon Tendency"
+			description="Dissolved Inorganic Carbon Tendency"
 				/>
 				<var name="DIC_ALT_CO2Tend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Inorganic Carbon, Alternative CO2 Tendency"
+			description="Dissolved Inorganic Carbon, Alternative CO2 Tendency"
 				/>
 				<var name="ALKTend" array_group="ecosysGRP" units="meq m^{-3} s^{-1}"
-					description="Alkalinity Tendency"
+			description="Alkalinity Tendency"
 				/>
 				<var name="DOCTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Organic Carbon Tendency"
+			description="Dissolved Organic Carbon Tendency"
 				/>
 				<var name="DONTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Organic Nitrogen Tendency"
+			description="Dissolved Organic Nitrogen Tendency"
 				/>
 				<var name="DOFeTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Organic Iron Tendency"
+			description="Dissolved Organic Iron Tendency"
 				/>
 				<var name="DOPTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Dissolved Organic Phosphorus Tendency"
+			description="Dissolved Organic Phosphorus Tendency"
 				/>
 				<var name="DOPrTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Refractory DOP Tendency"
+			description="Refractory DOP Tendency"
 				/>
 				<var name="DONrTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Refractory DON Tendency"
+			description="Refractory DON Tendency"
 				/>
 				<var name="zooCTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Zooplankton Carbon Tendency"
+			description="Zooplankton Carbon Tendency"
 				/>
 				<var name="spChlTend" array_group="ecosysGRP" units="mg m^{-3} s^{-1}"
-					description="Small Phytoplankton Chlorophyll Tendency"
+			description="Small Phytoplankton Chlorophyll Tendency"
 				/>
 				<var name="spCTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Small Phytoplankton Carbon Tendency"
+			description="Small Phytoplankton Carbon Tendency"
 				/>
 				<var name="spFeTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Small Phytoplankton Iron Tendency"
+			description="Small Phytoplankton Iron Tendency"
 				/>
 				<var name="spCaCO3Tend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Small Phytoplankton Calcium Carbonate Tendency"
+			description="Small Phytoplankton Calcium Carbonate Tendency"
 				/>
 				<var name="diatChlTend" array_group="ecosysGRP" units="mg m^{-3} s^{-1}"
-					description="Diatom Chlorophyll Tendency"
+			description="Diatom Chlorophyll Tendency"
 				/>
 				<var name="diatCTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Diatom Carbon Tendency"
+			description="Diatom Carbon Tendency"
 				/>
 				<var name="diatFeTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Diatom Iron Tendency"
+			description="Diatom Iron Tendency"
 				/>
 				<var name="diatSiTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Diatom Silicate Tendency"
+			description="Diatom Silicate Tendency"
 				/>
 				<var name="diazChlTend" array_group="ecosysGRP" units="mg m^{-3} s^{-1}"
-					description="Diazotroph Chlorophyll Tendency"
+			description="Diazotroph Chlorophyll Tendency"
 				/>
 				<var name="diazCTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Diazotroph Carbon Tendency"
+			description="Diazotroph Carbon Tendency"
 				/>
 				<var name="diazFeTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Diazotroph Iron Tendency"
+			description="Diazotroph Iron Tendency"
 				/>
 				<var name="phaeoChlTend" array_group="ecosysGRP" units="mg m^{-3} s^{-1}"
-					description="Phaeocystis Chlorophyll Tendency"
+			description="Phaeocystis Chlorophyll Tendency"
 				/>
 				<var name="phaeoCTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Phaeocystis Carbon Tendency"
+			description="Phaeocystis Carbon Tendency"
 				/>
 				<var name="phaeoFeTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
-					description="Phaeocystis Iron Tendency"
+			description="Phaeocystis Iron Tendency"
 				/>
 			</var_array>
 		</var_struct>
@@ -248,94 +248,94 @@
 			<var_array name="ecosysTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="ecosysTracersPKG">
 				<!-- Add constituents of tracer group -->
 				<var name="PO4SurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Inorganic Phosphate Surface Flux"
+			description="Dissolved Inorganic Phosphate Surface Flux"
 				/>
 				<var name="NO3SurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Inorganic Nitrate Surface Flux"
+			description="Dissolved Inorganic Nitrate Surface Flux"
 				/>
 				<var name="SiO3SurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Inorganic Silicate Surface Flux"
+			description="Dissolved Inorganic Silicate Surface Flux"
 				/>
 				<var name="NH4SurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Ammonia Surface Flux"
+			description="Dissolved Ammonia Surface Flux"
 				/>
 				<var name="FeSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Inorganic Iron Surface Flux"
+			description="Dissolved Inorganic Iron Surface Flux"
 				/>
 				<var name="O2SurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Oxygen Surface Flux"
+			description="Dissolved Oxygen Surface Flux"
 				/>
 				<var name="DICSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Inorganic Carbon Surface Flux"
+			description="Dissolved Inorganic Carbon Surface Flux"
 				/>
 				<var name="DIC_ALT_CO2SurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Inorganic Carbon, Alternative CO2 Surface Flux"
+			description="Dissolved Inorganic Carbon, Alternative CO2 Surface Flux"
 				/>
 				<var name="ALKSurfaceFlux" array_group="ecosysGRP" units="meq m^{-3} m s^{-1}"
-					description="Alkalinity Surface Flux"
+			description="Alkalinity Surface Flux"
 				/>
 				<var name="DOCSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Organic Carbon Surface Flux"
+			description="Dissolved Organic Carbon Surface Flux"
 				/>
 				<var name="DONSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Organic Nitrogen Surface Flux"
+			description="Dissolved Organic Nitrogen Surface Flux"
 				/>
 				<var name="DOFeSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Organic Iron Surface Flux"
+			description="Dissolved Organic Iron Surface Flux"
 				/>
 				<var name="DOPSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Dissolved Organic Phosphorus Surface Flux"
+			description="Dissolved Organic Phosphorus Surface Flux"
 				/>
 				<var name="DOPrSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Refractory DOP Surface Flux"
+			description="Refractory DOP Surface Flux"
 				/>
 				<var name="DONrSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Refractory DON Surface Flux"
+			description="Refractory DON Surface Flux"
 				/>
 				<var name="zooCSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Zooplankton Carbon Surface Flux"
+			description="Zooplankton Carbon Surface Flux"
 				/>
 				<var name="spChlSurfaceFlux" array_group="ecosysGRP" units="mg m^{-3} m s^{-1}"
-					description="Small Phytoplankton Chlorophyll Surface Flux"
+			description="Small Phytoplankton Chlorophyll Surface Flux"
 				/>
 				<var name="spCSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Small Phytoplankton Carbon Surface Flux"
+			description="Small Phytoplankton Carbon Surface Flux"
 				/>
 				<var name="spFeSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Small Phytoplankton Iron Surface Flux"
+			description="Small Phytoplankton Iron Surface Flux"
 				/>
 				<var name="spCaCO3SurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Small Phytoplankton Calcium Carbonate Surface Flux"
+			description="Small Phytoplankton Calcium Carbonate Surface Flux"
 				/>
 				<var name="diatChlSurfaceFlux" array_group="ecosysGRP" units="mg m^{-3} m s^{-1}"
-					description="Diatom Chlorophyll Surface Flux"
+			description="Diatom Chlorophyll Surface Flux"
 				/>
 				<var name="diatCSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Diatom Carbon Surface Flux"
+			description="Diatom Carbon Surface Flux"
 				/>
 				<var name="diatFeSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Diatom Iron Surface Flux"
+			description="Diatom Iron Surface Flux"
 				/>
 				<var name="diatSiSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Diatom Silicate Surface Flux"
+			description="Diatom Silicate Surface Flux"
 				/>
 				<var name="diazChlSurfaceFlux" array_group="ecosysGRP" units="mg m^{-3} m s^{-1}"
-					description="Diazotroph Chlorophyll Surface Flux"
+			description="Diazotroph Chlorophyll Surface Flux"
 				/>
 				<var name="diazCSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Diazotroph Carbon Surface Flux"
+			description="Diazotroph Carbon Surface Flux"
 				/>
 				<var name="diazFeSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Diazotroph Iron Surface Flux"
+			description="Diazotroph Iron Surface Flux"
 				/>
 				<var name="phaeoChlSurfaceFlux" array_group="ecosysGRP" units="mg m^{-3} m s^{-1}"
-					description="Phaeocystis Chlorophyll Surface Flux"
+			description="Phaeocystis Chlorophyll Surface Flux"
 				/>
 				<var name="phaeoCSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Phaeocystis Carbon Surface Flux"
+			description="Phaeocystis Carbon Surface Flux"
 				/>
 				<var name="phaeoFeSurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
-					description="Phaeocystis Iron Surface Flux"
+			description="Phaeocystis Iron Surface Flux"
 				/>
 			</var_array>
 		</var_struct>
@@ -620,654 +620,654 @@
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
 			<var_array name="ecosysTracersPistonVelocity" type="real" dimensions="nCells Time" packages="ecosysTracersSurfaceRestoringPKG">
 				<var name="PO4PistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which PO4 is restored to PO4SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which PO4 is restored to PO4SurfaceRestoringValue"
 				/>
 				<var name="NO3PistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which NO3 is restored to NO3SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which NO3 is restored to NO3SurfaceRestoringValue"
 				/>
 				<var name="SiO3PistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which SiO3 is restored to SiO3SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which SiO3 is restored to SiO3SurfaceRestoringValue"
 				/>
 				<var name="NH4PistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which NH4 is restored to NH4SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which NH4 is restored to NH4SurfaceRestoringValue"
 				/>
 				<var name="FePistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which Fe is restored to FeSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which Fe is restored to FeSurfaceRestoringValue"
 				/>
 				<var name="O2PistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which O2 is restored to O2SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which O2 is restored to O2SurfaceRestoringValue"
 				/>
 				<var name="DICPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DIC is restored to DICSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DIC is restored to DICSurfaceRestoringValue"
 				/>
 				<var name="DIC_ALT_CO2PistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DIC_ALT_CO2 is restored to DIC_ALT_CO2SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DIC_ALT_CO2 is restored to DIC_ALT_CO2SurfaceRestoringValue"
 				/>
 				<var name="ALKPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which ALK is restored to ALKSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which ALK is restored to ALKSurfaceRestoringValue"
 				/>
 				<var name="DOCPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DOC is restored to DOCSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DOC is restored to DOCSurfaceRestoringValue"
 				/>
 				<var name="DONPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DON is restored to DONSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DON is restored to DONSurfaceRestoringValue"
 				/>
 				<var name="DOFePistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DOFe is restored to DOFeSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DOFe is restored to DOFeSurfaceRestoringValue"
 				/>
 				<var name="DOPPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DOP is restored to DOPSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DOP is restored to DOPSurfaceRestoringValue"
 				/>
 				<var name="DOPrPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DOPr is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DOPr is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="DONrPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DONr is restored to DONrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DONr is restored to DONrSurfaceRestoringValue"
 				/>
 				<var name="zooCPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to zooCSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to zooCSurfaceRestoringValue"
 				/>
 				<var name="spChlPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which spChl is restored to spChlSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which spChl is restored to spChlSurfaceRestoringValue"
 				/>
 				<var name="spCPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which spC is restored to spCSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which spC is restored to spCSurfaceRestoringValue"
 				/>
 				<var name="spFePistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which spFe is restored to spFeSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which spFe is restored to spFeSurfaceRestoringValue"
 				/>
 				<var name="spCaCO3PistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which spCaCO3 is restored to spCaCO3SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which spCaCO3 is restored to spCaCO3SurfaceRestoringValue"
 				/>
 				<var name="diatChlPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which diatChl is restored to diatChlSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which diatChl is restored to diatChlSurfaceRestoringValue"
 				/>
 				<var name="diatCPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which diatC is restored to diatCSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which diatC is restored to diatCSurfaceRestoringValue"
 				/>
 				<var name="diatFePistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which diatFe is restored to diatFeSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which diatFe is restored to diatFeSurfaceRestoringValue"
 				/>
 				<var name="diatSiPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which diatSi is restored to diatSiSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which diatSi is restored to diatSiSurfaceRestoringValue"
 				/>
 				<var name="diazChlPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which diazChl is restored to diazChlSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which diazChl is restored to diazChlSurfaceRestoringValue"
 				/>
 				<var name="diazCPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which diazC is restored to diazCSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which diazC is restored to diazCSurfaceRestoringValue"
 				/>
 				<var name="diazFePistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which diazFe is restored to diazFeSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which diazFe is restored to diazFeSurfaceRestoringValue"
 				/>
 				<var name="phaeoChlPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which phaeoChl is restored to phaeoChlSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which phaeoChl is restored to phaeoChlSurfaceRestoringValue"
 				/>
 				<var name="phaeoCPistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which phaeoC is restored to phaeoCSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which phaeoC is restored to phaeoCSurfaceRestoringValue"
 				/>
 				<var name="phaeoFePistonVelocity" array_group="ecosysPVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which phaeoFe is restored to phaeoFeSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which phaeoFe is restored to phaeoFeSurfaceRestoringValue"
 				/>
 			</var_array>
 			<var_array name="ecosysTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="ecosysTracersSurfaceRestoringPKG">
 				<var name="PO4SurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which PO4 is restored to PO4SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which PO4 is restored to PO4SurfaceRestoringValue"
 				/>
 				<var name="NO3SurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which NO3 is restored to NO3SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which NO3 is restored to NO3SurfaceRestoringValue"
 				/>
 				<var name="SiO3SurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which SiO3 is restored to SiO3SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which SiO3 is restored to SiO3SurfaceRestoringValue"
 				/>
 				<var name="NH4SurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which NH4 is restored to NH4SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which NH4 is restored to NH4SurfaceRestoringValue"
 				/>
 				<var name="FeSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which Fe is restored to FeSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which Fe is restored to FeSurfaceRestoringValue"
 				/>
 				<var name="O2SurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which O2 is restored to O2SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which O2 is restored to O2SurfaceRestoringValue"
 				/>
 				<var name="DICSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DIC is restored to DICSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DIC is restored to DICSurfaceRestoringValue"
 				/>
 				<var name="DIC_ALT_CO2SurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DIC_ALT_CO2 is restored to DIC_ALT_CO2SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DIC_ALT_CO2 is restored to DIC_ALT_CO2SurfaceRestoringValue"
 				/>
 				<var name="ALKSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which ALK is restored to ALKSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which ALK is restored to ALKSurfaceRestoringValue"
 				/>
 				<var name="DOCSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DOC is restored to DOCSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DOC is restored to DOCSurfaceRestoringValue"
 				/>
 				<var name="DONSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DON is restored to DONSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DON is restored to DONSurfaceRestoringValue"
 				/>
 				<var name="DOFeSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DOFe is restored to DOFeSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DOFe is restored to DOFeSurfaceRestoringValue"
 				/>
 				<var name="DOPSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DOP is restored to DOPSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DOP is restored to DOPSurfaceRestoringValue"
 				/>
 				<var name="DOPrSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DOPr is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DOPr is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="DONrSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which DONr is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which DONr is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="spChlSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="spCSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="spFeSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="spCaCO3SurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="diatChlSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="diatCSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="diatFeSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="diatSiSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="diazChlSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="diazCSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="diazFeSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="phaeoChlSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="phaeoCSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="phaeoFeSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 				<var name="zooCSurfaceRestoringValue" array_group="ecosysSRVGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to DOPrSurfaceRestoringValue"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
 			<var_array name="ecosysTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="ecosysTracersInteriorRestoringPKG">
 				<var name="PO4InteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which PO4 is restored to PO4InteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which PO4 is restored to PO4InteriorRestoringValue"
 				/>
 				<var name="NO3InteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which NO3 is restored to NO3InteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which NO3 is restored to NO3InteriorRestoringValue"
 				/>
 				<var name="SiO3InteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which SiO3 is restored to SiO3InteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which SiO3 is restored to SiO3InteriorRestoringValue"
 				/>
 				<var name="NH4InteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which NH4 is restored to NH4InteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which NH4 is restored to NH4InteriorRestoringValue"
 				/>
 				<var name="FeInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which Fe is restored to FeInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which Fe is restored to FeInteriorRestoringValue"
 				/>
 				<var name="O2InteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which O2 is restored to O2InteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which O2 is restored to O2InteriorRestoringValue"
 				/>
 				<var name="DICInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which DIC is restored to DICInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which DIC is restored to DICInteriorRestoringValue"
 				/>
 				<var name="DIC_ALT_CO2InteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which DIC_ALT_CO2 is restored to DIC_ALT_CO2InteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which DIC_ALT_CO2 is restored to DIC_ALT_CO2InteriorRestoringValue"
 				/>
 				<var name="ALKInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which ALK is restored to ALKInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which ALK is restored to ALKInteriorRestoringValue"
 				/>
 				<var name="DOCInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which DOC is restored to DOCInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which DOC is restored to DOCInteriorRestoringValue"
 				/>
 				<var name="DONInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which DON is restored to DONInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which DON is restored to DONInteriorRestoringValue"
 				/>
 				<var name="DOFeInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which DOFe is restored to DOFeInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which DOFe is restored to DOFeInteriorRestoringValue"
 				/>
 				<var name="DOPInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which DOP is restored to DOPInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which DOP is restored to DOPInteriorRestoringValue"
 				/>
 				<var name="DOPrInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which DOPr is restored to DOPrInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which DOPr is restored to DOPrInteriorRestoringValue"
 				/>
 				<var name="DONrInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which DONr is restored to DONrInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which DONr is restored to DONrInteriorRestoringValue"
 				/>
 				<var name="zooCInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which zooC is restored to zooCInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which zooC is restored to zooCInteriorRestoringValue"
 				/>
 				<var name="spChlInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which spChl is restored to spChlInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which spChl is restored to spChlInteriorRestoringValue"
 				/>
 				<var name="spCInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which spC is restored to spCInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which spC is restored to spCInteriorRestoringValue"
 				/>
 				<var name="spFeInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which spFe is restored to spFeInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which spFe is restored to spFeInteriorRestoringValue"
 				/>
 				<var name="spCaCO3InteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which spCaCO3 is restored to spCaCO3InteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which spCaCO3 is restored to spCaCO3InteriorRestoringValue"
 				/>
 				<var name="diatChlInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which diatChl is restored to diatChlInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which diatChl is restored to diatChlInteriorRestoringValue"
 				/>
 				<var name="diatCInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which diatC is restored to diatCInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which diatC is restored to diatCInteriorRestoringValue"
 				/>
 				<var name="diatFeInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which diatFe is restored to diatFeInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which diatFe is restored to diatFeInteriorRestoringValue"
 				/>
 				<var name="diatSiInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which diatSi is restored to diatSiInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which diatSi is restored to diatSiInteriorRestoringValue"
 				/>
 				<var name="diazChlInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which diazChl is restored to diazChlInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which diazChl is restored to diazChlInteriorRestoringValue"
 				/>
 				<var name="diazCInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which diazC is restored to diazCInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which diazC is restored to diazCInteriorRestoringValue"
 				/>
 				<var name="diazFeInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which diazFe is restored to diazFeInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which diazFe is restored to diazFeInteriorRestoringValue"
 				/>
 				<var name="phaeoChlInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which phaeoChl is restored to phaeoChlInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which phaeoChl is restored to phaeoChlInteriorRestoringValue"
 				/>
 				<var name="phaeoCInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which phaeoC is restored to phaeoCInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which phaeoC is restored to phaeoCInteriorRestoringValue"
 				/>
 				<var name="phaeoFeInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
-					 description="A non-negative field controlling the rate at which phaeoFe is restored to phaeoFeInteriorRestoringValue"
+			 description="A non-negative field controlling the rate at which phaeoFe is restored to phaeoFeInteriorRestoringValue"
 				/>
 			</var_array>
 			<var_array name="ecosysTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="ecosysTracersInteriorRestoringPKG">
 				<var name="PO4InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by PO4InteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by PO4InteriorRestoringRate."
 				/>
 				<var name="NO3InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by NO3InteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by NO3InteriorRestoringRate."
 				/>
 				<var name="SiO3InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by SiO3InteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by SiO3InteriorRestoringRate."
 				/>
 				<var name="NH4InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by NH4InteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by NH4InteriorRestoringRate."
 				/>
 				<var name="FeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by FeInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by FeInteriorRestoringRate."
 				/>
 				<var name="O2InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by O2InteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by O2InteriorRestoringRate."
 				/>
 				<var name="DICInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by DICInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by DICInteriorRestoringRate."
 				/>
 				<var name="DIC_ALT_CO2InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by DIC_ALT_CO2InteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by DIC_ALT_CO2InteriorRestoringRate."
 				/>
 				<var name="ALKInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by ALKInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by ALKInteriorRestoringRate."
 				/>
 				<var name="DOCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by DOCInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by DOCInteriorRestoringRate."
 				/>
 				<var name="DONInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by DONInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by DONInteriorRestoringRate."
 				/>
 				<var name="DOFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by DOFeInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by DOFeInteriorRestoringRate."
 				/>
 				<var name="DOPInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by DOPInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by DOPInteriorRestoringRate."
 				/>
 				<var name="DOPrInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by DOPrInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by DOPrInteriorRestoringRate."
 				/>
 				<var name="DONrInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by DONrInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by DONrInteriorRestoringRate."
 				/>
 				<var name="zooCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by zooCInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by zooCInteriorRestoringRate."
 				/>
 				<var name="spChlInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by spChlInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by spChlInteriorRestoringRate."
 				/>
 				<var name="spCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by spCInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by spCInteriorRestoringRate."
 				/>
 				<var name="spFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by spFeInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by spFeInteriorRestoringRate."
 				/>
 				<var name="spCaCO3InteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by spCaCO3InteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by spCaCO3InteriorRestoringRate."
 				/>
 				<var name="diatChlInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by diatChlInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by diatChlInteriorRestoringRate."
 				/>
 				<var name="diatCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by diatCInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by diatCInteriorRestoringRate."
 				/>
 				<var name="diatFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by diatFeInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by diatFeInteriorRestoringRate."
 				/>
 				<var name="diatSiInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by diatSiInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by diatSiInteriorRestoringRate."
 				/>
 				<var name="diazChlInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by diazChlInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by diazChlInteriorRestoringRate."
 				/>
 				<var name="diazCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by diazCInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by diazCInteriorRestoringRate."
 				/>
 				<var name="diazFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by diazFeInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by diazFeInteriorRestoringRate."
 				/>
 				<var name="phaeoChlInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by phaeoChlInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by phaeoChlInteriorRestoringRate."
 				/>
 				<var name="phaeoCInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by phaeoCInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by phaeoCInteriorRestoringRate."
 				/>
 				<var name="phaeoFeInteriorRestoringValue" array_group="ecosysIRVGRP" units="mmol m^{3}"
-					 description="Temperature is restored toward this field at a rate controlled by phaeoFeInteriorRestoringRate."
+			 description="Temperature is restored toward this field at a rate controlled by phaeoFeInteriorRestoringRate."
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersExponentialDecayFields" time_levs="1">
 			<var_array name="ecosysTracersExponentialDecayRate" type="real" dimensions="Time" packages="ecosysTracersExponentialDecayPKG">
 				<var name="PO4ExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of PO4"
+			 description="A non-negative field controlling the exponential decay of PO4"
 				/>
 				<var name="NO3ExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of NO3"
+			 description="A non-negative field controlling the exponential decay of NO3"
 				/>
 				<var name="SiO3ExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of SiO3"
+			 description="A non-negative field controlling the exponential decay of SiO3"
 				/>
 				<var name="NH4ExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of NH4"
+			 description="A non-negative field controlling the exponential decay of NH4"
 				/>
 				<var name="FeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of Fe"
+			 description="A non-negative field controlling the exponential decay of Fe"
 				/>
 				<var name="O2ExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of O2"
+			 description="A non-negative field controlling the exponential decay of O2"
 				/>
 				<var name="DICExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of DIC"
+			 description="A non-negative field controlling the exponential decay of DIC"
 				/>
 				<var name="DIC_ALT_CO2ExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of DIC_ALT_CO2"
+			 description="A non-negative field controlling the exponential decay of DIC_ALT_CO2"
 				/>
 				<var name="ALKExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of ALK"
+			 description="A non-negative field controlling the exponential decay of ALK"
 				/>
 				<var name="DOCExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of DOC"
+			 description="A non-negative field controlling the exponential decay of DOC"
 				/>
 				<var name="DONExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of DON"
+			 description="A non-negative field controlling the exponential decay of DON"
 				/>
 				<var name="DOFeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of DOFe"
+			 description="A non-negative field controlling the exponential decay of DOFe"
 				/>
 				<var name="DOPExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of DOP"
+			 description="A non-negative field controlling the exponential decay of DOP"
 				/>
 				<var name="DOPrExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of DOPr"
+			 description="A non-negative field controlling the exponential decay of DOPr"
 				/>
 				<var name="DONrExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of DONr"
+			 description="A non-negative field controlling the exponential decay of DONr"
 				/>
 				<var name="zooCExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of zooC"
+			 description="A non-negative field controlling the exponential decay of zooC"
 				/>
 				<var name="spChlExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of spChl"
+			 description="A non-negative field controlling the exponential decay of spChl"
 				/>
 				<var name="spCExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of spC"
+			 description="A non-negative field controlling the exponential decay of spC"
 				/>
 				<var name="spFeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of spFe"
+			 description="A non-negative field controlling the exponential decay of spFe"
 				/>
 				<var name="spCaCO3ExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of spCaCO3"
+			 description="A non-negative field controlling the exponential decay of spCaCO3"
 				/>
 				<var name="diatChlExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of diatChl"
+			 description="A non-negative field controlling the exponential decay of diatChl"
 				/>
 				<var name="diatCExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of diatC"
+			 description="A non-negative field controlling the exponential decay of diatC"
 				/>
 				<var name="diatFeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of diatFe"
+			 description="A non-negative field controlling the exponential decay of diatFe"
 				/>
 				<var name="diatSiExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of diatSi"
+			 description="A non-negative field controlling the exponential decay of diatSi"
 				/>
 				<var name="diazChlExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of diazChl"
+			 description="A non-negative field controlling the exponential decay of diazChl"
 				/>
 				<var name="diazCExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of diazC"
+			 description="A non-negative field controlling the exponential decay of diazC"
 				/>
 				<var name="diazFeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of diazFe"
+			 description="A non-negative field controlling the exponential decay of diazFe"
 				/>
 				<var name="phaeoChlExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of phaeoChl"
+			 description="A non-negative field controlling the exponential decay of phaeoChl"
 				/>
 				<var name="phaeoCExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of phaeoC"
+			 description="A non-negative field controlling the exponential decay of phaeoC"
 				/>
 				<var name="phaeoFeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of phaeoFe"
+			 description="A non-negative field controlling the exponential decay of phaeoFe"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersIdealAgeFields" time_levs="1">
 			<var_array name="ecosysTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="ecosysTracersIdealAgePKG">
 				<var name="PO4IdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, PO4 is reset to PO4 * PO4IdealAgeMask, valid values of PO4IdealAgeMask or 0 and 1"
+			 description="In top layer, PO4 is reset to PO4 * PO4IdealAgeMask, valid values of PO4IdealAgeMask or 0 and 1"
 				/>
 				<var name="NO3IdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, NO3 is reset to NO3 * NO3IdealAgeMask, valid values of NO3IdealAgeMask or 0 and 1"
+			 description="In top layer, NO3 is reset to NO3 * NO3IdealAgeMask, valid values of NO3IdealAgeMask or 0 and 1"
 				/>
 				<var name="SiO3IdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, SiO3 is reset to SiO3 * SiO3IdealAgeMask, valid values of SiO3IdealAgeMask or 0 and 1"
+			 description="In top layer, SiO3 is reset to SiO3 * SiO3IdealAgeMask, valid values of SiO3IdealAgeMask or 0 and 1"
 				/>
 				<var name="NH4IdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, NH4 is reset to NH4 * NH4IdealAgeMask, valid values of NH4IdealAgeMask or 0 and 1"
+			 description="In top layer, NH4 is reset to NH4 * NH4IdealAgeMask, valid values of NH4IdealAgeMask or 0 and 1"
 				/>
 				<var name="FeIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, Fe is reset to Fe * FeIdealAgeMask, valid values of FeIdealAgeMask or 0 and 1"
+			 description="In top layer, Fe is reset to Fe * FeIdealAgeMask, valid values of FeIdealAgeMask or 0 and 1"
 				/>
 				<var name="O2IdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, O2 is reset to O2 * O2IdealAgeMask, valid values of O2IdealAgeMask or 0 and 1"
+			 description="In top layer, O2 is reset to O2 * O2IdealAgeMask, valid values of O2IdealAgeMask or 0 and 1"
 				/>
 				<var name="DICIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DIC is reset to DIC * DICIdealAgeMask, valid values of DICIdealAgeMask or 0 and 1"
+			 description="In top layer, DIC is reset to DIC * DICIdealAgeMask, valid values of DICIdealAgeMask or 0 and 1"
 				/>
 				<var name="DIC_ALT_CO2IdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DIC_ALT_CO2 is reset to DIC_ALT_CO2 * DIC_ALT_CO2IdealAgeMask, valid values of DIC_ALT_CO2IdealAgeMask or 0 and 1"
+			 description="In top layer, DIC_ALT_CO2 is reset to DIC_ALT_CO2 * DIC_ALT_CO2IdealAgeMask, valid values of DIC_ALT_CO2IdealAgeMask or 0 and 1"
 				/>
 				<var name="ALKIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, ALK is reset to ALK * ALKIdealAgeMask, valid values of ALKIdealAgeMask or 0 and 1"
+			 description="In top layer, ALK is reset to ALK * ALKIdealAgeMask, valid values of ALKIdealAgeMask or 0 and 1"
 				/>
 				<var name="DOCIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DOC is reset to DOC * DOCIdealAgeMask, valid values of DOCIdealAgeMask or 0 and 1"
+			 description="In top layer, DOC is reset to DOC * DOCIdealAgeMask, valid values of DOCIdealAgeMask or 0 and 1"
 				/>
 				<var name="DONIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DON is reset to DON * DONIdealAgeMask, valid values of DONIdealAgeMask or 0 and 1"
+			 description="In top layer, DON is reset to DON * DONIdealAgeMask, valid values of DONIdealAgeMask or 0 and 1"
 				/>
 				<var name="DOFeIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DOFe is reset to DOFe * DOFeIdealAgeMask, valid values of DOFeIdealAgeMask or 0 and 1"
+			 description="In top layer, DOFe is reset to DOFe * DOFeIdealAgeMask, valid values of DOFeIdealAgeMask or 0 and 1"
 				/>
 				<var name="DOPIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DOP is reset to DOP * DOPIdealAgeMask, valid values of DOPIdealAgeMask or 0 and 1"
+			 description="In top layer, DOP is reset to DOP * DOPIdealAgeMask, valid values of DOPIdealAgeMask or 0 and 1"
 				/>
 				<var name="DOPrIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DOPr is reset to DOPr * DOPrIdealAgeMask, valid values of DOPrIdealAgeMask or 0 and 1"
+			 description="In top layer, DOPr is reset to DOPr * DOPrIdealAgeMask, valid values of DOPrIdealAgeMask or 0 and 1"
 				/>
 				<var name="DONrIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DONr is reset to DONr * DONrIdealAgeMask, valid values of DONrIdealAgeMask or 0 and 1"
+			 description="In top layer, DONr is reset to DONr * DONrIdealAgeMask, valid values of DONrIdealAgeMask or 0 and 1"
 				/>
 				<var name="zooCIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, zooC is reset to zooC * zooCIdealAgeMask, valid values of zooCIdealAgeMask or 0 and 1"
+			 description="In top layer, zooC is reset to zooC * zooCIdealAgeMask, valid values of zooCIdealAgeMask or 0 and 1"
 				/>
 				<var name="spChlIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, spChl is reset to spChl * spChlIdealAgeMask, valid values of spChlIdealAgeMask or 0 and 1"
+			 description="In top layer, spChl is reset to spChl * spChlIdealAgeMask, valid values of spChlIdealAgeMask or 0 and 1"
 				/>
 				<var name="spCIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, spC is reset to spC * spCIdealAgeMask, valid values of spCIdealAgeMask or 0 and 1"
+			 description="In top layer, spC is reset to spC * spCIdealAgeMask, valid values of spCIdealAgeMask or 0 and 1"
 				/>
 				<var name="spFeIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, spFe is reset to spFe * spFeIdealAgeMask, valid values of spFeIdealAgeMask or 0 and 1"
+			 description="In top layer, spFe is reset to spFe * spFeIdealAgeMask, valid values of spFeIdealAgeMask or 0 and 1"
 				/>
 				<var name="spCaCO3IdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, spCaCO3 is reset to spCaCO3 * spCaCO3IdealAgeMask, valid values of spCaCO3IdealAgeMask or 0 and 1"
+			 description="In top layer, spCaCO3 is reset to spCaCO3 * spCaCO3IdealAgeMask, valid values of spCaCO3IdealAgeMask or 0 and 1"
 				/>
 				<var name="diatChlIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diatChl is reset to diatChl * diatChlIdealAgeMask, valid values of diatChlIdealAgeMask or 0 and 1"
+			 description="In top layer, diatChl is reset to diatChl * diatChlIdealAgeMask, valid values of diatChlIdealAgeMask or 0 and 1"
 				/>
 				<var name="diatCIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diatC is reset to diatC * diatCIdealAgeMask, valid values of diatCIdealAgeMask or 0 and 1"
+			 description="In top layer, diatC is reset to diatC * diatCIdealAgeMask, valid values of diatCIdealAgeMask or 0 and 1"
 				/>
 				<var name="diatFeIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diatFe is reset to diatFe * diatFeIdealAgeMask, valid values of diatFeIdealAgeMask or 0 and 1"
+			 description="In top layer, diatFe is reset to diatFe * diatFeIdealAgeMask, valid values of diatFeIdealAgeMask or 0 and 1"
 				/>
 				<var name="diatSiIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diatSi is reset to diatSi * diatSiIdealAgeMask, valid values of diatSiIdealAgeMask or 0 and 1"
+			 description="In top layer, diatSi is reset to diatSi * diatSiIdealAgeMask, valid values of diatSiIdealAgeMask or 0 and 1"
 				/>
 				<var name="diazChlIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diazChl is reset to diazChl * diazChlIdealAgeMask, valid values of diazChlIdealAgeMask or 0 and 1"
+			 description="In top layer, diazChl is reset to diazChl * diazChlIdealAgeMask, valid values of diazChlIdealAgeMask or 0 and 1"
 				/>
 				<var name="diazCIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diazC is reset to diazC * diazCIdealAgeMask, valid values of diazCIdealAgeMask or 0 and 1"
+			 description="In top layer, diazC is reset to diazC * diazCIdealAgeMask, valid values of diazCIdealAgeMask or 0 and 1"
 				/>
 				<var name="diazFeIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diazFe is reset to diazFe * diazFeIdealAgeMask, valid values of diazFeIdealAgeMask or 0 and 1"
+			 description="In top layer, diazFe is reset to diazFe * diazFeIdealAgeMask, valid values of diazFeIdealAgeMask or 0 and 1"
 				/>
 				<var name="phaeoChlIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, phaeoChl is reset to phaeoChl * phaeoChlIdealAgeMask, valid values of phaeoChlIdealAgeMask or 0 and 1"
+			 description="In top layer, phaeoChl is reset to phaeoChl * phaeoChlIdealAgeMask, valid values of phaeoChlIdealAgeMask or 0 and 1"
 				/>
 				<var name="phaeoCIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, phaeoC is reset to phaeoC * phaeoCIdealAgeMask, valid values of phaeoCIdealAgeMask or 0 and 1"
+			 description="In top layer, phaeoC is reset to phaeoC * phaeoCIdealAgeMask, valid values of phaeoCIdealAgeMask or 0 and 1"
 				/>
 				<var name="phaeoFeIdealAgeMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, phaeoFe is reset to phaeoFe * phaeoFeIdealAgeMask, valid values of phaeoFeIdealAgeMask or 0 and 1"
+			 description="In top layer, phaeoFe is reset to phaeoFe * phaeoFeIdealAgeMask, valid values of phaeoFeIdealAgeMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersTTDFields" time_levs="1">
 			<var_array name="ecosysTracersTTDMask" type="real" dimensions="nCells Time" packages="ecosysTracersTTDPKG">
 				<var name="PO4TTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, PO4 is reset to TTDMask, valid values of PO4TTDMask or 0 and 1"
+			 description="In top layer, PO4 is reset to TTDMask, valid values of PO4TTDMask or 0 and 1"
 				/>
 				<var name="NO3TTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, NO3 is reset to TTDMask, valid values of NO3TTDMask or 0 and 1"
+			 description="In top layer, NO3 is reset to TTDMask, valid values of NO3TTDMask or 0 and 1"
 				/>
 				<var name="SiO3TTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, SiO3 is reset to TTDMask, valid values of SiO3TTDMask or 0 and 1"
+			 description="In top layer, SiO3 is reset to TTDMask, valid values of SiO3TTDMask or 0 and 1"
 				/>
 				<var name="NH4TTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, NH4 is reset to TTDMask, valid values of NH4TTDMask or 0 and 1"
+			 description="In top layer, NH4 is reset to TTDMask, valid values of NH4TTDMask or 0 and 1"
 				/>
 				<var name="FeTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, Fe is reset to TTDMask, valid values of FeTTDMask or 0 and 1"
+			 description="In top layer, Fe is reset to TTDMask, valid values of FeTTDMask or 0 and 1"
 				/>
 				<var name="O2TTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, O2 is reset to TTDMask, valid values of O2TTDMask or 0 and 1"
+			 description="In top layer, O2 is reset to TTDMask, valid values of O2TTDMask or 0 and 1"
 				/>
 				<var name="DICTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DIC is reset to TTDMask, valid values of DICTTDMask or 0 and 1"
+			 description="In top layer, DIC is reset to TTDMask, valid values of DICTTDMask or 0 and 1"
 				/>
 				<var name="DIC_ALT_CO2TTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DIC_ALT_CO2 is reset to TTDMask, valid values of DIC_ALT_CO2TTDMask or 0 and 1"
+			 description="In top layer, DIC_ALT_CO2 is reset to TTDMask, valid values of DIC_ALT_CO2TTDMask or 0 and 1"
 				/>
 				<var name="ALKTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, ALK is reset to TTDMask, valid values of ALKTTDMask or 0 and 1"
+			 description="In top layer, ALK is reset to TTDMask, valid values of ALKTTDMask or 0 and 1"
 				/>
 				<var name="DOCTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DOC is reset to TTDMask, valid values of DOCTTDMask or 0 and 1"
+			 description="In top layer, DOC is reset to TTDMask, valid values of DOCTTDMask or 0 and 1"
 				/>
 				<var name="DONTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DON is reset to TTDMask, valid values of DONTTDMask or 0 and 1"
+			 description="In top layer, DON is reset to TTDMask, valid values of DONTTDMask or 0 and 1"
 				/>
 				<var name="DOFeTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DOFe is reset to TTDMask, valid values of DOFeTTDMask or 0 and 1"
+			 description="In top layer, DOFe is reset to TTDMask, valid values of DOFeTTDMask or 0 and 1"
 				/>
 				<var name="DOPTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DOP is reset to TTDMask, valid values of DOPTTDMask or 0 and 1"
+			 description="In top layer, DOP is reset to TTDMask, valid values of DOPTTDMask or 0 and 1"
 				/>
 				<var name="DOPrTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DOPr is reset to TTDMask, valid values of DOPrTTDMask or 0 and 1"
+			 description="In top layer, DOPr is reset to TTDMask, valid values of DOPrTTDMask or 0 and 1"
 				/>
 				<var name="DONrTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, DONr is reset to TTDMask, valid values of DONrTTDMask or 0 and 1"
+			 description="In top layer, DONr is reset to TTDMask, valid values of DONrTTDMask or 0 and 1"
 				/>
 				<var name="zooCTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, zooC is reset to TTDMask, valid values of zooCTTDMask or 0 and 1"
+			 description="In top layer, zooC is reset to TTDMask, valid values of zooCTTDMask or 0 and 1"
 				/>
 				<var name="spChlTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, spChl is reset to TTDMask, valid values of spChlTTDMask or 0 and 1"
+			 description="In top layer, spChl is reset to TTDMask, valid values of spChlTTDMask or 0 and 1"
 				/>
 				<var name="spCTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, spC is reset to TTDMask, valid values of spCTTDMask or 0 and 1"
+			 description="In top layer, spC is reset to TTDMask, valid values of spCTTDMask or 0 and 1"
 				/>
 				<var name="spFeTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, spFe is reset to TTDMask, valid values of spFeTTDMask or 0 and 1"
+			 description="In top layer, spFe is reset to TTDMask, valid values of spFeTTDMask or 0 and 1"
 				/>
 				<var name="spCaCO3TTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, spCaCO3 is reset to TTDMask, valid values of spCaCO3TTDMask or 0 and 1"
+			 description="In top layer, spCaCO3 is reset to TTDMask, valid values of spCaCO3TTDMask or 0 and 1"
 				/>
 				<var name="diatChlTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diatChl is reset to TTDMask, valid values of diatChlTTDMask or 0 and 1"
+			 description="In top layer, diatChl is reset to TTDMask, valid values of diatChlTTDMask or 0 and 1"
 				/>
 				<var name="diatCTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diatC is reset to TTDMask, valid values of diatCTTDMask or 0 and 1"
+			 description="In top layer, diatC is reset to TTDMask, valid values of diatCTTDMask or 0 and 1"
 				/>
 				<var name="diatFeTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diatFe is reset to TTDMask, valid values of diatFeTTDMask or 0 and 1"
+			 description="In top layer, diatFe is reset to TTDMask, valid values of diatFeTTDMask or 0 and 1"
 				/>
 				<var name="diatSiTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diatSi is reset to TTDMask, valid values of diatSiTTDMask or 0 and 1"
+			 description="In top layer, diatSi is reset to TTDMask, valid values of diatSiTTDMask or 0 and 1"
 				/>
 				<var name="diazChlTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diazChl is reset to TTDMask, valid values of diazChlTTDMask or 0 and 1"
+			 description="In top layer, diazChl is reset to TTDMask, valid values of diazChlTTDMask or 0 and 1"
 				/>
 				<var name="diazCTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diazC is reset to TTDMask, valid values of diazCTTDMask or 0 and 1"
+			 description="In top layer, diazC is reset to TTDMask, valid values of diazCTTDMask or 0 and 1"
 				/>
 				<var name="diazFeTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, diazFe is reset to TTDMask, valid values of diazFeTTDMask or 0 and 1"
+			 description="In top layer, diazFe is reset to TTDMask, valid values of diazFeTTDMask or 0 and 1"
 				/>
 				<var name="phaeoChlTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, phaeoChl is reset to TTDMask, valid values of phaeoChlTTDMask or 0 and 1"
+			 description="In top layer, phaeoChl is reset to TTDMask, valid values of phaeoChlTTDMask or 0 and 1"
 				/>
 				<var name="phaeoCTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, phaeoC is reset to TTDMask, valid values of phaeoCTTDMask or 0 and 1"
+			 description="In top layer, phaeoC is reset to TTDMask, valid values of phaeoCTTDMask or 0 and 1"
 				/>
 				<var name="phaeoFeTTDMask" array_group="ecosysGRP" units="unitless"
-					 description="In top layer, phaeoFe is reset to TTDMask, valid values of phaeoFeTTDMask or 0 and 1"
+			 description="In top layer, phaeoFe is reset to TTDMask, valid values of phaeoFeTTDMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>

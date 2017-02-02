@@ -468,7 +468,7 @@ contains
                  OBLDepths(kIndexOBL) = abs(cvmix_variables % zw_iface(kIndexOBL+1))
                  interfaceForcings(kIndexOBL) = cvmix_variables % SurfaceBuoyancyForcing
 
-                 ! initialize the surfaceAverageIndex for cases when the if statement below is not true 
+                 ! initialize the surfaceAverageIndex for cases when the if statement below is not true
                  surfaceAverageIndex(kIndexOBL) = 1
                  ! move progressively downward to find the bottom most layer within the surface layer
                  sfc_layer_depth = cvmix_variables % BoundaryLayerDepth * config_cvmix_kpp_surface_layer_extent
@@ -504,7 +504,8 @@ contains
                  end do
 
                  do kIndexOBL = 1, maxLevelCell(iCell)
-                    normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
+                    normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
+                        real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
                     delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
                     deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + factor * delU2
                  end do
@@ -603,7 +604,7 @@ contains
 
 
             if(config_cvmix_kpp_matching .eq. 'SimpleShapes') then
-                do k = 1, int(indexBoundaryLayerDepth(iCell)) 
+                do k = 1, int(indexBoundaryLayerDepth(iCell))
                    vertViscTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) + cvmix_variables % Mdiff_iface(k)
                    vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
                 end do
@@ -906,7 +907,7 @@ contains
            write(stderrUnit,*) "ERROR: unknown value for config_cvmix_kpp_matching., supported values are:"
            write(stderrUnit,*) "         SimpleShapes or MatchBoth"
            err = 1
-           return 
+           return
         endif
 
         call cvmix_init_kpp ( &

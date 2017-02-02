@@ -1,31 +1,31 @@
 	<nml_record name="tracer_forcing_debugTracers">
 		<nml_option name="config_use_debugTracers" type="logical" default_value=".false." units="unitless"
-					description="if true, the 'debugTracers' category is enabled for the run"
-					possible_values=".true. or .false."
+			description="if true, the 'debugTracers' category is enabled for the run"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_debugTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'debugTracers' category"
-					possible_values=".true. or .false."
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'debugTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_debugTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, surface restoring source is applied to tracers in 'debugTracers' category"
-					possible_values=".true. or .false."
+			description="if true, surface restoring source is applied to tracers in 'debugTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_debugTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
-					description="if true, interior restoring source is applied to tracers in 'debugTracers' category"
-					possible_values=".true. or .false."
+			description="if true, interior restoring source is applied to tracers in 'debugTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_debugTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
-					description="if true, exponential decay source is applied to tracers in 'debugTracers' category"
-					possible_values=".true. or .false."
+			description="if true, exponential decay source is applied to tracers in 'debugTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_debugTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, idealAge forcing source is applied to tracers in 'debugTracers' category"
-					possible_values=".true. or .false."
+			description="if true, idealAge forcing source is applied to tracers in 'debugTracers' category"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_debugTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
-					description="if true, transit time distribution forcing source is applied to tracers in 'debugTracers' category"
-					possible_values=".true. or .false."
+			description="if true, transit time distribution forcing source is applied to tracers in 'debugTracers' category"
+			possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -43,7 +43,7 @@
 		<var_struct name="tracers" time_levs="2">
 			<var_array name="debugTracers" dimensions="nVertLevels nCells Time" type="real" packages="debugTracersPKG" default_value="1.0">
 				<var name="tracer1" array_group="debugGRP" units="na"
-					 description="tracer for debugging purposes"
+			 description="tracer for debugging purposes"
 				/>
 			</var_array>
 		</var_struct>
@@ -53,7 +53,7 @@
 		<var_struct name="tracersTend" time_levs="1">
 			<var_array name="debugTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersPKG">
 				<var name="tracer1Tend" array_group="debugGRP" units="na"
-					 description="Tendency for tracer1"
+			 description="Tendency for tracer1"
 				/>
 			</var_array>
 		</var_struct>
@@ -63,19 +63,19 @@
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="debugTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="debugTracersPKG">
 				<var name="tracer1SurfaceFlux" array_group="debugGRP" units="na"
-					 description="Flux of tracer1 through the ocean surface. Positive into ocean."
+			 description="Flux of tracer1 through the ocean surface. Positive into ocean."
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
 			<var_array name="debugTracersPistonVelocity" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
 				<var name="tracer1PistonVelocity" array_group="debugGRP" units="m s^{-1}"
-					 description="A non-negative field controlling the rate at which tracer1 is restored to tracer1SurfaceRestoringValue"
+			 description="A non-negative field controlling the rate at which tracer1 is restored to tracer1SurfaceRestoringValue"
 				/>
 			</var_array>
 			<var_array name="debugTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
 				<var name="tracer1SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
-					 description="tracer1 is restored toward this field at a rate controlled by temperaturePistonVelocity."
+			 description="tracer1 is restored toward this field at a rate controlled by temperaturePistonVelocity."
 				/>
 			</var_array>
 		</var_struct>
@@ -94,21 +94,21 @@
 		<var_struct name="tracersExponentialDecayFields" time_levs="1">
 			<var_array name="debugTracersExponentialDecayRate" type="real" dimensions="Time" packages="debugTracersExponentialDecayPKG">
 				<var name="tracer1ExponentialDecayRate" array_group="debugGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of tracer1"
+			 description="A non-negative field controlling the exponential decay of tracer1"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersIdealAgeFields" time_levs="1">
 			<var_array name="debugTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="debugTracersIdealAgePKG">
 				<var name="tracer1IdealAgeMask" array_group="debugGRP" units="unitless"
-					 description="In top layer, tracer1 is reset to tracer1 * tracer1IdealAgeMask, valid values of tracer1IdealAgeMask or 0 and 1"
+			 description="In top layer, tracer1 is reset to tracer1 * tracer1IdealAgeMask, valid values of tracer1IdealAgeMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersTTDFields" time_levs="1">
 			<var_array name="debugTracersTTDMask" type="real" dimensions="nCells Time" packages="debugTracersTTDPKG">
 				<var name="tracer1TTDMask" array_group="debugGRP" units="unitless"
-					 description="In top layer, tracer1 is reset to TTDMask, valid values of tracer1TTDMask or 0 and 1"
+			 description="In top layer, tracer1 is reset to TTDMask, valid values of tracer1TTDMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>

@@ -740,7 +740,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
             write(metaDataName, '(a10, i2)' ) 'vertexHalo', iHalo
             call ocn_init_add_tau_metadata( metaDataName, nVerticesArray(iHalo) )
          end do
-         
+
          block => block % next
       end do
 

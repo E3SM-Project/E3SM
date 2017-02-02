@@ -790,7 +790,7 @@ contains
         ! average normal velocity values over the ocean surface layer
         ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
         !
- 
+
         !$omp do schedule(runtime) private(cell1, cell2, surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
         do iEdge=1,nEdges
           normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
@@ -1948,7 +1948,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_validate_state(domain, timeLevel)!{{{
-      type (domain_type), intent(inout) :: domain 
+      type (domain_type), intent(inout) :: domain
       integer, intent(in), optional :: timeLevel
 
       integer :: timeLevelLocal
@@ -2046,7 +2046,8 @@ contains
             write(debugUnit, *) '  -- Statistics information for block fields'
 
             if ( mpas_stream_mgr_stream_exists(domain % streamManager, 'block_.*') ) then
-               call mpas_stream_mgr_block_Write(domain % streamManager, writeBlock=block, streamID='block_.*', forceWriteNow=.true.)
+               call mpas_stream_mgr_block_Write(domain % streamManager, writeBlock=block, streamID='block_.*', &
+                  forceWriteNow=.true.)
             end if
 
             ! Also, write general block information, like lat/lon bounds
@@ -2491,7 +2492,7 @@ contains
       integer, intent(in) :: identifier
 
       character (len=StrKIND) :: filename
-      
+
       character (len=StrKIND) :: identifierString
 
       if ( identifier .lt. 10 ) then

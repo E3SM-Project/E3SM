@@ -339,8 +339,8 @@ contains
 
       ! do IO communications if this is an output time step
       call mpas_pool_get_config(domain % configs, 'config_AM_timeFilters_compute_cell_centered_values', computeCC)
-      if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='timeFiltersOutput', direction=MPAS_STREAM_OUTPUT, ierr=err) &
-        .and. computeCC) then
+      if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='timeFiltersOutput', &
+          direction=MPAS_STREAM_OUTPUT, ierr=err) .and. computeCC) then
         block => domain % blocklist
         do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)

@@ -1,86 +1,86 @@
 	<nml_record name="isomip_plus" mode="init" configuration="isomip_plus">
 		<nml_option name="config_isomip_plus_vert_levels" type="integer" default_value="36" units="unitless"
-					description="Number of vertical levels in test case."
-					possible_values="Any integer greater than 0."
+			description="Number of vertical levels in test case."
+			possible_values="Any integer greater than 0."
 		/>
 		<nml_option name="config_isomip_plus_vertical_level_distribution" type="character" default_value="constant" units="unitless"
-					description="The distribution of vertical levels, currently only constant (all equal thickness)."
-					possible_values="'constant'"
+			description="The distribution of vertical levels, currently only constant (all equal thickness)."
+			possible_values="'constant'"
 		/>
 		<nml_option name="config_isomip_plus_max_bottom_depth" type="real" default_value="-720.0" units="m"
-					description="Maximum depth of the ocean in the test case."
-					possible_values="Any negative real number."
+			description="Maximum depth of the ocean in the test case."
+			possible_values="Any negative real number."
 		/>
 		<nml_option name="config_isomip_plus_minimum_levels" type="integer" default_value="3" units="unitless"
-					description="Minimum number of vertical levels in a column."
-					possible_values="Any positive integer value greater than 0."
+			description="Minimum number of vertical levels in a column."
+			possible_values="Any positive integer value greater than 0."
 		/>
 		<nml_option name="config_isomip_plus_min_column_thickness" type="real" default_value="10.0" units="m"
-					description="Minimum thickness of the inital ocean column (to prevent 'drying')."
-					possible_values="Any positive real value."
+			description="Minimum thickness of the inital ocean column (to prevent 'drying')."
+			possible_values="Any positive real value."
 		/>
 		<nml_option name="config_isomip_plus_min_ocean_fraction" type="real" default_value="0.5" units="unitless"
-					description="Minimum fraction of a cell that contains ocean (as opposed to land or grounded land ice) in order for it to be an active ocean cell."
-					possible_values="Any positive real value."
+			description="Minimum fraction of a cell that contains ocean (as opposed to land or grounded land ice) in order for it to be an active ocean cell."
+			possible_values="Any positive real value."
 		/>
 		<nml_option name="config_isomip_plus_topography_file" type="character" default_value="input_geometry_processed.nc" units="unitless"
-					description="Path to the topography initial condition file."
-					possible_values="path/to/topography/file.nc"
+			description="Path to the topography initial condition file."
+			possible_values="path/to/topography/file.nc"
 		/>
 		<nml_option name="config_isomip_plus_init_top_temp" type="real" default_value="-1.9" units="^\circ C"
-					description="Initial temperature at sea level."
-					possible_values="Any real number."
+			description="Initial temperature at sea level."
+			possible_values="Any real number."
 		/>
 		<nml_option name="config_isomip_plus_init_bot_temp" type="real" default_value="-1.9" units="^\circ C"
-					description="Initial temperature in deepest cells."
-					possible_values="Any real number."
+			description="Initial temperature in deepest cells."
+			possible_values="Any real number."
 		/>
 		<nml_option name="config_isomip_plus_init_top_sal" type="real" default_value="33.8" units="PSU"
-					description="Initial salinity at sea level."
-					possible_values="Any positive real number."
+			description="Initial salinity at sea level."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_isomip_plus_init_bot_sal" type="real" default_value="34.5" units="PSU"
-					description="Initial salinity in deepest cells."
-					possible_values="Any positive real number."
+			description="Initial salinity in deepest cells."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_isomip_plus_restore_top_temp" type="real" default_value="-1.9" units="^\circ C"
-					description="Restoring temperature at sea level."
-					possible_values="Any real number."
+			description="Restoring temperature at sea level."
+			possible_values="Any real number."
 		/>
 		<nml_option name="config_isomip_plus_restore_bot_temp" type="real" default_value="1.0" units="^\circ C"
-					description="Restoring temperature in deepest cells."
-					possible_values="Any real number."
+			description="Restoring temperature in deepest cells."
+			possible_values="Any real number."
 		/>
 		<nml_option name="config_isomip_plus_restore_top_sal" type="real" default_value="33.8" units="PSU"
-					description="Restoring salinity at sea level."
-					possible_values="Any positive real number."
+			description="Restoring salinity at sea level."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_isomip_plus_restore_bot_sal" type="real" default_value="34.7" units="PSU"
-					description="Restoring salinity in deepest cells."
-					possible_values="Any positive real number."
+			description="Restoring salinity in deepest cells."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_isomip_plus_restore_rate" type="real" default_value="10.0" units="days^{-1}"
-					description="Restoring salinity in deepest cells."
-					possible_values="Any positive real number."
+			description="Restoring salinity in deepest cells."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_isomip_plus_restore_evap_rate" type="real" default_value="200" units="m yr^{-1}"
-					description="Evaporation rate used to maintain sea level near zero."
-					possible_values="Any real number."
+			description="Evaporation rate used to maintain sea level near zero."
+			possible_values="Any real number."
 		/>
 		<nml_option name="config_isomip_plus_restore_xMin" type="real" default_value="790.0e3" units="m"
-					description="Southern boundary of restoring region."
-					possible_values="Any real number."
+			description="Southern boundary of restoring region."
+			possible_values="Any real number."
 		/>
 		<nml_option name="config_isomip_plus_restore_xMax" type="real" default_value="800.0e3" units="m"
-					description="Northern boundary of restoring region."
-					possible_values="Any real number."
+			description="Northern boundary of restoring region."
+			possible_values="Any real number."
 		/>
-                <nml_option name="config_isomip_plus_coriolis_parameter" type="real" default_value="-1.409e-4" units="s^{-1}"
-                                        description="Coriolis parameter for entrie domain."
-                                        possible_values="Any real number."
-                />
-                <nml_option name="config_isomip_plus_effective_density" type="real" default_value="1026." units="kg m^{-3}"
-                                        description="Initial value for the effective density for entrie domain."
-                                        possible_values="Any non-negative real number."
-                />
+		<nml_option name="config_isomip_plus_coriolis_parameter" type="real" default_value="-1.409e-4" units="s^{-1}"
+			description="Coriolis parameter for entrie domain."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_isomip_plus_effective_density" type="real" default_value="1026." units="kg m^{-3}"
+			description="Initial value for the effective density for entrie domain."
+			possible_values="Any non-negative real number."
+		/>
 	</nml_record>

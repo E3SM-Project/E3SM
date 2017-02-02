@@ -3247,18 +3247,18 @@
 			/>
 	</var_struct>
 	<var_struct name="transects" time_levs="1">
-		<var name="transectEdgeMasks" 
-		     type="integer" 
-		     dimensions="nTransects nEdges" 
-		     units="NA"
+		<var name="transectEdgeMasks"
+			type="integer"
+			dimensions="nTransects nEdges"
+			units="NA"
 			 description="Mask of edges for measuring transport across transects"
-		/>
-		<var name="transectEdgeMaskSigns" 
-		     type="integer" 
-		     dimensions="nTransects nEdges" 
-		     units="NA"
-			 description="Sign of normalVelocity on edge for this transect"
-		/>
+			/>
+		<var name="transectEdgeMaskSigns"
+			type="integer"
+			dimensions="nTransects nEdges"
+			units="NA"
+			description="Sign of normalVelocity on edge for this transect"
+			/>
 		<var name="transectsInGroup"
 			type="integer"
 			dimensions="maxTransectsInGroup nTransectGroups"

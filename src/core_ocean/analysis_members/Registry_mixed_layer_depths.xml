@@ -1,63 +1,63 @@
 	<nml_record name="AM_mixedLayerDepths" mode="forward;analysis">
 		<nml_option name="config_AM_mixedLayerDepths_enable" type="logical" default_value=".false." units="unitless"
-					description="If true, ocean analysis member mixedLayerDepth is called."
-					possible_values=".true. or .false."
+			description="If true, ocean analysis member mixedLayerDepth is called."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_compute_interval" type="character" default_value="output_interval" units="unitless"
-					description="Timestamp determining how often analysis member computation should be performed."
-					possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_output_stream" type="character" default_value="mixedLayerDepthsOutput" units="unitless"
-					description="Name of the stream that the temPlate analysis member should be tied to."
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the stream that the temPlate analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_write_on_startup" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if an analysis member write occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_compute_on_startup" type="logical" default_value=".true." units="unitless"
-					description="Logical flag determining if an analysis member computation occurs on start-up"
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member computation occurs on start-up"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_Tthreshold" type="logical" default_value=".true." units="unitless"
-					description="Logical flag that determines if MLDs are calculated using a critical temperature threshold"
-					possible_values=".true. or .false."
+			description="Logical flag that determines if MLDs are calculated using a critical temperature threshold"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_Dthreshold" type="logical" default_value=".true." units="unitless"
-					description="Logical flag that determines if MLDs are calculated using a critical density threshold"
-					possible_values=".true. or .false."
+			description="Logical flag that determines if MLDs are calculated using a critical density threshold"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_crit_temp_threshold" type="real" default_value="0.2" units="degC"
-					description="temperature change relative to surface for threshold method"
-					possible_values="all real positive values, suggested range 0.2 less than or equal to thresh less than or equal to 1"
+			description="temperature change relative to surface for threshold method"
+			possible_values="all real positive values, suggested range 0.2 less than or equal to thresh less than or equal to 1"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_crit_dens_threshold" type="real" default_value="0.03" units="kgm^-3"
-					description="potential density change relative to surface for threshold method"
-					possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
+			description="potential density change relative to surface for threshold method"
+			possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_reference_pressure" type="real" default_value="1.0E5" units="N m^-2"
-					description="reference pressure for threshold computation"
-					possible_values="any positive real, suggested range .25E5 less than or equal to value less than or equal to 2E5"
+			description="reference pressure for threshold computation"
+			possible_values="any positive real, suggested range .25E5 less than or equal to value less than or equal to 2E5"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_Tgradient" type="logical" default_value=".true." units="unitless"
-					description="Logical flag controlling whether or not to compute MLDs via the temperature gradient"
-					possible_values=".true. or .false."
+			description="Logical flag controlling whether or not to compute MLDs via the temperature gradient"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_Dgradient" type="logical" default_value=".true." units="unitless"
-					description="Logical flag controlling whether or not to compute MLDs via the density gradient"
-					possible_values=".true. or .false."
+			description="Logical flag controlling whether or not to compute MLDs via the density gradient"
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_temp_gradient_threshold" type="real" default_value="5E-7" units="degC/Pa"
-					description="temp gradient crit value, if not exceeded max gradient used"
-					possible_values="all positive reals"
+			description="temp gradient crit value, if not exceeded max gradient used"
+			possible_values="all positive reals"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_den_gradient_threshold" type="real" default_value="5E-8" units="degC/Pa"
-					description="potential density gradient crit value.  If not exceeded max gradient used"
-					possible_values="all positive reals"
+			description="potential density gradient crit value.  If not exceeded max gradient used"
+			possible_values="all positive reals"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_interp_method" type="integer" default_value="1" units="unitless"
-					description="flag specifying which interpolation method to use in computations"
-					possible_values="1=linear or 2=quadratic or 3=cubic"
+			description="flag specifying which interpolation method to use in computations"
+			possible_values="1=linear or 2=quadratic or 3=cubic"
 		/>
 	</nml_record>
 	<packages>
@@ -88,11 +88,11 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
-			<stream name="mesh"/>	
-			<var name="xtime"/> 
-			<var name="tThreshMLD"/> 
+			<stream name="mesh"/>
+			<var name="xtime"/>
+			<var name="tThreshMLD"/>
 			<var name="dThreshMLD"/>
-			<var name="tGradMLD"/> 
+			<var name="tGradMLD"/>
 			<var name="dGradMLD"/>
 		</stream>
 	</streams>

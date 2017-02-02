@@ -17,40 +17,40 @@
 	</dims>
 	<nml_record name="AM_waterMassCensus" mode="forward;analysis">
 		<nml_option name="config_AM_waterMassCensus_enable" type="logical" default_value=".false." units="unitless"
-					description="If true, ocean analysis member water mass census is called."
-					possible_values=".true. or .false."
+			description="If true, ocean analysis member water mass census is called."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_waterMassCensus_compute_interval" type="character" default_value="output_interval" units="unitless"
-					description="Timestamp determining how often analysis member computation should be performed."
-					possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
 		<nml_option name="config_AM_waterMassCensus_output_stream" type="character" default_value="waterMassCensusOutput" units="unitless"
-					description="Name of the stream the water mass census analysis member should be tied to."
-					possible_values="Any existing stream name or 'none'"
+			description="Name of the stream the water mass census analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_waterMassCensus_compute_on_startup" type="logical" default_value=".false." units="unitless"
-					description="Logical flag determining if an analysis member computation occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_waterMassCensus_write_on_startup" type="logical" default_value=".false." units="unitless"
-					description="Logical flag determining if an analysis member output occurs on start-up."
-					possible_values=".true. or .false."
+			description="Logical flag determining if an analysis member output occurs on start-up."
+			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_waterMassCensus_minTemperature" type="real" default_value="-2.0" units="C"
-					description="minimum temperature used in water mass census"
-					possible_values="any real number smaller than config_AM_waterMassCensus_maxTemperature"
+			description="minimum temperature used in water mass census"
+			possible_values="any real number smaller than config_AM_waterMassCensus_maxTemperature"
 		/>
 		<nml_option name="config_AM_waterMassCensus_maxTemperature" type="real" default_value="30.0" units="C"
-					description="maximum temperature used in water mass census"
-					possible_values="any real number greater than config_AM_waterMassCensus_minTemperature"
+			description="maximum temperature used in water mass census"
+			possible_values="any real number greater than config_AM_waterMassCensus_minTemperature"
 		/>
 		<nml_option name="config_AM_waterMassCensus_minSalinity" type="real" default_value="32.0" units="PSU"
-					description="minimum salinity used in water mass census"
-					possible_values="any real number smaller than config_AM_waterMassCensus_maxSalinity"
+			description="minimum salinity used in water mass census"
+			possible_values="any real number smaller than config_AM_waterMassCensus_maxSalinity"
 		/>
 		<nml_option name="config_AM_waterMassCensus_maxSalinity" type="real" default_value="37.0" units="PSU"
-					description="maximum salinity used in water mass census"
-					possible_values="any real number greater than config_AM_waterMassCensus_minSalinity"
+			description="maximum salinity used in water mass census"
+			possible_values="any real number greater than config_AM_waterMassCensus_minSalinity"
 		/>
 	</nml_record>
 	<packages>
