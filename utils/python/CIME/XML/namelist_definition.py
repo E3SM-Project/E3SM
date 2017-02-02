@@ -139,8 +139,7 @@ class NamelistDefinition(EntryID):
     # good for that purpose anyway, so stop this function from being called.
     def set_value(self, vid, value, subgroup=None, ignore_type=True):
         """This function is not implemented."""
-        raise TypeError, \
-            "NamelistDefinition does not support `set_value`."
+        raise TypeError("NamelistDefinition does not support `set_value`.")
 
     def get_value_match(self, item, attributes=None, exact_match=True, entry_node=None):
         """Return the default value for the variable named `item`.

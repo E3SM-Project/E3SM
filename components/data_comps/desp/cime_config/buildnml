@@ -7,7 +7,7 @@
 # pylint: disable=invalid-name
 
 # Disable these because this is our standard setup
-# pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
+# pylint: disable=wildcard-import,unused-wildcard-import
 
 import os, shutil, sys, glob
 
@@ -42,6 +42,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     #----------------------------------------------------
     # Check for incompatible options.
     #----------------------------------------------------
+    # At this point, we don't know what multiple instances of ESP means
+    expect(len(inst_string) == 0, "Multiple ESP instances not supported")
 
     #----------------------------------------------------
     # Log some settings.
