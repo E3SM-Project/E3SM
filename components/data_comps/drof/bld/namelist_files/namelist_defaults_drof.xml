@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of DOCN model docn namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  The recognized attributes
+are: grid.attributes from the config_cache.xml file (with keys converted to upper-case).
+
+strm_year_first is the first year of the stream data that will be used
+strm_year_last  is the last  year of the stream data that will be used
+strm_year_align is the model year that will be aligned with stream data for year_first
+
+For cplhist forcing - the following substitutions will be made belwo
+Replace any instance of the following substring indicators with the appropriate values:
+    %y    => year from the range yearfirst to yearlast
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
+             obtained from values of <strm_year_start> -> <strm_year_end> below
+    %ym   => year-month from the range yearfirst to yearlast with all 12 months
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
+             obtained from values of <strm_year_start> -> <strm_year_end> below
+    %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
+             using in build-namelist $namelist_defaults_opts{'yearfirst'}
+             using in build-namelist $namelist_defaults_opts{'yearlast'}
+             obtained from values of <strm_year_start> -> <strm_year_end> below
+
+Replace any instance of $VARNAME with the environment variable obtained from any
+of the $CASEROOT/env*xml files
+
+In drof_rof_in,  streams namelist input has the form
+     streams = 'stream1.txt year_align year_first year_last ',
+               'stream2.txt year_align year_first year_last ',
+               ...
+               'streamN.txt year_align year_first year_last '
+
+Currently the following streams are supported
+
+   rof.cplhist
+   rof.diatren_ann_rx1
+   rof.diatren_iaf_rx1
+
+-->
+
+<!-- =========================================  -->
+<!--- datamode                                  -->
+<!-- =========================================  -->
+
+<datamode drof_mode="NULL"           >NULL</datamode>
+<datamode drof_mode="CPLHIST"        >CPLHIST</datamode>
+<datamode drof_mode="DIATREN_ANN_RX1">DIATREN_ANN_RX1</datamode>
+<datamode drof_mode="DIATREN_IAF_RX1">DIATREN_IAF_RX1</datamode>
+
+<!-- =========================================  -->
+<!--- streams                                   -->
+<!-- =========================================  -->
+
+<streamslist drof_mode="NULL"           >NULL</streamslist>
+<streamslist drof_mode="CPLHIST"        >rof.cplhist</streamslist>
+<streamslist drof_mode="DIATREN_ANN_RX1">rof.diatren_ann_rx1</streamslist>
+<streamslist drof_mode="DIATREN_IAF_RX1">rof.diatren_iaf_rx1</streamslist>
+
+<!-- =========================================  -->
+<!--- stream: dlnd.diatren_ann_rx1              -->
+<!--- Dai-Trenberth 1 degree runoff (NCAR OCE)  -->
+<!--- annual climatology                        -->
+<!-- =========================================  -->
+
+
+<strm_year_align stream="rof.diatren_ann_rx1">1</strm_year_align>
+<strm_year_start stream="rof.diatren_ann_rx1">1</strm_year_start>
+<strm_year_end   stream="rof.diatren_ann_rx1">1</strm_year_end>
+<strm_offset     stream="rof.diatren_ann_rx1">0</strm_offset>
+<strm_tintalgo   stream="rof.diatren_ann_rx1">upper</strm_tintalgo>
+<strm_taxmode    stream="rof.diatren_ann_rx1">cycle</strm_taxmode>
+<strm_domdir     stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</strm_domdir>
+<strm_domfil     stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</strm_domfil>
+<strm_datdir     stream="rof.diatren_ann_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</strm_datdir>
+<strm_datfil     stream="rof.diatren_ann_rx1">runoff.daitren.annual.090225.nc</strm_datfil>
+<strm_domvar     stream="rof.diatren_ann_rx1">
+  time   time
+  xc     lon
+  yc     lat
+  area   area
+  mask   mask
+</strm_domvar>
+<strm_datvar     stream="rof.diatren_ann_rx1">
+  runoff rofl
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- stream: dlnd.rof.diatren_iaf_rx1              -->
+<!--- Dai-Trenberth 1 degree runoff (NCAR OCE)  -->
+<!--- inter-annual                              -->
+<!-- =========================================  -->
+
+<strm_year_align stream="rof.diatren_iaf_rx1">1</strm_year_align>
+<strm_year_start stream="rof.diatren_iaf_rx1">1948</strm_year_start>
+<strm_year_end   stream="rof.diatren_iaf_rx1">2009</strm_year_end>
+<strm_offset     stream="rof.diatren_iaf_rx1">0</strm_offset>
+<strm_tintalgo   stream="rof.diatren_iaf_rx1">upper</strm_tintalgo>
+<strm_taxmode    stream="rof.diatren_iaf_rx1">cycle</strm_taxmode>
+<strm_domdir     stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</strm_domdir>
+<strm_domfil     stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.nc</strm_domfil>
+<strm_datdir     stream="rof.diatren_iaf_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</strm_datdir>
+<strm_datfil     stream="rof.diatren_iaf_rx1">runoff.daitren.iaf.20120419.nc</strm_datfil>
+<strm_domvar     stream="rof.diatren_iaf_rx1">
+  time   time
+  xc     lon
+  yc     lat
+  arear  area
+  mask   mask
+</strm_domvar>
+<strm_datvar     stream="rof.diatren_iaf_rx1">
+  runoff rofl
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- dlnd.rof.cplhist                          -->
+<!-- =========================================  -->
+
+<strm_year_align stream="rof.cplhist">$DROF_CPLHIST_YR_ALIGN</strm_year_align>
+<strm_year_start stream="rof.cplhist">$DROF_CPLHIST_YR_START</strm_year_start>
+<strm_year_end   stream="rof.cplhist">$DROF_CPLHIST_YR_END</strm_year_end>
+<strm_cpl_case   stream="rof.cplhist">$DROF_CPLHIST_CASE</strm_cpl_case>
+<strm_offset     stream="rof.cplhist">-43200</strm_offset>
+<strm_tintalgo   stream="rof.cplhist">lower</strm_tintalgo>
+<strm_taxmode    stream="rof.cplhist">cycle</strm_taxmode>
+<strm_domdir     stream="rof.cplhist">$DIN_LOC_ROOT/lnd/dlnd7</strm_domdir>
+<strm_domfil     stream="rof.cplhist">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</strm_domfil>
+<strm_datdir     stream="rof.cplhist">$DROF_CPLHIST_DIR</strm_datdir>
+<strm_datfil     stream="rof.cplhist">$DROF_CPLHIST_CASE.cpl.hr2xacc.%y.nc</strm_datfil>
+<strm_domvar     stream="rof.cplhist">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="rof.cplhist">
+  r2xacc_Forr_roff  rofl
+  r2xacc_Forr_ioff  rofi
+</strm_datvar>
+
+<!-- =========================================  -->
+<!--- non stream-specific vars (for now)        -->
+<!-- =========================================  -->
+
+<decomp>1d</decomp>
+
+<strm_dtlimit>1.5e0</strm_dtlimit>
+
+<strm_fillalgo>nn</strm_fillalgo>
+
+<strm_fillmask>nomask</strm_fillmask>
+
+<strm_mapalgo>bilinear</strm_mapalgo>
+
+<strm_mapmask>dstmask</strm_mapmask>
+
+<strm_tintalgo>linear</strm_tintalgo>
+
+<strm_taxmode>cycle</strm_taxmode>
+
+</namelist_defaults>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+ <!-- definition of attributes -->
+ <xs:attribute name="compname" type="xs:string"/>
+ <xs:attribute name="compclass" type="xs:string"/>
+
+ <!-- definition of simple elements -->
+ <xs:element name="rest_file_extension" type="xs:string"/>
+ <xs:element name="rest_history_varname" type="xs:string"/>
+ <xs:element name="rpointer_file" type="xs:string"/>
+ <xs:element name="rpointer_content" type="xs:string"/>
+ <xs:element name="hist_file_extension" type="xs:string"/>
+
+ <!-- definition of complex elements -->
+ <xs:element name="rpointer">
+   <xs:complexType>
+     <xs:sequence>
+       <xs:element ref="rpointer_file" minOccurs="0" maxOccurs="unbounded"/>
+       <xs:element ref="rpointer_content" minOccurs="0" maxOccurs="unbounded"/>
+     </xs:sequence>
+   </xs:complexType>
+ </xs:element>
+
+ <xs:element name="comp_archive_spec">
+   <xs:complexType>
+     <xs:sequence>
+       <xs:element ref="rest_file_extension" minOccurs="0" maxOccurs="unbounded"/>
+       <xs:element ref="hist_file_extension" minOccurs="0" maxOccurs="unbounded"/>
+       <xs:element ref="rest_history_varname" minOccurs="0" maxOccurs="unbounded"/>
+       <xs:element ref="rpointer" minOccurs="0" maxOccurs="unbounded"/>
+     </xs:sequence>
+     <xs:attribute ref="compname" use="required"/>
+     <xs:attribute ref="compclass" use="required"/>
+   </xs:complexType>
+ </xs:element>
+
+  <xs:element name="components">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="comp_archive_spec" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema> 
+
