@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_WAV">
+    <type>char</type>
+    <valid_values>xwav</valid_values>
+    <default_value>xwav</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of wave component</desc>
+  </entry>
+
+  <description>
+    <desc compset="_XWAV">Dead wave component</desc>
+  </description>
+
+</definitions_variables>
