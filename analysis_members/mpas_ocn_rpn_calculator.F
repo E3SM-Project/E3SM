@@ -539,8 +539,8 @@ subroutine eval_operator (exp_number, &
     call minus_operator(exp_number, stack, stack_pointer, type_checking)
   else if (op_index == DIV_OP) then
     call div_operator(exp_number, stack, stack_pointer, type_checking)
-  ! TODO FIXME 
-  ! sum (and other reduces) needs to be fixed, 
+  ! TODO FIXME
+  ! sum (and other reduces) needs to be fixed,
   ! because it is using (:) over decomposed dimensions, which is wrong
   !
   ! else if (op_index == SUM_OP) then
