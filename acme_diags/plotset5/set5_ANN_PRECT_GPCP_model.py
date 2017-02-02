@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import numpy
 import cdutil
+import genutil
 import cdms2
+import MV2
 import acme_diags.acme_parser
 import plot_set_5
     
@@ -30,9 +32,6 @@ if var == 'PRECT':
     else: 
         obs_pr = f_obs(var, longitude=(-180, 540))
         mod_pr = (f_mod('PRECC', longitude=(-180, 540)) + f_mod('PRECL', longitude=(-180, 540)))*3600.0*24.0*1000.0
-    print obs_pr.count(),obs_pr.shape
-    print mod_pr.count(),mod_pr.shape
-    print mod_pr[:,:,1],obs_pr[:,:,1]
     mod_pr.units = 'mm/day'
 
 elif var == 'T':
@@ -58,17 +57,17 @@ elif var == 'T':
         elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
             # if desired plev exists, read from input file, otherwise, interpolate
             try:
-                plev_ind = mv_plv.tolist().index(plev)
+                plev_ind = mv_plv[:].tolist().index(plev)
                 mv_p = f_in(var,level= plev)
-            except:
+                
+            except Exception as e: 
+                print str(e)+ 'execute vertical interpolation'
                 mv = f_in (var)
                 #Construct pressure level for interpolation
-                levels_orig = mv.clone()
-                levels_orig.units = 'mb'
-                levels_orig.id = 'pressure'
-    
-                for ilev in range(len(mv_plv[:])):
-                    levels_orig[:,ilev,:,:]=mv_plv[ilev]
+                levels_orig = MV2.array(mv_plv[:])
+                levels_orig.setAxis(0,mv_plv)
+                mv,levels_orig = genutil.grower(mv,levels_orig) # grow 1d levels_orig to mv dimention
+                #levels_orig.info()
     
                 mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,:,:], levels_orig[:,::-1,:,:], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
 
