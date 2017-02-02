@@ -26,10 +26,10 @@
 !> vS  velocityMeridionalTimesSalinity
 !> uw velocityZonalTimesVertVel
 !> vw  velocityMeridionalTimesVerVel
-!> 
-!> They you just stick these in the time-average AM.  We already time average u,v, and all tracers.  
+!>
+!> They you just stick these in the time-average AM.  We already time average u,v, and all tracers.
 !> Then compute <v'T'> etc as a post processing step, same as POP, as follows:
-!> 
+!>
 !> <v'T'> = <vT> - <v><T>
 !> <(u')^2> = <u^2> - <u>^2
 !>
