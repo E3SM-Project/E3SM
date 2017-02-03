@@ -249,11 +249,10 @@
 	<command name="load">ncarcompilers/0.3.5</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">netcdf/4.4.1</command>
+	<command name="load">netcdf/4.4.1.1</command>
       </modules>
       <modules mpilib="mpt">
-	<command name="load">netcdf/4.4.1</command>
-<!--	<command name="load">netcdf-mpi/4.4.1</command> -->
+	<command name="load">netcdf-mpi/4.4.1.1</command>
 	<command name="load">pnetcdf/1.8.0</command>
       </modules>
     </module_system>

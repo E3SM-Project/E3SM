@@ -12,7 +12,7 @@ def parse_command_line(args, cimeroot, description):
 ###############################################################################
     help_str = \
 """
-%s --case [CASE] --compset [COMPSET] --res [GRID] [--mach ...] [--compiler ...]
+%s --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
 OR
 %s --help
 """ % ((os.path.basename(args[0]), ) * 2)
@@ -38,7 +38,7 @@ OR
                         help="(required) Specify a model grid resolution. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("--mach", "-mach",
+    parser.add_argument("--machine", "-mach",
                         help="Specify a machine. default: match NODENAME_REGEX in config_machines.xml "
                         "To see list of current  machines, use the utility manage_case in this directory"
                         )
@@ -144,7 +144,7 @@ OR
         run_unsupported = args.run_unsupported
 
 
-    return args.case, args.compset, args.res, args.mach, args.compiler,\
+    return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
