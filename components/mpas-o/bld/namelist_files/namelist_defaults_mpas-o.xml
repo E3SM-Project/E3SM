@@ -639,6 +639,10 @@
 <config_soma_density_difference_linear>0.05</config_soma_density_difference_linear>
 <config_soma_surface_temperature>20.0</config_soma_surface_temperature>
 <config_soma_surface_salinity>33.0</config_soma_surface_salinity>
+<config_soma_use_surface_temp_restoring>false</config_soma_use_surface_temp_restoring>
+<config_soma_surface_temp_restoring_at_center_latitude>7.5</config_soma_surface_temp_restoring_at_center_latitude>
+<config_soma_surface_temp_restoring_latitude_gradient>0.5</config_soma_surface_temp_restoring_latitude_gradient>
+<config_soma_restoring_temp_piston_vel>1.0e-5</config_soma_restoring_temp_piston_vel>
 
 <!-- ziso -->
 <config_ziso_vert_levels>100</config_ziso_vert_levels>
@@ -883,6 +887,7 @@
 <config_AM_meridionalHeatTransport_num_bins>180</config_AM_meridionalHeatTransport_num_bins>
 <config_AM_meridionalHeatTransport_min_bin>-1.0e34</config_AM_meridionalHeatTransport_min_bin>
 <config_AM_meridionalHeatTransport_max_bin>-1.0e34</config_AM_meridionalHeatTransport_max_bin>
+<config_AM_meridionalHeatTransport_region_group>''</config_AM_meridionalHeatTransport_region_group>
 
 <!-- AM_testComputeInterval -->
 <config_AM_testComputeInterval_enable>.false.</config_AM_testComputeInterval_enable>

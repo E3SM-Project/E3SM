@@ -4067,6 +4067,38 @@ Valid values: Any real positive number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_soma_use_surface_temp_restoring" type="logical"
+	category="soma" group="soma">
+Logical flag that determines if surface temperature restoring is to be used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_soma_surface_temp_restoring_at_center_latitude" type="real"
+	category="soma" group="soma">
+Surface restoring temperature value at center latitutde.
+
+Valid values: Any real positive number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_soma_surface_temp_restoring_latitude_gradient" type="real"
+	category="soma" group="soma">
+Surface restoring temperature gradient in latitudal direction.
+
+Valid values: Any real positive number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_soma_restoring_temp_piston_vel" type="real"
+	category="soma" group="soma">
+Restoring piston velocity for surface temperature.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- ziso -->
 
@@ -5769,6 +5801,14 @@ Default: Defined in namelist_defaults.xml
 maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found.
 
 Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_meridionalHeatTransport_region_group" type="char*1024"
+	category="AM_meridionalHeatTransport" group="AM_meridionalHeatTransport">
+The name of the region group, for which the MHT should be computed in addition to the global MHT.
+
+Valid values: 'all', '', or the name of a region group.
 Default: Defined in namelist_defaults.xml
 </entry>
 
