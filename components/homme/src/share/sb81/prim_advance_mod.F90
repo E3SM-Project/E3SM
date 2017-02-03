@@ -23,8 +23,8 @@ module prim_advance_mod
   implicit none
   private
   save
-  public :: prim_advance_exp, prim_advance_init, &
-       applyCAMforcing_dynamics, applyCAMforcing
+  public :: prim_advance_exp, prim_advance_init1, &
+       applyCAMforcing_dynamics, applyCAMforcing, vertical_mesh_init2
 
   type (EdgeBuffer_t) :: edge3p1
   real (kind=real_kind), allocatable :: ur_weights(:)
@@ -32,7 +32,7 @@ module prim_advance_mod
 contains
 
   !_____________________________________________________________________
-  subroutine prim_advance_init(par, elem,integration)
+  subroutine prim_advance_init1(par, elem,integration)
     use edge_mod, only : initEdgeBuffer
     implicit none
     
@@ -58,20 +58,21 @@ contains
        enddo
     endif
 
-  end subroutine prim_advance_init
+    end subroutine prim_advance_init1
 
   !_____________________________________________________________________
-	subroutine prim_advance_init2(elem, nets, nete, hybrid, hvcoord)
+  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
 
     ! additional solver specific initializations (called from prim_init2)
 
-    type (element_t),			intent(inout), target :: elem(:)							! array of element_t structures
-    integer,							intent(in)		:: nets,nete										! start and end element indices
-    type (hybrid_t),			intent(in)		:: hybrid												! mpi/omp data struct
-    type (hvcoord_t),			intent(inout)	:: hvcoord											! hybrid vertical coord data struct
+    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
+    integer,				intent(in) :: nets,nete		! start and end element indices
+    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
+    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
 
-	end subroutine
+  end subroutine vertical_mesh_init2
 
+    
 #ifndef CAM
   !_____________________________________________________________________
   subroutine set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)

@@ -2,23 +2,21 @@
 #include "config.h"
 #endif
 
-module solver_init_mod
-  !OVERWRITING: solver_init2
-  use solver_init_base, only: 
-  use dimensions_mod, only: nelemd
-  implicit none
-  private
+!
+!  model specific initialization code, called from prim_init2
+!
+module model_init_mod
 
-  public :: solver_init2
-
+  public :: model_init2
 
 contains
 
 
-  subroutine solver_init2( elem , deriv )
+  subroutine model_init2( elem , deriv )
     use element_mod, only: element_t
     use element_state, only: state_qdp, derived_vn0, derived_divdp, derived_divdp_proj
     use derivative_mod, only: derivative_t
+    use dimensions_mod, only: nelemd
     implicit none
     type(element_t)   , intent(in) :: elem(:)
     type(derivative_t), intent(in) :: deriv
@@ -35,7 +33,7 @@ contains
 
     !$omp end master
     !$omp barrier
-  end subroutine solver_init2
+  end subroutine model_init2
 
 
-end module solver_init_mod
+end module model_init_mod

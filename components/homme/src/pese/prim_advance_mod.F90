@@ -40,7 +40,7 @@ module prim_advance_mod
 contains
 
   !_____________________________________________________________________
-  subroutine prim_advance_init(par, elem, integration)
+  subroutine prim_advance_init1(par, elem, integration)
     implicit none
     
     type (parallel_t),    intent(in)              :: par
@@ -51,10 +51,10 @@ contains
     ! allocate space for edge-data exchange
     call initEdgeBuffer(par,edge_buffer,elem,n_rhs)
 
-  end subroutine prim_advance_init
+  end subroutine prim_advance_init1
 
   !_____________________________________________________________________
-	subroutine prim_advance_init2(elem, nets, nete, hybrid, hvcoord)
+  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
 
     type (element_t),			intent(inout), target :: elem(:)							! array of element_t structures
     integer,							intent(in)		:: nets,nete										! start and end element indices
@@ -66,7 +66,7 @@ contains
     ! initialize vertical operators and coordinates
     call make_vertical_mesh(hybrid, hvcoord)
 
-	end subroutine
+  end subroutine vertical_mesh_init2
 
   !_____________________________________________________________________
   subroutine prim_advance_exp(elem,deriv,hvcoord,hybrid,dt,tl,nets,nete,compute_diagnostics)

@@ -68,7 +68,7 @@ contains
     ! --------------------------------
     use prim_advection_mod, only: prim_advec_init1
     ! --------------------------------
-    use prim_advance_mod, only: prim_advance_init
+    use prim_advance_mod, only: prim_advance_init1
     ! --------------------------------
 #ifdef TRILINOS
     use prim_implicit_mod, only : prim_implicit_init
@@ -451,7 +451,7 @@ contains
     nete=nelemd
     ! set the actual number of threads which will be used in the horizontal
     nThreadsHoriz = n_domains
-    call prim_advance_init(par,elem,integration)
+    call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
 #endif
@@ -480,10 +480,12 @@ contains
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_si_mod,          only: prim_set_mass
+    use prim_advance_mod,     only: vertical_mesh_init2
     use prim_advection_mod,   only: prim_advec_init2
-    use solver_init_mod,      only: solver_init2
+    use model_init_mod,       only: model_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
     use thread_mod,           only: nthreads
+    
 
 #ifndef CAM
     use control_mod,          only: pertlim                     
@@ -563,6 +565,9 @@ contains
 
   end interface
 #endif
+
+    ! model specific vertical mesh initialization
+    call vertical_mesh_init2(elem,nets,nete,hybrid,hvcoord)
 
     if (topology == "cube") then
        call test_global_integral(elem, hybrid,nets,nete)
@@ -774,7 +779,7 @@ contains
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
 
-    call solver_init2(elem(:), deriv1)
+    call model_init2(elem(:), deriv1)
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
   end subroutine prim_init2
