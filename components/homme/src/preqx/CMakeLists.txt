@@ -28,6 +28,7 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/common_movie_mod.F90
   ${SRC_DIR}/interpolate_driver_mod.F90
   ${SRC_DIR}/interp_movie_mod.F90
+  ${SRC_DIR}/interpolate_driver_mod.F90
   ${SRC_DIR}/netcdf_io_mod.F90
   ${SRC_DIR}/pio_io_mod.F90
   ${SRC_DIR}/prim_main.F90 
@@ -37,13 +38,13 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/restart_io_mod.F90
   ${SRC_DIR}/surfaces_mod.F90
   ${SRC_DIR}/test_mod.F90
+  ${UTILS_SHARE_DIR}/shr_const_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_file_mod.F90 
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_file_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_const_mod.F90 
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
+  ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
 )
 
 SET(PREQX_SRCS_C

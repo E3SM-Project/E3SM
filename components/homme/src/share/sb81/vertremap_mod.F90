@@ -3,7 +3,7 @@
 #endif
 
 module vertremap_mod
-  use vertremap_mod_base, only: remap1
+  use vertremap_base, only: remap1
 
   use kinds, only                  : real_kind,int_kind
   use dimensions_mod, only         : np,nlev,qsize,nlevp,npsq

@@ -16,7 +16,6 @@ module held_suarez_mod
   use physical_constants,     only: p0, kappa,g, dd_pi
   use physics_mod,            only: prim_condense
   use time_mod,               only: secpday
-  use time_mod,               only: timelevel_t
 
 implicit none
 private

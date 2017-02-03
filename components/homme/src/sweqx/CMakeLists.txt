@@ -56,13 +56,12 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/schedule_mod.F90
   ${SRC_SHARE}/schedtype_mod.F90
   ${SRC_SHARE}/edgetype_mod.F90
-  ${SRC_SHARE}/solver_init_mod_base.F90
   ${SRC_SHARE}/solver_mod.F90
   ${SRC_SHARE}/spacecurve_mod.F90
   ${SRC_SHARE}/thread_mod.F90
   ${SRC_SHARE}/time_mod.F90
   ${SRC_SHARE}/unit_tests_mod.F90
-  ${SRC_SHARE}/viscosity_mod_base.F90
+  ${SRC_SHARE}/viscosity_base.F90
   ${SRC_UTILS}/shr_file_mod.F90
   ${SRC_UTILS}/shr_kind_mod.F90
   ${SRC_UTILS}/shr_mpi_mod.F90

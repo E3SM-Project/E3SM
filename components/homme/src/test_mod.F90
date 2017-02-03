@@ -131,8 +131,6 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
        enddo
   endselect
 
-
-
 end subroutine
 
 

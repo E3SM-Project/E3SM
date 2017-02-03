@@ -31,15 +31,15 @@ module prim_advance_mod
 
 contains
 
+  !_____________________________________________________________________
   subroutine prim_advance_init(par, elem,integration)
     use edge_mod, only : initEdgeBuffer
     implicit none
     
     type (parallel_t) :: par
     type (element_t), intent(inout), target   :: elem(:)
-    character(len=*)    , intent(in) :: integration
-    integer :: i
-    integer :: ie
+    character(len=*), intent(in) :: integration
+    integer :: i, ie
 
     call initEdgeBuffer(par,edge3p1,elem,4*nlev)
 
@@ -59,6 +59,18 @@ contains
     endif
 
   end subroutine prim_advance_init
+
+  !_____________________________________________________________________
+	subroutine prim_advance_init2(elem, nets, nete, hybrid, hvcoord)
+
+    ! additional solver specific initializations (called from prim_init2)
+
+    type (element_t),			intent(inout), target :: elem(:)							! array of element_t structures
+    integer,							intent(in)		:: nets,nete										! start and end element indices
+    type (hybrid_t),			intent(in)		:: hybrid												! mpi/omp data struct
+    type (hvcoord_t),			intent(inout)	:: hvcoord											! hybrid vertical coord data struct
+
+	end subroutine
 
 #ifndef CAM
   !_____________________________________________________________________
@@ -1031,20 +1043,19 @@ contains
   !
   !
   ! ===================================
-  use kinds, only : real_kind
+  use kinds,          only : real_kind
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
-  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
-  use edgetype_mod, only : edgedescriptor_t
-  use bndry_mod, only : bndry_exchangev
-  use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
-  use hybvcoord_mod, only : hvcoord_t
-
+  use edge_mod,       only : edgevpack, edgevunpack, edgeDGVunpack
+  use edgetype_mod,   only : edgedescriptor_t
+  use bndry_mod,      only : bndry_exchangev
+  use control_mod,    only : moisture, qsplit, use_cpstar, rsplit, swest
+  use hybvcoord_mod,  only : hvcoord_t
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
-  use physics_mod, only : virtual_specific_heat, virtual_temperature
-  use prim_si_mod, only : preq_vertadv, preq_omega_ps, preq_hydrostatic
-
-  use time_mod, only : tevolve
+  use physics_mod,    only : virtual_specific_heat, virtual_temperature
+  use prim_si_mod,    only : preq_vertadv, preq_omega_ps, preq_hydrostatic
+  use time_mod,       only : tevolve
+  use viscosity_base, only: smooth_phis
 
   implicit none
   integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
@@ -1562,8 +1573,6 @@ contains
 !pw  call t_adj_detailf(-1)
 
   end subroutine compute_and_apply_rhs
-
-
 
 
 end module prim_advance_mod

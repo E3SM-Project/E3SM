@@ -4,6 +4,7 @@
 
 macro(preqx_acc_setup)
 
+SET(TARGET_DIR      ${HOMME_SOURCE_DIR}/src/preqx_acc)
 SET(UTILS_SHARE_DIR ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/share)
@@ -18,6 +19,20 @@ FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90 ${SRC_SHARE_DIR
 
 SET(PREQX_SRCS_F90
   ${TARGET_F90}
+  ${SRC_DIR}/checksum_mod.F90 
+  ${SRC_DIR}/common_io_mod.F90
+  ${SRC_DIR}/common_movie_mod.F90 
+  ${SRC_DIR}/interp_movie_mod.F90 
+  ${SRC_DIR}/interpolate_driver_mod.F90 
+  ${SRC_DIR}/netcdf_io_mod.F90 
+  ${SRC_DIR}/pio_io_mod.F90 
+  ${SRC_DIR}/prim_main.F90 
+  ${SRC_DIR}/prim_movie_mod.F90 
+  ${SRC_DIR}/prim_restart_mod.F90 
+  ${SRC_DIR}/repro_sum_mod.F90 
+  ${SRC_DIR}/restart_io_mod.F90 
+  ${SRC_DIR}/surfaces_mod.F90 
+  ${SRC_DIR}/test_mod.F90
   ${SRC_DIR}/test_src/asp_tests.F90
   ${SRC_DIR}/test_src/baroclinic_inst_mod.F90
   ${SRC_DIR}/test_src/dcmip2012_test1_2_3.F90
@@ -90,9 +105,6 @@ SET(NESTED_OPENMP FALSE )
 SET(COLUMN_OPENMP FALSE )
 
 endmacro(preqx_acc_setup)
-
-
-
 
 ############################################################################
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
