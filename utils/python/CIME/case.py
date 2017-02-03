@@ -1113,8 +1113,12 @@ class Case(object):
 
         tests = Testlist(tests_spec_file, files)
         testlist = tests.get_tests(compset=compset_alias, grid=grid_name)
-        if len(testlist) > 0:
-            logger.info("\nThis compset and grid combination is not scientifically supported, however it is used in %d tests.\n"%(len(testlist)))
+        testcnt = 0
+        for test in testlist:
+            if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
+                testcnt += 1
+        if testcnt > 0:
+            logger.info("\nThis compset and grid combination is not scientifically supported, however it is used in %d tests.\n"%(testcnt))
         else:
             expect(False, "\nThis compset and grid combination is unsupported in CESM.  "
                    "If you wish to use it anyway you must supply the --run-unsupported option to create_newcase.")
