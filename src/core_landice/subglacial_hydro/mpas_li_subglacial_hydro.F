@@ -135,7 +135,8 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       if (config_adaptive_timestep .and. config_SGH_adaptive_timestep) then
-         write (stdErrUnit,*) "ERROR: Subglacial hydrology cannot use its own adaptive time stepper if primary time stepper is adaptive.  This may be relaxed in the future."
+         write (stdErrUnit,*) "ERROR: Subglacial hydrology cannot use its own adaptive time stepper ", &
+            "if primary time stepper is adaptive.  This may be relaxed in the future."
          err = ior(err, 1)
       endif
 
@@ -608,7 +609,8 @@ module li_subglacial_hydro
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
          ! TODO: add these options if desired
-         write (stdErrUnit,*) "Error: 'from_vertex_barycentric' and 'from_vertex_barycentric_kiteareas' are not yet supported for the config_SGH_tangent_slope_calculation option."
+         write (stdErrUnit,*) "Error: 'from_vertex_barycentric' and 'from_vertex_barycentric_kiteareas'", &
+           " are not yet supported for the config_SGH_tangent_slope_calculation option."
          err = 1
 !         do iEdge = 1, nEdgesSolve
 !            ! Only calculate slope for edges that have ice on at least one side.
@@ -631,7 +633,8 @@ module li_subglacial_hydro
       gradMagPhiEdge = sqrt(hydropotentialBaseSlopeNormal**2 + hydropotentialBaseSlopeTangent**2)
 
       ! calculate effective conductivity on edges
-      effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) * (gradMagPhiEdge(:)+1.0e-10_RKIND)**(beta - 2.0_RKIND)   ! 1e-10 used for regularization
+      effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) * &
+         (gradMagPhiEdge(:)+1.0e-10_RKIND)**(beta - 2.0_RKIND)   ! 1e-10 used for regularization
 
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
@@ -652,7 +655,8 @@ module li_subglacial_hydro
          if (numGroundedCells < 2) then
             waterFluxDiffu(iEdge) = 0.0_RKIND
          else
-            waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) / dcEdge(iEdge)
+            waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) &
+               / dcEdge(iEdge)
          endif
       end do
       waterFlux(:) = waterFluxAdvec(:) + waterFluxDiffu(:)
@@ -759,7 +763,8 @@ module li_subglacial_hydro
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
          ! Calculate advective CFL-limited time step
-         dtSGHadvecBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(waterVelocity(1:nEdgesSolve)) + 1.0e-12_RKIND))  ! regularize
+         dtSGHadvecBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(waterVelocity(1:nEdgesSolve)) &
+            + 1.0e-12_RKIND))  ! regularize
          dtSGHadvecProc = min(dtSGHadvecProc, dtSGHadvecBlock)
 
          ! Calculate diffusive CFL-limited time step
@@ -792,7 +797,8 @@ module li_subglacial_hydro
          proposedDt = min(deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure)
          proposedDt = proposedDt * CFLfraction
 
-         ! Don't let SGH time step exceed master time step - technically need to check the interval til completion, because we might already be partway through the deltat
+         ! Don't let SGH time step exceed master time step -
+         !   technically need to check the interval til completion, because we might already be partway through the deltat
          proposedDt = min(proposedDt, maxDt)
 
          write(stdOutUnit,*) '  Setting SGH time step (seconds) to:', proposedDt
@@ -821,7 +827,8 @@ module li_subglacial_hydro
 
 
       ! optional: always write out for debugging
-      write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
+      write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", &
+         deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
 
       ! compare timesteps
       if (deltatSGH > deltatSGHadvec) then
@@ -941,13 +948,16 @@ module li_subglacial_hydro
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:))
-      !openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:)) + basalMeltInput(:) / rhoi  ! Hewitt 2011 opening
+      !openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:)) + &
+      !   basalMeltInput(:) / rhoi  ! Hewitt 2011 opening
       openingRate = max(0.0_RKIND, openingRate)
 
       closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * effectivePressure(:)**3 * waterThickness(:)
-!      closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND  ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
+!      closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND
+!          ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
 
-      zeroOrderSum = closingRate - openingRate + (basalMeltInput + externalWaterInput) / rho_water - (Wtill - WtillOld) / deltatSGH
+      zeroOrderSum = closingRate - openingRate + (basalMeltInput + externalWaterInput) / rho_water - &
+         (Wtill - WtillOld) / deltatSGH
 
       waterPressureOld = waterPressure
 

@@ -117,7 +117,7 @@ contains
 !> \brief   Initializes blocks for SIA velocity solver
 !> \author  Matt Hoffman/Xylar Asay-Davis
 !> \date    16 March 2012
-!> \details 
+!> \details
 !>  This routine initializes each block of the SIA ice velocity solver.
 !
 !-----------------------------------------------------------------------
@@ -218,9 +218,9 @@ contains
 !> \brief   Computes velocity using Shallow Ice Appoximation
 !> \author  Matt Hoffman
 !> \date    21 May 2012
-!> \details 
-!>  This routine computes the normal velocity on edges for each layer 
-!>  using the Shallow Ice Approximation.  It calculates ice thickness on 
+!> \details
+!>  This routine computes the normal velocity on edges for each layer
+!>  using the Shallow Ice Approximation.  It calculates ice thickness on
 !>  on an edge using the average of the two neighboring cells (2nd order).
 !
 !-----------------------------------------------------------------------
@@ -246,7 +246,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(inout) :: &
-         velocityPool          !< Input/Output: velocity information 
+         velocityPool          !< Input/Output: velocity information
 
       !-----------------------------------------------------------------
       !
@@ -271,8 +271,10 @@ contains
       integer :: iLevel, iEdge
       integer :: cell1, cell2
       real (kind=RKIND) :: thicknessEdge, flwaLevelEdge
-      real (kind=RKIND) :: positionIndependentFactor ! The portion of the velocity calculation that is completely independent of position
-      real (kind=RKIND) :: levelIndependentFactor ! The portion of the velocity calculation that depends on horizontal location but not vertical position
+      real (kind=RKIND) :: positionIndependentFactor ! The portion of the velocity calculation that
+                                                     ! is completely independent of position
+      real (kind=RKIND) :: levelIndependentFactor ! The portion of the velocity calculation that depends on
+                                                  ! horizontal location but not vertical position
       real (kind=RKIND), pointer :: rhoi         ! ice density
       real (kind=RKIND), pointer :: n            ! flow law exponent, n
       integer :: cell1_is_dynamic, cell2_is_dynamic
@@ -314,15 +316,19 @@ contains
 
              ! Calculate thickness on edge - 2nd order
              thicknessEdge = (thickness(cell1) + thickness(cell2) ) * 0.5_RKIND
-!             thicknessEdge = (thickness(cell1) * cell1_is_dynamic + thickness(cell2) * cell2_is_dynamic) / (cell1_is_dynamic + cell2_is_dynamic)  ! this version does an upwind thickness on margin edges only.  Most Halfar error stats are higher by about 10-20%
-             ! Also tried upwind everywhere [for dome can be hacked with: thicknessEdge = max(thickness(cell1), thickness(cell2) ]  This results in Halfar errors that are about 5x larger than centered difference
+!             thicknessEdge = (thickness(cell1) * cell1_is_dynamic + thickness(cell2) * cell2_is_dynamic) &
+!                 / (cell1_is_dynamic + cell2_is_dynamic)
+!            <- this version does an upwind thickness on margin edges only.  Most Halfar error stats are higher by about 10-20%
+             ! Also tried upwind everywhere [for dome can be hacked with: thicknessEdge = max(thickness(cell1), thickness(cell2) ]
+             !This results in Halfar errors that are about 5x larger than centered difference
 
              levelIndependentFactor = slopeEdge(iEdge)**(n-1) * normalSlopeEdge(iEdge) * thicknessEdge**(n+1)
 
              normalVelocity(nVertInterfaces, iEdge) = 0.0_RKIND  ! Assume no sliding
 
              do iLevel = nVertInterfaces-1, 1, -1  ! Loop upwards from second lowest level to surface
-                ! Calculate flwa on edge for this level - 2nd order, except can't do centered difference into areas where flwa may not be valid, so excluding the downwind flwa value in non-dynamic cells
+                ! Calculate flwa on edge for this level - 2nd order, except can't do centered difference
+                ! into areas where flwa may not be valid, so excluding the downwind flwa value in non-dynamic cells
 !                flwaLevelEdge = (flowParamA(iLevel, cell1) + flowParamA(iLevel, cell2) ) * 0.5_RKIND
                 flwaLevelEdge = (flowParamA(iLevel, cell1) * cell1_is_dynamic +  &
                    flowParamA(iLevel, cell2) * cell2_is_dynamic) / &
@@ -404,7 +410,7 @@ contains
 
    ! private subroutines
 
- 
+
 
 
 !***********************************************************************

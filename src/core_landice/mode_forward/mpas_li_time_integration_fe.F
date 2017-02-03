@@ -66,10 +66,10 @@ module li_time_integration_fe
 !
 !  routine li_time_integrator_forwardeuler
 !
-!> \brief   Forward Euler time integration scheme 
+!> \brief   Forward Euler time integration scheme
 !> \author  Matthew Hoffman
 !> \date    10 January 2012
-!> \details 
+!> \details
 !>  This routine performs Forward Euler time integration.
 !
 !-----------------------------------------------------------------------
@@ -86,7 +86,7 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
 
       type (domain_type), intent(inout) :: &
-         domain          !< Input/Output: domain object 
+         domain          !< Input/Output: domain object
 
       !-----------------------------------------------------------------
       ! output variables
@@ -297,8 +297,8 @@ module li_time_integration_fe
 
       err = 0
 
-      allowableAdvecDtOnProc = 1.0e36 ! set to large number
-      allowableDiffDtOnProc = 1.0e36 ! set to large number
+      allowableAdvecDtOnProc = 1.0e36_RKIND ! set to large number
+      allowableDiffDtOnProc = 1.0e36_RKIND ! set to large number
 
       block => domain % blocklist
       do while (associated(block))
@@ -356,7 +356,8 @@ module li_time_integration_fe
       err = ior(err,err_tmp)
 
       if (config_print_thickness_advection_info) then
-         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on advective CFL is (Days_hhh:mmm:sss):   ' // trim(allowableAdvecDtOnProcString)
+         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on advective CFL is (Days_hhh:mmm:sss):   ' &
+            // trim(allowableAdvecDtOnProcString)
       endif
 
 
@@ -370,7 +371,8 @@ module li_time_integration_fe
       err = ior(err,err_tmp)
 
       if (config_print_thickness_advection_info) then
-         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on diffusive CFL is (Days_hhh:mmm:sss):   ' // trim(allowableDiffDtOnProcString)
+         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on diffusive CFL is (Days_hhh:mmm:sss):   ' &
+            // trim(allowableDiffDtOnProcString)
       endif
 
 
@@ -424,9 +426,11 @@ module li_time_integration_fe
 
       ! Write messages if they are turned on
       if (config_print_thickness_advection_info) then
-          write(stdoutUnit,*) '  Maximum allowable time step for all processors based on advective CFL is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtAllProcsString) //  '  Time step is limited by processor number ', allowableAdvecDtProcNumber
+          write(stdoutUnit,*) '  Maximum allowable time step for all processors based on advective CFL is (Days_hhh:mmm:sss): ' &
+             // trim(allowableAdvecDtAllProcsString) // '  Time step is limited by processor number ', allowableAdvecDtProcNumber
           if (config_adaptive_timestep_include_DCFL) then
-             write(stdoutUnit,*) '  Maximum allowable time step for all processors based on diffusive CFL is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtAllProcsString) //  '  Time step is limited by processor number ', allowableDiffDtProcNumber
+             write(stdoutUnit,*) '  Maximum allowable time step for all processors based on diffusive CFL is (Days_hhh:mmm:sss): '&
+                // trim(allowableDiffDtAllProcsString) // '  Time step is limited by processor number ', allowableDiffDtProcNumber
           endif
       endif
 
@@ -450,13 +454,15 @@ module li_time_integration_fe
 
       ! Check for CFL error before finishing
       if (dtSeconds > allowableAdvecDtOnProc) then
-         write(stderrUnit,*) 'ERROR: Advective CFL violation on this processor.  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString)
+         write(stderrUnit,*) 'ERROR: Advective CFL violation on this processor.  ', &
+            'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString)
          err = ior(err,1)
       endif
 
       ! Local diffusive CFL info
       if ( (config_adaptive_timestep_include_DCFL) .and. (dtSeconds > allowableDiffDtOnProc) ) then
-         write(stderrUnit,*) 'WARNING: Diffusive CFL violation on this processor.  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString)
+         write(stderrUnit,*) 'WARNING: Diffusive CFL violation on this processor.  ', &
+            'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString)
       endif
 
       if (err > 0) then
@@ -494,7 +500,7 @@ module li_time_integration_fe
 !
 !  routine advection_solver
 !
-!> \brief   Advect thickness and tracers 
+!> \brief   Advect thickness and tracers
 !> \author  Matthew Hoffman and William Lipscomb
 !> \date    September 2013; revised December 2015
 !> \details
@@ -643,7 +649,7 @@ module li_time_integration_fe
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=1)
 
-         
+
          allocate( masktmp(nCells + 1) )
          masktmp = 0
 
@@ -752,9 +758,12 @@ module li_time_integration_fe
       !print *, 'curr', currTime % t % YR, currTime % t % basetime % S, currTime % t % basetime % Sn, currTime % t % basetime % Sd
       err = ior(err,err_tmp)
       nextForceTime = mpas_alarm_get_next_ring_time(clock, 'adaptiveTimestepForceInterval')
-      !print *, 'ring', nextForceTime % t % YR, nextForceTime % t % basetime % S, nextForceTime % t % basetime % Sn, nextForceTime % t % basetime % Sd
+      !print *, 'ring', nextForceTime % t % YR, nextForceTime % t % basetime % S, nextForceTime % t % basetime % Sn, &
+      !   nextForceTime % t % basetime % Sd
       intervalToNextForceTime = nextForceTime - currTime
-      !print *, 'int', intervalToNextForceTime % ti % YR, intervalToNextForceTime % ti % MM, intervalToNextForceTime % ti % basetime % S, intervalToNextForceTime % ti % basetime % Sn, intervalToNextForceTime % ti % basetime % Sd
+      !print *, 'int', intervalToNextForceTime % ti % YR, intervalToNextForceTime % ti % MM, &
+      !   intervalToNextForceTime % ti % basetime % S, intervalToNextForceTime % ti % basetime % Sn, &
+      !   intervalToNextForceTime % ti % basetime % Sd
       ! Due to roundoff errors, we might be just shy of the desired time.
       ! To avoid this, add one to the numerator of the fractional seconds to
       ! make sure we get pushed over the edge.  The way ESMF does fractional
@@ -769,7 +778,7 @@ module li_time_integration_fe
       !print *, proposedDt, secondsToNextForceTime
       dtSeconds = min(proposedDt, secondsToNextForceTime)
 
-      write(stdOutUnit,*) '  Setting time step (days) to:', dtSeconds / (86400.0)
+      write(stdOutUnit,*) '  Setting time step (days) to:', dtSeconds / (86400.0_RKIND)
       if (dtSeconds < config_min_adaptive_timestep) then
          write(stdErrUnit,*) 'ERROR: New deltat is less than config_min_adaptive_timestep.'
          err = 1

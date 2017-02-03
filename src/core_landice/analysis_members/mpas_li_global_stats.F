@@ -10,11 +10,11 @@
 !  mpas_li_global_stats
 !
 !> \brief MPAS land ice analysis mode member: mpas_li_global_stats
-!> \author Stephen Price 
+!> \author Stephen Price
 !> \date   8-30-2015
 !> \details
-!> 
-!> 
+!>
+!>
 !-----------------------------------------------------------------------
 module li_global_stats
 
@@ -63,7 +63,7 @@ contains
 !
 !> \brief   Initialize MPAS-Land Ice analysis member
 !> \author  S. Price
-!> \date    9/9/2015    
+!> \date    9/9/2015
 !> \details
 !>  This routine conducts all initializations required for the
 !>  MPAS-Land Ice analysis member.
@@ -112,7 +112,7 @@ contains
 !
 !> \brief   Compute MPAS-Land Ice analysis member
 !> \author  S. Price
-!> \date    9/9/2015    
+!> \date    9/9/2015
 !> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Land Ice analysis member.
@@ -166,12 +166,12 @@ contains
       real (kind=RKIND), pointer ::  config_ice_density
       real (kind=RKIND), pointer ::  deltat
       real (kind=RKIND), dimension(:), pointer ::  areaCell
-      real (kind=RKIND), dimension(:), pointer ::  thickness 
-      real (kind=RKIND), dimension(:), pointer ::  sfcMassBal  
+      real (kind=RKIND), dimension(:), pointer ::  thickness
+      real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
       real (kind=RKIND), dimension(:), pointer ::  basalMassBal
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
 
-      integer, dimension(:), pointer :: cellMask 
+      integer, dimension(:), pointer :: cellMask
       integer, pointer :: nCellsSolve
       integer :: k, iCell
 
@@ -179,9 +179,9 @@ contains
       real (kind=RKIND), pointer ::  totalIceArea, totalIceVolume
       real (kind=RKIND), pointer ::  groundedIceArea, groundedIceVolume
       real (kind=RKIND), pointer ::  floatingIceArea, floatingIceVolume
-      real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean 
-      real (kind=RKIND), pointer ::  totalSfcMassBal, totalBasalMassBal 
-      real (kind=RKIND), pointer ::  totalCalvingFlux 
+      real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean
+      real (kind=RKIND), pointer ::  totalSfcMassBal, totalBasalMassBal
+      real (kind=RKIND), pointer ::  totalCalvingFlux
 
       ! scalar sums over blocks
       real (kind=RKIND) ::  blockSumIceArea, blockSumIceVolume
@@ -252,19 +252,19 @@ contains
 
             ! sums of ice area and volume over cells (m^2 and m^3)
             blockSumIceArea = blockSumIceArea + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) 
+                * areaCell(iCell)
             blockSumIceVolume = blockSumIceVolume + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * thickness(iCell) 
+                * areaCell(iCell) * thickness(iCell)
 
             blockSumGroundedIceArea = blockSumGroundedIceArea + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
-                 * areaCell(iCell) 
+                 * areaCell(iCell)
             blockSumGroundedIceVolume = blockSumGroundedIceVolume + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * thickness(iCell) 
+                * areaCell(iCell) * thickness(iCell)
 
             blockSumFloatingIceArea = blockSumFloatingIceArea + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) 
+                * areaCell(iCell)
             blockSumFloatingIceVolume = blockSumFloatingIceVolume + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * thickness(iCell) 
+                * areaCell(iCell) * thickness(iCell)
 
             ! max, min thickness values (m)
             if( thickness(iCell) > blockThickMax)then
@@ -282,7 +282,8 @@ contains
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
 
             ! mass lass due do calving (kg yr^{-1})
-            blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat / scyr )     
+            blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * &
+               areaCell(iCell) * config_ice_density / ( deltat / scyr )
 
          end do ! end loop over cells
 
@@ -297,9 +298,9 @@ contains
       call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceVolume, groundedIceVolume)
       call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceArea, floatingIceArea)
       call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceVolume, floatingIceVolume)
-      call mpas_dmpar_sum_real(dminfo, blockSumSfcMassBal, totalSfcMassBal) 
-      call mpas_dmpar_sum_real(dminfo, blockSumBasalMassBal, totalBasalMassBal) 
-      call mpas_dmpar_sum_real(dminfo, blockSumCalvingFlux, totalCalvingFlux) 
+      call mpas_dmpar_sum_real(dminfo, blockSumSfcMassBal, totalSfcMassBal)
+      call mpas_dmpar_sum_real(dminfo, blockSumBasalMassBal, totalBasalMassBal)
+      call mpas_dmpar_sum_real(dminfo, blockSumCalvingFlux, totalCalvingFlux)
 
       ! find min, max, mean thickness over all procs
       call mpas_dmpar_min_real(dminfo, blockThickMin, iceThicknessMin)
@@ -326,7 +327,7 @@ contains
 !
 !> \brief   Save restart for MPAS-Land Ice analysis member
 !> \author  S. Price
-!> \date    9/9/2015    
+!> \date    9/9/2015
 !> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Land Ice analysis member.
@@ -375,7 +376,7 @@ contains
 !
 !> \brief   Finalize MPAS-Land Ice analysis member
 !> \author  S. Price
-!> \date    9/9/2015    
+!> \date    9/9/2015
 !> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Land Ice analysis member.
@@ -389,7 +390,7 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
-      
+
       character (len=*), intent(in) :: memberName
 
       !-----------------------------------------------------------------

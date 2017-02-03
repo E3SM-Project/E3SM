@@ -301,7 +301,7 @@ module li_advection
                write(stdoutUnit,*) 'Dome test diagnostics:'
             endif
          endif
-         
+
 
          if (advectTracers) then
 
@@ -338,7 +338,8 @@ module li_advection
                        iCell, indexToCellID(iCell), thickness(iCell), advectedTracers(1,1,iCell)
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                     write(stdoutUnit,*) 'iEdge (local, global), layerNormalVelocity:', iEdge, indexToEdgeID(iEdge), layerNormalVelocity(1,iEdge)
+                     write(stdoutUnit,*) 'iEdge (local, global), layerNormalVelocity:', &
+                        iEdge, indexToEdgeID(iEdge), layerNormalVelocity(1,iEdge)
                   enddo
                endif
             enddo
@@ -423,7 +424,7 @@ module li_advection
          thickness = sum(LayerThickness, 1)
 
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         
+
          ! Remap tracers to the standard vertical sigma coordinate
          ! Note: If tracers are not being advected, then this subroutine simply restores the
          !       layer thickness to sigma coordinate values.
@@ -495,7 +496,7 @@ module li_advection
 !> \brief   Apply surface and basal mass balance
 !> \author  William Lipscomb
 !> \date    February 2016
-!> \details 
+!> \details
 !>  This routine applies the surface and basal mass balance, with a
 !>  conservative treatment of tracers such as temperature.
 !
@@ -670,7 +671,7 @@ module li_advection
 !> \brief   Assemble a 3D array for tracer advection
 !> \author  William Lipscomb
 !> \date    November 2015
-!> \details 
+!> \details
 !>  This routine assembles a 3D array for tracer advection.
 !>  Each tracer in the array is transported conservatively, along
 !>  with the layer thickness field.
@@ -958,7 +959,7 @@ module li_advection
 !> \brief   Advect thickness and tracers using a first-order upwind scheme.
 !> \author  William Lipscomb
 !> \date    November 2015
-!> \details 
+!> \details
 !>  This routine computes new values of the thickness and tracers in each ice layer
 !>  under horizontal advection using a first-order upwind scheme.
 !>  Based on subroutine tend_layerThickness_fo_upwind by Matthew Hoffman
@@ -1074,7 +1075,8 @@ module li_advection
            thicknessTracerTendency, &! net thickness*tracer tendency for a cell
            newThicknessTracers       ! new values of thickness*tracer
 
-      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not to overflow
+      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND
+      ! This is ~300 million years in seconds, but it is small enough not to overflow
 
       real(kind=RKIND) :: velSign     ! = 1.0_RKIND or -1.0_RKIND depending on sign of velocity
 
@@ -1146,7 +1148,8 @@ module li_advection
          if (indexToCellID(iCell) == config_stats_cell_ID .and. config_print_thickness_advection_info) then
             write(stdoutUnit,*) 'In advect_thickness_tracer, iCell (local, global) =', iCell, indexToCellID(iCell)
             write(stdoutUnit,*)
-            write(stdoutUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency, thicknessTracerTendency:' 
+            write(stdoutUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, ', &
+               'thicknessFluxEdge, thicknessTendency, thicknessTracerTendency:'
          endif
 
          ! loop over layers
@@ -1178,7 +1181,7 @@ module li_advection
 
                   tracersEdge(:) = max(velSign * tracersOld(:,k,iCell1),   &
                                        velSign * (-1.0_RKIND) * tracersOld(:,k,iCell2))
-               
+
                   thicknessTracerTendency(:) = thicknessTracerTendency(:) &
                                              + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell * tracersEdge(:)
 
@@ -1231,21 +1234,25 @@ module li_advection
          enddo
 
          if (config_print_thickness_advection_info) then
-            write(stdoutUnit,*) 'init volume, final volume, difference:', initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum
-            write(stdoutUnit,*) 'init energy, final energy, difference:', initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+            write(stdoutUnit,*) 'init volume, final volume, difference:', &
+               initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum
+            write(stdoutUnit,*) 'init energy, final energy, difference:', &
+               initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
          endif
 
          !TODO - Make these fatal errors instead of warnings?
          difference = abs(finalVolumeSum - initVolumeSum)
          if (difference/initVolumeSum > eps11) then
             write(stderrUnit,*) 'WARNING: upwind advection, mass conservation error'
-            write(stderrUnit,*) 'init volume, final volume, difference:', initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum
+            write(stderrUnit,*) 'init volume, final volume, difference:', &
+               initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum
          endif
 
          difference = abs(finalEnergySum - initEnergySum)
          if (difference/initEnergySum > eps11) then
             write(stderrUnit,*) 'WARNING: upwind advection, mass*tracer conservation error'
-            write(stderrUnit,*) 'init energy, final energy, difference:', initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+            write(stderrUnit,*) 'init energy, final energy, difference:', &
+               initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
          endif
 
       endif
@@ -1271,7 +1278,7 @@ module li_advection
 !> \brief   Compute layer normal velocity and diagnose the advective CFL limit
 !> \author  William Lipscomb
 !> \date    January 2016
-!> \details 
+!> \details
 !>  This routine computed layer normal velocities on each edge in preparation
 !>  for advection. Given these velocities, it diagnoses the advective CFL limit
 !>  for the edges on this block. The logic here was originally part of
@@ -1339,7 +1346,8 @@ module li_advection
 
       integer :: iEdge, k
 
-      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but is small enough not to overflow
+      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND
+      ! This is ~300 million years in seconds, but is small enough not to overflow
 
       err = 0
 
@@ -1497,9 +1505,9 @@ module li_advection
                layerInterfaceSigma_Input(k) = layerInterfaceSigma_Input(k-1) + layerThickness(k-1, iCell) / thickness(iCell)
             end do
             layerInterfaceSigma_Input(nVertLevels+1) = 1.0_RKIND
-         
+
             ! *** Compute new layer thicknesses (layerInterfaceSigma coordinates)
-         
+
             do k = 1, nVertLevels
                layerThickness(k,iCell) = layerThicknessFractions(k) * thickness(iCell)
             end do
@@ -1511,7 +1519,7 @@ module li_advection
             !       search algorithm if the number of layers is large.
             !       This algorithm scales as nlyr^2.
             !-----------------------------------------------------------------
-         
+
             do k2 = 1, nVertLevels
                hTsum(:,k2) = 0.0_RKIND
                do k1 = 1, nVertLevels
@@ -1523,17 +1531,17 @@ module li_advection
                   enddo         ! nt
                enddo            ! k1
             enddo               ! k2
-            
+
             !-----------------------------------------------------------------
             ! Compute tracer values in new layers
             !-----------------------------------------------------------------
-            
+
             do k = 1, nVertLevels
                do nt = 1, nTracers
                   tracers(nt,k,iCell) = hTsum(nt,k) / (layerThickness(k, iCell))
                enddo         ! nt
             enddo            ! k
-         
+
          endif    ! thickness > 0.0
 
          if (checkConservation) then   ! compute new sum of layerThickness*tracer1 in the column
@@ -1542,12 +1550,13 @@ module li_advection
             if (initEnergySum > eps11) then
                if (difference/initEnergySum > eps11) then
                   write(stderrUnit,*) 'WARNING: vertical_remap, mass*tracer conservation error, iCell =', iCell
-                  write(stderrUnit,*) 'init energy, final energy, difference:', initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+                  write(stderrUnit,*) 'init energy, final energy, difference:', &
+                     initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
                   stop
                endif
             endif
          endif
-         
+
       enddo ! nCellsSolve
 
       ! clean up
