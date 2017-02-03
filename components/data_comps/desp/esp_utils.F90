@@ -7,8 +7,6 @@ module esp_utils
 
   implicit none
   private
-#include <mpif.h>
-  save
 
   public :: esp_pio_modify_variable
 
@@ -247,6 +245,7 @@ CONTAINS
   end subroutine esp_pio_newdecomp
 
   subroutine esp_pio_modify_variable(id, comm, filename, varname, found)
+    use mpi,         only: MPI_LOGICAL, MPI_LAND
     use shr_mpi_mod, only: shr_mpi_commsize, shr_mpi_commrank
     use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype
     use pio,         only: PIO_write, file_desc_t, pio_offset_kind
