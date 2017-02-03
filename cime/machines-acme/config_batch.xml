@@ -134,7 +134,6 @@
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
-       <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
        <directive> --output={{ output_error_path }}   </directive>
        <directive> --exclusive                        </directive>
        <directive> --time={{ wall_time }}</directive>
@@ -151,6 +150,13 @@
       </directives>
     </batch_system> 
 
+    <!-- anvil is PBS -->
+    <batch_system MACH="anvil" version="x.y">
+      <directives>
+        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      </directives>
+    </batch_system> 
+
     <!-- eos is PBS -->
     <batch_system MACH="eos" version="x.y">
     <jobid_pattern>^(\d+)</jobid_pattern>
@@ -160,6 +166,29 @@
       <directive>-l  nodes={{ num_nodes }}</directive>
     </directives>
    </batch_system>
+
+<!--
+    <batch_system MACH="cori-haswell" type="slurm" version="x.y">
+      <directives>
+        <directive> dash-dash-constraint=haswell</directive>
+      </directives>
+      <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="10000" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096">debug</queue>
+      </queues>
+    </batch_system>
+-->
+
+    <batch_system MACH="cori-knl" type="slurm" version="x.y">
+      <directives>
+        <directive> --constraint=knl,quad,cache</directive>
+        <!--directive> -dash-ntasks-per-core=4</directive-->
+      </directives>
+      <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="3000000" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="100000">debug</queue>
+      </queues>
+    </batch_system>
 
    <!-- Constance is slurm -->
 

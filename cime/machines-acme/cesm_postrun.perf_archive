@@ -63,7 +63,7 @@ if ($app_jobid == 'unknown') then
 
     set app_jobid = $PBS_JOBID
 
-  else if (($machine == 'edison') || ($machine == 'corip1')) then
+  else if (($machine == 'edison') || ($machine == 'cori-haswell') || ($machine == 'cori-knl')) then
 
     set app_jobid = $SLURM_JOB_ID
 
@@ -140,7 +140,7 @@ if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
       cp -p $string $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
       chmod a+r $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
 
-    else if (($machine == 'edison') || ($machine == 'corip1')) then
+    else if (($machine == 'edison') || ($machine == 'cori-haswell') || ($machine == 'cori-knl')) then
 
       set string = `ls $case`
       cp -p $string $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
