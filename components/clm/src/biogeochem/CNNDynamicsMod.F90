@@ -23,7 +23,7 @@ module CNNDynamicsMod
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp                
   use PatchType           , only : pft_pp
-  use EcophysConType      , only : ecophyscon
+  use VegetationPropertiesType      , only : veg_pp
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -651,8 +651,8 @@ contains
          ivt                   => pft_pp%itype                            , & ! input:  [integer  (:) ]  pft vegetation type  
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
-         vmax_nfix             => ecophyscon%vmax_nfix                 , &
-         km_nfix               => ecophyscon%km_nfix                   , &
+         vmax_nfix             => veg_pp%vmax_nfix                 , &
+         km_nfix               => veg_pp%km_nfix                   , &
          frootc                => carbonstate_vars%frootc_patch        , &
          nfix_to_sminn         => nitrogenflux_vars%nfix_to_sminn_col  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
          pnup_pfrootc          => nitrogenstate_vars%pnup_pfrootc_patch, &

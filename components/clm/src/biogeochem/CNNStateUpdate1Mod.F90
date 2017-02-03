@@ -11,7 +11,7 @@ module CNNStateUpdate1Mod
   use clm_varctl             , only : iulog, use_nitrif_denitrif
   use clm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : npcropmin, nc3crop
-  use EcophysconType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_pp
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use CNNitrogenFluxType     , only : nitrogenflux_type
@@ -58,7 +58,7 @@ contains
     associate(                                                                                           & 
          ivt                   => pft_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type                                
 
-         woody                 => ecophyscon%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                 => veg_pp%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
 
          cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool    , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step

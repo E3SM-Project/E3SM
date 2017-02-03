@@ -25,7 +25,7 @@ module CNAllocationMod
   use CNStateType         , only : cnstate_type
   use PhotosynthesisType  , only : photosyns_type
   use CropType            , only : crop_type
-  use EcophysConType      , only : ecophyscon
+  use VegetationPropertiesType      , only : veg_pp
   use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp                
   use PatchType           , only : pft_pp
@@ -413,20 +413,20 @@ contains
     associate(                                                                                   &
          ivt                          => pft_pp%itype                                             , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
-         woody                        => ecophyscon%woody                                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
-         froot_leaf                   => ecophyscon%froot_leaf                                 , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
-         croot_stem                   => ecophyscon%croot_stem                                 , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
-         stem_leaf                    => ecophyscon%stem_leaf                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
-         flivewd                      => ecophyscon%flivewd                                    , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
-         leafcn                       => ecophyscon%leafcn                                     , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
-         frootcn                      => ecophyscon%frootcn                                    , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
-         livewdcn                     => ecophyscon%livewdcn                                   , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
-         deadwdcn                     => ecophyscon%deadwdcn                                   , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
-         fcur2                        => ecophyscon%fcur                                       , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
-         graincn                      => ecophyscon%graincn                                    , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)                       
-         fleafcn                      => ecophyscon%fleafcn                                    , & ! Input:  [real(r8) (:)   ]  leaf c:n during organ fill              
-         ffrootcn                     => ecophyscon%ffrootcn                                   , & ! Input:  [real(r8) (:)   ]  froot c:n during organ fill             
-         fstemcn                      => ecophyscon%fstemcn                                    , & ! Input:  [real(r8) (:)   ]  stem c:n during organ fill              
+         woody                        => veg_pp%woody                                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         froot_leaf                   => veg_pp%froot_leaf                                 , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
+         croot_stem                   => veg_pp%croot_stem                                 , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
+         stem_leaf                    => veg_pp%stem_leaf                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
+         flivewd                      => veg_pp%flivewd                                    , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
+         leafcn                       => veg_pp%leafcn                                     , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
+         frootcn                      => veg_pp%frootcn                                    , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
+         livewdcn                     => veg_pp%livewdcn                                   , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
+         deadwdcn                     => veg_pp%deadwdcn                                   , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
+         fcur2                        => veg_pp%fcur                                       , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
+         graincn                      => veg_pp%graincn                                    , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)                       
+         fleafcn                      => veg_pp%fleafcn                                    , & ! Input:  [real(r8) (:)   ]  leaf c:n during organ fill              
+         ffrootcn                     => veg_pp%ffrootcn                                   , & ! Input:  [real(r8) (:)   ]  froot c:n during organ fill             
+         fstemcn                      => veg_pp%fstemcn                                    , & ! Input:  [real(r8) (:)   ]  stem c:n during organ fill              
 
          psnsun                       => photosyns_vars%psnsun_patch                           , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
          psnsha                       => photosyns_vars%psnsha_patch                           , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)
@@ -465,11 +465,11 @@ contains
          fpi_vr                       => cnstate_vars%fpi_vr_col                               , & ! Output: [real(r8) (:,:) ]  fraction of potential immobilization (no units)
 
          !!! add phosphorus
-         leafcp                       => ecophyscon%leafcp                                     , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)                        
-         frootcp                      => ecophyscon%frootcp                                    , & ! Input:  [real(r8) (:)   ]  fine root C:P (gC/gP)                   
-         livewdcp                     => ecophyscon%livewdcp                                   , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:P (gC/gP)
-         deadwdcp                     => ecophyscon%deadwdcp                                   , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:P (gC/gP)
-         graincp                      => ecophyscon%graincp                                    , & ! Input:  [real(r8) (:)   ]  grain C:P (gC/gP)                       
+         leafcp                       => veg_pp%leafcp                                     , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)                        
+         frootcp                      => veg_pp%frootcp                                    , & ! Input:  [real(r8) (:)   ]  fine root C:P (gC/gP)                   
+         livewdcp                     => veg_pp%livewdcp                                   , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:P (gC/gP)
+         deadwdcp                     => veg_pp%deadwdcp                                   , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:P (gC/gP)
+         graincp                      => veg_pp%graincp                                    , & ! Input:  [real(r8) (:)   ]  grain C:P (gC/gP)                       
          fpg_p                        => cnstate_vars%fpg_p_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)    
          fpi_p                        => cnstate_vars%fpi_p_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
          fpi_p_vr                     => cnstate_vars%fpi_p_vr_col                             , & ! Output: [real(r8) (:,:) ]  fraction of potential immobilization (no units)
@@ -621,21 +621,21 @@ contains
          cn_scalar                    => cnstate_vars%cn_scalar                                , &
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
          isoilorder                   => cnstate_vars%isoilorder                               , &
-         vmax_plant_nh4               => ecophyscon%vmax_plant_nh4                             , &
-         vmax_plant_no3               => ecophyscon%vmax_plant_no3                             , &
-         vmax_plant_p                 => ecophyscon%vmax_plant_p                               , &
-         vmax_minsurf_p_vr            => ecophyscon%vmax_minsurf_p_vr                          , &
-         km_plant_nh4                 => ecophyscon%km_plant_nh4                               , &
-         km_plant_no3                 => ecophyscon%km_plant_no3                               , &
-         km_plant_p                   => ecophyscon%km_plant_p                                 , &
-         km_minsurf_p_vr              => ecophyscon%km_minsurf_p_vr                            , &
-         km_decomp_nh4                => ecophyscon%km_decomp_nh4                              , &
-         km_decomp_no3                => ecophyscon%km_decomp_no3                              , &
-         km_decomp_p                  => ecophyscon%km_decomp_p                                , &
-         km_nit                       => ecophyscon%km_nit                                     , &
-         km_den                       => ecophyscon%km_den                                     , &
-         decompmicc_patch_vr          => ecophyscon%decompmicc_patch_vr                        , &
-         slatop                       => ecophyscon%slatop                                     , &
+         vmax_plant_nh4               => veg_pp%vmax_plant_nh4                             , &
+         vmax_plant_no3               => veg_pp%vmax_plant_no3                             , &
+         vmax_plant_p                 => veg_pp%vmax_plant_p                               , &
+         vmax_minsurf_p_vr            => veg_pp%vmax_minsurf_p_vr                          , &
+         km_plant_nh4                 => veg_pp%km_plant_nh4                               , &
+         km_plant_no3                 => veg_pp%km_plant_no3                               , &
+         km_plant_p                   => veg_pp%km_plant_p                                 , &
+         km_minsurf_p_vr              => veg_pp%km_minsurf_p_vr                            , &
+         km_decomp_nh4                => veg_pp%km_decomp_nh4                              , &
+         km_decomp_no3                => veg_pp%km_decomp_no3                              , &
+         km_decomp_p                  => veg_pp%km_decomp_p                                , &
+         km_nit                       => veg_pp%km_nit                                     , &
+         km_den                       => veg_pp%km_den                                     , &
+         decompmicc_patch_vr          => veg_pp%decompmicc_patch_vr                        , &
+         slatop                       => veg_pp%slatop                                     , &  
          t_scalar                     => carbonflux_vars%t_scalar_col                          , &
          w_scalar                     => carbonflux_vars%w_scalar_col                          , &
          smin_nh4_to_plant_patch      => nitrogenflux_vars%smin_nh4_to_plant_patch             , &                                   
@@ -1235,34 +1235,34 @@ contains
          frootc                       => carbonstate_vars%frootc_patch                         , & ! Input:  [real(r8) (:)   ]                                          
          leafc                        => carbonstate_vars%leafc_patch                          , & ! Input:  [real(r8) (:)   ]                                          
 
-         frootcn                      => ecophyscon%frootcn                                    , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
-         leafcn                       => ecophyscon%leafcn                                     , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
-         leafcp                       => ecophyscon%leafcp                                     , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
-         vmax_minsurf_p_vr            => ecophyscon%vmax_minsurf_p_vr                          , &
+         frootcn                      => veg_pp%frootcn                                    , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
+         leafcn                       => veg_pp%leafcn                                     , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
+         leafcp                       => veg_pp%leafcp                                     , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
+         vmax_minsurf_p_vr            => veg_pp%vmax_minsurf_p_vr                          , &
          
          leafn                        => nitrogenstate_vars%leafn_patch                        , &
 
-         vmax_plant_nh4               => ecophyscon%vmax_plant_nh4                             , &
-         vmax_plant_no3               => ecophyscon%vmax_plant_no3                             , &
-         vmax_plant_p                 => ecophyscon%vmax_plant_p                               , &
+         vmax_plant_nh4               => veg_pp%vmax_plant_nh4                             , &
+         vmax_plant_no3               => veg_pp%vmax_plant_no3                             , &
+         vmax_plant_p                 => veg_pp%vmax_plant_p                               , &
 
          nfixation_prof               => cnstate_vars%nfixation_prof_col                       , & ! Output: [real(r8) (:,:) ]                                        
 
          primp_to_labilep_vr_col      => phosphorusflux_vars%primp_to_labilep_vr_col           , &
          leafp                        => phosphorusstate_vars%leafp_patch                      , &
 
-         km_decomp_nh4                => ecophyscon%km_decomp_nh4                              , &
-         km_decomp_no3                => ecophyscon%km_decomp_no3                              , &
-         km_decomp_p                  => ecophyscon%km_decomp_p                                , &
-         km_nit                       => ecophyscon%km_nit                                     , &
-         km_den                       => ecophyscon%km_den                                     , &
+         km_decomp_nh4                => veg_pp%km_decomp_nh4                              , &
+         km_decomp_no3                => veg_pp%km_decomp_no3                              , &
+         km_decomp_p                  => veg_pp%km_decomp_p                                , &
+         km_nit                       => veg_pp%km_nit                                     , &
+         km_den                       => veg_pp%km_den                                     , &
 
-         km_plant_nh4                 => ecophyscon%km_plant_nh4                               , &
-         km_plant_no3                 => ecophyscon%km_plant_no3                               , &
-         km_plant_p                   => ecophyscon%km_plant_p                                 , &
-         km_minsurf_p_vr              => ecophyscon%km_minsurf_p_vr                            , &
+         km_plant_nh4                 => veg_pp%km_plant_nh4                               , &
+         km_plant_no3                 => veg_pp%km_plant_no3                               , &
+         km_plant_p                   => veg_pp%km_plant_p                                 , &
+         km_minsurf_p_vr              => veg_pp%km_minsurf_p_vr                            , &
 
-         decompmicc_patch_vr          => ecophyscon%decompmicc_patch_vr                        , &
+         decompmicc_patch_vr          => veg_pp%decompmicc_patch_vr                        , &
 
          adsorb_to_labilep_vr         => phosphorusflux_vars%adsorb_to_labilep_vr              , &
          desorb_to_solutionp_vr       => phosphorusflux_vars%desorb_to_solutionp_vr            , &
@@ -2974,17 +2974,17 @@ contains
     associate(                                                                                 &
          ivt                          => pft_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type
 !
-         woody                        => ecophyscon%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
-         froot_leaf                   => ecophyscon%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
-         croot_stem                   => ecophyscon%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
-         stem_leaf                    => ecophyscon%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
-         flivewd                      => ecophyscon%flivewd                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
-         leafcn                       => ecophyscon%leafcn                                   , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)
-         frootcn                      => ecophyscon%frootcn                                  , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)
-         livewdcn                     => ecophyscon%livewdcn                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
-         deadwdcn                     => ecophyscon%deadwdcn                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
-         fcur2                        => ecophyscon%fcur                                     , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
-         graincn                      => ecophyscon%graincn                                  , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)
+         woody                        => veg_pp%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         froot_leaf                   => veg_pp%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
+         croot_stem                   => veg_pp%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
+         stem_leaf                    => veg_pp%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
+         flivewd                      => veg_pp%flivewd                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
+         leafcn                       => veg_pp%leafcn                                   , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)
+         frootcn                      => veg_pp%frootcn                                  , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)
+         livewdcn                     => veg_pp%livewdcn                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
+         deadwdcn                     => veg_pp%deadwdcn                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
+         fcur2                        => veg_pp%fcur                                     , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
+         graincn                      => veg_pp%graincn                                  , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)
 
          croplive                     => cnstate_vars%croplive_patch                         , & ! Input:  [logical  (:)   ]  flag, true if planted, not harvested
          aleaf                        => cnstate_vars%aleaf_patch                            , & ! Output: [real(r8) (:)   ]  leaf allocation coefficient
@@ -2992,11 +2992,11 @@ contains
          fpg                          => cnstate_vars%fpg_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
 
          !!! add phosphorus
-         leafcp                       => ecophyscon%leafcp                                   , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
-         frootcp                      => ecophyscon%frootcp                                  , & ! Input:  [real(r8) (:)   ]  fine root C:P (gC/gP)
-         livewdcp                     => ecophyscon%livewdcp                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:P (gC/gP)
-         deadwdcp                     => ecophyscon%deadwdcp                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:P (gC/gP)
-         graincp                      => ecophyscon%graincp                                  , & ! Input:  [real(r8) (:)   ]  grain C:P (gC/gP)
+         leafcp                       => veg_pp%leafcp                                   , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
+         frootcp                      => veg_pp%frootcp                                  , & ! Input:  [real(r8) (:)   ]  fine root C:P (gC/gP)
+         livewdcp                     => veg_pp%livewdcp                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:P (gC/gP)
+         deadwdcp                     => veg_pp%deadwdcp                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:P (gC/gP)
+         graincp                      => veg_pp%graincp                                  , & ! Input:  [real(r8) (:)   ]  grain C:P (gC/gP)
          fpg_p                        => cnstate_vars%fpg_p_col                              , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
 
          c_allometry                  => cnstate_vars%c_allometry_patch                      , & ! Output: [real(r8) (:)   ]  C allocation index (DIM)
@@ -3232,8 +3232,8 @@ contains
              sminn_to_npool(p) = plant_ndemand(p) * fpg(c)
              sminp_to_ppool(p) = plant_pdemand(p) * fpg_p(c)
 
-             if (ecophyscon%nstor(pft_pp%itype(p)) > 1e-6_r8) then 
-               rc = ecophyscon%nstor(pft_pp%itype(p)) * max(annsum_npp(p) * n_allometry(p) / c_allometry(p), 0.01_r8)
+             if (veg_pp%nstor(pft_pp%itype(p)) > 1e-6_r8) then 
+               rc = veg_pp%nstor(pft_pp%itype(p)) * max(annsum_npp(p) * n_allometry(p) / c_allometry(p), 0.01_r8)
                r  = max(1._r8,rc/max(npool(p), 1e-9_r8))
                plant_nalloc(p) = (plant_ndemand(p) + retransn_to_npool(p)) / r
              else

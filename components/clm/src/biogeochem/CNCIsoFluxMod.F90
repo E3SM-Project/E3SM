@@ -10,7 +10,7 @@ module CNCIsoFluxMod
   use clm_varpar             , only : max_patch_per_col, maxpatch_pft
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use EcophysConType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_pp
   use CNCarbonFluxType       , only : carbonflux_type
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
@@ -886,12 +886,12 @@ contains
          ivt                       =>    pft_pp%itype                                     , & ! Input:  [integer  (:)   ]  pft vegetation type                                
          wtcol                     =>    pft_pp%wtcol                                     , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
          
-         lf_flab                   =>    ecophyscon%lf_flab                            , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-         lf_fcel                   =>    ecophyscon%lf_fcel                            , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-         lf_flig                   =>    ecophyscon%lf_flig                            , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-         fr_flab                   =>    ecophyscon%fr_flab                            , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-         fr_fcel                   =>    ecophyscon%fr_fcel                            , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-         fr_flig                   =>    ecophyscon%fr_flig                            , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+         lf_flab                   =>    veg_pp%lf_flab                            , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
+         lf_fcel                   =>    veg_pp%lf_fcel                            , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
+         lf_flig                   =>    veg_pp%lf_flig                            , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
+         fr_flab                   =>    veg_pp%fr_flab                            , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
+         fr_fcel                   =>    veg_pp%fr_fcel                            , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
+         fr_flig                   =>    veg_pp%fr_flig                            , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
 
          leaf_prof                 =>    cnstate_vars%leaf_prof_patch                  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
          froot_prof                =>    cnstate_vars%froot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
@@ -959,12 +959,12 @@ contains
           ivt                            =>    pft_pp%itype                                            , & ! Input:  [integer  (:)   ]  pft vegetation type                                
           wtcol                          =>    pft_pp%wtcol                                            , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
           
-          lf_flab                        =>    ecophyscon%lf_flab                                   , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-          lf_fcel                        =>    ecophyscon%lf_fcel                                   , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-          lf_flig                        =>    ecophyscon%lf_flig                                   , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-          fr_flab                        =>    ecophyscon%fr_flab                                   , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-          fr_fcel                        =>    ecophyscon%fr_fcel                                   , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-          fr_flig                        =>    ecophyscon%fr_flig                                   , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+          lf_flab                        =>    veg_pp%lf_flab                                   , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
+          lf_fcel                        =>    veg_pp%lf_fcel                                   , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
+          lf_flig                        =>    veg_pp%lf_flig                                   , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
+          fr_flab                        =>    veg_pp%fr_flab                                   , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
+          fr_fcel                        =>    veg_pp%fr_fcel                                   , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
+          fr_flig                        =>    veg_pp%fr_flig                                   , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
 
           leaf_prof                      =>    cnstate_vars%leaf_prof_patch                         , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
           froot_prof                     =>    cnstate_vars%froot_prof_patch                        , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
@@ -1101,12 +1101,12 @@ contains
           ivt                              =>    pft_pp%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
           wtcol                            =>    pft_pp%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
           
-          lf_flab                          =>    ecophyscon%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-          lf_fcel                          =>    ecophyscon%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-          lf_flig                          =>    ecophyscon%lf_flig                                     , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-          fr_flab                          =>    ecophyscon%fr_flab                                     , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-          fr_fcel                          =>    ecophyscon%fr_fcel                                     , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-          fr_flig                          =>    ecophyscon%fr_flig                                     , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+          lf_flab                          =>    veg_pp%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
+          lf_fcel                          =>    veg_pp%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
+          lf_flig                          =>    veg_pp%lf_flig                                     , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
+          fr_flab                          =>    veg_pp%fr_flab                                     , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
+          fr_fcel                          =>    veg_pp%fr_fcel                                     , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
+          fr_flig                          =>    veg_pp%fr_flig                                     , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
           
           leaf_prof                        =>    cnstate_vars%leaf_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
           froot_prof                       =>    cnstate_vars%froot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     

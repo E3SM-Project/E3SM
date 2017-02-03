@@ -8,7 +8,7 @@ module CNDVEstablishmentMod
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use decompMod         , only : bounds_type
-  use EcophysConType    , only : ecophyscon
+  use VegetationPropertiesType    , only : veg_pp
   use atm2lndType       , only : atm2lnd_type
   use CNDVType          , only : dgvs_type, dgv_ecophyscon
   use CNCarbonStateType , only : carbonstate_type
@@ -92,10 +92,10 @@ contains
 
     associate(                                                       & 
          ivt            =>    pft_pp%itype                            , & ! Input:  [integer  (:) ]  patch vegetation type                                
-         slatop         =>    ecophyscon%slatop                    , & ! Input:  [real(r8) (:) ]  specific leaf area at top of canopy, projected area basis [m^2/gC]
-         dsladlai       =>    ecophyscon%dsladlai                  , & ! Input:  [real(r8) (:) ]  dSLA/dLAI, projected area basis [m^2/gC]           
-         dwood          =>    ecophyscon%dwood                     , & ! Input:  [real(r8) (:) ]  ecophys const - wood density (gC/m3)              
-         woody          =>    ecophyscon%woody                     , & ! Input:  [real(r8) (:) ]  ecophys const - woody pft or not                  
+         slatop         =>    veg_pp%slatop                    , & ! Input:  [real(r8) (:) ]  specific leaf area at top of canopy, projected area basis [m^2/gC]
+         dsladlai       =>    veg_pp%dsladlai                  , & ! Input:  [real(r8) (:) ]  dSLA/dLAI, projected area basis [m^2/gC]           
+         dwood          =>    veg_pp%dwood                     , & ! Input:  [real(r8) (:) ]  ecophys const - wood density (gC/m3)              
+         woody          =>    veg_pp%woody                     , & ! Input:  [real(r8) (:) ]  ecophys const - woody pft or not                  
 
          crownarea_max  =>    dgv_ecophyscon%crownarea_max         , & ! Input:  [real(r8) (:) ]  ecophys const - tree maximum crown area [m2]      
          twmax          =>    dgv_ecophyscon%twmax                 , & ! Input:  [real(r8) (:) ]  ecophys const - upper limit of temperature of the warmest month

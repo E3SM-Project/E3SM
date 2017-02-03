@@ -23,7 +23,7 @@ module CNAllocationBetrMod
   use CNStateType         , only : cnstate_type
   use PhotosynthesisType  , only : photosyns_type
   use CropType            , only : crop_type
-  use EcophysConType      , only : ecophyscon
+  use VegetationPropertiesType      , only : veg_pp
   use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp                
   use PatchType           , only : pft_pp                
@@ -236,17 +236,17 @@ contains
   associate(                                                                               &
      ivt                          => pft_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
-     woody                        => ecophyscon%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
-     froot_leaf                   => ecophyscon%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
-     croot_stem                   => ecophyscon%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
-     stem_leaf                    => ecophyscon%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
-     flivewd                      => ecophyscon%flivewd                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
-     leafcn                       => ecophyscon%leafcn                                   , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
-     frootcn                      => ecophyscon%frootcn                                  , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
-     livewdcn                     => ecophyscon%livewdcn                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
-     deadwdcn                     => ecophyscon%deadwdcn                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
-     fcur2                        => ecophyscon%fcur                                     , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
-     graincn                      => ecophyscon%graincn                                  , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)                       
+     woody                        => veg_pp%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+     froot_leaf                   => veg_pp%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
+     croot_stem                   => veg_pp%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
+     stem_leaf                    => veg_pp%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
+     flivewd                      => veg_pp%flivewd                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
+     leafcn                       => veg_pp%leafcn                                   , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
+     frootcn                      => veg_pp%frootcn                                  , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
+     livewdcn                     => veg_pp%livewdcn                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
+     deadwdcn                     => veg_pp%deadwdcn                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
+     fcur2                        => veg_pp%fcur                                     , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
+     graincn                      => veg_pp%graincn                                  , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)                       
      psnsun                       => photosyns_vars%psnsun_patch                         , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
      psnsha                       => photosyns_vars%psnsha_patch                         , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)         
      leafc                        => carbonstate_vars%leafc_patch                        , & ! Input:  [real(r8) (:)   ]                                          
@@ -581,19 +581,19 @@ contains
   
   associate(                                                                              &
     ivt                          => pft_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                       
-    woody                        => ecophyscon%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
-    froot_leaf                   => ecophyscon%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
-    croot_stem                   => ecophyscon%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
-    stem_leaf                    => ecophyscon%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
-    flivewd                      => ecophyscon%flivewd                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
-    leafcn                       => ecophyscon%leafcn                                   , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
-    frootcn                      => ecophyscon%frootcn                                  , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
-    livewdcn                     => ecophyscon%livewdcn                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
-    deadwdcn                     => ecophyscon%deadwdcn                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
-    graincn                      => ecophyscon%graincn                                  , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)                       
-    fleafcn                      => ecophyscon%fleafcn                                  , & ! Input:  [real(r8) (:)   ]  leaf c:n during organ fill              
-    ffrootcn                     => ecophyscon%ffrootcn                                 , & ! Input:  [real(r8) (:)   ]  froot c:n during organ fill             
-    fstemcn                      => ecophyscon%fstemcn                                  , & ! Input:  [real(r8) (:)   ]  stem c:n during organ fill              
+    woody                        => veg_pp%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+    froot_leaf                   => veg_pp%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
+    croot_stem                   => veg_pp%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
+    stem_leaf                    => veg_pp%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
+    flivewd                      => veg_pp%flivewd                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
+    leafcn                       => veg_pp%leafcn                                   , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
+    frootcn                      => veg_pp%frootcn                                  , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
+    livewdcn                     => veg_pp%livewdcn                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
+    deadwdcn                     => veg_pp%deadwdcn                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
+    graincn                      => veg_pp%graincn                                  , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)                       
+    fleafcn                      => veg_pp%fleafcn                                  , & ! Input:  [real(r8) (:)   ]  leaf c:n during organ fill              
+    ffrootcn                     => veg_pp%ffrootcn                                 , & ! Input:  [real(r8) (:)   ]  froot c:n during organ fill             
+    fstemcn                      => veg_pp%fstemcn                                  , & ! Input:  [real(r8) (:)   ]  stem c:n during organ fill              
 
     psnsun                       => photosyns_vars%psnsun_patch                         , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
     psnsha                       => photosyns_vars%psnsha_patch                         , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)

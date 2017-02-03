@@ -14,7 +14,7 @@ module CNNitrogenStateType
   use decompMod              , only : bounds_type
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use EcophysConType         , only : ecophyscon
+  use VegetationPropertiesType         , only : veg_pp
   use abortutils             , only : endrun
   use spmdMod                , only : masterproc 
   use LandunitType           , only : lun_pp                
@@ -786,8 +786,8 @@ contains
              this%leafn_patch(p) = 0._r8
              this%leafn_storage_patch(p) = 0._r8
           else
-             this%leafn_patch(p)         = leafc_patch(p)         / ecophyscon%leafcn(pft_pp%itype(p))
-             this%leafn_storage_patch(p) = leafc_storage_patch(p) / ecophyscon%leafcn(pft_pp%itype(p))
+             this%leafn_patch(p)         = leafc_patch(p)         / veg_pp%leafcn(pft_pp%itype(p))
+             this%leafn_storage_patch(p) = leafc_storage_patch(p) / veg_pp%leafcn(pft_pp%itype(p))
           end if
 
           this%leafn_xfer_patch(p)        = 0._r8
@@ -806,8 +806,8 @@ contains
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (ecophyscon%woody(pft_pp%itype(p)) == 1._r8) then
-             this%deadstemn_patch(p) = deadstemc_patch(p) / ecophyscon%deadwdcn(pft_pp%itype(p))
+          if (veg_pp%woody(pft_pp%itype(p)) == 1._r8) then
+             this%deadstemn_patch(p) = deadstemc_patch(p) / veg_pp%deadwdcn(pft_pp%itype(p))
           else
              this%deadstemn_patch(p) = 0._r8
           end if
@@ -816,8 +816,8 @@ contains
               ! ECA competition calculate root NP uptake as a function of fine root biomass
               ! better to initialize root CNP pools with a non-zero value
               if (pft_pp%itype(p) .ne. noveg) then
-                 this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft_pp%itype(p))
-                 this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft_pp%itype(p))
+                 this%frootn_patch(p) = frootc_patch(p) / veg_pp%frootcn(pft_pp%itype(p))
+                 this%frootn_storage_patch(p) = frootc_storage_patch(p) / veg_pp%frootcn(pft_pp%itype(p))
               end if
           end if
 

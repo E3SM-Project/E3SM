@@ -15,7 +15,7 @@ module SurfaceAlbedoMod
   use clm_varcon        , only : grlnd, namep
   use clm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
   use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_ed  
-  use EcophysConType    , only : ecophyscon
+  use VegetationPropertiesType    , only : veg_pp
   use SnowSnicarMod     , only : sno_nbr_aer, SNICAR_RT, DO_SNO_AER, DO_SNO_OC
   use AerosolType       , only : aerosol_type
   use CanopyStateType   , only : canopystate_type
@@ -275,10 +275,10 @@ contains
   !-----------------------------------------------------------------------
 
    associate(&
-          rhol          =>    ecophyscon%rhol                     , & ! Input:  [real(r8)  (:,:) ]  leaf reflectance: 1=vis, 2=nir        
-          rhos          =>    ecophyscon%rhos                     , & ! Input:  [real(r8)  (:,:) ]  stem reflectance: 1=vis, 2=nir        
-          taul          =>    ecophyscon%taul                     , & ! Input:  [real(r8)  (:,:) ]  leaf transmittance: 1=vis, 2=nir      
-          taus          =>    ecophyscon%taus                     , & ! Input:  [real(r8)  (:,:) ]  stem transmittance: 1=vis, 2=nir      
+          rhol          =>    veg_pp%rhol                     , & ! Input:  [real(r8)  (:,:) ]  leaf reflectance: 1=vis, 2=nir        
+          rhos          =>    veg_pp%rhos                     , & ! Input:  [real(r8)  (:,:) ]  stem reflectance: 1=vis, 2=nir        
+          taul          =>    veg_pp%taul                     , & ! Input:  [real(r8)  (:,:) ]  leaf transmittance: 1=vis, 2=nir      
+          taus          =>    veg_pp%taus                     , & ! Input:  [real(r8)  (:,:) ]  stem transmittance: 1=vis, 2=nir      
 
           tlai          =>    canopystate_vars%tlai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided leaf area index, no burying by snow 
           tsai          =>    canopystate_vars%tsai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided stem area index, no burying by snow
@@ -1160,7 +1160,7 @@ contains
      SHR_ASSERT_ALL((ubound(tau)    == (/bounds%endp, numrad/)), errMsg(__FILE__, __LINE__))
 
    associate(&
-          xl           =>    ecophyscon%xl                       , & ! Input:  [real(r8) (:)   ]  ecophys const - leaf/stem orientation index
+          xl           =>    veg_pp%xl                       , & ! Input:  [real(r8) (:)   ]  ecophys const - leaf/stem orientation index
 
           t_veg        =>    temperature_vars%t_veg_patch        , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)         
 
