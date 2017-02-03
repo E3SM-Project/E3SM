@@ -2615,7 +2615,7 @@
     </values>
   </entry>
 
-  <entry id="profile_depth_limit" modify_via_xml="TIMER_LEVEL">>
+  <entry id="profile_depth_limit" modify_via_xml="TIMER_LEVEL">
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
