@@ -37,7 +37,6 @@ import sys
 import re
 
 logger = logging.getLogger("xmlquery")
-# pylint: disable=W0142
 
 ###############################################################################
 def parse_command_line(args):
