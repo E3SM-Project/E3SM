@@ -2615,15 +2615,14 @@
     </values>
   </entry>
 
-  <entry id="profile_depth_limit">
+  <entry id="profile_depth_limit" modify_via_xml="TIMER_LEVEL">
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
     <desc>
     </desc>
     <values>
-      <value timer_level='pos'>$TIMER_LEVEL</value>
-      <value timer_level='neg'>20</value>
+      <value>$TIMER_LEVEL</value>
     </values>
   </entry>
 
@@ -2638,15 +2637,14 @@
     </values>
   </entry>
 
-  <entry id="profile_detail_limit">
+  <entry id="profile_detail_limit"   modify_via_xml="TIMER_DETAIL">
     <type>integer</type>
     <category>performance</category>
     <group>prof_inparm</group>
     <desc>
     </desc>
     <values>
-      <value timer_level='neg'>$TIMER_LEVEL</value>
-      <value timer_level='pos'>0</value>
+      <value>$TIMER_DETAIL</value>
     </values>
   </entry>
 
