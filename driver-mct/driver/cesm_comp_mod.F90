@@ -582,7 +582,6 @@ contains
 
 subroutine cesm_pre_init1()
    use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
-   implicit none
 
    !----------------------------------------------------------
    !| Initialize MCT and MPI communicators and IO
@@ -799,7 +798,6 @@ subroutine cesm_pre_init2()
    use shr_wv_sat_mod, only: shr_wv_sat_set_default, shr_wv_sat_init, &
         ShrWVSatTableSpec, shr_wv_sat_make_tables
 
-   implicit none
    type(file_desc_t) :: pioid
    integer :: maxthreads
 
@@ -1119,8 +1117,6 @@ end subroutine cesm_pre_init2
 !===============================================================================
 
 subroutine cesm_init()
-
-  implicit none
 
  101  format( A, 2i8, 12A, A, F8.2, A, F8.2 )
  102  format( A, 2i8, A, 8L3 )
@@ -3892,7 +3888,6 @@ end subroutine cesm_init
 
    use shr_pio_mod, only : shr_pio_finalize
    use shr_wv_sat_mod, only: shr_wv_sat_final
-   implicit none
 
    !------------------------------------------------------------------------
    ! Finalization of all models
@@ -3987,7 +3982,6 @@ subroutine seq_cesm_printlogheader()
   !
   ! Local variables
   !
-  implicit none
 
   character(len=8) :: cdate          ! System date
   character(len=8) :: ctime          ! System time
@@ -4024,7 +4018,6 @@ end subroutine seq_cesm_printlogheader
 !===============================================================================
 
 subroutine cesm_comp_barriers(mpicom, timer)
-  implicit none
   integer         , intent(in) :: mpicom
   character(len=*), intent(in) :: timer
   integer :: ierr
