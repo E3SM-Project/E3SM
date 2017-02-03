@@ -2,11 +2,11 @@
 !
 !  cice_velocity_solver_pwl
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -33,11 +33,11 @@ contains
 !
 !  cice_init_velocity_solver_pwl
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -141,11 +141,11 @@ contains
 !
 !  init_velocity_solver_pwl_basis
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -379,8 +379,10 @@ contains
              iSubCell1 = iGradientVertex
              iSubCell2 = cice_wrapped_index(iGradientVertex - 1, nEdgesOnCell(iCell))
 
-             basisGradientU(iBasisVertex,iGradientVertex,iCell) = 0.5_RKIND * (subCellGradientU(iBasisVertex,iSubCell1) + subCellGradientU(iBasisVertex,iSubCell2))
-             basisGradientV(iBasisVertex,iGradientVertex,iCell) = 0.5_RKIND * (subCellGradientV(iBasisVertex,iSubCell1) + subCellGradientV(iBasisVertex,iSubCell2))
+             basisGradientU(iBasisVertex,iGradientVertex,iCell) = &
+                  0.5_RKIND * (subCellGradientU(iBasisVertex,iSubCell1) + subCellGradientU(iBasisVertex,iSubCell2))
+             basisGradientV(iBasisVertex,iGradientVertex,iCell) = &
+                  0.5_RKIND * (subCellGradientV(iBasisVertex,iSubCell1) + subCellGradientV(iBasisVertex,iSubCell2))
 
           enddo ! iGradientVertex
 
@@ -465,7 +467,8 @@ contains
                 basisIntegralsMetricSubCell = basisIntegralsMetricSubCell * &
                      basisSubArea(iSubCell) / 12.0_RKIND
 
-                basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) = basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) + &
+                basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) = &
+                     basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) + &
                      basisIntegralsMetricSubCell
 
              enddo ! iSubCell
@@ -488,11 +491,11 @@ contains
 !
 !  pwl_basis_gradient
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -535,11 +538,11 @@ contains
 !
 !  plot_pwl
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 28 October 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -668,11 +671,11 @@ contains
 !
 !  plot_subtriangle
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 28 October 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -782,7 +785,8 @@ contains
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
 
-                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') &
+                     "set object ",iObject," polygon from ",&
                      x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5
 
                 write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', pwl, ' fillstyle solid'
@@ -800,7 +804,8 @@ contains
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
 
-                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') &
+                     "set object ",iObject," polygon from ",&
                      x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5
 
                 write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', pwl, ' fillstyle solid'
@@ -818,11 +823,11 @@ contains
 !
 !  get_triangle_mapping
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -858,11 +863,11 @@ contains
 !
 !  use_triangle_mapping
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

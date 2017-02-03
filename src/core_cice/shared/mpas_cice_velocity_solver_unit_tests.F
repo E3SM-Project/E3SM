@@ -2,11 +2,11 @@
 !
 !  cice_velocity_solver_unit_tests
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -36,11 +36,11 @@ contains
 !
 !  cice_strain_rate_operator_unit_test
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -90,11 +90,11 @@ contains
 !
 !  cice_strain_rate_operator_unit_test
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -527,11 +527,11 @@ contains
 !
 !  average_variational_stress
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date December 12th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -596,11 +596,11 @@ contains
 !
 !  spherical_test_strain
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -705,11 +705,11 @@ contains
 !
 !  spherical_test_strain_velocities
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -812,11 +812,11 @@ contains
 !
 !  strain11_component
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -833,19 +833,19 @@ contains
        result(e11)!{{{
 
     real(kind=RKIND), intent(in) :: &
-         u,       & !< Input: 
-         v,       & !< Input: 
-         du_dlon, & !< Input: 
-         du_dlat, & !< Input: 
-         dv_dlon, & !< Input: 
-         dv_dlat, & !< Input:                                
-         r,       & !< Input: 
-         lon,     & !< Input: 
-         lat        !< Input: 
+         u,       & !< Input:
+         v,       & !< Input:
+         du_dlon, & !< Input:
+         du_dlat, & !< Input:
+         dv_dlon, & !< Input:
+         dv_dlat, & !< Input:
+         r,       & !< Input:
+         lon,     & !< Input:
+         lat        !< Input:
 
     real(kind=RKIND) :: e11
 
-    e11 = (1.0_RKIND / (r * cos(lat))) * (du_dlon - v * sin(lat)) 
+    e11 = (1.0_RKIND / (r * cos(lat))) * (du_dlon - v * sin(lat))
 
   end function strain11_component!}}}
 
@@ -853,11 +853,11 @@ contains
 !
 !  strain22_component
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -894,11 +894,11 @@ contains
 !
 !  strain12_component
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -939,11 +939,11 @@ contains
 !
 !  cice_stress_divergence_operator_unit_test
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -995,11 +995,11 @@ contains
 !
 !  cice_stress_divergence_operator_unit_test_individual
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1365,13 +1365,19 @@ contains
        call cice_plot_spherical_latlon(mesh, real(solveVelocity,RKIND), "solveVelocity_"//trim(unit_test_subtype)//".txt")
        call cice_plot_spherical_latlon(mesh, latVertexRotated0, "latVertexRotated0_"//trim(unit_test_subtype)//".txt")
 
-       call cice_plot_spherical_latlon(mesh, stressDivergenceU,      "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_model.txt")
-       call cice_plot_spherical_latlon(mesh, stressDivergenceU_test, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-       call cice_plot_spherical_latlon(mesh, stressDivergenceU_diff, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       call cice_plot_spherical_latlon(&
+            mesh, stressDivergenceU,      "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call cice_plot_spherical_latlon(&
+            mesh, stressDivergenceU_test, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call cice_plot_spherical_latlon(&
+            mesh, stressDivergenceU_diff, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_diff.txt")
 
-       call cice_plot_spherical_latlon(mesh, stressDivergenceV,      "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_model.txt")
-       call cice_plot_spherical_latlon(mesh, stressDivergenceV_test, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-       call cice_plot_spherical_latlon(mesh, stressDivergenceV_diff, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       call cice_plot_spherical_latlon(&
+            mesh, stressDivergenceV,      "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call cice_plot_spherical_latlon(&
+            mesh, stressDivergenceV_test, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call cice_plot_spherical_latlon(&
+            mesh, stressDivergenceV_diff, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_diff.txt")
 
        ! cleanup
        deallocate(stressDivergenceU_test)
@@ -1395,11 +1401,11 @@ contains
 !
 !  spherical_test_divergence_stress_weak
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1494,12 +1500,14 @@ contains
          latitudeDivergence(iPoint),  &
          test_type)
 
-       stressDivergenceU(iPoint) = divergenceStressU(stress11_test, stress22_test, stress12_test, &
-                                                     dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                                                     sphere_radius, longitudeDivergence(iPoint), latitudeDivergence(iPoint))
-       stressDivergenceV(iPoint) = divergenceStressV(stress11_test, stress22_test, stress12_test, &
-                                                     dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                                                     sphere_radius, longitudeDivergence(iPoint), latitudeDivergence(iPoint))
+       stressDivergenceU(iPoint) = &
+            divergenceStressU(stress11_test, stress22_test, stress12_test, &
+            dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
+            sphere_radius, longitudeDivergence(iPoint), latitudeDivergence(iPoint))
+       stressDivergenceV(iPoint) = &
+            divergenceStressV(stress11_test, stress22_test, stress12_test, &
+            dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
+            sphere_radius, longitudeDivergence(iPoint), latitudeDivergence(iPoint))
 
     enddo ! iPoint
 
@@ -1509,11 +1517,11 @@ contains
 !
 !  spherical_test_divergence_stress_variational
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1629,12 +1637,14 @@ contains
          latitudeDivergence(iVertex), &
          test_type)
 
-       stressDivergenceU(iVertex) = divergenceStressU(stress11_test, stress22_test, stress12_test, &
-                                                      dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                                                      sphere_radius, longitudeDivergence(iVertex), latitudeDivergence(iVertex))
-       stressDivergenceV(iVertex) = divergenceStressV(stress11_test, stress22_test, stress12_test, &
-                                                      dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                                                      sphere_radius, longitudeDivergence(iVertex), latitudeDivergence(iVertex))
+       stressDivergenceU(iVertex) = &
+            divergenceStressU(stress11_test, stress22_test, stress12_test, &
+            dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
+            sphere_radius, longitudeDivergence(iVertex), latitudeDivergence(iVertex))
+       stressDivergenceV(iVertex) = &
+            divergenceStressV(stress11_test, stress22_test, stress12_test, &
+            dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
+            sphere_radius, longitudeDivergence(iVertex), latitudeDivergence(iVertex))
 
     enddo ! iVertex
 
@@ -1644,11 +1654,11 @@ contains
 !
 !  spherical_test_divergence_stress_stresses
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1801,11 +1811,11 @@ contains
 !
 !  divergenceStressU
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1850,11 +1860,11 @@ contains
 !
 !  divergenceStressV
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1904,11 +1914,11 @@ contains
 !
 !  cice_constitutive_relationship_unit_test
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2026,11 +2036,11 @@ contains
 !
 !  constitutive_relationship_set_strains
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2081,11 +2091,11 @@ contains
 !
 !  constitutive_relationship_writeout
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

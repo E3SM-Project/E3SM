@@ -2,11 +2,11 @@
 !
 !  cice_advection_upwind
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -63,11 +63,11 @@ contains
 !
 !  cice_init_advection_upwind
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -190,11 +190,11 @@ contains
 !
 !  define_tracer_connectivities
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -220,13 +220,19 @@ contains
     call add_tracer_connectivity(tracerConnectivities, "snowVolumeCategory", "iceVolumeCategory")
 
     !if (config_use_velocity_solver) then
-    !   call add_tracer_connectivity(tracerConnectivities, "iceAreaCategory",    "none",            updateHalo = .false., childTracerMinimum=iceAreaMinimum)
-    !   call add_tracer_connectivity(tracerConnectivities, "iceVolumeCategory",  "iceAreaCategory", updateHalo = .false., childTracerMinimum=iceThicknessMinimum)
-    !   call add_tracer_connectivity(tracerConnectivities, "snowVolumeCategory", "iceAreaCategory", updateHalo = .false., childTracerMinimum=snowThicknessMinimum)
+    !   call add_tracer_connectivity(tracerConnectivities, "iceAreaCategory",    "none",            &
+    !        updateHalo = .false., childTracerMinimum=iceAreaMinimum)
+    !   call add_tracer_connectivity(tracerConnectivities, "iceVolumeCategory",  "iceAreaCategory", &
+    !        updateHalo = .false., childTracerMinimum=iceThicknessMinimum)
+    !   call add_tracer_connectivity(tracerConnectivities, "snowVolumeCategory", "iceAreaCategory", &
+    !        updateHalo = .false., childTracerMinimum=snowThicknessMinimum)
     !else
-    !   call add_tracer_connectivity(tracerConnectivities, "iceAreaCategory",    "none",            childTracerMinimum=iceAreaMinimum)
-    !   call add_tracer_connectivity(tracerConnectivities, "iceVolumeCategory",  "iceAreaCategory", childTracerMinimum=iceThicknessMinimum)
-    !   call add_tracer_connectivity(tracerConnectivities, "snowVolumeCategory", "iceAreaCategory", childTracerMinimum=snowThicknessMinimum)
+    !   call add_tracer_connectivity(tracerConnectivities, "iceAreaCategory",    "none",            &
+    !        childTracerMinimum=iceAreaMinimum)
+    !   call add_tracer_connectivity(tracerConnectivities, "iceVolumeCategory",  "iceAreaCategory", &
+    !        childTracerMinimum=iceThicknessMinimum)
+    !   call add_tracer_connectivity(tracerConnectivities, "snowVolumeCategory", "iceAreaCategory", &
+    !        childTracerMinimum=snowThicknessMinimum)
     !endif
 
     !call add_tracer_connectivity(tracerConnectivities, "surfaceTemperature", "iceAreaCategory")
@@ -242,11 +248,11 @@ contains
 !
 !  add_tracer_connectivity
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -305,11 +311,11 @@ contains
 !
 !  init_tracer_connectivity
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -337,11 +343,11 @@ contains
 !
 !  write_tracer_connectivities
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -381,11 +387,11 @@ contains
 !
 !  add_parent_tracer_minimums
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date September 16th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -424,11 +430,11 @@ contains
 !
 !  cice_run_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -528,7 +534,8 @@ contains
 
        do iTracerVariable = 1, nTracerVariables
 
-          !write(*,*) trim(tracerConnectivities(iTracerVariable) % childTracerName), trim(tracerConnectivities(iTracerVariable) % parentTracerName)
+          !write(*,*) trim(tracerConnectivities(iTracerVariable) % childTracerName), &
+          !     trim(tracerConnectivities(iTracerVariable) % parentTracerName)
 
           if (tracerConnectivities(iTracerVariable) % defined == 1) then
 
@@ -570,11 +577,11 @@ contains
 !
 !  run_advection_variable
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -676,11 +683,11 @@ contains
 !
 !  run_advection_variable_3D
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -857,11 +864,11 @@ contains
 !
 !  prepare_none_parent_tracer
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -970,11 +977,11 @@ contains
 !
 !  run_advection_variable_4D
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1089,11 +1096,11 @@ contains
 !
 !  run_advection_subvariable
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1263,10 +1270,12 @@ contains
 
                 ! calculate the new tracer
                 childTracerNew(iTracerDimension,iCategory,iCell) = &
-                     childTracerOld(iTracerDimension,iCategory,iCell) * parentTracerOld(1,iCategory,iCell) + childTendency(iTracerDimension,iCategory,iCell) * dt
+                     childTracerOld(iTracerDimension,iCategory,iCell) * parentTracerOld(1,iCategory,iCell) + &
+                     childTendency(iTracerDimension,iCategory,iCell) * dt
 
                 ! store the old child tracer multiplied by the old parent. This will be the parent tracer of the next child
-                childTracerOld(iTracerDimension,iCategory,iCell) = childTracerOld(iTracerDimension,iCategory,iCell) * parentTracerOld(iTracerDimension,iCategory,iCell)
+                childTracerOld(iTracerDimension,iCategory,iCell) = childTracerOld(iTracerDimension,iCategory,iCell) * &
+                     parentTracerOld(iTracerDimension,iCategory,iCell)
 
              enddo ! iTracer
 
@@ -1279,13 +1288,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  upwind_tendencies
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date September 16th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1410,8 +1419,9 @@ contains
                    if (parentTracerOld(iCategory,cell1) > parentTracerMinimum .or. &
                        parentTracerOld(iCategory,cell2) > parentTracerMinimum) then
 
-                      flux_upwind = dvEdge(iEdge) * (max(0.0_RKIND,parentEdgeFlux(iCategory,iEdge))*childTracerOld(iTracer,iCategory,cell1) + &
-                                                     min(0.0_RKIND,parentEdgeFlux(iCategory,iEdge))*childTracerOld(iTracer,iCategory,cell2))
+                      flux_upwind = dvEdge(iEdge) * &
+                           (max(0.0_RKIND,parentEdgeFlux(iCategory,iEdge))*childTracerOld(iTracer,iCategory,cell1) + &
+                            min(0.0_RKIND,parentEdgeFlux(iCategory,iEdge))*childTracerOld(iTracer,iCategory,cell2))
 
                       childTendency(iTracer,iCategory,iCell) = childTendency(iTracer,iCategory,iCell) + &
                            edgeSignOncell(iEdgeOnCell,iCell) * flux_upwind * invAreaCell1
@@ -1441,11 +1451,11 @@ contains
 !
 !  edge_from_vertex_velocity
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1587,11 +1597,11 @@ contains
 !
 !  prepare_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1671,11 +1681,11 @@ contains
 !
 !  initialize_timelevel_variables
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date August 18th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1824,11 +1834,11 @@ contains
 !
 !  halo_exchange_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date January 13th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1856,7 +1866,8 @@ contains
        if (tracerConnectivities(iTracerVariable) % defined == 1 .and. &
            tracerConnectivities(iTracerVariable) % updateHalo) then
 
-          call MPAS_pool_get_field_info(tracers_fields, trim(tracerConnectivities(iTracerVariable) % childTracerName), childFieldInfo)
+          call MPAS_pool_get_field_info(&
+               tracers_fields, trim(tracerConnectivities(iTracerVariable) % childTracerName), childFieldInfo)
 
           select case (childFieldInfo % nDims)
           case (3)
@@ -1877,11 +1888,11 @@ contains
 !
 !  finalize_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1927,11 +1938,11 @@ contains
 !
 !  prepare_tracers
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2030,11 +2041,11 @@ contains
 !
 !  finalize_tracers
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2186,11 +2197,11 @@ contains
 !
 !  scale_tracers_back
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2244,11 +2255,11 @@ contains
 !
 !  scale_tracers_back_3D
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2312,11 +2323,11 @@ contains
 !
 !  scale_tracers_back_4D
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2385,11 +2396,11 @@ contains
 !
 !  clean_tracers
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date August 4th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2499,11 +2510,11 @@ contains
 !
 !  initial_conservation
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date July 29th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2552,7 +2563,8 @@ contains
           call MPAS_pool_get_array(tracers, trim(tracerConnectivities(iTracerVariable) % childTracerName), childTracer, 1)
           call MPAS_pool_get_array(tracers, trim(tracerConnectivities(iTracerVariable) % childTracerName), childParentTracer, 2)
 
-          call MPAS_pool_get_array(tracer_conservation, trim(tracerConnectivities(iTracerVariable) % childTracerName) // "Cons", tracerAggregate, 1)
+          call MPAS_pool_get_array(&
+               tracer_conservation, trim(tracerConnectivities(iTracerVariable) % childTracerName) // "Cons", tracerAggregate, 1)
 
           tracerAggregate = 0.0_RKIND
 
@@ -2615,11 +2627,11 @@ contains
 !
 !  final_conservation
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date July 29th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2692,8 +2704,10 @@ contains
 
           call MPAS_pool_get_array(tracers, trim(tracerConnectivities(iTracerVariable) % childTracerName), tracer, 1)
 
-          call MPAS_pool_get_array(tracer_conservation, trim(tracerConnectivities(iTracerVariable) % childTracerName) // "Cons", tracerAggregate, 2)
-          call MPAS_pool_get_array(tracer_conservation, trim(tracerConnectivities(iTracerVariable) % childTracerName) // "Cons", initialTracerAggregate, 1)
+          call MPAS_pool_get_array(tracer_conservation, &
+               trim(tracerConnectivities(iTracerVariable) % childTracerName) // "Cons", tracerAggregate, 2)
+          call MPAS_pool_get_array(tracer_conservation, &
+               trim(tracerConnectivities(iTracerVariable) % childTracerName) // "Cons", initialTracerAggregate, 1)
 
           tracerAggregate = 0.0_RKIND
 
@@ -2716,7 +2730,8 @@ contains
                         adjustl(strTracerName), iCategory, iTracer, &
                         initialTracerAggregate(iTracer,iCategory), tracerAggregate(iTracer,iCategory), &
                         tracerAggregate(iTracer,iCategory) - initialTracerAggregate(iTracer,iCategory), &
-                        (tracerAggregate(iTracer,iCategory) - initialTracerAggregate(iTracer,iCategory)) / initialTracerAggregate(iTracer,iCategory)
+                        (tracerAggregate(iTracer,iCategory) - &
+                        initialTracerAggregate(iTracer,iCategory)) / initialTracerAggregate(iTracer,iCategory)
                 else
                    write(65,fmt='(a30,3x,i10,3x,i10,3x,e18.10,3x,e18.10,3x,e18.10,3x,a)') &
                         adjustl(strTracerName), iCategory, iTracer, &

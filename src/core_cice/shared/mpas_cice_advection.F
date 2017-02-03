@@ -2,11 +2,11 @@
 !
 !  cice_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 19th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -31,11 +31,11 @@ contains
 !
 !  cice_init_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 19th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -79,11 +79,11 @@ contains
 !
 !  cice_run_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 19th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

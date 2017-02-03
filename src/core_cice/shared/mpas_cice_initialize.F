@@ -2,11 +2,11 @@
 !
 !  cice_initialize
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -34,11 +34,11 @@ contains
 !
 !  cice_init
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -109,11 +109,11 @@ contains
 !
 !  cice_init_post_clock_advance
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -148,11 +148,11 @@ contains
 !
 !  init_junk_values
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -171,7 +171,7 @@ contains
          njunk
 
     real(kind=RKIND), parameter :: &
-         value_junk = -1.0e34
+         value_junk = -1.0e34_RKIND
 
     integer, pointer :: &
          nCells
@@ -201,11 +201,11 @@ contains
 !
 !  init_ice_state
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -404,11 +404,11 @@ contains
 !
 !  init_ice_state_uniform_ice
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -515,11 +515,11 @@ contains
 !
 !  init_ice_cice_default
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date March 2nd 1015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -698,11 +698,11 @@ contains
 !
 !  initial_category_areas_and_volumes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date March 2nd 1015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -820,11 +820,11 @@ contains
 !
 !  init_ice_state_uniform_interior_ice
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -913,11 +913,11 @@ contains
 !
 !  init_ice_state_circle_of_ice
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1044,11 +1044,11 @@ contains
 !
 !  init_ice_state_uniform_ice
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 30th July 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1164,11 +1164,11 @@ contains
 !
 !  init_ice_state_uniform_ice
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 30th July 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1265,11 +1265,11 @@ contains
 !
 !  init_ice_velocity_uniform
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1347,11 +1347,11 @@ contains
 !
 !  init_ice_velocity_ocean
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1447,11 +1447,11 @@ contains
 !
 !  init_ice_velocity_random
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1528,11 +1528,11 @@ contains
 !
 !  init_ice_velocity_special
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1633,11 +1633,11 @@ contains
 !
 !  initial_halo_exchanges
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date Januray 13th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1663,11 +1663,11 @@ contains
 !
 ! initialize_coupler_fields
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 14th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1914,11 +1914,11 @@ contains
 !
 ! init_test_ice_shelf_mask
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 9th April 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

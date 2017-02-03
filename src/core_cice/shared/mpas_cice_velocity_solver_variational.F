@@ -2,11 +2,11 @@
 !
 !  cice_velocity_solver_variational
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -38,11 +38,11 @@ contains
 !
 !  cice_init_velocity_solver_variational
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 24 October 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -112,11 +112,11 @@ contains
 !
 !  cice_internal_stress_variational
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -260,11 +260,11 @@ contains
 !
 !  cice_strain_tensor_variational
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -372,11 +372,11 @@ contains
 !
 !  cice_stress_tensor_variational
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -508,11 +508,11 @@ contains
 !
 !  cice_stress_divergence_variational
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -624,10 +624,12 @@ contains
 
                 ! metric terms
                 stressDivergenceUCell = stressDivergenceUCell - &
-                     stress12(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * tanLatVertexRotatedOverRadius(iVertex)
+                     stress12(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * &
+                     tanLatVertexRotatedOverRadius(iVertex)
 
                 stressDivergenceVCell = stressDivergenceVCell + &
-                     stress11(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * tanLatVertexRotatedOverRadius(iVertex)
+                     stress11(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * &
+                     tanLatVertexRotatedOverRadius(iVertex)
 
              enddo ! iStressVertex
 
@@ -649,11 +651,11 @@ contains
 !
 !  final_divergence_shear_variational
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date July 9th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

@@ -228,37 +228,68 @@ contains
 
     ! Next the tracers that might be included, depending on column package options:
 
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerIceAgeActive',        pkgColumnTracerIceAgeActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerFirstYearIceActive',  pkgColumnTracerFirstYearIceActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLevelIceActive',      pkgColumnTracerLevelIceActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerPondsActive',         pkgColumnTracerPondsActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLidThicknessActive',  pkgColumnTracerLidThicknessActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerAerosolsActive',      pkgColumnTracerAerosolsActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnBiogeochemistryActive',     pkgColumnBiogeochemistryActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerBrineActive',               pkgTracerBrineActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerMobileFractionActive',      pkgTracerMobileFractionActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalAlgaeActive',       pkgTracerSkeletalAlgaeActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalNitrateActive',     pkgTracerSkeletalNitrateActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalCarbonActive',      pkgTracerSkeletalCarbonActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalAmmoniumActive',    pkgTracerSkeletalAmmoniumActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalSilicateActive',    pkgTracerSkeletalSilicateActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalDMSActive',         pkgTracerSkeletalDMSActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalNonreactiveActive', pkgTracerSkeletalNonreactiveActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalHumicsActive',      pkgTracerSkeletalHumicsActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalDONActive',         pkgTracerSkeletalDONActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalIronActive',        pkgTracerSkeletalIronActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalAlgaeActive',       pkgTracerVerticalAlgaeActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalNitrateActive',     pkgTracerVerticalNitrateActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalCarbonActive',      pkgTracerVerticalCarbonActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalAmmoniumActive',    pkgTracerVerticalAmmoniumActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalSilicateActive',    pkgTracerVerticalSilicateActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalDMSActive',         pkgTracerVerticalDMSActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalNonreactiveActive', pkgTracerVerticalNonreactiveActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalHumicsActive',      pkgTracerVerticalHumicsActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalDONActive',         pkgTracerVerticalDONActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalIronActive',        pkgTracerVerticalIronActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerZAerosolsActive',           pkgTracerZAerosolsActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerZSalinityActive',           pkgTracerZSalinityActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerIceAgeActive', &
+                                                               pkgColumnTracerIceAgeActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerFirstYearIceActive', &
+                                                               pkgColumnTracerFirstYearIceActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLevelIceActive', &
+                                                               pkgColumnTracerLevelIceActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerPondsActive', &
+                                                               pkgColumnTracerPondsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLidThicknessActive', &
+                                                               pkgColumnTracerLidThicknessActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerAerosolsActive', &
+                                                               pkgColumnTracerAerosolsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnBiogeochemistryActive', &
+                                                               pkgColumnBiogeochemistryActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerBrineActive', &
+                                                               pkgTracerBrineActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerMobileFractionActive', &
+                                                               pkgTracerMobileFractionActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalAlgaeActive', &
+                                                               pkgTracerSkeletalAlgaeActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalNitrateActive', &
+                                                               pkgTracerSkeletalNitrateActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalCarbonActive', &
+                                                               pkgTracerSkeletalCarbonActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalAmmoniumActive', &
+                                                               pkgTracerSkeletalAmmoniumActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalSilicateActive', &
+                                                               pkgTracerSkeletalSilicateActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalDMSActive', &
+                                                               pkgTracerSkeletalDMSActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalNonreactiveActive', &
+                                                               pkgTracerSkeletalNonreactiveActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalHumicsActive', &
+                                                               pkgTracerSkeletalHumicsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalDONActive', &
+                                                               pkgTracerSkeletalDONActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalIronActive', &
+                                                               pkgTracerSkeletalIronActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalAlgaeActive', &
+                                                               pkgTracerVerticalAlgaeActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalNitrateActive', &
+                                                               pkgTracerVerticalNitrateActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalCarbonActive', &
+                                                               pkgTracerVerticalCarbonActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalAmmoniumActive', &
+                                                               pkgTracerVerticalAmmoniumActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalSilicateActive', &
+                                                               pkgTracerVerticalSilicateActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalDMSActive', &
+                                                               pkgTracerVerticalDMSActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalNonreactiveActive', &
+                                                               pkgTracerVerticalNonreactiveActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalHumicsActive', &
+                                                               pkgTracerVerticalHumicsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalDONActive', &
+                                                               pkgTracerVerticalDONActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalIronActive', &
+                                                               pkgTracerVerticalIronActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerZAerosolsActive', &
+                                                               pkgTracerZAerosolsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerZSalinityActive', &
+                                                               pkgTracerZSalinityActive)
 
     configPool => domain % blocklist % configs
     call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
@@ -748,7 +779,8 @@ contains
                             write(stderrUnit,*) 'ERROR, IR tracers: Cannot have an inactive parent with an active child'
                             write(stderrUnit,*) 'Inactive parent:', trim(tracer % tracerName)
                             write(stderrUnit,*) 'Active child:', trim(childTracer % tracerName)
-                            call mpas_dmpar_global_abort('MPAS-seaice: IR tracers: Cannot have an inactive parent with an active child')
+                            call mpas_dmpar_global_abort(&
+                                 'MPAS-seaice: IR tracers: Cannot have an inactive parent with an active child')
                          endif
                       endif
                    endif     ! nParents > 1
