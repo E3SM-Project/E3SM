@@ -13,18 +13,10 @@ if [ $# -ne 2 ]; then
   echo "ERROR: Wrong number of arguments, $# (should be 2)"
   errcode=$(( errcode + 1 ))
 else
-  cycle=$1
-  shift
-  total_cycles=$1
-  shift
-  if [ -n ${CASEROOT} ]; then
-    echo "caseroot: ${CASEROOT}"
-  else
-    echo "ERROR: CASEROOT not defined"
-    errcode=$(( errcode + 1 ))
-  fi
+  caseroot=$1
+  cycle=$2
+  echo "caseroot: ${caseroot}"
   echo "cycle: ${cycle}"
-  echo "total_cycles: ${total_cycles}"
 fi
 
 exit $errcode
