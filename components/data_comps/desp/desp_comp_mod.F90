@@ -74,8 +74,9 @@ module desp_comp_mod
   integer,          parameter :: BAD_ID      = -1
   integer,          parameter :: NO_RPOINTER = -2
   integer,          parameter :: NO_RFILE    = -3
-  integer,          parameter :: NO_READ     = -4
-  integer,          parameter :: NO_WRITE    = -5
+  integer,          parameter :: NO_RPREAD   = -4
+  integer,          parameter :: NO_READ     = -5
+  integer,          parameter :: NO_WRITE    = -6
 
   type(shr_strdata_type)      :: SDESP
 
@@ -494,6 +495,8 @@ CONTAINS
         select case (errcode)
         case(NO_RPOINTER)
           call shr_sys_abort(subname//'Missing rpointer file for '//comp_names(ind))
+        case(NO_RPREAD)
+          call shr_sys_abort(subname//'Cannot read rpointer file for '//comp_names(ind))
         case(NO_RFILE)
           call shr_sys_abort(subname//'Missing restart file for '//comp_names(ind))
         case(NO_READ)
@@ -632,9 +635,10 @@ CONTAINS
     logical                          :: file_exists
     character(len=8)                 :: file_read
     character(len=CS)                :: rpointer_name
+    character(len=CL)                :: errmsg
     character(len=*), parameter      :: subname = "(desp_restart_filenames) "
 
-    retcode = noerr
+    retcode = NOERR
     filenames = ' '
     num_inst = size(filenames)
     allocate(ids(num_inst))
@@ -662,36 +666,38 @@ CONTAINS
 
     do ind = 1, num_inst
       rpointer_name = rpprefix//comp_names(comp_ind)//trim(seq_comm_suffix(ids(ind)))
-      inquire(file=rpointer_name, EXIST=file_exists, READ=file_read)
-      if (.not. file_exists) then
-        retcode = NO_RPOINTER
-      else if (trim(file_read) /= "YES") then
-        retcode = NO_READ
-      else
-        unitn = shr_file_getUnit()
-        if ((my_task == master_task) .and. (loglevel > 0)) then
-          write(logunit,"(3A)") subname,"read rpointer file ", rpointer_name
-        end if
-        open(unitn, file=rpointer_name, form='FORMATTED', status='old',iostat=ierr)
-        if (ierr < 0) then
-          call shr_sys_abort(subname//'rpointer file open returns an'// &
-               ' error condition')
-        end if
-        read(unitn,'(a)', iostat=ierr) filenames(ind)
-        if (ierr < 0) then
-          call shr_sys_abort(subname//'rpointer file read returns an'// &
-               ' error condition')
-        end if
-        close(unitn)
-        call shr_file_freeUnit(unitn)
-        inquire(file=filenames(ind), EXIST=file_exists, READ=file_read)
+      if (my_task == master_task) then
+        inquire(file=rpointer_name, EXIST=file_exists)
         if (.not. file_exists) then
-          retcode = NO_RFILE
-        else if (trim(file_read) /= "YES") then
-          retcode = NO_READ
-        ! No else
+          retcode = NO_RPOINTER
+        else
+          unitn = shr_file_getUnit()
+          if (loglevel > 0) then
+            write(logunit,"(3A)") subname,"read rpointer file ", rpointer_name
+          end if
+          open(unitn, file=rpointer_name, form='FORMATTED', status='old',     &
+               action='READ', iostat=ierr)
+          if (ierr /= 0) then
+            write(errmsg, '(a,i0)') 'rpointer file open returns error condition, ',ierr
+            call shr_sys_abort(subname//trim(errmsg))
+          end if
+          read(unitn,'(a)', iostat=ierr) filenames(ind)
+          if (ierr /= 0) then
+            write(errmsg, '(a,i0)') 'rpointer file read returns error condition, ',ierr
+            call shr_sys_abort(subname//trim(errmsg))
+          end if
+          close(unitn)
+          call shr_file_freeUnit(unitn)
+          inquire(file=filenames(ind), EXIST=file_exists)
+          if (.not. file_exists) then
+            retcode = NO_RFILE
+            ! No else
+          end if
         end if
       end if
+      ! Broadcast what we learned about files
+      call shr_mpi_bcast(retcode,  mpicom, 'rpointer status')
+      call shr_mpi_bcast(filenames(ind),  mpicom, 'filenames(ind)')
     end do
 
     if (allocated(ids)) then

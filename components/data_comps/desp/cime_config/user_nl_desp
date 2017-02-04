@@ -6,8 +6,11 @@
 ! be modified below using the above syntax
 ! User preview_namelists to view (not modify) the output namelist in the
 ! directory $CASEROOT/CaseDocs
-! To modify the contents of a stream txt file, first use preview_namelists
-! to obtain the contents of the stream txt files in CaseDocs, and then
-! place a copy of the  modified stream txt file in $CASEROOT with the string
-! user_ prepended.
+!
+! Note that some namelist variables MAY NOT be changed in user_nl_desp - 
+! they are defined in a $CASEROOT xml file and must be changed with
+! xmlchange.
+!
+! For example, rather than set username to 'foo' in user_nl_desp, call
+! ./xmlchange USER=foo
 !------------------------------------------------------------------------
