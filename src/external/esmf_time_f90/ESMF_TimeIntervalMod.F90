@@ -103,6 +103,7 @@ module ESMF_TimeIntervalMod
 
       public operator(*)
       private ESMF_TimeIntervalProdI
+      private ESMF_TimeIntervalProdI8
 
 ! Inherited and overloaded from ESMF_BaseTime
 
@@ -147,6 +148,7 @@ module ESMF_TimeIntervalMod
 
 ! !PRIVATE MEMBER FUNCTIONS:
       module procedure ESMF_TimeIntervalProdI
+      module procedure ESMF_TimeIntervalProdI8
 
 ! !DESCRIPTION:
 !     This interface overloads the * operator for the {\tt ESMF\_TimeInterval}
@@ -1113,6 +1115,56 @@ module ESMF_TimeIntervalMod
       CALL normalize_timeint( ESMF_TimeIntervalProdI )
 
       end function ESMF_TimeIntervalProdI
+
+
+!------------------------------------------------------------------------------
+!BOP
+! !IROUTINE:   ESMF_TimeIntervalProdI8 - Multiply a time interval by an integer
+
+! !INTERFACE:
+      function ESMF_TimeIntervalProdI8(timeinterval, multiplier)
+
+! !RETURN VALUE:
+      type(ESMF_TimeInterval) :: ESMF_TimeIntervalProdI8
+
+! !ARGUMENTS:
+      type(ESMF_TimeInterval), intent(in) :: timeinterval
+      integer(kind=ESMF_KIND_I8), intent(in) :: multiplier
+! !LOCAL:
+      integer    :: rc
+
+! !DESCRIPTION:
+!     Multiply a {\tt ESMF\_TimeInterval} by an integer, return product as a
+!     {\tt ESMF\_TimeInterval}
+!
+!     The arguments are:
+!     \begin{description}
+!     \item[timeinterval]
+!          The multiplicand
+!     \item[mutliplier]
+!          Integer multiplier
+!     \end{description}
+!
+! !REQUIREMENTS:
+!     TMG1.5.7, TMG7.2
+!EOP
+      CALL timeintchecknormalized( timeinterval, 'ESMF_TimeIntervalProdI arg1', &
+                                   relative_interval=.true. )
+
+      CALL ESMF_TimeIntervalSet( ESMF_TimeIntervalProdI8, rc=rc )
+!$$$move this into overloaded operator(*) in BaseTime
+      ESMF_TimeIntervalProdI8%basetime%S  = &
+        timeinterval%basetime%S * multiplier
+      ESMF_TimeIntervalProdI8%basetime%Sn = &
+        timeinterval%basetime%Sn * multiplier
+      ! Don't multiply Sd
+      ESMF_TimeIntervalProdI8%basetime%Sd = timeinterval%basetime%Sd
+      ESMF_TimeIntervalProdI8%MM = timeinterval%MM * multiplier
+      ESMF_TimeIntervalProdI8%YR = timeinterval%YR * multiplier
+      CALL normalize_timeint( ESMF_TimeIntervalProdI8 )
+
+      end function ESMF_TimeIntervalProdI8
+
 
 !------------------------------------------------------------------------------
 !
