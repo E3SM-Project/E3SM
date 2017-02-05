@@ -369,13 +369,14 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData, temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, dt);
+    
+  }
+  
+  exportDissipationHeat(dissipation_heat_F);
 
-    exportDissipationHeat(dissipation_heat_F);
-
-    std::vector<int> mpasIndexToVertexID(nVertices);
-    for (int i = 0; i < nVertices; i++) {
+  std::vector<int> mpasIndexToVertexID(nVertices);
+  for (int i = 0; i < nVertices; i++) {
       mpasIndexToVertexID[i] = indexToCellID_F[vertexToFCell[i]];
-    }
   }
 
   mapVerticesToCells(velocityOnVertices, &velocityOnCells[0], 2, nLayers,
@@ -406,7 +407,6 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
   allToAll(u_normal_F, sendEdgesList_F, recvEdgesList_F, nLayers+1);
 
   first_time_step = false;
-
 
 #ifdef LIFEV
 
