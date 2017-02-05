@@ -62,10 +62,17 @@ class DAE(SystemTestsCompareTwo):
     ###########################################################################
     def run_phase(self):
     ###########################################################################
+        # Clean up any da.log files in case this is a re-run.
+        self._activate_case2()
+        case_root = self._get_caseroot2()
+        da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
+        for file in da_files:
+            os.remove(file)
+        # End for
+        self._activate_case1()
         SystemTestsCompareTwo.run_phase(self)
         # Do some checks on the data assimilation 'output' from case2
         self._activate_case2()
-        case_root = self._get_caseroot2()
         da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
         if da_files is None:
             logger = logging.getLogger(__name__)
