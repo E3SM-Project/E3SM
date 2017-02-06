@@ -560,6 +560,10 @@
 					description="If true, shear-based mixing is computed using CVMix"
 					possible_values="True or False"
 		/>
+		<nml_option name="config_cvmix_num_ri_smooth_loops" type="integer" default_value="2" units="NA"
+					description="Number of smoothing passes over RiTopOfCell for LMD94 shear instability mixing"
+					possible_values="any integer"
+		/>
 		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
 					description="Choose between Pacanowski/Philander or Large et al. shear mixing"
 					possible_values="PP or KPP"
