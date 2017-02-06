@@ -3,35 +3,16 @@ import numpy
 import cdutil
 import vcs
 import genutil.statistics
-'''
-import acme_diags.metrics.rmse
-import acme_diags.metrics.corr
-import acme_diags.metrics.min
-import acme_diags.metrics.max
-import acme_diags.metrics.mean
-'''
-from acme_diags.metrics import rmse, corr, min, max, mean
-
-def compute_rmse(model, obs):
-    rmse_func = rmse.RMSE()
-    return rmse_func(model, obs)
-
-def compute_corr(model, obs):
-    corr_func = corr.CORR()
-    return corr_func(model, obs)
+from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 
 def plot_min_max_mean(canvas, variable, ref_test_or_diff):
     """canvas is a vcs.Canvas, variable is a
     cdms2.tvariable.TransientVariable and ref_test_or_diff is a string"""
-    min_func = min.Min()
-    max_func = max.Max()
-    mean_func = mean.Mean()
+    var_min = '%.2f' % min_cdms(variable)
+    var_max = '%.2f' % max_cdms(variable)
+    var_mean = '%.2f' % mean(variable)
 
-    var_min = '%.2f' % min_func(variable)
-    var_max = '%.2f' % max_func(variable)
-    var_mean = '%.2f' % mean_func(variable)
-    
     # can be either 'reference', 'test' or 'diff'
     plot = ref_test_or_diff
     min_label = canvas.createtextcombined(Tt_source = plot + '_min_label',
@@ -62,8 +43,8 @@ def plot_rmse_and_corr(canvas, model, obs):
     """canvas is a vcs.Canvas, model and obs are
     a cdms2.tvariable.TransientVariable"""
 
-    rmse = '%.2f' % compute_rmse(obs, model)
-    corr = '%.2f' % compute_corr(obs, model)
+    rmse_str = '%.2f' % rmse(obs, model)
+    corr_str = '%.2f' % corr(obs, model)
 
     rmse_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_title',
                                            To_source = 'diff_plot_comment1_title')
@@ -77,8 +58,8 @@ def plot_rmse_and_corr(canvas, model, obs):
     corr_value = canvas.createtextcombined(Tt_source = 'diff_plot_comment2_value',
                                            To_source = 'diff_plot_comment2_value')
 
-    rmse_value.string = rmse
-    corr_value.string = corr
+    rmse_value.string = rmse_str
+    corr_value.string = corr_str
 
     canvas.plot(rmse_label)
     canvas.plot(corr_label)
@@ -169,4 +150,5 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     main_title.string = parameter.main_title
     vcs_canvas.plot(main_title)
 
-    vcs_canvas.png(case_id + '/' + parameter.output_file)
+    #vcs_canvas.pdf(case_id + '/' + parameter.output_file, textAsPaths=False)
+    vcs_canvas.pdf(case_id + '/' + parameter.output_file)
