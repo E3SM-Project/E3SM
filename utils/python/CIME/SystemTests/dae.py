@@ -62,10 +62,17 @@ class DAE(SystemTestsCompareTwo):
     ###########################################################################
     def run_phase(self):
     ###########################################################################
+        # Clean up any da.log files in case this is a re-run.
+        self._activate_case2()
+        case_root = self._get_caseroot2()
+        da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
+        for file in da_files:
+            os.remove(file)
+        # End for
+        self._activate_case1()
         SystemTestsCompareTwo.run_phase(self)
         # Do some checks on the data assimilation 'output' from case2
         self._activate_case2()
-        case_root = self._get_caseroot2()
         da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
         if da_files is None:
             logger = logging.getLogger(__name__)
@@ -80,7 +87,6 @@ class DAE(SystemTestsCompareTwo):
         for fname in da_files:
             found_caseroot = False
             found_cycle = False
-            found_total = False
             with open(fname) as dfile:
                 for line in dfile:
                     expect(line[0:5] != 'ERROR', "ERROR, error line found in %s"%fname)
@@ -91,17 +97,11 @@ class DAE(SystemTestsCompareTwo):
                         expect(int(line[7:]) == cycle_num,
                                "ERROR: Wrong cycle (%d) found in %s (expected %d)"%
                                (int(line[7:]), fname, cycle_num))
-                    elif line[0:12] == 'total_cycles':
-                        found_total = True
-                        expect(int(line[14:]) == da_cycles,
-                               "ERROR: Wrong total cycle count (%d) found in %s (expected %d)"%
-                               (int(line[14:]), fname, da_cycles))
                     else:
                         expect(False, "ERROR: Unrecognized line ('%s') found in %s"%(line, fname))
 
                 # End of for loop
                 expect(found_caseroot, "ERROR: No caseroot found in %s"%fname)
                 expect(found_cycle, "ERROR: No cycle found in %s"%fname)
-                expect(found_total, "ERROR: No total_cycles found in %s"%fname)
             # End of with
             cycle_num = cycle_num + 1

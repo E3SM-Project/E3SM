@@ -261,6 +261,16 @@ LII    CLM initial condition interpolation test
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="PRE">
+    <DESC>pause/resume test, default 5 hours, five pause/resume cycles, no data modification</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>nhours</STOP_OPTION>
+    <STOP_N>5</STOP_N>
+    <HIST_OPTION>nhours</HIST_OPTION>
+    <HIST_N>1</HIST_N>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
   <test NAME="TESTBUILDFAIL">
     <DESC>For testing infra only. Insta-fail build step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>
