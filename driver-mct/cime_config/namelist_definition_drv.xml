@@ -223,30 +223,6 @@
     </values>
   </entry>
 
-  <entry id="atm_adiabatic">
-    <type>logical</type>
-    <category>expdef</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      true => turn on adiabatic mode in cam
-    </desc>
-    <values>
-      <value>.false.</value>
-    </values>
-  </entry>
-
-  <entry id="atm_ideal_phys">
-    <type>logical</type>
-    <category>expdef</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      true => turn on ideal physics mode in cam
-    </desc>
-    <values>
-      <value>.false.</value>
-    </values>
-  </entry>
-
   <entry id="aqua_planet">
     <type>logical</type>
     <category>expdef</category>
@@ -1946,6 +1922,55 @@
     </desc>
     <values>
       <value>-999</value>
+    </values>
+  </entry>
+
+  <entry id="pause_option" modify_via_xml="PAUSE_OPTION">
+    <type>char</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,monthly,nmonths,nmonth,nyears,nyear</valid_values>
+    <desc>
+      sets the pause frequency with pause_n
+      pause_option alarms are:
+      [none/never], turns option off
+      [nstep/s]   , pauses every pause_n nsteps  , relative to start or last pause time
+      [nsecond/s] , pauses every pause_n nseconds, relative to start or last pause time
+      [nminute/s] , pauses every pause_n nminutes, relative to start or last pause time
+      [nhour/s]   , pauses every pause_n nhours  , relative to start or last pause time
+      [nday/s]    , pauses every pause_n ndays   , relative to start or last pause time
+      [nmonth/s]  , pauses every pause_n nmonths , relative to start or last pause time
+      [monthly/s] , pauses every        month    , relative to start or last pause time
+      [nyear/s]   , pauses every pause_n nyears  , relative to start or last pause time
+    </desc>
+    <values>
+      <value>$PAUSE_OPTION</value>
+    </values>
+  </entry>
+
+  <entry id="pause_n" modify_via_xml="PAUSE_N">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Sets the pause frequency with pause_option
+    </desc>
+    <values>
+      <value>$PAUSE_N</value>
+    </values>
+  </entry>
+
+  <entry id="pause_component_list" modify_via_xml="PAUSE_COMPONENT_LIST" skip_default_entry="true">
+    <type>char</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      A colon-separated list of component types (e.g., ocn,atm) to receive a
+      resume signal after a pause has happened. Special values "all" or "none"
+      may be used in place of a list
+    </desc>
+    <values>
+      <value>$PAUSE_COMPONENT_LIST</value>
     </values>
   </entry>
 
