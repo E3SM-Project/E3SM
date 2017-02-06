@@ -19,7 +19,7 @@ output_file = 'test'
 main_title = 'PRECT ANN'
 
 test_name = '1850_alpha6_01 (yrs0070-0099)'
-test_title = 'Reference'
+test_title = 'Model'
 test_colormap = ''
 #test_levels = [0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17]
 test_levels = []

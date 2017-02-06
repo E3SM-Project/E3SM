@@ -138,8 +138,8 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill)
     set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill)
 
-    vcs_canvas.plot(test, template_test, reference_isofill)
-    vcs_canvas.plot(reference, template_ref, test_isofill)
+    vcs_canvas.plot(test, template_test, test_isofill)
+    vcs_canvas.plot(reference, template_ref, reference_isofill)
     vcs_canvas.plot(diff, template_diff, diff_isofill)
 
     plot_rmse_and_corr(vcs_canvas, test_regrid, reference_regrid)
