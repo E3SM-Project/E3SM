@@ -790,10 +790,7 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler OS="Linux" COMPILER="intel">
-  <CPPDEFS>
-    <append> -DLINUX </append>
-  </CPPDEFS>
+<compiler OS="LINUX" COMPILER="intel">
   <FFLAGS>
     <append> -mcmodel medium -shared-intel </append>
   </FFLAGS>
