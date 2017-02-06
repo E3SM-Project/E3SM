@@ -33,16 +33,16 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
-		        <var name="pointNames"/>
+			<var name="pointNames"/>
 			<var name="pointCellGlobalID"/>
 			<var name="xtime"/>
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="latPoint"/>
-                        <var name="lonPoint"/>
-                        <var name="xPoint"/>
-                        <var name="yPoint"/>
-                        <var name="zPoint"/>
+			<var name="lonPoint"/>
+			<var name="xPoint"/>
+			<var name="yPoint"/>
+			<var name="zPoint"/>
 
 		</stream>
 	</streams>

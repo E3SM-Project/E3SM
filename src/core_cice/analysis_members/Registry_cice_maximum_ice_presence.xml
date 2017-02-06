@@ -18,14 +18,14 @@
 		<nml_option name="config_AM_maximumIcePresence_write_on_startup" type="logical" default_value="false" units="unitless"
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values="true or false"
-		/>	
+		/>
 		<nml_option name="config_AM_maximumIcePresence_start_time" type="character" default_value="0000-00-00_00:00:00" units="time"
 			description="Time to start accumulating ice domain"
 			possible_values="Timestamp"
 		/>
 	</nml_record>
 	<dims>
-	        <dim name="nMonths" definition="13"/>
+		<dim name="nMonths" definition="13"/>
 	</dims>
 	<packages>
 		<package name="maximumIcePresenceAMPKG" description="This package includes variables required for the maximumIcePresence analysis member."/>
@@ -44,8 +44,8 @@
 				packages="maximumIcePresenceAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-		        <var name="xtime"/>
-		        <stream name="mesh"/>
+			<var name="xtime"/>
+			<stream name="mesh"/>
 			<var name="maximumIcePresence"/>
 		</stream>
 	</streams>

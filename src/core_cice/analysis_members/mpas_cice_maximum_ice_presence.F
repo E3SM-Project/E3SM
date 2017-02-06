@@ -291,7 +291,8 @@ contains
       ! ice domain
       currentTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierrTime)
       call MPAS_get_time(currentTime, MM=iMonth)
-      call MPAS_pool_get_config(domain % configs, "config_AM_maximumIcePresence_start_time", config_AM_maximumIcePresence_start_time)
+      call MPAS_pool_get_config(domain % configs, "config_AM_maximumIcePresence_start_time", &
+                                                   config_AM_maximumIcePresence_start_time)
       call MPAS_set_time(startTime, dateTimeString=config_AM_maximumIcePresence_start_time)
 
       if (currentTime > startTime) then

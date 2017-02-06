@@ -369,7 +369,8 @@ contains
          if (latentHeatFluxCategoryInitialArea % isActive) then
             call MPAS_pool_get_array(atmosFluxesPool, "latentHeatFluxCategory", latentHeatFluxCategory)
             do iCell = 1, nCellsSolve
-               latentHeatFluxCategoryInitialArea % array(:,iCell) = latentHeatFluxCategory(:,iCell) * iceAreaCategoryInitial(:,iCell)
+               latentHeatFluxCategoryInitialArea % array(:,iCell) = &
+                    latentHeatFluxCategory(:,iCell) * iceAreaCategoryInitial(:,iCell)
             enddo ! iCell
          endif
 
@@ -387,7 +388,8 @@ contains
          if (sensibleHeatFluxCategoryInitialArea % isActive) then
             call MPAS_pool_get_array(atmosFluxesPool, "sensibleHeatFluxCategory", sensibleHeatFluxCategory)
             do iCell = 1, nCellsSolve
-               sensibleHeatFluxCategoryInitialArea % array(:,iCell) = sensibleHeatFluxCategory(:,iCell) * iceAreaCategoryInitial(:,iCell)
+               sensibleHeatFluxCategoryInitialArea % array(:,iCell) = &
+                    sensibleHeatFluxCategory(:,iCell) * iceAreaCategoryInitial(:,iCell)
             enddo ! iCell
          endif
 
@@ -423,7 +425,8 @@ contains
          if (surfaceHeatFluxCategoryInitialArea % isActive) then
             call MPAS_pool_get_array(atmosFluxesPool, "surfaceHeatFluxCategory", surfaceHeatFluxCategory)
             do iCell = 1, nCellsSolve
-               surfaceHeatFluxCategoryInitialArea % array(:,iCell) = surfaceHeatFluxCategory(:,iCell) * iceAreaCategoryInitial(:,iCell)
+               surfaceHeatFluxCategoryInitialArea % array(:,iCell) = &
+                    surfaceHeatFluxCategory(:,iCell) * iceAreaCategoryInitial(:,iCell)
             enddo ! iCell
          endif
 
@@ -437,11 +440,13 @@ contains
          endif
 
          ! surfaceConductiveFluxCategory - fcondtopn
-         call MPAS_pool_get_field(areaVariablesAMPool, "surfaceConductiveFluxCategoryInitialArea", surfaceConductiveFluxCategoryInitialArea)
+         call MPAS_pool_get_field(areaVariablesAMPool, "surfaceConductiveFluxCategoryInitialArea", &
+                                                        surfaceConductiveFluxCategoryInitialArea)
          if (surfaceConductiveFluxCategoryInitialArea % isActive) then
             call MPAS_pool_get_array(atmosFluxesPool, "surfaceConductiveFluxCategory", surfaceConductiveFluxCategory)
             do iCell = 1, nCellsSolve
-               surfaceConductiveFluxCategoryInitialArea % array(:,iCell) = surfaceConductiveFluxCategory(:,iCell) * iceAreaCategoryInitial(:,iCell)
+               surfaceConductiveFluxCategoryInitialArea % array(:,iCell) = &
+                    surfaceConductiveFluxCategory(:,iCell) * iceAreaCategoryInitial(:,iCell)
             enddo ! iCell
          endif
 

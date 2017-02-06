@@ -8,7 +8,7 @@
 !
 !  cice_deactivate_unneeded_fields
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner
 !> \date   6th December 2016
 !> \details
@@ -36,7 +36,7 @@ contains
 !
 !  routine cice_deactivate_unneeded_stream_fields
 !
-!> \brief   
+!> \brief
 !> \author  Adrian K. Turner
 !> \date    6th December 2016
 !> \details

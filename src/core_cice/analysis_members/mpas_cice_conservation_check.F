@@ -318,7 +318,8 @@ contains
 
       err = 0
 
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                               config_AM_conservationCheck_write_to_logfile)
 
       if (config_AM_conservationCheck_write_to_logfile .and. &
           MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
@@ -447,7 +448,8 @@ contains
            formatString
 
       call MPAS_pool_get_config(domain % blocklist % configs, "config_dt", dt)
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                               config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
       ! Net heat flux to ice
@@ -712,7 +714,8 @@ contains
            formatString
 
       call MPAS_pool_get_config(domain % blocklist % configs, "config_dt", dt)
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                               config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
       ! Net mass flux to ice
@@ -953,7 +956,8 @@ contains
            formatString
 
       call MPAS_pool_get_config(domain % blocklist % configs, "config_dt", dt)
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                               config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
       ! Net salt flux to ice

@@ -27,11 +27,11 @@ module cice_core
    !
    !  routine cice_core_init
    !
-   !> \brief   
-   !> \author  
-   !> \date    
-   !> \details 
-   !>  
+   !> \brief
+   !> \author
+   !> \date
+   !> \details
+   !>
    !
    !-----------------------------------------------------------------------
 
@@ -128,11 +128,11 @@ module cice_core
    !
    !  routine cice_simulation_clock_init
    !
-   !> \brief   
-   !> \author  
-   !> \date    
-   !> \details 
-   !>  
+   !> \brief
+   !> \author
+   !> \date
+   !> \details
+   !>
    !
    !-----------------------------------------------------------------------
 
@@ -198,11 +198,11 @@ module cice_core
    !
    !  routine mpas_init_block
    !
-   !> \brief   
-   !> \author  
-   !> \date    
-   !> \details 
-   !>  
+   !> \brief
+   !> \author
+   !> \date
+   !> \details
+   !>
    !
    !-----------------------------------------------------------------------
 
@@ -226,11 +226,11 @@ module cice_core
    !
    !  routine cice_core_run
    !
-   !> \brief   
-   !> \author  
-   !> \date    
-   !> \details 
-   !>  
+   !> \brief
+   !> \author
+   !> \date
+   !> \details
+   !>
    !
    !-----------------------------------------------------------------------
 
@@ -315,7 +315,8 @@ module cice_core
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
 
          ! update the restart_timestamp file with the new time if needed
-         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
+         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &
+              streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) timeStamp
             close(22)
@@ -346,11 +347,11 @@ module cice_core
    !
    !  routine mpas_timestep
    !
-   !> \brief   
-   !> \author  
-   !> \date    
-   !> \details 
-   !>  
+   !> \brief
+   !> \author
+   !> \date
+   !> \details
+   !>
    !
    !-----------------------------------------------------------------------
 
@@ -374,11 +375,11 @@ module cice_core
    !
    !  routine cice_core_finalize
    !
-   !> \brief   
-   !> \author  
-   !> \date    
-   !> \details 
-   !>  
+   !> \brief
+   !> \author
+   !> \date
+   !> \details
+   !>
    !
    !-----------------------------------------------------------------------
 

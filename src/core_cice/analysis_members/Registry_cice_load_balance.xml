@@ -18,14 +18,14 @@
 		<nml_option name="config_AM_loadBalance_write_on_startup" type="logical" default_value="false" units="unitless"
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values="true or false"
-		/>	
+		/>
 		<nml_option name="config_AM_loadBalance_nProcs" type="integer" default_value="32" units="unitless"
 			description="Number of processors to output results for"
 			possible_values="Any positive integer"
 		/>
 	</nml_record>
 	<dims>
-	        <dim name="nProcs" definition="namelist:config_AM_loadBalance_nProcs"/>
+		<dim name="nProcs" definition="namelist:config_AM_loadBalance_nProcs"/>
 	</dims>
 	<packages>
 		<package name="loadBalanceAMPKG" description="This package includes variables required for the loadBalance analysis member."/>
@@ -47,8 +47,8 @@
 				packages="loadBalanceAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-			<var name="xtime"/> 
-			<var name="nCellsProcWithSeaIce"/> 
+			<var name="xtime"/>
+			<var name="nCellsProcWithSeaIce"/>
 			<var name="nCellsProc"/>
 		</stream>
 	</streams>
