@@ -3,31 +3,15 @@ import numpy
 import cdutil
 import vcs
 import genutil.statistics
+from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
-def compute_rmse(model, obs):
-    rmse = -numpy.infty
-    try:
-        rmse = float(genutil.statistics.rms(model, obs, axis='xy', weights='generate'))
-    except Exception, err:
-        print err
-    return rmse
-
-def compute_corr(model, obs):
-    corr = -numpy.infty
-    try:
-        corr = float(genutil.statistics.correlation(model, obs, axis='xy', weights='generate'))
-    except Exception, err:
-        print err
-    return corr
 
 def plot_min_max_mean(canvas, variable, ref_test_or_diff):
     """canvas is a vcs.Canvas, variable is a
     cdms2.tvariable.TransientVariable and ref_test_or_diff is a string"""
-    var_min = '%.2f' % float(variable.min())
-    var_max = '%.2f' % float(variable.max())
-
-    # Doesn't work: var_mean = str(round(float(variable.mean()), 2))
-    var_mean = '%.2f' % cdutil.averager(variable, axis='xy', weights='generate')
+    var_min = '%.2f' % min_cdms(variable)
+    var_max = '%.2f' % max_cdms(variable)
+    var_mean = '%.2f' % mean(variable)
 
     # can be either 'reference', 'test' or 'diff'
     plot = ref_test_or_diff
@@ -58,8 +42,9 @@ def plot_min_max_mean(canvas, variable, ref_test_or_diff):
 def plot_rmse_and_corr(canvas, model, obs):
     """canvas is a vcs.Canvas, model and obs are
     a cdms2.tvariable.TransientVariable"""
-    rmse = '%.2f' % compute_rmse(obs, model)
-    corr = '%.2f' % compute_corr(obs, model)
+
+    rmse_str = '%.2f' % rmse(obs, model)
+    corr_str = '%.2f' % corr(obs, model)
 
     rmse_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_title',
                                            To_source = 'diff_plot_comment1_title')
@@ -73,8 +58,8 @@ def plot_rmse_and_corr(canvas, model, obs):
     corr_value = canvas.createtextcombined(Tt_source = 'diff_plot_comment2_value',
                                            To_source = 'diff_plot_comment2_value')
 
-    rmse_value.string = rmse
-    corr_value.string = corr
+    rmse_value.string = rmse_str
+    corr_value.string = corr_str
 
     canvas.plot(rmse_label)
     canvas.plot(corr_label)
@@ -153,8 +138,8 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill)
     set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill)
 
-    vcs_canvas.plot(test, template_test, reference_isofill)
-    vcs_canvas.plot(reference, template_ref, test_isofill)
+    vcs_canvas.plot(test, template_test, test_isofill)
+    vcs_canvas.plot(reference, template_ref, reference_isofill)
     vcs_canvas.plot(diff, template_diff, diff_isofill)
 
     plot_rmse_and_corr(vcs_canvas, test_regrid, reference_regrid)
@@ -165,4 +150,5 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     main_title.string = parameter.main_title
     vcs_canvas.plot(main_title)
 
-    vcs_canvas.png(case_id + '/' + parameter.output_file)
+    #vcs_canvas.pdf(case_id + '/' + parameter.output_file, textAsPaths=False)
+    vcs_canvas.pdf(case_id + '/' + parameter.output_file)
