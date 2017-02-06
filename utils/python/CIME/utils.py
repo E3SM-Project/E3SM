@@ -8,7 +8,7 @@ import logging, gzip, sys, os, time, re, shutil, glob, string, random
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
 
-def expect(condition, error_msg, exc_type=SystemExit):
+def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR: "):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
@@ -23,7 +23,7 @@ def expect(condition, error_msg, exc_type=SystemExit):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("ERROR: %s" % error_msg)
+        raise exc_type("%s %s" % (error_prefix,error_msg))
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))

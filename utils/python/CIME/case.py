@@ -1121,4 +1121,5 @@ class Case(object):
             logger.info("\nThis compset and grid combination is not scientifically supported, however it is used in %d tests.\n"%(testcnt))
         else:
             expect(False, "\nThis compset and grid combination is unsupported in CESM.  "
-                   "If you wish to use it anyway you must supply the --run-unsupported option to create_newcase.")
+                   "If you wish to use it anyway you must supply the --run-unsupported option to create_newcase.",
+                   error_prefix="STOP: ")
