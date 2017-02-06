@@ -78,6 +78,7 @@ for mct, etc.
      compilers -->
 <compiler>
   <CPPDEFS>
+    <append> -D<env>OS</env> -DCPR<shell> echo <env>COMPILER</env> | tr a-z A-z</shell></append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
   </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
@@ -789,7 +790,7 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler OS="Linux" COMPILER="intel">
+<compiler OS="LINUX" COMPILER="intel">
   <FFLAGS>
     <append> -mcmodel medium -shared-intel </append>
   </FFLAGS>

@@ -492,7 +492,7 @@
   <machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
     <NODENAME_REGEX/>
-    <OS>Linux</OS>
+    <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/acme/scratch</CIME_OUTPUT_ROOT>

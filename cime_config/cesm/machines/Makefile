@@ -76,7 +76,7 @@ endif
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
 
-CPPDEFS := $(USER_CPPDEFS) -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
+CPPDEFS := $(USER_CPPDEFS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifneq ($(strip $(DEBUG)),TRUE)

@@ -23,7 +23,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "utils", "python"))
 
 from standard_script_setup import *
-from CIME.utils import expect
+from CIME.utils import expect, get_model
 from CIME.BuildTools.configure import configure
 from CIME.XML.machines import Machines
 
@@ -63,7 +63,8 @@ def parse_command_line(args):
         machines_file = os.path.join(args.machines_dir, "config_machines.xml")
         machobj = Machines(infile=machines_file, machine=args.machine)
     else:
-        if os.environ.get('CIME_MODEL') is not None:
+        model = get_model()
+        if model is not None:
             machobj = Machines(machine=args.machine)
         else:
             expect(False, "Either --mach-dir or the CIME_MODEL environment "
