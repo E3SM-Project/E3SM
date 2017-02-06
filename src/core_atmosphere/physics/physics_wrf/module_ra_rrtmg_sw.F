@@ -1948,6 +1948,14 @@
 
       module rrtmg_sw_cldprmc
 
+#if defined(mpas)
+ use mpas_atmphys_utilities,only: physics_error_fatal
+#define FATAL_ERROR(M) call physics_error_fatal( M )
+#else
+use module_wrf_error
+#define FATAL_ERROR(M) call wrf_error_fatal( M )
+#endif
+
 !  --------------------------------------------------------------------------
 ! |                                                                          |
 ! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
@@ -2173,7 +2181,7 @@
                          write(errmess,'(A,i5,i5,f8.2,f8.2)' )         &
                'ERROR: ICE GENERALIZED EFFECTIVE SIZE OUT OF BOUNDS'   &
                ,ig, lay, ciwpmc(ig,lay), radice
-                         call wrf_error_fatal(errmess)
+                         FATAL_ERROR(errmess)
                      end if
                      factor = (radice - 2._rb)/3._rb
                      index = int(factor)
@@ -2190,11 +2198,11 @@
                                  (fdlice3(index+1,ib) - fdlice3(index,ib))
                      if (fdelta(ig) .lt. 0.0_rb) then
                       write(errmess, *) 'FDELTA LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                      if (fdelta(ig) .gt. 1.0_rb) then
                       write(errmess, *) 'FDELTA GT THAN 1.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                      forwice(ig) = fdelta(ig) + 0.5_rb / ssacoice(ig)
 ! See Fu 1996 p. 2067 
@@ -2222,7 +2230,7 @@
                          write(errmess,'(A,i5,i5,f8.2,f8.2)' )         &
                'ERROR: SNOW GENERALIZED EFFECTIVE SIZE OUT OF BOUNDS'   &
                ,ig, lay, cswpmc(ig,lay), radsno
-                         call wrf_error_fatal(errmess)
+                         FATAL_ERROR(errmess)
                      end if
                      factor = (radsno - 2._rb)/3._rb
                      index = int(factor)
@@ -2239,11 +2247,11 @@
                                  (fdlice3(index+1,ib) - fdlice3(index,ib))
                      if (fdelta(ig) .lt. 0.0_rb) then
                       write(errmess, *) 'FDELTA LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                      if (fdelta(ig) .gt. 1.0_rb) then
                       write(errmess, *) 'FDELTA GT THAN 1.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                      forwsno(ig) = fdelta(ig) + 0.5_rb / ssacosno(ig)
 ! See Fu 1996 p. 2067
@@ -2251,23 +2259,23 @@
 ! Check to ensure all calculated quantities are within physical limits.  
                      if (extcosno(ig) .lt. 0.0_rb) then
                       write(errmess, *) 'SNOW EXTINCTION LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                      if (ssacosno(ig) .gt. 1.0_rb) then
                       write(errmess, *) 'SNOW SSA GRTR THAN 1.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                      if (ssacosno(ig) .lt. 0.0_rb)  then
                       write(errmess, *) 'SNOW SSA LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                      if (gsno(ig) .gt. 1.0_rb)  then
                       write(errmess, *) 'SNOW ASYM GRTR THAN 1.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                      if (gsno(ig) .lt. 0.0_rb)  then
                       write(errmess, *) 'SNOW ASYM LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
+                      FATAL_ERROR(errmess)
                      end if
                   else
                      extcosno(ig) = 0.0_rb
