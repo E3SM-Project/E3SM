@@ -1,0 +1,43 @@
+<template>
+	<namelist>
+		<option name="config_ocean_run_mode">'forward'</option>
+		<option name="config_dt">'00:05:00'</option>
+		<option name="config_btr_dt">'00:00:15'</option>
+		<option name="config_run_duration">'0000_00:15:00'</option>
+		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+		<option name="config_pio_num_iotasks">1</option>
+		<option name="config_pio_stride">4</option>
+		<option name="config_write_output_on_startup">.false.</option>
+		<option name="config_time_integrator">'split_explicit'</option>
+		<option name="config_use_mom_del2">.true.</option>
+		<option name="config_mom_del2">10.0</option>
+		<option name="config_convective_visc">1.0</option>
+		<option name="config_convective_diff">1.0</option>
+		<option name="config_bottom_drag_coeff">1.0e-2</option>
+		<option name="config_use_const_visc">.true.</option>
+		<option name="config_vert_visc">1.0e-4</option>
+	</namelist>
+
+	<streams>
+		<stream name="mesh">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="output">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">output.nc</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<add_contents>
+				<member name="tracers" type="var_struct"/>
+				<member name="mesh" type="stream"/>
+				<member name="xtime" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+
+</template>
