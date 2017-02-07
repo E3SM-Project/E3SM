@@ -1598,15 +1598,21 @@ module li_subglacial_hydro
             write(stdErrUnit,*) "ERROR: Unknown value for config_SGH_shmip_forcing!"
             err = ior(err, 1)
          end select
+
+         ! basalMeltInput calculated in SHMIP m/s units here
          where (externalWaterInput > 0.0_RKIND)
-            basalMeltInput = 0.9 / areaCell * (1.0_RKIND - ra * sin(2.0_RKIND * pii * daysSinceStart))
+            ! 0.9/areaCell is the value being input into each moulin in B5
+            basalMeltInput = 0.9_RKIND / areaCell * (1.0_RKIND - ra * sin(2.0_RKIND * pii * daysSinceStart))
          elsewhere
+            ! where the input file does not identify a moulin, set source term to 0
             basalMeltInput = 0.0_RKIND
          end where
+         ! instructions say to zero negative values
          where (basalMeltInput < 0.0_RKIND)
             basalMeltInput = 0.0_RKIND
          end where
-         basalMeltInput = (basalMeltInput + 7.93e-11_RKIND) / 1000.0_RKIND
+         ! Add in basal melting contribution specified by instructions AND convert from m/s to kg/m2/s
+         basalMeltInput = (basalMeltInput + 7.93e-11_RKIND) * 1000.0_RKIND
 
       case ('D')
          select case (config_SGH_shmip_forcing(2:2)) ! get experiment number
