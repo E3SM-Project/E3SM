@@ -58,6 +58,8 @@ module seq_timemgr_mod
 
    ! --- For usability, built on interfaces above ---
    public :: seq_timemgr_restartAlarmIsOn    ! Is a restart alarm ringing
+   public :: seq_timemgr_stopAlarmIsOn       ! Is a stop alarm ringing
+   public :: seq_timemgr_historyAlarmIsOn    ! Is a history alarm ringing
 
    ! --- Data that belongs to the driver (but is here to avoid loops)
    character(SHR_KIND_CS),public :: seq_timemgr_pause_component_list  ! Pause - resume components
@@ -1815,6 +1817,71 @@ logical function seq_timemgr_restartAlarmIsOn( EClock)
        seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_restart)
 
 end function seq_timemgr_restartAlarmIsOn
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_stopAlarmIsOn -- check if an alarm is ringing
+!   
+! !DESCRIPTION:
+!   
+!     check if an alarm is ringing
+!      
+! !INTERFACE: ------------------------------------------------------------------
+
+logical function seq_timemgr_stopAlarmIsOn( EClock)
+
+    implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
+
+!EOP
+
+    !----- local -----
+    character(len=*), parameter :: subname = '(seq_timemgr_stopAlarmIsOn) '
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+    seq_timemgr_stopAlarmIsOn =  &
+       seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_stop)
+
+end function seq_timemgr_stopAlarmIsOn
+
+!===============================================================================
+!===============================================================================
+! !IROUTINE: seq_timemgr_historyAlarmIsOn -- check if an alarm is ringing
+!   
+! !DESCRIPTION:
+!   
+!     check if an alarm is ringing
+!      
+! !INTERFACE: ------------------------------------------------------------------
+
+logical function seq_timemgr_historyAlarmIsOn( EClock)
+
+    implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+    type(ESMF_Clock) , intent(IN) :: EClock     ! clock/alarm
+
+!EOP
+
+    !----- local -----
+    integer :: rc
+    character(len=*), parameter :: subname = '(seq_timemgr_historyAlarmIsOn) '
+
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+    seq_timemgr_historyAlarmIsOn =  &
+       seq_timemgr_alarmIsOn(EClock, alarmname=seq_timemgr_alarm_history)
+
+end function seq_timemgr_historyAlarmIsOn
 
 !===============================================================================
 !===============================================================================
