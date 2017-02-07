@@ -508,11 +508,6 @@
  qv   => scalars(index_qv,:,:)
  qc   => scalars(index_qc,:,:)
  qr   => scalars(index_qr,:,:)
- qi   => scalars(index_qi,:,:)
- qs   => scalars(index_qs,:,:)
- qg   => scalars(index_qg,:,:)
- ni   => scalars(index_ni,:,:)
- nr   => scalars(index_nr,:,:)
 
 !initialize variables needed in the cloud microphysics schemes:
  do j = jts, jte
@@ -539,6 +534,10 @@
  microp_select_init: select case(microp_scheme)
 
     case ("mp_thompson","mp_wsm6")
+       qi   => scalars(index_qi,:,:)
+       qs   => scalars(index_qs,:,:)
+       qg   => scalars(index_qg,:,:)
+
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -552,6 +551,9 @@
     microp2_select: select case(microp_scheme)
 
        case("mp_thompson")
+          ni   => scalars(index_ni,:,:)
+          nr   => scalars(index_nr,:,:)
+
           do j = jts,jte
           do i = its,ite
              muc_p(i,j) = mu_c(i)
@@ -654,11 +656,6 @@
  qv   => scalars(index_qv,:,:)
  qc   => scalars(index_qc,:,:)
  qr   => scalars(index_qr,:,:)
- qi   => scalars(index_qi,:,:)
- qs   => scalars(index_qs,:,:)
- qg   => scalars(index_qg,:,:)
- ni   => scalars(index_ni,:,:)
- nr   => scalars(index_nr,:,:)
 
  call mpas_pool_get_array(tend,'rt_diabatic_tend',rt_diabatic_tend)
 
@@ -711,6 +708,10 @@
  microp_select_init: select case(microp_scheme)
 
     case ("mp_thompson","mp_wsm6")
+       qi   => scalars(index_qi,:,:)
+       qs   => scalars(index_qs,:,:)
+       qg   => scalars(index_qg,:,:)
+
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -724,6 +725,9 @@
     microp2_select: select case(microp_scheme)
 
        case("mp_thompson")
+          ni   => scalars(index_ni,:,:)
+          nr   => scalars(index_nr,:,:)
+
           do j = jts, jte
           do k = kts, kte
           do i = its, ite
