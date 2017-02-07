@@ -159,7 +159,7 @@ contains
       real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
                                                       deltaVelocitySquared, normalVelocitySum, &
-                                                      potentialDensitySum
+                                                      potentialDensitySum, RiTemp
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed, OBLDepths, interfaceForcings
       logical :: bulkRichardsonFlag
 
@@ -327,7 +327,8 @@ contains
       allocate(Nsqr_iface(nVertLevels+1))
       allocate(turbulentScalarVelocityScale(nVertLevels))
       allocate(RiSmoothed(nVertLevels+1))
-      allocate(BVFSmoothed(nVertLevels+1))
+      allocate(BVFSmoothed(nVertLevels+1))  
+      allocate(RiTemp(nVertLevels+1))
 
       allocate(normalVelocitySum(nVertLevels))
       allocate(potentialDensitySum(nVertLevels))
@@ -379,13 +380,17 @@ contains
          cvmix_variables % AdiabWaterDensity_cntr => displacedDensity(1:maxLevelCell(iCell), iCell)
 
          ! fill Ri
+
          RiSmoothed(1:maxLevelCell(iCell)) = RiTopOfCell(1:maxLevelCell(iCell),iCell)
          RiSmoothed(maxLevelCell(iCell)+1) = RiSmoothed(maxLevelCell(iCell))
+         RiTemp(1:maxLevelCell(iCell)+1) = RiSmoothed(1:maxLevelCell(iCell)+1)
+
          ! Use a 1-2-1 filter to remove 2 dz noise in RiTopOfCell
          do nsmooth=1,config_cvmix_num_ri_smooth_loops
             do k=2,maxLevelCell(iCell)
-                 RiSmoothed(k) = (RiSmoothed(k-1) + 2.0_RKIND*RiSmoothed(k) + RiSmoothed(k+1))  / 4.0_RKIND
+                 RiSmoothed(k) = (RiTemp(k-1) + 2.0_RKIND*RiTemp(k) + RiTemp(k+1))  / 4.0_RKIND
             enddo
+            RiTemp(1:maxLevelCell(iCell)) = RiSmoothed(1:maxLevelCell(iCell))
          enddo 
       
          cvmix_variables%ShearRichardson_iface => RiSmoothed(1:maxLevelCell(iCell)+1)
