@@ -344,7 +344,7 @@ for i in largestChannels:
     plt.plot(days/365.0, f.variables['channelArea'][:,i])
 plt.plot(days[:]/365.0, f.variables['channelArea'][:,:].max(axis=1), linewidth=2)  #max
 plt.xlabel('Years since start')
-plt.ylabel('maximum channel area (m^2)')
+plt.ylabel('Channel area (m^2)')
 plt.grid(True)
 
 

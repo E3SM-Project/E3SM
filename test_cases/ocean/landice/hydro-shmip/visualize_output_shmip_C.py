@@ -16,7 +16,7 @@ from optparse import OptionParser
 import matplotlib.pyplot as plt
 #from matplotlib import cm
 # import time
-#import random
+import random
 
 
 parser = OptionParser()
@@ -109,6 +109,71 @@ class DailyData:
 f = netCDF4.Dataset(options.filename, 'r')
 numDays = 5  # number of days before final too process
 dayData = DailyData(f, numDays)  # analyze output data
+
+# general info outside of the classes
+nCells = len(f.dimensions['nCells'])
+nEdges = len(f.dimensions['nEdges'])
+days = f.variables['daysSinceStart'][:]
+areaCell= f.variables['areaCell'][:]
+
+############################
+# plot how close to SS we are
+############################
+fig = plt.figure(2, facecolor='w')
+# thickness over time
+ax1 = fig.add_subplot(141)
+# plot n random cells
+n=50    # set number of random cells.  More is more expensive
+#for i in ind:  # this version plots cells along the centerline only
+for i in random.sample(range(min(nCells,n)), n):
+    plt.plot(days, f.variables['waterThickness'][:,i])
+plt.plot(days[:], f.variables['waterThickness'][:,:].max(axis=1), linewidth=2) #max
+plt.xlabel('Days since start')
+plt.ylabel('water thickness (m)')
+plt.grid(True)
+
+# ---
+# Effective pressure over time
+ax = fig.add_subplot(142, sharex=ax1)
+# plot n random cells
+#for i in ind:  # this version plots cells along the centerline only
+for i in random.sample(range(min(nCells,n)), n):
+    plt.plot(days, f.variables['effectivePressure'][:,i]/1.0e6)
+plt.plot(days[:], f.variables['effectivePressure'][:,:].max(axis=1)/1.0e6, linewidth=2) #max
+plt.xlabel('Days since start')
+plt.ylabel('effective pressure (MPa)')
+plt.grid(True)
+
+# ---
+# Channel area over time
+ax = fig.add_subplot(143, sharex=ax1)
+# plot n largest channel edges
+largestChannels = np.argpartition(f.variables['channelArea'][-1,:], -n)[-n:]  # get indices to the n largest channels
+for i in largestChannels:
+    plt.plot(days, f.variables['channelArea'][:,i])
+plt.plot(days[:], f.variables['channelArea'][:,:].max(axis=1), linewidth=2)  #max
+plt.xlabel('Days since start')
+plt.ylabel('Channel area (m^2)')
+plt.grid(True)
+
+# ---
+# Forcing
+ax = fig.add_subplot(144, sharex=ax1)
+# I chose to put the total source term in basalMeltInput.
+# externalWaterInput is used as an input field to show where the moulins are located and has a tiny nonzero value at moulins
+basalMelt=f.variables['basalMeltInput'][:].max(axis=1) # time-series
+plt.plot(days[:], basalMelt, '-', label='basal')
+plt.plot(days[:], np.ones(days.shape) * 0.9 * 1000.0 / areaCell.max(), label='B5')
+plt.legend(loc='best')
+plt.xlabel('Days since start')
+plt.ylabel('melt input (kg/m/s)')
+
+
+
+
+
+
+
 
 
 # ===============
