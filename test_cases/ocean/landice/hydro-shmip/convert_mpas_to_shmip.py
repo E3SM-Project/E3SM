@@ -74,7 +74,7 @@ ntIn = len(infile.dimensions['Time'])
 if options.scenario[0] in ('C','D'):
    times = np.arange(ntIn)  # use list of all time indices.  (Assuming file ONLY contains the required time levels (i.e. annual file with daily output for test D; daily file with hourly output for test C)
 else:
-   times = np.array([ntIn,])  # only index of final time
+   times = np.array([ntIn-1,])  # only index of final time
 print "Using time indices:", times
 
 
