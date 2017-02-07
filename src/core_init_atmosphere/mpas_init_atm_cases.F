@@ -3346,6 +3346,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
              trim(field % field) == 'ST028100' .or. &
              trim(field % field) == 'ST100255' .or. &
              trim(field % field) == 'PRES' .or. &
+             trim(field % field) == 'PRESSURE' .or. &
              trim(field % field) == 'SNOW' .or. &
              trim(field % field) == 'SEAICE' .or. &
              trim(field % field) == 'SKINTEMP') then
@@ -3505,6 +3506,13 @@ write(0,*) 'Interpolating GHT at ', k, vert_level(k)
                ndims = 2
             else if (trim(field % field) == 'PRES') then
 write(0,*) 'Interpolating PRES at ', k, vert_level(k)
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'p', destField2d)
+               ndims = 2
+            else if (trim(field % field) == 'PRESSURE') then
+write(0,*) 'Interpolating PRESSURE at ', k, vert_level(k)
                nInterpPoints = nCells
                latPoints => latCell
                lonPoints => lonCell
