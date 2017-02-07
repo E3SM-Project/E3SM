@@ -580,25 +580,29 @@ contains
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'cellsOnCell:'
           do iCellOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iCellOnCell, cellsOnCell(iCellOnCell, iCell), indexToCellID(cellsOnCell(iCellOnCell,iCell))
+             write(stderrUnit,*) iCellOnCell, cellsOnCell(iCellOnCell, iCell), &
+                  indexToCellID(cellsOnCell(iCellOnCell,iCell))
           enddo
 
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'edgesOnCell:'
           do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iEdgeOnCell, edgesOnCell(iEdgeOnCell, iCell), indexToEdgeID(edgesOnCell(iEdgeOnCell,iCell))
+             write(stderrUnit,*) iEdgeOnCell, edgesOnCell(iEdgeOnCell, iCell), &
+                  indexToEdgeID(edgesOnCell(iEdgeOnCell,iCell))
           enddo
 
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'verticesOnCell:'
           do iVertexOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iVertexOnCell, verticesOnCell(iVertexOnCell,iCell), indexToVertexID(verticesOnCell(iVertexOnCell,iCell))
+             write(stderrUnit,*) iVertexOnCell, verticesOnCell(iVertexOnCell,iCell), &
+                  indexToVertexID(verticesOnCell(iVertexOnCell,iCell))
           enddo
 
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'xVertexOnCell, yVertexOnCell:'
           do iVertexOnCell = 1, nEdgesOnCell(iCell)
-             write(stderrUnit,*) iVertexOnCell, xVertexOnCell(iVertexOnCell, iCell), yVertexOnCell(iVertexOnCell, iCell)
+             write(stderrUnit,*) iVertexOnCell, xVertexOnCell(iVertexOnCell, iCell), &
+                  yVertexOnCell(iVertexOnCell, iCell)
           enddo
 
        endif   ! ctestOnProc & ctestBlockID
@@ -613,13 +617,15 @@ contains
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'cellsOnEdge:'
           do iCellOnEdge = 1, 2
-             write(stderrUnit,*) iCellOnEdge, cellsOnEdge(iCellOnEdge, iEdge), indexToCellID(cellsOnEdge(iCellOnEdge, iEdge))
+             write(stderrUnit,*) iCellOnEdge, cellsOnEdge(iCellOnEdge, iEdge), &
+                  indexToCellID(cellsOnEdge(iCellOnEdge, iEdge))
           enddo
 
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'verticesOnEdge:'
           do iVertexOnEdge = 1, 2
-             write(stderrUnit,*) iVertexOnEdge, verticesOnEdge(iVertexOnEdge, iEdge), indexToVertexID(verticesOnEdge(iVertexOnEdge, iEdge))
+             write(stderrUnit,*) iVertexOnEdge, verticesOnEdge(iVertexOnEdge, iEdge), &
+                  indexToVertexID(verticesOnEdge(iVertexOnEdge, iEdge))
           enddo
 
           if (vertexDegree == 3) then   ! hex mesh
@@ -658,7 +664,8 @@ contains
           write(stderrUnit,*) 'xVertexOnEdge, yVertexOnEdge:', indexToEdgeID(iEdge)
           write(stderrUnit,*) 'vertex, x, y:'
           do iVertexOnEdge = 1, nVerticesOnEdgeRemap
-             write(stderrUnit,*) iVertexOnEdge, xVertexOnEdge(iVertexOnEdge,iEdge), yVertexOnEdge(iVertexOnEdge,iEdge)
+             write(stderrUnit,*) iVertexOnEdge, xVertexOnEdge(iVertexOnEdge,iEdge), &
+                  yVertexOnEdge(iVertexOnEdge,iEdge)
           enddo
 
           write(stderrUnit,*) ' '
@@ -674,7 +681,8 @@ contains
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'edgesOnVertex:'
           do iEdgeOnVertex = 1, vertexDegree
-             write(stderrUnit,*) iEdgeOnVertex, edgesOnVertex(iEdgeOnVertex,iVertex), indexToEdgeID(edgesOnVertex(iEdgeOnVertex,iVertex))
+             write(stderrUnit,*) iEdgeOnVertex, edgesOnVertex(iEdgeOnVertex,iVertex), &
+                  indexToEdgeID(edgesOnVertex(iEdgeOnVertex,iVertex))
           enddo
 
        endif
@@ -1324,7 +1332,8 @@ contains
                 if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), cellCenter(:))) then
                    ! cell 1 is in the left half-plane, as required
                 else
-                   write(errorMessage,*) 'cell 1 is not in the left half-plane: iEdge (local, global ID) =', iEdge, indexToEdgeID(iEdge)
+                   write(errorMessage,*) 'cell 1 is not in the left half-plane: iEdge (local, global ID) =', &
+                        iEdge, indexToEdgeID(iEdge)
                    write(stderrUnit,*) 'ERROR: '//trim(errorMessage)
                    write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
                    write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
@@ -1362,7 +1371,8 @@ contains
                 if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), cellCenter(:))) then
                    ! cell 1 is in the left half-plane, as required
                 else
-                   write(errorMessage,*) 'cell 1 is not in the left half-plane: iEdge (local, global ID) =', iEdge, indexToEdgeID(iEdge)
+                   write(errorMessage,*) 'cell 1 is not in the left half-plane: iEdge (local, global ID) =', &
+                        iEdge, indexToEdgeID(iEdge)
                    write(stderrUnit,*) 'ERROR: '//trim(errorMessage)
                    write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
                    write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
@@ -1512,7 +1522,8 @@ contains
                 do iCellOnEdge = 1, 2
                    iCellNeighbor = cellsOnEdge(iCellOnEdge,iEdgeNeighbor)
                    if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then   ! this cell exists
-                      if (iCellNeighbor /= cellsOnEdgeRemap(1,iEdge) .and. iCellNeighbor /= cellsOnEdgeRemap(2,iEdge)) then ! not C1 or C2
+                      if (iCellNeighbor /= cellsOnEdgeRemap(1,iEdge) .and. &
+                          iCellNeighbor /= cellsOnEdgeRemap(2,iEdge)) then ! not C1 or C2
                          cellsOnEdgeRemap(iVertexOnEdge+2,iEdge) = iCellNeighbor
                       endif
                    endif
@@ -2004,7 +2015,8 @@ contains
              do iVertexCell = 1, nEdgesOnCell(iCell)
                 write(stderrUnit,*) iVertexCell, xVertexOnCell(iVertexCell,iCell), yVertexOnCell(iVertexCell,iCell)
              enddo
-             call mpas_dmpar_global_abort('MPAS-seaice: IR requires convex cells with vertices arranged CCW around the cell: check')
+             call mpas_dmpar_global_abort(&
+                  'MPAS-seaice: IR requires convex cells with vertices arranged CCW around the cell: check')
           endif
 
        enddo   ! iVertexOnCell
@@ -2898,7 +2910,8 @@ contains
           if (thisTracer % ndims == 2) then  ! the pointer to iceAreaCategory should always be 2D, but check just in case
              do iCell = 1, nCellsSolve
                 if (thisTracer % array2D(iCatTest,iCell) > 0.0_RKIND) then
-                   write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(iCatTest,iCell), xCell(iCell), yCell(iCell), zCell(iCell)
+                   write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(iCatTest,iCell), &
+                        xCell(iCell), yCell(iCell), zCell(iCell)
                 endif
              enddo
           endif  ! ndims
@@ -3295,7 +3308,8 @@ contains
        if (thisTracer % ndims == 2) then  ! the pointer to iceAreaCategory should always be 2D, but check just in case
           do iCell = 1, nCellsSolve
              if (thisTracer % array2D(iCatTest,iCell) > 0.0_RKIND) then
-                write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(iCatTest,iCell), xCell(iCell), yCell(iCell), zCell(iCell)
+                write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(iCatTest,iCell), &
+                     xCell(iCell), yCell(iCell), zCell(iCell)
              endif
           enddo
        endif  ! ndims
@@ -3540,7 +3554,8 @@ contains
          transGlobalToCell  !< Input: 3x3 matrix for transforming vectors from global to cell-based coordinates
 
     real(kind=RKIND), dimension(:,:,:), intent(in) ::  &
-         coeffsReconstruct  !< Input: coefficients for reconstructing the gradient at a cell center, given normal components on edges
+         coeffsReconstruct  !< Input: coefficients for reconstructing the gradient at a cell center,
+                            !         given normal components on edges
 
     integer, dimension(:), intent(in) :: &
          maskCell           !< Input: = 1 for cells with ice, else = 0
@@ -3790,7 +3805,8 @@ contains
              elseif (thisTracer % nParents == 3) then
 
                 write(stderrUnit,*) 'IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children'
-                call mpas_dmpar_global_abort('MPAS-seaice: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children')
+                call mpas_dmpar_global_abort(&
+                     'MPAS-seaice: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children')
 
              endif   ! nParents
 
@@ -3844,9 +3860,10 @@ contains
              do iCell = 1, nCells
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
-                      thisTracer % center3D(iLayer,iCat,iCell) = thisTracer % array3D(iLayer,iCat,iCell)  &
-                                                               - thisTracer % xGrad3D(iLayer,iCat,iCell) * parentTracer % xBarycenter2D(iCat,iCell)  &
-                                                               - thisTracer % yGrad3D(iLayer,iCat,iCell) * parentTracer % yBarycenter2D(iCat,iCell)
+                      thisTracer % center3D(iLayer,iCat,iCell) = &
+                           thisTracer % array3D(iLayer,iCat,iCell)  &
+                         - thisTracer % xGrad3D(iLayer,iCat,iCell) * parentTracer % xBarycenter2D(iCat,iCell)  &
+                         - thisTracer % yGrad3D(iLayer,iCat,iCell) * parentTracer % yBarycenter2D(iCat,iCell)
                    enddo
                 enddo
              enddo
@@ -3873,9 +3890,10 @@ contains
              do iCell = 1, nCells
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
-                      thisTracer % center3D(iLayer,iCat,iCell) = thisTracer % array3D(iLayer,iCat,iCell)  &
-                                                               - thisTracer % xGrad3D(iLayer,iCat,iCell) * parentTracer % xBarycenter3D(iLayer,iCat,iCell)  &
-                                                               - thisTracer % yGrad3D(iLayer,iCat,iCell) * parentTracer % yBarycenter3D(iLayer,iCat,iCell)
+                      thisTracer % center3D(iLayer,iCat,iCell) = &
+                           thisTracer % array3D(iLayer,iCat,iCell)  &
+                         - thisTracer % xGrad3D(iLayer,iCat,iCell) * parentTracer % xBarycenter3D(iLayer,iCat,iCell)  &
+                         - thisTracer % yGrad3D(iLayer,iCat,iCell) * parentTracer % yBarycenter3D(iLayer,iCat,iCell)
                    enddo
                 enddo
              enddo
@@ -4070,7 +4088,8 @@ contains
                 elseif (thisTracer % nParents == 3) then
 
                    write(stderrUnit,*) 'ERROR: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children'
-                   call mpas_dmpar_global_abort('MPAS-seaice: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children')
+                   call mpas_dmpar_global_abort(&
+                        'MPAS-seaice: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children')
 
                 endif   ! parentTracer % ndims
 
@@ -4149,7 +4168,8 @@ contains
          dcEdge              !< Input: distance between the 2 cell centers on each side of an edge
 
     real(kind=RKIND), dimension(:,:,:), intent(in) ::  &
-         coeffsReconstruct   !< Input: coefficients for reconstructing the gradient at a cell center, given normal components on edges
+         coeffsReconstruct   !< Input: coefficients for reconstructing the gradient at a cell center,
+                             !         given normal components on edges
 
     logical, intent(in) ::   &
          on_a_sphere,               &  !< Input: T if flow is on a sphere, F if on a plane
@@ -4229,7 +4249,8 @@ contains
 
                 do iCat = 1, nCategories
 
-                   if (mask(iCat,iCell) == 1 .and. mask(iCat,iCellNeighbor) == 1) then   ! field values in cell and its neighbor have physical meaning
+                   ! field values in cell and its neighbor have physical meaning
+                   if (mask(iCat,iCell) == 1 .and. mask(iCat,iCellNeighbor) == 1) then
 
                       if (iCell == cellsOnEdge(1,iEdge)) then
                          signGradient =  1.0_RKIND
@@ -4254,7 +4275,8 @@ contains
 
              endif
 
-             ! add the contribution of this normal component to the reconstructed gradient at the cell center (in global x/y/z coordinates)
+             ! add the contribution of this normal component to the reconstructed
+             ! gradient at the cell center (in global x/y/z coordinates)
              globalGrad(:,1) = globalGrad(:,1) + coeffsReconstruct(1,iEdgeOnCell,iCell) * normalGrad(:,iEdgeOnCell)
              globalGrad(:,2) = globalGrad(:,2) + coeffsReconstruct(2,iEdgeOnCell,iCell) * normalGrad(:,iEdgeOnCell)
              globalGrad(:,3) = globalGrad(:,3) + coeffsReconstruct(3,iEdgeOnCell,iCell) * normalGrad(:,iEdgeOnCell)
@@ -4310,7 +4332,8 @@ contains
              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                 iCellNeighbor = cellsOnCell(iEdgeOnCell,iCell)
                 iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), field(iCatTest,iCellNeighbor), normalGrad(iCatTest,iEdgeOnCell)
+                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), &
+                     field(iCatTest,iCellNeighbor), normalGrad(iCatTest,iEdgeOnCell)
              enddo
              write(stderrUnit,*) ' '
              write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iCatTest,iCell), yGrad(iCatTest,iCell), zGrad(iCatTest)
@@ -4376,7 +4399,8 @@ contains
          dcEdge              !< Input: distance between the 2 cell centers on each side of an edge
 
     real(kind=RKIND), dimension(:,:,:), intent(in) ::  &
-         coeffsReconstruct   !< Input: coefficients for reconstructing the gradient at a cell center, given normal components on edges
+         coeffsReconstruct   !< Input: coefficients for reconstructing the gradient at a cell center,
+                             ! given normal components on edges
 
     logical, intent(in) ::   &
          on_a_sphere,               &  !< Input: T if flow is on a sphere, F if on a plane
@@ -4468,7 +4492,8 @@ contains
                             signGradient = -1.0_RKIND
                          end if
 
-                         normalGrad(iLayer,iCat,iEdgeOnCell) = signGradient * (field(iLayer,iCat,iCellNeighbor) - field(iLayer,iCat,iCell)) / dcEdge(iEdge)
+                         normalGrad(iLayer,iCat,iEdgeOnCell) = &
+                              signGradient * (field(iLayer,iCat,iCellNeighbor) - field(iLayer,iCat,iCell)) / dcEdge(iEdge)
 
                       else   ! either or both field values do not have physical meaning; set gradient component = 0
 
@@ -4486,7 +4511,8 @@ contains
 
              endif
 
-             ! add the contribution of this normal component to the reconstructed gradient at the cell center (in global x/y/z coordinates)
+             ! add the contribution of this normal component to the reconstructed gradient
+             ! at the cell center (in global x/y/z coordinates)
              globalGrad(:,:,1) = globalGrad(:,:,1) + coeffsReconstruct(1,iEdgeOnCell,iCell) * normalGrad(:,:,iEdgeOnCell)
              globalGrad(:,:,2) = globalGrad(:,:,2) + coeffsReconstruct(2,iEdgeOnCell,iCell) * normalGrad(:,:,iEdgeOnCell)
              globalGrad(:,:,3) = globalGrad(:,:,3) + coeffsReconstruct(3,iEdgeOnCell,iCell) * normalGrad(:,:,iEdgeOnCell)
@@ -4542,10 +4568,12 @@ contains
              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                 iCellNeighbor = cellsOnCell(iEdgeOnCell,iCell)
                 iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), field(iLayerTest,iCatTest,iCellNeighbor), normalGrad(iLayerTest,iCatTest,iEdgeOnCell)
+                write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), &
+                     field(iLayerTest,iCatTest,iCellNeighbor), normalGrad(iLayerTest,iCatTest,iEdgeOnCell)
              enddo
              write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell), zGrad(iLayerTest,iCatTest)
+             write(stderrUnit,*) 'Unlimited center gradient:', &
+                  xGrad(iLayerTest,iCatTest,iCell), yGrad(iLayerTest,iCatTest,iCell), zGrad(iLayerTest,iCatTest)
           endif
        endif
 
@@ -4689,12 +4717,14 @@ contains
        xBarycenter = (c0   * geomAvgCell % x   (iCell) &
                     + cx   * geomAvgCell % xx  (iCell) + cy   * geomAvgCell % xy  (iCell) &
                     + cxx  * geomAvgCell % xxx (iCell) + cxy  * geomAvgCell % xxy (iCell) + cyy  * geomAvgCell % xyy (iCell) &
-                    + cxxx * geomAvgCell % xxxx(iCell) + cxxy * geomAvgCell % xxxy(iCell) + cxyy * geomAvgCell % xxyy(iCell) + cyyy * geomAvgCell % xyyy(iCell))  &
+                    + cxxx * geomAvgCell % xxxx(iCell) + cxxy * geomAvgCell % xxxy(iCell) + cxyy * geomAvgCell % xxyy(iCell) &
+                                                                                          + cyyy * geomAvgCell % xyyy(iCell)) &
                     * reciprocal
        yBarycenter = (c0   * geomAvgCell % y   (iCell) &
                     + cx   * geomAvgCell % xy  (iCell) + cy   * geomAvgCell % yy  (iCell) &
                     + cxx  * geomAvgCell % xxy (iCell) + cxy  * geomAvgCell % xyy (iCell) + cyy  * geomAvgCell % yyy (iCell) &
-                    + cxxx * geomAvgCell % xxxy(iCell) + cxxy * geomAvgCell % xxyy(iCell) + cxyy * geomAvgCell % xyyy(iCell) + cyyy * geomAvgCell % yyyy(iCell))  &
+                    + cxxx * geomAvgCell % xxxy(iCell) + cxxy * geomAvgCell % xxyy(iCell) + cxyy * geomAvgCell % xyyy(iCell) &
+                                                                                          + cyyy * geomAvgCell % yyyy(iCell)) &
                     * reciprocal
 
     endif
@@ -4837,7 +4867,8 @@ contains
                 ! for each vertex, compute the deviation from the mean value
                 !  Note: The barycenter (i.e., the location were the tracer has the value contained in the 'field' array)
                 !         coincides with the geometric center only for mass-type fields (nParents = 0).
-                !        This is why the x and y terms consist of the difference between the vertex coordinate and the barycenter coordinate.
+                !        This is why the x and y terms consist of the difference between
+                !        the vertex coordinate and the barycenter coordinate.
                 !        For nParents = 1, the barycenter is the center of mass.
                 !        For nParents = 2, the barycenter is the center of mass*tracer1, etc.
 
@@ -5054,12 +5085,14 @@ contains
                       ! for each vertex, compute the deviation from the mean value
                       !  Note: The barycenter (i.e., the location were the tracer has the value contained in the 'field' array)
                       !         coincides with the geometric center only for mass-type fields (nParents = 0).
-                      !        This is why the x and y terms consist of the difference between the vertex coordinate and the barycenter coordinate.
+                      !        This is why the x and y terms consist of the difference
+                      !        between the vertex coordinate and the barycenter coordinate.
                       !        For nParents = 1, the barycenter is the center of mass.
                       !        For nParents = 2, the barycenter is the center of mass*tracer1, etc.
 
-                      deviationAtVertex = xGrad(iLayer,iCat,iCell) * (xVertexOnCell(iVertex,iCell) - xBarycenter2D(iCat,iCell)) &
-                                        + yGrad(iLayer,iCat,iCell) * (yVertexOnCell(iVertex,iCell) - yBarycenter2D(iCat,iCell))
+                      deviationAtVertex = &
+                           xGrad(iLayer,iCat,iCell) * (xVertexOnCell(iVertex,iCell) - xBarycenter2D(iCat,iCell)) &
+                         + yGrad(iLayer,iCat,iCell) * (yVertexOnCell(iVertex,iCell) - yBarycenter2D(iCat,iCell))
 
                       ! modify the max and min, as appropriate
                       maxLocal(iLayer,iCat) = max(maxLocal(iLayer,iCat), deviationAtVertex)
@@ -5082,12 +5115,14 @@ contains
                       ! for each vertex, compute the deviation from the mean value
                       !  Note: The barycenter (i.e., the location were the tracer has the value contained in the 'field' array)
                       !         coincides with the geometric center only for mass-type fields (nParents = 0).
-                      !        This is why the x and y terms consist of the difference between the vertex coordinate and the barycenter coordinate.
+                      !        This is why the x and y terms consist of the difference
+                      !        between the vertex coordinate and the barycenter coordinate.
                       !        For nParents = 1, the barycenter is the center of mass.
                       !        For nParents = 2, the barycenter is the center of mass*tracer1, etc.
 
-                      deviationAtVertex = xGrad(iLayer,iCat,iCell) * (xVertexOnCell(iVertex,iCell) - xBarycenter3D(iLayer,iCat,iCell)) &
-                                        + yGrad(iLayer,iCat,iCell) * (yVertexOnCell(iVertex,iCell) - yBarycenter3D(iLayer,iCat,iCell))
+                      deviationAtVertex = &
+                           xGrad(iLayer,iCat,iCell) * (xVertexOnCell(iVertex,iCell) - xBarycenter3D(iLayer,iCat,iCell)) &
+                         + yGrad(iLayer,iCat,iCell) * (yVertexOnCell(iVertex,iCell) - yBarycenter3D(iLayer,iCat,iCell))
 
                       ! modify the max and min, as appropriate
                       maxLocal(iLayer,iCat) = max(maxLocal(iLayer,iCat), deviationAtVertex)
@@ -5450,7 +5485,8 @@ contains
          intersectionPoint,   & ! x and y coordinates of the intersection of two lines
                                 ! one line is a side edge; the other line joins the two departure points on the edge
          intersectionPointMain  ! x and y coordinates of the intersection of two lines
-                                ! one line is the main (central) edge or its extension; the other line joins the two departure points on the edge
+                                ! one line is the main (central) edge or its extension;
+                                ! the other line joins the two departure points on the edge
 
     integer, dimension(nTriPerEdgeRemap) ::  &
          triangleVertexOnEdge, &! vertexOnEdge index for a given triangle, relative to iEdge
@@ -5596,10 +5632,14 @@ contains
                 write(stderrUnit,*) ' '
                 write(stderrUnit,*) 'edge vertex 1:', edgeVertex(:,1)
                 write(stderrUnit,*) 'edge vertex 2:', edgeVertex(:,2)
-                write(stderrUnit,*) 'Distance 1:', sqrt( (edgeVertex(1,1) - departurePoint(1,1))**2 + (edgeVertex(2,1) - departurePoint(2,1))**2 )
-                write(stderrUnit,*) 'Distance 2:', sqrt( (edgeVertex(1,2) - departurePoint(1,2))**2 + (edgeVertex(2,2) - departurePoint(2,2))**2 )
-                write(stderrUnit,*) 'Length of edge:', sqrt( (edgeVertex(1,2) - edgeVertex(1,1))**2 + (edgeVertex(2,2) - edgeVertex(2,1))**2 )
-                write(stderrUnit,*) 'Length of D12:', sqrt( (departurePoint(1,2) - departurePoint(1,1))**2 + (departurePoint(2,2) - departurePoint(2,1))**2 )
+                write(stderrUnit,*) 'Distance 1:', &
+                     sqrt( (edgeVertex(1,1) - departurePoint(1,1))**2 + (edgeVertex(2,1) - departurePoint(2,1))**2 )
+                write(stderrUnit,*) 'Distance 2:', &
+                     sqrt( (edgeVertex(1,2) - departurePoint(1,2))**2 + (edgeVertex(2,2) - departurePoint(2,2))**2 )
+                write(stderrUnit,*) 'Length of edge:', &
+                     sqrt( (edgeVertex(1,2) - edgeVertex(1,1))**2 + (edgeVertex(2,2) - edgeVertex(2,1))**2 )
+                write(stderrUnit,*) 'Length of D12:', &
+                     sqrt( (departurePoint(1,2) - departurePoint(1,1))**2 + (departurePoint(2,2) - departurePoint(2,1))**2 )
                 write(stderrUnit,*) 'dp1 in left half plane = ', dpInHalfPlane(1)
                 write(stderrUnit,*) 'dp2 in left half plane = ', dpInHalfPlane(2)
              endif
@@ -5687,12 +5727,13 @@ contains
 
                       if (vertexDegree == 3) then  ! hex mesh
                          iOtherEdge = iEdgeOnEdgeRemap + 2
-                         if (iOtherEdge > 4) iOtherEdge = iOtherEdge - 4   ! 4 side edges in total: E1 and E3 on V1, E2 and E4 on V2
+                         if (iOtherEdge > 4) iOtherEdge = iOtherEdge - 4 ! 4 side edges in total: E1 and E3 on V1, E2 and E4 on V2
                       elseif (vertexDegree == 4) then  ! quad mesh
                          iOtherEdge = iVertexOnEdge + 4  ! E5 for V1; E6 for V2
                       endif  ! vertexDegree
 
-                      iOtherVertex = iOtherEdge + 2   ! V3 and V5 for edges E1 and E3; V4 and V6 for E2 and E4; V7 and V8 for E5 and E6
+                      iOtherVertex = iOtherEdge + 2 ! V3 and V5 for edges E1 and E3;
+                                                    ! V4 and V6 for E2 and E4; V7 and V8 for E5 and E6
                       edgeNeighborVertex(1,2) = xVertexOnEdge(iOtherVertex,iEdge)
                       edgeNeighborVertex(2,2) = yVertexOnEdge(iOtherVertex,iEdge)
                       edgeVector2(:,triangleCount) = edgeNeighborVertex(:,2) - edgeNeighborVertex(:,1)
@@ -5757,7 +5798,8 @@ contains
                             if (on_a_sphere) then
 
                                ! change edgeVector1 (spherical mesh only)
-                               ! Currently, iVertexOnEdgeRemap = V3 or V4 (since IP is in left half-plane); switch to V5 or V6 in right half-plane
+                               ! Currently, iVertexOnEdgeRemap = V3 or V4 (since IP is in left half-plane);
+                               ! switch to V5 or V6 in right half-plane
                                ! Since edgeVector2 already points along E5 or E6, it need not be changed
 
                                iOtherVertex = iVertexOnEdgeRemap + 2    ! V3 -> V5; V4 -> V6
@@ -5774,7 +5816,8 @@ contains
                             if (on_a_sphere) then
 
                                ! change edgeVector1
-                               ! Currently, iVertexOnEdgeRemap = V5 or V6 (since IP is in right half-plane); switch to V3 or V4 in right half-plane
+                               ! Currently, iVertexOnEdgeRemap = V5 or V6 (since IP is in right half-plane);
+                               ! switch to V3 or V4 in right half-plane
                                ! Since edgeVector2 already points along E5 or E6, it need not be changed
 
                                iOtherVertex = iVertexOnEdgeRemap - 2    ! V5 -> V3; V6 -> V4
@@ -5900,7 +5943,8 @@ contains
                 triangleVertexOnEdge(triangleCount) = iVertexOnEdge
 
                 ! choose the cell location and set the sign of the flux
-                dpInHalfPlane(iVertexOnEdge) = point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), departurePoint(:,iVertexOnEdge))
+                dpInHalfPlane(iVertexOnEdge) = &
+                     point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), departurePoint(:,iVertexOnEdge))
                 if (dpInHalfPlane(iVertexOnEdge)) then  ! departure point in left half-plane of iEdge
                    iCellTriangle(triangleCount,iEdge) = cellsOnEdgeRemap(1,iEdge)  ! C1
                    fluxSign(triangleCount) = 1
@@ -5936,7 +5980,8 @@ contains
                    else  ! departure point in right half-plane; choose E3 or E4
                       iOtherEdge = iVertexOnEdge + 2
                    endif
-                   edgeNeighborVertex(1,2) = xVertexOnEdge(iOtherEdge+2,iEdge)   ! V3 and V5 for edges E1 and E3; V4 and V6 for edges E2 and E4
+                   edgeNeighborVertex(1,2) = &
+                        xVertexOnEdge(iOtherEdge+2,iEdge)   ! V3 and V5 for edges E1 and E3; V4 and V6 for edges E2 and E4
                    edgeNeighborVertex(2,2) = yVertexOnEdge(iOtherEdge+2,iEdge)
                    edgeVector2(:,triangleCount) = edgeNeighborVertex(:,2) - edgeVertex(:,iVertexOnEdge)
 
@@ -6101,13 +6146,16 @@ contains
                          write(stderrUnit,*) n, xTriangle(n,iTri,iEdge), yTriangle(n,iTri,iEdge)
                       enddo
                       write(stderrUnit,*) 'edge-based triangle area =',  &
-                           abs (0.5_RKIND * ( (xTriangle(2,iTri,iEdge) - xTriangle(1,iTri,iEdge)) * (yTriangle(3,iTri,iEdge) - yTriangle(1,iTri,iEdge))  &
-                           - (yTriangle(2,iTri,iEdge) - yTriangle(1,iTri,iEdge)) * (xTriangle(3,iTri,iEdge) - xTriangle(1,iTri,iEdge)) ) )
+                           abs (0.5_RKIND * ( (xTriangle(2,iTri,iEdge) - xTriangle(1,iTri,iEdge)) * &
+                                              (yTriangle(3,iTri,iEdge) - yTriangle(1,iTri,iEdge))  &
+                                            - (yTriangle(2,iTri,iEdge) - yTriangle(1,iTri,iEdge)) * &
+                                              (xTriangle(3,iTri,iEdge) - xTriangle(1,iTri,iEdge)) ) )
                       write(stderrUnit,*) 'source cell =', indexToCellID(iCell)
                    endif
                 endif
 
-                !TODO: Compute triangle area in edge-based coordinates? Then would use the edge-based triangle area instead of the cell-based area.
+                !TODO: Compute triangle area in edge-based coordinates?
+                !Then would use the edge-based triangle area instead of the cell-based area.
 
                 call shift_vertices_of_departure_triangle(&
                      iEdge,                         &
@@ -6197,10 +6245,11 @@ contains
          yVertexOnCell       !< Input: y (north) coordinate of cell vertex relative to cell center in local tangent plane
 
     ! Note: Together, edgeVector1 and edgeVector2 define a basis for locating triangle vertices.
-    !       Both edges are among the edges included in the diagrams at the top of subroutine find_departure_triangles (7 for quads, 5 for hexes).
+    !       Both edges are among the edges included in the diagrams at the top of subroutine
+    !       find_departure_triangles (7 for quads, 5 for hexes).
     !       The edges are assumed to be adjacent and to share a vertex; each vector points away from the common vertex.
     !       Both edges must belong to the source cell, with the second edge following the first edge
-    !        when proceeding CCW around the cell. This implies that the cross product (edgeVector1 x edgeVector2) < 0.
+    !       when proceeding CCW around the cell. This implies that the cross product (edgeVector1 x edgeVector2) < 0.
 
     real(kind=RKIND), dimension(2), intent(inout) ::  &
          edgeVector1,      & !< Input: x and y coordinates of a vector pointing along an edge
@@ -6312,7 +6361,8 @@ contains
             crossProduct)
 
        if (abs(crossProduct) < eps11) then  ! the two vectors are (nearly) parallel; something is wrong
-          write(errorMessage,*) 'basis vectors for IR coordinate transformations must not be parallel: iEdge, iCell =', iEdge, iCell
+          write(errorMessage,*) 'basis vectors for IR coordinate transformations must not be parallel: iEdge, iCell =', &
+               iEdge, iCell
           write(stderrUnit,*) 'ERROR: '//trim(errorMessage)
           call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
        endif
@@ -6719,9 +6769,10 @@ contains
 
                       ! evaluate the tracer at each quadrature point
                       do iqp = 1, nQuadPoints
-                         thisTracer % triangleValue2D(:,iqp,iTri,iEdge) = thisTracer % center2D(:,iCell)                             &
-                                                                        + thisTracer % xGrad2D(:,iCell) * xTriangle(iqp,iTri,iEdge)  &
-                                                                        + thisTracer % yGrad2D(:,iCell) * yTriangle(iqp,iTri,iEdge)
+                         thisTracer % triangleValue2D(:,iqp,iTri,iEdge) = &
+                              thisTracer % center2D(:,iCell)                             &
+                            + thisTracer % xGrad2D(:,iCell) * xTriangle(iqp,iTri,iEdge)  &
+                            + thisTracer % yGrad2D(:,iCell) * yTriangle(iqp,iTri,iEdge)
                       enddo
 
                       ! evaluate the product mass*tracer at each quadrature point (using parent tracer info computed already)
@@ -6801,9 +6852,10 @@ contains
 
                       ! evaluate the tracer at each quadrature point
                       do iqp = 1, nQuadPoints
-                         thisTracer % triangleValue3D(:,:,iqp,iTri,iEdge) = thisTracer % center3D(:,:,iCell)   &
-                                                                          + thisTracer % xGrad3D(:,:,iCell) * xTriangle(iqp,iTri,iEdge)  &
-                                                                          + thisTracer % yGrad3D(:,:,iCell) * yTriangle(iqp,iTri,iEdge)
+                         thisTracer % triangleValue3D(:,:,iqp,iTri,iEdge) = &
+                              thisTracer % center3D(:,:,iCell)   &
+                            + thisTracer % xGrad3D(:,:,iCell) * xTriangle(iqp,iTri,iEdge)  &
+                            + thisTracer % yGrad3D(:,:,iCell) * yTriangle(iqp,iTri,iEdge)
                       enddo
 
                       ! evaluate the product mass*tracer at each quadrature point (using parent tracer info computed already)
@@ -6814,8 +6866,9 @@ contains
                       ! Note: Parent tracer can have ndims = 2 or 3
                       if (parentTracer % ndims == 2) then
                          do iLayer = 1, nLayers
-                            thisTracer % triangleValue3D(iLayer,:,:,iTri,iEdge) = parentTracer % triangleValue2D       (:,:,iTri,iEdge) &
-                                                                                  * thisTracer % triangleValue3D(iLayer,:,:,iTri,iEdge)
+                            thisTracer % triangleValue3D(iLayer,:,:,iTri,iEdge) = &
+                                 parentTracer % triangleValue2D(:,:,iTri,iEdge) * &
+                                 thisTracer % triangleValue3D(iLayer,:,:,iTri,iEdge)
                          enddo
                       else  ! parents has ndims = 3
                          thisTracer % triangleValue3D(:,:,:,iTri,iEdge) = parentTracer % triangleValue3D(:,:,:,iTri,iEdge) &
@@ -6852,7 +6905,8 @@ contains
                                if (thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge) < 0.0_RKIND) then
                                   write(stderrUnit,*)'ERROR: Negative reconstructed ice area'
                                   write(stderrUnit,*)'nCells =', nCells
-                                  write(stderrUnit,*)'iLayer, iCat, iCell, global iCell:', iLayer, iCat, iCell, indexToCellID(iCell)
+                                  write(stderrUnit,*)'iLayer, iCat, iCell, global iCell:', &
+                                       iLayer, iCat, iCell, indexToCellID(iCell)
                                   write(stderrUnit,*)'iEdge, global iEdge, iTri, iqp:', iEdge, indexToEdgeID(iEdge), iTri, iqp
                                   write(stderrUnit,*)'triangle area:', triangleArea(iTri,iEdge)
                                   write(stderrUnit,*)'tracer val:', thisTracer % triangleValue3D(iLayer,iCat,iqp,iTri,iEdge)
@@ -6995,7 +7049,7 @@ contains
              do iCell = 1, nCells
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
-                      thisTracer % massTracerProduct3D(iLayer,iCat,iCell) = parentTracer % massTracerProduct2D(iCat,iCell)  &
+                      thisTracer % massTracerProduct3D(iLayer,iCat,iCell) = parentTracer % massTracerProduct2D(iCat,iCell) &
                                                                           * thisTracer % array3D(iLayer,iCat,iCell)
                    enddo
                 enddo
@@ -7006,7 +7060,7 @@ contains
              do iCell = 1, nCells
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
-                      thisTracer % massTracerProduct3D(iLayer,iCat,iCell) = parentTracer % massTracerProduct3D(iLayer,iCat,iCell)  &
+                      thisTracer % massTracerProduct3D(iLayer,iCat,iCell) = parentTracer % massTracerProduct3D(iLayer,iCat,iCell) &
                                                                           * thisTracer % array3D(iLayer,iCat,iCell)
                    enddo
                 enddo
@@ -7219,11 +7273,13 @@ contains
              enddo   ! nEdgesOnCell
 
              ! update the tracer
-             ! Note: This expression uses the old value of massTracerProduct for this tracer, but the new value for the parent tracer
+             ! Note: This expression uses the old value of massTracerProduct for this tracer,
+             ! but the new value for the parent tracer
              do iCat = 1, nCategories
                 if (parentTracer % massTracerProduct2D(iCat,iCell) > 0.0_RKIND) then
-                   thisTracer % array2D(iCat,iCell) = (thisTracer % massTracerProduct2D(iCat,iCell) - (fluxFromCell2D(iCat) / areaCell(iCell))) &
-                                                   / parentTracer % massTracerProduct2D(iCat,iCell)
+                   thisTracer % array2D(iCat,iCell) = &
+                        (thisTracer % massTracerProduct2D(iCat,iCell) - (fluxFromCell2D(iCat) / areaCell(iCell))) / &
+                        parentTracer % massTracerProduct2D(iCat,iCell)
                 else
                    thisTracer % array2D(iCat,iCell) = 0.0_RKIND
                 endif
@@ -7234,7 +7290,8 @@ contains
                    write(stderrUnit,*) 'cell area:', areaCell(iCell)
                    write(stderrUnit,*) 'iceAreaCategory, massTracerProduct:', thisTracer % massTracerProduct2D(iCatTest,iCell)
                    write(stderrUnit,*) 'flux/area:', fluxFromCell2D(iCatTest) / areaCell(iCell)
-                   write(stderrUnit,*) 'difference:', (thisTracer % massTracerProduct2D(iCatTest,iCell) - (fluxFromCell2D(iCatTest) / areaCell(iCell)))
+                   write(stderrUnit,*) 'difference:', &
+                        (thisTracer % massTracerProduct2D(iCatTest,iCell) - (fluxFromCell2D(iCatTest) / areaCell(iCell)))
                    write(stderrUnit,*) 'parent massTracerProduct:', parentTracer % massTracerProduct2D(iCatTest,iCell)
                    write(stderrUnit,*) 'new value:', thisTracer % array2D(iCatTest,iCell)
                 endif
@@ -7297,7 +7354,8 @@ contains
              enddo  ! iEdgeOnCell
 
              ! update the tracer
-             ! Note: This expression uses the old value of massTracerProduct for this tracer, but the new value for the parent tracer
+             ! Note: This expression uses the old value of massTracerProduct for this tracer,
+             ! but the new value for the parent tracer
 
              if (parentTracer % ndims == 2) then
 
@@ -7350,7 +7408,8 @@ contains
                    if (iCell == ctest .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
                       write(stderrUnit,*) 'cell area:', areaCell(iCell)
                       write(stderrUnit,*) 'massTracerProduct:', thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
-                      write(stderrUnit,*) 'parent massTracerProduct:', parentTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
+                      write(stderrUnit,*) 'parent massTracerProduct:', &
+                           parentTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
                       write(stderrUnit,*) 'new value:', thisTracer % array3D(iLayerTest,iCatTest,iCell)
                    endif
                 endif
@@ -7687,7 +7746,8 @@ contains
 
                 if (verboseConstruct .and. ctestOnProc) then
                    if (iCell == ctest) then
-                      write(stderrUnit,*) '   Tracer, triangle value: ', trim(thisTracer % tracerName), thisTracer % massTracerProductTriangle2D(iCatTest)
+                      write(stderrUnit,*) '   Tracer, triangle value: ', &
+                           trim(thisTracer % tracerName), thisTracer % massTracerProductTriangle2D(iCatTest)
                    endif
                 endif
 
@@ -7722,11 +7782,13 @@ contains
                       do iLayer = 1, nLayers
 
                          ! reset the current tracer value to the product of the tracer and its parent(s)
-                         thisTracer % valueQP3D(iLayer,:,iqp) = thisTracer % valueQP3D(iLayer,:,iqp) * parentTracer % valueQP2D(:,iqp)
+                         thisTracer % valueQP3D(iLayer,:,iqp) = &
+                              thisTracer % valueQP3D(iLayer,:,iqp) * parentTracer % valueQP2D(:,iqp)
 
                          ! increment the sum over QPs
-                         thisTracer % massTracerProductTriangle3D(iLayer,:) = thisTracer % massTracerProductTriangle3D(iLayer,:)    &
-                                                                            + wQP(iqp) * thisTracer % valueQP3D(iLayer,:,iqp)
+                         thisTracer % massTracerProductTriangle3D(iLayer,:) = &
+                              thisTracer % massTracerProductTriangle3D(iLayer,:) &
+                            + wQP(iqp) * thisTracer % valueQP3D(iLayer,:,iqp)
 
                       enddo   ! nLayers
 
@@ -7736,7 +7798,7 @@ contains
                       thisTracer % valueQP3D(:,:,iqp) = thisTracer % valueQP3D(:,:,iqp) * parentTracer % valueQP3D(:,:,iqp)
 
                       ! increment the sum over QPs
-                      thisTracer % massTracerProductTriangle3D(:,:) = thisTracer % massTracerProductTriangle3D(:,:)    &
+                      thisTracer % massTracerProductTriangle3D(:,:) = thisTracer % massTracerProductTriangle3D(:,:) &
                                                                     + wQP(iqp) * thisTracer % valueQP3D(:,:,iqp)
 
                    endif  ! parentTracer % ndims
@@ -7745,15 +7807,17 @@ contains
 
                 if (verboseConstruct .and. ctestOnProc) then
                    if (iCell == ctest) then
-                      write(stderrUnit,*) '   Tracer, triangle value:', trim(thisTracer % tracerName), thisTracer % massTracerProductTriangle3D(iLayerTest,iCatTest)
+                      write(stderrUnit,*) '   Tracer, triangle value:', &
+                           trim(thisTracer % tracerName), thisTracer % massTracerProductTriangle3D(iLayerTest,iCatTest)
                    endif
                 endif
 
                 ! add this triangle contribution to the cumulative sum for the cell,
                 ! weighted by the fractional area of the triangle
 
-                thisTracer % massTracerProductCell3D(:,:) = thisTracer % massTracerProductCell3D(:,:)   &
-                                                          + fracEdgeArea(iEdgeOnCell) * thisTracer % massTracerProductTriangle3D(:,:)
+                thisTracer % massTracerProductCell3D(:,:) = &
+                     thisTracer % massTracerProductCell3D(:,:) &
+                   + fracEdgeArea(iEdgeOnCell) * thisTracer % massTracerProductTriangle3D(:,:)
 
              endif   ! thisTracer % ndims
 
@@ -7774,7 +7838,8 @@ contains
 
              do iCat = 1, nCategories
 
-                !TODO - Figure out a criterion based on nParents?  Relative errors are largest for tracers with 3 parents (e.g., pond depth)
+                !TODO - Figure out a criterion based on nParents?
+                ! Relative errors are largest for tracers with 3 parents (e.g., pond depth)
                 difference = thisTracer % massTracerProductCell2D(iCat) - thisTracer % massTracerProduct2D(iCat,iCell)
                 if (abs(difference) > eps11 * abs(thisTracer % massTracerProduct2D(iCat,iCell)) .and. abs(difference) > eps11) then
                    write(stderrUnit,*) 'WARNING: Reconstructed tracer does not recover the mean, iCat, iCell, tracer =', &
@@ -7788,7 +7853,8 @@ contains
 
              if (verboseConstruct .and. ctestOnProc) then
                 if (iCell == ctest) then
-                   write(stderrUnit,*) '   Tracer, reconstructed and desired value of mass*tracer: ', trim(thisTracer % tracerName),  &
+                   write(stderrUnit,*) '   Tracer, reconstructed and desired value of mass*tracer: ', &
+                        trim(thisTracer % tracerName),  &
                         thisTracer % massTracerProductCell2D(iCatTest), &
                         thisTracer % massTracerProduct2D(iCatTest,iCell)
                 endif
@@ -7799,8 +7865,10 @@ contains
              do iCat = 1, nCategories
                 do iLayer = 1, nLayers
 
-                   difference = thisTracer % massTracerProductCell3D(iLayer,iCat) - thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
-                   if (abs(difference) > eps11 * abs(thisTracer % massTracerProduct3D(iLayer,iCat,iCell)) .and. abs(difference) > eps11) then
+                   difference = &
+                        thisTracer % massTracerProductCell3D(iLayer,iCat) - thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
+                   if (abs(difference) > eps11 * abs(thisTracer % massTracerProduct3D(iLayer,iCat,iCell)) .and. &
+                        abs(difference) > eps11) then
                       write(stderrUnit,*) 'WARNING: Reconstructed tracer does not recover the mean, iCat, iCell, tracer =', &
                            iCat, iCell, trim(thisTracer % tracerName)
                       write(stderrUnit,*) 'Product of means:     ', thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
@@ -7813,7 +7881,8 @@ contains
 
              if (verboseConstruct .and. ctestOnProc) then
                 if (iCell == ctest) then
-                   write(stderrUnit,*) '   Tracer, reconstructed and desired value of  mass*tracer: ', trim(thisTracer % tracerName),  &
+                   write(stderrUnit,*) '   Tracer, reconstructed and desired value of  mass*tracer: ', &
+                        trim(thisTracer % tracerName),  &
                         thisTracer % massTracerProductCell3D(iLayerTest,iCatTest), &
                         thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
                 endif
@@ -7957,7 +8026,8 @@ contains
           do iCell = 1, nCellsSolve
              do iCat = 1, nCategories
                 do iLayer = 1, nLayers
-                   tracerSum3D(iLayer,iCat) = tracerSum3D(iLayer,iCat) + areaCell(iCell) * thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
+                   tracerSum3D(iLayer,iCat) = &
+                        tracerSum3D(iLayer,iCat) + areaCell(iCell) * thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
                 enddo
              enddo
           enddo
@@ -8041,7 +8111,8 @@ contains
              call mpas_timer_stop("tracer cons check 2D glbsum")
 
              if (verboseRun .and. iCat == 1) then
-                if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
+                if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. &
+                    trim(thisTracer % tracerName) == 'iceVolumeCategory') then
                    write(stderrUnit,*) ' '
                    write(stderrUnit,*) 'Tracer conservation, init global sum, final global sum: ', trim(thisTracer % tracerName), &
                         thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
@@ -8059,7 +8130,8 @@ contains
                 if (abs(ratio) > eps11) then
                    write(errorMessage,*) 'Tracer conservation error: tracer, category =', trim(thisTracer % tracerName), iCat
                    write(stderrUnit,*) trim(errorMessage)
-                   write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
+                   write(stderrUnit,*) 'Init value, final value:', &
+                        thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
                    write(stderrUnit,*) 'Difference, ratio:', difference, ratio
                    call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
                 endif
@@ -8085,9 +8157,11 @@ contains
                 call mpas_timer_stop("tracer cons check 3D glbsum")
 
                 if (verboseRun .and. iCat == 1 .and. iLayer == 1) then
-                   if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
+                   if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. &
+                       trim(thisTracer % tracerName) == 'iceVolumeCategory') then
                       write(stderrUnit,*) ' '
-                      write(stderrUnit,*) 'Tracer conservation, init global sum, final global sum: ', trim(thisTracer % tracerName), &
+                      write(stderrUnit,*) 'Tracer conservation, init global sum, final global sum: ', &
+                           trim(thisTracer % tracerName), &
                            thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
                    endif
                 endif
@@ -8099,9 +8173,11 @@ contains
 
                    !TODO - Verify that eps11 will work as a threshold
                    if (abs(ratio) > eps11) then
-                      write(errorMessage,*) 'Tracer conservation error: tracer, category, layer =', trim(thisTracer % tracerName), iCat, iLayer
+                      write(errorMessage,*) 'Tracer conservation error: tracer, category, layer =', &
+                           trim(thisTracer % tracerName), iCat, iLayer
                       write(stderrUnit,*) trim(errorMessage)
-                      write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
+                      write(stderrUnit,*) 'Init value, final value:', &
+                           thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
                       write(stderrUnit,*) 'Difference, ratio:', difference, ratio
                       call mpas_dmpar_global_abort('MPAS-seaice: IR: '//trim(errorMessage))
                    endif
@@ -8193,7 +8269,8 @@ contains
                    iCellNeighbor = cellsOnCell(iCellOnCell, iCell)
 
                    if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then       ! the neighbor cell exists
-                      if (thisTracer % arrayMask2D(iCat,iCellNeighbor) == 1) then   ! the tracer value in the neighbor cell has physical meaning
+                      ! the tracer value in the neighbor cell has physical meaning
+                      if (thisTracer % arrayMask2D(iCat,iCellNeighbor) == 1) then
                          if (thisTracer % array2D(iCat,iCellNeighbor) < thisTracer % localMin2D(iCat,iCell)) then
                             thisTracer % localMin2D(iCat,iCell) = thisTracer % array2D(iCat,iCellNeighbor)
                          endif
@@ -8222,7 +8299,7 @@ contains
                 do iLayer = 1, nLayers
 
                    ! initialize to the values in the cell itself
-                   if (thisTracer % arrayMask3D(iLayer,iCat,iCell) == 1) then   ! the tracer value in this cell has physical meaning
+                   if (thisTracer % arrayMask3D(iLayer,iCat,iCell) == 1) then ! the tracer value in this cell has physical meaning
                       thisTracer % localMin3D(iLayer,iCat,iCell) = thisTracer % array3D(iLayer,iCat,iCell)
                       thisTracer % localMax3D(iLayer,iCat,iCell) = thisTracer % array3D(iLayer,iCat,iCell)
                    endif
@@ -8232,7 +8309,8 @@ contains
                       iCellNeighbor = cellsOnCell(iCellOnCell, iCell)
 
                       if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then       ! the neighbor cell exists
-                         if (thisTracer % arrayMask3D(iLayer,iCat,iCellNeighbor) == 1) then   ! the tracer value in the neighbor cell has physical meaning
+                         ! the tracer value in the neighbor cell has physical meaning
+                         if (thisTracer % arrayMask3D(iLayer,iCat,iCellNeighbor) == 1) then
                             if (thisTracer % array3D(iLayer,iCat,iCellNeighbor) < thisTracer % localMin3D(iLayer,iCat,iCell)) then
                                thisTracer % localMin3D(iLayer,iCat,iCell) = thisTracer % array3D(iLayer,iCat,iCellNeighbor)
                             endif
@@ -8373,7 +8451,8 @@ contains
                                iCellNeighbor = cellsOnCell(iCellOnCell, iCell)
 
                                if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then       ! the neighbor cell exists
-                                  if (thisTracer % arrayMask2D(iCat,iCellNeighbor) == 1) then   ! the tracer value in the neighbor cell has physical meaning
+                                  ! the tracer value in the neighbor cell has physical meaning
+                                  if (thisTracer % arrayMask2D(iCat,iCellNeighbor) == 1) then
 
                                      if (thisTracer % localMin2D(iCat,iCellNeighbor) < thisTracer % localMin2D(iCat,iCell)) then
                                         thisTracer % localMin2D(iCat,iCell) = thisTracer % localMin2D(iCat,iCellNeighbor)
@@ -8405,7 +8484,8 @@ contains
 
              do while(associated(block))
 
-                ! check for monotonicity; compare the new value in each cell with the max/min of the old values in the cell neighborhood
+                ! check for monotonicity;
+                ! compare the new value in each cell with the max/min of the old values in the cell neighborhood
 
                 do iCell = 1, nCellsSolve
                    do iCat = 1, nCategories
@@ -8474,21 +8554,27 @@ contains
                       do iCat = 1, nCategories
                          do iLayer = 1, nLayers
 
-                            if (thisTracer % arrayMask3D(iLayer,iCat,iCell) == 1) then   ! the tracer value in this cell has physical meaning
+                            ! the tracer value in this cell has physical meaning
+                            if (thisTracer % arrayMask3D(iLayer,iCat,iCell) == 1) then
 
                                do iCellOnCell = 1, nEdgesOnCell(iCell)
 
                                   iCellNeighbor = cellsOnCell(iCellOnCell, iCell)
 
                                   if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then       ! the neighbor cell exists
-                                     if (thisTracer % arrayMask3D(iLayer,iCat,iCellNeighbor) == 1) then   ! the tracer value in the neighbor cell has physical meaning
+                                     ! the tracer value in the neighbor cell has physical meaning
+                                     if (thisTracer % arrayMask3D(iLayer,iCat,iCellNeighbor) == 1) then
 
-                                        if (thisTracer % localMin3D(iLayer,iCat,iCellNeighbor) < thisTracer % localMin3D(iLayer,iCat,iCell)) then
-                                           thisTracer % localMin3D(iLayer,iCat,iCell) = thisTracer % localMin3D(iLayer,iCat,iCellNeighbor)
+                                        if (thisTracer % localMin3D(iLayer,iCat,iCellNeighbor) < &
+                                            thisTracer % localMin3D(iLayer,iCat,iCell)) then
+                                           thisTracer % localMin3D(iLayer,iCat,iCell) = &
+                                                thisTracer % localMin3D(iLayer,iCat,iCellNeighbor)
                                         endif
 
-                                        if (thisTracer % localMax3D(iLayer,iCat,iCellNeighbor) > thisTracer % localMax3D(iLayer,iCat,iCell)) then
-                                           thisTracer % localMax3D(iLayer,iCat,iCell) = thisTracer % localMax3D(iLayer,iCat,iCellNeighbor)
+                                        if (thisTracer % localMax3D(iLayer,iCat,iCellNeighbor) > &
+                                            thisTracer % localMax3D(iLayer,iCat,iCell)) then
+                                           thisTracer % localMax3D(iLayer,iCat,iCell) = &
+                                                thisTracer % localMax3D(iLayer,iCat,iCellNeighbor)
                                         endif
 
                                      endif  ! tracer value in neighbor cell has physical meaning
@@ -8514,33 +8600,39 @@ contains
 
              do while(associated(block))
 
-                ! check for monotonicity; compare the new value in each cell with the max/min of the old values in the cell neighborhood
+                ! check for monotonicity;
+                ! compare the new value in each cell with the max/min of the old values in the cell neighborhood
 
                 do iCell = 1, nCellsSolve
                    do iCat = 1, nCategories
                       do iLayer = 1, nLayers
 
-                         if (thisTracer % arrayMask3D(iLayer,iCat,iCell) == 1) then   ! the tracer value in this cell has physical meaning
+                         ! the tracer value in this cell has physical meaning
+                         if (thisTracer % arrayMask3D(iLayer,iCat,iCell) == 1) then
 
                             toleranceMin = eps11 * max(1.0_RKIND, abs(thisTracer % localMin3D(iLayer,iCat,iCell)))
                             toleranceMax = eps11 * max(1.0_RKIND, abs(thisTracer % localMax3D(iLayer,iCat,iCell)))
 
-                            if (thisTracer % array3D(iLayer,iCat,iCell) < thisTracer % localMin3D(iLayer,iCat,iCell) - toleranceMin) then
+                            if (thisTracer % array3D(iLayer,iCat,iCell) < &
+                                thisTracer % localMin3D(iLayer,iCat,iCell) - toleranceMin) then
 
                                write(stderrUnit,*) ' '
                                write(stderrUnit,*) 'IR advection, monotonicity violation!'
-                               write(stderrUnit,*) 'Tracer, iLayer,iCat, iCell =', trim(thisTracer % tracerName), iLayer,iCat, iCell
+                               write(stderrUnit,*) 'Tracer, iLayer,iCat, iCell =', &
+                                    trim(thisTracer % tracerName), iLayer,iCat, iCell
                                write(stderrUnit,*) 'Old min value in neighborhood =', thisTracer % localMin3D(iLayer,iCat,iCell)
                                write(stderrUnit,*) 'New value in cell =', thisTracer % array3D(iLayer,iCat,iCell)
                                write(stderrUnit,*) 'Tolerance, difference:', toleranceMin,  &
                                     thisTracer % localMin3D(iLayer,iCat,iCell) - thisTracer % array3D(iLayer,iCat,iCell)
                                call mpas_dmpar_global_abort('MPAS-seaice: IR advection, monotonicity violation (min, nDims == 3)')
 
-                            elseif (thisTracer % array3D(iLayer,iCat,iCell) > thisTracer % localMax3D(iLayer,iCat,iCell) + toleranceMax) then
+                            elseif (thisTracer % array3D(iLayer,iCat,iCell) > &
+                                    thisTracer % localMax3D(iLayer,iCat,iCell) + toleranceMax) then
 
                                write(stderrUnit,*) ' '
                                write(stderrUnit,*) 'IR advection, monotonicity violation!'
-                               write(stderrUnit,*) 'Tracer, iLayer,iCat, iCell =', trim(thisTracer % tracerName), iLayer,iCat, iCell
+                               write(stderrUnit,*) 'Tracer, iLayer,iCat, iCell =', &
+                                    trim(thisTracer % tracerName), iLayer,iCat, iCell
                                write(stderrUnit,*) 'Old max value in neighborhood =', thisTracer % localMax3D(iLayer,iCat,iCell)
                                write(stderrUnit,*) 'New value in cell =', thisTracer % array3D(iLayer,iCat,iCell)
                                write(stderrUnit,*) 'Tolerance, difference:', toleranceMax,  &

@@ -52,7 +52,7 @@
 
 		<nml_option name="config_AM_timeSeriesStatsClimatology_reference_times"
 					type="character"
-          default_value="00-03-01_00:00:00;00-06-01_00:00:00;00-09-01_00:00:00;00-12-01_00:00:00"
+					default_value="00-03-01_00:00:00;00-06-01_00:00:00;00-09-01_00:00:00;00-12-01_00:00:00"
 					units="unitless"
 					description="A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)"
 					possible_values="A list of absolute times or 'initial_time's, separated by ;."

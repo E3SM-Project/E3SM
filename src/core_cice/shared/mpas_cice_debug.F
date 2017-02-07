@@ -2,11 +2,11 @@
 !
 !  cice_debug
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -18,7 +18,7 @@ module cice_debug
   implicit none
 
   private
-  save 
+  save
 
   public :: &
        cice_prepare_output_variables, &
@@ -62,11 +62,11 @@ contains
 !
 !  find_nearest_cell
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -124,11 +124,11 @@ contains
 !
 !  rotate_ninety
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -209,11 +209,11 @@ contains
 !
 !  plot_vertices_spherical
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -331,7 +331,8 @@ contains
     write(55,*) "set pm3d"
     write(55,*) "set size square"
     write(55,*) "unset key"
-    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0,"//&
+         " 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
 
     minArray = 1e30
     maxArray = -1e30
@@ -381,7 +382,8 @@ contains
              if (lnofill) then
                 write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border lt -1'
              else
-                write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', cellArray(iVertex), ' fillstyle solid'
+                write(strout,fmt='(a,i5,a,e14.6,a)') &
+                     "set object ",iObject,' fc palette cb ', cellArray(iVertex), ' fillstyle solid'
              endif
 
              write(55,*) trim(strout)
@@ -475,7 +477,8 @@ contains
 
           if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
 
-             write(strout,fmt='(a,i5,a,e14.6,a,e14.6,a,e14.6,a,e14.6,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
+             write(strout,fmt='(a,i5,a,e14.6,a,e14.6,a,e14.6,a,e14.6,a)') &
+                  "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
              write(55,*) trim(strout)
 
              iArrow = iArrow + 1
@@ -503,7 +506,8 @@ contains
 
           if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
 
-             write(strout,fmt='(a,i5,a,e14.6,a,e14.6,a,e14.6,a,e14.6,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
+             write(strout,fmt='(a,i5,a,e14.6,a,e14.6,a,e14.6,a,e14.6,a)') &
+                  "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
              write(55,*) trim(strout)
 
              iArrow = iArrow + 1
@@ -534,11 +538,11 @@ contains
 !
 !  plot_cells_spherical
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -654,7 +658,8 @@ contains
     write(55,*) "set pm3d"
     write(55,*) "set size square"
     write(55,*) "unset key"
-    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, "//&
+         "4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
 
     do iCell = 1, nCells
 
@@ -786,7 +791,8 @@ contains
 
           if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
 
-             write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
+             write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') &
+                  "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
              write(55,*) trim(strout)
 
              iArrow = iArrow + 1
@@ -814,7 +820,8 @@ contains
 
           if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
 
-             write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
+             write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') &
+                  "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
              write(55,*) trim(strout)
 
              iArrow = iArrow + 1
@@ -847,11 +854,11 @@ contains
 !
 !  latlon_to_xyz
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -887,11 +894,11 @@ contains
 !
 !  perform_rotation
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -948,11 +955,11 @@ contains
 !
 !  plot_pop_grid_cells
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1056,11 +1063,11 @@ contains
 !
 !  plot_pop_grid_vertices
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1174,11 +1181,11 @@ contains
 !
 !  cice_init_ijpop_from_ivertex
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1258,7 +1265,7 @@ contains
        enddo ! iVertexDegree
 
        ! decide if at border
-       POP_nx_2 = nint(real(POP_nx) / 2.0)
+       POP_nx_2 = nint(real(POP_nx,RKIND) / 2.0_RKIND)
 
        l_boundary = .false.
        if (imin < POP_nx_2 .and. imax > POP_nx_2) l_boundary = .true.
@@ -1315,11 +1322,11 @@ contains
 !
 !  cice_rms_difference
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1368,11 +1375,11 @@ contains
 !
 !  cice_plot_vertices_planar
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1434,7 +1441,8 @@ contains
     write(55,*) "set pm3d"
     write(55,*) "set size square"
     write(55,*) "unset key"
-    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, "//&
+         "4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
 
     do iVertex = 1, nVertices
 
@@ -1482,11 +1490,11 @@ contains
 !
 !  cice_plot_cells_planar
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1550,7 +1558,8 @@ contains
     write(55,*) "set pm3d"
     write(55,*) "set size square"
     write(55,*) "unset key"
-    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, "//&
+         "4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
 
     do iCell = 1, nCells
 
@@ -1594,11 +1603,11 @@ contains
 !
 !  open_filename_tag
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1635,11 +1644,11 @@ contains
 !
 !  cice_plot_spherical_latlon
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1753,7 +1762,8 @@ contains
     write(55,*) "set pm3d"
     write(55,*) "set size square"
     write(55,*) "unset key"
-    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, "//&
+         "4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
 
     iObject = 1
 
@@ -1828,11 +1838,11 @@ contains
 !
 !  strip_plot
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1879,11 +1889,11 @@ contains
 !
 !  cice_test_case_output
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1941,11 +1951,11 @@ contains
 !
 !  test_case_output_global_velocity
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2178,15 +2188,19 @@ contains
     call plot_vertices_spherical(mesh, stressDivergenceUGeographical, interiorVertex, "stressDivergenceU.txt", itimestep)
     call plot_vertices_spherical(mesh, stressDivergenceVGeographical, interiorVertex, "stressDivergenceV.txt", itimestep)
 
-    write(*,*) "stressDivergenceU: ", sum(abs(stressDivergenceUGeographical(1:nVertices)), mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
-    write(*,*) "stressDivergenceV: ", sum(abs(stressDivergenceVGeographical(1:nVertices)), mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
+    write(*,*) "stressDivergenceU: ", sum(abs(stressDivergenceUGeographical(1:nVertices)), &
+         mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
+    write(*,*) "stressDivergenceV: ", sum(abs(stressDivergenceVGeographical(1:nVertices)), &
+         mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
 
     ! ice velocity
     call plot_vertices_spherical(mesh, uVelocityGeographical, interiorVertex, "uVelocity.txt", itimestep)
     call plot_vertices_spherical(mesh, vVelocityGeographical, interiorVertex, "vVelocity.txt", itimestep)
 
-    write(*,*) "uVelocity: ", sum(abs(uVelocityGeographical(1:nVertices)), mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
-    write(*,*) "vVelocity: ", sum(abs(vVelocityGeographical(1:nVertices)), mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
+    write(*,*) "uVelocity: ", sum(abs(uVelocityGeographical(1:nVertices)), &
+         mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
+    write(*,*) "vVelocity: ", sum(abs(vVelocityGeographical(1:nVertices)), &
+         mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
 
     deallocate(uVelocityGeographical)
     deallocate(vVelocityGeographical)
@@ -2205,11 +2219,11 @@ contains
 !
 !  test_case_output_square_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2250,11 +2264,11 @@ contains
 !
 !  test_case_output_advection
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2303,11 +2317,11 @@ contains
 !
 !  cice_prepare_output_variables
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date July, 14th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2400,11 +2414,11 @@ contains
 !
 !  cice_time_output_variable_real
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date August 14th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2462,11 +2476,11 @@ contains
 !
 !  cice_time_output_variable_real_2D
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date August 10th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2526,11 +2540,11 @@ contains
 !
 !  cice_time_output_variable_int
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date August 14th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2588,11 +2602,11 @@ contains
 !
 !  cice_time_output_variable_int_2D
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date August 19th 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2654,11 +2668,11 @@ contains
 !
 !  cice_debug_output_array
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date Feburary 11th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2691,11 +2705,11 @@ contains
 !
 !  cice_debug_output_block
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date Feburary 11th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2723,11 +2737,11 @@ contains
 !
 !  cice_debug_output_block
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date Feburary 11th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2772,13 +2786,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+! cice_debug_write_out_field
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2816,7 +2830,8 @@ contains
 
     call MPAS_pool_get_field_info(pool, trim(fieldname), fieldInfo)
 
-    write(stderrUnit,*) "cice_debug_write_out_field: ", fieldInfo % nDims, " ", trim(poolname), " ", trim(fieldname), " ", trim(cicename)
+    write(stderrUnit,*) "cice_debug_write_out_field: ", fieldInfo % nDims, " ", &
+         trim(poolname), " ", trim(fieldname), " ", trim(cicename)
 
     select case (fieldInfo % nDims)
     case(1)
@@ -2846,10 +2861,12 @@ contains
        if (array3D % isActive) then
           do iDim1 = 1, size(array3D % array,1)
              do iDim2 = 1, size(array3D % array,2)
-                if (size(array3D % array,1) == 1 .and. trim(fieldname) /= "snowEnthalpy" .and. trim(fieldname) /= "absorbedShortwaveSnowLayer") then
+                if (size(array3D % array,1) == 1 .and. trim(fieldname) /= "snowEnthalpy" .and. &
+                     trim(fieldname) /= "absorbedShortwaveSnowLayer") then
                    write(fileout,fmt='(a,i1,a)') "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim2,".dat"
                 else
-                   write(fileout,fmt='(a,i1,a,i1,a)') "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim1,"_",iDim2,".dat"
+                   write(fileout,fmt='(a,i1,a,i1,a)') &
+                        "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim1,"_",iDim2,".dat"
                 endif
                 call cice_debug_output_array(array3D % array(iDim1,iDim2,:), trim(fileout))
              enddo
@@ -2863,7 +2880,8 @@ contains
           do iDim1 = 1, size(array4D % array,1)
              do iDim2 = 1, size(array4D % array,2)
                 do iDim3 = 1, size(array4D % array,3)
-                   write(fileout,fmt='(a,i1,a,i1,a,i1,a)') "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim1,"_",iDim2,"_",iDim3,".dat"
+                   write(fileout,fmt='(a,i1,a,i1,a,i1,a)') &
+                        "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim1,"_",iDim2,"_",iDim3,".dat"
                    call cice_debug_output_array(array4D % array(iDim1,iDim2,iDim3,:), trim(fileout))
                 enddo
              enddo
@@ -2876,13 +2894,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+! cice_debug_write_out_fields
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3167,8 +3185,10 @@ contains
        !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellVRotateRotate", "vectorCellVRotateRotate")
        !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexURotateRotate", "vectorVertexURotateRotate")
        !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVRotateRotate", "vectorVertexVRotateRotate")
-       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexURotateInterpolateRotate", "vectorVertexURotateInterpolateRotate")
-       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVRotateInterpolateRotate", "vectorVertexVRotateInterpolateRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexURotateInterpolateRotate", &
+       !                                                     "vectorVertexURotateInterpolateRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVRotateInterpolateRotate", &
+       !                                                     "vectorVertexVRotateInterpolateRotate")
        !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellUDiff", "vectorCellUDiff")
        !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellVDiff", "vectorCellVDiff")
        !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexUDiff", "vectorVertexUDiff")
@@ -3189,13 +3209,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  cice_writeout_config
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3246,13 +3266,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  config_cice_int
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3340,13 +3360,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  cice_writeout_configs
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3439,13 +3459,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  cice_debug_rotate_winds
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3534,7 +3554,8 @@ contains
     ANGLET = 0.0_RKIND
 
     recl = 2 * nx * ny
-    open(55, file="/usr/projects/climate/akt/cice_mpas_comparison/cice/column_pkg/rundir/grid", form="unformatted", access="direct", recl=recl)
+    open(55, file="/usr/projects/climate/akt/cice_mpas_comparison/cice/column_pkg/rundir/grid", &
+         form="unformatted", access="direct", recl=recl)
     read(55,rec=1) ULAT(1:nx,1:ny)
     read(55,rec=2) ULON(1:nx,1:ny)
     read(55,rec=3) HTN(1:nx,1:ny)
@@ -3621,11 +3642,11 @@ contains
 !
 !  cice_debug_processor_number
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3661,11 +3682,11 @@ contains
 !
 !  cice_debug_forcing_restart_test
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3765,22 +3786,29 @@ contains
        call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceHumidity2m", atmosReferenceHumidity2m)
 
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airLevelHeightRestartTest", airLevelHeightRestartTest)
-       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airPotentialTemperatureRestartTest", airPotentialTemperatureRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airPotentialTemperatureRestartTest", &
+                                                               airPotentialTemperatureRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airTemperatureRestartTest", airTemperatureRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airSpecificHumidityRestartTest", airSpecificHumidityRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airDensityRestartTest", airDensityRestartTest)
-       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveVisibleDirectDownRestartTest", shortwaveVisibleDirectDownRestartTest)
-       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveVisibleDiffuseDownRestartTest", shortwaveVisibleDiffuseDownRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveVisibleDirectDownRestartTest", &
+                                                               shortwaveVisibleDirectDownRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveVisibleDiffuseDownRestartTest", &
+                                                               shortwaveVisibleDiffuseDownRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveIRDirectDownRestartTest", shortwaveIRDirectDownRestartTest)
-       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveIRDiffuseDownRestartTest", shortwaveIRDiffuseDownRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveIRDiffuseDownRestartTest", &
+                                                               shortwaveIRDiffuseDownRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "longwaveDownRestartTest", longwaveDownRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "rainfallRateRestartTest", rainfallRateRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "snowfallRateRestartTest", snowfallRateRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "uAirVelocityRestartTest", uAirVelocityRestartTest)
        call MPAS_pool_get_array(atmosCouplingRestartTestPool, "vAirVelocityRestartTest", vAirVelocityRestartTest)
-       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceSpeed10mRestartTest", atmosReferenceSpeed10mRestartTest)
-       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceTemperature2mRestartTest", atmosReferenceTemperature2mRestartTest)
-       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceHumidity2mRestartTest", atmosReferenceHumidity2mRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceSpeed10mRestartTest", &
+                                                               atmosReferenceSpeed10mRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceTemperature2mRestartTest", &
+                                                               atmosReferenceTemperature2mRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceHumidity2mRestartTest", &
+                                                               atmosReferenceHumidity2mRestartTest)
 
        airLevelHeightRestartTest              = airLevelHeightRestartTest              + airLevelHeight
        airPotentialTemperatureRestartTest     = airPotentialTemperatureRestartTest     + airPotentialTemperature
@@ -3817,14 +3845,17 @@ contains
 
        call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaSurfaceTemperatureRestartTest", seaSurfaceTemperatureRestartTest)
        call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaSurfaceSalinityRestartTest", seaSurfaceSalinityRestartTest)
-       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaFreezingTemperatureRestartTest", seaFreezingTemperatureRestartTest)
-       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "freezingMeltingPotentialRestartTest", freezingMeltingPotentialRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaFreezingTemperatureRestartTest", &
+                                                               seaFreezingTemperatureRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "freezingMeltingPotentialRestartTest", &
+                                                               freezingMeltingPotentialRestartTest)
        call MPAS_pool_get_array(oceanCouplingRestartTestPool, "uOceanVelocityRestartTest", uOceanVelocityRestartTest)
        call MPAS_pool_get_array(oceanCouplingRestartTestPool, "vOceanVelocityRestartTest", vOceanVelocityRestartTest)
        call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaSurfaceTiltURestartTest", seaSurfaceTiltURestartTest)
        call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaSurfaceTiltVRestartTest", seaSurfaceTiltVRestartTest)
        call MPAS_pool_get_array(oceanCouplingRestartTestPool, "oceanMixedLayerDepthRestartTest", oceanMixedLayerDepthRestartTest)
-       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "oceanHeatFluxConvergenceRestartTest", oceanHeatFluxConvergenceRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "oceanHeatFluxConvergenceRestartTest", &
+                                                               oceanHeatFluxConvergenceRestartTest)
 
        seaSurfaceTemperatureRestartTest    = seaSurfaceTemperatureRestartTest    + seaSurfaceTemperature
        seaSurfaceSalinityRestartTest       = seaSurfaceSalinityRestartTest       + seaSurfaceSalinity

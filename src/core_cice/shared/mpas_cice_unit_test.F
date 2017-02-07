@@ -2,11 +2,11 @@
 !
 !  cice_unit_test
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -28,11 +28,11 @@ contains
 !
 !  cice_perform_unit_test
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ contains
          cice_constitutive_relationship_unit_test
 
     type(domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     character(len=strKIND), pointer :: &
          config_unit_test_type, &
@@ -73,4 +73,3 @@ contains
 !-----------------------------------------------------------------------
 
 end module cice_unit_test
-

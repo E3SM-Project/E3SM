@@ -23,11 +23,11 @@
 	<packages>
 		<package name="highFrequencyOutputAMPKG" description="This package includes variables required for the highFrequencyOutput analysis member."/>
 	</packages>
-        <var_struct name="highFrequencyOutputAM" time_levs="1" packages="highFrequencyOutputAMPKG">
-                <var name="iceAreaCellCategory1" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
-                        description="area of ice in category 1"
-                />
-        </var_struct>
+	<var_struct name="highFrequencyOutputAM" time_levs="1" packages="highFrequencyOutputAMPKG">
+		<var name="iceAreaCellCategory1" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
+			description="area of ice in category 1"
+		/>
+	</var_struct>
 	<streams>
 		<stream name="highFrequencyOutput" type="output"
 				mode="forward;analysis"
@@ -43,4 +43,3 @@
 			<var name="iceAreaCellCategory1"/>
 		</stream>
 	</streams>
-

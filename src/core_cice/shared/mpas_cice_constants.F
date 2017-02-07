@@ -2,11 +2,11 @@
 !
 !  cice_constants
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

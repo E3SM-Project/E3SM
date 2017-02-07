@@ -25,39 +25,39 @@
 	</packages>
 	<var_struct name="geographicalVectorsAM" time_levs="1" packages="geographicalVectorsAMPKG">
 		<var name="uVelocityGeo" type="real" dimensions="nVertices Time" units="m/s"
-		     description="True eastwards ice velocity"
-		     />
+			description="True eastwards ice velocity"
+		/>
 		<var name="vVelocityGeo" type="real" dimensions="nVertices Time" units="m/s"
-		     description="True northwards ice velocity"
-		     />
+			description="True northwards ice velocity"
+		/>
 		<var name="stressDivergenceUGeo" type="real" dimensions="nVertices Time" units="N/m^2"
-		     description="True eastwards stress divergence"
-		     />
+			description="True eastwards stress divergence"
+		/>
 		<var name="stressDivergenceVGeo" type="real" dimensions="nVertices Time" units="N/m^2"
-		     description="True northwards stress divergence"
-		     />
+			description="True northwards stress divergence"
+		/>
 		<var name="airStressVertexUGeo" type="real" dimensions="nVertices Time" units="N/m^2"
-		     description="True eastwards sea ice-air stress"
-		     />
+			description="True eastwards sea ice-air stress"
+		/>
 		<var name="airStressVertexVGeo" type="real" dimensions="nVertices Time" units="N/m^2"
-		     description="True northwards sea ice-air stress"
-		     />
+			description="True northwards sea ice-air stress"
+		/>
 		<var name="oceanStressUGeo" type="real" dimensions="nVertices Time" units="N/m^2"
-		     description="True eastwards sea ice-ocean stress"
-		     />
+			description="True eastwards sea ice-ocean stress"
+		/>
 		<var name="oceanStressVGeo" type="real" dimensions="nVertices Time" units="N/m^2"
-		     description="True northwards sea ice-ocean stress"
-		     />
+			description="True northwards sea ice-ocean stress"
+		/>
 		<var name="surfaceTiltForceUGeo" type="real" dimensions="nVertices Time" units="N/m^2"
-		     description="True eastwards sea surface tilt stress"
-		     />
+			description="True eastwards sea surface tilt stress"
+		/>
 		<var name="surfaceTiltForceVGeo" type="real" dimensions="nVertices Time" units="N/m^2"
-		     description="True northwards sea surface tilt stress"
-		     />
+			description="True northwards sea surface tilt stress"
+		/>
 		<var name="uOceanVelocityVertexGeo" type="real" dimensions="nVertices Time" units="m/s"
-		     description="True eastwards ocean velocity"
-		     />
+			description="True eastwards ocean velocity"
+		/>
 		<var name="vOceanVelocityVertexGeo" type="real" dimensions="nVertices Time" units="m/s"
-		     description="True northwards ocean velocity"
-		     />
+			description="True northwards ocean velocity"
+		/>
 	</var_struct>

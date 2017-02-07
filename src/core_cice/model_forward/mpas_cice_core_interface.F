@@ -115,11 +115,11 @@ module cice_core_interface
    !
    !  routine setup_packages_dynamics
    !
-   !> \brief   
+   !> \brief
    !> \author  Adrian K. Turner
    !> \date    9th Feburary 2015
-   !> \details 
-   !>  
+   !> \details
+   !>
    !
    !-----------------------------------------------------------------------
 
@@ -205,11 +205,11 @@ module cice_core_interface
    !
    !  routine setup_packages_dynamics
    !
-   !> \brief   
+   !> \brief
    !> \author  Adrian K. Turner
    !> \date    9th Feburary 2015
-   !> \details 
-   !>  
+   !> \details
+   !>
    !
    !-----------------------------------------------------------------------
 

@@ -347,7 +347,8 @@ contains
 
             if (iceAreaCell(iCell) > cicePuny) then
 
-               nCellsProcWithSeaIceTmp(domain % dminfo % my_proc_id+1) = nCellsProcWithSeaIceTmp(domain % dminfo % my_proc_id+1) + 1
+               nCellsProcWithSeaIceTmp(domain % dminfo % my_proc_id+1) = &
+                    nCellsProcWithSeaIceTmp(domain % dminfo % my_proc_id+1) + 1
 
             endif
 

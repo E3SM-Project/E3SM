@@ -7,11 +7,11 @@
 !
 !  cice_column
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 12th January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -187,11 +187,11 @@ contains
 !
 !  cice_init_column_physics_package_parameters
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -222,11 +222,11 @@ contains
 !
 !  cice_init_column_physics_package_variables
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -282,11 +282,11 @@ contains
 !
 !  init_column_itd
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -331,11 +331,11 @@ contains
 !
 !  init_column_thermo
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -390,7 +390,8 @@ contains
 
              ! these profiles are not used by mushy
              initialSalinityProfile(iIceLayer,iCell)           = initialSalinityProfileVertical(iIceLayer)
-             initialMeltingTemperatureProfile(iIceLayer,iCell) = colpkg_liquidus_temperature(initialSalinityProfileVertical(iIceLayer))
+             initialMeltingTemperatureProfile(iIceLayer,iCell) = &
+                  colpkg_liquidus_temperature(initialSalinityProfileVertical(iIceLayer))
 
           enddo ! iIceLayer
        enddo ! iCell
@@ -406,11 +407,11 @@ contains
 !
 !  init_column_shortwave
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -627,11 +628,11 @@ contains
 !
 !  init_column_thermodynamic_tracers
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -724,11 +725,11 @@ contains
 !
 !  init_column_level_ice_tracers
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -780,11 +781,11 @@ contains
 !
 !  cice_column_finalize
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 29th October 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -803,11 +804,11 @@ contains
 !
 !  cice_column_predynamics_time_integration
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -834,7 +835,8 @@ contains
     if (config_use_column_package) then
 
        call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
-       call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", &
+                                                    config_use_column_vertical_thermodynamics)
        call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
        call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
        call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
@@ -903,11 +905,11 @@ contains
 !
 !  cice_column_dynamics_time_integration
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -972,11 +974,11 @@ contains
 !
 !  cice_column_postdynamics_time_integration
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1021,11 +1023,11 @@ contains
 !
 !  column_vertical_thermodynamics
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 20th January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1428,11 +1430,15 @@ contains
              do iCategory = 1, nCategories
                 do iAerosol = 1, nAerosols
 
-                   specificSnowAerosol(iAerosol, 1, iCategory) = snowScatteringAerosol(iAerosol,iCategory,iCell) * snowVolumeCategoryInitial(iCategory,iCell)
-                   specificSnowAerosol(iAerosol, 2, iCategory) = snowBodyAerosol(iAerosol,iCategory,iCell)       * snowVolumeCategoryInitial(iCategory,iCell)
+                   specificSnowAerosol(iAerosol, 1, iCategory) = &
+                        snowScatteringAerosol(iAerosol,iCategory,iCell) * snowVolumeCategoryInitial(iCategory,iCell)
+                   specificSnowAerosol(iAerosol, 2, iCategory) = &
+                        snowBodyAerosol(iAerosol,iCategory,iCell)       * snowVolumeCategoryInitial(iCategory,iCell)
 
-                   specificIceAerosol(iAerosol, 1, iCategory) = iceScatteringAerosol(iAerosol,iCategory,iCell)   * iceVolumeCategoryInitial(iCategory,iCell)
-                   specificIceAerosol(iAerosol, 2, iCategory) = iceBodyAerosol(iAerosol,iCategory,iCell)         * iceVolumeCategoryInitial(iCategory,iCell)
+                   specificIceAerosol(iAerosol, 1, iCategory) = &
+                        iceScatteringAerosol(iAerosol,iCategory,iCell)   * iceVolumeCategoryInitial(iCategory,iCell)
+                   specificIceAerosol(iAerosol, 2, iCategory) = &
+                        iceBodyAerosol(iAerosol,iCategory,iCell)         * iceVolumeCategoryInitial(iCategory,iCell)
 
                 enddo ! iAerosol
              enddo ! iCategory
@@ -1590,10 +1596,12 @@ contains
                 do iAerosol = 1, nAerosols
 
                    if (snowVolumeCategory(1,iCategory,iCell) > cicePuny) &
-                        specificSnowAerosol(iAerosol, :, iCategory) = specificSnowAerosol(iAerosol, :, iCategory) / snowVolumeCategory(1,iCategory,iCell)
+                        specificSnowAerosol(iAerosol, :, iCategory) = &
+                        specificSnowAerosol(iAerosol, :, iCategory) / snowVolumeCategory(1,iCategory,iCell)
 
                    if (iceVolumeCategory(1,iCategory,iCell) > cicePuny) &
-                        specificIceAerosol(iAerosol, :, iCategory)  = specificIceAerosol(iAerosol, :, iCategory)  / iceVolumeCategory(1,iCategory,iCell)
+                        specificIceAerosol(iAerosol, :, iCategory)  = &
+                        specificIceAerosol(iAerosol, :, iCategory)  / iceVolumeCategory(1,iCategory,iCell)
 
                    snowScatteringAerosol(iAerosol,iCategory,iCell) = specificSnowAerosol(iAerosol, 1, iCategory)
                    snowBodyAerosol(iAerosol,iCategory,iCell)       = specificSnowAerosol(iAerosol, 2, iCategory)
@@ -1621,11 +1629,11 @@ contains
 !
 !  column_itd_thermodynamics
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 21th January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1920,11 +1928,11 @@ contains
 !
 !  column_prep_radiation
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 21th January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2048,11 +2056,11 @@ contains
 !
 !  column_radiation
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 21th January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2324,7 +2332,7 @@ contains
           enddo ! iCategory
 
           lonCellColumn = lonCell(iCell)
-          if (lonCellColumn > pii) lonCellColumn = lonCellColumn - 2.0 * pii
+          if (lonCellColumn > pii) lonCellColumn = lonCellColumn - 2.0_RKIND * pii
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -2419,11 +2427,11 @@ contains
 !
 !  column_ridging
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 21th January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2691,11 +2699,11 @@ contains
 !
 !  column_biogeochemistry
 !
-!> \brief 
+!> \brief
 !> \author Nicole Jeffery, LANL
 !> \date 19th October 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3168,11 +3176,11 @@ contains
 !
 !  get_day_of_year
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 20th January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3203,11 +3211,11 @@ contains
 !
 !  get_seconds_into_day
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3240,11 +3248,11 @@ contains
 !
 !  get_days_in_year
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3295,11 +3303,11 @@ contains
 !
 !  cice_column_update_state
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 31st March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3408,11 +3416,11 @@ contains
 !
 !  cice_column_aggregate
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3517,11 +3525,11 @@ contains
 !
 !  cice_column_coupling_prep
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th April
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3940,11 +3948,11 @@ contains
 !
 !  cice_column_scale_fluxes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th April
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -4205,11 +4213,11 @@ contains
 !
 !  cice_column_ocean_mixed_layer
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th April
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -4447,11 +4455,11 @@ contains
 !
 !  init_column_tracer_object
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 22nd January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -4519,11 +4527,11 @@ contains
 !
 !  init_column_tracer_object_tracer_number
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 22nd January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -4796,11 +4804,11 @@ contains
 !
 !  init_column_tracer_object_child_indices
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 22nd January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -4918,11 +4926,11 @@ contains
 !
 !  init_column_tracer_object_parent_indices
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 22nd January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5033,11 +5041,11 @@ contains
 !
 !  init_column_tracer_object_first_ancestor_mask
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 3rd Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5092,11 +5100,11 @@ contains
 !
 !  init_column_tracer_object_ancestor_indices
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 3rd Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5145,7 +5153,8 @@ contains
        ! refrozen pond lid
        tracerObject % ancestorNumber (tracerObject % index_pondLidThickness)   = 2
        tracerObject % ancestorIndices(tracerObject % index_pondLidThickness,2) = tracerObject % index_pondArea  ! on melt pond area
-       tracerObject % ancestorIndices(tracerObject % index_pondLidThickness,1) = tracerObject % index_levelIceArea  ! on level ice area
+       tracerObject % ancestorIndices(tracerObject % index_pondLidThickness,1) = &
+            tracerObject % index_levelIceArea  ! on level ice area
 
     endif
 
@@ -5172,11 +5181,11 @@ contains
 !
 !  set_cice_tracer_array_category
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5209,11 +5218,11 @@ contains
 !
 !  get_cice_tracer_array_category
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5246,11 +5255,11 @@ contains
 !
 !  set_cice_tracer_array_cell
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5283,11 +5292,11 @@ contains
 !
 !  get_cice_tracer_array_cell
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5320,11 +5329,11 @@ contains
 !
 !  set_cice_physics_tracer_array_category
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5480,11 +5489,11 @@ contains
 !
 !  get_cice_physics_tracer_array_category
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5640,11 +5649,11 @@ contains
 !
 !  set_cice_physics_tracer_array_cell
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5802,11 +5811,11 @@ contains
 !
 !  get_cice_physics_tracer_array_cell
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 4th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -5964,8 +5973,8 @@ contains
 !
 !  set_cice_biogeochemistry_array_category
 !
-!> \brief 
-!> \author Nicole Jeffery 
+!> \brief
+!> \author Nicole Jeffery
 !> \date 12th September 2015
 !> \details
 !>
@@ -6124,7 +6133,8 @@ contains
 
        ! algal nitrogen
        do iBioTracers = 1, nAlgae
-          tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers),:) = skeletalAlgaeConc(iBioTracers,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers),:) = &
+               skeletalAlgaeConc(iBioTracers,:,iCell)
        enddo
 
        ! nitrate
@@ -6175,10 +6185,12 @@ contains
        ! Particulate and dissovled Iron
        if (config_use_iron) then
           do iBioTracers = 1, nParticulateIron
-             tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers),:) = skeletalParticulateIronConc(iBioTracers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers),:) = &
+                  skeletalParticulateIronConc(iBioTracers,:,iCell)
           enddo
           do iBioTracers = 1, nDissolvedIron
-             tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers),:) = skeletalDissolvedIronConc(iBioTracers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers),:) = &
+                  skeletalDissolvedIronConc(iBioTracers,:,iCell)
           enddo
        endif
 
@@ -6195,7 +6207,8 @@ contains
           do iBioTracers = 1, nAlgae
              do iLayers = 1,nBioLayersP3
                 iBiocount = iBiocount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers)+iLayers-1,:) = verticalAlgaeConc(iBioCount,:,iCell)
+                tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers)+iLayers-1,:) = &
+                     verticalAlgaeConc(iBioCount,:,iCell)
              enddo
           enddo
        endif
@@ -6203,7 +6216,8 @@ contains
        ! nitrate
        if (config_use_nitrate) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_nitrateConc + iLayers-1,:) = verticalNitrateConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_nitrateConc + iLayers-1,:) = &
+                  verticalNitrateConc(iLayers,:,iCell)
           enddo
        endif
 
@@ -6213,7 +6227,8 @@ contains
           do iBioTracers = 1, nDOC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers) + iLayers-1,:) = verticalDOCConc(iBioCount,:,iCell)
+                tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers) + iLayers-1,:) = &
+                     verticalDOCConc(iBioCount,:,iCell)
              enddo
           enddo
           iBioCount = 0
@@ -6222,7 +6237,8 @@ contains
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers) + iLayers-1,:) = verticalDICConc(iBioCount,:,iCell)
+                tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers) + iLayers-1,:) = &
+                     verticalDICConc(iBioCount,:,iCell)
              enddo
           enddo
        endif
@@ -6233,7 +6249,8 @@ contains
           do iBioTracers = 1, nDON
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_DONConc(iBioTracers) + iLayers-1,:) = verticalDONConc(iBioCount,:,iCell)
+                tracerObject % tracerArrayCategory(tracerObject % index_DONConc(iBioTracers) + iLayers-1,:) = &
+                     verticalDONConc(iBioCount,:,iCell)
              enddo
           enddo
        endif
@@ -6241,14 +6258,16 @@ contains
        ! ammonium
        if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_ammoniumConc + iLayers-1,:) = verticalAmmoniumConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_ammoniumConc + iLayers-1,:) = &
+                  verticalAmmoniumConc(iLayers,:,iCell)
           enddo
        endif
 
        ! silicate
        if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_silicateConc+iLayers-1,:) = verticalSilicateConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_silicateConc+iLayers-1,:) = &
+                  verticalSilicateConc(iLayers,:,iCell)
           enddo
        endif
 
@@ -6264,7 +6283,8 @@ contains
        ! nonreactive purely mobile tracers
        if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_nonreactiveConc+iLayers-1,:) = verticalNonreactiveConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_nonreactiveConc+iLayers-1,:) = &
+                  verticalNonreactiveConc(iLayers,:,iCell)
           enddo
        endif
 
@@ -6281,14 +6301,16 @@ contains
           do iBioTracers = 1, nParticulateIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1,:) = verticalParticulateIronConc(iBioCount,:,iCell)
+                tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1,:) = &
+                     verticalParticulateIronConc(iBioCount,:,iCell)
              enddo
           enddo
           iBioCount = 0
           do iBioTracers = 1, nDissolvedIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1,:) = verticalDissolvedIronConc(iBioCount,:,iCell)
+                tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1,:) = &
+                     verticalDissolvedIronConc(iBioCount,:,iCell)
              enddo
           enddo
        endif
@@ -6299,7 +6321,8 @@ contains
           do iBioTracers = 1, nzAerosols
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCategory(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1,:) =  verticalAerosolsConc(iBioCount,:,iCell)
+                tracerObject % tracerArrayCategory(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1,:) = &
+                     verticalAerosolsConc(iBioCount,:,iCell)
              enddo
           enddo
        endif
@@ -6307,7 +6330,8 @@ contains
        ! salinity used with BL99 thermodynamics
        if (config_use_vertical_zsalinity) then
           do iLayers = 1, nBioLayers
-             tracerObject % tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:) = verticalSalinity(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:) = &
+                  verticalSalinity(iLayers,:,iCell)
           enddo
        endif
     endif
@@ -6318,11 +6342,11 @@ contains
 !
 !  get_cice_biogeochemistry_array_category
 !
-!> \brief 
+!> \brief
 !> \author Nicole Jeffery, LANL
 !> \date 23rd September 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -6397,7 +6421,7 @@ contains
          verticalHumicsConc, &
          verticalParticulateIronConc, &
          verticalDissolvedIronConc, &
-         verticalAerosolsConc, & 
+         verticalAerosolsConc, &
          verticalSalinity, &
          brineFraction, &
          mobileFraction
@@ -6477,7 +6501,8 @@ contains
 
        ! algal nitrogen
        do iBioTracers = 1, nAlgae
-          skeletalAlgaeConc(iBioTracers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers),:)
+          skeletalAlgaeConc(iBioTracers,:,iCell) = &
+               tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers),:)
        enddo
 
        ! nitrate
@@ -6488,12 +6513,14 @@ contains
 
           ! DOC
           do iBioTracers = 1, nDOC
-             skeletalDOCConc(iBioTracers,:,iCell) =  tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers),:)
+             skeletalDOCConc(iBioTracers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers),:)
           enddo
 
           ! DIC
           do iBioTracers = 1, nDIC
-             skeletalDICConc(iBioTracers,:,iCell) =  tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers),:)
+             skeletalDICConc(iBioTracers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers),:)
           enddo
        endif
 
@@ -6528,12 +6555,14 @@ contains
 
           ! Particulate Iron
           do iBioTracers = 1, nParticulateIron
-             skeletalParticulateIronConc(iBioTracers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers),:)
+             skeletalParticulateIronConc(iBioTracers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers),:)
           enddo
 
           ! Dissolved Iron
           do iBioTracers = 1, nDissolvedIron
-             skeletalDissolvedIronConc(iBioTracers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers),:)
+             skeletalDissolvedIronConc(iBioTracers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers),:)
           enddo
        endif
 
@@ -6551,7 +6580,8 @@ contains
           do iBioTracers = 1, nAlgae
              do iLayers = 1,nBioLayersP3
                 iBiocount = iBiocount + 1
-                verticalAlgaeConc(iBioCount,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers)+iLayers-1,:)
+                verticalAlgaeConc(iBioCount,:,iCell) = &
+                     tracerObject % tracerArrayCategory(tracerObject % index_algaeConc(iBioTracers)+iLayers-1,:)
              enddo
           enddo
        endif
@@ -6559,7 +6589,8 @@ contains
        ! nitrate
        if (config_use_nitrate) then
           do iLayers = 1, nBioLayersP3
-             verticalNitrateConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nitrateConc + iLayers-1,:)
+             verticalNitrateConc(iLayers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_nitrateConc + iLayers-1,:)
           enddo
        endif
 
@@ -6570,7 +6601,8 @@ contains
           do iBioTracers = 1, nDOC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalDOCConc(iBioCount,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers) + iLayers-1,:)
+                verticalDOCConc(iBioCount,:,iCell) = &
+                     tracerObject % tracerArrayCategory(tracerObject % index_DOCConc(iBioTracers) + iLayers-1,:)
              enddo
           enddo
           iBioCount = 0
@@ -6579,7 +6611,8 @@ contains
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalDICConc(iBioCount,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers) + iLayers-1,:)
+                verticalDICConc(iBioCount,:,iCell) = &
+                     tracerObject % tracerArrayCategory(tracerObject % index_DICConc(iBioTracers) + iLayers-1,:)
              enddo
           enddo
        endif
@@ -6590,7 +6623,8 @@ contains
           do iBioTracers = 1, nDON
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalDONConc(iBioCount,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DONConc(iBioTracers) + iLayers-1,:)
+                verticalDONConc(iBioCount,:,iCell) = &
+                     tracerObject % tracerArrayCategory(tracerObject % index_DONConc(iBioTracers) + iLayers-1,:)
              enddo
           enddo
        endif
@@ -6598,14 +6632,16 @@ contains
        ! ammonium
        if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
-             verticalAmmoniumConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_ammoniumConc + iLayers-1,:)
+             verticalAmmoniumConc(iLayers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_ammoniumConc + iLayers-1,:)
           enddo
        endif
 
        ! silicate
        if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
-             verticalSilicateConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_silicateConc+iLayers-1,:)
+             verticalSilicateConc(iLayers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_silicateConc+iLayers-1,:)
           enddo
        endif
 
@@ -6621,7 +6657,8 @@ contains
        ! nonreactive tracer
        if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
-             verticalNonreactiveConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nonreactiveConc+iLayers-1,:)
+             verticalNonreactiveConc(iLayers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_nonreactiveConc+iLayers-1,:)
           enddo
        endif
 
@@ -6639,7 +6676,8 @@ contains
           do iBioTracers = 1, nParticulateIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalParticulateIronConc(iBioCount,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1,:)
+                verticalParticulateIronConc(iBioCount,:,iCell) = &
+                     tracerObject % tracerArrayCategory(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1,:)
              enddo
           enddo
           iBioCount = 0
@@ -6648,7 +6686,8 @@ contains
           do iBioTracers = 1, nDissolvedIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalDissolvedIronConc(iBioCount,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1,:)
+                verticalDissolvedIronConc(iBioCount,:,iCell) = &
+                     tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1,:)
              enddo
           enddo
        endif
@@ -6659,7 +6698,8 @@ contains
           do iBioTracers = 1, nzAerosols
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalAerosolsConc(iBioCount,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1,:)
+                verticalAerosolsConc(iBioCount,:,iCell) = &
+                     tracerObject % tracerArrayCategory(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1,:)
              enddo
           enddo
        endif
@@ -6667,7 +6707,8 @@ contains
        ! salinity used with BL99 thermodynamics
        if (config_use_vertical_zsalinity) then
           do iLayers = 1, nBioLayers
-             verticalSalinity(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:)
+             verticalSalinity(iLayers,:,iCell) = &
+                  tracerObject % tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:)
           enddo
        endif
     endif
@@ -6678,11 +6719,11 @@ contains
 !
 !  set_cice_biogeochemistry_array_cell
 !
-!> \brief 
+!> \brief
 !> \author Nicole Jeffery, LANL
 !> \date 23rd September 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -6890,12 +6931,14 @@ contains
 
           ! particulate iron
           do iBioTracers = 1, nParticulateIron
-             tracerObject % tracerArrayCell(tracerObject % index_particulateIronConc(iBioTracers))   = skeletalParticulateIronConcCell(iBioTracers,iCell)
+             tracerObject % tracerArrayCell(tracerObject % index_particulateIronConc(iBioTracers)) = &
+                  skeletalParticulateIronConcCell(iBioTracers,iCell)
           enddo
 
           ! dissolved iron
           do iBioTracers = 1, nDissolvedIron
-             tracerObject % tracerArrayCell(tracerObject % index_dissolvedIronConc(iBioTracers))  = skeletalDissolvedIronConcCell(iBioTracers,iCell)
+             tracerObject % tracerArrayCell(tracerObject % index_dissolvedIronConc(iBioTracers)) = &
+                  skeletalDissolvedIronConcCell(iBioTracers,iCell)
           enddo
        endif
 
@@ -6908,7 +6951,8 @@ contains
           do iBioTracers = 1, nAlgae
              do iLayers = 1,nBioLayersP3
                 iBiocount = iBiocount + 1
-                tracerObject % tracerArrayCell(tracerObject % index_algaeConc(iBioTracers)+iLayers-1)  = verticalAlgaeConcCell(iBioCount,iCell)
+                tracerObject % tracerArrayCell(tracerObject % index_algaeConc(iBioTracers)+iLayers-1) = &
+                     verticalAlgaeConcCell(iBioCount,iCell)
              enddo
           enddo
        endif
@@ -6927,7 +6971,8 @@ contains
           do iBioTracers = 1, nDOC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCell(tracerObject % index_DOCConc(iBioTracers) + iLayers-1)  = verticalDOCConcCell(iBioCount,iCell)
+                tracerObject % tracerArrayCell(tracerObject % index_DOCConc(iBioTracers) + iLayers-1) = &
+                     verticalDOCConcCell(iBioCount,iCell)
              enddo
           enddo
           iBioCount = 0
@@ -6936,7 +6981,8 @@ contains
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCell(tracerObject % index_DICConc(iBioTracers) + iLayers-1)  = verticalDICConcCell(iBioCount,iCell)
+                tracerObject % tracerArrayCell(tracerObject % index_DICConc(iBioTracers) + iLayers-1) = &
+                     verticalDICConcCell(iBioCount,iCell)
              enddo
           enddo
        endif
@@ -6947,7 +6993,8 @@ contains
           do iBioTracers = 1, nDON
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCell(tracerObject % index_DONConc(iBioTracers) + iLayers-1)  = verticalDONConcCell(iBioCount,iCell)
+                tracerObject % tracerArrayCell(tracerObject % index_DONConc(iBioTracers) + iLayers-1) = &
+                     verticalDONConcCell(iBioCount,iCell)
              enddo
           enddo
        endif
@@ -6955,14 +7002,15 @@ contains
        ! ammonium
        if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCell(tracerObject % index_ammoniumConc + iLayers-1)  = verticalAmmoniumConcCell(iLayers,iCell)
+             tracerObject % tracerArrayCell(tracerObject % index_ammoniumConc + iLayers-1) = &
+                  verticalAmmoniumConcCell(iLayers,iCell)
           enddo
        endif
 
        ! silicate
        if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCell(tracerObject % index_silicateConc+iLayers-1)  = verticalSilicateConcCell(iLayers,iCell)
+             tracerObject % tracerArrayCell(tracerObject % index_silicateConc+iLayers-1) = verticalSilicateConcCell(iLayers,iCell)
           enddo
        endif
 
@@ -6978,7 +7026,8 @@ contains
        ! nonreactive
        if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCell(tracerObject % index_nonreactiveConc+iLayers-1) =  verticalNonreactiveConcCell(iLayers,iCell)
+             tracerObject % tracerArrayCell(tracerObject % index_nonreactiveConc+iLayers-1) = &
+                  verticalNonreactiveConcCell(iLayers,iCell)
           enddo
        endif
 
@@ -6996,7 +7045,8 @@ contains
           do iBioTracers = 1, nParticulateIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCell(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1)  = verticalParticulateIronConcCell(iBioCount,iCell)
+                tracerObject % tracerArrayCell(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1) = &
+                     verticalParticulateIronConcCell(iBioCount,iCell)
              enddo
           enddo
           iBioCount = 0
@@ -7005,7 +7055,8 @@ contains
           do iBioTracers = 1, nDissolvedIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCell(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1)  = verticalDissolvedIronConcCell(iBioCount,iCell)
+                tracerObject % tracerArrayCell(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1) = &
+                     verticalDissolvedIronConcCell(iBioCount,iCell)
              enddo
           enddo
        endif
@@ -7016,7 +7067,8 @@ contains
           do iBioTracers = 1, nzAerosols
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                tracerObject % tracerArrayCell(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1)  = verticalAerosolsConcCell(iBioCount,iCell)
+                tracerObject % tracerArrayCell(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1) = &
+                     verticalAerosolsConcCell(iBioCount,iCell)
              enddo
           enddo
        endif
@@ -7035,11 +7087,11 @@ contains
 !
 !  get_cice_biogeochemistry_tracer_array_cell
 !
-!> \brief 
+!> \brief
 !> \author Nicole Jeffery
 !> \date 23rd September 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -7247,12 +7299,14 @@ contains
 
           ! particulate iron
           do iBioTracers = 1, nParticulateIron
-             skeletalParticulateIronConcCell(iBioTracers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_particulateIronConc(iBioTracers))
+             skeletalParticulateIronConcCell(iBioTracers,iCell) = &
+                  tracerObject % tracerArrayCell(tracerObject % index_particulateIronConc(iBioTracers))
           enddo
 
           ! dissolved iron
           do iBioTracers = 1, nDissolvedIron
-             skeletalDissolvedIronConcCell(iBioTracers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_dissolvedIronConc(iBioTracers))
+             skeletalDissolvedIronConcCell(iBioTracers,iCell) = &
+                  tracerObject % tracerArrayCell(tracerObject % index_dissolvedIronConc(iBioTracers))
           enddo
        endif
 
@@ -7265,7 +7319,8 @@ contains
           do iBioTracers = 1, nAlgae
              do iLayers = 1,nBioLayersP3
                 iBiocount = iBiocount + 1
-                verticalAlgaeConcCell(iBioCount,iCell) = tracerObject % tracerArrayCell(tracerObject % index_algaeConc(iBioTracers)+iLayers-1)
+                verticalAlgaeConcCell(iBioCount,iCell) = &
+                     tracerObject % tracerArrayCell(tracerObject % index_algaeConc(iBioTracers)+iLayers-1)
              enddo
           enddo
        endif
@@ -7284,7 +7339,8 @@ contains
           do iBioTracers = 1, nDOC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalDOCConcCell(iBioCount,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DOCConc(iBioTracers) + iLayers-1)
+                verticalDOCConcCell(iBioCount,iCell) = &
+                     tracerObject % tracerArrayCell(tracerObject % index_DOCConc(iBioTracers) + iLayers-1)
              enddo
           enddo
           iBioCount = 0
@@ -7293,7 +7349,8 @@ contains
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalDICConcCell(iBioCount,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DICConc(iBioTracers) + iLayers-1)
+                verticalDICConcCell(iBioCount,iCell) = &
+                     tracerObject % tracerArrayCell(tracerObject % index_DICConc(iBioTracers) + iLayers-1)
              enddo
           enddo
        endif
@@ -7304,7 +7361,8 @@ contains
           do iBioTracers = 1, nDON
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalDONConcCell(iBioCount,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DONConc(iBioTracers) + iLayers-1)
+                verticalDONConcCell(iBioCount,iCell) = &
+                     tracerObject % tracerArrayCell(tracerObject % index_DONConc(iBioTracers) + iLayers-1)
              enddo
           enddo
        endif
@@ -7312,7 +7370,8 @@ contains
        ! ammonium
        if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
-             verticalAmmoniumConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_ammoniumConc + iLayers-1)
+             verticalAmmoniumConcCell(iLayers,iCell) = &
+                  tracerObject % tracerArrayCell(tracerObject % index_ammoniumConc + iLayers-1)
           enddo
        endif
 
@@ -7335,7 +7394,8 @@ contains
        ! nonreactive tracer
        if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
-             verticalNonreactiveConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_nonreactiveConc+iLayers-1)
+             verticalNonreactiveConcCell(iLayers,iCell) = &
+                  tracerObject % tracerArrayCell(tracerObject % index_nonreactiveConc+iLayers-1)
           enddo
        endif
 
@@ -7353,7 +7413,8 @@ contains
           do iBioTracers = 1, nParticulateIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalParticulateIronConcCell(iBioCount,iCell) = tracerObject % tracerArrayCell(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1)
+                verticalParticulateIronConcCell(iBioCount,iCell) = &
+                     tracerObject % tracerArrayCell(tracerObject % index_particulateIronConc(iBioTracers)+iLayers-1)
              enddo
           enddo
           iBioCount = 0
@@ -7362,7 +7423,8 @@ contains
           do iBioTracers = 1, nDissolvedIron
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalDissolvedIronConcCell(iBioCount,iCell) = tracerObject % tracerArrayCell(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1)
+                verticalDissolvedIronConcCell(iBioCount,iCell) = &
+                     tracerObject % tracerArrayCell(tracerObject % index_dissolvedIronConc(iBioTracers)+iLayers-1)
              enddo
           enddo
        endif
@@ -7373,7 +7435,8 @@ contains
           do iBioTracers = 1, nzAerosols
              do iLayers = 1,nBioLayersP3
                 iBioCount = iBioCount + 1
-                verticalAerosolsConcCell(iBioCount,iCell) = tracerObject % tracerArrayCell(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1)
+                verticalAerosolsConcCell(iBioCount,iCell) = &
+                     tracerObject % tracerArrayCell(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1)
              enddo
           enddo
        endif
@@ -7396,11 +7459,11 @@ contains
 !
 !  init_column_package_parameters
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2nd Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -7432,11 +7495,11 @@ contains
 !
 !  check_column_package_configs
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -7588,13 +7651,15 @@ contains
     ! check config_ridging_participation_function value
     if (.not. (trim(config_ridging_participation_function) == "Thorndike75" .or. &
                trim(config_ridging_participation_function) == "exponential")) then
-       call config_error("config_ridging_participation_function", config_ridging_participation_function, "'Thorndike75' or 'exponential'")
+       call config_error("config_ridging_participation_function", &
+            config_ridging_participation_function, "'Thorndike75' or 'exponential'")
     endif
 
     ! check config_ridging_redistribution_function value
     if (.not. (trim(config_ridging_redistribution_function) == "Hibler80" .or. &
                trim(config_ridging_redistribution_function) == "exponential")) then
-       call config_error("config_ridging_redistribution_function", config_ridging_redistribution_function, "'Hibler80' or 'exponential'")
+       call config_error("config_ridging_redistribution_function", &
+            config_ridging_redistribution_function, "'Hibler80' or 'exponential'")
     endif
 
     ! check config_atmos_boundary_method value
@@ -7615,7 +7680,8 @@ contains
                trim(config_category_bounds_type) == "new" .or. &
                trim(config_category_bounds_type) == "WMO" .or. &
                trim(config_category_bounds_type) == "asymptotic")) then
-       call config_error("config_category_bounds_type", config_category_bounds_type, "'single category', 'original', 'new', 'WMO' or 'asymptotic'")
+       call config_error("config_category_bounds_type", &
+            config_category_bounds_type, "'single category', 'original', 'new', 'WMO' or 'asymptotic'")
     endif
 
     ! check config_pond_refreezing_type value
@@ -7667,8 +7733,10 @@ contains
     ! check dEdd shortwave if using ponds
     use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
     if (trim(config_shortwave_type) /= 'dEdd' .and. use_meltponds .and. config_calc_surface_temperature) then
-       COLUMN_ERROR_WRITE("config_shortwave_type) /= 'dEdd' .and. use_meltponds = .true. .and. config_calc_surface_temperature ==.true.")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_shortwave_type, use_meltponds and config_calc_surface_temperature')
+       COLUMN_ERROR_WRITE("config_shortwave_type) /= 'dEdd' .and. use_meltponds = .true. .")
+       COLUMN_ERROR_WRITE("and. config_calc_surface_temperature ==.true.")
+       call MPAS_dmpar_global_abort(&
+            'MPAS-seaice: Incompatible config_shortwave_type, use_meltponds and config_calc_surface_temperature')
     endif
 
     ! check range of config_min_meltwater_retained_fraction and config_max_meltwater_retained_fraction
@@ -7722,11 +7790,13 @@ contains
     ! check thermodynamic type and sea freezing temperature type
     if (trim(config_thermodynamics_type) == "BL99" .and. trim(config_sea_freezing_temperature_type) /= "linear_salt") then
        COLUMN_ERROR_WRITE("config_thermodynamics_type == 'BL99' and config_sea_freezing_temperature_type /= 'linear_salt'")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_thermodynamics_type and config_sea_freezing_temperature_type')
+       call MPAS_dmpar_global_abort(&
+            'MPAS-seaice: Incompatible config_thermodynamics_type and config_sea_freezing_temperature_type')
     endif
     if (trim(config_thermodynamics_type) == "mushy" .and. trim(config_sea_freezing_temperature_type) /= "mushy") then
        COLUMN_ERROR_WRITE("config_thermodynamics_type == 'mushy' and config_sea_freezing_temperature_type /= 'mushy'")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_thermodynamics_type and config_sea_freezing_temperature_type')
+       call MPAS_dmpar_global_abort(&
+            'MPAS-seaice: Incompatible config_thermodynamics_type and config_sea_freezing_temperature_type')
     endif
 
     ! check biogeochemistry flags:
@@ -7753,7 +7823,8 @@ contains
          (.not. config_use_brine .or. .not. config_use_vertical_tracers )) then
        COLUMN_ERROR_WRITE("vertical biochemistry and zaerosols require config_use_brine and config_use_vertical_tracer = true")
        call MPAS_dmpar_global_abort &
-            ('MPAS-seaice: Incompatible config_use_vertical_biochemistry, config_use_zaerosols, config_use_brine, and config_use_vertical_tracer')
+            ('MPAS-seaice: Incompatible config_use_vertical_biochemistry, '// &
+             'config_use_zaerosols, config_use_brine, and config_use_vertical_tracer')
     endif
 
     ! check that vertical bio tracers and not used with skeletal bio tracers
@@ -7772,7 +7843,8 @@ contains
     if ((config_use_vertical_biochemistry .or. config_use_skeletal_biochemistry) .and. .not. config_use_nitrate) then
        COLUMN_ERROR_WRITE("biochemistry needs at the very least config_use_nitrate = true")
        call MPAS_dmpar_global_abort&
-            ('MPAS-seaice: Incompatible config_use_vertical_biochemistry, config_use_skeletal_biochemistry, and config_use_nitrate')
+            ('MPAS-seaice: Incompatible config_use_vertical_biochemistry, '// &
+             'config_use_skeletal_biochemistry, and config_use_nitrate')
     endif
 
   end subroutine check_column_package_configs
@@ -7781,11 +7853,11 @@ contains
 !
 !  init_column_package_tracer_flags
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2nd Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -7917,11 +7989,11 @@ contains
 !
 !  init_column_package_tracer_numbers
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 9th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -7953,11 +8025,11 @@ contains
 !
 !  init_column_package_tracer_indices
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -8159,11 +8231,11 @@ contains
 !
 !  init_column_package_configs
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2nd Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -8559,7 +8631,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ice_shortwave_tuning_parameter", config_ice_shortwave_tuning_parameter)
     call MPAS_pool_get_config(domain % configs, "config_pond_shortwave_tuning_parameter", config_pond_shortwave_tuning_parameter)
     call MPAS_pool_get_config(domain % configs, "config_snow_shortwave_tuning_parameter", config_snow_shortwave_tuning_parameter)
-    call MPAS_pool_get_config(domain % configs, "config_temp_change_snow_grain_radius_change", config_temp_change_snow_grain_radius_change)
+    call MPAS_pool_get_config(domain % configs, "config_temp_change_snow_grain_radius_change", &
+                                                 config_temp_change_snow_grain_radius_change)
     call MPAS_pool_get_config(domain % configs, "config_max_melting_snow_grain_radius", config_max_melting_snow_grain_radius)
     call MPAS_pool_get_config(domain % configs, "config_algae_absorption_coefficient", config_algae_absorption_coefficient)
     call MPAS_pool_get_config(domain % configs, "config_ice_strength_formulation", config_ice_strength_formulation)
@@ -8582,7 +8655,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_min_meltwater_retained_fraction", config_min_meltwater_retained_fraction)
     call MPAS_pool_get_config(domain % configs, "config_max_meltwater_retained_fraction", config_max_meltwater_retained_fraction)
     call MPAS_pool_get_config(domain % configs, "config_pond_depth_to_fraction_ratio", config_pond_depth_to_fraction_ratio)
-    call MPAS_pool_get_config(domain % configs, "config_snow_on_pond_ice_tapering_parameter", config_snow_on_pond_ice_tapering_parameter)
+    call MPAS_pool_get_config(domain % configs, "config_snow_on_pond_ice_tapering_parameter", &
+                                                 config_snow_on_pond_ice_tapering_parameter)
     call MPAS_pool_get_config(domain % configs, "config_critical_pond_ice_thickness", config_critical_pond_ice_thickness)
     call MPAS_pool_get_config(domain % configs, "config_skeletal_bgc_flux_type", config_skeletal_bgc_flux_type)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
@@ -8592,8 +8666,10 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols", config_use_modal_aerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
-    call MPAS_pool_get_config(domain % configs, "config_biogrid_bottom_molecular_sublayer", config_biogrid_bottom_molecular_sublayer)
-    call MPAS_pool_get_config(domain % configs, "config_bio_gravity_drainage_length_scale", config_bio_gravity_drainage_length_scale)
+    call MPAS_pool_get_config(domain % configs, "config_biogrid_bottom_molecular_sublayer", &
+                                                 config_biogrid_bottom_molecular_sublayer)
+    call MPAS_pool_get_config(domain % configs, "config_bio_gravity_drainage_length_scale", &
+                                                 config_bio_gravity_drainage_length_scale)
     call MPAS_pool_get_config(domain % configs, "config_biogrid_top_molecular_sublayer", config_biogrid_top_molecular_sublayer)
     call MPAS_pool_get_config(domain % configs, "config_zsalinity_gravity_drainage_scale", config_zsalinity_gravity_drainage_scale)
     call MPAS_pool_get_config(domain % configs, "config_new_ice_fraction_biotracer", config_new_ice_fraction_biotracer)
@@ -8622,7 +8698,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ratio_Fe_to_dust", config_ratio_Fe_to_dust)
     call MPAS_pool_get_config(domain % configs, "config_solubility_of_Fe_in_dust", config_solubility_of_Fe_in_dust)
     call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_diatoms", config_chla_absorptivity_of_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_small_plankton", config_chla_absorptivity_of_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_small_plankton", &
+                                                 config_chla_absorptivity_of_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_phaeocystis", config_chla_absorptivity_of_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_light_attenuation_diatoms", config_light_attenuation_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_light_attenuation_small_plankton", config_light_attenuation_small_plankton)
@@ -8631,10 +8708,12 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_light_inhibition_small_plankton", config_light_inhibition_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_light_inhibition_phaeocystis", config_light_inhibition_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_diatoms", config_maximum_growth_rate_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_small_plankton", config_maximum_growth_rate_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_small_plankton", &
+                                                 config_maximum_growth_rate_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_phaeocystis", config_maximum_growth_rate_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_temperature_growth_diatoms", config_temperature_growth_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_small_plankton", config_temperature_growth_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_small_plankton", &
+                                                 config_temperature_growth_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_temperature_growth_phaeocystis", config_temperature_growth_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_diatoms", config_grazed_fraction_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_small_plankton", config_grazed_fraction_small_plankton)
@@ -8643,19 +8722,25 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_mortality_small_plankton", config_mortality_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_mortality_phaeocystis", config_mortality_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_diatoms", config_temperature_mortality_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_small_plankton", config_temperature_mortality_small_plankton)
-    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_phaeocystis", config_temperature_mortality_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_small_plankton", &
+                                                 config_temperature_mortality_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_phaeocystis", &
+                                                 config_temperature_mortality_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_exudation_diatoms", config_exudation_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_exudation_small_plankton", config_exudation_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_exudation_phaeocystis", config_exudation_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_diatoms", config_nitrate_saturation_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_small_plankton", config_nitrate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_small_plankton", &
+                                                 config_nitrate_saturation_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_phaeocystis", config_nitrate_saturation_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_diatoms", config_ammonium_saturation_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_small_plankton", config_ammonium_saturation_small_plankton)
-    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_phaeocystis", config_ammonium_saturation_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_small_plankton", &
+                                                 config_ammonium_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_phaeocystis", &
+                                                 config_ammonium_saturation_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_diatoms", config_silicate_saturation_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_small_plankton", config_silicate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_small_plankton", &
+                                                 config_silicate_saturation_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_phaeocystis", config_silicate_saturation_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_iron_saturation_diatoms", config_iron_saturation_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_iron_saturation_small_plankton", config_iron_saturation_small_plankton)
@@ -9659,11 +9744,11 @@ contains
 !
 !  config_error
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th Feburary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -9685,11 +9770,11 @@ contains
 !
 !  config_cice_int
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 20th January 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -9779,11 +9864,11 @@ contains
 !
 !  init_column_non_activated_pointers
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10076,11 +10161,11 @@ contains
 !
 !  finalize_column_non_activated_pointers
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 29th October 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10359,11 +10444,11 @@ contains
 !
 !  set_stand_in_tracer_array
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 5th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10394,11 +10479,11 @@ contains
 !
 !  finalize_stand_in_tracer_array
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 29th October 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10431,11 +10516,11 @@ contains
 !
 !  init_column_history_variables
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 3rd April 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10468,11 +10553,11 @@ contains
 !
 !  cice_column_initial_air_drag_coefficient
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10492,11 +10577,11 @@ contains
 !
 !  cice_column_reinitialize_fluxes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 31st August 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10516,11 +10601,11 @@ contains
 !
 !  cice_column_reinitialize_atmospheric_fluxes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 31st August 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10603,11 +10688,11 @@ contains
 !
 !  cice_column_reinitialize_oceanic_fluxes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 31st August 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10659,11 +10744,11 @@ contains
 !
 !  init_column_tracer_object_bio_tracer_number
 !
-!> \brief 
+!> \brief
 !> \author Nicole Jeffery, LANL
 !> \date 14 September 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -10862,7 +10947,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_rapid_mobile_to_stationary_time", config_rapid_mobile_to_stationary_time)
     call MPAS_pool_get_config(domain % configs, "config_long_mobile_to_stationary_time", config_long_mobile_to_stationary_time)
     call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_diatoms", config_chla_absorptivity_of_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_small_plankton", config_chla_absorptivity_of_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_small_plankton", &
+                                                 config_chla_absorptivity_of_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_chla_absorptivity_of_phaeocystis", config_chla_absorptivity_of_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_light_attenuation_diatoms", config_light_attenuation_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_light_attenuation_small_plankton", config_light_attenuation_small_plankton)
@@ -10871,10 +10957,12 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_light_inhibition_small_plankton", config_light_inhibition_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_light_inhibition_phaeocystis", config_light_inhibition_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_diatoms", config_maximum_growth_rate_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_small_plankton", config_maximum_growth_rate_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_small_plankton", &
+                                                 config_maximum_growth_rate_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_maximum_growth_rate_phaeocystis", config_maximum_growth_rate_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_temperature_growth_diatoms", config_temperature_growth_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_small_plankton", config_temperature_growth_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_growth_small_plankton", &
+                                                 config_temperature_growth_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_temperature_growth_phaeocystis", config_temperature_growth_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_diatoms", config_grazed_fraction_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_grazed_fraction_small_plankton", config_grazed_fraction_small_plankton)
@@ -10883,19 +10971,24 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_mortality_small_plankton", config_mortality_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_mortality_phaeocystis", config_mortality_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_diatoms", config_temperature_mortality_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_small_plankton", config_temperature_mortality_small_plankton)
-    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_phaeocystis", config_temperature_mortality_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_small_plankton", &
+                                                 config_temperature_mortality_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_temperature_mortality_phaeocystis", &
+                                                 config_temperature_mortality_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_exudation_diatoms", config_exudation_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_exudation_small_plankton", config_exudation_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_exudation_phaeocystis", config_exudation_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_diatoms", config_nitrate_saturation_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_small_plankton", config_nitrate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_small_plankton", &
+                                                 config_nitrate_saturation_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_nitrate_saturation_phaeocystis", config_nitrate_saturation_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_diatoms", config_ammonium_saturation_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_small_plankton", config_ammonium_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_small_plankton", &
+                                                 config_ammonium_saturation_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_ammonium_saturation_phaeocystis", config_ammonium_saturation_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_diatoms", config_silicate_saturation_diatoms)
-    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_small_plankton", config_silicate_saturation_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_small_plankton", &
+                                                 config_silicate_saturation_small_plankton)
     call MPAS_pool_get_config(domain % configs, "config_silicate_saturation_phaeocystis", config_silicate_saturation_phaeocystis)
     call MPAS_pool_get_config(domain % configs, "config_iron_saturation_diatoms", config_iron_saturation_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_iron_saturation_small_plankton", config_iron_saturation_small_plankton)
@@ -11195,11 +11288,11 @@ contains
 !
 !  init_column_biogeochemistry
 !
-!> \brief 
+!> \brief
 !> \author Nicole Jeffery, LANL
 !> \date 17th September 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -11984,11 +12077,11 @@ contains
 !
 !  column_separate_snow_ice_aerosols
 !
-!> \brief 
+!> \brief
 !> \author Nicole Jeffery, LANL
 !> \date 26 Jan 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -12069,11 +12162,11 @@ contains
 !
 !  column_combine_snow_ice_aerosols
 !
-!> \brief 
+!> \brief
 !> \author Nicole Jeffery, LANL
 !> \date 26 Jan 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

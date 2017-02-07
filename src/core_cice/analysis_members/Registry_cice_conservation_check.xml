@@ -1,4 +1,3 @@
-
 	<nml_record name="AM_conservationCheck">
 		<nml_option name="config_AM_conservationCheck_enable" type="logical" default_value="false" units="unitless"
 			description="If true, ocean analysis member conservationCheck is called."
@@ -137,35 +136,35 @@
 				packages="conservationCheckAMPKG"
 				clobber_mode="replace_files"
 				runtime_format="single_file">
-			<var name="xtime"/> 
-			<var name="initialEnergy"/> 
-			<var name="finalEnergy"/> 
+			<var name="xtime"/>
+			<var name="initialEnergy"/>
+			<var name="finalEnergy"/>
 			<var name="energyChange"/>
 			<var name="accumulatedSurfaceHeatFlux"/>
 			<var name="accumulatedOceanHeatFlux"/>
 			<var name="accumulatedFreezingPotential"/>
 			<var name="accumulatedSnowfallHeat"/>
 			<var name="accumulatedLatentHeat"/>
-			<var name="netEnergyFlux"/> 
+			<var name="netEnergyFlux"/>
 			<var name="absoluteEnergyError"/>
 			<var name="relativeEnergyError"/>
-			<var name="initialMass"/> 
-			<var name="finalMass"/> 
+			<var name="initialMass"/>
+			<var name="finalMass"/>
 			<var name="massChange"/>
 			<var name="accumulatedRainfallRate"/>
 			<var name="accumulatedSnowfallRate"/>
 			<var name="accumulatedEvaporation"/>
 			<var name="accumulatedFreshWater"/>
 			<var name="accumulatedFrazilWater"/>
-			<var name="netMassFlux"/> 
+			<var name="netMassFlux"/>
 			<var name="absoluteMassError"/>
 			<var name="relativeMassError"/>
-			<var name="initialSalt"/> 
-			<var name="finalSalt"/> 
+			<var name="initialSalt"/>
+			<var name="finalSalt"/>
 			<var name="saltChange"/>
 			<var name="accumulatedOceanSaltFlux"/>
 			<var name="accumulatedFrazilSaltFlux"/>
-			<var name="netSaltFlux"/> 
+			<var name="netSaltFlux"/>
 			<var name="absoluteSaltError"/>
 			<var name="relativeSaltError"/>
 		</stream>
@@ -180,9 +179,9 @@
 				output_interval="stream:restart:output_interval"
 				runtime_format="single_file"
 				immutable="true">
-		        <var name="performConservationPrecompute"/>
-		        <var name="initialEnergy"/>
-		        <var name="accumulatedSurfaceHeatFlux"/>
+			<var name="performConservationPrecompute"/>
+			<var name="initialEnergy"/>
+			<var name="accumulatedSurfaceHeatFlux"/>
 			<var name="accumulatedOceanHeatFlux"/>
 			<var name="accumulatedFreezingPotential"/>
 			<var name="accumulatedSnowfallHeat"/>

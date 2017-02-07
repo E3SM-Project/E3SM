@@ -54,11 +54,11 @@ contains
 !
 !  cice_forcing_init
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -87,11 +87,11 @@ contains
 !
 !  init_atmospheric_forcing
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -335,11 +335,11 @@ contains
 !
 !  atmospheric_forcing
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -407,11 +407,11 @@ contains
 !
 !  prepare_atmospheric_coupling_variables_CORE
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -576,11 +576,11 @@ contains
 !
 !  post_atmospheric_coupling
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -682,11 +682,11 @@ contains
 !
 !  post_atmospheric_forcing
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -758,11 +758,11 @@ contains
 !
 !  limit_specific_humidity
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 17th Febuary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -809,7 +809,7 @@ contains
 !
 !  longwave_rosati_miyakoda
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 17th Febuary 2015
 !> \details
@@ -887,13 +887,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  longwave_parkinson_and_washington
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -927,11 +927,11 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  init_precipitation_factor
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
 !>  convert precipitation units to kg/m^2 s
 !
@@ -966,13 +966,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  precipitation
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1012,11 +1012,11 @@ contains
 !
 !  get_seconds_today
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1050,11 +1050,11 @@ contains
 !
 !  shortwave_down
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1133,11 +1133,11 @@ contains
 !
 !  init_oceanic_forcing
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 17th Febuary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1164,11 +1164,11 @@ contains
 !
 !  init_oceanic_forcing_ncar
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 17th Febuary 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1335,11 +1335,11 @@ contains
 !
 !  oceanic_forcing
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1417,11 +1417,11 @@ contains
 !
 !  prepare_oceanic_coupling_variables_ncar
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1501,11 +1501,11 @@ contains
 !
 !  post_oceanic_coupling
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1607,11 +1607,11 @@ contains
 !
 !  cice_reset_coupler_fluxes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1637,11 +1637,11 @@ contains
 !
 !  reset_atmospheric_coupler_fluxes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1741,11 +1741,11 @@ contains
 !
 !  reset_ocean_coupler_fluxes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th March 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1855,11 +1855,11 @@ contains
 !
 !  cice_forcing_write_restart_times
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1887,13 +1887,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  forcing_testing
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

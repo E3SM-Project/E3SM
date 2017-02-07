@@ -2,11 +2,11 @@
 !
 !  cice_velocity_solver_wachspress
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -34,11 +34,11 @@ contains
 !
 !  cice_init_velocity_solver_wachspress
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -197,11 +197,11 @@ contains
 !
 !  calc_wachspress_coefficients
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -258,8 +258,10 @@ contains
           if (i1 < 1) i1 = i1 + nEdgesOnCell(iCell)
 
           ! solve for the line segment equation
-          wachspressA(iVertex, iCell) = (yLocal(i2,iCell) - yLocal(i1,iCell)) / (xLocal(i1,iCell) * yLocal(i2,iCell) - xLocal(i2,iCell) * yLocal(i1,iCell))
-          wachspressB(iVertex, iCell) = (xLocal(i1,iCell) - xLocal(i2,iCell)) / (xLocal(i1,iCell) * yLocal(i2,iCell) - xLocal(i2,iCell) * yLocal(i1,iCell))
+          wachspressA(iVertex, iCell) = &
+               (yLocal(i2,iCell) - yLocal(i1,iCell)) / (xLocal(i1,iCell) * yLocal(i2,iCell) - xLocal(i2,iCell) * yLocal(i1,iCell))
+          wachspressB(iVertex, iCell) = &
+               (xLocal(i1,iCell) - xLocal(i2,iCell)) / (xLocal(i1,iCell) * yLocal(i2,iCell) - xLocal(i2,iCell) * yLocal(i1,iCell))
 
        enddo ! iVertex
 
@@ -278,8 +280,10 @@ contains
              if (i2 > nEdgesOnCell(iCell)) i2 = i2 - nEdgesOnCell(iCell)
 
              wachspressKappa(jVertex,iVertex,iCell) = wachspressKappa(jVertex-1,iVertex,iCell) * &
-                  (wachspressA(i2,iCell) * (xLocal(i0,iCell) - xLocal(i1,iCell)) + wachspressB(i2,iCell) * (yLocal(i0,iCell) - yLocal(i1,iCell))) / &
-                  (wachspressA(i0,iCell) * (xLocal(i1,iCell) - xLocal(i0,iCell)) + wachspressB(i0,iCell) * (yLocal(i1,iCell) - yLocal(i0,iCell)))
+                  (wachspressA(i2,iCell) * (xLocal(i0,iCell) - xLocal(i1,iCell)) + &
+                   wachspressB(i2,iCell) * (yLocal(i0,iCell) - yLocal(i1,iCell))) / &
+                  (wachspressA(i0,iCell) * (xLocal(i1,iCell) - xLocal(i0,iCell)) + &
+                   wachspressB(i0,iCell) * (yLocal(i1,iCell) - yLocal(i0,iCell)))
 
           enddo ! jVertex
 
@@ -293,11 +297,11 @@ contains
 !
 !  wachspress_indexes
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -347,11 +351,11 @@ contains
 !
 !  wachspress_basis_function
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -436,11 +440,11 @@ contains
 !
 !  wachspress_basis_derivative
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -532,8 +536,10 @@ contains
 
     enddo ! jVertex
 
-    wachspressU(:) = derivative(:,1,iVertex) / denominator(:) - (numerator(:,iVertex) / denominator(:)**2) * sum_of_derivatives(:,1)
-    wachspressV(:) = derivative(:,2,iVertex) / denominator(:) - (numerator(:,iVertex) / denominator(:)**2) * sum_of_derivatives(:,2)
+    wachspressU(:) = derivative(:,1,iVertex) / denominator(:) - &
+         (numerator(:,iVertex) / denominator(:)**2) * sum_of_derivatives(:,1)
+    wachspressV(:) = derivative(:,2,iVertex) / denominator(:) - &
+         (numerator(:,iVertex) / denominator(:)**2) * sum_of_derivatives(:,2)
 
     deallocate(denominator)
     deallocate(sum_of_derivatives)
@@ -549,11 +555,11 @@ contains
 !
 !  wachspress_numerator
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -624,11 +630,11 @@ contains
 !
 !  wachspress_numerator_derivative
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -734,11 +740,11 @@ contains
 !
 !  wachspress_edge_equation
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -768,11 +774,11 @@ contains
 !
 !  calculate_wachspress_derivatives
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -918,11 +924,11 @@ contains
 !
 !  get_triangle_mapping
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -964,11 +970,11 @@ contains
 !
 !  use_triangle_mapping
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -995,11 +1001,11 @@ contains
 !
 !  integrate_wachspress
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1129,11 +1135,11 @@ contains
 !
 !  get_integration_factors
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th October 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1200,11 +1206,11 @@ contains
 !
 !  get_integration_factors_trapezoidal
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th October 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1300,11 +1306,11 @@ contains
 !
 !  get_integration_factors
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th October 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1330,7 +1336,8 @@ contains
     real(kind=RKIND), intent(out) :: &
          normalizationFactor
 
-    ! D. A. Dunavant, High degree efficient symmetrical Gaussian quadrature rules for the triangle, Int. J. Num. Meth. Engng, 21(1985):1129-1148.
+    ! D. A. Dunavant, High degree efficient symmetrical Gaussian quadrature rules for the triangle,
+    ! Int. J. Num. Meth. Engng, 21(1985):1129-1148.
 
     normalizationFactor = 2.0_RKIND
 
@@ -1623,11 +1630,11 @@ contains
 !
 !  get_integration_factors
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th October 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1653,7 +1660,8 @@ contains
     real(kind=RKIND), intent(out) :: &
          normalizationFactor
 
-    ! M. A. TAYLOR, B. A. WINGATE, AND R. E. VINCENT, (200), "AN ALGORITHM FOR COMPUTING FEKETE POINTS IN THE TRIANGLE", SIAM J. NUMER. ANAL., Vol. 38, No. 5, pp. 1707–1720
+    ! M. A. TAYLOR, B. A. WINGATE, AND R. E. VINCENT, (200), "AN ALGORITHM FOR COMPUTING FEKETE POINTS IN THE TRIANGLE",
+    ! SIAM J. NUMER. ANAL., Vol. 38, No. 5, pp. 1707–1720
 
     normalizationFactor = 2.0_RKIND
 
@@ -1701,15 +1709,18 @@ contains
        allocate(weights(nIntegrationPoints))
 
        u = (/ &
-            9.15762135097704655e-02_RKIND, 8.16847572980458514e-01_RKIND, 9.15762135097710761e-02_RKIND, 1.08103018168070275e-01_RKIND, &
+            9.15762135097704655e-02_RKIND, 8.16847572980458514e-01_RKIND, &
+            9.15762135097710761e-02_RKIND, 1.08103018168070275e-01_RKIND, &
             4.45948490915965612e-01_RKIND, 4.45948490915964113e-01_RKIND /)
 
        v = (/ &
-            8.16847572980458514e-01_RKIND, 9.15762135097710761e-02_RKIND, 9.15762135097704655e-02_RKIND, 4.45948490915964113e-01_RKIND, &
+            8.16847572980458514e-01_RKIND, 9.15762135097710761e-02_RKIND, &
+            9.15762135097704655e-02_RKIND, 4.45948490915964113e-01_RKIND, &
             1.08103018168070275e-01_RKIND, 4.45948490915965612e-01_RKIND /)
 
        weights = (/ &
-            1.09951743655321843e-01_RKIND, 1.09951743655321857e-01_RKIND, 1.09951743655321885e-01_RKIND, 2.23381589678011389e-01_RKIND, &
+            1.09951743655321843e-01_RKIND, 1.09951743655321857e-01_RKIND, &
+            1.09951743655321885e-01_RKIND, 2.23381589678011389e-01_RKIND, &
             2.23381589678011527e-01_RKIND, 2.23381589678011527e-01_RKIND /)
 
     case (5)
@@ -1721,18 +1732,24 @@ contains
        allocate(weights(nIntegrationPoints))
 
        u = (/ &
-            0.00000000000000000e+00_RKIND, 1.00000000000000000e+00_RKIND, 0.00000000000000000e+00_RKIND, 2.67327353118498978e-01_RKIND, &
-            6.72817552946136210e-01_RKIND, 6.49236350054349654e-02_RKIND, 6.71649853904175198e-01_RKIND, 6.54032456800035522e-02_RKIND, &
+            0.00000000000000000e+00_RKIND, 1.00000000000000000e+00_RKIND, &
+            0.00000000000000000e+00_RKIND, 2.67327353118498978e-01_RKIND, &
+            6.72817552946136210e-01_RKIND, 6.49236350054349654e-02_RKIND, &
+            6.71649853904175198e-01_RKIND, 6.54032456800035522e-02_RKIND, &
             2.69376706913982855e-01_RKIND, 3.38673850389605513e-01_RKIND /)
 
        v = (/ &
-            1.00000000000000000e+00_RKIND, 0.00000000000000000e+00_RKIND, 0.00000000000000000e+00_RKIND, 6.72819921871012694e-01_RKIND, &
-            2.67328859948191944e-01_RKIND, 6.71653011149382917e-01_RKIND, 6.49251690028951334e-02_RKIND, 2.69378936645285116e-01_RKIND, &
+            1.00000000000000000e+00_RKIND, 0.00000000000000000e+00_RKIND, &
+            0.00000000000000000e+00_RKIND, 6.72819921871012694e-01_RKIND, &
+            2.67328859948191944e-01_RKIND, 6.71653011149382917e-01_RKIND, &
+            6.49251690028951334e-02_RKIND, 2.69378936645285116e-01_RKIND, &
             6.54054874919145490e-02_RKIND, 3.38679989302702156e-01_RKIND /)
 
        weights = (/ &
-            1.31356049751916795e-02_RKIND, 1.31358306034076201e-02_RKIND, 1.37081973800151392e-02_RKIND, 1.17419193291163376e-01_RKIND, &
-            1.17420611913379477e-01_RKIND, 1.24012589655715613e-01_RKIND, 1.24015246126072495e-01_RKIND, 1.25930230276426303e-01_RKIND, &
+            1.31356049751916795e-02_RKIND, 1.31358306034076201e-02_RKIND, &
+            1.37081973800151392e-02_RKIND, 1.17419193291163376e-01_RKIND, &
+            1.17420611913379477e-01_RKIND, 1.24012589655715613e-01_RKIND, &
+            1.24015246126072495e-01_RKIND, 1.25930230276426303e-01_RKIND, &
             1.25933026682913923e-01_RKIND, 2.25289469095714456e-01_RKIND /)
 
     case (6)
@@ -1744,19 +1761,22 @@ contains
        allocate(weights(nIntegrationPoints))
 
        u = (/ &
-            5.72549866774768601e-02_RKIND, 8.95362640024579104e-01_RKIND, 6.84475748456514044e-01_RKIND, 6.87462559150295305e-02_RKIND, &
-            6.15676205575839575e-01_RKIND, 6.27946141197789465e-01_RKIND, 6.29091383418635686e-02_RKIND, 6.83782119205099126e-02_RKIND, &
-            2.87529458374392255e-01_RKIND, 3.28783556413134614e-01_RKIND, 3.12290405013644801e-01_RKIND /)
+            5.72549866774768601e-02_RKIND, 8.95362640024579104e-01_RKIND, 6.84475748456514044e-01_RKIND, &
+            6.87462559150295305e-02_RKIND, 6.15676205575839575e-01_RKIND, 6.27946141197789465e-01_RKIND, &
+            6.29091383418635686e-02_RKIND, 6.83782119205099126e-02_RKIND, 2.87529458374392255e-01_RKIND, &
+            3.28783556413134614e-01_RKIND, 3.12290405013644801e-01_RKIND /)
 
        v = (/ &
-            8.95498146789879490e-01_RKIND, 6.18282212503219533e-02_RKIND, 2.33437384976827311e-02_RKIND, 6.00302757472630025e-02_RKIND, &
-            3.33461808341377175e-01_RKIND, 1.59189185992151483e-01_RKIND, 6.55295093705452469e-01_RKIND, 3.09117685428267230e-01_RKIND, &
-            6.36426509179620181e-01_RKIND, 7.70240056424634223e-02_RKIND, 3.52344786445899505e-01_RKIND /)
+            8.95498146789879490e-01_RKIND, 6.18282212503219533e-02_RKIND, 2.33437384976827311e-02_RKIND, &
+            6.00302757472630025e-02_RKIND, 3.33461808341377175e-01_RKIND, 1.59189185992151483e-01_RKIND, &
+            6.55295093705452469e-01_RKIND, 3.09117685428267230e-01_RKIND, 6.36426509179620181e-01_RKIND, &
+            7.70240056424634223e-02_RKIND, 3.52344786445899505e-01_RKIND /)
 
        weights = (/ &
-            3.80680718529555623e-02_RKIND, 3.83793553077528410e-02_RKIND, 4.62004567445618367e-02_RKIND, 5.34675894441989999e-02_RKIND, &
-            8.37558269657456833e-02_RKIND, 1.01644833025517037e-01_RKIND, 1.01861524461366940e-01_RKIND, 1.11421831660001677e-01_RKIND, &
-            1.12009450262946106e-01_RKIND, 1.24787571437558295e-01_RKIND, 1.88403488837394911e-01_RKIND /)
+            3.80680718529555623e-02_RKIND, 3.83793553077528410e-02_RKIND, 4.62004567445618367e-02_RKIND, &
+            5.34675894441989999e-02_RKIND, 8.37558269657456833e-02_RKIND, 1.01644833025517037e-01_RKIND, &
+            1.01861524461366940e-01_RKIND, 1.11421831660001677e-01_RKIND, 1.12009450262946106e-01_RKIND, &
+            1.24787571437558295e-01_RKIND, 1.88403488837394911e-01_RKIND /)
 
     case (8)
 
@@ -1767,22 +1787,28 @@ contains
        allocate(weights(nIntegrationPoints))
 
        u = (/ &
-            7.28492392955404355e-01_RKIND, 8.39477740995753056e-03_RKIND, 2.63112829634638112e-01_RKIND, 8.39477740995753056e-03_RKIND, &
-            7.28492392955404355e-01_RKIND, 2.63112829634638112e-01_RKIND, 5.05472283170310122e-02_RKIND, 5.05472283170309566e-02_RKIND, &
-            8.98905543365938087e-01_RKIND, 4.59292588292723236e-01_RKIND, 8.14148234145536387e-02_RKIND, 4.59292588292723125e-01_RKIND, &
-            1.70569307751760324e-01_RKIND, 1.70569307751760046e-01_RKIND, 6.58861384496479685e-01_RKIND, 3.33333333333333370e-01_RKIND /)
+            7.28492392955404355e-01_RKIND, 8.39477740995753056e-03_RKIND, 2.63112829634638112e-01_RKIND, &
+            8.39477740995753056e-03_RKIND, 7.28492392955404355e-01_RKIND, 2.63112829634638112e-01_RKIND, &
+            5.05472283170310122e-02_RKIND, 5.05472283170309566e-02_RKIND, 8.98905543365938087e-01_RKIND, &
+            4.59292588292723236e-01_RKIND, 8.14148234145536387e-02_RKIND, 4.59292588292723125e-01_RKIND, &
+            1.70569307751760324e-01_RKIND, 1.70569307751760046e-01_RKIND, 6.58861384496479685e-01_RKIND, &
+            3.33333333333333370e-01_RKIND /)
 
        v = (/ &
-            8.39477740995753056e-03_RKIND, 2.63112829634638112e-01_RKIND, 7.28492392955404355e-01_RKIND, 7.28492392955404355e-01_RKIND, &
-            2.63112829634638112e-01_RKIND, 8.39477740995753056e-03_RKIND, 5.05472283170309566e-02_RKIND, 8.98905543365938087e-01_RKIND, &
-            5.05472283170310122e-02_RKIND, 8.14148234145536387e-02_RKIND, 4.59292588292723125e-01_RKIND, 4.59292588292723236e-01_RKIND, &
-            6.58861384496479685e-01_RKIND, 1.70569307751760324e-01_RKIND, 1.70569307751760046e-01_RKIND, 3.33333333333333370e-01_RKIND /)
+            8.39477740995753056e-03_RKIND, 2.63112829634638112e-01_RKIND, 7.28492392955404355e-01_RKIND, &
+            7.28492392955404355e-01_RKIND, 2.63112829634638112e-01_RKIND, 8.39477740995753056e-03_RKIND, &
+            5.05472283170309566e-02_RKIND, 8.98905543365938087e-01_RKIND, 5.05472283170310122e-02_RKIND, &
+            8.14148234145536387e-02_RKIND, 4.59292588292723125e-01_RKIND, 4.59292588292723236e-01_RKIND, &
+            6.58861384496479685e-01_RKIND, 1.70569307751760324e-01_RKIND, 1.70569307751760046e-01_RKIND, &
+            3.33333333333333370e-01_RKIND /)
 
        weights = (/ &
-            2.72303141744348991e-02_RKIND, 2.72303141744349199e-02_RKIND, 2.72303141744349199e-02_RKIND, 2.72303141744349789e-02_RKIND, &
-            2.72303141744349789e-02_RKIND, 2.72303141744349997e-02_RKIND, 3.24584976231980793e-02_RKIND, 3.24584976231980793e-02_RKIND, &
-            3.24584976231981001e-02_RKIND, 9.50916342672845638e-02_RKIND, 9.50916342672846193e-02_RKIND, 9.50916342672846193e-02_RKIND, &
-            1.03217370534718286e-01_RKIND, 1.03217370534718314e-01_RKIND, 1.03217370534718314e-01_RKIND, 1.44315607677787283e-01_RKIND /)
+            2.72303141744348991e-02_RKIND, 2.72303141744349199e-02_RKIND, 2.72303141744349199e-02_RKIND, &
+            2.72303141744349789e-02_RKIND, 2.72303141744349789e-02_RKIND, 2.72303141744349997e-02_RKIND, &
+            3.24584976231980793e-02_RKIND, 3.24584976231980793e-02_RKIND, 3.24584976231981001e-02_RKIND, &
+            9.50916342672845638e-02_RKIND, 9.50916342672846193e-02_RKIND, 9.50916342672846193e-02_RKIND, &
+            1.03217370534718286e-01_RKIND, 1.03217370534718314e-01_RKIND, 1.03217370534718314e-01_RKIND, &
+            1.44315607677787283e-01_RKIND /)
 
     case (9)
 
@@ -1793,25 +1819,31 @@ contains
        allocate(weights(nIntegrationPoints))
 
        u = (/ &
-            2.26739052759332704e-01_RKIND, 4.77345862087794129e-02_RKIND, 2.26577168977105115e-02_RKIND, 9.10074385862343016e-01_RKIND, &
-            4.41452661673673585e-02_RKIND, 4.79944340675050984e-01_RKIND, 7.42657808541620557e-01_RKIND, 7.43369623518591927e-01_RKIND, &
-            2.79454959355581213e-02_RKIND, 3.71861932583309532e-02_RKIND, 2.22639561442096401e-01_RKIND, 1.16082059855864395e-01_RKIND, &
-            4.73822270420208358e-01_RKIND, 4.77758170054016440e-01_RKIND, 6.46387881792721997e-01_RKIND, 2.85357695207302253e-01_RKIND, &
-            2.04236860041029755e-01_RKIND, 1.59370884213907937e-01_RKIND, 3.95698265017060125e-01_RKIND /)
+            2.26739052759332704e-01_RKIND, 4.77345862087794129e-02_RKIND, 2.26577168977105115e-02_RKIND, &
+            9.10074385862343016e-01_RKIND, 4.41452661673673585e-02_RKIND, 4.79944340675050984e-01_RKIND, &
+            7.42657808541620557e-01_RKIND, 7.43369623518591927e-01_RKIND, 2.79454959355581213e-02_RKIND, &
+            3.71861932583309532e-02_RKIND, 2.22639561442096401e-01_RKIND, 1.16082059855864395e-01_RKIND, &
+            4.73822270420208358e-01_RKIND, 4.77758170054016440e-01_RKIND, 6.46387881792721997e-01_RKIND, &
+            2.85357695207302253e-01_RKIND, 2.04236860041029755e-01_RKIND, 1.59370884213907937e-01_RKIND, &
+            3.95698265017060125e-01_RKIND /)
 
        v = (/ &
-            0.00000000000000000e+00_RKIND, 9.16183156802148568e-01_RKIND, 7.97193825386026345e-01_RKIND, 4.44666861644595901e-02_RKIND, &
-            4.81588383854628099e-02_RKIND, 5.01294615157430568e-01_RKIND, 3.03405081749971196e-02_RKIND, 2.22245578824042445e-01_RKIND, &
-            5.25527023486726308e-01_RKIND, 2.39263537482135413e-01_RKIND, 7.29063709376736702e-01_RKIND, 6.62507673462198188e-01_RKIND, &
-            4.60334709656892230e-02_RKIND, 4.01038691325781238e-01_RKIND, 1.65342747538830548e-01_RKIND, 4.92973630851354261e-01_RKIND, &
-            1.19056565447230756e-01_RKIND, 3.66261159763432431e-01_RKIND, 2.27511600022304139e-01_RKIND /)
+            0.00000000000000000e+00_RKIND, 9.16183156802148568e-01_RKIND, 7.97193825386026345e-01_RKIND, &
+            4.44666861644595901e-02_RKIND, 4.81588383854628099e-02_RKIND, 5.01294615157430568e-01_RKIND, &
+            3.03405081749971196e-02_RKIND, 2.22245578824042445e-01_RKIND, 5.25527023486726308e-01_RKIND, &
+            2.39263537482135413e-01_RKIND, 7.29063709376736702e-01_RKIND, 6.62507673462198188e-01_RKIND, &
+            4.60334709656892230e-02_RKIND, 4.01038691325781238e-01_RKIND, 1.65342747538830548e-01_RKIND, &
+            4.92973630851354261e-01_RKIND, 1.19056565447230756e-01_RKIND, 3.66261159763432431e-01_RKIND, &
+            2.27511600022304139e-01_RKIND /)
 
        weights = (/ &
-            1.58676858667487208e-02_RKIND, 2.19524732703951786e-02_RKIND, 2.40354401213296598e-02_RKIND, 2.58522468388647786e-02_RKIND, &
-            2.71951393759608216e-02_RKIND, 3.02097786027936584e-02_RKIND, 3.70093240446550606e-02_RKIND, 4.11482921825866571e-02_RKIND, &
-            4.26331605467379776e-02_RKIND, 4.71413336863812371e-02_RKIND, 5.45129844125978591e-02_RKIND, 6.26632599630084636e-02_RKIND, &
-            6.31379657675310846e-02_RKIND, 7.14623133641135444e-02_RKIND, 7.51048615652924606e-02_RKIND, 7.98259878444318866e-02_RKIND, &
-            8.16607475819435963e-02_RKIND, 9.37481686311500140e-02_RKIND, 1.04838836333477403e-01_RKIND /)
+            1.58676858667487208e-02_RKIND, 2.19524732703951786e-02_RKIND, 2.40354401213296598e-02_RKIND, &
+            2.58522468388647786e-02_RKIND, 2.71951393759608216e-02_RKIND, 3.02097786027936584e-02_RKIND, &
+            3.70093240446550606e-02_RKIND, 4.11482921825866571e-02_RKIND, 4.26331605467379776e-02_RKIND, &
+            4.71413336863812371e-02_RKIND, 5.45129844125978591e-02_RKIND, 6.26632599630084636e-02_RKIND, &
+            6.31379657675310846e-02_RKIND, 7.14623133641135444e-02_RKIND, 7.51048615652924606e-02_RKIND, &
+            7.98259878444318866e-02_RKIND, 8.16607475819435963e-02_RKIND, 9.37481686311500140e-02_RKIND, &
+            1.04838836333477403e-01_RKIND /)
 
     case default
 
@@ -1826,11 +1858,11 @@ contains
 !
 !  integrate_wachspress_polygon
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2042,11 +2074,11 @@ contains
 !
 !  plot_wachpress
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2173,11 +2205,11 @@ contains
 !
 !  plot_subtriangle
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2316,7 +2348,8 @@ contains
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
 
-                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') &
+                     "set object ",iObject," polygon from ",&
                      x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5
 
                 write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', wachspress, ' fillstyle solid'
@@ -2334,7 +2367,8 @@ contains
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
 
-                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') &
+                     "set object ",iObject," polygon from ",&
                      x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5
 
                 write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', wachspress, ' fillstyle solid'
@@ -2355,11 +2389,11 @@ contains
 !
 !  plot_subtriangle_2
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 31 October 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2527,7 +2561,8 @@ contains
                       xx1 = x0 + xx1 ; yy1 = y0 + yy1
                       xx2 = x0 + xx2 ; yy2 = y0 + yy2
 
-                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') &
+                           "set object ",iObject," polygon from ",&
                            xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0
 
                       write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
@@ -2573,7 +2608,8 @@ contains
                       xx1 = x0 + xx1 ; yy1 = y0 + yy1
                       xx2 = x0 + xx2 ; yy2 = y0 + yy2
 
-                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') &
+                           "set object ",iObject," polygon from ",&
                            xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0
 
                       write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
@@ -2671,7 +2707,8 @@ contains
                       xx1 = x0 + xx1 ; yy1 = y0 + yy1
                       xx2 = x0 + xx2 ; yy2 = y0 + yy2
 
-                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') &
+                           "set object ",iObject," polygon from ",&
                            xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0
 
                       write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
@@ -2720,7 +2757,8 @@ contains
                       xx1 = x0 + xx1 ; yy1 = y0 + yy1
                       xx2 = x0 + xx2 ; yy2 = y0 + yy2
 
-                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') &
+                           "set object ",iObject," polygon from ",&
                            xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0
 
                       write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
@@ -2746,11 +2784,11 @@ contains
 !
 !  plot_wachspress_square
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

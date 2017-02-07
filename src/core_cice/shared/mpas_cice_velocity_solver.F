@@ -2,11 +2,11 @@
 !
 !  cice_velocity_solver
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -44,11 +44,11 @@ contains
 !
 !  cice_init_velocity_solver
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -188,11 +188,11 @@ contains
 !
 !  dynamically_locked_cell_mask
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 6th April 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -267,11 +267,11 @@ contains
 !
 !  init_ice_shelve_vertex_mask
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 9th April 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -348,11 +348,11 @@ contains
 !
 !  cice_run_velocity_solver
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -401,11 +401,11 @@ contains
 !
 !  velocity_solver_pre_subcycle
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date January 13th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -465,11 +465,11 @@ contains
 !
 !  aggregate_mass_and_area
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -546,11 +546,11 @@ contains
 !
 !  calculation_masks
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 19th September 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -583,7 +583,8 @@ contains
 
     ! set initial ice area if not have column physics
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
-    call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", &
+                                                 config_use_column_vertical_thermodynamics)
 
     if (.not. config_use_column_package .or. &
          (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
@@ -654,11 +655,11 @@ contains
 !
 !  stress_calculation_mask
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -766,11 +767,11 @@ contains
 !
 !  velocity_calculation_mask
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -857,11 +858,11 @@ contains
 !
 !  new_ice_velocities
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 29th June 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -988,11 +989,11 @@ contains
 !
 !  ice_strength
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1045,7 +1046,8 @@ contains
     do while (associated(block))
 
        call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
-       call MPAS_pool_get_config(block % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+       call MPAS_pool_get_config(block % configs, "config_use_column_vertical_thermodynamics", &
+                                                   config_use_column_vertical_thermodynamics)
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
@@ -1124,11 +1126,11 @@ contains
 !
 !  air_stress
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 19th September 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1160,7 +1162,8 @@ contains
 
     ! calculate the air stress
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
-    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_vertical_thermodynamics", &
+                                                             config_use_column_vertical_thermodynamics)
 
     if (.not. config_use_column_package .or. &
          (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
@@ -1220,11 +1223,11 @@ contains
 !
 !  constant_air_stress
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1297,11 +1300,11 @@ contains
 !
 !  coriolis_force_coefficient
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1357,11 +1360,11 @@ contains
 !
 !  ocean_stress
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1452,11 +1455,11 @@ contains
 !
 !  surface_tilt
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1496,11 +1499,11 @@ contains
 !
 !  surface_tilt_geostrophic
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1582,11 +1585,11 @@ contains
 !
 !  surface_tilt_ssh_gradient
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1695,11 +1698,11 @@ contains
 !
 !  no_surface_tilt
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1742,11 +1745,11 @@ contains
 !
 !  init_subcycle_variables
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 18th October 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1919,11 +1922,11 @@ contains
 !
 !  subcycle_velocity_solver
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1960,11 +1963,11 @@ contains
 !
 !  single_subcycle_velocity_solver
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2049,11 +2052,11 @@ contains
 !
 !  ocean_stress_coefficient
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2143,11 +2146,11 @@ contains
 !
 !  solve_velocity
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2244,10 +2247,12 @@ contains
 
              ! right hand side of matrix solve
              rightHandSide(1) = stressDivergenceU(iVertex) + airStressVertexU(iVertex) + surfaceTiltForceU(iVertex) + &
-                  oceanStressCoeff(iVertex) * oceanStressU(iVertex) + (totalMassVertex(iVertex) * uVelocity(iVertex)) / elasticTimeStep
+                  oceanStressCoeff(iVertex) * oceanStressU(iVertex) + &
+                  (totalMassVertex(iVertex) * uVelocity(iVertex)) / elasticTimeStep
 
              rightHandSide(2) = stressDivergenceV(iVertex) + airStressVertexV(iVertex) + surfaceTiltForceV(iVertex) + &
-                  oceanStressCoeff(iVertex) * oceanStressV(iVertex) + (totalMassVertex(iVertex) * vVelocity(iVertex)) / elasticTimeStep
+                  oceanStressCoeff(iVertex) * oceanStressV(iVertex) + &
+                  (totalMassVertex(iVertex) * vVelocity(iVertex)) / elasticTimeStep
 
              ! solve the equation
              solutionDenominator = leftMatrix(1,1) * leftMatrix(2,2) - leftMatrix(1,2) * leftMatrix(2,1)
@@ -2268,11 +2273,11 @@ contains
 !
 !  solve_velocity_revised
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2375,11 +2380,13 @@ contains
              ! right hand side of matrix solve
              rightHandSide(1) = stressDivergenceU(iVertex) + airStressVertexU(iVertex) + surfaceTiltForceU(iVertex) + &
                   oceanStressCoeff(iVertex) * oceanStressU(iVertex) + &
-                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * uVelocity(iVertex) + uVelocityInitial(iVertex))) / dynamicsTimeStep
+                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * uVelocity(iVertex) + &
+                  uVelocityInitial(iVertex))) / dynamicsTimeStep
 
              rightHandSide(2) = stressDivergenceV(iVertex) + airStressVertexV(iVertex) + surfaceTiltForceV(iVertex) + &
                   oceanStressCoeff(iVertex) * oceanStressV(iVertex) + &
-                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * vVelocity(iVertex) + vVelocityInitial(iVertex))) / dynamicsTimeStep
+                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * vVelocity(iVertex) + &
+                  vVelocityInitial(iVertex))) / dynamicsTimeStep
 
              ! solve the equation
              solutionDenominator = leftMatrix(1,1) * leftMatrix(2,2) - leftMatrix(1,2) * leftMatrix(2,1)
@@ -2404,11 +2411,11 @@ contains
 !
 !  velocity_solver_post_subcycle
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date January 13th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2438,11 +2445,11 @@ contains
 !
 !  final_divergence_shear
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date July 9th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2487,11 +2494,11 @@ contains
 !
 !  principal_stresses_driver
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2611,11 +2618,11 @@ contains
 !
 !  principal_stresses
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2668,11 +2675,11 @@ contains
 !
 !  ocean_stress_final
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2758,10 +2765,14 @@ contains
 
              if (solveVelocity(iVertex) == 1) then
 
-                oceanStressU(iVertex) = oceanStressCoeff(iVertex) * ((uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * cosOceanTurningAngle &
-                                                                   - (vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,fVertex(iVertex)))
-                oceanStressV(iVertex) = oceanStressCoeff(iVertex) * ((vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * cosOceanTurningAngle &
-                                                                   + (uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,fVertex(iVertex)))
+                oceanStressU(iVertex) = oceanStressCoeff(iVertex) * &
+                     ((uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * cosOceanTurningAngle &
+                    - (vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * sinOceanTurningAngle * &
+                     sign(1.0_RKIND,fVertex(iVertex)))
+                oceanStressV(iVertex) = oceanStressCoeff(iVertex) * &
+                     ((vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * cosOceanTurningAngle &
+                    + (uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * sinOceanTurningAngle * &
+                     sign(1.0_RKIND,fVertex(iVertex)))
 
                 oceanStressU(iVertex) = oceanStressU(iVertex) / iceAreaVertex(iVertex)
                 oceanStressV(iVertex) = oceanStressV(iVertex) / iceAreaVertex(iVertex)

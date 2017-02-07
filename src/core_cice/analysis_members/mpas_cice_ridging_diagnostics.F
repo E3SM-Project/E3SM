@@ -315,11 +315,19 @@ contains
 
             do iCategory = 1, nCategories
 
-               levelIceAreaAverage(iCell)    = levelIceAreaAverage(iCell)    + iceAreaCategory(1,iCategory,iCell)   *              levelIceArea(1,iCategory,iCell)
-               ridgedIceAreaAverage(iCell)   = ridgedIceAreaAverage(iCell)   + iceAreaCategory(1,iCategory,iCell)   * (1.0_RKIND - levelIceArea(1,iCategory,iCell))
+               levelIceAreaAverage(iCell) = &
+                    levelIceAreaAverage(iCell) + iceAreaCategory(1,iCategory,iCell) * &
+                    levelIceArea(1,iCategory,iCell)
+               ridgedIceAreaAverage(iCell) = &
+                    ridgedIceAreaAverage(iCell) + iceAreaCategory(1,iCategory,iCell) * &
+                    (1.0_RKIND - levelIceArea(1,iCategory,iCell))
 
-               levelIceVolumeAverage(iCell)  = levelIceVolumeAverage(iCell)  + iceVolumeCategory(1,iCategory,iCell) *              levelIceArea(1,iCategory,iCell)
-               ridgedIceVolumeAverage(iCell) = ridgedIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * (1.0_RKIND - levelIceArea(1,iCategory,iCell))
+               levelIceVolumeAverage(iCell) = &
+                    levelIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * &
+                    levelIceArea(1,iCategory,iCell)
+               ridgedIceVolumeAverage(iCell) = &
+                    ridgedIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * &
+                    (1.0_RKIND - levelIceArea(1,iCategory,iCell))
 
             enddo ! iCategory
          enddo ! iCell

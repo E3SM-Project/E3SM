@@ -2,11 +2,11 @@
 !
 !  cice_numerics
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -32,11 +32,11 @@ contains
 !
 !  cice_solve_linear_basis_system
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -89,9 +89,9 @@ contains
     REAL(kind=RKIND), PARAMETER :: TINY=1.0e-20_RKIND
     INTEGER :: j,n,imax
     n=assert_eq(size(a,1),size(a,2),size(indx),'ludcmp')
-    d=1.0
+    d=1.0_RKIND
     vv=maxval(abs(a),dim=2)
-    if (any(vv == 0.0)) call nrerror('singular matrix in ludcmp')
+    if (any(vv == 0.0_RKIND)) call nrerror('singular matrix in ludcmp')
     vv=1.0_RKIND/vv
     do j=1,n
        imax=(j-1)+imaxloc(vv(j:n)*abs(a(j:n,j)))
@@ -101,7 +101,7 @@ contains
           vv(imax)=vv(j)
        end if
        indx(j)=imax
-       if (a(j,j) == 0.0) a(j,j)=TINY
+       if (a(j,j) == 0.0_RKIND) a(j,j)=TINY
        a(j+1:n,j)=a(j+1:n,j)/a(j,j)
        a(j+1:n,j+1:n)=a(j+1:n,j+1:n)-outerprod(a(j+1:n,j),a(j,j+1:n))
     end do
@@ -125,7 +125,7 @@ contains
        b(ll)=b(i)
        if (ii /= 0) then
           summ=summ-dot_product(a(i,ii:i-1),b(ii:i-1))
-       else if (summ /= 0.0) then
+       else if (summ /= 0.0_RKIND) then
           ii=i
        end if
        b(i)=summ

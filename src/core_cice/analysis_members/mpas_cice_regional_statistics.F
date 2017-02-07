@@ -517,14 +517,16 @@ contains
 
              ! loop over entries in the input stream
              call MPAS_stream_mgr_begin_iteration(domain % streamManager, trim(streamID), ierr=ierrField)
-             streamLoop: do while (MPAS_stream_mgr_get_next_field(domain % streamManager, trim(streamID), inputFieldName, isActive))
+             streamLoop: do while (MPAS_stream_mgr_get_next_field(&
+                  domain % streamManager, trim(streamID), inputFieldName, isActive))
 
                 ! check the input field is of the correct type - must be real(nCells), single time level
                 call MPAS_pool_get_field_info(block % allFields, trim(inputFieldName), inputFieldInfo)
                 if (inputFieldInfo % fieldType   /= MPAS_POOL_REAL .or. &
                     inputFieldInfo % nDims       >  2 .or. &
                     inputFieldInfo % nTimeLevels /= 1) then
-                   call MPAS_dmpar_global_abort("MPAS-seaice: init_runtime_regional_statistics: input field wrong type: "//trim(inputFieldName))
+                   call MPAS_dmpar_global_abort(&
+                        "MPAS-seaice: init_runtime_regional_statistics: input field wrong type: "//trim(inputFieldName))
                 endif
 
                 ! check if field is active
@@ -539,7 +541,9 @@ contains
                       ! get the input field
                       call MPAS_pool_get_field(block % allFields, trim(inputFieldName), inputField1D)
                       if (trim(inputField1D % dimNames(1)) /= "nCells") then
-                         call MPAS_dmpar_global_abort("MPAS-seaice: init_runtime_regional_statistics: input field wrong dimensions: "//trim(inputFieldName))
+                         call MPAS_dmpar_global_abort(&
+                              "MPAS-seaice: init_runtime_regional_statistics: input field wrong dimensions: "//&
+                              trim(inputFieldName))
                       endif
 
                       ! create a new field
@@ -554,7 +558,9 @@ contains
                       ! get the input field
                       call MPAS_pool_get_field(block % allFields, trim(inputFieldName), inputField2D)
                       if (trim(inputField2D % dimNames(2)) /= "nCells") then
-                         call MPAS_dmpar_global_abort("MPAS-seaice: init_runtime_regional_statistics: input field wrong dimensions: "//trim(inputFieldName))
+                         call MPAS_dmpar_global_abort(&
+                              "MPAS-seaice: init_runtime_regional_statistics: input field wrong dimensions: "//&
+                              trim(inputFieldName))
                       endif
 
                       ! create a new field

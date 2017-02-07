@@ -391,7 +391,8 @@ contains
             ! meltPondDepthFinalArea - hpond_ai
             if (meltPondDepthFinalArea % isActive) then
                do iCell = 1, nCellsSolve
-                  meltPondDepthFinalArea % array(iCell) = levelIceAreaCell(iCell) * pondAreaCell(iCell) * pondDepthCell(iCell) * iceAreaCell(iCell)
+                  meltPondDepthFinalArea % array(iCell) = &
+                       levelIceAreaCell(iCell) * pondAreaCell(iCell) * pondDepthCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
 
@@ -405,7 +406,8 @@ contains
             ! meltPondLidThicknessFinalArea - ipond_ai
             if (meltPondLidThicknessFinalArea % isActive) then
                do iCell = 1, nCellsSolve
-                  meltPondLidThicknessFinalArea % array(iCell) = levelIceAreaCell(iCell) * pondAreaCell(iCell) * pondLidThicknessCell(iCell) * iceAreaCell(iCell)
+                  meltPondLidThicknessFinalArea % array(iCell) = &
+                       levelIceAreaCell(iCell) * pondAreaCell(iCell) * pondLidThicknessCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
 
@@ -450,7 +452,8 @@ contains
             ! meltPondLidThicknessFinalArea - ipond_ai
             if (meltPondLidThicknessFinalArea % isActive) then
                do iCell = 1, nCellsSolve
-                  meltPondLidThicknessFinalArea % array(iCell) = pondAreaCell(iCell) * pondLidThicknessCell(iCell) * iceAreaCell(iCell)
+                  meltPondLidThicknessFinalArea % array(iCell) = &
+                       pondAreaCell(iCell) * pondLidThicknessCell(iCell) * iceAreaCell(iCell)
                enddo ! iCell
             endif ! is active
 

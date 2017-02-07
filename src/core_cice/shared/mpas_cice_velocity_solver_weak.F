@@ -2,11 +2,11 @@
 !
 !  cice_velocity_solver_weak
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -38,11 +38,11 @@ contains
 !
 !  cice_init_velocity_solver_weak
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -100,13 +100,13 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  cice_internal_stress_weak
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -228,11 +228,11 @@ contains
 !
 !  cice_strain_tensor_weak
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -383,11 +383,11 @@ contains
 !
 !  cice_stress_tensor_weak
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -510,11 +510,11 @@ contains
 !
 !  cice_stress_divergence_weak
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -671,11 +671,11 @@ contains
 !
 !  final_divergence_shear_weak
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date July 9th 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

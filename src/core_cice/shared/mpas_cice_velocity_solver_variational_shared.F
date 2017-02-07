@@ -2,11 +2,11 @@
 !
 !  cice_velocity_solver_variational_shared
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 24 October 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -31,11 +31,11 @@ contains
 !
 !  cice_calc_local_coords
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 22 October 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -79,11 +79,11 @@ contains
 !
 !  calc_local_coords_planar
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -147,11 +147,11 @@ contains
 !
 !  calc_local_coords_spherical
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 22 October 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -255,11 +255,11 @@ contains
 !
 !  cice_calc_variational_metric_terms
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 22 October 2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -340,11 +340,11 @@ contains
 !
 !  cice_wrapped_index
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

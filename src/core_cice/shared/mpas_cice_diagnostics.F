@@ -2,11 +2,11 @@
 !
 !  cice_diagnostics
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -33,11 +33,11 @@ contains
 !
 !  cice_initialize_time_diagnostics
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -92,11 +92,11 @@ contains
 !
 !  cice_initialize_time_diagnostics
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 
+!> \date
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -156,11 +156,11 @@ contains
 !
 !  cice_check_state
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 10th March 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -391,11 +391,11 @@ contains
 !
 !  cice_warning_message
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 13th May 2016
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

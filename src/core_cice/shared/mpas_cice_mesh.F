@@ -2,11 +2,11 @@
 !
 !  cice_mesh
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -41,11 +41,11 @@ contains
 !
 !  cice_init_mesh
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 7th August 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -70,11 +70,11 @@ contains
 !
 !  rescale_mesh
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 7th August 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -234,7 +234,8 @@ contains
                 areaTriangle(iVertex) = 0.0_RKIND
 
                 do iVertexDegree = 1, vertexDegree
-                   kiteAreasOnVertex(iVertexDegree, iVertex) = ( kiteAreasOnVertex(iVertexDegree, iVertex) / oldRadius**2) * newRadius**2
+                   kiteAreasOnVertex(iVertexDegree, iVertex) = &
+                        ( kiteAreasOnVertex(iVertexDegree, iVertex) / oldRadius**2) * newRadius**2
                    areaTriangle(iVertex) = areaTriangle(iVertex) + kiteAreasOnVertex(iVertexDegree, iVertex)
                 end do
 
@@ -295,11 +296,11 @@ contains
 !
 !  coriolis_parameter
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 7th August 2015
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -360,19 +361,19 @@ contains
 !
 !  init_boundary
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
-  
+
   subroutine init_boundary(&
        domain)!{{{
 
     type (domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain !< Input/Output:
 
     type(block_type), pointer :: &
          block
@@ -411,11 +412,11 @@ contains
 !
 !  interior_vertices
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -490,11 +491,11 @@ contains
 !
 !  interior_cells
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -555,11 +556,11 @@ contains
 !
 !  interior_cells
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -620,11 +621,11 @@ contains
 !
 !  cice_cell_vertices_at_vertex
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -698,11 +699,11 @@ contains
 !
 !  cice_normal_vectors
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -755,11 +756,11 @@ contains
 !
 !  cice_normal_vectors_polygon
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -789,7 +790,8 @@ contains
     call MPAS_pool_get_config(mesh, "on_a_sphere", on_a_sphere)
 
     if (on_a_sphere) then
-       call normal_vectors_spherical_polygon_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorPolygon, latCellRotated)
+       call normal_vectors_spherical_polygon_metric(&
+            mesh, rotateCartesianGrid, removeMetricTerms, normalVectorPolygon, latCellRotated)
     else
        call normal_vectors_planar_polygon(mesh, normalVectorPolygon)
        if (present(latCellRotated)) latCellRotated = 0.0_RKIND
@@ -801,11 +803,11 @@ contains
 !
 !  cice_normal_vectors_triangle
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -839,7 +841,8 @@ contains
     call MPAS_pool_get_config(mesh, "on_a_sphere", on_a_sphere)
 
     if (on_a_sphere) then
-       call normal_vectors_spherical_triangle_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorTriangle, interiorVertex, latVertexRotated)
+       call normal_vectors_spherical_triangle_metric(&
+            mesh, rotateCartesianGrid, removeMetricTerms, normalVectorTriangle, interiorVertex, latVertexRotated)
     else
        call normal_vectors_planar_triangle(mesh, normalVectorTriangle, interiorVertex)
        if (present(latVertexRotated)) latVertexRotated = 0.0_RKIND
@@ -851,11 +854,11 @@ contains
 !
 !  normal_vectors_planar_polygon
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -924,11 +927,11 @@ contains
 !
 !  normal_vectors_planar_triangle
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1005,11 +1008,11 @@ contains
 !
 !  normal_vectors_spherical_polygon_metric
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1222,11 +1225,11 @@ contains
 !
 !  normal_vectors_spherical_polygon
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1360,11 +1363,11 @@ contains
 !
 !  normal_vectors_spherical_triangle_metric
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1587,11 +1590,11 @@ contains
 !
 !  normal_vectors_spherical_triangle
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1725,11 +1728,11 @@ contains
 !
 !  cice_dot_product_3space
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1750,11 +1753,11 @@ contains
 !
 !  cross_product_3space
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1777,11 +1780,11 @@ contains
 !
 !  normal_vectors_spherical_polygon_2
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1859,10 +1862,12 @@ contains
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
           ! get the polygon side normal unit vector
-          call get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, rotateCartesianGrid, normalVector3D)
+          call get_polygon_side_normal_3D_vector(&
+               mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, rotateCartesianGrid, normalVector3D)
 
           ! project the 3D vector onto the local 2D plane
-          call cice_project_3D_vector_onto_local_2D(normalVectorPolygon(:,iEdgeOnCell,iCell), normalVector3D, xCell0, yCell0, zCell0)
+          call cice_project_3D_vector_onto_local_2D(&
+               normalVectorPolygon(:,iEdgeOnCell,iCell), normalVector3D, xCell0, yCell0, zCell0)
 
           ! normalize the projected vector
           vectorMagnitude = sqrt(normalVectorPolygon(1,iEdgeOnCell,iCell)**2 + normalVectorPolygon(2,iEdgeOnCell,iCell)**2)
@@ -1879,11 +1884,11 @@ contains
 !
 !  normal_vectors_spherical_triangle_2
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -1961,13 +1966,16 @@ contains
           do iVertexDegree = 1, vertexDegree
 
              ! get the triangle side normal unit vector
-             call get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, rotateCartesianGrid, normalVector3D)
+             call get_triangle_side_normal_3D_vector(&
+                  mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, rotateCartesianGrid, normalVector3D)
 
              ! project the 3D vector onto the local 2D plane
-             call cice_project_3D_vector_onto_local_2D(normalVectorTriangle(:,iVertexDegree,iVertex), normalVector3D, xVertex0, yVertex0, zVertex0)
+             call cice_project_3D_vector_onto_local_2D(&
+                  normalVectorTriangle(:,iVertexDegree,iVertex), normalVector3D, xVertex0, yVertex0, zVertex0)
 
              ! normalize the projected vector
-             vectorMagnitude = sqrt(normalVectorTriangle(1,iVertexDegree,iVertex)**2 + normalVectorTriangle(2,iVertexDegree,iVertex)**2)
+             vectorMagnitude = sqrt(normalVectorTriangle(&
+                  1,iVertexDegree,iVertex)**2 + normalVectorTriangle(2,iVertexDegree,iVertex)**2)
              normalVectorTriangle(1,iVertexDegree,iVertex) = normalVectorTriangle(1,iVertexDegree,iVertex) / vectorMagnitude
              normalVectorTriangle(2,iVertexDegree,iVertex) = normalVectorTriangle(2,iVertexDegree,iVertex) / vectorMagnitude
 
@@ -1983,11 +1991,11 @@ contains
 !
 !  cice_project_3D_vector_onto_local_2D
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2037,11 +2045,11 @@ contains
 !
 !  get_polygon_side_normal_3D_vector
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2150,11 +2158,11 @@ contains
 !
 !  get_triangle_side_normal_3D_vector
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2234,11 +2242,11 @@ contains
 !
 !  local_eastern_and_northern_unit_vectors
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2312,11 +2320,11 @@ contains
 !
 !  cice_grid_rotation_forward
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2357,11 +2365,11 @@ contains
 !
 !  grid_rotation_backward
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2402,11 +2410,11 @@ contains
 !
 !  xyz_vector_rotation_forward
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2447,11 +2455,11 @@ contains
 !
 !  xyz_vector_rotation_backward
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2492,11 +2500,11 @@ contains
 !
 !  cice_latlon_vector_rotation_forward
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2555,11 +2563,11 @@ contains
 !
 !  cice_latlon_vector_rotation_backward
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2618,11 +2626,11 @@ contains
 !
 !  latlon_vector_to_xyz_vector
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2651,11 +2659,11 @@ contains
 !
 !  xyz_vector_to_latlon_vector
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2687,11 +2695,11 @@ contains
 !
 !  cice_latlon_from_xyz
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -2722,11 +2730,11 @@ contains
 !
 !  cice_interpolate_cell_to_vertex
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -3192,9 +3200,12 @@ contains
                unitVectorEast, &
                unitVectorNorth)
 
-          xVectorEndRotateTmp = xCellRotate(iCell) + unitVectorEast(1) * vectorCellURotate(iCell) + unitVectorNorth(1) * vectorCellVRotate(iCell)
-          yVectorEndRotateTmp = yCellRotate(iCell) + unitVectorEast(2) * vectorCellURotate(iCell) + unitVectorNorth(2) * vectorCellVRotate(iCell)
-          zVectorEndRotateTmp = zCellRotate(iCell) + unitVectorEast(3) * vectorCellURotate(iCell) + unitVectorNorth(3) * vectorCellVRotate(iCell)
+          xVectorEndRotateTmp = &
+               xCellRotate(iCell) + unitVectorEast(1) * vectorCellURotate(iCell) + unitVectorNorth(1) * vectorCellVRotate(iCell)
+          yVectorEndRotateTmp = &
+               yCellRotate(iCell) + unitVectorEast(2) * vectorCellURotate(iCell) + unitVectorNorth(2) * vectorCellVRotate(iCell)
+          zVectorEndRotateTmp = &
+               zCellRotate(iCell) + unitVectorEast(3) * vectorCellURotate(iCell) + unitVectorNorth(3) * vectorCellVRotate(iCell)
 
           call grid_rotation_backward(&
                xVectorEndRotate(iCell), yVectorEndRotate(iCell), zVectorEndRotate(iCell), &
@@ -3495,7 +3506,8 @@ contains
           ! initial fields
           do iCell = 1, nCells
 
-             call cice_grid_rotation_forward(xCellRotate, yCellRotate, zCellRotate, xCell(iCell), yCell(iCell), zCell(iCell), rotateGrid)
+             call cice_grid_rotation_forward(&
+                  xCellRotate, yCellRotate, zCellRotate, xCell(iCell), yCell(iCell), zCell(iCell), rotateGrid)
              call cice_latlon_from_xyz(latCellRotate, lonCellRotate, xCellRotate, yCellRotate, zCellRotate, sphere_radius)
 
              !lonCellRotate = lonCell(iCell)
@@ -3512,8 +3524,10 @@ contains
 
           do iVertex = 1, nVertices
 
-             call cice_grid_rotation_forward(xVertexRotate, yVertexRotate, zVertexRotate, xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), rotateGrid)
-             call cice_latlon_from_xyz(latVertexRotate, lonVertexRotate, xVertexRotate, yVertexRotate, zVertexRotate, sphere_radius)
+             call cice_grid_rotation_forward(&
+                  xVertexRotate, yVertexRotate, zVertexRotate, xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), rotateGrid)
+             call cice_latlon_from_xyz(&
+                  latVertexRotate, lonVertexRotate, xVertexRotate, yVertexRotate, zVertexRotate, sphere_radius)
 
              !lonVertexRotate = lonVertex(iVertex)
              !latVertexRotate = latVertex(iVertex)
