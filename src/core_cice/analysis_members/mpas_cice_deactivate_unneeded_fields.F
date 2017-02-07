@@ -103,7 +103,7 @@ contains
 
                    ! see if area field is in stream
                    if (trim(fieldName) == trim(poolItr % memberName) .or. &
-                      index(trim(fieldName), "_"//trim(poolItr % memberName)//"_") /= 0) then
+                      index(trim(fieldName), "_"//trim(poolItr % memberName)) /= 0) then
 
                       fieldInStream = .true.
 
