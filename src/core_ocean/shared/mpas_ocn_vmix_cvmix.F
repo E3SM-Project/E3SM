@@ -327,7 +327,7 @@ contains
       allocate(Nsqr_iface(nVertLevels+1))
       allocate(turbulentScalarVelocityScale(nVertLevels))
       allocate(RiSmoothed(nVertLevels+1))
-      allocate(BVFSmoothed(nVertLevels+1))  
+      allocate(BVFSmoothed(nVertLevels+1))
       allocate(RiTemp(nVertLevels+1))
 
       allocate(normalVelocitySum(nVertLevels))
@@ -391,8 +391,8 @@ contains
                  RiSmoothed(k) = (RiTemp(k-1) + 2.0_RKIND*RiTemp(k) + RiTemp(k+1))  / 4.0_RKIND
             enddo
             RiTemp(1:maxLevelCell(iCell)) = RiSmoothed(1:maxLevelCell(iCell))
-         enddo 
-      
+         enddo
+
          cvmix_variables%ShearRichardson_iface => RiSmoothed(1:maxLevelCell(iCell)+1)
 
          ! fill BVF
