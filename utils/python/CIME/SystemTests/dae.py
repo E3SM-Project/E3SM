@@ -66,8 +66,8 @@ class DAE(SystemTestsCompareTwo):
         self._activate_case2()
         case_root = self._get_caseroot2()
         da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
-        for file in da_files:
-            os.remove(file)
+        for file_ in da_files:
+            os.remove(file_)
         # End for
         self._activate_case1()
         SystemTestsCompareTwo.run_phase(self)

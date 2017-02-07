@@ -363,6 +363,7 @@
     <default_value>$CIMEROOT/components/stub_comps/sesp/cime_config/config_component.xml</default_value>
     <values>
       <value component="sesp">$CIMEROOT/components/stub_comps/sesp/cime_config/config_component.xml</value>
+      <value component="desp">$CIMEROOT/components/data_comps/desp/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
