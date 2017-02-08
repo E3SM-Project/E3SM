@@ -726,7 +726,6 @@ module atm_time_integration
                   rt_driving_tend(1:nVertLevels,1:nCells+1) =  mpas_atm_get_bdy_tend( clock, domain % blocklist, nVertLevels, nCells, 'rtheta_m', 0.0_RKIND )
                   rho_driving_tend(1:nVertLevels,1:nCells+1) =  mpas_atm_get_bdy_tend( clock, domain % blocklist, nVertLevels, nCells, 'rho_zz', 0.0_RKIND )
                   write(0,*) ' tendencies retrieved '
-
 !$OMP PARALLEL DO
                   do thread=1,nThreads
                      write(0,*) ' calling spec zone tend adjust '
@@ -2410,7 +2409,7 @@ module atm_time_integration
 !!!                 ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - pgrad) &
 !!!                                  - smdiv*dcEdge(iEdge)*(divergence_3d(k,cell2)-divergence_3d(k,cell1))
                  ru_p(k,iEdge) = ru_p(k,iEdge) + dts*tend_ru(k,iEdge) &
-                      - specZoneMaskEdge(iEdge)*( dts*pgrad + smdiv*dcEdge(iEdge)*(divergence_3d(k,cell2)-divergence_3d(k,cell1)) )
+                      - (1.0_RKIND - specZoneMaskEdge(iEdge))*( dts*pgrad + smdiv*dcEdge(iEdge)*(divergence_3d(k,cell2)-divergence_3d(k,cell1)) )
               end do
 
               ! accumulate ru_p for use later in scalar transport
@@ -2436,7 +2435,7 @@ module atm_time_integration
 !DIR$ IVDEP
               do k=1,nVertLevels
 !!!                 ru_p(k,iEdge) = dts*tend_ru(k,iEdge) - smdiv*dcEdge(iEdge)*(tend_rho(k,cell2)-tend_rho(k,cell1))
-                 ru_p(k,iEdge) = dts*tend_ru(k,iEdge) - specZoneMaskEdge(iEdge)*smdiv*dcEdge(iEdge)*(tend_rho(k,cell2)-tend_rho(k,cell1))
+                 ru_p(k,iEdge) = dts*tend_ru(k,iEdge) - (1.0_RKIND - specZoneMaskEdge(iEdge))*smdiv*dcEdge(iEdge)*(tend_rho(k,cell2)-tend_rho(k,cell1))
               end do
 !DIR$ IVDEP
               do k=1,nVertLevels
@@ -2462,17 +2461,10 @@ module atm_time_integration
 
       do iCell=cellSolveStart,cellSolveEnd  ! loop over all owned cells to solve
 
-         if(specZoneMaskCell(iCell) == 0.0) then  ! not specified zone, compute...
-
-         ts(:) = 0.0
-         rs(:) = 0.0
-
          if(small_step == 1) then  ! initialize here on first small timestep.
             wwAvg(1:nVertLevels+1,iCell) = 0.0            
             rho_pp(1:nVertLevels,iCell) = 0.0            
             rtheta_pp(1:nVertLevels,iCell) = 0.0            
-!MGD moved to loop above over all cells
-!            rtheta_pp_old(1:nVertLevels,iCell) = 0.0
             rw_p(:,iCell) = 0.0
             divergence_3d(1:nVertLevels,iCell) = 0.
          else  ! reset rtheta_pp to input value;
@@ -2482,6 +2474,11 @@ module atm_time_integration
             divergence_3d(1:nVertLevels,iCell) = rho_pp(1:nVertLevels,iCell)
          end if
             
+         if(specZoneMaskCell(iCell) == 0.0) then  ! not specified zone, compute...
+
+         ts(:) = 0.0
+         rs(:) = 0.0
+
          do i=1,nEdgesOnCell(iCell) 
             iEdge = edgesOnCell(i,iCell)
             cell1 = cellsOnEdge(1,iEdge)
@@ -2572,6 +2569,7 @@ module atm_time_integration
                rw_p(k,iCell) = rw_p(k,iCell) + dts*tend_rw(k,iCell)
                wwAvg(k,iCell) = wwAvg(k,iCell) + 0.5*(1.0+epssm)*rw_p(k,iCell)
             end do
+
          end if
 
       end do !  end of loop over cells
@@ -6154,7 +6152,7 @@ module atm_time_integration
       !  where the dry dynamics is split from the scalar transport (i.e. where the dry dynamics is
       !  using a different, usually smaller, timestep.
       !
-      !  WCS 18 November 2014
+      !  WCS Fall 2016
 
       type (mpas_pool_type), intent(in) :: state
       type (mpas_pool_type), intent(inout) :: tend
@@ -6166,7 +6164,7 @@ module atm_time_integration
       integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
 
       real (kind=RKIND), dimension(:,:), intent(in) :: ru_driving_tend, rt_driving_tend, rho_driving_tend
-      real (kind=RKIND), dimension(:,:), pointer :: tend_ru, tend_rt, tend_rho, tend_rw
+      real (kind=RKIND), dimension(:,:), pointer :: tend_ru, tend_rt, tend_rho, tend_rw, rt_diabatic_tend
       integer, dimension(:), pointer :: bdyMaskCell, bdyMaskEdge
 
       integer :: iCell, iEdge, k
@@ -6177,6 +6175,7 @@ module atm_time_integration
       call mpas_pool_get_array(tend, 'w', tend_rw)
       call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
       call mpas_pool_get_array(mesh, 'bdyMaskEdge', bdyMaskEdge)
+      call mpas_pool_get_array(tend, 'rt_diabatic_tend', rt_diabatic_tend)
       
       do iCell = cellSolveStart, cellSolveEnd
          if(bdyMaskCell(iCell) > nRelaxZone) then
@@ -6184,6 +6183,7 @@ module atm_time_integration
                tend_rho(k,iCell) = rho_driving_tend(k,iCell)
                tend_rt(k,iCell) = rt_driving_tend(k,iCell)
                tend_rw(k,iCell) = 0.
+               rt_diabatic_tend(k,iCell) = 0.
             end do
          end if
       end do
@@ -6191,7 +6191,9 @@ module atm_time_integration
       do iEdge = edgeSolveStart, edgeSolveEnd
          if(bdyMaskEdge(iEdge) > nRelaxZone) then
             do k=1, nVertLevels
-               tend_ru(k,iEdge) = ru_driving_tend(k,iCell)
+!  wcs error_1
+!               tend_ru(k,iEdge) = ru_driving_tend(k,iCell)
+               tend_ru(k,iEdge) = ru_driving_tend(k,iEdge)
             end do
          end if
       end do
@@ -6211,7 +6213,7 @@ module atm_time_integration
       !  where the dry dynamics is split from the scalar transport (i.e. where the dry dynamics is
       !  using a different, usually smaller, timestep.
       !
-      !  WCS 18 November 2014
+      !  WCS Fall 2016
 
       type (mpas_pool_type), intent(in) :: state
       type (mpas_pool_type), intent(inout) :: tend
@@ -6281,7 +6283,9 @@ module atm_time_integration
          if( (bdyMaskEdge(iEdge) > 1) .and. (bdyMaskEdge(iEdge) <= nRelaxZone) ) then
             rayleigh_damping_coef = (real(bdyMaskEdge(iEdge)) - 1.)/real(nRelaxZone)/(50.*dt)
             do k=1, nVertLevels
-               tend_ru(k,iEdge) = tend_ru(k,iEdge) - rayleigh_damping_coef * (ru_driving_values(k,iCell) - ru(k,iCell))
+!  wcs error_1
+!               tend_ru(k,iEdge) = tend_ru(k,iEdge) - rayleigh_damping_coef * (ru_driving_values(k,iCell) - ru(k,iCell))
+               tend_ru(k,iEdge) = tend_ru(k,iEdge) - rayleigh_damping_coef * (ru_driving_values(k,iEdge) - ru(k,iEdge))
             end do
          end if
       end do
