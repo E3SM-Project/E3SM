@@ -53,7 +53,7 @@ wrf_error_fatal.o:
 wrf_message.o:
 
 clean:
-	rm -rf *.o *.mod *.a
+	rm -rf *.tmp.f90 *.o *.mod *.a
 
 .F90.o:
 	$(RM) $@ $*.mod
@@ -63,4 +63,3 @@ ifeq "$(GEN_F90)" "true"
 else
 	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F90 $(CPPINCLUDES) $(FCINCLUDES) -I.
 endif
-#	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F90 $(CPPINCLUDES) $(FCINCLUDES) -I.
