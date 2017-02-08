@@ -3374,8 +3374,8 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
                 trim(field % field) == 'SKINTEMP') then
                k = 1
             else if (trim(field % field) /= 'PMSL' .and. &
-                     trim(field % field) /='PSFC' .and. &
-                     trim(field % field) /= 'SOILHGT')  then
+                     trim(field % field) /= 'PSFC' .and. &
+                     trim(field % field) /= 'SOILHGT') then
 
                ! Since the hash table can only store integers, transfer the bit pattern from 
                ! the real-valued xlvl into an integer; that the result is not an integer version
