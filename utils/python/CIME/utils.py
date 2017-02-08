@@ -8,7 +8,7 @@ import logging, gzip, sys, os, time, re, shutil, glob, string, random
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
 
-def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR: "):
+def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
