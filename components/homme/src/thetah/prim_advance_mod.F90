@@ -563,7 +563,6 @@ contains
 
 
 
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -592,7 +591,12 @@ contains
 #endif
            do k=1,nlev
               exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
-              theta_ref(:,:,:,ie) = (T0/exner(:,:,:) + T1)
+              theta_ref(:,:,k,ie) = (T0/exner(:,:,k) + T1)
+
+              theta_ref(:,:,k,ie)=0
+              phi_ref(:,:,k,ie)=0
+              dp_ref(:,:,k,ie)=0
+              
               elem(ie)%state%theta(:,:,k,nt)=elem(ie)%state%theta(:,:,k,nt)-&
                    theta_ref(:,:,k,ie)
               elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)-&

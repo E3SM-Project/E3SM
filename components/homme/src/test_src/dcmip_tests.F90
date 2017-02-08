@@ -263,7 +263,6 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
-!save temperature of the whole element to reset nonhydro model to discrete hydrostatic balance
   real(rl):: dpp(np,np,nlev), he(np,np,nlev)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-0: steady state atmosphere with orography'
@@ -276,34 +275,19 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
 
   ! set initial conditions
   do ie = nets,nete; 
-  do k=1,nlev; do j=1,np; do i=1,np
-    call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
-    call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,phis,ps,rho,q(1))
-    dp = pressure_thickness(ps,k,hvcoord)
-!let's get an analytical \phi
-    he(i,j,k) = (T0 - T)/gamma
-!print *, 'zm, height', zm(k), he
-    call set_state(u,v,w,T,ps,phis,p,dp,he(i,j,k),g, i,j,k,elem(ie),1,nt)
-    call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
-  enddo; enddo; enddo; 
-!  set dp
-!  do k=1,nlev
-!    dpp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-!                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-!  enddo
-!  call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta,dpp,elem(ie)%state%phi)
-!now compare the two
-!print *, 'element------------------------------------------', ie
-!print *, 'maxval ----------', maxval(he(1,1,:) - zm(:))
-!print *, g*he(1,1,:) - elem(ie)%state%phi(1,1,:,1)
-!print *, 'he', he(1,1,:)
-!print *, 'zm', zm(:)
-!print *, 'diff', he(1,1,:) - zm(:)
-!stop
- call dcmip2012_tests_finalize(elem(ie),hvcoord,1,nt)
+     do k=1,nlev; do j=1,np; do i=1,np
+        call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
+        call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,phis,ps,rho,q(1))
+        dp = pressure_thickness(ps,k,hvcoord)
+        !let's get an analytical \phi
+        he(i,j,k) = (T0 - T)/gamma
+        call set_state(u,v,w,T,ps,phis,p,dp,he(i,j,k),g, i,j,k,elem(ie),1,nt)
+        call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
+     enddo; enddo; enddo; 
+     call dcmip2012_tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
-
-end subroutine
+  
+  end subroutine dcmip2012_test2_0
 
 !_____________________________________________________________________
 subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
@@ -336,18 +320,21 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
 
   ! set initial conditions
-  do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
-    call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
-    call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,shear,u,v,w,T,phis,ps,rho,q(1))
-    dp = pressure_thickness(ps,k,hvcoord)
-! original
-!    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
-! This test obtains analytical height and returns it, so, we use it for \phi ...
-    call set_state(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
-    call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
-! ... or we can use discrete hydro state to init \phi. 
-    call dcmip2012_tests_finalize(elem(ie),hvcoord,1,nt)
-  enddo; enddo; enddo; enddo
+  do ie = nets,nete; 
+     do k=1,nlev; do j=1,np; do i=1,np
+        call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
+        call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyam,hybm,shear,u,v,w,T,phis,ps,rho,q(1))
+        dp = pressure_thickness(ps,k,hvcoord)
+        ! original
+        !    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+        ! This test obtains analytical height and returns it, so, we use it for \phi ...
+        call set_state(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
+        call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
+        ! ... or we can use discrete hydro state to init \phi. 
+        
+     enddo; enddo; enddo; 
+     call dcmip2012_tests_finalize(elem(ie),hvcoord,1,nt)
+  enddo
 
   ! store initial velocity fields for use in sponge layer
   allocate( u0(np,np,nlev,nelemd) )
