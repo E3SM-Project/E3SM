@@ -510,7 +510,7 @@ use mpas_atmphys_utilities, only: physics_error_fatal
    if(ahoption==1) AH=AH*ahdiuprf(tloc)
 
    IF( ZDC+Z0C+2. >= ZA) THEN
-    FATAL_ERROR ("ZDC + Z0C + 2m is larger than the 1st WRF level - Stop in subroutine urban - change ZDC and Z0C" ) 
+    FATAL_ERROR("ZDC + Z0C + 2m is larger than the 1st WRF level - Stop in subroutine urban - change ZDC and Z0C" ) 
    END IF
 
    IF(.NOT.LSOLAR) THEN
