@@ -1,7 +1,7 @@
-# Module used for CESM testing.
+# Module used for CIME testing.
 #
 # This module contains statements that would otherwise be boilerplate in
-# most CESM tests. It enables CTest testing, handles the USE_COLOR and
+# most CIME tests. It enables CTest testing, handles the USE_COLOR and
 # ENABLE_GENF90 arguments, and includes several other modules.
 
 #==========================================================================
@@ -30,11 +30,16 @@ set(CMAKE_COLOR_MAKEFILE "${USE_COLOR}")
 # Compiler info
 #=================================================
 
-if("${CMAKE_BUILD_TYPE}" MATCHES CESM)
-  include(${CMAKE_BINARY_DIR}/CESM_Macros.cmake)
-else()
-  include(Compilers)
+include(${CMAKE_BINARY_DIR}/Macros.cmake RESULT_VARIABLE FOUND)
+set(CMAKE_C_FLAGS ${CFLAGS})
+set(CMAKE_Fortran_FLAGS ${FFLAGS})
+set (CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
+if(NOT FOUND)
+       message(FATAL_ERROR "You must generate a Macros.cmake file using CIME's configure")
 endif()
+
+include(Compilers)
+
 
 #=================================================
 # GenF90
