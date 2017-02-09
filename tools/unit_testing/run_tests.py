@@ -8,8 +8,9 @@ sys.path.append(os.path.join(_CIMEROOT, "tools", "unit_testing", "python"))
 
 from standard_script_setup import *
 from CIME.BuildTools.configure import configure
-from CIME.utils import expect, get_cime_root, run_cmd
+from CIME.utils import expect, get_cime_root, run_cmd, stringify_bool
 from CIME.XML.machines import Machines
+from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec
 
 #=================================================
@@ -17,6 +18,7 @@ from xml_test_list import TestSuiteSpec
 #=================================================
 from printer import Printer
 from shutil import rmtree
+from distutils.spawn import find_executable
 
 logger = logging.getLogger(__name__)
 
@@ -121,10 +123,10 @@ override the command provided by Machines."""
     return output, args.build_dir, args.build_type, args.clean,\
         args.cmake_args, args.compiler, args.enable_genf90, args.machine, args.machines_dir,\
         args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
-        args.use_env_compiler, args.use_openmp, args.xml_test_list
+        args.use_env_compiler, args.use_openmp, args.xml_test_list, args.verbose
 
 
-def cmake_stage(name, test_spec_dir, cimeroot, cmake_args=None, clean=False, verbose=False, genf90=True, color=True):
+def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_args=None, clean=False, verbose=False, genf90=True, color=True):
     """Run cmake in the current working directory.
 
     Arguments:
@@ -138,8 +140,6 @@ def cmake_stage(name, test_spec_dir, cimeroot, cmake_args=None, clean=False, ver
             os.remove("CMakeCache.txt")
         if "CMakeFiles" in pwd_contents:
             rmtree("CMakeFiles")
-        if "CESM_Macros.cmake" in pwd_contents:
-            os.remove("CESM_Macros.cmake")
 
     if not os.path.isfile("CMakeCache.txt"):
 
@@ -148,7 +148,7 @@ def cmake_stage(name, test_spec_dir, cimeroot, cmake_args=None, clean=False, ver
         cmake_command = [
             "cmake",
             test_spec_dir,
-            "-DCMAKE_MODULE_DIRECTORY="+os.path.join(cimeroot,"externals","CMake"),
+            "-DCMAKE_MODULE_DIRECTORY="+os.path.join(_CIMEROOT,"externals","CMake"),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN="+mpirun_command,
             ]
@@ -158,11 +158,10 @@ def cmake_stage(name, test_spec_dir, cimeroot, cmake_args=None, clean=False, ver
 
         if genf90:
             cmake_command.append("-DENABLE_GENF90=ON")
-            if cesm_root_dir is not None:
-                genf90_dir = os.path.join(
-                    cesm_root_dir, "cime", "externals", "genf90"
-                    )
-                cmake_command.append("-DCMAKE_PROGRAM_PATH="+genf90_dir)
+            genf90_dir = os.path.join(
+                _CIMEROOT, "externals", "genf90"
+                )
+            cmake_command.append("-DCMAKE_PROGRAM_PATH="+genf90_dir)
 
         if not color:
             cmake_command.append("-DUSE_COLOR=OFF")
@@ -172,9 +171,9 @@ def cmake_stage(name, test_spec_dir, cimeroot, cmake_args=None, clean=False, ver
 
         macros_path = os.path.abspath("Macros.cmake")
 
-        run_cmd(cmake_command)
+        run_cmd(" ".join(cmake_command), verbose=True)
 
-def make_stage(name):
+def make_stage(name, output, clean=False, verbose=False):
     """Run make in the current working directory.
 
     Arguments:
@@ -182,15 +181,15 @@ def make_stage(name):
     """
     output.print_header("Running make for "+name+".")
 
-    if options.clean:
-        subprocess.check_call(["make","clean"])
+    if clean:
+        run_cmd("make clean")
 
     make_command = ["make"]
 
-    if options.verbose:
+    if verbose:
         make_command.append("VERBOSE=1")
 
-    run_cmd(make_command)
+    run_cmd(" ".join(make_command), verbose=True)
 
 #=================================================
 # Iterate over input suite specs, building the tests.
@@ -201,7 +200,7 @@ def _main():
     output, build_dir, build_type, clean,\
         cmake_args, compiler, enable_genf90, machine, machines_dir,\
         mpilib, mpirun_command, test_spec_dir, ctest_args,\
-        use_env_compiler, use_openmp, xml_test_list \
+        use_env_compiler, use_openmp, xml_test_list, verbose \
         = parse_command_line(sys.argv)
 
 #=================================================
@@ -256,6 +255,15 @@ def _main():
     #
     #
     configure(machobj, build_dir, ["CMake"], compiler, mpilib, debug, os_)
+    machspecific = EnvMachSpecific(build_dir)
+    machspecific.load_env(compiler, debug, mpilib)
+    logger.warn("Compiler is %s"%compiler)
+    os.environ["COMPILER"] = compiler
+    os.environ["DEBUG"] = stringify_bool(debug)
+    os.environ["MPILIB"] = mpilib
+    os.environ["compile_threaded"] = "true"
+    os.environ["CC"] = find_executable("mpicc")
+    os.environ["FC"] = find_executable("mpif90")
 
 #=================================================
 # Run tests.
@@ -276,23 +284,36 @@ def _main():
             name = spec.name+"/"+label
 
             output.print_header("Running CTest tests for "+name+".")
+            if not os.path.islink("Macros.cmake"):
+                os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
+            cmake_stage(name, directory, build_type, mpirun_command, output, verbose=verbose)
+            make_stage(name, output, clean=clean, verbose=verbose)
+        os.chdir(build_dir)
+
+    for spec in suite_specs:
+        os.chdir(spec.name)
+
+        for label, directory in spec:
+
+            os.chdir(label)
+
+            name = spec.name+"/"+label
+
+            output.print_header("Running CTest tests for "+name+".")
 
             ctest_command = ["ctest", "--output-on-failure"]
 
-#            if verbose:
-            ctest_command.append("-VV")
+            if verbose:
+                ctest_command.append("-VV")
 
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd(ctest_command)
+            run_cmd(" ".join(ctest_command), verbose=True)
 
             os.chdir("..")
 
-            os.chdir(build_dir)
-
-
-
+        os.chdir(build_dir)
 
 if __name__ == "__main__":
     _main()

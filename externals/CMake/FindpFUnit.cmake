@@ -25,7 +25,7 @@
 include(FindPackageHandleStandardArgs)
 
 find_program(PFUNIT_PARSER pFUnitParser.py
-  HINTS $ENV{PFUNIT}/bin)
+  HINTS ${PFUNIT_PATH}/bin)
 
 string(REGEX REPLACE "bin/pFUnitParser\\.py\$" ""
   pfunit_directory ${PFUNIT_PARSER})
