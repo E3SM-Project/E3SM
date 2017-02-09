@@ -151,4 +151,4 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     vcs_canvas.plot(main_title)
 
     #vcs_canvas.pdf(case_id + '/' + parameter.output_file, textAsPaths=False)
-    vcs_canvas.pdf(case_id + '/' + parameter.output_file)
+    vcs_canvas.png(case_id + '/' + parameter.output_file)

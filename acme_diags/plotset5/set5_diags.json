@@ -1,0 +1,29 @@
+{
+	"somekey": [
+	  {
+      "case_id": "set5_ANN_PRECT_GPCP",
+			"variables": "PRECT",
+      "reference_data_set": "GPCP_ANN_climo.nc",
+      "test_data_set": "20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc",
+			"ref_name": "GPCP",
+			"season": "ANN",
+      "test_name": "1850_alpha6_01 (yrs0070-0099)",
+      "reference_name": "GPCP (yrs1979-2009)",
+      "test_units": "mm/day",
+      "diff_units": "mm/day",
+			"regions": ["land", "ocean", "tropics", "global"],
+			"levels": []
+		},
+		{
+      "case_id": "set5_ANN_T200_ECMWF",
+			"variables": "T",
+      "plev": 880,
+			"reference_data_set": "MERRA_ANN_climo.nc",
+			"season": "ANN",
+      "test_name": "1850_alpha6_01 (yrs0070-0099)",
+      "output_file": "test_lev.png",
+      "regions": ["tropics", "global"],
+			"levels": []
+		}
+	]
+}
