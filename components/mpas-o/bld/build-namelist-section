@@ -8,12 +8,18 @@ add_default($nl, 'config_ocean_run_mode');
 # Namelist group: time_management #
 ###################################
 
-add_default($nl, 'config_do_restart');
+if ($CONTINUE_RUN eq 'TRUE') {
+	add_default($nl, 'config_do_restart', 'val'=>".true.");
+} else {
+	add_default($nl, 'config_do_restart', 'val'=>".false.");
+}
 add_default($nl, 'config_restart_timestamp_name');
-add_default($nl, 'config_start_time');
-add_default($nl, 'config_stop_time');
-add_default($nl, 'config_run_duration');
-add_default($nl, 'config_calendar_type');
+add_default($nl, 'config_calendar_type', 'calendar'=>"$CALENDAR");
+if ($CONTINUE_RUN eq 'TRUE') {
+	add_default($nl, 'config_start_time', 'val'=>"'file'");
+} else {
+	add_default($nl, 'config_start_time', 'val'=>"'${RUN_STARTDATE}_${START_TOD}'");
+}
 
 ######################
 # Namelist group: io #
@@ -28,7 +34,7 @@ add_default($nl, 'config_pio_stride');
 #################################
 
 add_default($nl, 'config_num_halos');
-add_default($nl, 'config_block_decomp_file_prefix');
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ocn/mpas-o/${OCN_GRID}/mpas-o.graph.info.${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
@@ -712,6 +718,10 @@ add_default($nl, 'config_soma_thermocline_depth');
 add_default($nl, 'config_soma_density_difference_linear');
 add_default($nl, 'config_soma_surface_temperature');
 add_default($nl, 'config_soma_surface_salinity');
+add_default($nl, 'config_soma_use_surface_temp_restoring');
+add_default($nl, 'config_soma_surface_temp_restoring_at_center_latitude');
+add_default($nl, 'config_soma_surface_temp_restoring_latitude_gradient');
+add_default($nl, 'config_soma_restoring_temp_piston_vel');
 
 ########################
 # Namelist group: ziso #
@@ -1013,6 +1023,7 @@ add_default($nl, 'config_AM_meridionalHeatTransport_output_stream');
 add_default($nl, 'config_AM_meridionalHeatTransport_num_bins');
 add_default($nl, 'config_AM_meridionalHeatTransport_min_bin');
 add_default($nl, 'config_AM_meridionalHeatTransport_max_bin');
+add_default($nl, 'config_AM_meridionalHeatTransport_region_group');
 
 ##########################################
 # Namelist group: AM_testComputeInterval #

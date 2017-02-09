@@ -21,19 +21,20 @@
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
-<config_run_duration>'0000_24:00:00'</config_run_duration>
+<config_run_duration>'00-00-01_00:00:00'</config_run_duration>
 <config_num_halos>2</config_num_halos>
 
 <!-- io -->
 <config_pio_num_iotasks>0</config_pio_num_iotasks>
 <config_pio_stride>1</config_pio_stride>
+<config_write_output_on_startup>false</config_write_output_on_startup>
 <config_test_case_diag>false</config_test_case_diag>
 <config_test_case_diag_type>'none'</config_test_case_diag_type>
 
 <!-- decomposition -->
 <config_block_decomp_file_prefix>'graph.info.part.'</config_block_decomp_file_prefix>
 <config_number_of_blocks>0</config_number_of_blocks>
-<config_explicit_proc_decomp>.false.</config_explicit_proc_decomp>
+<config_explicit_proc_decomp>false</config_explicit_proc_decomp>
 <config_proc_decomp_file_prefix>'graph.info.part.'</config_proc_decomp_file_prefix>
 
 <!-- restart -->
@@ -74,7 +75,7 @@
 <config_forcing_restart_file>'restart_forcing_timestamps'</config_forcing_restart_file>
 <config_forcing_precipitation_units>'mm_per_sec'</config_forcing_precipitation_units>
 <config_forcing_sst_type>'ncar'</config_forcing_sst_type>
-<config_update_ocean_fluxes>.true.</config_update_ocean_fluxes>
+<config_update_ocean_fluxes>true</config_update_ocean_fluxes>
 <config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
 
 <!-- unit_test -->
@@ -110,7 +111,7 @@
 
 <!-- advection -->
 <config_advection_type>'incremental_remap'</config_advection_type>
-<config_monotonic>.true.</config_monotonic>
+<config_monotonic>true</config_monotonic>
 <config_conservation_check>false</config_conservation_check>
 <config_monotonicity_check>false</config_monotonicity_check>
 <config_recover_tracer_means_check>false</config_recover_tracer_means_check>
@@ -339,154 +340,168 @@
 <config_check_state>false</config_check_state>
 
 <!-- AM_highFrequencyOutput -->
-<config_AM_highFrequencyOutput_enable>.false.</config_AM_highFrequencyOutput_enable>
+<config_AM_highFrequencyOutput_enable>false</config_AM_highFrequencyOutput_enable>
 <config_AM_highFrequencyOutput_compute_interval>'output_interval'</config_AM_highFrequencyOutput_compute_interval>
 <config_AM_highFrequencyOutput_output_stream>'highFrequencyOutput'</config_AM_highFrequencyOutput_output_stream>
-<config_AM_highFrequencyOutput_compute_on_startup>.true.</config_AM_highFrequencyOutput_compute_on_startup>
-<config_AM_highFrequencyOutput_write_on_startup>.true.</config_AM_highFrequencyOutput_write_on_startup>
+<config_AM_highFrequencyOutput_compute_on_startup>true</config_AM_highFrequencyOutput_compute_on_startup>
+<config_AM_highFrequencyOutput_write_on_startup>true</config_AM_highFrequencyOutput_write_on_startup>
 
 <!-- AM_temperatures -->
-<config_AM_temperatures_enable>.false.</config_AM_temperatures_enable>
+<config_AM_temperatures_enable>false</config_AM_temperatures_enable>
 <config_AM_temperatures_compute_interval>'dt'</config_AM_temperatures_compute_interval>
 <config_AM_temperatures_output_stream>'output'</config_AM_temperatures_output_stream>
-<config_AM_temperatures_compute_on_startup>.false.</config_AM_temperatures_compute_on_startup>
-<config_AM_temperatures_write_on_startup>.false.</config_AM_temperatures_write_on_startup>
+<config_AM_temperatures_compute_on_startup>true</config_AM_temperatures_compute_on_startup>
+<config_AM_temperatures_write_on_startup>true</config_AM_temperatures_write_on_startup>
 
 <!-- AM_regionalStatistics -->
-<config_AM_regionalStatistics_enable>.true.</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable>true</config_AM_regionalStatistics_enable>
 <config_AM_regionalStatistics_compute_interval>'0000-00-00_01:00:00'</config_AM_regionalStatistics_compute_interval>
 <config_AM_regionalStatistics_output_stream>'regionalStatisticsOutput'</config_AM_regionalStatistics_output_stream>
-<config_AM_regionalStatistics_compute_on_startup>.true.</config_AM_regionalStatistics_compute_on_startup>
-<config_AM_regionalStatistics_write_on_startup>.true.</config_AM_regionalStatistics_write_on_startup>
+<config_AM_regionalStatistics_compute_on_startup>true</config_AM_regionalStatistics_compute_on_startup>
+<config_AM_regionalStatistics_write_on_startup>true</config_AM_regionalStatistics_write_on_startup>
 <config_AM_regionalStatistics_ice_extent_limit>0.15</config_AM_regionalStatistics_ice_extent_limit>
 
 <!-- AM_ridgingDiagnostics -->
-<config_AM_ridgingDiagnostics_enable>.true.</config_AM_ridgingDiagnostics_enable>
+<config_AM_ridgingDiagnostics_enable>true</config_AM_ridgingDiagnostics_enable>
 <config_AM_ridgingDiagnostics_compute_interval>'dt'</config_AM_ridgingDiagnostics_compute_interval>
 <config_AM_ridgingDiagnostics_output_stream>'output'</config_AM_ridgingDiagnostics_output_stream>
-<config_AM_ridgingDiagnostics_compute_on_startup>.true.</config_AM_ridgingDiagnostics_compute_on_startup>
-<config_AM_ridgingDiagnostics_write_on_startup>.true.</config_AM_ridgingDiagnostics_write_on_startup>
+<config_AM_ridgingDiagnostics_compute_on_startup>true</config_AM_ridgingDiagnostics_compute_on_startup>
+<config_AM_ridgingDiagnostics_write_on_startup>true</config_AM_ridgingDiagnostics_write_on_startup>
 
 <!-- AM_conservationCheck -->
-<config_AM_conservationCheck_enable>.false.</config_AM_conservationCheck_enable>
+<config_AM_conservationCheck_enable>false</config_AM_conservationCheck_enable>
 <config_AM_conservationCheck_compute_interval>'dt'</config_AM_conservationCheck_compute_interval>
 <config_AM_conservationCheck_output_stream>'conservationCheckOutput'</config_AM_conservationCheck_output_stream>
-<config_AM_conservationCheck_compute_on_startup>.true.</config_AM_conservationCheck_compute_on_startup>
-<config_AM_conservationCheck_write_on_startup>.true.</config_AM_conservationCheck_write_on_startup>
-<config_AM_conservationCheck_write_to_logfile>.true.</config_AM_conservationCheck_write_to_logfile>
+<config_AM_conservationCheck_compute_on_startup>true</config_AM_conservationCheck_compute_on_startup>
+<config_AM_conservationCheck_write_on_startup>true</config_AM_conservationCheck_write_on_startup>
+<config_AM_conservationCheck_write_to_logfile>true</config_AM_conservationCheck_write_to_logfile>
 
 <!-- AM_geographicalVectors -->
-<config_AM_geographicalVectors_enable>.true.</config_AM_geographicalVectors_enable>
+<config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>
 <config_AM_geographicalVectors_compute_interval>'dt'</config_AM_geographicalVectors_compute_interval>
 <config_AM_geographicalVectors_output_stream>'output'</config_AM_geographicalVectors_output_stream>
-<config_AM_geographicalVectors_compute_on_startup>.true.</config_AM_geographicalVectors_compute_on_startup>
-<config_AM_geographicalVectors_write_on_startup>.true.</config_AM_geographicalVectors_write_on_startup>
+<config_AM_geographicalVectors_compute_on_startup>true</config_AM_geographicalVectors_compute_on_startup>
+<config_AM_geographicalVectors_write_on_startup>true</config_AM_geographicalVectors_write_on_startup>
 
 <!-- AM_loadBalance -->
-<config_AM_loadBalance_enable>.false.</config_AM_loadBalance_enable>
+<config_AM_loadBalance_enable>false</config_AM_loadBalance_enable>
 <config_AM_loadBalance_compute_interval>'output_interval'</config_AM_loadBalance_compute_interval>
 <config_AM_loadBalance_output_stream>'loadBalanceOutput'</config_AM_loadBalance_output_stream>
-<config_AM_loadBalance_compute_on_startup>.true.</config_AM_loadBalance_compute_on_startup>
-<config_AM_loadBalance_write_on_startup>.true.</config_AM_loadBalance_write_on_startup>
+<config_AM_loadBalance_compute_on_startup>true</config_AM_loadBalance_compute_on_startup>
+<config_AM_loadBalance_write_on_startup>true</config_AM_loadBalance_write_on_startup>
 <config_AM_loadBalance_nProcs>32</config_AM_loadBalance_nProcs>
 
 <!-- AM_maximumIcePresence -->
-<config_AM_maximumIcePresence_enable>.false.</config_AM_maximumIcePresence_enable>
+<config_AM_maximumIcePresence_enable>false</config_AM_maximumIcePresence_enable>
 <config_AM_maximumIcePresence_compute_interval>'dt'</config_AM_maximumIcePresence_compute_interval>
 <config_AM_maximumIcePresence_output_stream>'maximumIcePresenceOutput'</config_AM_maximumIcePresence_output_stream>
-<config_AM_maximumIcePresence_compute_on_startup>.true.</config_AM_maximumIcePresence_compute_on_startup>
-<config_AM_maximumIcePresence_write_on_startup>.true.</config_AM_maximumIcePresence_write_on_startup>
+<config_AM_maximumIcePresence_compute_on_startup>true</config_AM_maximumIcePresence_compute_on_startup>
+<config_AM_maximumIcePresence_write_on_startup>true</config_AM_maximumIcePresence_write_on_startup>
 <config_AM_maximumIcePresence_start_time>'0000-00-00_00:00:00'</config_AM_maximumIcePresence_start_time>
 
 <!-- AM_miscellaneous -->
-<config_AM_miscellaneous_enable>.true.</config_AM_miscellaneous_enable>
+<config_AM_miscellaneous_enable>true</config_AM_miscellaneous_enable>
 <config_AM_miscellaneous_compute_interval>'dt'</config_AM_miscellaneous_compute_interval>
 <config_AM_miscellaneous_output_stream>'none'</config_AM_miscellaneous_output_stream>
-<config_AM_miscellaneous_compute_on_startup>.false.</config_AM_miscellaneous_compute_on_startup>
-<config_AM_miscellaneous_write_on_startup>.false.</config_AM_miscellaneous_write_on_startup>
+<config_AM_miscellaneous_compute_on_startup>true</config_AM_miscellaneous_compute_on_startup>
+<config_AM_miscellaneous_write_on_startup>true</config_AM_miscellaneous_write_on_startup>
 
 <!-- AM_areaVariables -->
-<config_AM_areaVariables_enable>.true.</config_AM_areaVariables_enable>
+<config_AM_areaVariables_enable>true</config_AM_areaVariables_enable>
 <config_AM_areaVariables_compute_interval>'dt'</config_AM_areaVariables_compute_interval>
 <config_AM_areaVariables_output_stream>'none'</config_AM_areaVariables_output_stream>
-<config_AM_areaVariables_compute_on_startup>.false.</config_AM_areaVariables_compute_on_startup>
-<config_AM_areaVariables_write_on_startup>.false.</config_AM_areaVariables_write_on_startup>
+<config_AM_areaVariables_compute_on_startup>true</config_AM_areaVariables_compute_on_startup>
+<config_AM_areaVariables_write_on_startup>true</config_AM_areaVariables_write_on_startup>
 
 <!-- AM_pondDiagnostics -->
-<config_AM_pondDiagnostics_enable>.true.</config_AM_pondDiagnostics_enable>
+<config_AM_pondDiagnostics_enable>true</config_AM_pondDiagnostics_enable>
 <config_AM_pondDiagnostics_compute_interval>'dt'</config_AM_pondDiagnostics_compute_interval>
 <config_AM_pondDiagnostics_output_stream>'none'</config_AM_pondDiagnostics_output_stream>
-<config_AM_pondDiagnostics_compute_on_startup>.false.</config_AM_pondDiagnostics_compute_on_startup>
-<config_AM_pondDiagnostics_write_on_startup>.false.</config_AM_pondDiagnostics_write_on_startup>
+<config_AM_pondDiagnostics_compute_on_startup>true</config_AM_pondDiagnostics_compute_on_startup>
+<config_AM_pondDiagnostics_write_on_startup>true</config_AM_pondDiagnostics_write_on_startup>
 
 <!-- AM_unitConversion -->
-<config_AM_unitConversion_enable>.true.</config_AM_unitConversion_enable>
+<config_AM_unitConversion_enable>true</config_AM_unitConversion_enable>
 <config_AM_unitConversion_compute_interval>'dt'</config_AM_unitConversion_compute_interval>
 <config_AM_unitConversion_output_stream>'none'</config_AM_unitConversion_output_stream>
-<config_AM_unitConversion_compute_on_startup>.false.</config_AM_unitConversion_compute_on_startup>
-<config_AM_unitConversion_write_on_startup>.false.</config_AM_unitConversion_write_on_startup>
+<config_AM_unitConversion_compute_on_startup>false</config_AM_unitConversion_compute_on_startup>
+<config_AM_unitConversion_write_on_startup>false</config_AM_unitConversion_write_on_startup>
 
 <!-- AM_pointwiseStats -->
-<config_AM_pointwiseStats_enable>.false.</config_AM_pointwiseStats_enable>
+<config_AM_pointwiseStats_enable>false</config_AM_pointwiseStats_enable>
 <config_AM_pointwiseStats_compute_interval>'dt'</config_AM_pointwiseStats_compute_interval>
 <config_AM_pointwiseStats_output_stream>'pointwiseStatsOutput'</config_AM_pointwiseStats_output_stream>
-<config_AM_pointwiseStats_compute_on_startup>.false.</config_AM_pointwiseStats_compute_on_startup>
-<config_AM_pointwiseStats_write_on_startup>.false.</config_AM_pointwiseStats_write_on_startup>
+<config_AM_pointwiseStats_compute_on_startup>true</config_AM_pointwiseStats_compute_on_startup>
+<config_AM_pointwiseStats_write_on_startup>true</config_AM_pointwiseStats_write_on_startup>
 
 <!-- AM_iceShelves -->
-<config_AM_iceShelves_enable>.false.</config_AM_iceShelves_enable>
+<config_AM_iceShelves_enable>false</config_AM_iceShelves_enable>
 <config_AM_iceShelves_compute_interval>'output_interval'</config_AM_iceShelves_compute_interval>
 <config_AM_iceShelves_output_stream>'iceShelvesOutput'</config_AM_iceShelves_output_stream>
-<config_AM_iceShelves_compute_on_startup>.true.</config_AM_iceShelves_compute_on_startup>
-<config_AM_iceShelves_write_on_startup>.true.</config_AM_iceShelves_write_on_startup>
+<config_AM_iceShelves_compute_on_startup>true</config_AM_iceShelves_compute_on_startup>
+<config_AM_iceShelves_write_on_startup>true</config_AM_iceShelves_write_on_startup>
 
 <!-- AM_icePresent -->
-<config_AM_icePresent_enable>.true.</config_AM_icePresent_enable>
+<config_AM_icePresent_enable>true</config_AM_icePresent_enable>
 <config_AM_icePresent_compute_interval>'dt'</config_AM_icePresent_compute_interval>
 <config_AM_icePresent_output_stream>'none'</config_AM_icePresent_output_stream>
-<config_AM_icePresent_compute_on_startup>.false.</config_AM_icePresent_compute_on_startup>
-<config_AM_icePresent_write_on_startup>.false.</config_AM_icePresent_write_on_startup>
+<config_AM_icePresent_compute_on_startup>false</config_AM_icePresent_compute_on_startup>
+<config_AM_icePresent_write_on_startup>false</config_AM_icePresent_write_on_startup>
 
 <!-- AM_timeSeriesStatsDaily -->
-<config_AM_timeSeriesStatsDaily_enable>.false.</config_AM_timeSeriesStatsDaily_enable>
-<config_AM_timeSeriesStatsDaily_compute_on_startup>.false.</config_AM_timeSeriesStatsDaily_compute_on_startup>
-<config_AM_timeSeriesStatsDaily_write_on_startup>.false.</config_AM_timeSeriesStatsDaily_write_on_startup>
+<config_AM_timeSeriesStatsDaily_enable>false</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_compute_on_startup>false</config_AM_timeSeriesStatsDaily_compute_on_startup>
+<config_AM_timeSeriesStatsDaily_write_on_startup>false</config_AM_timeSeriesStatsDaily_write_on_startup>
 <config_AM_timeSeriesStatsDaily_compute_interval>'dt'</config_AM_timeSeriesStatsDaily_compute_interval>
 <config_AM_timeSeriesStatsDaily_output_stream>'timeSeriesStatsDailyOutput'</config_AM_timeSeriesStatsDaily_output_stream>
 <config_AM_timeSeriesStatsDaily_restart_stream>'timeSeriesStatsDailyRestart'</config_AM_timeSeriesStatsDaily_restart_stream>
-<config_AM_timeSeriesStatsDaily_add_mesh>.true.</config_AM_timeSeriesStatsDaily_add_mesh>
 <config_AM_timeSeriesStatsDaily_operation>'avg'</config_AM_timeSeriesStatsDaily_operation>
 <config_AM_timeSeriesStatsDaily_reference_times>'initial_time'</config_AM_timeSeriesStatsDaily_reference_times>
 <config_AM_timeSeriesStatsDaily_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsDaily_duration_intervals>
 <config_AM_timeSeriesStatsDaily_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsDaily_repeat_intervals>
 <config_AM_timeSeriesStatsDaily_reset_intervals>'00-00-01_00:00:00'</config_AM_timeSeriesStatsDaily_reset_intervals>
+<config_AM_timeSeriesStatsDaily_backward_output_offset>'00-00-01_00:00:00'</config_AM_timeSeriesStatsDaily_backward_output_offset>
 
 <!-- AM_timeSeriesStatsMonthly -->
-<config_AM_timeSeriesStatsMonthly_enable>.true.</config_AM_timeSeriesStatsMonthly_enable>
-<config_AM_timeSeriesStatsMonthly_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthly_compute_on_startup>
-<config_AM_timeSeriesStatsMonthly_write_on_startup>.false.</config_AM_timeSeriesStatsMonthly_write_on_startup>
+<config_AM_timeSeriesStatsMonthly_enable>true</config_AM_timeSeriesStatsMonthly_enable>
+<config_AM_timeSeriesStatsMonthly_compute_on_startup>false</config_AM_timeSeriesStatsMonthly_compute_on_startup>
+<config_AM_timeSeriesStatsMonthly_write_on_startup>false</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'0000-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
 <config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
 <config_AM_timeSeriesStatsMonthly_restart_stream>'timeSeriesStatsMonthlyRestart'</config_AM_timeSeriesStatsMonthly_restart_stream>
-<config_AM_timeSeriesStatsMonthly_add_mesh>.true.</config_AM_timeSeriesStatsMonthly_add_mesh>
 <config_AM_timeSeriesStatsMonthly_operation>'avg'</config_AM_timeSeriesStatsMonthly_operation>
 <config_AM_timeSeriesStatsMonthly_reference_times>'initial_time'</config_AM_timeSeriesStatsMonthly_reference_times>
 <config_AM_timeSeriesStatsMonthly_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsMonthly_duration_intervals>
 <config_AM_timeSeriesStatsMonthly_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsMonthly_repeat_intervals>
 <config_AM_timeSeriesStatsMonthly_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthly_reset_intervals>
+<config_AM_timeSeriesStatsMonthly_backward_output_offset>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthly_backward_output_offset>
 
 <!-- AM_timeSeriesStatsClimatology -->
-<config_AM_timeSeriesStatsClimatology_enable>.false.</config_AM_timeSeriesStatsClimatology_enable>
-<config_AM_timeSeriesStatsClimatology_compute_on_startup>.false.</config_AM_timeSeriesStatsClimatology_compute_on_startup>
-<config_AM_timeSeriesStatsClimatology_write_on_startup>.false.</config_AM_timeSeriesStatsClimatology_write_on_startup>
-<config_AM_timeSeriesStatsClimatology_compute_interval>'dt'</config_AM_timeSeriesStatsClimatology_compute_interval>
+<config_AM_timeSeriesStatsClimatology_enable>false</config_AM_timeSeriesStatsClimatology_enable>
+<config_AM_timeSeriesStatsClimatology_compute_on_startup>false</config_AM_timeSeriesStatsClimatology_compute_on_startup>
+<config_AM_timeSeriesStatsClimatology_write_on_startup>false</config_AM_timeSeriesStatsClimatology_write_on_startup>
+<config_AM_timeSeriesStatsClimatology_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsClimatology_compute_interval>
 <config_AM_timeSeriesStatsClimatology_output_stream>'timeSeriesStatsClimatologyOutput'</config_AM_timeSeriesStatsClimatology_output_stream>
 <config_AM_timeSeriesStatsClimatology_restart_stream>'timeSeriesStatsClimatologyRestart'</config_AM_timeSeriesStatsClimatology_restart_stream>
-<config_AM_timeSeriesStatsClimatology_add_mesh>.true.</config_AM_timeSeriesStatsClimatology_add_mesh>
 <config_AM_timeSeriesStatsClimatology_operation>'avg'</config_AM_timeSeriesStatsClimatology_operation>
 <config_AM_timeSeriesStatsClimatology_reference_times>'00-01-01_00:00:00;00-04-01_00:00:00;00-07-01_00:00:00;00-10-01_00:00:00;00-03-01_00:00:00;00-06-01_00:00:00;00-09-01_00:00:00;00-12-01_00:00:00'</config_AM_timeSeriesStatsClimatology_reference_times>
 <config_AM_timeSeriesStatsClimatology_duration_intervals>'00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00'</config_AM_timeSeriesStatsClimatology_duration_intervals>
 <config_AM_timeSeriesStatsClimatology_repeat_intervals>'01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00'</config_AM_timeSeriesStatsClimatology_repeat_intervals>
 <config_AM_timeSeriesStatsClimatology_reset_intervals>'10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00'</config_AM_timeSeriesStatsClimatology_reset_intervals>
+<config_AM_timeSeriesStatsClimatology_backward_output_offset>'00-03-00_00:00:00'</config_AM_timeSeriesStatsClimatology_backward_output_offset>
+
+<!-- AM_timeSeriesStatsCustom -->
+<config_AM_timeSeriesStatsCustom_enable>false</config_AM_timeSeriesStatsCustom_enable>
+<config_AM_timeSeriesStatsCustom_compute_on_startup>false</config_AM_timeSeriesStatsCustom_compute_on_startup>
+<config_AM_timeSeriesStatsCustom_write_on_startup>false</config_AM_timeSeriesStatsCustom_write_on_startup>
+<config_AM_timeSeriesStatsCustom_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsCustom_compute_interval>
+<config_AM_timeSeriesStatsCustom_output_stream>'timeSeriesStatsCustomOutput'</config_AM_timeSeriesStatsCustom_output_stream>
+<config_AM_timeSeriesStatsCustom_restart_stream>'timeSeriesStatsCustomRestart'</config_AM_timeSeriesStatsCustom_restart_stream>
+<config_AM_timeSeriesStatsCustom_operation>'avg'</config_AM_timeSeriesStatsCustom_operation>
+<config_AM_timeSeriesStatsCustom_reference_times>'initial_time'</config_AM_timeSeriesStatsCustom_reference_times>
+<config_AM_timeSeriesStatsCustom_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsCustom_duration_intervals>
+<config_AM_timeSeriesStatsCustom_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsCustom_repeat_intervals>
+<config_AM_timeSeriesStatsCustom_reset_intervals>'00-00-07_00:00:00'</config_AM_timeSeriesStatsCustom_reset_intervals>
+<config_AM_timeSeriesStatsCustom_backward_output_offset>'00-00-01_00:00:00'</config_AM_timeSeriesStatsCustom_backward_output_offset>
 
 </namelist_defaults>

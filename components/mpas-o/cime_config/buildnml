@@ -227,8 +227,8 @@ while ($inst_counter <= $NINST_OCN) {
 
 # Write streams file if there isn't one in SourceMods
 
-if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
-	$sysmod = "cp $CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME $RUNDIR/$STREAM_NAME";
+if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
+	$sysmod = "cp $CASEROOT/SourceMods/src.mpaso/$STREAM_NAME $RUNDIR/$STREAM_NAME";
 	system($sysmod) == 0 or die "ERROR mpas-o buildnml: $sysmod fails: $?\n";
 } else {
 	open(my $stream_file, "+>", "$RUNDIR/$STREAM_NAME");
