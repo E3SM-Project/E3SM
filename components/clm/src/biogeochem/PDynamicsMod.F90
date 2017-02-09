@@ -28,7 +28,7 @@ module PDynamicsMod
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
   use PatchType           , only : pft_pp
-  use VegetationPropertiesType      , only : veg_pp
+  use VegetationPropertiesType      , only : veg_vp
   !
   implicit none
   save
@@ -623,10 +623,10 @@ contains
          biochem_pmin_vr      => phosphorusflux_vars%biochem_pmin_vr_col  , &
          biochem_pmin_ppools_vr_col  => phosphorusflux_vars%biochem_pmin_ppools_vr_col ,&
          npimbalance          => nitrogenstate_vars%npimbalance_patch     , &
-         vmax_ptase_vr        => veg_pp%vmax_ptase_vr                 , &
-         km_ptase             => veg_pp%km_ptase                      , &
+         vmax_ptase_vr        => veg_vp%vmax_ptase_vr                 , &
+         km_ptase             => veg_vp%km_ptase                      , &
          decomp_ppools_vr_col => phosphorusstate_vars%decomp_ppools_vr_col, &
-         lamda_ptase          => veg_pp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar                 &
          )

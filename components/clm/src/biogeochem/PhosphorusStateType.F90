@@ -14,7 +14,7 @@ module PhosphorusStateType
   use decompMod              , only : bounds_type
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use VegetationPropertiesType         , only : veg_pp
+  use VegetationPropertiesType         , only : veg_vp
   use abortutils             , only : endrun
   use spmdMod                , only : masterproc 
   use LandunitType           , only : lun_pp                
@@ -688,8 +688,8 @@ contains
              this%leafp_patch(p) = 0._r8
              this%leafp_storage_patch(p) = 0._r8
           else
-             this%leafp_patch(p)         = leafc_patch(p)         / veg_pp%leafcp(pft_pp%itype(p))
-             this%leafp_storage_patch(p) = leafc_storage_patch(p) / veg_pp%leafcp(pft_pp%itype(p))
+             this%leafp_patch(p)         = leafc_patch(p)         / veg_vp%leafcp(pft_pp%itype(p))
+             this%leafp_storage_patch(p) = leafc_storage_patch(p) / veg_vp%leafcp(pft_pp%itype(p))
           end if
 
           this%leafp_xfer_patch(p)        = 0._r8
@@ -708,8 +708,8 @@ contains
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (veg_pp%woody(pft_pp%itype(p)) == 1._r8) then
-             this%deadstemp_patch(p) = deadstemc_patch(p) / veg_pp%deadwdcp(pft_pp%itype(p))
+          if (veg_vp%woody(pft_pp%itype(p)) == 1._r8) then
+             this%deadstemp_patch(p) = deadstemc_patch(p) / veg_vp%deadwdcp(pft_pp%itype(p))
           else
              this%deadstemp_patch(p) = 0._r8
           end if
@@ -718,8 +718,8 @@ contains
               ! ECA competition calculate root NP uptake as a function of fine root biomass
               ! better to initialize root CNP pools with a non-zero value
               if (pft_pp%itype(p) .ne. noveg) then
-                 this%frootp_patch(p) = frootc_patch(p) / veg_pp%frootcp(pft_pp%itype(p))
-                 this%frootp_storage_patch(p) = frootc_storage_patch(p) / veg_pp%frootcp(pft_pp%itype(p))
+                 this%frootp_patch(p) = frootc_patch(p) / veg_vp%frootcp(pft_pp%itype(p))
+                 this%frootp_storage_patch(p) = frootc_storage_patch(p) / veg_vp%frootcp(pft_pp%itype(p))
               end if
           end if
            

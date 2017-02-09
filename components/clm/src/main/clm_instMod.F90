@@ -47,8 +47,8 @@ module clm_instMod
   use glcDiagnosticsMod          , only : glc_diagnostics_type
   use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
   use UrbanParamsType            , only : urbanparams_type   ! Constants
-  use VegetationPropertiesType   , only : veg_pp             ! Ecophysical Constants
-  ! use VegetationPropertiesType             , only : veg_pp         ! Constants
+  use VegetationPropertiesType   , only : veg_vp             ! Ecophysical Constants
+  ! use VegetationPropertiesType             , only : veg_vp         ! Constants
   use SoilorderConType           , only : soilordercon         ! Constants
 
   use LandunitType               , only : lun_pp
@@ -231,7 +231,7 @@ contains
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil
-    use VegetationPropertiesType          , only : veg_pp
+    use VegetationPropertiesType          , only : veg_vp
     use SoilorderConType                  , only : soilorderconInit
     use LakeCon                           , only : LakeConInit
     use initVerticalMod                   , only : initVertical
@@ -288,7 +288,7 @@ contains
 
     ! Initialize ecophys constants
 
-    call veg_pp%Init()
+    call veg_vp%Init()
 
     ! Initialize soil order related constants
 

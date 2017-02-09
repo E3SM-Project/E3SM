@@ -10,7 +10,7 @@ module CNGapMortalityMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use abortutils          , only : endrun
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use VegetationPropertiesType      , only : veg_pp
+  use VegetationPropertiesType      , only : veg_vp
   use CNDVType            , only : dgvs_type
   use CNStateType         , only : cnstate_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -119,7 +119,7 @@ contains
     associate(                                                                                              & 
          ivt                                 =>    pft_pp%itype                                              , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
-         woody                               =>    veg_pp%woody                                       , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform                    
+         woody                               =>    veg_vp%woody                                       , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform                    
          
          greffic                             =>    dgvs_vars%greffic_patch                                , & ! Input:  [real(r8) (:) ]                                                    
          heatstress                          =>    dgvs_vars%heatstress_patch                             , & ! Input:  [real(r8) (:) ]                                                    
@@ -322,12 +322,12 @@ contains
          ivt                                 =>    pft_pp%itype                                              , & ! Input:  [integer  (:)   ]  pft vegetation type                                
          wtcol                               =>    pft_pp%wtcol                                              , & ! Input:  [real(r8) (:)   ]  pft weight relative to column (0-1)               
          
-         lf_flab                             =>    veg_pp%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
-         lf_fcel                             =>    veg_pp%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
-         lf_flig                             =>    veg_pp%lf_flig                                     , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
-         fr_flab                             =>    veg_pp%fr_flab                                     , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
-         fr_fcel                             =>    veg_pp%fr_fcel                                     , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
-         fr_flig                             =>    veg_pp%fr_flig                                     , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
+         lf_flab                             =>    veg_vp%lf_flab                                     , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
+         lf_fcel                             =>    veg_vp%lf_fcel                                     , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
+         lf_flig                             =>    veg_vp%lf_flig                                     , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction                       
+         fr_flab                             =>    veg_vp%fr_flab                                     , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction                  
+         fr_fcel                             =>    veg_vp%fr_fcel                                     , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction               
+         fr_flig                             =>    veg_vp%fr_flig                                     , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction                  
          
          leaf_prof                           =>    cnstate_vars%leaf_prof_patch                           , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
          froot_prof                          =>    cnstate_vars%froot_prof_patch                          , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     

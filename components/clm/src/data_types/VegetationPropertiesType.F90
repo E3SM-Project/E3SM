@@ -136,16 +136,16 @@ module VegetationPropertiesType
 
 
    contains
-   procedure, public :: Init => veg_pp_init
+   procedure, public :: Init => veg_vp_init
   
    end type vegetation_properties_type
 
-  type(vegetation_properties_type), public :: veg_pp ! patch ecophysiological constants structure
+  type(vegetation_properties_type), public :: veg_vp ! patch ecophysiological constants structure
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine veg_pp_init(this)
+  subroutine veg_vp_init(this)
     !
     ! !USES:
     use clm_varpar, only : numrad, numpft 
@@ -403,6 +403,6 @@ contains
        this%vmax_ptase_vr(j) = vmax_ptase_vr(j)
     end do
      
-  end subroutine veg_pp_init
+  end subroutine veg_vp_init
 
 end module VegetationPropertiesType

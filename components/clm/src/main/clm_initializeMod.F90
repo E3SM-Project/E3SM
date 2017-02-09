@@ -387,7 +387,7 @@ contains
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
-    use VegetationPropertiesType        , only : veg_pp 
+    use VegetationPropertiesType        , only : veg_vp 
     use SoilorderConType      , only : soilorderconInit 
     use LakeCon               , only : LakeConInit 
     use SatellitePhenologyMod , only : SatellitePhenologyInit, readAnnualVegetation, interpMonthlyVeg

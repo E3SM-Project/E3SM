@@ -20,7 +20,7 @@ module CanopyTemperatureMod
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation 
   use CLMFatesInterfaceMod , only : hlm_fates_interface_type
   use SurfaceResistanceMod , only : calc_soilevap_stress
-  use VegetationPropertiesType     , only : veg_pp
+  use VegetationPropertiesType     , only : veg_vp
   use atm2lndType          , only : atm2lnd_type
   use CanopyStateType      , only : canopystate_type
   use EnergyFluxType       , only : energyflux_type
@@ -126,8 +126,8 @@ contains
          z_d_town         =>    lun_pp%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
          urbpoi           =>    lun_pp%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
 
-         z0mr             =>    veg_pp%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
-         displar          =>    veg_pp%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
+         z0mr             =>    veg_vp%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
+         displar          =>    veg_vp%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
 
          forc_hgt_t       =>    atm2lnd_vars%forc_hgt_t_grc           , & ! Input:  [real(r8) (:)   ] observational height of temperature [m]  
          forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in east direction (m/s)

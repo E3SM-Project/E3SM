@@ -20,7 +20,7 @@ module PStateUpdate3Mod
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
-  use VegetationPropertiesType      , only : veg_pp 
+  use VegetationPropertiesType      , only : veg_vp 
   !
   implicit none
   save
@@ -71,8 +71,8 @@ contains
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool ,&
          pf => phosphorusflux_vars  , &
          ps => phosphorusstate_vars , &
-         vmax_minsurf_p_vr => veg_pp%vmax_minsurf_p_vr , &
-         km_minsurf_p_vr   => veg_pp%km_minsurf_p_vr     &
+         vmax_minsurf_p_vr => veg_vp%vmax_minsurf_p_vr , &
+         km_minsurf_p_vr   => veg_vp%km_minsurf_p_vr     &
          )
 
       ! set time steps

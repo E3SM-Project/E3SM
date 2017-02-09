@@ -14,7 +14,7 @@ module CNMRespMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use pftvarcon           , only : npcropmin
   use CNSharedParamsMod   , only : CNParamsShareInst
-  use VegetationPropertiesType      , only : veg_pp
+  use VegetationPropertiesType      , only : veg_vp
   use SoilStateType       , only : soilstate_type
   use CanopyStateType     , only : canopystate_type
   use TemperatureType     , only : temperature_type
@@ -105,7 +105,7 @@ contains
 
     associate(                                                        &    
          ivt            =>    pft_pp%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type                                
-         woody          =>    veg_pp%woody                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody          =>    veg_vp%woody                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
 
          frac_veg_nosno =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          laisun         =>    canopystate_vars%laisun_patch         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index                  

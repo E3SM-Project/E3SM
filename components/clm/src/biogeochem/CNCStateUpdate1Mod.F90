@@ -16,7 +16,7 @@ module CNCStateUpdate1Mod
   use CNCarbonFluxType       , only : carbonflux_type
   use CNStateType            , only : cnstate_type
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use VegetationPropertiesType         , only : veg_pp
+  use VegetationPropertiesType         , only : veg_vp
   use PatchType              , only : pft_pp
   use clm_varctl             , only : nu_com
   ! bgc interface & pflotran:
@@ -106,7 +106,7 @@ contains
     associate(                                                                                     & 
          ivt                           =>    pft_pp%itype                                           , & ! Input:  [integer  (:)     ]  pft vegetation type                                
 
-         woody                         =>    veg_pp%woody                                    , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                         =>    veg_vp%woody                                    , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
          cascade_donor_pool            =>    decomp_cascade_con%cascade_donor_pool               , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool         =>    decomp_cascade_con%cascade_receiver_pool            , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 

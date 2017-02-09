@@ -31,7 +31,7 @@ module CNFireMod
   use decompMod              , only : bounds_type
   use subgridAveMod          , only : p2c
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use VegetationPropertiesType         , only : veg_pp
+  use VegetationPropertiesType         , only : veg_vp
   use atm2lndType            , only : atm2lnd_type
   use CNDVType               , only : dgvs_type
   use CNStateType            , only : cnstate_type
@@ -766,7 +766,7 @@ contains
         is_cwd                              =>    decomp_cascade_con%is_cwd                                   , & ! Input:  [logical  (:)     ]  TRUE => pool is a cwd pool                         
         is_litter                           =>    decomp_cascade_con%is_litter                                , & ! Input:  [logical  (:)     ]  TRUE => pool is a litter pool                      
 
-        woody                               =>    veg_pp%woody                                            , & ! Input:  [real(r8) (:)     ]  woody lifeform (1=woody, 0=not woody)             
+        woody                               =>    veg_vp%woody                                            , & ! Input:  [real(r8) (:)     ]  woody lifeform (1=woody, 0=not woody)             
 
         nind                                =>    dgvs_vars%nind_patch                                        , & ! Input:  [real(r8) (:)     ]  number of individuals (#/m2)                      
         
