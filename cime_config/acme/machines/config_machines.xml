@@ -1760,6 +1760,7 @@
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<CCSM_BASELINE>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
 	<CESMSCRATCHROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CESMSCRATCHROOT>
+	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
 	   <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
@@ -1800,6 +1801,7 @@
 	   <env name="LD_LIBRARY_PATH">$LD_LIBRARY_PATH:$NETCDF_ROOT/lib</env>
 	</environment_variables>
 
+	<BATCH_SYSTEM>moab</BATCH_SYSTEM>
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
@@ -1826,7 +1828,7 @@
 	<PES_PER_NODE>16</PES_PER_NODE>
 	<PROJECT>climateacme</PROJECT>
 	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
+	<SUPPORTED_BY>jonbob -at- lanl.gov</SUPPORTED_BY>
 </machine>
 
 <machine MACH="caldera">
