@@ -37,12 +37,15 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
 
         # special case for clm
         # clm 4_0 is not a shared library and must be built here
-        # clm 4_5 and newer is a shared library and should be built in build_libraries
-        if comp == "clm":
-            if "clm4_0" in clm_config_opts:
-                logger.info("         - Building clm4_0 Library ")
-            else:
-                continue
+        # clm 4_5 and newer is a shared library (but not in ACME) and should be built in build_libraries
+        if get_model() != "acme":
+            if comp == "clm":
+                if "clm4_0" in clm_config_opts:
+                    logger.info("         - Building clm4_0 Library ")
+                else:
+                    continue
+        else:
+            logger.info("         - Building clm Library ")
 
         smp = nthrds > 1 or build_threaded
 
@@ -240,6 +243,9 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
     os.environ["CLM_USE_PETSC"]        = stringify_bool(clm_use_petsc)
     os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)
     os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)
+
+    if get_model() == "acme" and mach == "titan" and compiler == "pgiacc":
+        case.set_value("CAM_TARGET", "preqx_acc")
 
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
@@ -502,32 +508,34 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
         my_file = os.path.join(os.path.dirname(machines_file), "buildlib.%s" % lib)
         with open(file_build, "w") as fd:
             fd.write("Current env:\n%s" % "\n".join(["  %s = %s" % (env, os.environ[env]) for env in sorted(os.environ)]))
-            stat = run_cmd("%s %s %s" %
+            fd.flush()
+            stat = run_cmd("%s %s %s 2>&1" %
                            (my_file, sharedpath, caseroot),
                            from_dir=exeroot,
-                           verbose=True, arg_stdout=fd,
-                           arg_stderr=subprocess.STDOUT)[0]
+                           verbose=True, arg_stdout=fd)[0]
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
 
-    comp_lnd = case.get_value("COMP_LND")
-    clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
-    if comp_lnd == "clm" and not "clm4_0" in clm_config_opts:
-        logging.info("         - Building clm4_5/clm5_0 Library ")
-        esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
-        sharedpath = os.environ["SHAREDPATH"]
-        bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "clm","obj" )
-        libroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "lib")
-        incroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "include")
-        file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
-        config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
+    # clm not a shared lib for ACME
+    if get_model() != "acme":
+        comp_lnd = case.get_value("COMP_LND")
+        clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
+        if comp_lnd == "clm" and not "clm4_0" in clm_config_opts:
+            logging.info("         - Building clm4_5/clm5_0 Library ")
+            esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
+            sharedpath = os.environ["SHAREDPATH"]
+            bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "clm","obj" )
+            libroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "lib")
+            incroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "include")
+            file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
+            config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
 
-        for ndir in [bldroot, libroot]:
-            if (not os.path.isdir(ndir)):
-                os.makedirs(ndir)
+            for ndir in [bldroot, libroot]:
+                if (not os.path.isdir(ndir)):
+                    os.makedirs(ndir)
 
-        smp = "SMP" in os.environ and os.environ["SMP"] == "TRUE"
-        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs, smp)
+            smp = "SMP" in os.environ and os.environ["SMP"] == "TRUE"
+            _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs, smp)
 
     return logs
 

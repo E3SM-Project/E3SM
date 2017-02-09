@@ -102,7 +102,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
-      <value component="drv"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/config_pes.xml</value>
       <value component="cam"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
       <value component="cism"     >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
       <value component="clm"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
@@ -155,15 +155,15 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/cime_config/$MODEL//allactive/testmods_dirs</value>
-      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/testdefs/testmods_dirs</value>
-      <value component="cam"      >$SRCROOT/components/cam/cime_config/testdefs/testmods_dirs</value>
-      <value component="cism"     >$SRCROOT/components/cism/cime_config/testdefs/testmods_dirs</value>
-      <value component="clm"      >$SRCROOT/components/clm/cime_config/testdefs/testmods_dirs</value>
-      <value component="cice"     >$SRCROOT/components/cice/cime_config/testdefs/testmods_dirs</value>
-      <value component="rtm"      >$SRCROOT/components/rtm/cime_config/testdefs/testmods_dirs</value>
-      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testmods_dirs</value>
-      <value component="pop"      >$SRCROOT/components/pop/cime_config/testdefs/testmods_dirs</value>
+      <value component="allactive">$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="drv"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="cam"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="cism"     >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="clm"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="cice"     >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="rtm"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="mosart"   >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="pop"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

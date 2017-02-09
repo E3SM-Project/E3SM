@@ -45,7 +45,8 @@
        <arg flag="-A" name="PROJECT"/>
        <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
        <!-- space is required here so that variable is resolved correctly -->
-       <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+       <!-- ceiling of $a/$b is ($a+$b-1)/$b -->
+       <arg flag="-n" name=" ($TOTALPES+$MAX_TASKS_PER_NODE-1)/$MAX_TASKS_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
        <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
@@ -127,7 +128,7 @@
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
-       <directive> --output={{ output_error_path }}   </directive>
+       <directive> --output={{ output_error_path }}.%j </directive>
        <directive> --exclusive                        </directive>
        <directive> --time={{ job_wallclock_time }}</directive>
        <directive> --partition={{ job_queue }}</directive>
@@ -163,8 +164,8 @@
     <!-- edison is SLURM as of Jan-4-2016 -->
     <batch_system MACH="edison" type="slurm" version="x.y">
       <queues>
-        <queue walltimemax="01:30:00" jobmin="1" jobmax="100" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="100">debug</queue>
+        <queue walltimemax="01:30:00" jobmin="1" jobmax="150000" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288">debug</queue>
       </queues>
     </batch_system>
 
@@ -186,27 +187,27 @@
 
     <batch_system MACH="cori-haswell" type="slurm" version="x.y">
       <directives>
-        <directive>--constraint=haswell</directive>
+        <directive> --constraint=haswell</directive>
       </directives>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="100" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="100">debug</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="10000" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096">debug</queue>
       </queues>
     </batch_system>
 
     <batch_system MACH="cori-knl" type="slurm" version="x.y">
       <directives>
-        <directive>--constraint=knl</directive>
+        <directive> --constraint=knl,quad,cache</directive>
       </directives>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="100" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="100">debug</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="3000000" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="100000">debug</queue>
       </queues>
     </batch_system>
 
     <batch_system MACH="mira" type="cobalt">
       <queues>
-        <queue walltimemax="06:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
+        <queue walltimemax="03:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
       </queues>
       <walltimes>
         <walltime default="true">03:00:00</walltime>
@@ -215,7 +216,7 @@
 
     <batch_system MACH="cetus" type="cobalt">
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="4096" default="true">default</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="65536" default="true">default</queue>
       </queues>
       <walltimes>
         <walltime default="true">01:00:00</walltime>
@@ -224,6 +225,7 @@
 
    <batch_system MACH="constance" type="slurm" version="x.y">
     <directives>
+       <directive>-A  climate</directive>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
        <directive>--mail-type=END</directive>
        <directive>--mail-user=email@pnnl.gov</directive>
@@ -240,23 +242,24 @@
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+      <queue jobmin="1" jobmax="512" default="true">ec</queue>
     </queues>
     <walltimes>
-      <walltime default="true">0:50:00</walltime>
+      <walltime default="true">2:00:00</walltime>
       <walltime ccsm_estcost="0">1:50:00</walltime>
       <walltime ccsm_estcost="1">5:00:00</walltime>
     </walltimes>
   </batch_system>
+
   <batch_system MACH="redsky" type="slurm" version="x.y">
     <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
     </directives>
     <queues>
-      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+      <queue jobmin="1" jobmax="512" default="true">ec</queue>
     </queues>
     <walltimes>
-      <walltime default="true">0:50:00</walltime>
+      <walltime default="true">4:00:00</walltime>
       <walltime ccsm_estcost="0">1:50:00</walltime>
       <walltime ccsm_estcost="1">6:00:00</walltime>
     </walltimes>

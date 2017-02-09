@@ -961,21 +961,20 @@ for mct, etc.
     <base> -llapack -lblas -L<env>IBM_MAIN_DIR</env>/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L<env>IBM_MAIN_DIR</env>/xlsmp/bg/3.1/bglib64 -lxlsmp </base>
   </CXX_LIBS>
   <CXX_LINKER>CXX</CXX_LINKER>
-  <LDFLAGS>
-    <append>-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl </append>
-  </LDFLAGS>
+  <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/ </HDF5_PATH>
+  <LD> mpixlf77_r </LD>
   <MPICC> mpixlc_r </MPICC>
   <MPICXX> /soft/compilers/bgclang/mpi/bgclang/bin/mpic++11 </MPICXX>
   <MPIFC> mpixlf2003_r </MPIFC>
-  <NETCDF_PATH>/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/</NETCDF_PATH>
+  <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
   <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.3.1/cnk-xl/current/</PNETCDF_PATH>
+  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
   <SCC> mpixlc_r </SCC>
   <SFC> mpixlf2003_r </SFC>
   <SLIBS>
-    <append>-L<var>NETCDF_PATH</var>/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
+    <append>-L<var>NETCDF_PATH</var>/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.14/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
     <append compile_threaded="true"> -L<env>IBM_MAIN_DIR</env>/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L<env>IBM_MAIN_DIR</env>/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
@@ -1025,18 +1024,46 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler MACH="corip1" COMPILER="intel">
-  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+<compiler MACH="cori-haswell" COMPILER="intel">
   <CFLAGS>
+    <append> -xCORE-AVX2 </append>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CPPDEFS>
+    <append> -DHAVE_SLASHPROC </append>
     <append MODEL="gptl"> -DHAVE_PAPI </append>
   </CPPDEFS>
   <FFLAGS>
+    <append> -xCORE-AVX2 </append>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <PETSC_PATH><env>PETSC_DIR</env></PETSC_PATH>
+  <SLIBS>
+    <append> -L<env>NETCDF_DIR</env> -lnetcdff -Wl,--as-needed,-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf </append>
+    <append> <env>MKLROOT</env>/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group <env>MKLROOT</env>/lib/intel64/libmkl_intel_lp64.a <env>MKLROOT</env>/lib/intel64/libmkl_core.a <env>MKLROOT</env>/lib/intel64/libmkl_sequential.a -Wl,--end-group <env>MKLROOT</env>/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="cori-knl" COMPILER="intel">
+  <CFLAGS>
+    <append> -xMIC-AVX512 </append>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DHAVE_SLASHPROC </append>
+    <append MODEL="gptl"> -DHAVE_PAPI </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append> -xMIC-AVX512 </append>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
   <MPICC> cc </MPICC>

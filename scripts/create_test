@@ -316,6 +316,7 @@ OR
             baseline_name = args.baseline_name if args.baseline_name else CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
             expect(baseline_name is not None,
                    "Could not determine baseline name from branch, please use -b option")
+            baseline_name = os.path.join(args.compiler, baseline_name)
             if args.compare:
                 baseline_cmp_name = baseline_name
             elif args.generate:

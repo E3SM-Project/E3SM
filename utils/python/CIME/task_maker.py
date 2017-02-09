@@ -38,13 +38,15 @@ class TaskMaker(object):
 
         self.DEFAULT_RUN_EXE_TEMPLATE_STR = "__DEFAULT_RUN_EXE__"
         self.MAX_TASKS_PER_NODE = 1 if self.MAX_TASKS_PER_NODE < 1 else self.MAX_TASKS_PER_NODE
-
+        # Remember machine , we will have machine specifi settings in _compute_values
+        setattr(self, "machine" ,  case.get_value("MACH"))
         self._compute_values()
 
     def _compute_values(self):
         """
         JGF: This code really needs a refactor/rethink
         """
+
         total_tasks = 0
         for ntasks, rootpe, pstrid in zip(self.NTASKS, self.ROOTPE, self.PSTRID):
             tt = rootpe + (ntasks - 1) * pstrid + 1
@@ -110,7 +112,7 @@ class TaskMaker(object):
         tasks_per_node, total_node_count, max_total_node_count = 0, 0, 0
         for c1 in xrange(1, total_tasks):
             sum_ += maxt[c1]
-
+    
             if maxt[c1] > self.MAX_TASKS_PER_NODE:
                 full_sum += self.MAX_TASKS_PER_NODE
                 sum_ = maxt[c1]
@@ -124,9 +126,18 @@ class TaskMaker(object):
                 tasks_per_node = min(self.PES_PER_NODE, self.MAX_TASKS_PER_NODE / thread_count)
 
                 tasks_per_node = min(task_count, tasks_per_node)
+                
+                # Compute for every subset
+                task_per_numa = int(math.ceil(tasks_per_node / 2.0))
+                # Option for Titan
+                if self.machine.lower() == "titan" and tasks_per_node > 1:
+		    if self.COMPILER == "intel":
+                        aprun += " -S %d -cc numa_node " % task_per_numa
+                    else:
+                        aprun += " -S %d " % task_per_numa
 
                 aprun += " -n %d -N %d -d %d %s :" % (task_count, tasks_per_node, thread_count, self.DEFAULT_RUN_EXE_TEMPLATE_STR)
-
+                
                 node_count = int(math.ceil(float(task_count) / tasks_per_node))
 
                 total_node_count += node_count
@@ -138,7 +149,7 @@ class TaskMaker(object):
 
             else:
                 task_count += 1
-
+                
         max_tasks_per_node = min(self.MAX_TASKS_PER_NODE / max_thread_count, self.PES_PER_NODE, max_task_count)
         max_total_node_count = int(math.ceil(float(max_task_count) / max_tasks_per_node))
 
@@ -155,7 +166,8 @@ class TaskMaker(object):
         total_node_count += int(math.ceil(float(task_count) / tasks_per_node))
 
         task_per_numa = int(math.ceil(tasks_per_node / 2.0))
-        if self.COMPILER == "intel" and tasks_per_node > 1:
+        # Special option for Titan or intel compiler
+        if self.COMPILER == "intel" or self.machine.lower() == "titan" and tasks_per_node > 1:
             aprun += " -S %d -cc numa_node " % task_per_numa
 
         aprun += " -n %d -N %d -d %d %s " % (task_count, tasks_per_node, thread_count, self.DEFAULT_RUN_EXE_TEMPLATE_STR)
