@@ -13,7 +13,7 @@ parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename", type='string', help="MPAS output file", metavar="FILE")
 parser.add_option("-i", "--icfile", dest="icfilename", type='string', help="MPAS initial condition file", metavar="FILE")
 parser.add_option("-s", "--scenario", dest="scenario", type='string', help="name of SHMIP scenario this run corresponds to, e.g., A1", metavar="SCENARIO")
-parser.add_option("-t", "--title", dest="title", type='string', help="string to use for title for this test, e.g. 'hoffman_mpas_A1'", metavar="TITLE")
+parser.add_option("-t", "--title", dest="title", type='string', help="string to use for title for this test. Defulat: 'hoffman_mpas_SCENARIO'", metavar="TITLE")
 parser.add_option("-v", "--version", dest="hash", type='string', help="version of MPAS used", metavar="HASH")
 options, args = parser.parse_args()
 if not options.filename:
@@ -71,10 +71,18 @@ outfile.createDimension('index_ch', len(infile.dimensions['nEdges']))
 # Account for time depending on test
 # ============================================
 ntIn = len(infile.dimensions['Time'])
-if options.scenario[0] in ('C','D'):
-   times = np.arange(ntIn)  # use list of all time indices.  (Assuming file ONLY contains the required time levels (i.e. annual file with daily output for test D; daily file with hourly output for test C)
+if options.scenario[0] == 'D':
+   times = np.arange(ntIn)  # use list of all time indices.  (Assuming file ONLY contains the required time levels (i.e. annual file with daily output)
+
+elif options.scenario[0] == 'C':
+   # Need to find last full day
+   daysSinceStart = infile.variables['daysSinceStart'][:]
+   lastFullDay = np.floor(daysSinceStart).max() - 1  # assuming last day is partial
+   times = np.nonzero(np.logical_and(daysSinceStart >= lastFullDay, daysSinceStart < lastFullDay + 1))[0]
+
 else:
    times = np.array([ntIn-1,])  # only index of final time
+
 print "Using time indices:", times
 
 

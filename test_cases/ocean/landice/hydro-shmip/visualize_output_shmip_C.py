@@ -181,9 +181,9 @@ plt.ylabel('melt input (kg/m/s)')
 # left side axes show all days together
 # ===============
 fig = plt.figure(1, facecolor='w')
-ax1 = fig.add_subplot(321)
-ax2 = fig.add_subplot(323, sharex=ax1)
-ax3 = fig.add_subplot(325, sharex=ax1)
+ax1 = fig.add_subplot(311)
+ax2 = fig.add_subplot(312, sharex=ax1)
+ax3 = fig.add_subplot(313, sharex=ax1)
 
 
 # Perform same plot operations for each day
@@ -195,7 +195,7 @@ for d in range(numDays):
    plt.plot(dayData.hours, dayData.h_max[:,d], '--', label='h_max{}'.format(dayData.dayNum[d]))
    plt.ylabel('sheet thickness (m)')
    plt.title('Magnitude for all days')
-   plt.legend()
+   plt.legend(loc='best')
 
    # N mean/max
    plt.sca(ax2)
@@ -203,16 +203,16 @@ for d in range(numDays):
    #plt.plot(days, N_min/1.0e6, 'b--', label='N_min')
    #plt.plot(days, N_max/1.0e6, 'b--', label='N_max')
    plt.ylabel('N (MPa)')
-   plt.legend()
+   plt.legend(loc='best')
 
    # channel Q mean/max
    plt.sca(ax3)
-   #plt.plot(dayData.hours, dayData.Q_mean[:,d], '-', label='Q_mean{}'.format(dayData.dayNum[d]))
+   plt.plot(dayData.hours, dayData.Q_mean[:,d], '-', label='Q_mean{}'.format(dayData.dayNum[d]))
    #plt.plot(days, Q_min, 'b--', label='h_min')
-   plt.plot(dayData.hours, dayData.Q_max[:,d], '--', label='Q_max{}'.format(dayData.dayNum[d]))
+   #plt.plot(dayData.hours, dayData.Q_max[:,d], '--', label='Q_max{}'.format(dayData.dayNum[d]))
    plt.xlabel('DOY')
    plt.ylabel('channel Q (m)')
-   plt.legend()
+   plt.legend(loc='best')
 
 plt.draw()
 plt.show()
