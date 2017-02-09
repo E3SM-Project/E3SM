@@ -175,7 +175,7 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
 
         run_cmd(" ".join(cmake_command), verbose=True)
 
-def make_stage(name, output, clean=False, verbose=False):
+def make_stage(name, output, clean=False, verbose=True):
     """Run make in the current working directory.
 
     Arguments:
@@ -273,8 +273,8 @@ def _main():
     os.environ["DEBUG"] = stringify_bool(debug)
     os.environ["MPILIB"] = mpilib
     os.environ["compile_threaded"] = "true"
-    os.environ["CC"] = find_executable("mpicc")
-    os.environ["FC"] = find_executable("mpif90")
+    os.environ["CC"] = find_executable("icc")
+    os.environ["FC"] = find_executable("ifort")
     os.environ["NETCDF_PATH"] = os.environ.get("NETCDF")
 
 #=================================================
@@ -298,7 +298,7 @@ def _main():
             if not os.path.islink("Macros.cmake"):
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
             cmake_stage(name, directory, build_type, mpirun_command, output, verbose=verbose)
-            make_stage(name, output, clean=clean, verbose=verbose)
+            make_stage(name, output, clean=clean)
 
 
     for spec in suite_specs:

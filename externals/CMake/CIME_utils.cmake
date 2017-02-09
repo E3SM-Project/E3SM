@@ -32,9 +32,10 @@ set(CMAKE_COLOR_MAKEFILE "${USE_COLOR}")
 
 include(${CMAKE_BINARY_DIR}/Macros.cmake RESULT_VARIABLE FOUND)
 list(APPEND CMAKE_MODULE_PATH "../pio2/cmake")
-
-set(CMAKE_C_FLAGS ${CFLAGS})
-set(CMAKE_Fortran_FLAGS ${FFLAGS})
+set(CMAKE_C_COMPILER ${MPICC})
+set(CMAKE_Fortran_COMPILER  ${MPIF90})
+set(CMAKE_C_FLAGS "${CPPDEFS} ${CFLAGS}")
+set(CMAKE_Fortran_FLAGS "${CPPDEFS} ${FFLAGS}")
 set (CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
 if(NOT FOUND)
        message(FATAL_ERROR "You must generate a Macros.cmake file using CIME's configure")

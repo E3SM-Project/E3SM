@@ -22,8 +22,8 @@ ExternalProject_add(mct_project
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}
   SOURCE_DIR ${MCT_ROOT}
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct
-  CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR}
-  BUILD_COMMAND make SRCDIR=${MCT_ROOT}
+  CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR} CFLAGS=${CFLAGS} FCFLAGS=${FFLAGS} SRCDIR=${MCT_ROOT} DEBUG="-g"
+  BUILD_COMMAND make
   # Leave things in <BINARY_DIR> rather than "installing", because we have
   # no need to move things around inside of the CMake binary directory.
   INSTALL_COMMAND :
