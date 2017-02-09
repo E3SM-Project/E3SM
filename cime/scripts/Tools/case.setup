@@ -13,7 +13,7 @@ from CIME.case       import Case
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [<casedir>] [--verbose]
+        usage="""\n%s [<casedir>] [--verbose] [--clean] [--reset]
 OR
 %s --help
 OR

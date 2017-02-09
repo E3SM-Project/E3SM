@@ -1,11 +1,7 @@
 #===============================================================================
+#
 # Common Makefile: a framework for building all CIME components and more
 #
-# Command-line variables
-#   MODEL=<model>  ~ a standard macro definition, often found in the included
-#                    MACFILE, used to trigger special compilation flags
-# Supported compilers
-# ibm, bgl, bgp, pgi, intel, pathscale, gnu, nag
 #===============================================================================
 
 # Set up special characters
@@ -80,7 +76,7 @@ endif
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
 
-CPPDEFS := $(USER_CPPDEFS) -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
+CPPDEFS := $(USER_CPPDEFS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifneq ($(strip $(DEBUG)),TRUE)
@@ -137,10 +133,11 @@ endif
 
 
 ifeq (,$(SHAREDPATH))
-  SHAREDPATH = $(SHAREDLIBROOT)/$(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
 endif
+INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 
-include $(CASEROOT)/Macros
+include $(CASEROOT)/Macros.make
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), true)
@@ -188,23 +185,57 @@ ifndef AR
    AR := ar
 endif
 
-ifdef NETCDF_PATH
+ifdef NETCDF_C_PATH
+  ifndef NETCDF_FORTRAN_PATH
+    $(error "NETCDF_C_PATH specified without NETCDF_FORTRAN_PATH")
+  endif
+  NETCDF_SEPARATE:=true
+  ifndef INC_NETCDF_C
+    INC_NETCDF_C:=$(NETCDF_C_PATH)/include
+  endif
+  ifndef INC_NETCDF_FORTRAN
+    INC_NETCDF_FORTRAN:=$(NETCDF_FORTRAN_PATH)/include
+  endif
+  ifndef LIB_NETCDF_C
+    LIB_NETCDF_C:=$(NETCDF_C_PATH)/lib
+  endif
+  ifndef LIB_NETCDF_FORTRAN
+    LIB_NETCDF_FORTRAN:=$(NETCDF_C_PATH)/lib
+  endif
+ else ifdef NETCDF_FORTRAN_PATH
+  $(error "NETCDF_FORTRAN_PATH specified without NETCDF_C_PATH")
+ else ifdef NETCDF_PATH
+  NETCDF_SEPARATE:=false
   ifndef INC_NETCDF
     INC_NETCDF:=$(NETCDF_PATH)/include
   endif
   ifndef LIB_NETCDF
     LIB_NETCDF:=$(NETCDF_PATH)/lib
   endif
-endif
-ifdef PNETCDF_PATH
-  ifndef $(INC_PNETCDF)
-    INC_PNETCDF:=$(PNETCDF_PATH)/include
+else
+  # No Netcdf is an error unless target is clean or DEP
+  ifneq ($(MAKECMDGOALS), db_files)
+  ifneq ($(MAKECMDGOALS), db_flags)
+  ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+      $(error NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH in config_machines.xml or config_compilers.xml)
   endif
-  ifndef LIB_PNETCDF
-    LIB_PNETCDF:=$(PNETCDF_PATH)/lib
+  endif
   endif
 endif
 
+
+ifeq ($(MPILIB),mpi-serial)
+  undefine PNETCDF_PATH
+else
+  ifdef PNETCDF_PATH
+    ifndef $(INC_PNETCDF)
+      INC_PNETCDF:=$(PNETCDF_PATH)/include
+    endif
+    ifndef LIB_PNETCDF
+      LIB_PNETCDF:=$(PNETCDF_PATH)/lib
+    endif
+  endif
+endif
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   ifdef TRILINOS_PATH
     ifndef INC_TRILINOS
@@ -247,9 +278,7 @@ endif
 ifndef CONFIG_ARGS
   CONFIG_ARGS :=
 endif
-ifeq ($(MPILIB),mpi-serial)
-   CONFIG_ARGS+= --enable-mpiserial
-endif
+
 ifeq  ($(findstring pio,$(MODEL)),pio)
   CONFIG_ARGS+= --enable-timing
   ifeq ($DEBUG,TRUE)
@@ -277,7 +306,7 @@ ifeq ($(strip $(MPILIB)), mpi-serial)
   MPIFC   := $(SFC)
   MPICC   := $(SCC)
   MPICXX  := $(SCXX)
-  CONFIG_ARGS += --enable-mpiserial MCT_PATH=$(SHAREDPATH)/mct/mpi-serial
+  CONFIG_ARGS +=  MCT_PATH=$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial
 else
   CC  := $(MPICC)
   FC  := $(MPIFC)
@@ -287,21 +316,18 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
-
+CSM_SHR_INCLUDE:=$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
+# This is needed so that dependancies are found
+VPATH+=$(CSM_SHR_INCLUDE)
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
-INCLDIR += -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
+INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(CSM_SHR_INCLUDE)
 
-#
-#  Tell gmake to look in the csm_share directory for shr_*.mod files
-#
-
-vpath  shr%.mod $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
-
-
-ifdef INC_NETCDF
+ifeq ($(NETCDF_SEPARATE), false)
   INCLDIR += -I$(INC_NETCDF)
+else ifeq ($(NETCDF_SEPARATE), true)
+  INCLDIR += -I$(INC_NETCDF_C) -I$(INC_NETCDF_FORTRAN)
 endif
 ifdef MOD_NETCDF
   INCLDIR += -I$(MOD_NETCDF)
@@ -322,7 +348,12 @@ ifeq ($(MODEL),driver)
 # nagfor requires the weird "-Wl,-Wl,," syntax.
 # If done in config_compilers.xml, we break MCT.
   ifeq ($(strip $(COMPILER)),nag)
-     SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
+    ifeq ($(NETCDF_SEPARATE), false)
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
+    else ifeq ($(NETCDF_SEPARATE), true)
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_C_PATH)/lib
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_FORTRAN_PATH)/lib
+    endif
   endif
 else
   ifeq ($(strip $(COMPILER)),nag)
@@ -331,27 +362,23 @@ else
        # GCC needs to be able to link to
        # nagfor runtime to get autoconf
        # tests to work.
-         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
        endif
     endif
   endif
 endif
 
-ifeq ($(COMP_OCN), pop)
-  INCLDIR += -I$(EXEROOT)/ocn/cvmix
-endif
-
 ifndef MCT_LIBDIR
-  MCT_LIBDIR=$(SHAREDPATH)/mct
+  MCT_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
 ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(SHAREDPATH)/pio$(PIO_VERSION)
+  PIO_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
 ifndef GPTL_LIBDIR
-  GPTL_LIBDIR=$(SHAREDPATH)/gptl
+  GPTL_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
 ifndef GLC_DIR
@@ -361,7 +388,7 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR +=	-I$(SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
+INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
 		-I$(CIMEROOT)/share/csm_share/include -I$(CIMEROOT)/share/shr_RandNum/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
@@ -369,10 +396,17 @@ INCLDIR +=	-I$(SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
 
-CONFIG_ARGS +=  CC="$(SCC)" FC="$(SFC)" MPICC="$(MPICC)" \
-                MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
-                CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
-                NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"
+CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
+		MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
+		CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" LDFLAGS="$(LDFLAGS)"
+
+ifeq ($(NETCDF_SEPARATE), false)
+  CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
+else ifeq ($(NETCDF_SEPARATE), true)
+  # The mct library needs the NetCDF_C library
+  CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
+endif
+
 ifeq ($(COMPILER),nag)
   CONFIG_ARGS += LIBS="$(SLIBS)"
 endif
@@ -420,7 +454,11 @@ endif
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
-   SLIBS := -L$(LIB_NETCDF) -lnetcdf
+  ifeq ($(NETCDF_SEPARATE), false)
+    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
+  else ifeq ($(NETCDF_SEPARATE), true)
+    SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
+  endif
 endif
 ifdef LIB_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
@@ -476,23 +514,13 @@ endif
 # Drive configure scripts for support libraries (mct)
 #------------------------------------------------------------------------------
 
-
-$(MCT_LIBDIR)/Makefile.conf:
+$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
 	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
 
-$(MCT_LIBDIR)/mpi-serial/Makefile.conf:
+$(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
-
-$(MCT_LIBDIR)/mpeu/libmpeu.a: $(MCT_LIBDIR)/Makefile.conf
-	$(MAKE) -C $(MCT_LIBDIR)/mpeu
-
-$(MCT_LIBDIR)/mct/libmct.a: $(MCT_LIBDIR)/mpeu/libmpeu.a
-	$(MAKE) -C $(MCT_LIBDIR)/mct
-
-$(MCT_LIBDIR)/mpi-serial/libmpi-serial.a: $(MCT_LIBDIR)/mpi-serial/Makefile.conf
-	$(MAKE) -C $(MCT_LIBDIR)/mpi-serial
+	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct/mpi-serial
 
 ifeq ($(PIO_VERSION),2)
 # This is a pio2 library
@@ -514,7 +542,7 @@ MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a
 
 GPTLLIB = $(GPTL_LIBDIR)/libgptl.a
 
-ULIBS += -L$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -lcsm_share -L$(SHAREDPATH)/lib $(PIOLIBNAME) -lgptl -lmct -lmpeu
+ULIBS += -L$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/lib -lcsm_share -L$(INSTALL_SHAREDPATH)/lib $(PIOLIBNAME) -lgptl -lmct -lmpeu
 
 #------------------------------------------------------------------------------
 # Drive cmake script for cism and pio
@@ -528,24 +556,31 @@ endif
 # doesn't seem to be able to differentiate between free & fixed
 # fortran flags)
 CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
-              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
-              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
-              -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-              -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
-              -D GPTL_PATH:STRING=$(SHAREDPATH) \
-              -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
+	      -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(INCLDIR)" \
+	      -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
+	      -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+	      -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
+	      -D PIO_ENABLE_TESTS:BOOL=OFF \
+	      -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
+
+# Allow for separate installations of the NetCDF C and Fortran libraries
+ifeq ($(NETCDF_SEPARATE), false)
+  CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_PATH)
+else ifeq ($(NETCDF_SEPARATE), true)
+  CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_C_PATH) \
+                -D NETCDF_Fortran_DIR:PATH=$(NETCDF_FORTRAN_PATH)
+endif
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)"
 else
-        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
+	CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif
 
 # NAG doesn't get along too nicely with PnetCDF Fortran interfaces.
 ifeq ($(COMPILER),nag)
   ifeq ($(PIO_VERSION),1)
-        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
+	CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
   endif
 endif
 
@@ -563,9 +598,9 @@ ifndef CMAKE_ENV_VARS
   CMAKE_ENV_VARS :=
 endif
 CMAKE_ENV_VARS += CC=$(CC) \
-                  CXX=$(CXX) \
-                  FC=$(FC) \
-                  LDFLAGS="$(LDFLAGS)"
+		  CXX=$(CXX) \
+		  FC=$(FC) \
+		  LDFLAGS="$(LDFLAGS)"
 
 
 # We declare $(GLC_DIR)/Makefile to be a phony target so that cmake is
@@ -636,8 +671,13 @@ db_flags:
 
 test_fc: test_fc.o
 	$(LD) -o $@ test_fc.o $(LDFLAGS)
+ifeq ($(NETCDF_SEPARATE), false)
 test_nc: test_nc.o
-	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdf $(LDFLAGS)
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF) -lnetcdff -lnetcdf $(LDFLAGS)
+else ifeq ($(NETCDF_SEPARATE), true)
+test_nc: test_nc.o
+	$(LD) -o $@ test_nc.o -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf $(LDFLAGS)
+endif
 test_mpi: test_mpi.o
 	$(LD) -o $@ test_mpi.o $(LDFLAGS)
 test_esmf: test_esmf.o
@@ -651,12 +691,17 @@ ifeq ($(CLMVER),$(null))
   LNDOBJDIR = $(EXEROOT)/lnd/obj
   LNDLIBDIR=$(LIBROOT)
   LNDLIB := liblnd.a
+  INCLDIR += -I$(LNDOBJDIR)
 else
-  LNDOBJDIR = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
-  LNDLIBDIR = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
+  LNDOBJDIR = $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
+  LNDLIBDIR = $(EXEROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
   LNDLIB := libclm.a
+  INCLDIR += -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  ifeq ($(MODEL),clm)
+    INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
+  endif
 endif
-INCLDIR += -I$(LNDOBJDIR)
+
 
 ifeq ($(ULIBDEP),$(null))
    ifneq ($(LIBROOT),$(null))
@@ -664,9 +709,6 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/libice.a
      ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
      ULIBDEP += $(LIBROOT)/libocn.a
-     ifeq ($(COMP_OCN), pop)
-       ULIBDEP += $(LIBROOT)/libcvmix.a
-     endif
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
@@ -674,7 +716,7 @@ ifeq ($(ULIBDEP),$(null))
      ifeq ($(COMP_GLC), cism)
        ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
        ifeq ($(CISM_USE_TRILINOS), TRUE)
-         ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
+	 ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
        endif
      endif
      ifeq ($(OCN_SUBMODEL),moby)
@@ -698,7 +740,7 @@ endif
 
 # libcsm_share.a is in ULIBDEP, but -lcsm_share is in ULIBS rather than CLIBS,
 # so this needs to be added after creating CLIBS above
-CSMSHARELIB = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share/libcsm_share.a
+CSMSHARELIB = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/lib/libcsm_share.a
 ULIBDEP += $(CSMSHARELIB)
 
 #-------------------------------------------------------------------------------
@@ -709,12 +751,12 @@ ULIBDEP += $(CSMSHARELIB)
 .SUFFIXES: .F90 .F .f90 .f .c .cpp .o .in
 
 ifeq ($(MPILIB),mpi-serial)
-  MPISERIAL = $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a
+  MPISERIAL = $(INSTALL_SHAREDPATH)/lib/libmpi-serial.a
   MLIBS += $(MPISERIAL)
-  CMAKE_OPTS += -DMPI_C_INCLUDE_PATH=$(SHAREDPATH)/include \
-      -DMPI_Fortran_INCLUDE_PATH=$(SHAREDPATH)/include \
-      -DMPI_C_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a \
-      -DMPI_Fortran_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a
+  CMAKE_OPTS += -DMPI_C_INCLUDE_PATH=$(INSTALL_SHAREDPATH)/include \
+      -DMPI_Fortran_INCLUDE_PATH=$(INSTALL_SHAREDPATH)/include \
+      -DMPI_C_LIBRARIES=$(INSTALL_SHAREDPATH)/lib/libmpi-serial.a \
+      -DMPI_Fortran_LIBRARIES=$(INSTALL_SHAREDPATH)/lib/libmpi-serial.a
 endif
 
 $(MCTLIBS)  : $(MPISERIAL)
@@ -729,11 +771,14 @@ endif
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-$(COMPLIB): $(OBJS)
+ifdef INCLUDE_DIR
+  $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
-
-$(LIBROOT)/libcvmix.a:
-	$(MAKE) -f $(CIMEROOT)/../components/pop/source/cvmix/Makefile SRC_DIR=$(CIMEROOT)/../components/pop/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
+	$(CP) *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
+else
+  $(COMPLIB): $(OBJS)
+	$(AR) -r $(COMPLIB) $(OBJS)
+endif
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
@@ -745,6 +790,7 @@ $(LIBROOT)/libcvmix.a:
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  $<
 .F90.o:
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(CONTIGUOUS_FLAG) $<
+
 .cpp.o:
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 
@@ -753,18 +799,18 @@ $(LIBROOT)/libcvmix.a:
 
 cleanatm:
 	$(RM) -f $(LIBROOT)/libatm.a
-	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.mod
+	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.$(MOD_SUFFIX)
 
 cleancpl:
-	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.mod
+	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.$(MOD_SUFFIX)
 
 cleanocn:
-	$(RM) -f $(LIBROOT)/libocn.a $(LIBROOT)/libcvmix.a
-	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.mod
+	$(RM) -f $(LIBROOT)/libocn.a
+	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
 
 cleanwav:
 	$(RM) -f $(LIBROOT)/libwav.a
-	cd $(EXEROOT)/wav/obj ; $(RM) -f *.o *.mod
+	cd $(EXEROOT)/wav/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
 
 cleanglc:
 	$(RM) -f $(LIBROOT)/libglc.a
@@ -772,40 +818,39 @@ cleanglc:
 
 cleanesp:
 	$(RM) -f $(LIBROOT)/libesp.a
-	cd $(EXEROOT)/esp/obj ; $(RM) -f *.o *.mod
+	cd $(EXEROOT)/esp/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
 
 cleanice:
 	$(RM) -f $(LIBROOT)/libice.a
-	cd $(EXEROOT)/ice/obj ; $(RM) -f *.o *.mod
+	cd $(EXEROOT)/ice/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
 
 cleanrof:
 	$(RM) -f $(LIBROOT)/librof.a
-	cd $(EXEROOT)/rof/obj ; $(RM) -f *.o *.mod
+	cd $(EXEROOT)/rof/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
 
 cleanlnd:
 	$(RM) -f $(LNDLIBDIR)/$(LNDLIB)
-	cd $(LNDOBJDIR) ; $(RM) -f *.o *.mod
+	cd $(LNDOBJDIR) ; $(RM) -f *.o *.$(MOD_SUFFIX)
 
 cleancsmshare:
 	$(RM) -f $(CSMSHARELIB)
-	$(RM) -fr $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
+	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
 cleanpio:
-	$(RM) -f $(SHAREDPATH)/lib/libpio*
-	$(RM) -fr $(PIO_LIBDIR)
+	$(RM) -f $(PIO_LIBDIR)/libpio*
+	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/pio
 
 cleanmct:
 	$(RM) -f $(MCTLIBS)
-	$(RM) -fr $(MCT_LIBDIR)
+	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/mct
 
 cleangptl:
 	$(RM) -f $(GPTLLIB)
-	$(RM) -fr $(GPTL_LIBDIR)
+	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/gptl
 
 clean: cleanatm cleanocn cleanwav cleanglc cleanesp cleanice cleanrof cleanlnd
 
 realclean: clean cleancsmshare cleanpio cleanmct cleangptl
-
 
 # the if-tests prevent DEPS files from being created when they're not needed
 ifneq ($(MAKECMDGOALS), db_files)

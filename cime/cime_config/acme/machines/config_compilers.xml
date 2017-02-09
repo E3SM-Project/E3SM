@@ -100,7 +100,7 @@ for mct, etc.
   -C              => runtime array bounds checking (runs slow)
   -qinitauto=...  => initializes automatic variables
   -->
-  <ADD_CPPDEFS> -DFORTRAN_SAME </ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRAN_SAME -DCPRIBM</ADD_CPPDEFS>
   <CPRE>-WF,-D</CPRE>
   <CFLAGS> -g -qfullpath -qmaxmem=-1 </CFLAGS>
   <FIXEDFLAGS>  -qsuffix=f=f -qfixed=132 </FIXEDFLAGS>
@@ -149,7 +149,7 @@ for mct, etc.
   <!--  -time           => Print execution time for each compiler step  -->
 
 
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16  </ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DCPRPGI </ADD_CPPDEFS>
   <CFLAGS> -gopt -Mlist  -time </CFLAGS>
 
   <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
@@ -269,7 +269,7 @@ for mct, etc.
 
 <compiler COMPILER="intel">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
   <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
@@ -309,7 +309,7 @@ for mct, etc.
 
 <compiler COMPILER="intel14">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
   <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
@@ -337,7 +337,7 @@ for mct, etc.
 
 <compiler COMPILER="intelmic">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
   <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
@@ -367,7 +367,7 @@ for mct, etc.
 
 <compiler COMPILER="intelmic14">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
   <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
@@ -397,7 +397,7 @@ for mct, etc.
 
 <compiler COMPILER="gnu">
   <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</ADD_CPPDEFS>
   <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
@@ -442,7 +442,7 @@ for mct, etc.
 
 <compiler COMPILER="cray">
   <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY</ADD_CPPDEFS>
   <ADD_CPPDEFS MODEL="pop"> -DDIR=NOOP </ADD_CPPDEFS>
   <ADD_CFLAGS compile_threaded="false"> -h noomp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> -h noomp </ADD_FFLAGS>
@@ -465,7 +465,7 @@ for mct, etc.
   <SCC> gcc </SCC>
   <MPICC> mpicc </MPICC>
 
-  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS -DNO_SHR_VMATH </ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS -DNO_SHR_VMATH -DCPRNAG</ADD_CPPDEFS>
 
   <!-- Yes, you really do need this huge -wmismatch flag for NAG to work.    -->
   <!-- More specifically, it exempts MPI functions without explicit          -->

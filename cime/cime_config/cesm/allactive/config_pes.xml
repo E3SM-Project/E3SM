@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<config_pes>
+<config_pes version="2.0">
 
   <grid name="any">
     <mach name="any">
@@ -77,7 +77,7 @@
     </mach>
   </grid>
   <grid name="a%1.9x2.5.+l%1.9x2.5.+oi%gx1">
-    <mach name="corip1">
+    <mach name="cori-haswell">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -1109,7 +1109,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
-    <mach name='corip1'>
+    <mach name='cori-haswell'>
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -1405,6 +1405,44 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
+    <mach name="laramie">
+      <pes pesize="M" compset="CAM.+CLM.+CICE.+POP.+">
+	<comment>none</comment>
+	<ntasks>
+	  <ntasks_atm>-8</ntasks_atm>
+	  <ntasks_lnd>-6</ntasks_lnd>
+	  <ntasks_rof>-6</ntasks_rof>
+	  <ntasks_ice>-2</ntasks_ice>
+	  <ntasks_ocn>-2</ntasks_ocn>
+	  <ntasks_glc>1</ntasks_glc>
+	  <ntasks_wav>-4</ntasks_wav>
+	  <ntasks_cpl>-8</ntasks_cpl>
+	</ntasks>
+	<nthrds>
+	  <nthrds_atm>2</nthrds_atm>
+	  <nthrds_lnd>2</nthrds_lnd>
+	  <nthrds_rof>2</nthrds_rof>
+	  <nthrds_ice>2</nthrds_ice>
+	  <nthrds_ocn>2</nthrds_ocn>
+	  <nthrds_glc>2</nthrds_glc>
+	  <nthrds_wav>2</nthrds_wav>
+	  <nthrds_cpl>2</nthrds_cpl>
+	</nthrds>
+	<rootpe>
+	  <rootpe_atm>0</rootpe_atm>
+	  <rootpe_lnd>0</rootpe_lnd>
+	  <rootpe_rof>0</rootpe_rof>
+	  <rootpe_ice>-6</rootpe_ice>
+	  <rootpe_ocn>-8</rootpe_ocn>
+	  <rootpe_glc>0</rootpe_glc>
+	  <rootpe_wav>0</rootpe_wav>
+	  <rootpe_cpl>0</rootpe_cpl>
+	</rootpe>
+      </pes>
+    </mach>
+  </grid>
+
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
       <pes pesize="X2" compset="CAM.+CLM.+CICE.+POP.+">
@@ -1754,6 +1792,30 @@
         </pes>
      </mach>
   </grid>
-
-
+  <overrides>
+    <grid name="any" >
+      <mach name="any" >
+        <pes pesize="any" compset="SPCAM[SM]">
+          <nthrds>
+            <nthrds_atm>1</nthrds_atm>
+            <nthrds_lnd>1</nthrds_lnd>
+            <nthrds_rof>1</nthrds_rof>
+            <nthrds_ice>1</nthrds_ice>
+            <nthrds_ocn>1</nthrds_ocn>
+            <nthrds_glc>1</nthrds_glc>
+            <nthrds_wav>1</nthrds_wav>
+            <nthrds_cpl>1</nthrds_cpl>
+          </nthrds>
+        </pes>
+        <pes pesize="any" compset="CISM1">
+          <ntasks>
+            <ntasks_glc>1</ntasks_glc>
+          </ntasks>
+          <nthrds>
+            <nthrds_glc>1</nthrds_glc>
+          </nthrds>
+        </pes>
+      </mach>
+    </grid>
+  </overrides>
 </config_pes>

@@ -1,0 +1,150 @@
+#!/usr/bin/env python
+import shutil, glob, re
+from standard_script_setup import *
+from CIME.utils import run_cmd_no_fail, expect
+from CIME.case import Case
+
+logger = logging.getLogger(__name__)
+
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--debug]
+OR
+%s --verbose
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 5),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("buildroot",
+                        help="build path root")
+
+    parser.add_argument("installpath",
+                        help="install path ")
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.buildroot, args.installpath, args.caseroot
+
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    bldroot, installpath, caseroot = parse_command_line(sys.argv, description)
+    with Case(caseroot, read_only=False) as case:
+        pio_version = case.get_value("PIO_VERSION")
+        mpilib = case.get_value("MPILIB")
+        exeroot = case.get_value("EXEROOT")
+        pio_model = "pio%s"% pio_version
+        pio_dir = os.path.join(bldroot, pio_model)
+        compiler = case.get_value("COMPILER")
+        build_threaded = case.get_value("BUILD_THREADED")
+        if not os.path.isdir(pio_dir):
+            os.makedirs(pio_dir)
+        os.chdir(pio_dir)
+        casetools = case.get_value("CASETOOLS")
+        cmake_opts = "\" -D GENF90_PATH=$CIMEROOT/externals/genf90\""
+        gmake_opts = "%s/Makefile CASEROOT=%s MODEL=%s USER_CMAKE_OPTS=%s "\
+            "PIO_LIBDIR=%s CASETOOLS=%s PIO_VERSION=%s MPILIB=%s "\
+            "SHAREDLIBROOT=%s EXEROOT=%s COMPILER=%s BUILD_THREADED=%s "\
+            "USER_CPPDEFS=-DTIMING -f %s/Makefile"\
+            %(pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
+              pio_version, mpilib, bldroot, exeroot, compiler, build_threaded,
+              casetools)
+
+        gmake_cmd = case.get_value("GMAKE")
+        # This runs the pio cmake command from the cime case Makefile
+        cmd = "%s %s"%(gmake_cmd, gmake_opts)
+        output = run_cmd_no_fail(cmd, from_dir=pio_dir)
+        # This runs the pio make command from the cmake generated Makefile
+        logger.info(output)
+        output = run_cmd_no_fail("%s -j %s"%(gmake_cmd, case.get_value("GMAKE_J")), from_dir=pio_dir)
+        logger.info(output)
+        if pio_version == 1:
+            installed_lib = os.path.join(installpath,"lib","libpio.a")
+            installed_lib_time = 0
+            if os.path.isfile(installed_lib):
+                installed_lib_time = os.path.getmtime(installed_lib)
+            newlib = os.path.join(pio_dir,"pio","libpio.a")
+            newlib_time = os.path.getmtime(newlib)
+            if newlib_time > installed_lib_time:
+                logger.info("Installing pio version 1")
+                shutil.copy2(newlib, installed_lib)
+                for glob_to_copy in ("*.h", "*.mod"):
+                    for item in glob.glob(os.path.join(pio_dir,"pio",glob_to_copy)):
+                        shutil.copy2(item, "%s/include"%installpath)
+            expect_string = "D_NETCDF;"
+            pnetcdf_string = "D_PNETCDF"
+            netcdf4_string = "D_NETCDF4"
+        else:
+            globs_to_copy = (os.path.join("src","clib","libpioc.*"),
+                             os.path.join("src","flib","libpiof.*"),
+                             os.path.join("src","clib","*.h"),
+                             os.path.join("src","flib","*.mod"))
+            for glob_to_copy in globs_to_copy:
+                installed_file_time = 0
+                for item in glob.glob(os.path.join(pio_dir,glob_to_copy)):
+                    if item.endswith(".a") or item.endswith(".so"):
+                        installdir = "lib"
+                    else:
+                        installdir = "include"
+                    installed_file = os.path.join(installpath,installdir,os.path.basename(item))
+                    item_time = os.path.getmtime(item)
+                    if os.path.isfile(installed_file):
+                        installed_file_time = os.path.getmtime(installed_file)
+                    if item_time  > installed_file_time:
+                        shutil.copy2(item, installed_file)
+            expect_string = "NetCDF_C_LIBRARY-ADVANCED"
+            pnetcdf_string = "PnetCDF_C_LIBRARY-ADVANCED"
+            netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
+
+
+        # make sure case pio_typename valid_values is set correctly
+        expect_string_found = False
+        pnetcdf_found = False
+        netcdf4_parallel_found = False
+
+        cache_file = open(os.path.join(pio_dir,"CMakeCache.txt"), "r")
+        for line in cache_file:
+            if re.search(expect_string, line):
+                expect_string_found = True
+            if re.search(pnetcdf_string, line):
+                pnetcdf_found = True
+            if re.search(netcdf4_string, line):
+                netcdf4_parallel_found = True
+
+        expect(expect_string_found, "CIME models require NETCDF in PIO build")
+        valid_values = "netcdf"
+        if pnetcdf_found:
+            valid_values += ",pnetcdf"
+        if netcdf4_parallel_found:
+            valid_values += ",netcdf4p,netcdf4c"
+        logger.warn("Updating valid_values for PIO_TYPENAME: %s", valid_values)
+        case.set_valid_values("PIO_TYPENAME",valid_values)
+        # nothing means use the general default
+        valid_values += ",nothing"
+        for comp in ("ATM","CPL","OCN","WAV","GLC","ICE","ROF","LND"):
+            case.set_valid_values("%s_PIO_TYPENAME"%comp,valid_values)
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

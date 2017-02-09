@@ -75,6 +75,9 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
         """
         Initialize a SystemTestsCompareTwoFake object
 
+        The core test phases prior to RUN_PHASE are set to TEST_PASS_STATUS;
+        RUN_PHASE is left unset (as is any later phase)
+
         Args:
             case1 (CaseFake): existing case
             run_one_suffix (str, optional): Suffix used for first run. Defaults
@@ -104,12 +107,14 @@ class SystemTestsCompareTwoFake(SystemTestsCompareTwo):
             separate_builds = False,
             run_two_suffix = run_two_suffix)
 
-        # Need to tell test status that case has been built, since this is
-        # checked in the run call
+        # Need to tell test status that all phases prior to the run phase have
+        # passed, since this is checked in the run call (at least for the build
+        # phase status)
         with self._test_status:
-            self._test_status.set_status(
-                test_status.MODEL_BUILD_PHASE,
-                test_status.TEST_PASS_STATUS)
+            for phase in test_status.CORE_PHASES:
+                if phase == test_status.RUN_PHASE:
+                    break
+                self._test_status.set_status(phase, test_status.TEST_PASS_STATUS)
 
         self.run_pass_casenames = []
         if run_one_should_pass:

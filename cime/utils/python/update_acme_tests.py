@@ -15,35 +15,40 @@ _TEST_SUITES = {
                    ),
 
     "cime_test_only_pass" : (None, "0:10:00",
-                   ("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
-                    "TESTRUNPASS_Mmpi-serial.ne30_g16_rx1.A",
-                    "TESTRUNPASS_Mmpi-serial.f45_g37_rx1.A")
+                   ("TESTRUNPASS_P1.f19_g16_rx1.A",
+                    "TESTRUNPASS_P1.ne30_g16_rx1.A",
+                    "TESTRUNPASS_P1.f45_g37_rx1.A")
                    ),
 
     "cime_test_only_slow_pass" : (None, "0:10:00",
-                   ("TESTRUNSLOWPASS_Mmpi-serial.f19_g16_rx1.A",
-                    "TESTRUNSLOWPASS_Mmpi-serial.ne30_g16_rx1.A",
-                    "TESTRUNSLOWPASS_Mmpi-serial.f45_g37_rx1.A")
+                   ("TESTRUNSLOWPASS_P1.f19_g16_rx1.A",
+                    "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A",
+                    "TESTRUNSLOWPASS_P1.f45_g37_rx1.A")
                    ),
 
     "cime_test_only" : (None, "0:10:00",
-                   ("TESTBUILDFAIL.f19_g16_rx1.A",
-                    "TESTBUILDFAILEXC.f19_g16_rx1.A",
-                    "TESTRUNFAIL_Mmpi-serial.f19_g16_rx1.A",
-                    "TESTRUNFAILEXC_Mmpi-serial.f19_g16_rx1.A",
-                    "TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
-                    "TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
-                    "TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X")
+                   ("TESTBUILDFAIL_P1.f19_g16_rx1.A",
+                    "TESTBUILDFAILEXC_P1.f19_g16_rx1.A",
+                    "TESTRUNFAIL_P1.f19_g16_rx1.A",
+                    "TESTRUNFAILEXC_P1.f19_g16_rx1.A",
+                    "TESTRUNPASS_P1.f19_g16_rx1.A",
+                    "TESTTESTDIFF_P1.f19_g16_rx1.A",
+                    "TESTMEMLEAKFAIL_P1.f19_g16.X",
+                    "TESTMEMLEAKPASS_P1.f19_g16.X")
                    ),
 
     "cime_developer" : (None, "0:10:00",
                             ("NCK_Ld3.f45_g37_rx1.A",
                              "ERI.f45_g37.X",
+                             "ERIO.f45_g37.X",
                              "SEQ_Ln9.f19_g16_rx1.A",
-                             "ERS_Ld3.ne30_g16_rx1.A",
-                             "ERS_N2_Ld3.f19_g16_rx1.A",
-                             "ERR_Ld3.f45_g37_rx1.A",
-                             "SMS_D_Ln9.f19_g16_rx1.A")
+                             "ERS.ne30_g16_rx1.A",
+                             "ERS_N2.f19_g16_rx1.A",
+                             "ERR.f45_g37_rx1.A",
+                             "ERP.f45_g37_rx1.A",
+                             "SMS_D_Ln9.f19_g16_rx1.A",
+                             "DAE.f19_f19.A")
+#                             "PRE.f19_f19.ADESP")
                             ),
 
     #
@@ -59,7 +64,7 @@ _TEST_SUITES = {
                              ("ERS.f19_f19.I1850CLM45CN",
                               "ERS.f09_g16.I1850CLM45CN",
                               "SMS.hcru_hcru.I1850CRUCLM45CN",
-                             ("SMS_Ly3_P1x1.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
+                             ("SMS_Ly3.1x1_smallvilleIA.ICLM45CNCROP", "force_netcdf_pio"),
                               "ERS.ne11_oQU240.I20TRCLM45",
                               "ERS.f09_g16.IMCLM45BC")
                              ),
@@ -97,7 +102,8 @@ _TEST_SUITES = {
                          "NCK.f19_g16_rx1.A",
                          "SMS.ne30_f19_g16_rx1.A",
                          "ERS_Ld5.T62_oQU120.CMPASO-NYF",
-                         "ERS.f09_g16_g.MPASLISIA",
+                         "ERS.f09_g16_g.MPASLI_ONLY",
+                         "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI",
                          "SMS_D_Ln5.ne16_ne16.FC5AV1F",
@@ -128,12 +134,13 @@ _TEST_SUITES = {
                            "PET.f19_g16.X",
                            "PET.f45_g37_rx1.A",
                            "PET_Ln9.ne30_oEC.A_WCYCL2000",
-                           "ERP_Ld3.ne30_oEC.A_WCYCL2000",
+                           "ERP_Ln3.ne30_oEC.A_WCYCL2000",
+                           "PFS.ne30_ne30.FC5",
                            "SEQ_IOP.f19_g16.X",
                            "SMS.ne30_oEC.A_WCYCL2000",
                            "SMS.ne16_ne16.FC5AQUAP",
                            "SMS_D_Ld3.ne16_ne16.FC5",
-                           "SMS.f09_g16_a.MPASLIALB",
+                           "SMS.f09_g16_a.MPASLIALB_ONLY",
                            "ERS.ne16_ne16.FC5ATMMOD",
                            "ERS_Ld5.ne16_ne16.FC5AV1F",
                            "ERS_Ld5.ne16_ne16.FC5AV1C",
@@ -141,7 +148,6 @@ _TEST_SUITES = {
                            "ERS_Ld5.ne16_ne16.FC5AV1C-02",
                            "ERS_Ld5.ne16_ne16.FC5AV1C-03",
                            "ERS_Ld5.ne16_ne16.FC5AV1C-04",
-                           "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
                            "ERS_Ld5.ne30_oEC.F1850C5AV1C-02",
                            "ERS_Ld5.ne16_ne16.F1850C5AV1C-04",
                            "ERS_Ld5.ne16_ne16.F20TRC5AV1C-03",
@@ -244,10 +250,7 @@ def get_full_test_names(testargs, machine, compiler):
 
     for negation in negations:
         if (negation in acme_test_suites):
-            for test, testmod in get_test_suite(negation, machine, compiler):
-                fullname = CIME.utils.get_full_test_name(test, machine=machine, compiler=compiler, testmod=testmod)
-                if (fullname in tests_to_run):
-                    tests_to_run.remove(fullname)
+            tests_to_run -= set(get_test_suite(negation, machine, compiler))
         else:
             fullname = CIME.utils.get_full_test_name(negation, machine=machine, compiler=compiler)
             if (fullname in tests_to_run):

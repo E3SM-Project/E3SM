@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl 
 use strict;
 
 my $netcdf_incdir = $ARGV[0];
@@ -22,7 +22,7 @@ foreach my $line (@file){
   chomp($line);
   next if($line =~ /^\s*\/\*/);
   next if($line =~ /^\s*[#\*]/);
-  $line =~ s/\s+/ /g;
+  $line =~ s/\s+/ /g; 
   if($line =~ / ncmpi_(.*)(\(.*)$/) {
     $func = $1;
 
@@ -41,7 +41,7 @@ my $func="";
 foreach my $line (@file){
   chomp($line);
   next if($line =~ /^\s*\/\*/);
-  next if($line =~ /^\s*[#\*]/);
+  next if($line =~ /^\s*[#\*]/); 
   $line =~ s/\s+/ /g;
   if($line =~ /^\s*nc_([^_].*)(\(.*)$/) {
     $func = $1;
@@ -93,7 +93,7 @@ foreach my $func (keys %{$functions}){
 	  }
 	  if($line =~/function/){
 	      if($line =~ s/PIO_function/PIOc_$func/){
-		  $line =~ s/\(\)/ $pnetfunc / ;
+		  $line =~ s/\(\)/ $pnetfunc / ; 
 #	      $line =~ s/int ncid/file_desc_t *file/;
 		  $line =~ s/MPI_Offset/PIO_Offset/g;
 		  $line =~ s/\;//;
@@ -102,7 +102,7 @@ foreach my $func (keys %{$functions}){
 
 		  $line =~ s/, int \*request//;
 
-
+		  
 	      }else{
 		  my $args;
 		  if(defined $bfunc){
@@ -116,7 +116,7 @@ foreach my $func (keys %{$functions}){
 		      }
 		  }
 		  if($line =~ s/nc_function/nc_$func/){
-		      $args = $functions->{$func}{netcdf}  ;
+		      $args = $functions->{$func}{netcdf}  ; 
 		      if($pnetfunc =~ /void \*buf/  ){
 			  $args =~ s/\*op/ buf/g;
 			  $args =~ s/\*ip/ buf/g;
@@ -143,7 +143,7 @@ foreach my $func (keys %{$functions}){
 		  $args =~ s/MPI_Info //g;
 		  $args =~ s/,\s+\*/, /g;
 		  $args =~ s/\[\]//g;
-
+		  
 		  $args =~ s/size_t \*indexp/\(size_t \*\) index/g;
 		  $args =~ s/size_t \*startp/\(size_t \*\) start/g;
 		  $args =~ s/size_t \*countp/\(size_t \*\) count/g;
@@ -156,7 +156,7 @@ foreach my $func (keys %{$functions}){
 #		  }else{
 #		      $args =~ s/size_t /\(size_t\)/g;
 #		  }
-
+		  
 		  $line =~ s/\(\)/$args/;
 	      }
 	  }
@@ -164,10 +164,10 @@ foreach my $func (keys %{$functions}){
 #	      print F "  file->varlist[*varidp].record=-1;\n";
 #	      print F "  file->varlist[*varidp].buffer=NULL;\n";
 #	  }
-	  print F $line;
+	  print F $line;	  
 
       }
-
+    
 
       print F "\n";
   }
@@ -193,7 +193,7 @@ foreach my $func (keys %{$functions}){
 #      print "nctype $nctype\n";
       $buftype = $typemap->{$nctype};
   }
-
+  
   if($func =~ /var1/){
       $bufcount = 1;
   }
@@ -254,7 +254,7 @@ foreach my $func (keys %{$functions}){
 	  my $postline;
 	  if($line =~/function/){
 	      if($line =~ s/PIO_function/PIOc_$func/){
-		  $line =~ s/\(\)/ $functions->{$func}{pnetcdf} / ;
+		  $line =~ s/\(\)/ $functions->{$func}{pnetcdf} / ; 
 #	      $line =~ s/int ncid/file_desc_t *file/;
 		  $line =~ s/MPI_Offset/PIO_Offset/g;
 		  $line =~ s/\;//;
@@ -272,7 +272,7 @@ foreach my $func (keys %{$functions}){
 		  }elsif($line =~ /ncmpi_function_all/){
 		      $line = " ";
 		  }
-
+		  
 		  if($line =~ s/ncmpi_function\(/ncmpi_$func\(/){
 		      if($allfunc==1){
 			  $preline = "#ifdef PNET_READ_AND_BCAST\n";
@@ -284,9 +284,9 @@ foreach my $func (keys %{$functions}){
 			  $postline.="#else\n";
 		      }
 		  }
-
+		  
 		  if($line =~ s/nc_function/nc_$func/){
-		      $args = $functions->{$func}{netcdf}  ;
+		      $args = $functions->{$func}{netcdf}  ; 
 		  }
 		  $args =~ s/int ncid/file->fh/;
 
@@ -317,7 +317,7 @@ foreach my $func (keys %{$functions}){
 		  $args =~ s/MPI_Info //g;
 		  $args =~ s/,\s+\*/, /g;
 		  $args =~ s/\[\]//g;
-
+		  
 		  $args =~ s/size_t \*indexp/\(size_t \*\) index/g;
 		  $args =~ s/size_t \*startp/\(size_t \*\) start/g;
 		  $args =~ s/size_t \*countp/\(size_t \*\) count/g;
@@ -330,7 +330,7 @@ foreach my $func (keys %{$functions}){
 #		  }else{
 #		      $args =~ s/size_t /\(size_t\)/g;
 #		  }
-
+		  
 		  $line =~ s/\(\)/$args/;
 	      }
 	  }
@@ -344,7 +344,7 @@ foreach my $func (keys %{$functions}){
 
 
       }
-
+    
 #    print "$func  $functions->{$func}{pnetcdf} $functions->{$func}{netcdf}\n";
       print F "\n";
   }

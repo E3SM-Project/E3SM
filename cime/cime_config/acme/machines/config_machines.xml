@@ -60,10 +60,10 @@
   <TESTS>acme_developer</TESTS>
   <COMPILERS>intel,gnu,cray</COMPILERS>
   <MPILIBS>mpt,mpi-serial</MPILIBS>
-  <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch/edison</CESMSCRATCHROOT>
-  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/edison</CIME_OUTPUT_ROOT>
+  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -75,15 +75,15 @@
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
   <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-  <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+  <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
   <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
   <mpirun mpilib="default">
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
-      <arg name="num_tasks" > -n {{ num_tasks }}</arg>
-      <arg name="thread_count" > -c {{ thread_count }}</arg>
+      <arg name="num_tasks" > -n $TOTALPES</arg>
+      <arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -185,14 +185,14 @@
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
     <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
     <OS>CNL</OS>
@@ -208,7 +208,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
+	<arg name="num_tasks" > -n $TOTALPES</arg>
         <!--NOTE: hard-coding -c 2 for now, which is only correct when using full node with no hyper-threading.  need updates from cime5.2 to fix.  (ndk) -->
 	<arg name="thread_count" > -c 2 </arg>
 	<!--arg name="binding" > dash-dash-cpu_bind=cores</arg-->
@@ -318,14 +318,14 @@
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/project/projectdirs/acme/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
     <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
     <OS>CNL</OS>
@@ -341,7 +341,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
+	<arg name="num_tasks" > -n $TOTALPES</arg>
         <!--NOTE: hard-coding -c 4 for now, which is only correct when using full node with no hyper-threading.  need updates from cime5.2 to fix.  (ndk) -->
 	<arg name="thread_count" > -c 4 </arg>
 	<arg name="binding" > --cpu_bind=cores</arg>
@@ -458,8 +458,8 @@
     <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/projects/acme/scratch/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CESMSCRATCHROOT>$ENV{HOME}/projects/acme/scratch</CESMSCRATCHROOT>
-    <CCSM_BASELINE>$ENV{HOME}/projects/acme/baselines</CCSM_BASELINE>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/acme/scratch</CIME_OUTPUT_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/projects/acme/baselines</BASELINE_ROOT>
     <!-- cmake -DCMAKE_Fortran_COMPILER=/opt/local/bin/mpif90-mpich-gcc48 -DHDF5_DIR=/opt/local -DNetcdf_INCLUDE_DIR=/opt/local/include .. -->
 >
     <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
@@ -473,8 +473,8 @@
 <machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
     <NODENAME_REGEX></NODENAME_REGEX>
+    <OS>LINUX</OS>
     <TESTS>acme_developer</TESTS>
-    <OS>Linux</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
     <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
@@ -483,8 +483,8 @@
     <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/projects/acme/scratch/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CESMSCRATCHROOT>$ENV{HOME}/projects/acme/scratch</CESMSCRATCHROOT>
-    <CCSM_BASELINE>$ENV{HOME}/projects/acme/baselines</CCSM_BASELINE>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/acme/scratch</CIME_OUTPUT_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/projects/acme/baselines</BASELINE_ROOT>
     <!-- cmake -DCMAKE_Fortran_COMPILER=/opt/local/bin/mpif90-mpich-gcc48 -DHDF5_DIR=/opt/local -DNetcdf_INCLUDE_DIR=/opt/local/include .. -->>
     <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jayesh at mcs dot anl dot gov</SUPPORTED_BY>
@@ -495,7 +495,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
 </machine>
@@ -508,14 +508,14 @@
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/sems-data-store/ACME/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
     <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
@@ -527,7 +527,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -551,8 +551,8 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-      <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
 </machine>
 
@@ -564,14 +564,14 @@
     <OS>LINUX</OS>
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/sems-data-store/ACME/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
     <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
@@ -583,7 +583,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -614,8 +614,8 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-      <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
 </machine>
 
@@ -627,16 +627,16 @@
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/home/climate1/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/home/climate1/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/home/climate1/acme/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/home/climate1/acme/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/home/climate1/acme/cprnc/build/cprnc</CCSM_CPRNC>
-    <SAVE_TIMING_DIR>$CESMSCRATCHROOT/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>$CIME_OUTPUT_ROOT/timings</SAVE_TIMING_DIR>
     <BATCHQUERY></BATCHQUERY>
     <BATCHSUBMIT></BATCHSUBMIT>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
@@ -648,7 +648,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
@@ -667,8 +667,8 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDFROOT">$(dirname $(dirname $(which ncdump)))</env>
-      <env name="PNETCDFROOT" mpilib="!mpi-serial">$(dirname $(dirname $(which pnetcdf_version)))</env>
+      <env name="NETCDFROOT">$SHELL{dirname $(dirname $(which ncdump))}</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
 </machine>
 
@@ -680,14 +680,14 @@
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi,mpi-serial</MPILIBS>
   <OS>LINUX</OS>
-  <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
-  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch/skybridge</CIME_OUTPUT_ROOT>
+  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
   <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
+  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
   <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
-  <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
+  <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
   <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -703,8 +703,8 @@
     <executable>mpiexec</executable>
     <arguments>
       <arg name="bind"> --bind-to-core</arg>
-      <arg name="num_tasks"> --n {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks"> --n $TOTALPES</arg>
+      <arg name="tasks_per_node"> --npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -738,16 +738,16 @@
   </module_system>
   <environment_variables>
     <!-- <env name="PATH">/projects/ccsm/cmake-2.8.10.2-Linux-i386/bin:$PATH</env> -->
-    <env name="PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/bin:$PATH</env>
-    <env name="LD_LIBRARY_PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib:$LD_LIBRARY_PATH</env>
+    <env name="PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/bin:$ENV{PATH}</env>
+    <env name="LD_LIBRARY_PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib:$ENV{LD_LIBRARY_PATH}</env>
     <env name="NETCDF_INCLUDES">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/include</env>
     <env name="NETCDF_LIBS">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib</env>
     <env name="NETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env>
     <env name="PNETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env>
-    <!-- <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env> -->
-    <!-- <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env> -->
-    <!-- <env name="NETCDF_INCLUDES">$SEMS_NETCDF_ROOT/include</env> -->
-    <!-- <env name="NETCDF_LIBS">$SEMS_NETCDF_ROOT/lib</env> -->
+    <!-- <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env> -->
+    <!-- <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env> -->
+    <!-- <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env> -->
+    <!-- <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env> -->
     <env name="OMP_STACKSIZE">64M</env>
   </environment_variables>
 </machine>
@@ -760,14 +760,14 @@
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi,mpi-serial</MPILIBS>
   <OS>LINUX</OS>
-  <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch</CESMSCRATCHROOT>
-  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch</CIME_OUTPUT_ROOT>
+  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
   <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
+  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
   <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
-  <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
+  <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
   <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
   <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -783,8 +783,8 @@
     <executable>mpiexec</executable>
     <arguments>
       <arg name="bind"> --bind-to-core</arg>
-      <arg name="num_tasks"> --n {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks"> --n $TOTALPES</arg>
+      <arg name="tasks_per_node"> --npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -818,16 +818,16 @@
   </module_system>
   <environment_variables>
     <!-- <env name="PATH">/projects/ccsm/cmake-2.8.10.2-Linux-i386/bin:$PATH</env> -->
-    <env name="PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/bin:$PATH</env>
-    <env name="LD_LIBRARY_PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib:$LD_LIBRARY_PATH</env>
+    <env name="PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/bin:$ENV{PATH}</env>
+    <env name="LD_LIBRARY_PATH">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib:$ENV{LD_LIBRARY_PATH}</env>
     <env name="NETCDF_INCLUDES">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/include</env>
     <env name="NETCDF_LIBS">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5/lib</env>
     <env name="NETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env>
     <env name="PNETCDFROOT">/projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</env>
-    <!-- <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env> -->
-    <!-- <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env> -->
-    <!-- <env name="NETCDF_INCLUDES">$SEMS_NETCDF_ROOT/include</env> -->
-    <!-- <env name="NETCDF_LIBS">$SEMS_NETCDF_ROOT/lib</env> -->
+    <!-- <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env> -->
+    <!-- <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env> -->
+    <!-- <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env> -->
+    <!-- <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env> -->
     <env name="OMP_STACKSIZE">64M</env>
   </environment_variables>
 </machine>
@@ -838,15 +838,15 @@
          <TESTS>acme_integration</TESTS>
          <COMPILERS>gnu,pgi,intel,nag</COMPILERS>
          <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CIME_OUTPUT_ROOT>
 	 <SAVE_TIMING_DIR>/lcrc/project/$PROJECT</SAVE_TIMING_DIR>
-	 <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-	 <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+	 <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/lcrc/group/earthscience/acme_baselines</CCSM_BASELINE>
+         <BASELINE_ROOT>/lcrc/group/earthscience/acme_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -859,7 +859,7 @@
          <mpirun mpilib="mvapich">
            <executable>mpiexec</executable>
            <arguments>
-             <arg name="num_tasks"> -n {{ num_tasks }} </arg>
+             <arg name="num_tasks"> -n $TOTALPES </arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mpi-serial">
@@ -897,8 +897,8 @@
       <env name="NETCDFROOT">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1</env>
       <env name="NETCDF_INCLUDES">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/include</env>
       <env name="NETCDF_LIBS">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/lib</env>
-      <env name="PATH">$NETCDFROOT/bin:$PATH</env>
-      <env name="LD_LIBRARY_PATH">$NETCDFROOT/lib:/soft/intel/15.0.1/mkl/lib/intel64:$LD_LIBRARY_PATH</env>
+      <env name="PATH">$ENV{NETCDFROOT}/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{NETCDFROOT}/lib:/soft/intel/15.0.1/mkl/lib/intel64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mvapich">
       <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>
@@ -914,15 +914,15 @@
          <TESTS>acme_integration</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mvapich,openmpi,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>/lcrc/group/acme/$USER/acme_scratch</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch</CIME_OUTPUT_ROOT>
 	 <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
-	 <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-	 <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+	 <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+	 <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lcrc/group/acme/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/lcrc/group/acme/acme_baselines</CCSM_BASELINE>
+         <BASELINE_ROOT>/lcrc/group/acme/acme_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
 	 <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -936,7 +936,7 @@
            <executable>mpiexec</executable>
            <arguments>
              <arg name="num_tasks"> -n $TOTALPES </arg>
-             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE={{ thread_count }} --bind-to core</arg>
+             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$OMP_NUM_THREADS --bind-to core</arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mvapich">
@@ -1014,14 +1014,14 @@
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <CESMSCRATCHROOT>/projects/$PROJECT/$USER</CESMSCRATCHROOT>
-         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
+         <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/projects/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
+         <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/</BASELINE_ROOT>
          <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
          <OS>BGQ</OS>
@@ -1040,12 +1040,12 @@
                <!-- Ranks per node!! -->
                <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
-               <arg name="num_tasks"> --np {{ num_tasks }}</arg>
+               <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1074,15 +1074,15 @@
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>$ENV{HOME}/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/acme/ptclmdata</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
 
-    <CCSM_BASELINE>/home/agsalin/acme/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/home/agsalin/acme/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <SUPPORTED_BY>agsalin at sandia dot gov</SUPPORTED_BY>
     <GMAKE_J>20</GMAKE_J>
@@ -1096,13 +1096,13 @@
          <MPILIBS>mpich,mpi-serial</MPILIBS>
          <RUNDIR>/p/lscratche/$CCSMUSER/ACME/$CASE/run</RUNDIR>
          <EXEROOT>/p/lscratche/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/p/lscratche/$USER</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>/p/lscratche/$USER</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/p/lscratchd/ma21/ccsm3data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/ma21/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/p/lscratche/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
+         <BASELINE_ROOT>/p/lscratchd/$CCSMUSER/ccsm_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <BATCHQUERY>mshow</BATCHQUERY>
@@ -1136,14 +1136,14 @@
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <CESMSCRATCHROOT>/projects/$PROJECT/$USER</CESMSCRATCHROOT>
-         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
+         <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/projects/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
+         <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/</BASELINE_ROOT>
          <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
          <OS>BGQ</OS>
@@ -1162,12 +1162,12 @@
                <!-- Ranks per node!! -->
                <arg name="tasks_per_node"> --ranks-per-node $PES_PER_NODE</arg>
                <!-- Total MPI Tasks -->
-               <arg name="num_tasks"> --np {{ num_tasks }}</arg>
+               <arg name="num_tasks"> --np $TOTALPES</arg>
                <arg name="locargs"> --block $COBALT_PARTNAME $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1198,12 +1198,12 @@
          <MPILIBS>mvapich2</MPILIBS>
          <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/$USER/csmruns/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/lustre/$USER/csmruns/</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>/lustre/$USER/csmruns/</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/lustre/sing201/DATASETS/CAM/InitialCondFilesCam/FromMythos1/CSMDATA_CAM/aerocom/csmdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/sing201/DATASETS/CAM/InitialCondFilesCam/FromMythos1/CSMDATA_CAM/aerocom/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/UNSET_BASELINE</CCSM_BASELINE>
+         <BASELINE_ROOT>/UNSET_BASELINE</BASELINE_ROOT>
          <CCSM_CPRNC>/lustre/sing201/CAM/netcdfComp_cprnc/cprnc/cprnc</CCSM_CPRNC>
 	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>balwinder.singh at pnnl dot gov</SUPPORTED_BY>
@@ -1224,8 +1224,8 @@
          <DIN_LOC_ROOT_CLMFORC>/dtemp/sing201/inputdata/CAM/CSMDATA_CAM/aerocom/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/dtemp/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/dtemp/sing201/acme_testing/acme_baselines/</CCSM_BASELINE>
-             <CESMSCRATCHROOT>/dtemp/$USER/csmruns</CESMSCRATCHROOT>
+         <BASELINE_ROOT>/dtemp/sing201/acme_testing/acme_baselines/</BASELINE_ROOT>
+             <CIME_OUTPUT_ROOT>/dtemp/$USER/csmruns</CIME_OUTPUT_ROOT>
          <CCSM_CPRNC>/home/sing201/CAM/cprnc/cprnc</CCSM_CPRNC>
 	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>balwinder.singh at pnnl dot gov</SUPPORTED_BY>
@@ -1241,12 +1241,12 @@
 	 <NODENAME_REGEX>constance</NODENAME_REGEX>
          <RUNDIR>/pic/scratch/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/pic/scratch/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>/pic/scratch/$USER</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/pic/projects/climate/csmdata/</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/pic/projects/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/pic/projects/climate/acme_baselines</CCSM_BASELINE>
+         <BASELINE_ROOT>/pic/projects/climate/acme_baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/pic/projects/climate/acme_baselines/cprnc</CCSM_CPRNC>
 	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
@@ -1256,7 +1256,7 @@
 	   <executable>srun</executable>
 	   <arguments>
 	     <arg name="mpinone"> --mpi=none</arg>
-	     <arg name="num_tasks"> --ntasks={{ num_tasks }}</arg>
+	     <arg name="num_tasks"> --ntasks=$TOTALPES</arg>
 	     <arg name="cpubind"> --cpu_bind=sockets</arg>
 	     <arg name="cpubind"> --cpu_bind=verbose</arg>
              <arg name="killonbadexit"> --kill-on-bad-exit</arg>
@@ -1276,7 +1276,7 @@
          <MPILIBS>mpich,mpi-serial,openmpi</MPILIBS>
          <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
          <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/home/$USER/models/ACME</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/home/zdr/models/ccsm_inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/zdr/models/ccsm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/home/$USER/models/ACME/run/archive/$CASE</DOUT_S_ROOT>
@@ -1289,7 +1289,7 @@
          <mpirun mpilib="mpich">
               <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
 	      <arguments>
-			<arg name="num_tasks"> -np {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -np $TOTALPES</arg>
 			<arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
 	      </arguments>
          </mpirun>
@@ -1324,7 +1324,7 @@
          <MPILIBS>mpich,mpi-serial,openmpi</MPILIBS>
          <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
          <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/home/$USER/models/ACME</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>/home/$USER/models/ACME</CIME_OUTPUT_ROOT>
          <DIN_LOC_ROOT>/home/zdr/models/ccsm_inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/zdr/models/ccsm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/home/$USER/models/ACME/run/archive/$CASE</DOUT_S_ROOT>
@@ -1337,7 +1337,7 @@
          <mpirun mpilib="mpich">
               <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
 	      <arguments>
-			<arg name="num_tasks"> -np {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -np $TOTALPES</arg>
                         <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
 	      </arguments>
          </mpirun>
@@ -1362,8 +1362,8 @@
       <DIN_LOC_ROOT_CLMFORC>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
       <DOUT_S_ROOT>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/archives/$CASE</DOUT_S_ROOT>
       <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-      <CESMSCRATCHROOT>/lustre/pfs1/cades-ccsi/scratch</CESMSCRATCHROOT>
-      <CCSM_BASELINE>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/baselines</CCSM_BASELINE>
+      <CIME_OUTPUT_ROOT>/lustre/pfs1/cades-ccsi/scratch</CIME_OUTPUT_ROOT>
+      <BASELINE_ROOT>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/baselines</BASELINE_ROOT>
       <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
       <SUPPORTED_BY>Fengming Yuan</SUPPORTED_BY>
       <GMAKE_J>4</GMAKE_J>
@@ -1373,7 +1373,7 @@
       <mpirun mpilib="openmpi" compiler="gnu">
         <executable args="default">/software/tools/spack/opt/spack/linux-x86_64/gcc-5.3.0/openmpi-1.10.2-w26llp27jmybo7wlgoqxjrtptltmripg/bin/mpirun</executable>
         <arguments>
-          <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+          <arg name="num_tasks"> -np $TOTALPES</arg>
           <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
         </arguments>
       </mpirun>
@@ -1405,14 +1405,14 @@
     <TESTS>acme_developer</TESTS>
     <COMPILERS>pgi,pgiacc,intel,cray</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
     <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{MEMBERWORK}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
     <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
     <OS>CNL</OS>
@@ -1430,9 +1430,9 @@
       <arguments>
 	<!-- <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-        <arg name="num_tasks" > -n {{ num_tasks }}</arg>
-        <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
-        <arg name="thread_count" > -d {{ thread_count }}</arg>
+        <arg name="num_tasks" > -n $TOTALPES</arg>
+        <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
+        <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
         <arg name="numa_node" > -cc numa_node </arg>
 	-->
 	<arg name="aprun"> {{ aprun }}</arg>
@@ -1580,14 +1580,14 @@
          <TESTS>acme_developer</TESTS>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
+         <CIME_OUTPUT_ROOT>$ENV{HOME}/acme_scratch/$PROJECT</CIME_OUTPUT_ROOT>
          <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
-         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>$ENV{MEMBERWORK}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
+         <BASELINE_ROOT>/lustre/atlas1/cli900/world-shared/cesm/baselines</BASELINE_ROOT>
          <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.eos</CCSM_CPRNC>
          <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
@@ -1603,9 +1603,9 @@
            <arguments>
              <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-             <arg name="num_tasks" > -n {{ num_tasks }}</arg>
-             <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
-             <arg name="thread_count" > -d {{ thread_count }}</arg>
+             <arg name="num_tasks" > -n $TOTALPES</arg>
+             <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
+             <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
              <arg name="numa_node" > -cc numa_node</arg>
            </arguments>
          </mpirun>
@@ -1679,8 +1679,8 @@
 	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
 	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CESMSCRATCHROOT>
+	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</BASELINE_ROOT>
+	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
 		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
@@ -1720,7 +1720,7 @@
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 			<arg name="bind_option"> --bind-to core</arg>
 			<arg name="map_option"> --map-by node</arg>
 		</arguments>
@@ -1728,7 +1728,7 @@
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 			<arg name="map_option"> --map-by node</arg>
 			<arg name="bind_option"> --bind-to core</arg>
 		</arguments>
@@ -1757,8 +1757,8 @@
 	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
 	<DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CESMSCRATCHROOT>
+	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</BASELINE_ROOT>
+	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
 	   <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
@@ -1802,19 +1802,19 @@
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mvapich">
 		<executable>srun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mpi-serial">
@@ -1834,14 +1834,14 @@
   <OS>LINUX</OS>
   <COMPILERS>intel,pgi,gnu</COMPILERS>
   <MPILIBS>mpich2,pempi,mpi-serial</MPILIBS>
-  <CESMSCRATCHROOT>/glade/scratch/$USER</CESMSCRATCHROOT>
-  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
+  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
   <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
-  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>
+  <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines</BASELINE_ROOT>
   <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
   <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>
   <BATCH_SYSTEM>none</BATCH_SYSTEM>
@@ -1945,7 +1945,7 @@
 <!-- complete path to a short term archiving directory -->
         <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>
 <!-- complete path to a long term archiving directory -->
-        <CCSM_BASELINE>USERDEFINED_optional_run</CCSM_BASELINE>
+        <BASELINE_ROOT>USERDEFINED_optional_run</BASELINE_ROOT>
 <!-- where the cesm testing scripts write and read baseline results -->
         <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>
 <!-- path to the cprnc tool used to compare netcdf history files in testing -->
@@ -1957,10 +1957,10 @@
          <mpirun mpilib="default">
            <executable>aprun</executable>
              <arguments>
-                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+                <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
-                <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
-                <arg name="thread_count"> -d {{ thread_count }}</arg>
+                <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
+                <arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
 </machine>
@@ -1985,7 +1985,7 @@
 <!-- complete path to a short term archiving directory -->
         <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>
 <!-- complete path to a long term archiving directory -->
-        <CCSM_BASELINE>USERDEFINED_optional_run</CCSM_BASELINE>
+        <BASELINE_ROOT>USERDEFINED_optional_run</BASELINE_ROOT>
 <!-- where the cesm testing scripts write and read baseline results -->
         <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>
 <!-- path to the cprnc tool used to compare netcdf history files in testing -->
@@ -1996,10 +1996,10 @@
          <mpirun mpilib="default">
            <executable>aprun</executable>
              <arguments>
-                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+                <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
-                <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
-                <arg name="thread_count"> -d {{ thread_count }}</arg>
+                <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
+                <arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
              </arguments>
          </mpirun>
 </machine>
@@ -2009,15 +2009,15 @@
   <OS>LINUX</OS>
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi,mpi-serial</MPILIBS>
-  <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
-  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
+  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
   <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-  <DOUT_S_ROOT>$CESMSCRATCHROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <CCSM_BASELINE>$CESMSCRATCHROOT/cesm_baselines</CCSM_BASELINE>
-  <CCSM_CPRNC>/$CESMSCRATCHROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+  <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
+  <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>gbisht at lbl dot gov </SUPPORTED_BY>
   <GMAKE_J>4</GMAKE_J>
@@ -2026,15 +2026,15 @@
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
 </machine>
@@ -2044,15 +2044,15 @@
   <OS>LINUX</OS>
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi,mpi-serial</MPILIBS>
-  <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
-  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
+  <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
   <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
   <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-  <DOUT_S_ROOT>$CESMSCRATCHROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+  <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <CCSM_BASELINE>$CESMSCRATCHROOT/cesm_baselines</CCSM_BASELINE>
-  <CCSM_CPRNC>/$CESMSCRATCHROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+  <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
+  <CCSM_CPRNC>/$CIME_OUTPUT_ROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
   <SUPPORTED_BY>gbisht at lbl dot gov</SUPPORTED_BY>
   <GMAKE_J>4</GMAKE_J>
@@ -2062,15 +2062,15 @@
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="default">
     <executable>mpirun</executable>
     <arguments>
-      <arg name="num_tasks">-np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="num_tasks">-np $TOTALPES</arg>
+      <arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
     </arguments>
   </mpirun>
 </machine>

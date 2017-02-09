@@ -1,8 +1,8 @@
 ///
 /// PIO interface to nc_function
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.
-///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
 /// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
 ///
 int PIO_function()
@@ -25,7 +25,7 @@ int PIO_function()
   msg = 0;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -52,7 +52,7 @@ int PIO_function()
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request,
+	vdesc->request = realloc(vdesc->request, 
 				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
