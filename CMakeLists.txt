@@ -3,8 +3,8 @@ include(ExternalProject)
 
 project(cime_tests Fortran C)
 
-list(APPEND CMAKE_MODULE_PATH ${CESM_CMAKE_MODULE_DIRECTORY})
-include(CESM_utils)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_MODULE_DIRECTORY})
+include(CIME_utils)
 find_package(NETCDF)
 include_directories(${NETCDF_INCLUDE_DIRS})
 

@@ -11,7 +11,7 @@ from CIME.BuildTools.configure import configure
 from CIME.utils import expect, get_cime_root, run_cmd, stringify_bool
 from CIME.XML.machines import Machines
 from CIME.XML.env_mach_specific import EnvMachSpecific
-from xml_test_list import TestSuiteSpec
+from xml_test_list import TestSuiteSpec, suites_from_xml
 
 #=================================================
 # Standard library modules.
@@ -19,6 +19,8 @@ from xml_test_list import TestSuiteSpec
 from printer import Printer
 from shutil import rmtree
 from distutils.spawn import find_executable
+# This violates CIME policy - move to CIME/XML directory
+from xml.etree.ElementTree import ElementTree
 
 logger = logging.getLogger(__name__)
 
@@ -207,6 +209,15 @@ def _main():
 # Find directory and file paths.
 #=================================================
     suite_specs = []
+    # TODO: this violates cime policy of direct access to xml
+    # should be moved to CIME/XML
+    if xml_test_list is not None:
+        test_xml_tree = ElementTree()
+        test_xml_tree.parse(xml_test_list)
+        known_paths = {
+            "here": os.path.abspath(os.path.dirname(xml_test_list)),
+            }
+        suite_specs.extend(suites_from_xml(test_xml_tree, known_paths))
     if test_spec_dir is not None:
         suite_specs.append(
             TestSuiteSpec("__command_line_test__",
@@ -264,18 +275,19 @@ def _main():
     os.environ["compile_threaded"] = "true"
     os.environ["CC"] = find_executable("mpicc")
     os.environ["FC"] = find_executable("mpif90")
+    os.environ["NETCDF_PATH"] = os.environ.get("NETCDF")
 
 #=================================================
 # Run tests.
 #=================================================
 
     for spec in suite_specs:
+        os.chdir(build_dir)
         if not os.path.isdir(spec.name):
             os.mkdir(spec.name)
 
-        os.chdir(spec.name)
-
         for label, directory in spec:
+            os.chdir(os.path.join(build_dir,spec.name))
             if not os.path.isdir(label):
                 os.mkdir(label)
 
@@ -283,19 +295,15 @@ def _main():
 
             name = spec.name+"/"+label
 
-            output.print_header("Running CTest tests for "+name+".")
             if not os.path.islink("Macros.cmake"):
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
             cmake_stage(name, directory, build_type, mpirun_command, output, verbose=verbose)
             make_stage(name, output, clean=clean, verbose=verbose)
-        os.chdir(build_dir)
+
 
     for spec in suite_specs:
-        os.chdir(spec.name)
-
+        os.chdir(os.path.join(build_dir,spec.name))
         for label, directory in spec:
-
-            os.chdir(label)
 
             name = spec.name+"/"+label
 
@@ -309,11 +317,11 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd(" ".join(ctest_command), verbose=True)
+            run_cmd(" ".join(ctest_command), from_dir=label, verbose=True)
 
-            os.chdir("..")
 
-        os.chdir(build_dir)
+
+
 
 if __name__ == "__main__":
     _main()
