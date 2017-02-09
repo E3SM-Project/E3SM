@@ -69,6 +69,9 @@ class DAE(SystemTestsCompareTwo):
         for file_ in da_files:
             os.remove(file_)
         # End for
+        # CONTINUE_RUN ends up TRUE, set it back in case this is a re-run.
+        self._case.set_value("CONTINUE_RUN", False)
+        # Start normal run here
         self._activate_case1()
         SystemTestsCompareTwo.run_phase(self)
         # Do some checks on the data assimilation 'output' from case2
