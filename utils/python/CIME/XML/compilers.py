@@ -59,6 +59,13 @@ class Compilers(GenericXML):
             flag_xpath = ".//xs:group[@name='compilerVars']/xs:choice/xs:element[@type='flagsVar']"
             flag_elems = ET.parse(schema).getroot().findall(flag_xpath, ns)
             self.flag_vars = set(elem.get('name') for elem in flag_elems)
+            # Need to add os and compiler to cppdefs here
+            generic_compiler_node = self.get_nodes("compiler")[0]
+            if generic_compiler_node is not None:
+                cppdefs = self.get_node("CPPDEFS", root=generic_compiler_node)
+                if cppdefs is not None:
+                    self.add_sub_node(cppdefs, "append", "-D%s -DCPR%s"%(self.os,self.compiler.upper()))
+
 
 
 
@@ -188,6 +195,7 @@ class Compilers(GenericXML):
         # Start processing the file.
         value_lists = dict()
         node_list = []
+
         if xml is None:
             node_list = self.get_nodes("compiler")
         else:

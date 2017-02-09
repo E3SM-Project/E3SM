@@ -273,8 +273,8 @@ def _main():
     os.environ["DEBUG"] = stringify_bool(debug)
     os.environ["MPILIB"] = mpilib
     os.environ["compile_threaded"] = "true"
-    os.environ["CC"] = find_executable("icc")
-    os.environ["FC"] = find_executable("ifort")
+    os.environ["CC"] = find_executable("mpicc")
+    os.environ["FC"] = find_executable("mpif90")
     os.environ["NETCDF_PATH"] = os.environ.get("NETCDF")
 
 #=================================================
