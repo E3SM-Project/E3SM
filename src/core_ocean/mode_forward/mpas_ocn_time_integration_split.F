@@ -205,6 +205,8 @@ module ocn_time_integration_split
       character (len=StrKIND) :: configName
       integer :: threadNum
 
+      integer :: temp_mask
+
       call mpas_timer_start("se timestep")
 
       call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_beg', config_n_bcl_iter_beg)
@@ -317,9 +319,6 @@ module ocn_time_integration_split
             end do
          end do
          !$omp end do
-
-
-         threadnum = mpas_threading_get_thread_num()
 
          call mpas_pool_begin_iteration(tracersPool)
          do while ( mpas_pool_get_next_member(tracersPool, groupItr))
@@ -779,24 +778,26 @@ module ocn_time_integration_split
                      !$omp do schedule(runtime) private(cell1, cell2, CoriolisTerm, i, eoe)
                      do iEdge = 1, nEdges
 
-                        cell1 = cellsOnEdge(1,iEdge)
-                        cell2 = cellsOnEdge(2,iEdge)
+                        temp_mask = edgeMask(1, iEdge)
 
-                        ! Compute the barotropic Coriolis term, -f*uPerp
-                        CoriolisTerm = 0.0_RKIND
-                        do i = 1, nEdgesOnEdge(iEdge)
-                           eoe = edgesOnEdge(i,iEdge)
-                           CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge) &
-                                        * normalBarotropicVelocitySubcycleCur(eoe) * fEdge(eoe)
-                        end do
+                          cell1 = cellsOnEdge(1,iEdge)
+                          cell2 = cellsOnEdge(2,iEdge)
 
-                        ! normalBarotropicVelocityNew = normalBarotropicVelocityOld + dt/J*(-f*normalBarotropicVelocityoldPerp
-                        !                             - g*grad(SSH) + G)
-                        normalBarotropicVelocitySubcycleNew(iEdge) &
-                          = (normalBarotropicVelocitySubcycleCur(iEdge) &
-                          + dt / nBtrSubcycles * (CoriolisTerm - gravity &
-                          * (sshSubcycleCur(cell2) - sshSubcycleCur(cell1) ) &
-                          / dcEdge(iEdge) + barotropicForcing(iEdge))) * edgeMask(1, iEdge)
+                          ! Compute the barotropic Coriolis term, -f*uPerp
+                          CoriolisTerm = 0.0_RKIND
+                          do i = 1, nEdgesOnEdge(iEdge)
+                             eoe = edgesOnEdge(i,iEdge)
+                             CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge) &
+                                          * normalBarotropicVelocitySubcycleCur(eoe) * fEdge(eoe)
+                          end do
+
+                          normalBarotropicVelocitySubcycleNew(iEdge) &
+                            = temp_mask &
+                            * (normalBarotropicVelocitySubcycleCur(iEdge) &
+                            + dt / nBtrSubcycles * (CoriolisTerm - gravity &
+                            * (sshSubcycleCur(cell2) - sshSubcycleCur(cell1) ) &
+                            / dcEdge(iEdge) + barotropicForcing(iEdge)))
+
                      end do
                      !$omp end do
 
@@ -851,15 +852,6 @@ module ocn_time_integration_split
                 nCells = nCellsArray( cellHaloComputeCounter )
                 nEdges = nEdgesArray( edgeHaloComputeCounter )
 
-                if (config_btr_solve_SSH2) then
-                   ! If config_btr_solve_SSH2=.true., then do NOT accumulate barotropicThicknessFlux in this SSH predictor
-                   ! section, because it will be accumulated in the SSH corrector section.
-                   barotropicThicknessFlux_coeff = 0.0_RKIND
-                else
-                   ! otherwise, DO accumulate barotropicThicknessFlux in this SSH predictor section
-                   barotropicThicknessFlux_coeff = 1.0_RKIND
-                endif
-
                 ! config_btr_gam1_velWt1 sets the forward weighting of velocity in the SSH computation
                 ! config_btr_gam1_velWt1=  1     flux = normalBarotropicVelocityNew*H
                 ! config_btr_gam1_velWt1=0.5     flux = 1/2*(normalBarotropicVelocityNew+normalBarotropicVelocityOld)*H
@@ -891,42 +883,51 @@ module ocn_time_integration_split
                            + config_btr_gam1_velWt1 * normalBarotropicVelocitySubcycleNew(iEdge)) &
                            * thicknessSum
 
-                    sshTend(iCell) = sshTend(iCell) + edgeSignOncell(i, iCell) * flux &
-                           * dvEdge(iEdge)
+                    sshTend(iCell) = sshTend(iCell) + edgeSignOncell(i, iCell) * flux * dvEdge(iEdge)
 
                   end do
 
                   ! SSHnew = SSHold + dt/J*(-div(Flux))
-                  sshSubcycleNew(iCell) = sshSubcycleCur(iCell) + dt / nBtrSubcycles * sshTend(iCell) / areaCell(iCell)
+                  sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
+                                          + dt / nBtrSubcycles * sshTend(iCell) / areaCell(iCell)
                 end do
                 !$omp end do
 
-                !$omp do schedule(runtime) private(cell1, cell2, sshEdge, thicknessSum, flux)
-                do iEdge = 1, nEdges
-                   cell1 = cellsOnEdge(1,iEdge)
-                   cell2 = cellsOnEdge(2,iEdge)
+                !! asarje: changed to avoid redundant computations when config_btr_solve_SSH2 is true
 
-                   sshEdge = 0.5_RKIND * (sshSubcycleCur(cell1) &
-                             + sshSubcycleCur(cell2) )
+                if (config_btr_solve_SSH2) then
 
-                   ! method 0: orig, works only without pbc:
-                   !thicknessSum = sshEdge + refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
+                  ! If config_btr_solve_SSH2=.true.,
+                  ! then do NOT accumulate barotropicThicknessFlux in this SSH predictor
+                  ! section, because it will be accumulated in the SSH corrector section.
+                  barotropicThicknessFlux_coeff = 0.0_RKIND
 
-                   ! method 1, matches method 0 without pbcs, works with pbcs.
-                   thicknessSum = sshEdge + min(bottomDepth(cell1), bottomDepth(cell2))
+                  ! othing else to do
 
-                   ! method 2: may be better than method 1.
-                   ! take average  of full thickness at two neighboring cells
-                   !thicknessSum = sshEdge + 0.5 *(  bottomDepth(cell1) &
-                   !                       + bottomDepth(cell2) )
+                else
 
-                   flux = ((1.0-config_btr_gam1_velWt1) * normalBarotropicVelocitySubcycleCur(iEdge) &
-                          + config_btr_gam1_velWt1 * normalBarotropicVelocitySubcycleNew(iEdge)) &
-                          * thicknessSum
+                  ! otherwise, DO accumulate barotropicThicknessFlux in this SSH predictor section
+                  barotropicThicknessFlux_coeff = 1.0_RKIND
 
-                   barotropicThicknessFlux(iEdge) = barotropicThicknessFlux(iEdge) + barotropicThicknessFlux_coeff * flux
-                end do
-                !$omp end do
+                  !$omp do schedule(runtime)
+                  do iEdge = 1, nEdges
+                     cell1 = cellsOnEdge(1,iEdge)
+                     cell2 = cellsOnEdge(2,iEdge)
+
+                     sshEdge = 0.5_RKIND * (sshSubcycleCur(cell1) + sshSubcycleCur(cell2))
+
+                     ! method 1, matches method 0 without pbcs, works with pbcs.
+                     thicknessSum = sshEdge + min(bottomDepth(cell1), bottomDepth(cell2))
+
+                     flux = ((1.0-config_btr_gam1_velWt1) * normalBarotropicVelocitySubcycleCur(iEdge) &
+                            + config_btr_gam1_velWt1 * normalBarotropicVelocitySubcycleNew(iEdge)) &
+                            * thicknessSum
+
+                     barotropicThicknessFlux(iEdge) = barotropicThicknessFlux(iEdge) + flux
+                  end do
+                  !$omp end do
+
+                endif
 
                 block => block % next
               end do  ! block
@@ -988,28 +989,36 @@ module ocn_time_integration_split
 
                    !$omp do schedule(runtime) private(cell1, cell2, eoe, CoriolisTerm, i, sshCell1, sshCell2)
                    do iEdge = 1, nEdges
-                     cell1 = cellsOnEdge(1,iEdge)
-                     cell2 = cellsOnEdge(2,iEdge)
 
-                     ! Compute the barotropic Coriolis term, -f*uPerp
-                     CoriolisTerm = 0.0_RKIND
-                     do i = 1, nEdgesOnEdge(iEdge)
-                        eoe = edgesOnEdge(i,iEdge)
-                        CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge) &
-                             !* normalBarotropicVelocitySubcycleNew(eoe) &
-                             * btrvel_temp(eoe) * fEdge(eoe)
-                     end do
+                     ! asarje: added to avoid redundant computations based on mask
+                     temp_mask = edgeMask(1,iEdge)
 
-                     ! In this final solve for velocity, SSH is a linear
-                     ! combination of SSHold and SSHnew.
-                     sshCell1 = (1-config_btr_gam2_SSHWt1) * sshSubcycleCur(cell1) + config_btr_gam2_SSHWt1 * sshSubcycleNew(cell1)
-                     sshCell2 = (1-config_btr_gam2_SSHWt1) * sshSubcycleCur(cell2) + config_btr_gam2_SSHWt1 * sshSubcycleNew(cell2)
+                       cell1 = cellsOnEdge(1,iEdge)
+                       cell2 = cellsOnEdge(2,iEdge)
 
-                     ! normalBarotropicVelocityNew = normalBarotropicVelocityOld + dt/J*(-f*normalBarotropicVelocityoldPerp
-                     !                             - g*grad(SSH) + G)
-                     normalBarotropicVelocitySubcycleNew(iEdge) = (normalBarotropicVelocitySubcycleCur(iEdge) &
-                         + dt / nBtrSubcycles *(CoriolisTerm - gravity *(sshCell2 - sshCell1) / dcEdge(iEdge) &
-                         + barotropicForcing(iEdge))) * edgeMask(1,iEdge)
+                       ! Compute the barotropic Coriolis term, -f*uPerp
+                       CoriolisTerm = 0.0_RKIND
+                       do i = 1, nEdgesOnEdge(iEdge)
+                         eoe = edgesOnEdge(i,iEdge)
+                         CoriolisTerm = CoriolisTerm &
+                                        + weightsOnEdge(i,iEdge) * btrvel_temp(eoe) * fEdge(eoe)
+                       end do
+
+                       ! In this final solve for velocity, SSH is a linear
+                       ! combination of SSHold and SSHnew.
+                       sshCell1 = (1 - config_btr_gam2_SSHWt1) * sshSubcycleCur(cell1) &
+                                  + config_btr_gam2_SSHWt1 * sshSubcycleNew(cell1)
+                       sshCell2 = (1 - config_btr_gam2_SSHWt1) * sshSubcycleCur(cell2) &
+                                  + config_btr_gam2_SSHWt1 * sshSubcycleNew(cell2)
+
+                       ! normalBarotropicVelocityNew = normalBarotropicVelocityOld + dt/J*(-f*normalBarotropicVelocityoldPerp
+                       !                             - g*grad(SSH) + G)
+                       normalBarotropicVelocitySubcycleNew(iEdge) = temp_mask &
+                            * (normalBarotropicVelocitySubcycleCur(iEdge) &
+                            + dt / nBtrSubcycles &
+                            * (CoriolisTerm - gravity * (sshCell2 - sshCell1) / dcEdge(iEdge) &
+                            + barotropicForcing(iEdge)))
+
                    end do
                    !$omp end do
 
@@ -1795,8 +1804,6 @@ module ocn_time_integration_split
          end if
 
          call mpas_timer_start('se final mpas reconstruct', .false.)
-         call mpas_threading_barrier()
-         !$omp master
          call mpas_reconstruct(meshPool, normalVelocityNew,  &
                           velocityX, velocityY, velocityZ,   &
                           velocityZonal, velocityMeridional, &
@@ -1806,8 +1813,6 @@ module ocn_time_integration_split
                           gradSSHX, gradSSHY, gradSSHZ,    &
                           gradSSHZonal, gradSSHMeridional, &
                           includeHalos = .true.)
-         !$omp end master
-         call mpas_threading_barrier()
          call mpas_timer_stop('se final mpas reconstruct')
 
          !$omp do schedule(runtime)
