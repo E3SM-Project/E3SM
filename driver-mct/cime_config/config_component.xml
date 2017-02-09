@@ -544,7 +544,7 @@
   <entry id="BATCH_SYSTEM">
      <type>char</type>
      <default_value>none</default_value>
-     <valid_values>pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
+     <valid_values>moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
      <group>config_batch</group>
      <file>env_batch.xml</file>
      <desc>The batch system type to use for this machine.</desc>
@@ -906,6 +906,7 @@
     <desc>logical to diagnose model timing at the end of the run</desc>
   </entry>
 
+
   <entry id="TIMER_LEVEL">
     <type>integer</type>
     <default_value>12</default_value>
@@ -914,12 +915,13 @@
     <desc>timer output depth</desc>
   </entry>
 
-  <entry id="TIMER_DETAIL">
-    <type>integer</type>
-    <default_value>2</default_value>
+  <entry id="SAVE_TIMING_DIR">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>timing</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer detail FIXME - add documentation</desc>
+    <desc>Where to auto archive timing data</desc>
   </entry>
 
   <entry id="PROFILE_PAPI_ENABLE">
@@ -931,16 +933,6 @@
     <desc>Enables the papi hardware counters in gptl
     The papi library must be included in the build step for
     this to work.</desc>
-  </entry>
-
-  <entry id="TPROF_TOTAL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>run_cesm</group>
-    <file>env_run.xml</file>
-    <desc>Determines number of times profiler is called over the model run period.
-    This sets values for tprof_option and tprof_n that determine the timing output file frequency
-    </desc>
   </entry>
 
   <entry id="COMP_RUN_BARRIERS">
@@ -1097,7 +1089,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,null</valid_values>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.gis20km,mpas.ais20km,null</valid_values>
     <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
