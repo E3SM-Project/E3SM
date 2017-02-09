@@ -15,7 +15,7 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
     # re-run create_test.
 
     # Update namelist files
-    print "Test '%s' had a namelist diff" % test_name
+    print "Test '%s' had namelist diff" % test_name
     if (not report_only and
         (force or raw_input("Update namelists (y/n)? ").upper() in ["Y", "YES"])):
         create_test_gen_args = " -g %s " % baseline_name if get_model() == "cesm" else " -g -b %s " % baseline_name
@@ -54,7 +54,7 @@ def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root
                 return True, None
 
 ###############################################################################
-def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None):
+def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None, no_skip_pass=False):
 ###############################################################################
     test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
     test_status_files = glob.glob("%s/%s/%s" % (test_root, test_id_glob, TEST_STATUS_FILENAME))
@@ -68,36 +68,35 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
         if (bless_tests in [[], None] or CIME.utils.match_any(test_name, bless_tests)):
             overall_result = ts.get_overall_test_status()
 
-            # Compute namelists status, False implies it diffed
+            # See if we need to bless namelist
             if (not hist_only):
-                if (ts.get_status(NAMELIST_PHASE) is not None):
-                    nl_no_bless = ts.get_status(NAMELIST_PHASE) == TEST_PASS_STATUS
+                if no_skip_pass:
+                    nl_bless = True
                 else:
-                    logging.warning("Test '%s' did not make it to namelist phase" % test_name)
-                    broken_blesses.append((test_name, "no namelist phase"))
-                    nl_no_bless = True
+                    nl_bless = ts.get_status(NAMELIST_PHASE) != TEST_PASS_STATUS
             else:
-                nl_no_bless = True
+                nl_bless = False
 
-            # Compute hist status, False implies it diffed
+            # See if we need to bless baselines
             if (not namelists_only):
                 run_result = ts.get_status(RUN_PHASE)
                 if (run_result is None):
                     broken_blesses.append((test_name, "no run phase"))
                     logging.warning("Test '%s' did not make it to run phase" % test_name)
-                    hist_no_bless = True
+                    hist_bless = False
                 elif (run_result != TEST_PASS_STATUS):
                     broken_blesses.append((test_name, "test did not pass"))
                     logging.warning("Test '%s' did not pass, not safe to bless" % test_name)
-                    hist_no_bless = True
+                    hist_bless = False
+                elif no_skip_pass:
+                    hist_bless = True
                 else:
-                    hist_no_bless = False
-
+                    hist_bless = ts.get_status(BASELINE_PHASE) != TEST_PASS_STATUS
             else:
-                hist_no_bless = True
+                hist_bless = False
 
             # Now, do the bless
-            if ( (nl_no_bless and hist_no_bless) or (nl_no_bless and namelists_only) or (hist_no_bless and hist_only) ):
+            if not nl_bless and not hist_bless:
                 print "Nothing to bless for test:", test_name, " overall status:", overall_result
             else:
 
@@ -108,13 +107,13 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
                     time.sleep(2)
 
                 # Bless namelists
-                if (not nl_no_bless):
+                if nl_bless:
                     success, reason = bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
                     if not success:
                         broken_blesses.append((test_name, reason))
 
                 # Bless hist files
-                if (not hist_no_bless):
+                if hist_bless:
                     success, reason = bless_history(test_name, test_dir, baseline_name, baseline_root, compiler, report_only, force)
                     if (not success):
                         broken_blesses.append((test_name, reason))
