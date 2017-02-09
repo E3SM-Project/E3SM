@@ -7,7 +7,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.preview_namelists import create_namelists
 from CIME.compare_namelists import is_namelist_file, compare_namelist_files
 from CIME.simple_compare import compare_files
-from CIME.utils import get_current_branch, append_status
+from CIME.utils import append_status
 from CIME.test_status import *
 
 import os, shutil, traceback, stat, glob
@@ -108,12 +108,10 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
             # baseline operations which may not directly impact the functioning of the viability of this case
             if compare and not compare_name:
                 compare_name = case.get_value("BASELINE_NAME_CMP")
-                compare_name = get_current_branch() if compare_name is None else compare_name
                 expect(compare_name, "Was asked to do baseline compare but unable to determine baseline name")
                 logging.info("Comparing namelists with baselines '%s'" % compare_name)
             if generate and not generate_name:
                 generate_name = case.get_value("BASELINE_NAME_GEN")
-                generate_name = get_current_branch() if generate_name is None else generate_name
                 expect(generate_name, "Was asked to do baseline generation but unable to determine baseline name")
                 logging.info("Generating namelists to baselines '%s'" % generate_name)
 
