@@ -612,6 +612,18 @@
     </values>
   </entry>
 
+  <entry id="gust_fac">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      wind gustiness factor
+    </desc>
+    <values>
+      <value>0.0D0</value>
+    </values>
+  </entry>
+
   <entry id="atm_gnam" modify_via_xml="ATM_GRID">
     <type>char</type>
     <category>mapping</category>

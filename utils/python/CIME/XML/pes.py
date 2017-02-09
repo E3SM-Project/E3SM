@@ -83,7 +83,7 @@ class Pes(GenericXML):
                                                           (compset_match == "any" or \
                                                            re.search(compset_match,compset)):
 
-                                points = int(grid_match!="any")*4+int(mach_match!="any")*3+\
+                                points = int(grid_match!="any")*3+int(mach_match!="any")*7+\
                                     int(compset_match!="any")*2+int(pesize_match!="any")
                                 if override and points > 0:
                                     for node in pes_node:
@@ -116,7 +116,7 @@ class Pes(GenericXML):
                                         logger.warn("compset_choice %s compset_match %s"%(compset_choice, compset_match))
                                         logger.warn("pesize_choice %s pesize_match %s"%(pesize_choice, pesize_match))
                                         logger.warn("points = %d"%points)
-                                        expect(False, "We dont expect to be here" )
+                                        expect(False, "More than one PE layout matches given PE specs")
         if not override:
             for node in pe_select:
                 vid = node.tag

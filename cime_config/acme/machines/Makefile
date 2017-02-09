@@ -78,7 +78,7 @@ endif
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
 
-CPPDEFS := $(USER_CPPDEFS)
+CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifneq ($(strip $(DEBUG)),TRUE)
@@ -745,20 +745,9 @@ ifeq ($(ULIBDEP),$(null))
                LNDLIB := liblnd.a
           endif
      endif
-     ifeq ($(findstring libclm.a,$(LNDLIB)),libclm.a)
-        ULIBDEP += $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib/$(LNDLIB)
-     else
-        ULIBDEP += $(LIBROOT)/$(LNDLIB)
-     endif
-     ifeq ($(MODEL),driver)
-         ifeq ($(findstring libclm.a,$(LNDLIB)),libclm.a)
-             INCLDIR += -I$(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
-         else
-             INCLDIR += -I$(EXEROOT)/lnd/obj
-         endif
-     endif
 
-
+     ULIBDEP += $(LIBROOT)/$(LNDLIB)
+     INCLDIR += -I$(EXEROOT)/lnd/obj
      ULIBDEP += $(LIBROOT)/libocn.a
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
