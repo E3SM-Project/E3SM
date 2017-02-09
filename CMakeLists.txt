@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
 include(ExternalProject)
+set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 project(cime_tests Fortran C)
-
+list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/externals/pio2/cmake")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_MODULE_DIRECTORY})
 include(CIME_utils)
-find_package(NETCDF)
+find_package(NetCDF)
 include_directories(${NETCDF_INCLUDE_DIRS})
 
-set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # TODO: Some of the below should be done in the relevant directories, not in
 # this top level CMakeLists.

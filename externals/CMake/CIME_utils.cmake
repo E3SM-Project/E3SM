@@ -31,6 +31,8 @@ set(CMAKE_COLOR_MAKEFILE "${USE_COLOR}")
 #=================================================
 
 include(${CMAKE_BINARY_DIR}/Macros.cmake RESULT_VARIABLE FOUND)
+list(APPEND CMAKE_MODULE_PATH "../pio2/cmake")
+
 set(CMAKE_C_FLAGS ${CFLAGS})
 set(CMAKE_Fortran_FLAGS ${FFLAGS})
 set (CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
