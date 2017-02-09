@@ -12,6 +12,7 @@ import shutil, traceback, stat, threading, time, glob
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
+from update_acme_tests import get_recommended_test_time
 from CIME.utils import append_status, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name
 from CIME.test_status import *
 from CIME.XML.machines import Machines
@@ -361,9 +362,13 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            (component,modspath) = test_mods.split('/',1)
-            testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
+            if CIME.utils.get_model() == "acme":
+                component = "allactive"
+                modspath = test_mods
+            else:
+                (component, modspath) = test_mods.split('/',1)
 
+            testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
             if not os.path.exists(test_mod_file):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
@@ -389,9 +394,16 @@ class TestScheduler(object):
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
-        elif test in self._test_data and "options" in self._test_data[test] and \
-                "wallclock" in self._test_data[test]['options']:
-            create_newcase_cmd += " --walltime %s" % self._test_data[test]['options']['wallclock']
+        else:
+            # model specific ways of setting time
+            if CIME.utils.get_model() == "acme":
+                recommended_time = get_recommended_test_time(test)
+                if recommended_time is not None:
+                    create_newcase_cmd += " --walltime %s" % recommended_time
+            else:
+                if test in self._test_data and "options" in self._test_data[test] and \
+                        "wallclock" in self._test_data[test]['options']:
+                    create_newcase_cmd += " --walltime %s" % self._test_data[test]['options']['wallclock']
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
@@ -508,8 +520,7 @@ class TestScheduler(object):
                                             "sharedlibroot.%s"%self._test_id))
             envtest.set_initial_values(case)
             case.set_value("TEST", True)
-            if self._save_timing:
-                case.set_value("SAVE_TIMING", True)
+            case.set_value("SAVE_TIMING", self._save_timing)
 
         return True
 

@@ -28,10 +28,14 @@ def bless_namelists(test_name, report_only, force, baseline_name, baseline_root)
         return True, None
 
 ###############################################################################
-def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root, report_only, force):
+def bless_history(test_name, testcase_dir_for_test, baseline_name, baseline_root, compiler, report_only, force):
 ###############################################################################
     with Case(testcase_dir_for_test) as case:
-        baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
+        if get_model() == "acme":
+            baseline_full_dir = os.path.join(baseline_root, compiler, baseline_name, case.get_value("CASEBASEID"))
+        else:
+            baseline_full_dir = os.path.join(baseline_root, baseline_name, case.get_value("CASEBASEID"))
+
         result, comments = compare_baseline(case, baseline_dir=baseline_full_dir)
         if result:
             return True, None
@@ -111,7 +115,7 @@ def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_i
 
                 # Bless hist files
                 if (not hist_no_bless):
-                    success, reason = bless_history(test_name, test_dir, baseline_name, baseline_root, report_only, force)
+                    success, reason = bless_history(test_name, test_dir, baseline_name, baseline_root, compiler, report_only, force)
                     if (not success):
                         broken_blesses.append((test_name, reason))
 
