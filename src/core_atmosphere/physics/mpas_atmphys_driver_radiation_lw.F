@@ -9,12 +9,11 @@
  module mpas_atmphys_driver_radiation_lw
  use mpas_kind_types
  use mpas_pool_routines
- use mpas_derived_types
+!use mpas_derived_types
 
  use mpas_atmphys_driver_radiation_sw, only: radconst
  use mpas_atmphys_constants
  use mpas_atmphys_manager, only: gmt,curr_julday,julday,year
- use mpas_atmphys_o3climatology, only: vinterp_ozn
  use mpas_atmphys_camrad_init
  use mpas_atmphys_rrtmg_lwinit
  use mpas_atmphys_vars
@@ -22,6 +21,7 @@
 !wrf physics:
  use module_ra_cam            
  use module_ra_rrtmg_lw
+ use module_ra_rrtmg_vinterp
 
  implicit none
  private
