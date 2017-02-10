@@ -82,7 +82,10 @@ module namelist_mod
     dcmip2_x_ueq,                     &
     dcmip2_x_h0,                      &
     dcmip2_x_d,                       &
-    dcmip2_x_xi
+    dcmip2_x_xi,                      &
+    dcmip2_x_xi,                      &
+    dcmip4_moist,                     &
+    dcmip4_X
 #endif
 
   use thread_mod,     only: nthreads, nthreads_accel, omp_set_num_threads, omp_get_max_threads, vert_num_threads, vthreads
@@ -601,6 +604,11 @@ module namelist_mod
     nsplit          = se_nsplit
     call MPI_bcast(vthreads  ,      1, MPIinteger_t, par%root,par%comm,ierr)
 #else
+    if(test_case == "dcmip2012_test4") then
+       rearth = rearth/dcmip4_X
+       omega = omega*dcmip4_X
+    endif
+
     call MPI_bcast(pertlim,         1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nmax,            1, MPIinteger_t, par%root,par%comm,ierr)
@@ -621,6 +629,8 @@ module namelist_mod
     call MPI_bcast(dcmip2_x_h0,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_x_d,      1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip2_x_xi,     1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(dcmip4_moist,    1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(dcmip4_X,        1, MPIreal_t,    par%root,par%comm,ierr)
 #endif
     call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(phys_tscale,     1, MPIreal_t,    par%root,par%comm,ierr)
