@@ -182,6 +182,12 @@ IF(${BUILD_HOMME_PESE})
   ADD_SUBDIRECTORY(pese-nlev60)
 ENDIF()
 
+IF(${BUILD_HOMME_THETA})
+  ADD_SUBDIRECTORY(theta-nlev20)
+  ADD_SUBDIRECTORY(theta-nlev30)
+  ADD_SUBDIRECTORY(theta-nlev60)
+ENDIF()
+
 # Add the test exec subdirs for the prim executable
 IF(${BUILD_HOMME_PRIM})
   ADD_SUBDIRECTORY(primA)

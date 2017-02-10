@@ -32,9 +32,12 @@ $WDIR/tests     directory containing all the HOMME regression tests
 HOMME has a large regression test suite.  For instructions on running and adding
 new tests, see homme/test/reg_test/README
 
-DCMIP tests provide a standard means for testing and comparing the ACME HOMME dycore with other dycores
-both hydrostatic and nonhydrostatic. They have been placed in their own dcmip_test directory for now.
-To run a DCMIP tests, navigate to the appropriate directory and type make install to install test scripts and namelists.
+DCMIP tests provide a standard means for testing and comparing the
+ACME HOMME dycore with other dycores both hydrostatic and
+nonhydrostatic. They have been placed in their own dcmip_test
+directory for now.  To run a DCMIP tests, run cmake to configure the model
+then navigate to the appropriate DCMIP directory in your working directory $WDIR
+and type make install to install test scripts and namelists.
 
 The CMAKE code could use some cleanup. 
 - user configured variables should not need to be prefixed by the exectuable name
@@ -42,6 +45,7 @@ The CMAKE code could use some cleanup.
   to maintain.
 - the test cases are created after all the test executables are created. In keeping
   with cmake's tree-like directory approach, the tests should be associated with their
+  test executable
 
 
 ************************************************************************************************

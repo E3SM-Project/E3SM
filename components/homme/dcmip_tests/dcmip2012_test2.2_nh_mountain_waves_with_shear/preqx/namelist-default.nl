@@ -1,23 +1,25 @@
 !
 ! namelist for dcmip2012 test2-2: nonhydro mountain waves without shear
+! for both preqx and theta-hydrostatic models
 !_______________________________________________________________________
 &ctl_nl
   nthreads          = 1
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2012_test2_2"       ! test identifier
+  theta_hydrostatic_mode = .true.
   ne                = 20                        ! number of elements per cube face
-  qsize             = 1                         ! num tracer fields
-  ndays             = 0                         ! num simulation days: 0 => use nmax steps
-  nmax              = 72000                     ! 7200s / 0.1s per step = 72000 steps
-  statefreq         = 500                       ! number of steps between screen dumps
+  qsize             = 0                         ! num tracer fields
+  nmax              = 7200                     ! 7200s / 0.1s per step = 72000 steps
+  statefreq         = 360                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 0.1                       ! largest timestep in seconds
+  rsplit            = 1                         ! vertical remap 
+  tstep             = 1.0                      ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5                         ! 1 => default method
-  smooth            = 0.05                      ! timestep smooting
-  nu                = 3.2e7                     ! reduced planet hyperviscosity hv/500^3
+  vert_remap_q_alg  = 0
+  nu                = 3.2e7                       ! reduced planet hyperviscosity hv/500^3
   nu_s              = 3.2e7
   nu_p              = 3.2e7
   hypervis_order    = 2                         ! 2 = hyperviscosity
@@ -36,9 +38,9 @@
 /
 &analysis_nl
   output_dir        = "./movies/"              ! destination dir for netcdf file
-  output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 36000,                     ! 100s /0.1s = 1000 steps between outputs
-  output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
+  output_timeunits  = 3,                            ! 1=days, 2=hours, 0=timesteps
+  output_frequency  = 720,                          ! 100s /0.1s = 1000 steps between outputs
+  output_varnames1  ='T','ps','u','v','geo','omega' ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16         

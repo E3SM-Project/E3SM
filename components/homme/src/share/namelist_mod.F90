@@ -549,6 +549,10 @@ module namelist_mod
              output_frequency(i) = output_frequency(i)*(secphr/tstep)
              output_start_time(i)= output_start_time(i)*(secphr/tstep)
              output_end_time(i)  = output_end_time(i)*(secphr/tstep)
+          else if(output_timeunits(i).eq.3) then  ! per_seconds
+             output_frequency(i) = output_frequency(i)/tstep
+             output_start_time(i)= output_start_time(i)/tstep
+             output_end_time(i)  = output_end_time(i)/tstep
           end if
           if(output_end_time(i)<0) then
              output_end_time(i)=nEndStep

@@ -1,8 +1,8 @@
-# macro for building thetah primitive equations executable
+# macro for building theta primitive equations executable
 
-macro(thetah_setup)
+macro(theta_setup)
 
-SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/thetah)
+SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta)
 SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
@@ -15,7 +15,7 @@ SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90)
 
 
-SET(THETAH_SRCS_F90
+SET(THETA_SRCS_F90
   ${TARGET_F90}
   ${SRC_DIR}/test_src/dcmip_tests.F90
   ${SRC_DIR}/test_src/asp_tests.F90
@@ -52,12 +52,12 @@ SET(THETHAH_SRCS_C
 )
 
 # If the user specified a file for custom compiler options use those
-IF (DEFINED THETAH_CUSTOM_FLAGS_FILE)
-  setCustomCompilerFlags(THETAH_CUSTOM_FLAGS_FILE THETAH_SRCS_F90)
+IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
+  setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETA_SRCS_F90)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${THETAH_SRCS} ${THETAH_SRCS_C} ${THETAH_SRCS_F90} )
+SET(EXEC_SOURCES ${THETA_SRCS} ${THETA_SRCS_C} ${THETA_SRCS_F90} )
 
 # Set up defaults
 IF (NOT PREQX_NP)
@@ -88,12 +88,12 @@ IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
-endmacro(thetah_setup)
+endmacro(theta_setup)
 
-thetah_setup()
+theta_setup()
 ############################################################################
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(thetah thetah ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
+createTestExec(theta theta ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
 
