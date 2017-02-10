@@ -15,10 +15,11 @@
   runtype           = 0                         ! 0 => new run
   tstep             = 0.1                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 1                         ! 1 => default method
+  tstep_type        = 5                         ! 1 => default method
   smooth            = 0.05                      ! timestep smooting
-  nu                = 8e6                       ! reduced planet hyperviscosity hv/500^3
-  nu_s              = 8e6
+  nu                = 3.2e7                     ! reduced planet hyperviscosity hv/500^3
+  nu_s              = 3.2e7
+  nu_p              = 3.2e7
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   rearth            = 12752.0                   ! reduced planet radius rearth = a/500.0
@@ -28,12 +29,6 @@
   dcmip2_x_d        = 5000.0                    ! mountain half-width   (m)
   dcmip2_x_xi       = 4000.0                    ! mountain wavelength   (m)
 /
-&filter_nl/
-&solver_nl
-  precon_method     = "identity"
-  maxits            = 50
-  tol               = 1.e-7
-/
 &vert_nl
   vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
@@ -42,7 +37,7 @@
 &analysis_nl
   output_dir        = "./movies/"              ! destination dir for netcdf file
   output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 1000,                     ! 100s /0.1s = 1000 steps between outputs
+  output_frequency  = 36000,                     ! 100s /0.1s = 1000 steps between outputs
   output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf

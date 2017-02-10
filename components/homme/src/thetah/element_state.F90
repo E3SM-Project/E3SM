@@ -62,7 +62,7 @@ module element_state
     real (kind=real_kind) :: divdp_proj(np,np,nlev)                   ! DSSed divdp
 
     real (kind=real_kind) :: FQ(np,np,nlev,qsize_d)                ! tracer forcing
-    real (kind=real_kind) :: FM(np,np,2,nlev)                      ! momentum forcing
+    real (kind=real_kind) :: FM(np,np,3,nlev)                      ! momentum forcing
     real (kind=real_kind) :: FT(np,np,nlev)                        ! temperature forcing
     real (kind=real_kind) :: pecnd(np,np,nlev)                        ! pressure perturbation from condensate
     real (kind=real_kind) :: FQps(np,np)                   ! forcing of FQ on ps_v

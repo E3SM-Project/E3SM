@@ -134,7 +134,13 @@ contains
     
     call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
-       write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
+       if (Time_at(tl%nstep) <= 3600) then
+          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)," [s]"
+       else if (Time_at(tl%nstep) <= 24*3600) then
+          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/3600," [h]"
+       else
+          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
+       endif
     end if
 
     TOTE     = 0

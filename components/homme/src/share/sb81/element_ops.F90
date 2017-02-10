@@ -161,18 +161,35 @@ subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
   elem%state%v   (i,j,1,k,n0:n1) = u
   elem%state%v   (i,j,2,k,n0:n1) = v
   elem%state%T   (i,j,k,n0:n1)   = T
-! OG Should it be set here?
-  elem%state%dp3d(i,j,k,n0:n1)   = dp
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phis(i,j)           = phis
 
-  ! set some diagnostic variables
-  elem%derived%dp(i,j,k)         = dp
-  elem%derived%phi(i,j,k)        = g*zm
-
 end subroutine
 
-  subroutine dcmip2012_tests_finalize(elem,hvcoord,ns,ne)
+
+  subroutine set_forcing_rayleigh_friction(elem, f_d, u0,v0, n)
+!
+! test cases which use rayleigh friciton will call this with the relaxation coefficient
+! f_d, and the reference state u0,v0.  Currently assume w0 = 0
+!
+  implicit none
+
+  type(element_t),  intent(inout)  :: elem
+  real(real_kind):: u0(np,np,nlev)
+  real(real_kind):: v0(np,np,nlev)
+  real(real_kind):: f_d(nlev)
+  integer :: n,k
+
+  do k=1,nlev
+     elem%derived%FM(:,:,1,k) = f_d(k) * ( elem%state%v(:,:,1,k,n) - u0(:,:,k) )
+     elem%derived%FM(:,:,2,k) = f_d(k) * ( elem%state%v(:,:,2,k,n) - v0(:,:,k) )
+  enddo
+  end subroutine 
+
+
+
+
+  subroutine tests_finalize(elem,hvcoord,ns,ne)
   implicit none
 
   type(hvcoord_t),     intent(in)  :: hvcoord
@@ -180,7 +197,7 @@ end subroutine
   integer,             intent(in)  :: ns,ne
 
   !do nothing
-  end subroutine dcmip2012_tests_finalize
+  end subroutine tests_finalize
 
 
 end module

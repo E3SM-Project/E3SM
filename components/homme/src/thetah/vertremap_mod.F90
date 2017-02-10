@@ -3,7 +3,7 @@
 #endif
 
 module vertremap_mod
-  use vertremap_base, only: remap1
+  use vertremap_base, only: remap1, remap1_nofilter
 
   use kinds, only                  : real_kind,int_kind
   use dimensions_mod, only         : np,nlev,qsize,nlevp,npsq
@@ -12,7 +12,7 @@ module vertremap_mod
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp, parallel_t
   use control_mod, only : vert_remap_q_alg
-
+  use element_ops, only : set_hydrostatic_phi
   implicit none
   private
   public :: vertical_remap
@@ -49,6 +49,7 @@ contains
   integer :: q
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
+  real (kind=real_kind), dimension(np,np,nlev)  :: phi_ref
   real (kind=real_kind), dimension(np,np,nlev,5)  :: ttmp
 
   call t_startf('vertical_remap')
@@ -103,6 +104,10 @@ contains
      endif
 
      if (rsplit>0) then
+        ! remove hydrostatic phi befor remap
+        call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta(:,:,:,np1),dp_star,phi_ref)
+        elem(ie)%state%phi(:,:,:,np1)=elem(ie)%state%phi(:,:,:,np1)-phi_ref(:,:,:)
+
         !  REMAP u,v,T from levels in dp3d() to REF levels
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
@@ -119,6 +124,9 @@ contains
         elem(ie)%state%theta(:,:,:,np1)=ttmp(:,:,:,3)/dp
         elem(ie)%state%phi(:,:,:,np1)=ttmp(:,:,:,4)/dp
         elem(ie)%state%w(:,:,:,np1)=ttmp(:,:,:,5)/dp
+
+        call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta(:,:,:,np1),dp,phi_ref)
+        elem(ie)%state%phi(:,:,:,np1)=elem(ie)%state%phi(:,:,:,np1)+phi_ref(:,:,:)
      endif
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp

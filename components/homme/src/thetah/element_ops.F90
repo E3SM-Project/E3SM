@@ -253,8 +253,6 @@ contains
 !==============================================================
 !  non-hydrostatic formulas
 !==============================================================
-
-
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
@@ -458,8 +456,6 @@ contains
 
 
 
-
-
  
   subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
 !
@@ -476,19 +472,40 @@ contains
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phi(i,j,k,n0:n1)      = g*zm
   elem%state%phis(i,j)           = phis
-! This needs to be debugged.
-  elem%state%dp3d(i,j,k,n0:n1)   = dp
+  elem%state%theta(i,j,k,n0:n1)=T/((p/p0)**kappa)
 
-  if (use_moisture) then
-     call abortmp('ERROR: thetah set_state not yet coded for moisture')
-  else
-     elem%state%theta(i,j,k,n0:n1)=T/((p/p0)**kappa)
-  endif
   end subroutine set_state
 
 
-  subroutine dcmip2012_tests_finalize(elem, hvcoord,ns,ne)
-! Need to switch this to set_hydrostatic and debug against analyt. \phi.
+
+  subroutine set_forcing_rayleigh_friction(elem, f_d, u0,v0, n)
+!
+! test cases which use rayleigh friciton will call this with the relaxation coefficient
+! f_d, and the reference state u0,v0.  Currently assume w0 = 0
+!
+  implicit none
+
+  type(element_t),  intent(inout)  :: elem
+  real(real_kind):: u0(np,np,nlev)
+  real(real_kind):: v0(np,np,nlev)
+  real(real_kind):: f_d(nlev)
+  integer :: n,k
+
+  do k=1,nlev
+     elem%derived%FM(:,:,1,k) = f_d(k) * ( elem%state%v(:,:,1,k,n) - u0(:,:,k) )
+     elem%derived%FM(:,:,2,k) = f_d(k) * ( elem%state%v(:,:,2,k,n) - v0(:,:,k) )
+     elem%derived%FM(:,:,3,k) = f_d(k) * ( elem%state%w(:,:,k,n)  )
+  enddo
+  end subroutine 
+
+
+
+
+
+  subroutine tests_finalize(elem, hvcoord,ns,ne)
+!
+! Now that all variables have been initialized, set phi to be in hydrostatic balance
+!
   implicit none
 
   type(hvcoord_t),     intent(in)  :: hvcoord
@@ -509,7 +526,7 @@ contains
     call copy_state(elem,ns,tl)
   enddo
 
-  end subroutine dcmip2012_tests_finalize
+  end subroutine tests_finalize
 
 end module
 

@@ -469,7 +469,8 @@ contains
 
      elem(ie)%state%theta(:,:,:,np1) = elem(ie)%state%theta(:,:,:,np1) + &
           dt*elem(ie)%derived%FT(:,:,:) / exner(:,:,:)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
+     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
+     elem(ie)%state%w(:,:,:,np1) = elem(ie)%state%w(:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
   enddo
   end subroutine applyCAMforcing_dynamics
 
@@ -592,11 +593,11 @@ contains
            do k=1,nlev
               exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
               theta_ref(:,:,k,ie) = (T0/exner(:,:,k) + T1)
-
+#if 0
               theta_ref(:,:,k,ie)=0
               phi_ref(:,:,k,ie)=0
               dp_ref(:,:,k,ie)=0
-              
+#endif              
               elem(ie)%state%theta(:,:,k,nt)=elem(ie)%state%theta(:,:,k,nt)-&
                    theta_ref(:,:,k,ie)
               elem(ie)%state%phi(:,:,k,nt)=elem(ie)%state%phi(:,:,k,nt)-&
@@ -969,7 +970,7 @@ contains
         vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%w(:,:,k,n0),deriv,elem(ie)%Dinv)
         v_gradw(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
              +elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2) 
-        stens(:,:,k,1) = -s_vadv(:,:,k,1) - v_gradw(:,:,k) - g*(1-dpnh_dp(:,:,k) )
+        stens(:,:,k,1) = -s_vadv(:,:,k,1) - v_gradw(:,:,k) -  g*(1-dpnh_dp(:,:,k) )
 
         vtemp(:,:,:)   = gradient_sphere(theta(:,:,k),deriv,elem(ie)%Dinv)
         v_gradtheta(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1) &
@@ -979,8 +980,7 @@ contains
         gradphi(:,:,:,k) = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
         v_gradphi(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*gradphi(:,:,1,k) &
              +elem(ie)%state%v(:,:,2,k,n0)*gradphi(:,:,2,k) 
-        stens(:,:,k,3) = -s_vadv(:,:,k,3) - v_gradphi(:,:,k) + g*elem(ie)%state%w(:,:,k,n0)                              
-
+        stens(:,:,k,3) = -s_vadv(:,:,k,3) - v_gradphi(:,:,k) + g*elem(ie)%state%w(:,:,k,n0)
 
         do j=1,np
            do i=1,np

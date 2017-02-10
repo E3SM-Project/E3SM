@@ -6,19 +6,21 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2012_test2_1"       ! test identifier
+  theta_hydrostatic_mode = .false.
+  rsplit = 0
   ne                = 20                        ! number of elements per cube face
   qsize             = 1                         ! num tracer fields
   ndays             = 0                         ! num simulation days: 0 => use nmax steps
-  nmax              = 72000                     ! 7200s / 0.1s per step = 72000 steps
-  statefreq         = 500                      ! number of steps between screen dumps
+  nmax              = 14400                     ! 7200s / 0.1s per step = 72000 steps
+  statefreq         = 30                      ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  tstep             = 0.1                       ! largest timestep in seconds
+  tstep             = 0.5                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 1                         ! 1 => default method
-  smooth            = 0.05                      ! timestep smooting
-  nu                = 8e6                       ! reduced planet hyperviscosity hv/500^3
-  nu_s              = 8e6
+  tstep_type        = 5                         ! 1 => default method
+  nu                = 3.2e7                       ! reduced planet hyperviscosity hv/500^3
+  nu_s              = 3.2e7
+  nu_p              = 3.2e7
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   rearth            = 12752.0                   ! reduced planet radius rearth = a/500.0

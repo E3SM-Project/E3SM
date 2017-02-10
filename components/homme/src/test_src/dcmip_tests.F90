@@ -11,12 +11,15 @@ use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_had
 use derivative_mod,       only: derivative_t, gradient_sphere
 use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
 use element_mod,          only: element_t
-use element_ops,          only: set_state, copy_state, dcmip2012_tests_finalize
 use element_state,        only: nt=>timelevels
 use hybrid_mod,           only: hybrid_t
 use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp
+
+! model specific routines - must be provided by each model:
+use element_ops,          only: set_state, copy_state, tests_finalize, set_forcing_rayleigh_friction
+
 
 implicit none
 
@@ -284,7 +287,7 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
         call set_state(u,v,w,T,ps,phis,p,dp,he(i,j,k),g, i,j,k,elem(ie),1,nt)
         call set_tracers(q,1,dp,i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo; 
-     call dcmip2012_tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
   
   end subroutine dcmip2012_test2_0
@@ -333,7 +336,7 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
         ! ... or we can use discrete hydro state to init \phi. 
         
      enddo; enddo; enddo; 
-     call dcmip2012_tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord,1,nt)
   enddo
 
   ! store initial velocity fields for use in sponge layer
@@ -365,7 +368,6 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
     zh      = 20000.d0        ! sponge-layer cutoff height
 
   real(rl) :: f_d(nlev)                                                 ! damping function
-  real(rl) :: z(np,np,nlev)
 
   ! Compute damping as a function of layer-midpoint height
   where(zm .ge. zh)
@@ -374,13 +376,23 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
     f_d = 0.0d0
   end where
 
+#if 0
   ! apply sponge layer forcing to momentum terms
   do ie=nets,nete
     do k=1,nlev
       elem(ie)%derived%FM(:,:,1,k) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,1,k,n) - u0(:,:,k,ie) )
       elem(ie)%derived%FM(:,:,2,k) = -f_d(k)/tau * ( elem(ie)%state%v(:,:,2,k,n) - v0(:,:,k,ie) )
+      elem(ie)%derived%FM(:,:,3,k) = -f_d(k)/tau * ( elem(ie)%state%w(:,:,k,n)  )
     enddo
   enddo
+#endif
+
+  f_d = -f_d/tau
+  do ie=nets,nete
+     call set_forcing_rayleigh_friction(elem(ie),f_d,u0(:,:,:,ie),v0(:,:,:,ie),n)
+  enddo
+
+
 
 end subroutine
 
