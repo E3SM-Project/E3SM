@@ -15,7 +15,7 @@
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
   rsplit            = 1                         ! vertical remap 
-  tstep             = 0.4                       ! largest timestep in seconds
+  tstep             = 0.40                      ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5                         ! 1 => default method
   vert_remap_q_alg  = 0
@@ -41,7 +41,7 @@
   output_timeunits  = 3,                            ! 1=days, 2=hours, 0=timesteps
   output_frequency  = 720,                          ! 100s /0.1s = 1000 steps between outputs
   output_varnames1  ='T','ps','u','v','geo','omega' ! variables to write to file
-  interp_type       = 0                         ! 0=native grid, 1=bilinear
+  interp_type       = 1                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16         
 /
