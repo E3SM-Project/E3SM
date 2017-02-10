@@ -43,7 +43,7 @@
   <comp_archive_spec compname="rtm" compclass="rof">
     <rest_file_extension>\.r.*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
+    <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.rof</rpointer_file>
       <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
@@ -53,7 +53,7 @@
   <comp_archive_spec compname="mosart" compclass="rof">
     <rest_file_extension>\.r.*</rest_file_extension>
     <hist_file_extension>\.h.*.nc$</hist_file_extension>
-    <rest_history_varname>unset</rest_history_varname>
+    <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.rof</rpointer_file>
       <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
@@ -124,7 +124,7 @@
 
   <comp_archive_spec compname="ww3" compclass="wav">
     <rest_file_extension>\.r.*</rest_file_extension>
-    <hist_file_extension>\.hi.*</hist_file_extension>
+    <hist_file_extension>\.hi\..*\.nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.wav</rpointer_file>
@@ -141,16 +141,18 @@
     </rpointer>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="dart" compclass="esp">
+  <comp_archive_spec compclass="esp" compname="dart">
     <rest_file_extension>inflate_restart.*</rest_file_extension>
-    <hist_file_extension>True_State.*</hist_file_extension>
-    <hist_file_extension>Prior_Diag.*</hist_file_extension>
-    <hist_file_extension>Posterior_Diag.*</hist_file_extension>
-    <hist_file_extension>obs_seq.*</hist_file_extension>
+    <hist_file_extension>\.True_State.*</hist_file_extension>
+    <hist_file_extension>\.Prior_Diag.*</hist_file_extension>
+    <hist_file_extension>\.Posterior_Diag.*</hist_file_extension>
+    <hist_file_extension>\..+\.posterior*</hist_file_extension>
+    <hist_file_extension>\..+\.prior*</hist_file_extension>
+    <hist_file_extension>\..+$_obs_seq.*</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.unset</rpointer_file>
-      <rpointer_content >unset</rpointer_content>
+      <rpointer_content>unset</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 
