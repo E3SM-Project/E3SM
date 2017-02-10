@@ -41,7 +41,7 @@ Examples:
 > %s RUNDIR
 
 # Show all vars containing the substring ROOT
-> %s -p '*.ROOT.*'
+> %s -p ROOT
 
 # Show all vars in the case
 > %s --listall
@@ -50,7 +50,7 @@ Examples:
 > %s --listall --subgroup=run_pio
 
 # Show all vars containing the substring ROOT in subgroup build_def
-> %s -p '*.ROOT.*' --subgroup build_def""" % ((os.path.basename(sys.argv[0]), ) * 7),
+> %s -p ROOT --subgroup build_def""" % ((os.path.basename(sys.argv[0]), ) * 7),
 
 description="Query the xml files for attributes and return their values." ,
 formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -198,9 +198,9 @@ def _main_func():
             if partial_match:
                 all_matching_vars = []
                 for variable in variables:
+                    regex = re.compile(variable)
                     for all_variable in all_variables:
-                        regex = re.compile(variable)
-                        if regex.match(all_variable):
+                        if regex.search(all_variable):
                             if subgroup is not None:
                                 vargroups = case.get_record_fields(all_variable, "group")
                                 if subgroup not in vargroups:
