@@ -169,4 +169,8 @@ module control_mod
   real(real_kind), public :: dcmip2_x_d       = 5000.0d0       ! mountain half width   (m)
   real(real_kind), public :: dcmip2_x_xi      = 4000.0d0       ! mountain wavelength   (m)
 
+  ! for dcmip 2014 test 4:
+  integer,         public :: dcmip4_moist     = 1
+  real(real_kind), public :: dcmip4_X         = 1.0d0 
+
 end module control_mod

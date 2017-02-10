@@ -20,7 +20,8 @@ use time_mod,       only: timelevel_t, time_at
 use asp_tests,            only: asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave
 use baroclinic_inst_mod,  only: binst_init_state, jw_baroclinic
 use dcmip_tests,          only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_test1_3,&
-                                dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3
+                                dcmip2012_test2_0, dcmip2012_test2_x, dcmip2012_test3,  &
+                                dcmip2012_test4_init
 use held_suarez_mod,      only: hs0_init_state
 
 implicit none
@@ -58,6 +59,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('dcmip2012_test2_1');  call dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,0)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,1)
     case('dcmip2012_test3');    call dcmip2012_test3  (elem,hybrid,hvcoord,nets,nete)
+    case('dcmip2012_test4');    call dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
     case('held_suarez0');       call hs0_init_state   (elem,hybrid,hvcoord,nets,nete,300.0_rl)
     case('jw_baroclinic');      call jw_baroclinic    (elem,hybrid,hvcoord,nets,nete)
     case default;               call abortmp('unrecognized test case')

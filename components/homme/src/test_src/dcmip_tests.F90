@@ -5,9 +5,10 @@ module dcmip_tests
 
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
-use control_mod,          only: test_case
+use control_mod,          only: test_case, dcmip4_moist, dcmip4_X
 use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_hadley, test1_advection_orography, &
                                 test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave
+use dcmip2012_test4,      only: test4_baroclinic_wave 
 use derivative_mod,       only: derivative_t, gradient_sphere
 use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
 use element_mod,          only: element_t
@@ -437,6 +438,48 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
   enddo; enddo; enddo; enddo
 
 end subroutine
+
+subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
+
+  type(element_t),    intent(inout), target :: elem(:)
+  type(hybrid_t),     intent(in)            :: hybrid 
+  type(hvcoord_t),    intent(inout)         :: hvcoord        
+  integer,            intent(in)            :: nets,nete      
+  integer,  parameter :: zcoords = 0                          ! we are not using z coords
+  logical,  parameter :: use_eta = .true.                     ! we are using hybrid eta coords
+
+!Some params from dcmip2012 tests need to be pulled to this level.
+!ps is needed to set pressure before the main int routine is called.
+  real(rl), parameter :: ps_test = 100000.0d0
+  integer :: i,j,k,ie                                                   !
+  real(rl):: lon,lat,hyam,hybm
+  real(rl):: p,z,phis,u,v,w,T,ps,rho,dp    !pointwise field values
+  real(rl):: q,q1,q2,qarray(3),pressure
+  integer :: qs
+  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 4: baroclinic'
+
+  ! set initial conditions
+
+  do ie = nets,nete; 
+    do k=1,nlev
+      pressure=hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps_test
+      do j=1,np; do i=1,np
+        call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
+
+!test4_baroclinic_wave(moist,X,lon,lat,p,z,zcoords,u,v,w,t,phis,ps,rho,q,q1,q2)
+!moist 0 or 1, X is Earth scale factor, zcoord=0, q is vapor, q1, q2 
+        call test4_baroclinic_wave(dcmip4_moist,dcmip4_X,lon,lat,&
+                                   pressure,z,zcoords,u,v,w,T,phis,ps,rho,q,q1,q2)
+        qarray(1)=q; qarray(2)=q1; qarray(3)=q2;
+        dp = pressure_thickness(ps,k,hvcoord)
+        call set_state(u,v,w,T,ps,phis,pressure,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+!init only <=qsize tracers
+        qs = min(qsize,3)
+        call set_tracers(qarray(1:qs),qs, dp,i,j,k,lat,lon,elem(ie))
+      enddo; enddo; enddo; 
+    call tests_finalize(elem(ie),hvcoord,1,nt)
+  enddo ! ie loop
+end subroutine dcmip2012_test4_init
 
 !_____________________________________________________________________
 subroutine get_evenly_spaced_z(zi,zm, zb,zt)
