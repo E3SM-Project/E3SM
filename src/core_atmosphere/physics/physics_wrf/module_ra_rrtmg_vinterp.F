@@ -1,10 +1,11 @@
-! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
-! and the University Corporation for Atmospheric Research (UCAR).
-!
-! Unless noted otherwise source code is licensed under the BSD license.
-! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
-!
+!=================================================================================================================
+!in module_ra_rrtmg_vinterp, the subroutine vinterp_ozn was originally the same as subroutine radozn and copied
+!from module_ra_cam.F. module_ra_cam.F was itself copied from WRF 3.3.0.
+
+!subroutine vinterp_ozn is called from the subroutines rrtmg_lwrad (in module_ra_rrtmg_lw.F) and rrtmg_swrad (in
+!module_ra_rrtmg_sw.F) for interpolation of climatological ozone onto the MPAS pressure levels. vinterp_ozn is
+!also called from subroutine radiation_lw_from_MPAS (in mpas_atmphys_driver_radiation_lw.F) for diagnostic only.
+!Laura D. Fowler (laura@ucar.edu)/2017-02-10.
 !=================================================================================================================
  module module_ra_rrtmg_vinterp
  use mpas_kind_types
