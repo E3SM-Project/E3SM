@@ -268,7 +268,9 @@ module namelist_mod
       dcmip2_x_ueq,       & !dcmip2-x windspeed at equator      (m/s)
       dcmip2_x_h0,        & !dcmip2-x mountain height           (m)
       dcmip2_x_d,         & !dcmip2-x mountain half-width       (m)
-      dcmip2_x_xi           !dcmip2-x mountain wavelength       (m)
+      dcmip2_x_xi,        & !dcmip2-x mountain wavelength       (m)
+      dcmip4_moist,       & !dcmip4   moist, 0 or 1
+      dcmip4_X              !dcmip4   scaling factor, nondim
     namelist /vert_nl/        &
       vform,              &
       vfile_mid,          &
