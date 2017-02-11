@@ -1,24 +1,22 @@
 !
-! namelist for dcmip2012 test2-2: nonhydro mountain waves without shear
-! for both preqx and theta-hydrostatic models
+! namelist for dcmip2012 test2-1: nonhydro mountain waves without shear
 !_______________________________________________________________________
 &ctl_nl
   nthreads          = 1
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
-  test_case         = "dcmip2012_test2_2"       ! test identifier
-  theta_hydrostatic_mode = .true.
+  test_case         = "dcmip2012_test2_1"       ! test identifier
+  theta_hydrostatic_mode = .false.
+  rsplit = 1
   ne                = 20                        ! number of elements per cube face
   qsize             = 0                         ! num tracer fields
-  nmax              = 7200                     ! 7200s / 0.1s per step = 72000 steps
-  statefreq         = 360                       ! number of steps between screen dumps
+  nmax              = 18000                     ! 7200s / 0.1s per step = 72000 steps
+  statefreq         = 360                      ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
-  rsplit            = 3                         ! vertical remap 
-  tstep             = 1.0                      ! largest timestep in seconds
+  tstep             = 0.4                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5                         ! 1 => default method
-  vert_remap_q_alg  = 0
   nu                = 3.2e7                       ! reduced planet hyperviscosity hv/500^3
   nu_s              = 3.2e7
   nu_p              = 3.2e7
@@ -31,6 +29,12 @@
   dcmip2_x_d        = 5000.0                    ! mountain half-width   (m)
   dcmip2_x_xi       = 4000.0                    ! mountain wavelength   (m)
 /
+&filter_nl/
+&solver_nl
+  precon_method     = "identity"
+  maxits            = 50
+  tol               = 1.e-7
+/
 &vert_nl
   vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
@@ -38,10 +42,10 @@
 /
 &analysis_nl
   output_dir        = "./movies/"              ! destination dir for netcdf file
-  output_timeunits  = 3,                            ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 720,                          ! 100s /0.1s = 1000 steps between outputs
-  output_varnames1  ='T','ps','u','v','geo','omega' ! variables to write to file
-  interp_type       = 1                         ! 0=native grid, 1=bilinear
+  output_timeunits  = 3,                        ! 1=days, 2=hours, 0=timesteps
+  output_frequency  = 720,                     ! 100s /0.1s = 1000 steps between outputs
+  output_varnames1  ='T','ps','u','v','omega','geo'   ! variables to write to file
+  interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16         
 /

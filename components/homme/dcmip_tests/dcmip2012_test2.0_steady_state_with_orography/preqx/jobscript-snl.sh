@@ -1,9 +1,9 @@
 #!/bin/tcsh 
 #
-#SBATCH --job-name d22
+#SBATCH --job-name d21
 #SBATCH --account=FY150001
-#SBATCH -N 12
-#SBATCH --time=0:10:00
+#SBATCH -N 25
+#SBATCH --time=3:00:00
 #SBATCH -p ec
 
 
@@ -16,21 +16,21 @@ if ( ${?SLURM_NNODES} ) then   # redsky
 endif
 
 # NH model
-#set EXEC = ../../../test_execs/theta-nlev60/theta-nlev60    
-#set namelist = namelist-nh-default.nl
+set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
+set namelist = namelist-nh-default.nl
 
 
 # hydrostatic theta
-#set EXEC = ../../../test_execs/theta-nlev60/theta-nlev60    
+#set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30    
 #set namelist = namelist-default.nl
 
 
 # hydrostatic preqx
-set EXEC = ../../../test_execs/preqx-nlev60-interp/preqx-nlev60-interp        # set name of executable
-set namelist = namelist-default.nl
+#set EXEC = ../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp        # set name of executable
+#set namelist = namelist-default.nl
 
 \cp -f $namelist input.nl
 date
 mpirun -np $NCPU $EXEC < input.nl
 date
-ncl plot_lon_vs_z.ncl
+ncl plot_z_lon.ncl

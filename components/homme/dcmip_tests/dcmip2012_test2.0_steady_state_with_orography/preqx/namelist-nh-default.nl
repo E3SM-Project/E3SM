@@ -6,15 +6,15 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2012_test2_0"       ! test identifier
-  theta_hydrostatic_mode = .true.
+  theta_hydrostatic_mode = .false.
   ne                = 30                        ! number of elements per cube face
   qsize             = 0                         ! num tracer fields
   ndays             = 6                         ! num simulation days: 0 = use nmax steps
   statefreq         = 288                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
-  tstep             = 300                       ! largest timestep in seconds
-  rsplit            = 3
+  tstep             = 1.0                        ! largest timestep in seconds
+  rsplit            = 1
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5                         ! 1 => default method
   nu                = 1e15                      ! hyperviscosity

@@ -193,7 +193,6 @@ module namelist_mod
       nthreads_accel,    &         ! number of threads per an accelerator process
       limiter_option,    &
       smooth,            &         ! timestep Filter
-      omega,             &
       pertlim,           &         ! temperature initial perturbation
       omega,                   &   ! scaled rotation rate
       rearth,                  &   ! scaled earth radius
