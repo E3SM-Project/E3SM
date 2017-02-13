@@ -937,6 +937,14 @@ Valid values: True or False
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_num_ri_smooth_loops" type="integer"
+	category="cvmix" group="cvmix">
+Number of smoothing passes over RiTopOfCell for LMD94 shear instability mixing
+
+Valid values: any integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_cvmix_shear_mixing_scheme" type="char*1024"
 	category="cvmix" group="cvmix">
 Choose between Pacanowski/Philander or Large et al. shear mixing
