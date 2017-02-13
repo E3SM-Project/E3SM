@@ -15,7 +15,7 @@ from CIME.case_cmpgen_namelists     import case_cmpgen_namelists
 
 logger = logging.getLogger(__name__)
 
-def submit(case, job=None, resubmit=False, no_batch=False):
+def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
     caseroot = case.get_value("CASEROOT")
 
     if job is None:
@@ -62,7 +62,7 @@ def submit(case, job=None, resubmit=False, no_batch=False):
     case.flush()
 
     logger.warn("submit_jobs %s"%job)
-    job_ids = case.submit_jobs(no_batch=no_batch, job=job)
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job, batch_args=batch_args)
     msg = "Submitted jobs %s"%job_ids
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 

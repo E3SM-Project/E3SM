@@ -1052,9 +1052,9 @@ class Case(object):
 
         return newcase
 
-    def submit_jobs(self, no_batch=False, job=None):
+    def submit_jobs(self, no_batch=False, job=None, batch_args=None):
         env_batch = self.get_env('batch')
-        return env_batch.submit_jobs(self, no_batch=no_batch, job=job)
+        return env_batch.submit_jobs(self, no_batch=no_batch, job=job, batch_args=batch_args)
 
     def get_mpirun_cmd(self, job="case.run"):
         env_mach_specific = self.get_env('mach_specific')
