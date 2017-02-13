@@ -71,11 +71,15 @@ def _interpret_value(value_str, filename):
         new_tokens = []
         for token in tokens:
             if "*" in token:
-                # the following ensure that the following to namelist settings trigger a match
-                # nmlvalue = 1,1,1 versus nmlvalue = 3*1
-                sub_tokens = [item.strip() for item in token.split("*")]
-                expect(len(sub_tokens) == 2, "Incorrect usage of multiplication in token '%s'" % token)
-                new_tokens.extend([sub_tokens[1]] * int(sub_tokens[0]))
+                try:
+                    # the following ensure that the following to namelist settings trigger a match
+                    # nmlvalue = 1,1,1 versus nmlvalue = 3*1
+                    sub_tokens = [item.strip() for item in token.split("*")]
+                    expect(len(sub_tokens) == 2, "Incorrect usage of multiplication in token '%s'" % token)
+                    new_tokens.extend([sub_tokens[1]] * int(sub_tokens[0]))
+                except:
+                    # User probably did not intend to use the * operator as a namelist multiplier
+                    new_tokens.append(token)
             else:
                 new_tokens.append(token)
 
@@ -111,6 +115,14 @@ def _parse_namelists(namelist_lines, filename):
     ... '''
     >>> _parse_namelists(teststr.splitlines(), 'foo')
     OrderedDict([('nml', OrderedDict([('val', "'foo'"), ('aval', ["'one'", "'two'", "'three'"]), ('maval', ["'one'", "'two'", "'three'", "'four'"]), ('dval', OrderedDict([('one', 'two'), ('three', 'four')])), ('mdval', OrderedDict([('one', 'two'), ('three', 'four'), ('five', 'six')])), ('nval', '1850')])), ('nml2', OrderedDict([('val2', '.false.')]))])
+
+    >>> teststr = '''&fire_emis_nl
+    ... fire_emis_factors_file = 'fire_emis_factors_c140116.nc'
+    ... fire_emis_specifier = 'bc_a1 = BC', 'pom_a1 = 1.4*OC', 'pom_a2 = A*B*C', 'SO2 = SO2'
+    ... /
+    ... '''
+    >>> _parse_namelists(teststr.splitlines(), 'foo')
+    OrderedDict([('fire_emis_nl', OrderedDict([('fire_emis_factors_file', "'fire_emis_factors_c140116.nc'"), ('fire_emis_specifier', ["'bc_a1 = BC'", "'pom_a1 = 1.4*OC'", "'pom_a2 = A*B*C'", "'SO2 = SO2'"])]))])
 
     >>> _parse_namelists('blah', 'foo')
     Traceback (most recent call last):
