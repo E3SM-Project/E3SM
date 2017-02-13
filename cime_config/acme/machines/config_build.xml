@@ -1545,6 +1545,21 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler MACH="grizzly" COMPILER="intel">
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+  <MPICC>mpicc</MPICC>
+  <MPICXX>mpic++</MPICXX>
+  <MPIFC>mpif90</MPIFC>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <SFC>ifort</SFC>
+  <SLIBS>
+    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -llapack -lblas</append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="wolf" COMPILER="gnu">
   <ALBANY_PATH><env>ALBANY_PATH</env></ALBANY_PATH>
   <CXX_LIBS>

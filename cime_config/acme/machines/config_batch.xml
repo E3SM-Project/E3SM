@@ -283,7 +283,7 @@
 	  <walltime ccsm_estcost="3">16:00:00</walltime>
 	</walltimes>
 	<queues>
-	   <queue walltimemax="10:00:00" default="true">moab</queue>
+	   <queue walltimemax="16:00:00" default="true">moab</queue>
 	</queues>
   </batch_system>
 
