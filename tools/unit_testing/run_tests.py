@@ -8,7 +8,7 @@ sys.path.append(os.path.join(_CIMEROOT, "tools", "unit_testing", "python"))
 
 from standard_script_setup import *
 from CIME.BuildTools.configure import configure
-from CIME.utils import expect, get_cime_root, run_cmd, stringify_bool
+from CIME.utils import run_cmd, stringify_bool
 from CIME.XML.machines import Machines
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
@@ -125,10 +125,10 @@ override the command provided by Machines."""
     return output, args.build_dir, args.build_type, args.clean,\
         args.cmake_args, args.compiler, args.enable_genf90, args.machine, args.machines_dir,\
         args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
-        args.use_env_compiler, args.use_openmp, args.xml_test_list, args.verbose
+        args.use_openmp, args.xml_test_list, args.verbose
 
 
-def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_args=None, clean=False, verbose=False, genf90=True, color=True):
+def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_args=None, clean=False, verbose=False, enable_genf90=True, color=True):
     """Run cmake in the current working directory.
 
     Arguments:
@@ -158,7 +158,7 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
         if verbose:
             cmake_command.append("-Wdev")
 
-        if genf90:
+        if enable_genf90:
             cmake_command.append("-DENABLE_GENF90=ON")
             genf90_dir = os.path.join(
                 _CIMEROOT, "externals", "genf90"
@@ -169,7 +169,7 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
             cmake_command.append("-DUSE_COLOR=OFF")
 
         if cmake_args is not None:
-            cmake_command.extend(options.cmake_args.split(" "))
+            cmake_command.extend(cmake_args.split(" "))
 
         run_cmd(" ".join(cmake_command), verbose=True, arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
@@ -200,7 +200,7 @@ def _main():
     output, build_dir, build_type, clean,\
         cmake_args, compiler, enable_genf90, machine, machines_dir,\
         mpilib, mpirun_command, test_spec_dir, ctest_args,\
-        use_env_compiler, use_openmp, xml_test_list, verbose \
+        use_openmp, xml_test_list, verbose \
         = parse_command_line(sys.argv)
 
 #=================================================
@@ -229,7 +229,6 @@ def _main():
 # Search for the CESM root directory.
 # First check the option. If not specified, look to see if there's a tools
 # directory two levels up (just as a sanity check).
-    model_root_dir = os.path.abspath(os.path.join(get_cime_root(),os.pardir))
     if machine is None:
         machine="yellowstone"
 
@@ -237,7 +236,6 @@ def _main():
         machines_file = os.path.join(machines_dir, "config_machines.xml")
         machobj = Machines(infile=machines_file, machine=machine)
     else:
-        cime_model = CIME.utils.get_model()
         machobj = Machines(machine=machine)
 
 # Create build directory if necessary.
@@ -270,7 +268,8 @@ def _main():
     os.environ["COMPILER"] = compiler
     os.environ["DEBUG"] = stringify_bool(debug)
     os.environ["MPILIB"] = mpilib
-    os.environ["compile_threaded"] = "true"
+    if use_openmp:
+        os.environ["compile_threaded"] = "true"
     os.environ["CC"] = find_executable("mpicc")
     os.environ["FC"] = find_executable("mpif90")
     os.environ["NETCDF_PATH"] = os.environ.get("NETCDF")
@@ -299,7 +298,8 @@ def _main():
 
             if not os.path.islink("Macros.cmake"):
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
-            cmake_stage(name, directory, build_type, mpirun_command, output, verbose=verbose)
+            cmake_stage(name, directory, build_type, mpirun_command, output, verbose=verbose,
+                        enable_genf90=enable_genf90, cmake_args=cmake_args)
             make_stage(name, output, clean=clean)
 
 
