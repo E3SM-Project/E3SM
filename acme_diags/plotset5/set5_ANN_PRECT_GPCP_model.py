@@ -61,7 +61,7 @@ elif var == 'T':
                 mv_p = f_in(var,level= plev)
                 
             except Exception as e: 
-                print str(e)+ 'execute vertical interpolation'
+                print str(plev)+ ' is not standard pressure level, execute vertical interpolation'
                 mv = f_in (var)
                 #Construct pressure level for interpolation
                 levels_orig = MV2.array(mv_plv[:])
@@ -69,7 +69,7 @@ elif var == 'T':
                 mv,levels_orig = genutil.grower(mv,levels_orig) # grow 1d levels_orig to mv dimention
                 #levels_orig.info()
     
-                mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,:,:], levels_orig[:,::-1,:,:], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
+                mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,], levels_orig[:,::-1,], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
 
         else:
             print( 'Vertical level is neither hybrid nor pressure. Abort')
