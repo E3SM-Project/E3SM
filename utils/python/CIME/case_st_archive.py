@@ -147,10 +147,13 @@ def _archive_history_files(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
-            if ninst_string:
-                newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
+            if compname == 'dart':
+                newsuffix = casename + suffix
             else:
-                newsuffix = casename + '.' + compname + ".*" + suffix
+                if ninst_string:
+                    newsuffix = casename + '.' + compname + ".*" + ninst_string[i] + suffix
+                else:
+                    newsuffix = casename + '.' + compname + ".*" + suffix
             logger.debug("short term archiving suffix is %s " %newsuffix)
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
@@ -194,7 +197,7 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
                 if matchobj:
                     histfile = matchobj.group(1).strip()
                     histfile = os.path.basename(histfile)
-                    # append histfile to the list ONLY if it exists in rundir before the archviving
+                    # append histfile to the list ONLY if it exists in rundir before the archiving
                     if os.path.isfile(os.path.join(rundir,histfile)): 
                         histfiles.append(histfile)
     return histfiles
