@@ -120,7 +120,7 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
         $grid_date .= '170111';
         $grid_prefix .= 'seaice.RRS18to6v3';
         $decomp_date .= '170111';
-        $decomp_prefix .= 'mpas-cice.graph.info.lblat_3.';
+        $decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS15to5' ) {
         $grid_date .= '151209';
         $grid_prefix .= 'seaice.RRS.15to5km';
@@ -160,7 +160,7 @@ while ($inst_counter <= $NINST_ICE) {
 		# for each instance
 		if ( (! -e "$RUNDIR/rpointer.ice${inst_string}") && (-e "$RUNDIR/rpointer.ice") ) {
 				$sysmod = "cp -v $RUNDIR/rpointer.ice $RUNDIR/rpointer.ice${inst_string}";
-				system($sysmod) == 0 or die "ERROR mpas-cice.buildnml: $sysmod failed: $?\n";
+				system($sysmod) == 0 or die "ERROR mpas-cice buildnml: $sysmod failed: $?\n";
 		}
     }
 
@@ -200,7 +200,7 @@ while ($inst_counter <= $NINST_ICE) {
     # at some point, we may want to pass both -- but for now this is simpler
     # also, pass in decomp_date for date_stamp, since that's the one required by the scripts
 
-    system($sysmod) == 0 or die "ERROR mpas-cice.buildnml: $sysmod failed: $?\n";
+    system($sysmod) == 0 or die "ERROR mpas-cice buildnml: $sysmod failed: $?\n";
 
     # -----------------------------------------------------
     # Copy resolved namelist to $RUNDIR
@@ -210,7 +210,7 @@ while ($inst_counter <= $NINST_ICE) {
     my $in_filename = "${default_in_filename}${inst_string}";
     if ( -d ${RUNDIR} ) {
 	$sysmod = "cp $CASEBUILD/mpas-ciceconf/mpas-cice_in ${RUNDIR}/$in_filename";
-	system($sysmod) == 0 or die "ERROR mpas-cice.buildnml: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR mpas-cice buildnml: $sysmod failed: $?\n";
     }
 
     # -----------------------------------------------------
@@ -222,9 +222,9 @@ while ($inst_counter <= $NINST_ICE) {
 
 # Write streams file if there isn't one in SourceMods
 
-if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
-	$sysmod = "cp $CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME $RUNDIR/$STREAM_NAME";
-	system($sysmod) == 0 or die "ERROR mpas-cice.buildnml: $sysmod fails: $?\n";
+if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
+	$sysmod = "cp $CASEROOT/SourceMods/src.mpascice/$STREAM_NAME $RUNDIR/$STREAM_NAME";
+	system($sysmod) == 0 or die "ERROR mpas-cice buildnml: $sysmod fails: $?\n";
 } else {
 	open(my $stream_file, "+>", "$RUNDIR/$STREAM_NAME");
 
@@ -306,6 +306,18 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '                  filename_interval="none"' . "\n";
 	print $stream_file '                  input_interval="none" />' . "\n";
 	print $stream_file '' . "\n";
+        print $stream_file '<immutable_stream name="StandardAerosolsInput"' . "\n";
+        print $stream_file '                  type="input"' . "\n";
+        print $stream_file '                  filename_template="standard_optics_mpas_cice.nc"' . "\n";
+        print $stream_file '                  filename_interval="none"' . "\n";
+        print $stream_file '                  input_interval="none" />' . "\n";
+        print $stream_file '' . "\n";
+        print $stream_file '<immutable_stream name="ModalAerosolsInput"' . "\n";
+        print $stream_file '                  type="input"' . "\n";
+        print $stream_file '                  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"' . "\n";
+        print $stream_file '                  filename_interval="none"' . "\n";
+        print $stream_file '                  input_interval="none" />' . "\n";
+        print $stream_file '' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
@@ -371,6 +383,15 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '	<var name="relativeSaltError"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
+        print $stream_file '<stream name="conservationCheckRestart"' . "\n";
+        print $stream_file '        type="input;output"' . "\n";
+        print $stream_file '        filename_template="mpascice.rst.am.conservationCheck.$Y-$M-$D_$S.nc"' . "\n";
+        print $stream_file '        filename_interval="output_interval"' . "\n";
+        print $stream_file '        clobber_mode="truncate"' . "\n";
+        print $stream_file '        packages="conservationCheckAMPKG"' . "\n";
+        print $stream_file '        input_interval="initial_only"' . "\n";
+        print $stream_file '        output_interval="stream:restart:output_interval">' . "\n";
+        print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="loadBalanceOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";

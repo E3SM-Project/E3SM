@@ -8,6 +8,7 @@ my @groups = qw(velocity_solver
                 io
                 decomposition
                 debug
+                subglacial_hydro
                 am_globalstats
                 am_regionalstats
                 );
