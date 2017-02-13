@@ -64,8 +64,8 @@ class CMakeMacroWriter(MacroWriterBase):
         # counter so that we get a different value next time.
         var_name = "CIME_TEMP_SHELL" + str(self._var_num)
         self._var_num += 1
-        set_up = "execute_process(COMMAND (" + command + \
-                 ") OUTPUT_VARIABLE " + var_name + \
+        set_up = "execute_process(COMMAND " + command + \
+                 " OUTPUT_VARIABLE " + var_name + \
                  " OUTPUT_STRIP_TRAILING_WHITESPACE)"
         tear_down = "unset(" + var_name + ")"
         return (set_up, "${" + var_name + "}", tear_down)
@@ -89,6 +89,7 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> s.getvalue()
         u'set(foo "bar")\\n'
         """
+        print "name %s value %s"%(name,value)
         self.write_line("set(" + name + ' "' + value + '")')
 
     def start_ifeq(self, left, right):

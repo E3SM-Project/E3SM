@@ -173,9 +173,9 @@ def setup_proxy():
 class N_TestUnitTest(unittest.TestCase):
 ###############################################################################
     def test_unit_test(self):
-        self._machine           = MACHINE.get_machine_name()
-        self._compiler          = MACHINE.get_default_compiler()
-        if (self._machine != "yellowstone" or self._compiler != "intel"):
+        machine           = MACHINE.get_machine_name()
+        compiler          = MACHINE.get_default_compiler()
+        if (machine != "yellowstone" or compiler != "intel"):
             #TODO: get rid of this restriction
             self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
         unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"tools","unit_testing","run_tests.py"))
