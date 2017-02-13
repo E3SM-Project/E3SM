@@ -28,7 +28,7 @@ begin
   ;_________________________________________________
   ; open file and read in data(time,lev,lat,long)
 
-  f     = addfile("./movies/dcmip2012_test2_01.nc","r")
+  f     = addfile("dcmip2012_test2_01.nc","r")
 	lat   = f->lat
 	lon   = f->lon
 	lev   = f->lev
@@ -48,14 +48,14 @@ begin
   if(isvar("t")) then
     t_index = t
   end if
-  print ("t_index: t = " + t_index)
+  print ("t_index: t = " + f->time(t_index))
 
 	equator   = nlat/2
 
   ;_________________________________________________
   ; load data
 
-  var_num = 0
+  var_num = 1
   if(isvar("n")) then
     var_num = n
   end if
@@ -87,10 +87,10 @@ begin
 
   norm = max(abs(var))
 
-  amax = 1.2
-  step = amax/6
+  amax = 0.25
+  step = amax/10
 
-  var = var/norm
+;  var = var/norm
 	;var@long_name = " "
 
   ;_________________________________________________
@@ -154,7 +154,7 @@ begin
   res1@lbAutoManage         = False
   res1@lbTitlePosition      = "Bottom"
   res1@lbOrientation        = "Vertical"
-  res1@lbTitleString        = sprintf("*%7.3f", norm)
+  res1@lbTitleString        = sprintf("max=%7.3f", norm)
   res1@cnFillPalette        = "temp_diff_18lev"; "WhBlGrYeRe"; "BlWhRe";  "BlueWhiteOrangeRed"; "BlueRed"; "cmp_b2r";
   res1@cnSpanFillPalette    = True
   res1@tiXAxisFontHeightF   = 0.020
@@ -165,8 +165,8 @@ begin
   res1@tiMainFontHeightF    = 0.020
   res1@gsnCenterStringFontHeightF = 0.025			; to set the gsnLeft/Center/RightString font heights,
   res1@cnLevelSelectionMode = "ManualLevels"
-  res1@cnMaxLevelValF       = amax-0.5*step;  0.9; ; max contour color label
-	res1@cnMinLevelValF       =-amax+0.5*step; -0.9; ; min contour color label
+  res1@cnMaxLevelValF       = amax; -0.5*step;  0.9; ; max contour color label
+  res1@cnMinLevelValF       =-amax; +0.5*step; -0.9; ; min contour color label
   res1@cnLevelSpacingF      = step;           0.1; ; contour color spacing
   res1@gsnCenterString      =""
 	res1@tiMainString         = "DCMIP 2012 Test 2-0  "+var_name+"   t = "+sprintf("%5.2f", time(t_index)) + " days"

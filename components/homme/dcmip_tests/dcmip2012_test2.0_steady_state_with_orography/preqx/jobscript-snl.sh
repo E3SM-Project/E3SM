@@ -33,4 +33,5 @@ set namelist = namelist-nh-default.nl
 date
 mpirun -np $NCPU $EXEC < input.nl
 date
+cd movies
 ncl plot_z_lon.ncl
