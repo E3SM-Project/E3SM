@@ -170,6 +170,20 @@ def setup_proxy():
     return False
 
 ###############################################################################
+class N_TestUnitTest(unittest.TestCase):
+###############################################################################
+    def test_unit_test(self):
+        self._machine           = MACHINE.get_machine_name()
+        self._compiler          = MACHINE.get_default_compiler()
+        if (self._machine != "yellowstone" or self._compiler != "intel"):
+            #TODO: get rid of this restriction
+            self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"tools","unit_testing","run_tests.py"))
+        test_spec_dir = os.path.join(os.path.dirname(unit_test_tool),"Examples", "interpolate_1d", "tests")
+        run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s --compiler intel --use-openmp --mpirun-command mpirun.lsf"\
+                            %(unit_test_tool,TEST_ROOT,test_spec_dir))
+
+###############################################################################
 class J_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     @classmethod
@@ -513,11 +527,11 @@ class TestCreateTestCommon(unittest.TestCase):
     ###########################################################################
         self._thread_error      = None
         self._unset_proxy       = setup_proxy()
-        self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._machine           = MACHINE.get_machine_name()
+        self._compiler          = MACHINE.get_default_compiler()
+        self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._baseline_area     = MACHINE.get_value("BASELINE_ROOT")
         self._testroot          = TEST_ROOT
-        self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
 

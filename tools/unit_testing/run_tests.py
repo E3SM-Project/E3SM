@@ -12,7 +12,7 @@ from CIME.utils import expect, get_cime_root, run_cmd, stringify_bool
 from CIME.XML.machines import Machines
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
-
+import subprocess
 #=================================================
 # Standard library modules.
 #=================================================
@@ -150,11 +150,11 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
         cmake_command = [
             "cmake",
             test_spec_dir,
-            "-DCMAKE_MODULE_DIRECTORY="+os.path.join(_CIMEROOT,"externals","CMake"),
+            "-DCESM_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"externals","CMake")),
+            "-DCMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"externals","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN="+mpirun_command,
             ]
-
         if verbose:
             cmake_command.append("-Wdev")
 
@@ -171,9 +171,7 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
         if cmake_args is not None:
             cmake_command.extend(options.cmake_args.split(" "))
 
-        macros_path = os.path.abspath("Macros.cmake")
-
-        run_cmd(" ".join(cmake_command), verbose=True)
+        run_cmd(" ".join(cmake_command), verbose=True, arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
 def make_stage(name, output, clean=False, verbose=True):
     """Run make in the current working directory.
@@ -191,7 +189,7 @@ def make_stage(name, output, clean=False, verbose=True):
     if verbose:
         make_command.append("VERBOSE=1")
 
-    run_cmd(" ".join(make_command), verbose=True)
+    run_cmd(" ".join(make_command), arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
 #=================================================
 # Iterate over input suite specs, building the tests.
@@ -259,7 +257,7 @@ def _main():
     if compiler is None:
         compiler = machobj.get_default_compiler()
 
-    debug = True
+    debug = False
     os_ = machobj.get_value("OS")
 
     # Create the environment, and the Macros.cmake file
@@ -283,6 +281,10 @@ def _main():
 
     for spec in suite_specs:
         os.chdir(build_dir)
+        if os.path.isdir(spec.name):
+            if clean:
+                rmtree(spec.name)
+
         if not os.path.isdir(spec.name):
             os.mkdir(spec.name)
 
@@ -317,7 +319,7 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd(" ".join(ctest_command), from_dir=label, verbose=True)
+            run_cmd(" ".join(ctest_command), from_dir=label, arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
 
 
