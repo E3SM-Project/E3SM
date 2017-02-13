@@ -15,13 +15,13 @@
 			"levels": []
 		},
 		{
-      "case_id": "set5_ANN_T200_ECMWF",
+      "case_id": "set5_ANN_T200_MERRA",
 			"variables": "T",
       "plev": 880,
 			"reference_data_set": "MERRA_ANN_climo.nc",
 			"season": "ANN",
       "test_name": "1850_alpha6_01 (yrs0070-0099)",
-      "output_file": "test_lev.png",
+      "output_file": "test.png",
       "regions": ["tropics", "global"],
 			"levels": []
 		}

@@ -8,7 +8,7 @@ test_data_path = '/Users/zhang40/Documents/ACME_simulations/'
 reference_data_set = 'MERRA_ANN_climo.nc'  # observation
 test_data_set = '20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'  # model
 variables = 'T'
-plev = 880
+plev = 850
 season = 'ANN'
 output_file = 'test_lev.png'
 

@@ -128,7 +128,11 @@ for parameter in parameters:
     #    parameter.test_levels = levels
     #    parameter.diff_levels = diff_levels
 
-    if var == 'T':
-        parameter.main_title = ' '.join([var, str(plev), 'mb', season])
+###not working
+#    if var == 'T':
+#        #parameter.main_title = ' '.join([var, str(plev), 'mb', season])
+#        parameter.main_title = ' '.join([var, season])
+#    else:
+#        parameter.main_title = ' '.join([var, season])
 
     plot_set_5.plot(obs_pr, mod_pr, obs_pr_reg, mod_pr_reg, parameter)
