@@ -1513,10 +1513,10 @@ file(WRITE query.out "${{{}}}")
 
         with open(macros_file_name, "w") as macros_file:
             for key in var:
-                macros_file.write("set(CIME_{} {})\n".format(key, var[key]))
+                macros_file.write("set({} {})\n".format(key, var[key]))
             macros_file.write(self.cmake_string)
         with open(cmakelists_name, "w") as cmakelists:
-            cmakelists.write(self._cmakelists_template.format("CIME_"+var_name))
+            cmakelists.write(self._cmakelists_template.format(var_name))
 
         environment = os.environ.copy()
         environment.update(env)

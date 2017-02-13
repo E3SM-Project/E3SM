@@ -300,7 +300,7 @@ def _main():
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
             cmake_stage(name, directory, build_type, mpirun_command, output, verbose=verbose,
                         enable_genf90=enable_genf90, cmake_args=cmake_args)
-            make_stage(name, output, clean=clean)
+            make_stage(name, output, clean=clean, verbose=verbose)
 
 
     for spec in suite_specs:

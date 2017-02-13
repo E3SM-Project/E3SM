@@ -89,7 +89,6 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> s.getvalue()
         u'set(foo "bar")\\n'
         """
-        print "name %s value %s"%(name,value)
         self.write_line("set(" + name + ' "' + value + '")')
 
     def start_ifeq(self, left, right):
