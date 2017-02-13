@@ -63,7 +63,9 @@ def _main_func(description):
             os.makedirs(pio_dir)
         os.chdir(pio_dir)
         casetools = case.get_value("CASETOOLS")
-        cmake_opts = "\" -D GENF90_PATH=$CIMEROOT/externals/genf90\""
+        cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/externals/genf90\
+                        -D CMAKE_MODULE_PATH=%s\" "%\
+            os.path.join(CIME.utils.get_cime_root(), "externals","pio2","cmake")
         gmake_opts = "%s/Makefile CASEROOT=%s MODEL=%s USER_CMAKE_OPTS=%s "\
             "PIO_LIBDIR=%s CASETOOLS=%s PIO_VERSION=%s MPILIB=%s "\
             "SHAREDLIBROOT=%s EXEROOT=%s COMPILER=%s BUILD_THREADED=%s "\

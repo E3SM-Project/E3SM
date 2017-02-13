@@ -79,8 +79,8 @@ class GradientInfo:
         """Draw a figure of this gradient info, and save it to
         output_filename"""
 
-        elev_min = min(self.elevclass_bounds)
-        elev_max = max(self.elevclass_bounds)
+#        elev_min = min(self.elevclass_bounds)
+#        elev_max = max(self.elevclass_bounds)
         field_min = min(self.field)
         field_max = max(self.field)
 
@@ -117,7 +117,7 @@ class GradientInfo:
 
         pylab.savefig(output_filename)
         plt.close()
-        
+
 
 def commandline_options():
     """Process command-line arguments"""
@@ -145,8 +145,8 @@ def commandline_options():
     parser.add_argument('--backtrace', action='store_true',
                         help='show exception backtraces as extra debugging output')
 
-    options = parser.parse_args()
-    return options
+    loptions = parser.parse_args()
+    return loptions
 
 def gradient_line(x, y, slope, x_lb, x_ub):
     """Returns two tuples (x1, x2), (y1, y2) giving the end points of a line
@@ -161,8 +161,8 @@ def gradient_line(x, y, slope, x_lb, x_ub):
     y_ub = y + (x_ub - x)*slope
     return ((x_lb, x_ub), (y_lb, y_ub))
 
-def main(options):
-    for input_filename in options.files:
+def main(loptions):
+    for input_filename in loptions.files:
         file_base = os.path.splitext(input_filename)[0]
         gradient_info = GradientInfo.from_file(input_filename)
         gradient_info.draw_figure(file_base + '.pdf')
@@ -174,6 +174,4 @@ if __name__ == "__main__":
         sys.exit(status)
     except Exception as error:
         print(str(error))
-        if options.backtrace:
-            traceback.print_exc()
         sys.exit(1)
