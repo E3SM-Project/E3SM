@@ -425,6 +425,15 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
 
 end subroutine
 
+
+subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
+  type(element_t),    intent(inout), target :: elem(:)
+  type(hybrid_t),     intent(in)            :: hybrid
+  type(hvcoord_t),    intent(inout)         :: hvcoord
+  integer,            intent(in)            :: nets,nete
+  call abortmp("Dcmip2012 Test 4 is not implemented for PESE target.") 
+end subroutine dcmip2012_test4_init
+
 #if 0
 
 !_____________________________________________________________________
