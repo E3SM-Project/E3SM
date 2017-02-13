@@ -1159,6 +1159,17 @@ for mct, etc.
         <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
 </compiler>
 
+<compiler MACH="grizzly" COMPILER="intel">
+        <MPICC>mpicc</MPICC>
+        <MPIFC>mpif90</MPIFC>
+        <MPICXX>mpic++</MPICXX>
+        <SFC>ifort</SFC>
+        <SCC>icc</SCC>
+        <SCXX>icpc</SCXX>
+        <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+        <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+</compiler>
+
 <compiler MACH="wolf" COMPILER="pgi">
 	<MPICC>mpicc</MPICC>
 	<MPIFC>mpif90</MPIFC>
