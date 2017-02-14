@@ -4,7 +4,7 @@ set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 project(cime_tests Fortran C)
 list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/externals/pio2/cmake")
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_MODULE_DIRECTORY})
+list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
 include(CIME_utils)
 find_package(NetCDF)
 include_directories(${NETCDF_INCLUDE_DIRS})

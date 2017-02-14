@@ -114,11 +114,11 @@ Quick guide to the CESM unit testing framework
 ** CESM_utils - run_tests.py interface
 
    The following CMake snippet will include the CESM utilities module. The
-   variable ${CESM_CMAKE_MODULE_DIRECTORY} is defined by run_tests.py, or
+   variable ${CIME_CMAKE_MODULE_DIRECTORY} is defined by run_tests.py, or
    by hand if you choose not to use run_tests.py and instead invoke cmake
    directly.
 
-     list(APPEND CMAKE_MODULE_PATH ${CESM_CMAKE_MODULE_DIRECTORY})
+     list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
      include(CESM_utils)
 
    CESM_utils processes a few options set by run_tests.py (e.g.

@@ -150,8 +150,7 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
         cmake_command = [
             "cmake",
             test_spec_dir,
-            "-DCESM_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"externals","CMake")),
-            "-DCMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"externals","CMake")),
+            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"externals","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN="+mpirun_command,
             ]
