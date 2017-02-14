@@ -296,6 +296,7 @@ class Grids(GenericXML):
                  ("OCN", component_grids[2]), \
                  ("ICE", component_grids[2]), \
                  ("ROF", component_grids[3]), \
+                 ("MASK", component_grids[4]), \
                  ("GLC", component_grids[5]), \
                  ("WAV", component_grids[6])]
         mask = component_grids[4]
