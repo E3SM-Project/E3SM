@@ -9,7 +9,7 @@ if(${CMAKE_C_COMPILER_ID} STREQUAL GNU)
   endfunction()
 elseif(${CMAKE_C_COMPILER_ID} STREQUAL Intel)
   function(make_cpp_command varname start_file end_file)
-    set(${varname} ${CMAKE_C_COMPILER} -E ${start_file} -o ${end_file}
+    set(${varname} "${CMAKE_C_COMPILER} -E ${start_file} -o ${end_file}"
       PARENT_SCOPE)
   endfunction()
 elseif(${CMAKE_C_COMPILER_ID} STREQUAL XL)
@@ -42,7 +42,7 @@ function(c_preprocess in_file out_file)
   set(includes ${ARGN})
 
   make_cpp_command(cpp_command ${start_file} ${end_file})
-
+  separate_arguments(cpp_command)
   add_custom_command(
     OUTPUT ${end_file}
     COMMAND ${cpp_command}

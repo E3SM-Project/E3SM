@@ -170,6 +170,68 @@ def setup_proxy():
     return False
 
 ###############################################################################
+class N_TestUnitTest(unittest.TestCase):
+###############################################################################
+    @classmethod
+    def setUpClass(cls):
+        cls._do_teardown = []
+        cls._testroot = os.path.join(TEST_ROOT, 'TestUnitTests')
+        cls._testdirs = []
+
+    def test_a_unit_test(self):
+        cls = self.__class__
+        machine           = MACHINE.get_machine_name()
+        compiler          = MACHINE.get_default_compiler()
+        if (machine != "yellowstone" or compiler != "intel"):
+            #TODO: get rid of this restriction
+            self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        test_dir = os.path.join(cls._testroot,"unit_tester_test")
+        cls._testdirs.append(test_dir)
+        os.makedirs(test_dir)
+        unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"tools","unit_testing","run_tests.py"))
+        test_spec_dir = os.path.join(os.path.dirname(unit_test_tool),"Examples", "interpolate_1d", "tests")
+        run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s --compiler intel --use-openmp --mpirun-command mpirun.lsf"\
+                            %(unit_test_tool,test_dir,test_spec_dir))
+        cls._do_teardown.append(test_dir)
+
+    def test_b_cime_f90_unit_tests(self):
+        cls = self.__class__
+        if (FAST_ONLY):
+            self.skipTest("Skipping slow test")
+
+        machine           = MACHINE.get_machine_name()
+        compiler          = MACHINE.get_default_compiler()
+        test_dir = os.path.join(cls._testroot,"driver_f90_tests")
+        cls._testdirs.append(test_dir)
+        os.makedirs(test_dir)
+        if (machine != "yellowstone" or compiler != "intel"):
+            #TODO: get rid of this restriction
+            self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        test_spec_dir = CIME.utils.get_cime_root()
+        unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"tools","unit_testing","run_tests.py"))
+
+        run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s --compiler %s --use-openmp --mpirun-command mpirun.lsf"\
+                            %(unit_test_tool,test_dir,test_spec_dir, compiler))
+        cls._do_teardown.append(test_dir)
+
+    @classmethod
+    def tearDownClass(cls):
+        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+
+        teardown_root = True
+        for tfile in cls._testdirs:
+            if tfile not in cls._do_teardown:
+                print "Detected failed test or user request no teardown"
+                print "Leaving case directory : %s"%tfile
+                teardown_root = False
+            elif do_teardown:
+                shutil.rmtree(tfile)
+        if teardown_root:
+            shutil.rmtree(cls._testroot)
+
+
+
+###############################################################################
 class J_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     @classmethod
@@ -513,11 +575,11 @@ class TestCreateTestCommon(unittest.TestCase):
     ###########################################################################
         self._thread_error      = None
         self._unset_proxy       = setup_proxy()
-        self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._machine           = MACHINE.get_machine_name()
+        self._compiler          = MACHINE.get_default_compiler()
+        self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_timestamp()
         self._baseline_area     = MACHINE.get_value("BASELINE_ROOT")
         self._testroot          = TEST_ROOT
-        self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
 
@@ -1499,10 +1561,10 @@ file(WRITE query.out "${{{}}}")
 
         with open(macros_file_name, "w") as macros_file:
             for key in var:
-                macros_file.write("set(CIME_{} {})\n".format(key, var[key]))
+                macros_file.write("set({} {})\n".format(key, var[key]))
             macros_file.write(self.cmake_string)
         with open(cmakelists_name, "w") as cmakelists:
-            cmakelists.write(self._cmakelists_template.format("CIME_"+var_name))
+            cmakelists.write(self._cmakelists_template.format(var_name))
 
         environment = os.environ.copy()
         environment.update(env)

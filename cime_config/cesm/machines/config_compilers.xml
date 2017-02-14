@@ -69,7 +69,7 @@ using a fortran linker.
      compilers -->
 <compiler>
   <CPPDEFS>
-    <append> -D<env>OS</env> -DCPR<shell> echo <env>COMPILER</env> | tr a-z A-z</shell></append>
+    <append> -D<env>OS</env> </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
   </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
@@ -83,7 +83,7 @@ using a fortran linker.
   </CFLAGS>
   <CPPDEFS>
     <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16</append>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY</append>
     <append MODEL="pop"> -DDIR=NOOP </append>
     <append MODEL="moby"> -DDIR=NOOP </append>
   </CPPDEFS>
@@ -117,7 +117,7 @@ using a fortran linker.
   </CMAKE_OPTS>
   <CPPDEFS>
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16</append>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
   </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
@@ -178,7 +178,7 @@ using a fortran linker.
   -C              => runtime array bounds checking (runs slow)
   -qinitauto=...  => initializes automatic variables
   -->
-    <append> -DFORTRAN_SAME </append>
+    <append> -DFORTRAN_SAME -DCPRIBM </append>
   </CPPDEFS>
   <CPRE>-WF,-D</CPRE>
   <FC_AUTO_R8>
@@ -214,7 +214,7 @@ using a fortran linker.
   </CFLAGS>
   <CPPDEFS>
     <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16</append>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
   </CPPDEFS>
   <CXX_LDFLAGS>
     <base> -cxxlib </base>
@@ -347,7 +347,7 @@ using a fortran linker.
     <!--  -Mlist          => Create a listing file             -->
     <!--  -F              => leaves file.f for each preprocessed file.F file  -->
     <!--  -time           => Print execution time for each compiler step  -->
-    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16  </append>
+    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16  -DCPRPGI </append>
   </CPPDEFS>
   <CXX_LINKER>CXX</CXX_LINKER>
   <FC_AUTO_R8>

@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
 include(ExternalProject)
+set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 project(cime_tests Fortran C)
-
-list(APPEND CMAKE_MODULE_PATH ${CESM_CMAKE_MODULE_DIRECTORY})
-include(CESM_utils)
-find_package(NETCDF)
+list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/externals/pio2/cmake")
+list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
+include(CIME_utils)
+find_package(NetCDF)
 include_directories(${NETCDF_INCLUDE_DIRS})
 
-set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # TODO: Some of the below should be done in the relevant directories, not in
 # this top level CMakeLists.
@@ -22,8 +22,8 @@ ExternalProject_add(mct_project
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}
   SOURCE_DIR ${MCT_ROOT}
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct
-  CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR}
-  BUILD_COMMAND make SRCDIR=${MCT_ROOT}
+  CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR} CFLAGS=${CFLAGS} FCFLAGS=${FFLAGS} SRCDIR=${MCT_ROOT} DEBUG="-g"
+  BUILD_COMMAND make
   # Leave things in <BINARY_DIR> rather than "installing", because we have
   # no need to move things around inside of the CMake binary directory.
   INSTALL_COMMAND :

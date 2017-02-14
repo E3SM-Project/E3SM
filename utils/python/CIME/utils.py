@@ -1032,6 +1032,11 @@ def copy_umask(src, dst):
     dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
     os.chmod(dst, octal_base - curr_umask)
 
+def stringify_bool(val):
+    val = False if val is None else val
+    expect(type(val) is bool, "Wrong type for val '%s'" % repr(val))
+    return "TRUE" if val else "FALSE"
+
 class SharedArea(object):
     """
     Enable 0002 umask within this manager

@@ -2,18 +2,13 @@
 functions for building CIME models
 """
 from CIME.XML.standard_module_setup  import *
-from CIME.utils                 import get_model, append_status, analyze_build_log
+from CIME.utils                 import get_model, append_status, analyze_build_log, stringify_bool
 from CIME.provenance            import save_build_provenance
 from CIME.preview_namelists     import create_namelists
 from CIME.check_lockedfiles     import check_lockedfiles, lock_file, unlock_file
 import glob, shutil, time, threading, gzip, subprocess
 
 logger = logging.getLogger(__name__)
-
-def stringify_bool(val):
-    val = False if val is None else val
-    expect(type(val) is bool, "Wrong type for val '%s'" % repr(val))
-    return "TRUE" if val else "FALSE"
 
 ###############################################################################
 def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
