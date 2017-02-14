@@ -14,6 +14,7 @@
 !   than the model-top index.
 !   Laura D. Fowler (laura@ucar.edu)/2016-09-23. 
 
+ use mpas_atmphys_functions,only: rslf,rsif
 
  implicit none
  private
@@ -47,8 +48,8 @@
      &                 ims,ime, jms,jme, kms,kme,                       &
      &                 its,ite, jts,jte, kts,kte)
 !
-      USE module_mp_thompson   , ONLY : rsif, rslf
-      IMPLICIT NONE
+!     USE module_mp_thompson   , ONLY : rsif, rslf
+!     IMPLICIT NONE
 !
       INTEGER, INTENT(IN):: ids,ide, jds,jde, kds,kde,                  &
      &                      ims,ime, jms,jme, kms,kme,                  &
