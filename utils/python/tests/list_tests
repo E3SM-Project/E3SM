@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+import unittest
+DEBUG = False
+
+def list_tests_from():
+    loader = unittest.TestLoader()
+    suite = loader.discover(".", pattern="scripts_regression_tests.py")
+    for atest in suite:
+        tests = atest._tests
+        if len(tests):
+            for atest in tests:
+                if DEBUG:
+                    print atest
+                for btest in atest._tests:
+                    btestname = btest.__str__().split()
+                    print btestname[1][1:-1] + "." + btestname[0]
+
+if __name__ == "__main__":
+  # Include the directories
+  list_tests_from()

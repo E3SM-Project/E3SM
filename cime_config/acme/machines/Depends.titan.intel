@@ -1,0 +1,5 @@
+shr_dmodel_mod.o: shr_dmodel_mod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+
+shr_scam_mod.o: shr_scam_mod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
