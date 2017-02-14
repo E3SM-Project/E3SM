@@ -1449,6 +1449,8 @@ do i=1,ncol
       nstend(i,1:pver)=0._r8
       prect(i)=0._r8
       preci(i)=0._r8
+      rflx(i,1:pver+1)=0._r8
+      sflx(i,1:pver+1)=0._r8
       qniic(i,1:pver)=0._r8
       qric(i,1:pver)=0._r8
       nsic(i,1:pver)=0._r8
@@ -1501,6 +1503,10 @@ do i=1,ncol
 
       prect(i)=0._r8
       preci(i)=0._r8
+
+      ! initialize fluxes
+      rflx(i,1:pver+1)=0._r8
+      sflx(i,1:pver+1)=0._r8
 
       do k=top_lev,pver
       
@@ -2822,6 +2828,10 @@ do i=1,ncol
             end if
          end if
 
+         ! Precip Flux Calculation (Diagnostic)
+         rflx(i,k+1)=(prect(i)-preci(i)) * rhow
+         sflx(i,k+1)=preci(i) * rhow
+
          ! if rain/snow mix ratio is zero so should number concentration
 
          if (qniic(i,k).lt.qsmall) then
@@ -2962,15 +2972,6 @@ do i=1,ncol
          if (arcld(i,k) .gt. 0._r8) then
             rercld(i,k)=rercld(i,k)/arcld(i,k)
          end if
-
-         !calculate precip fluxes and adding them to summing sub-stepping variables
-         !! flux is zero at top interface
-         rflx(i,1)=0.0_r8
-         sflx(i,1)=0.0_r8
-
-         !! calculating the precip flux (kg/m2/s) as mixingratio(kg/kg)*airdensity(kg/m3)*massweightedfallspeed(m/s)
-         rflx(i,k+1)=qrout(i,k)*rho(i,k)*umr(k)
-         sflx(i,k+1)=qsout(i,k)*rho(i,k)*ums(k)
 
          !! add to summing sub-stepping variable
          rflx1(i,k+1)=rflx1(i,k+1)+rflx(i,k+1)
@@ -3310,6 +3311,12 @@ do i=1,ncol
 
       prect(i) = prect(i)+(faloutc(pver)+falouti(pver))/g/nstep/1000._r8  
       preci(i) = preci(i)+(falouti(pver))/g/nstep/1000._r8
+
+      ! Add fallout to Precip Flux: note unit change m/s *kg/m3 = kg/m2
+      do k = top_lev,pver
+         rflx(i,k+1)=rflx(i,k+1)+(faloutc(k))/g/nstep/1000._r8 * rhow
+         sflx(i,k+1)=sflx(i,k+1)+(falouti(k))/g/nstep/1000._r8 * rhow
+      end do
 
    end do   !! nstep loop
 

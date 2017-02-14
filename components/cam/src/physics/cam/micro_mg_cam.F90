@@ -1120,6 +1120,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), target :: prodsnow(state%psetcols,pver)   ! Local production of snow
    real(r8), target :: cmeice(state%psetcols,pver)     ! Rate of cond-evap of ice within the cloud
    real(r8), target :: qsout(state%psetcols,pver)      ! Snow mixing ratio
+   real(r8), target :: cflx(state%psetcols,pverp)      ! grid-box avg liq condensate flux (kg m^-2 s^-1)
+   real(r8), target :: iflx(state%psetcols,pverp)      ! grid-box avg ice condensate flux (kg m^-2 s^-1)
    real(r8), target :: rflx(state%psetcols,pverp)      ! grid-box average rain flux (kg m^-2 s^-1)
    real(r8), target :: sflx(state%psetcols,pverp)      ! grid-box average snow flux (kg m^-2 s^-1)
    real(r8), target :: qrout(state%psetcols,pver)      ! Rain mixing ratio
@@ -1246,6 +1248,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), allocatable, target :: packed_prodsnow(:,:)
    real(r8), allocatable, target :: packed_cmeout(:,:)
    real(r8), allocatable, target :: packed_qsout(:,:)
+   real(r8), allocatable, target :: packed_cflx(:,:)
+   real(r8), allocatable, target :: packed_iflx(:,:)
    real(r8), allocatable, target :: packed_rflx(:,:)
    real(r8), allocatable, target :: packed_sflx(:,:)
    real(r8), allocatable, target :: packed_qrout(:,:)
@@ -1817,6 +1821,10 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call post_proc%add_field(p(cmeice), p(packed_cmeout))
    allocate(packed_qsout(mgncol,nlev))
    call post_proc%add_field(p(qsout), p(packed_qsout))
+   allocate(packed_cflx(mgncol,nlev+1))
+   call post_proc%add_field(p(cflx), p(packed_cflx))
+   allocate(packed_iflx(mgncol,nlev+1))
+   call post_proc%add_field(p(iflx), p(packed_iflx))
    allocate(packed_rflx(mgncol,nlev+1))
    call post_proc%add_field(p(rflx), p(packed_rflx))
    allocate(packed_sflx(mgncol,nlev+1))
@@ -2144,6 +2152,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_cmeout,          packed_dei,             &
                  packed_mu,              packed_lambdac,         &
                  packed_qsout,           packed_des,             &
+                 packed_cflx,    packed_iflx,                    &
                  packed_rflx,    packed_sflx,    packed_qrout,   &
                  reff_rain_dum,          reff_snow_dum,          &
                  packed_qcsevap, packed_qisevap, packed_qvres,   &
@@ -2264,14 +2273,26 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       end do
    end do
 
+   ! array must be zeroed beyond trop_cloud_top_pre otherwise undefined values will be used in cosp.
+   mgflxprc(:ncol,1:top_lev) = 0.0_r8
+   mgflxsnw(:ncol,1:top_lev) = 0.0_r8
+
    mgflxprc(:ncol,top_lev:pverp) = rflx(:ncol,top_lev:pverp) + sflx(:ncol,top_lev:pverp)
    mgflxsnw(:ncol,top_lev:pverp) = sflx(:ncol,top_lev:pverp)
+
+!ADD CONDENSATE FLUXES FOR MG2 (ice and snow already added for MG1)
+   if (micro_mg_version .ge. 2) then
+      mgflxprc(:ncol,top_lev:pverp) = mgflxprc(:ncol,top_lev:pverp) + iflx(:ncol,top_lev:pverp) + cflx(:ncol,top_lev:pverp)
+      mgflxsnw(:ncol,top_lev:pverp) = mgflxsnw(:ncol,top_lev:pverp) + iflx(:ncol,top_lev:pverp)
+   end if
 
    mgmrprc(:ncol,top_lev:pver) = qrout(:ncol,top_lev:pver) + qsout(:ncol,top_lev:pver)
    mgmrsnw(:ncol,top_lev:pver) = qsout(:ncol,top_lev:pver)
 
    !! calculate effective radius of convective liquid and ice using dcon and deicon (not used by code, not useful for COSP)
    !! hard-coded as average of hard-coded values used for deep/shallow convective detrainment (near line 1502/1505)
+   ! this needs to be replaced by clubb_liq_deep and clubb_ice+deep accordingly
+
    cvreffliq(:ncol,top_lev:pver) = 9.0_r8
    cvreffice(:ncol,top_lev:pver) = 37.0_r8
 
@@ -2358,6 +2379,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                cldfsnow(i,k) = 0.25_r8
             endif
          endif
+
          ! Calculate in-cloud snow water path
          icswp(i,k) = qsout(i,k) / max( mincld, cldfsnow(i,k) ) * state_loc%pdel(i,k) / gravit
       end do

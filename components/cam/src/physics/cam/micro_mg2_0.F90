@@ -366,6 +366,7 @@ subroutine micro_mg_tend ( &
      cmeout,                       deffi,                        &
      pgamrad,                      lamcrad,                      &
      qsout,                        dsout,                        &
+     lflx,               iflx,                                   &
      rflx,               sflx,               qrout,              &
      reff_rain,                    reff_snow,                    &
      qcsevap,            qisevap,            qvres,              &
@@ -501,6 +502,8 @@ subroutine micro_mg_tend ( &
   real(r8), intent(out) :: lamcrad(:,:)      ! slope of droplet distribution for optics (radiation) (1/m)
   real(r8), intent(out) :: qsout(:,:)        ! snow mixing ratio (kg/kg)
   real(r8), intent(out) :: dsout(:,:)        ! snow diameter (m)
+  real(r8), intent(out) :: lflx(:,:)         ! grid-box average liquid condensate flux (kg m^-2 s^-1)
+  real(r8), intent(out) :: iflx(:,:)         ! grid-box average ice condensate flux (kg m^-2 s^-1)
   real(r8), intent(out) :: rflx(:,:)         ! grid-box average rain flux (kg m^-2 s^-1)
   real(r8), intent(out) :: sflx(:,:)         ! grid-box average snow flux (kg m^-2 s^-1)
   real(r8), intent(out) :: qrout(:,:)        ! grid-box average rain mixing ratio (kg/kg)
@@ -951,6 +954,8 @@ subroutine micro_mg_tend ( &
 
   rflx=0._r8
   sflx=0._r8
+  lflx=0._r8
+  iflx=0._r8
 
   ! initialize precip output
 
@@ -1950,13 +1955,6 @@ subroutine micro_mg_tend ( &
   qsout = qs
   nsout = ns * rho
 
-  ! calculate precip fluxes
-  ! calculate the precip flux (kg/m2/s) as mixingratio(kg/kg)*airdensity(kg/m3)*massweightedfallspeed(m/s)
-  ! ---------------------------------------------------------------------
-
-  rflx(:,2:) = rflx(:,2:) + (qric*rho*umr*precip_frac)
-  sflx(:,2:) = sflx(:,2:) + (qsic*rho*ums*precip_frac)
-
   ! calculate n0r and lamr from rain mass and number
   ! divide by precip fraction to get in-precip (local) values of
   ! rain mass and number, divide by rhow to get rain number in kg^-1
@@ -2217,6 +2215,11 @@ subroutine micro_mg_tend ( &
 
         end do
 
+        ! Ice flux
+        do k = 1,nlev
+          iflx(i,k+1) = iflx(i,k+1) + falouti(k) / g / real(nstep)
+        end do
+
         ! units below are m/s
         ! sedimentation flux at surface is added to precip flux at surface
         ! to get total precip (cloud + precip water) rate
@@ -2283,6 +2286,11 @@ subroutine micro_mg_tend ( &
 
         end do
 
+        !Liquid condensate flux here
+        do k = 1,nlev
+           lflx(i,k+1) = lflx(i,k+1) + faloutc(k) / g / real(nstep)
+        end do
+
         prect(i) = prect(i)+faloutc(nlev)/g/real(nstep)/1000._r8
 
      end do
@@ -2332,6 +2340,11 @@ subroutine micro_mg_tend ( &
            dumr(i,k) = dumr(i,k)-faltndr*deltat/real(nstep)
            dumnr(i,k) = dumnr(i,k)-faltndnr*deltat/real(nstep)
 
+        end do
+
+        ! Rain Flux
+        do k = 1,nlev
+           rflx(i,k+1) = rflx(i,k+1) + faloutr(k) / g / real(nstep)
         end do
 
         prect(i) = prect(i)+faloutr(nlev)/g/real(nstep)/1000._r8
@@ -2384,6 +2397,11 @@ subroutine micro_mg_tend ( &
            dumns(i,k) = dumns(i,k)-faltndns*deltat/real(nstep)
 
         end do   !! k loop
+
+        ! Snow Flux
+        do k = 1,nlev
+           sflx(i,k+1) = sflx(i,k+1) + falouts(k) / g / real(nstep)
+        end do
 
         prect(i) = prect(i)+falouts(nlev)/g/real(nstep)/1000._r8
         preci(i) = preci(i)+falouts(nlev)/g/real(nstep)/1000._r8
