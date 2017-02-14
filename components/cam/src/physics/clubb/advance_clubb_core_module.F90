@@ -1047,17 +1047,19 @@ module advance_clubb_core_module
       ! To avoid inefficient implicit temporary array creation and
       ! copies in call to pdf_closure, perform copies explicitly.
       ! Copy in for intent(in) here
-      do i = 1, sclr_dim, 1
-        tmp_sclrm(i)          = sclrm(k,i)          ! intent(in)
-        tmp_wpsclrp_zt(i)     = wpsclrp_zt(k,i)     ! intent(in)
-        tmp_sclrp2_zt(i)      = sclrp2_zt(k,i)      ! intent(in)
-        tmp_sclrprtp_zt(i)    = sclrprtp_zt(k,i)    ! intent(in)
-        tmp_sclrpthlp_zt(i)   = sclrpthlp_zt(k,i)   ! intent(in)
-        tmp_wphydrometp_zt(i) = wphydrometp_zt(k,i) ! intent(in)
-        tmp_wp2hmp(i)         = wp2hmp(k,i)         ! intent(in)
-        tmp_rtphmp_zt(i)      = rtphmp_zt(k,i)      ! intent(in)
-        tmp_thlphmp_zt(i)     = thlphmp_zt(k,i)     ! intent(in)
-      enddo
+      if (sclr_dim > 0) then
+         do i = 1, sclr_dim, 1
+            tmp_sclrm(i)          = sclrm(k,i)          ! intent(in)
+            tmp_wpsclrp_zt(i)     = wpsclrp_zt(k,i)     ! intent(in)
+            tmp_sclrp2_zt(i)      = sclrp2_zt(k,i)      ! intent(in)
+            tmp_sclrprtp_zt(i)    = sclrprtp_zt(k,i)    ! intent(in)
+            tmp_sclrpthlp_zt(i)   = sclrpthlp_zt(k,i)   ! intent(in)
+            tmp_wphydrometp_zt(i) = wphydrometp_zt(k,i) ! intent(in)
+            tmp_wp2hmp(i)         = wp2hmp(k,i)         ! intent(in)
+            tmp_rtphmp_zt(i)      = rtphmp_zt(k,i)      ! intent(in)
+            tmp_thlphmp_zt(i)     = thlphmp_zt(k,i)     ! intent(in)
+         enddo
+      endif
 
       call pdf_closure & 
         ( hydromet_dim, p_in_Pa(k), exner(k), thv_ds_zt(k), wm_zt(k), & ! intent(in)
@@ -1099,14 +1101,16 @@ module advance_clubb_core_module
       ! To avoid inefficient implicit temporary array creation and
       ! copies in call to pdf_closure, perform copies explicitly.
       ! Copy out for intent(out) here
-      do i = 1, sclr_dim, 1
-        wpsclrprtp(k,i)    = tmp_wpsclrprtp(i)   ! intent(out)
-        wpsclrp2(k,i)      = tmp_wpsclrp2(i)     ! intent(out)
-        sclrpthvp_zt(k,i)  = tmp_sclrpthvp_zt(i) ! intent(out)
-        wpsclrpthlp(k,i)   = tmp_wpsclrpthlp(i)  ! intent(out)
-        sclrprcp_zt(k,i)   = tmp_sclrprcp_zt(i)  ! intent(out)
-        wp2sclrp(k,i)      = tmp_wp2sclrp(i)     ! intent(out)
-      enddo
+      if (sclr_dim > 0) then
+         do i = 1, sclr_dim, 1
+            wpsclrprtp(k,i)    = tmp_wpsclrprtp(i)   ! intent(out)
+            wpsclrp2(k,i)      = tmp_wpsclrp2(i)     ! intent(out)
+            sclrpthvp_zt(k,i)  = tmp_sclrpthvp_zt(i) ! intent(out)
+            wpsclrpthlp(k,i)   = tmp_wpsclrpthlp(i)  ! intent(out)
+            sclrprcp_zt(k,i)   = tmp_sclrprcp_zt(i)  ! intent(out)
+            wp2sclrp(k,i)      = tmp_wp2sclrp(i)     ! intent(out)
+         enddo
+      endif
 
     end do ! k = 1, gr%nz, 1
 
@@ -1222,17 +1226,19 @@ module advance_clubb_core_module
         ! To avoid inefficient implicit temporary array creation and
         ! copies in call to pdf_closure, perform copies explicitly.
         ! Copy in for intent(in) here
-        do i = 1, sclr_dim, 1
-          tmp_sclrm_zm(i)    = sclrm_zm(k,i)    ! intent(in)
-          tmp_wpsclrp(i)     = wpsclrp(k,i)     ! intent(in)
-          tmp_sclrp2(i)      = sclrp2(k,i)      ! intent(in)
-          tmp_sclrprtp(i)    = sclrprtp(k,i)    ! intent(in)
-          tmp_sclrpthlp(i)   = sclrpthlp(k,i)   ! intent(in)
-          tmp_wphydrometp(i) = wphydrometp(k,i) ! intent(in)
-          tmp_wp2hmp_zm(i)   = wp2hmp_zm(k,i)   ! intent(in)
-          tmp_rtphmp(i)      = rtphmp(k,i)      ! intent(in)
-          tmp_thlphmp(i)     = thlphmp(k,i)     ! intent(in)
-        enddo
+         if (sclr_dim > 0) then
+            do i = 1, sclr_dim, 1
+               tmp_sclrm_zm(i)    = sclrm_zm(k,i)    ! intent(in)
+               tmp_wpsclrp(i)     = wpsclrp(k,i)     ! intent(in)
+               tmp_sclrp2(i)      = sclrp2(k,i)      ! intent(in)
+               tmp_sclrprtp(i)    = sclrprtp(k,i)    ! intent(in)
+               tmp_sclrpthlp(i)   = sclrpthlp(k,i)   ! intent(in)
+               tmp_wphydrometp(i) = wphydrometp(k,i) ! intent(in)
+               tmp_wp2hmp_zm(i)   = wp2hmp_zm(k,i)   ! intent(in)
+               tmp_rtphmp(i)      = rtphmp(k,i)      ! intent(in)
+               tmp_thlphmp(i)     = thlphmp(k,i)     ! intent(in)
+            enddo
+         endif
 
         call pdf_closure & 
           ( hydromet_dim, p_in_Pa_zm(k), exner_zm(k), thv_ds_zm(k), wm_zm(k), & ! intent(in)
@@ -1275,15 +1281,16 @@ module advance_clubb_core_module
         ! To avoid inefficient implicit temporary array creation and
         ! copies in call to pdf_closure, perform copies explicitly.
         ! Copy out for intent(out) here
-        do i = 1, sclr_dim, 1
-          wpsclrprtp_zm(k,i)  = tmp_wpsclrprtp_zm(i)  ! intent(out)
-          wpsclrp2_zm(k,i)    = tmp_wpsclrp2_zm(i)    ! intent(out)
-          sclrpthvp(k,i)      = tmp_sclrpthvp(i)      ! intent(out)
-          wpsclrpthlp_zm(k,i) = tmp_wpsclrpthlp_zm(i) ! intent(out)
-          sclrprcp(k,i)       = tmp_sclrprcp(i)       ! intent(out)
-          wp2sclrp_zm(k,i)    = tmp_wp2sclrp_zm(i)    ! intent(out)
-        enddo
-
+        if (sclr_dim > 0) then
+           do i = 1, sclr_dim, 1
+              wpsclrprtp_zm(k,i)  = tmp_wpsclrprtp_zm(i)  ! intent(out)
+              wpsclrp2_zm(k,i)    = tmp_wpsclrp2_zm(i)    ! intent(out)
+              sclrpthvp(k,i)      = tmp_sclrpthvp(i)      ! intent(out)
+              wpsclrpthlp_zm(k,i) = tmp_wpsclrpthlp_zm(i) ! intent(out)
+              sclrprcp(k,i)       = tmp_sclrprcp(i)       ! intent(out)
+              wp2sclrp_zm(k,i)    = tmp_wp2sclrp_zm(i)    ! intent(out)
+           enddo
+        endif
       end do ! k = 1, gr%nz, 1
 
     else ! l_call_pdf_closure_twice is false
