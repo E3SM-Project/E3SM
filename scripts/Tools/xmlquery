@@ -63,7 +63,7 @@ epilog=textwrap.dedent(__doc__))
                         help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> )")
 
     parser.add_argument("-file" , "--file",
-                        help="depreciated option, do not use")
+                        help="deprecated option, do not use")
 
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
