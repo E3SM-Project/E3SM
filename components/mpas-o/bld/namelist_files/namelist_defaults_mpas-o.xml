@@ -197,6 +197,7 @@
 <config_cvmix_convective_basedOnBVF>.true.</config_cvmix_convective_basedOnBVF>
 <config_cvmix_convective_triggerBVF>0.0</config_cvmix_convective_triggerBVF>
 <config_use_cvmix_shear>.true.</config_use_cvmix_shear>
+<config_cvmix_num_ri_smooth_loops>2</config_cvmix_num_ri_smooth_loops>
 <config_cvmix_shear_mixing_scheme>'KPP'</config_cvmix_shear_mixing_scheme>
 <config_cvmix_shear_PP_nu_zero>0.005</config_cvmix_shear_PP_nu_zero>
 <config_cvmix_shear_PP_alpha>5.0</config_cvmix_shear_PP_alpha>
