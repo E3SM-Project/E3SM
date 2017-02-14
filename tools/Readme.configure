@@ -1,0 +1,36 @@
+SYNOPSIS
+     configure [options]
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -cimeroot            Specify the toplevel cime directory.
+                          default: use CIMEROOT environment variable
+     -mach <name>         Specify a machine (required).
+     -compiler <name>     Specify a compiler for the target machine (optional)
+                          default: default compiler for the target machine
+     -mpilib <name>       Specify an mpi library for the target machine (optional)
+                          default: mpi-serial  (most of the tools are serial apps)
+     -mach_dir <path>     Specify the locations of the Machines directory (optional).
+
+     -output_dir <path>   default: current working directory
+     -output_format <value> Output format can be make or cmake.
+                          default: make
+     -help [or -h]        Print usage to STDOUT (optional).
+     -loglevel
+
+EXAMPLES
+
+  ./configure -mach bluefire -compiler ibm -cimeroot /path/to/cime
+
+
+This tool is used to create Macros files to build CESM tools on supported machines.
+It will create a Macros file in make or cmake format along with the module support
+for the specified or default compiler.   It will also create two files
+.env_mach_specific.csh
+.env_mach_specific.sh
+
+Before you try to run make you should source the file above appropriate for your shell
+this will set the proper environment for supported systems which use modules.
