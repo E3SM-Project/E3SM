@@ -2022,7 +2022,9 @@
   <SUPPORTED_BY>gbisht at lbl dot gov </SUPPORTED_BY>
   <GMAKE_J>4</GMAKE_J>
   <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+  <PES_PER_NODE>16</PES_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <SAVE_TIMING_DIR>/global/scratch/$ENV{USER}</SAVE_TIMING_DIR>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
@@ -2037,6 +2039,31 @@
       <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
     </arguments>
   </mpirun>
+  <module_system type="module">
+    <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+    <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+    <init_path lang="perl">/usr/Modules/init/perl.pm</init_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="python">module</cmd_path>
+    <modules>
+      <command name="purge"/>
+      <command name="load">cmake</command>
+      <command name="load">perl xml-libxml switch</command>
+    </modules>
+    <modules compiler="intel">
+      <command name="load">intel/2015.6.233</command>
+      <command name="load">mkl</command>
+    </modules>
+    <modules compiler="intel" mpilib="mpi-serial">
+      <command name="load">netcdf/4.4.0-intel-s</command>
+    </modules>
+    <modules compiler="intel" mpilib="!mpi-serial">
+      <command name="load">openmpi</command>
+      <command name="load">netcdf/4.4.0-intel-p</command>
+    </modules>
+     </module_system>
 </machine>
 
 <machine MACH="lawrencium-lr2">
@@ -2057,8 +2084,9 @@
   <SUPPORTED_BY>gbisht at lbl dot gov</SUPPORTED_BY>
   <GMAKE_J>4</GMAKE_J>
   <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+  <PES_PER_NODE>12</PES_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-
+  <SAVE_TIMING_DIR>/global/scratch/$ENV{USER}</SAVE_TIMING_DIR>
   <mpirun mpilib="mpi-serial">
     <executable>mpirun</executable>
     <arguments>
@@ -2073,6 +2101,31 @@
       <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
     </arguments>
   </mpirun>
+  <module_system type="module">
+    <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+    <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+    <init_path lang="perl">/usr/Modules/init/perl.pm</init_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="python">module</cmd_path>
+    <modules>
+      <command name="purge"/>
+      <command name="load">cmake</command>
+      <command name="load">perl xml-libxml switch</command>
+    </modules>
+    <modules compiler="intel">
+      <command name="load">intel/2015.6.233</command>
+      <command name="load">mkl</command>
+    </modules>
+    <modules compiler="intel" mpilib="mpi-serial">
+      <command name="load">netcdf/4.4.0-intel-s</command>
+    </modules>
+    <modules compiler="intel" mpilib="!mpi-serial">
+      <command name="load">openmpi</command>
+      <command name="load">netcdf/4.4.0-intel-p</command>
+    </modules>
+     </module_system>
 </machine>
 
 <default_run_suffix>
