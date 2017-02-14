@@ -16,7 +16,7 @@ from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
 
-def _submit(case, job=None, resubmit=False, no_batch=False):
+def _submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
     caseroot = case.get_value("CASEROOT")
 
     if job is None:
@@ -63,13 +63,13 @@ def _submit(case, job=None, resubmit=False, no_batch=False):
     case.flush()
 
     logger.warn("submit_jobs %s" % job)
-    job_ids = case.submit_jobs(no_batch=no_batch, job=job)
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job, batch_args=batch_args)
     msg = "Submitted jobs %s" % job_ids
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
-def submit(case, job=None, resubmit=False, no_batch=False):
+def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
     try:
-        _submit(case, job=job, resubmit=resubmit, no_batch=no_batch)
+        _submit(case, job=job, resubmit=resubmit, no_batch=no_batch, batch_args=batch_args)
     except:
         # If something failed in the batch system, make sure to mark
         # the test as failed if we are running a test.
