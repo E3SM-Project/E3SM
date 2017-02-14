@@ -3336,6 +3336,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
              trim(field % field) == 'SM007028' .or. &
              trim(field % field) == 'SM028100' .or. &
              trim(field % field) == 'SM100255' .or. &
+             trim(field % field) == 'SM100289' .or. &
              trim(field % field) == 'ST000010' .or. &
              trim(field % field) == 'ST010040' .or. &
              trim(field % field) == 'ST040100' .or. &
@@ -3345,6 +3346,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
              trim(field % field) == 'ST007028' .or. &
              trim(field % field) == 'ST028100' .or. &
              trim(field % field) == 'ST100255' .or. &
+             trim(field % field) == 'ST100289' .or. &
              trim(field % field) == 'PRES' .or. &
              trim(field % field) == 'PRESSURE' .or. &
              trim(field % field) == 'SNOW' .or. &
@@ -3360,6 +3362,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
                 trim(field % field) == 'SM007028' .or. &
                 trim(field % field) == 'SM028100' .or. &
                 trim(field % field) == 'SM100255' .or. &
+                trim(field % field) == 'SM100289' .or. &
                 trim(field % field) == 'ST000010' .or. &
                 trim(field % field) == 'ST010040' .or. &
                 trim(field % field) == 'ST040100' .or. &
@@ -3369,6 +3372,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
                 trim(field % field) == 'ST007028' .or. &
                 trim(field % field) == 'ST028100' .or. &
                 trim(field % field) == 'ST100255' .or. &
+                trim(field % field) == 'ST100289' .or. &
                 trim(field % field) == 'SNOW' .or. &
                 trim(field % field) == 'SEAICE' .or. &
                 trim(field % field) == 'SKINTEMP') then
@@ -3719,6 +3723,26 @@ write(0,*) 'Interpolating SM100255'
                ndims = 2
                dzs_fg(k,:) = 255.-100.
                zs_fg(k,:) = 255.
+            else if (trim(field % field) == 'SM100289') then
+write(0,*) 'Interpolating SM100289'
+
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 1.0
+
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
+               k = 4
+               ndims = 2
+               dzs_fg(k,:) = 289.-100.
+               zs_fg(k,:) = 289.
             else if (trim(field % field) == 'ST000010') then
 write(0,*) 'Interpolating ST000010'
 
@@ -3908,6 +3932,27 @@ write(0,*) 'Interpolating ST100255'
                ndims = 2
                dzs_fg(k,:) = 255.-100.
                zs_fg(k,:) = 255.
+            else if (trim(field % field) == 'ST100289') then
+write(0,*) 'Interpolating ST100289'
+
+               interp_list(1) = SIXTEEN_POINT
+               interp_list(2) = FOUR_POINT
+               interp_list(3) = W_AVERAGE4
+               interp_list(4) = SEARCH
+               interp_list(5) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 285.0
+
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
+               k = 4
+               ndims = 2
+               dzs_fg(k,:) = 289.-100.
+               zs_fg(k,:) = 289.
             else if (trim(field % field) == 'SNOW') then
 write(0,*) 'Interpolating SNOW'
 
