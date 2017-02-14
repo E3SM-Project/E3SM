@@ -239,6 +239,19 @@
     </queues>
    </batch_system>
 
+   <batch_system MACH="sooty" type="slurm" >
+     <directives>
+       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive>--mail-type=END</directive>
+       <directive>--mail-user=email@pnnl.gov</directive>
+       <directive>--output=slurm.out</directive>
+       <directive>--error=slurm.err</directive>
+     </directives>
+    <queues>
+      <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">slurm</queue>
+    </queues>
+   </batch_system>
+
   <batch_system MACH="skybridge" type="slurm" >
     <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
