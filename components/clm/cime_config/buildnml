@@ -38,7 +38,6 @@ my $RUN_STARTDATE	= `./xmlquery  RUN_STARTDATE	   -value`;
 my $RUN_REFCASE		= `./xmlquery  RUN_REFCASE	   -value`;
 my $RUN_REFDATE		= `./xmlquery  RUN_REFDATE	   -value`;
 my $RUN_REFTOD		= `./xmlquery  RUN_REFTOD	   -value`;
-my $GLC_SMB		= `./xmlquery  GLC_SMB		   -value`;
 
 my @dirs = ("${CIMEROOT}/utils/perl5lib");
 unshift @INC, @dirs;
@@ -161,7 +160,10 @@ while ($inst_counter <= $NINST_LND) {
     # -----------------------------------------------------
 
     my $glc_opts = "";
-    if ("$COMP_GLC" ne "sglc" ) {$glc_opts = "-glc_present -glc_smb .$GLC_SMB. ";}
+    if ("$COMP_GLC" ne "sglc" ) {
+        my $GLC_SMB		= `./xmlquery  GLC_SMB		   -value`;
+        $glc_opts = "-glc_present -glc_smb .$GLC_SMB. ";
+    }
 
     my $usecase = " ";
     if ($CLM_NML_USE_CASE ne "UNSET") {$usecase = "-use_case $CLM_NML_USE_CASE";}
