@@ -60,7 +60,9 @@ OR
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.sharedlib_only, args.model_only, args.clean, args.clean_all
+    cleanlist = args.clean if args.clean is None or len(args.clean) else comps
+
+    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all
 
 ###############################################################################
 def _main_func(description):

@@ -118,7 +118,7 @@ class SystemTestsCommon(object):
                          sharedlib_only=sharedlib_only, model_only=model_only)
 
     def clean_build(self, comps=None):
-        build.clean(self._case, cleanlist=comps)
+        build.clean(self._case, cleanlist=comps if comps is not None else [])
 
     def run(self):
         """

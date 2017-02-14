@@ -503,21 +503,32 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
 
+def cleantree(base, ignoredirs=None):
+    """
+    clean all files below base level, leave directories and top level files
+    """
+    ignoredirs.append(base)
+    for root, _, files in os.walk(base, topdown=False):
+        if root not in ignoredirs:
+            for name in files:
+                os.remove(os.path.join(root, name))
+
+
 ###############################################################################
 def clean(case, cleanlist=None, clean_all=False):
 ###############################################################################
     caseroot = case.get_value("CASEROOT")
-    if clean_all or cleanlist is not None and len(cleanlist) == 0:
+    if clean_all:
         # If cleanlist is empty just remove the bld directory
         exeroot = case.get_value("EXEROOT")
         if os.path.isdir(exeroot):
-            logging.info("removing directory %s" %exeroot)
-            shutil.rmtree(case.get_value("EXEROOT"))
+            logging.info("cleaning directory %s" %exeroot)
+            cleantree(exeroot, ignoredirs=[os.path.join(exeroot,"lib")])
         # if clean_all is True also remove the sharedlibpath
         sharedlibroot = case.get_value("SHAREDLIBROOT")
-        if clean_all and os.path.isdir(sharedlibroot):
-            logging.info("removing directory %s" %sharedlibroot)
-            shutil.rmtree(sharedlibroot)
+        if sharedlibroot != exeroot and os.path.isdir(sharedlibroot):
+            logging.warn("cleaning directory %s" %sharedlibroot)
+            cleantree(sharedlibroot)
     else:
         debug           = case.get_value("DEBUG")
         use_esmf_lib    = case.get_value("USE_ESMF_LIB")
