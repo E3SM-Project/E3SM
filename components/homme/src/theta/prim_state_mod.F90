@@ -589,7 +589,7 @@ contains
           write(iulog,'(a,2e22.14)')'horiz adv KE-w terms, possibly nonzero   :',KEhorz2
           write(iulog,'(a,2e22.14)')'Tot IE advection vert =0                 :',IEvert
           write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert = 0         :',PEhorz,PEvert       
-          write(iulog,'(a,2e22.14)')'(T1+S1 abs/rel = 0)                      :',S1+T1, dabs(S1+T1)/dsqrt(S1**2+T1**2)
+          write(iulog,'(a,2e22.14)')'(T1+S1 abs/rel = 0)                      :',S1+T1, abs(S1+T1)/dsqrt(S1**2+T1**2)
           write(iulog,'(a,2e22.14)')'(S1,T1)                                  :',S1,T1
           write(iulog,'(a,2e22.14)')'(T2+S2 = 0)                              :',T2+S2
           
