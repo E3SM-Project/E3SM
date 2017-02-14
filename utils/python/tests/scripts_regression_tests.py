@@ -211,20 +211,23 @@ class N_TestUnitTest(unittest.TestCase):
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"tools","unit_testing","run_tests.py"))
 
         run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s --compiler %s --use-openmp --mpirun-command mpirun.lsf"\
-                            %(unit_test_tool,cls._testroot,test_spec_dir, compiler))
+                            %(unit_test_tool,test_dir,test_spec_dir, compiler))
         cls._do_teardown.append(test_dir)
-        cls._do_teardown.append(cls._testroot)
 
     @classmethod
     def tearDownClass(cls):
         do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
 
+        teardown_root = True
         for tfile in cls._testdirs:
             if tfile not in cls._do_teardown:
                 print "Detected failed test or user request no teardown"
                 print "Leaving case directory : %s"%tfile
+                teardown_root = False
             elif do_teardown:
                 shutil.rmtree(tfile)
+        if teardown_root:
+            shutil.rmtree(cls._testroot)
 
 
 
