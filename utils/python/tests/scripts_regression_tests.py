@@ -172,24 +172,38 @@ def setup_proxy():
 ###############################################################################
 class N_TestUnitTest(unittest.TestCase):
 ###############################################################################
+    @classmethod
+    def setUpClass(cls):
+        cls._do_teardown = []
+        cls._testroot = os.path.join(TEST_ROOT, 'TestUnitTests')
+        cls._testdirs = []
+
     def test_a_unit_test(self):
+        cls = self.__class__
         machine           = MACHINE.get_machine_name()
         compiler          = MACHINE.get_default_compiler()
         if (machine != "yellowstone" or compiler != "intel"):
             #TODO: get rid of this restriction
             self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        test_dir = os.path.join(cls._testroot,"unit_tester_test")
+        cls._testdirs.append(test_dir)
+        os.makedirs(test_dir)
         unit_test_tool = os.path.abspath(os.path.join(CIME.utils.get_cime_root(),"tools","unit_testing","run_tests.py"))
         test_spec_dir = os.path.join(os.path.dirname(unit_test_tool),"Examples", "interpolate_1d", "tests")
         run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s --compiler intel --use-openmp --mpirun-command mpirun.lsf"\
-                            %(unit_test_tool,TEST_ROOT,test_spec_dir))
+                            %(unit_test_tool,test_dir,test_spec_dir))
+        cls._do_teardown.append(test_dir)
 
     def test_b_cime_f90_unit_tests(self):
+        cls = self.__class__
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
         machine           = MACHINE.get_machine_name()
         compiler          = MACHINE.get_default_compiler()
-
+        test_dir = os.path.join(cls._testroot,"driver_f90_tests")
+        cls._testdirs.append(test_dir)
+        os.makedirs(test_dir)
         if (machine != "yellowstone" or compiler != "intel"):
             #TODO: get rid of this restriction
             self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
@@ -197,8 +211,20 @@ class N_TestUnitTest(unittest.TestCase):
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"tools","unit_testing","run_tests.py"))
 
         run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s --compiler %s --use-openmp --mpirun-command mpirun.lsf"\
-                            %(unit_test_tool,TEST_ROOT,test_spec_dir, compiler))
+                            %(unit_test_tool,cls._testroot,test_spec_dir, compiler))
+        cls._do_teardown.append(test_dir)
+        cls._do_teardown.append(cls._testroot)
 
+    @classmethod
+    def tearDownClass(cls):
+        do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+
+        for tfile in cls._testdirs:
+            if tfile not in cls._do_teardown:
+                print "Detected failed test or user request no teardown"
+                print "Leaving case directory : %s"%tfile
+            elif do_teardown:
+                shutil.rmtree(tfile)
 
 
 
