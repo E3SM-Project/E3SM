@@ -11,11 +11,11 @@ import plot_set_5
 import glob
 import os
 import fnmatch
-import re
 
 
 def make_parameters(orginal_parameter):
-    f_data = open('set5_diags.json').read()
+    #f_data = open('set5_diags.json').read()
+    f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
     parameters = []
@@ -31,6 +31,23 @@ parser = acme_diags.acme_parser.ACMEParser()
 orginal_parameter = parser.get_parameter()
 parameters = make_parameters(orginal_parameter)
 
+def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
+    """regrid transient variable toward lower resolution of two variables"""
+
+    axes1 = mv1.getAxisList()
+    axes2 = mv2.getAxisList()
+
+    if len(axes1[1]) <= len(axes2[1]): # use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
+        mv_grid = mv1.getGrid()
+        mv1_reg = mv1
+        mv2_reg = mv2.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
+    else:
+        mv_grid = mv2.getGrid()
+        mv2_reg = mv2
+        mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
+    return mv1_reg, mv2_reg
+    
+
 
 for parameter in parameters:
 
@@ -39,6 +56,8 @@ for parameter in parameters:
 
     test_data_path = parameter.test_data_path
 #    test_data_set = parameter.test_data_set # model
+#    filename1=test_data_path + test_data_set
+#    filename2=reference_data_path + reference_data_set
 
     var = parameter.variables
     season = parameter.season
@@ -57,86 +76,85 @@ for parameter in parameters:
             print filename
             filename2 = filename
     
-#        filename1=test_data_path + test_data_set
-#        filename2=reference_data_path + reference_data_set
         print filename1, filename2
+
         if var == 'PRECT':
-            f_obs = cdms2.open(filename2)
             f_mod = cdms2.open(filename1)
+            f_obs = cdms2.open(filename2)
             if ref_name == 'TRMM': #TRMM region following AMWG  latitude=(-38,38)
-                obs_pr = f_obs(var, latitude=(-38,38))
-                mod_pr = (f_mod('PRECC', latitude=(-38,38)) + f_mod('PRECL', latitude=(-38,38)))*3600.0*24.0*1000.0
+                mv1 = (f_mod('PRECC', latitude=(-38,38)) + f_mod('PRECL', latitude=(-38,38)))*3600.0*24.0*1000.0
+                mv2 = f_obs(var, latitude=(-38,38))
             else:
-                obs_pr = f_obs(var)
-                mod_pr = (f_mod('PRECC') + f_mod('PRECL'))*3600.0*24.0*1000.0
-            mod_pr.units = 'mm/day'
+                mv1 = (f_mod('PRECC') + f_mod('PRECL'))*3600.0*24.0*1000.0
+                mv2 = f_obs(var)
+            mv1.units = 'mm/day'
             parameter.output_file = '_'.join([ref_name,it])
+            parameter.main_title = ' '.join([var,it])
             print parameter.output_file
-    
-        elif var == 'T':
-    
-            plev = parameter.levels[0]
-            print 'selected pressure level', plev
-    
-            for filename in [filename1,filename2]:
-                f_in = cdms2.open(filename)
-                mv = f_in[var] # Square brackets for metadata preview
-                mv_plv = mv.getLevel()
-    
-                if mv_plv.long_name.lower().find('hybrid') != -1: # var(time,lev,lon,lat) convert from hybrid level to pressure
-                    mv = f_in (var) # Parentheses actually load the transient variable
-                    hyam = f_in('hyam')
-                    hybm = f_in('hybm')
-                    ps = f_in('PS')/100.    #convert unit from 'Pa' to mb
-                    p0 = 1000. #mb
-                    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
-                    levels_orig.units = 'mb'
-                    mv_p=cdutil.vertical.logLinearInterpolation(mv, levels_orig, plev)
-    
-                elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
-                    # if desired plev exists, read from input file, otherwise, interpolate
-                    try:
-                        plev_ind = mv_plv[:].tolist().index(plev)
-                        mv_p = f_in(var,level= plev)
-    
-                    except Exception as e:
-                        print str(plev)+ ' is not standard pressure level, execute vertical interpolation'
-                        mv = f_in (var)
-                        #Construct pressure level for interpolation
-                        levels_orig = MV2.array(mv_plv[:])
-                        levels_orig.setAxis(0,mv_plv)
-                        mv,levels_orig = genutil.grower(mv,levels_orig) # grow 1d levels_orig to mv dimention
-                        #levels_orig.info()
-    
-                        mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,], levels_orig[:,::-1,], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
-    
-                else:
-                    print( 'Vertical level is neither hybrid nor pressure. Abort')
-                    quit()
-                print filename
-                parameter.output_file = '_'.join([ref_name,it, str(plev)+'mb'])
-                print parameter.output_file
-    
-                if filename == filename1:
-                    mod_pr = mv_p
-    
-                if filename == filename2:
-                    obs_pr = mv_p
-    
-        axes1 = mod_pr.getAxisList()
-        axes2 = obs_pr.getAxisList()
-    
-    
-        # For plotting, original grid is plotted for model observation, differece plot is regridded to coaser grid. Need if statement to evaluate grid size. aminusb_2ax from uvcmetrics takes care of this,which also considers complex corner cases.
-        if len(axes1[1]) <= len(axes2[1]): # use nlat to decide data resolution, higher number means higher data resolution. For the difference plot, regrid toward lower resolution
-            model_grid = mod_pr.getGrid()
-            mod_pr_reg = mod_pr
-            obs_pr_reg = obs_pr.regrid(model_grid, regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
+        elif var == 'PREH2O':
+            f_in = cdms2.open(filename1)
+            mv1 = f_in('TMQ')
+            f_in = cdms2.open(filename2)
+            mv2 = f_in(var)
         else:
-            obs_grid = obs_pr.getGrid()
-            obs_pr_reg = obs_pr
-            mod_pr_reg = mod_pr.regrid(obs_grid, regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
+            f_in = cdms2.open(filename1)
+            mv1 = f_in(var)
+            f_in = cdms2.open(filename2)
+            mv2 = f_in(var)
+
+            
+#        elif var == 'T':
+#    
+#            plev = parameter.levels[0]
+#            print 'selected pressure level', plev
+#    
+#            for filename in [filename1,filename2]:
+#                f_in = cdms2.open(filename)
+#                mv = f_in[var] # Square brackets for metadata preview
+#                mv_plv = mv.getLevel()
+#    
+#                if mv_plv.long_name.lower().find('hybrid') != -1: # var(time,lev,lon,lat) convert from hybrid level to pressure
+#                    mv = f_in (var) # Parentheses actually load the transient variable
+#                    hyam = f_in('hyam')
+#                    hybm = f_in('hybm')
+#                    ps = f_in('PS')/100.    #convert unit from 'Pa' to mb
+#                    p0 = 1000. #mb
+#                    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
+#                    levels_orig.units = 'mb'
+#                    mv_p=cdutil.vertical.logLinearInterpolation(mv, levels_orig, plev)
+#    
+#                elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
+#                    # if desired plev exists, read from input file, otherwise, interpolate
+#                    try:
+#                        plev_ind = mv_plv[:].tolist().index(plev)
+#                        mv_p = f_in(var,level= plev)
+#    
+#                    except Exception as e:
+#                        print str(plev)+ ' is not standard pressure level, execute vertical interpolation'
+#                        mv = f_in (var)
+#                        #Construct pressure level for interpolation
+#                        levels_orig = MV2.array(mv_plv[:])
+#                        levels_orig.setAxis(0,mv_plv)
+#                        mv,levels_orig = genutil.grower(mv,levels_orig) # grow 1d levels_orig to mv dimention
+#                        #levels_orig.info()
+#    
+#                        mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,], levels_orig[:,::-1,], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
+#    
+#                else:
+#                    print( 'Vertical level is neither hybrid nor pressure. Abort')
+#                    quit()
+#                print filename
+#                parameter.output_file = '_'.join([ref_name,it, str(plev)+'mb'])
+#                print parameter.output_file
+#    
+#                if filename == filename1:
+#                    mv1 = mv_p
+#    
+#                if filename == filename2:
+#                    mv2 = mv_p
     
+        #regrid towards lower resolution of two variables for calculating difference
+        mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
         #if var == 'T' and plev == 850:
         #    levels = [230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300]
         #    diff_levels = [-8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8]
@@ -157,4 +175,5 @@ for parameter in parameters:
     #    else:
     #        parameter.main_title = ' '.join([var, season])
     
-        plot_set_5.plot(obs_pr, mod_pr, obs_pr_reg, mod_pr_reg, parameter)
+        print mv2_reg.shape, mv1_reg.shape
+        plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)

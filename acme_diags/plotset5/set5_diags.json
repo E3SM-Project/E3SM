@@ -1,6 +1,7 @@
 {
-	"somekey": [
-	  {
+	"set5": [
+
+          {
       "case_id": "set5_PRECT_GPCP",
       "variables": "PRECT",
       "ref_name": "GPCP",
@@ -10,26 +11,7 @@
       "diff_units": "mm/day",
       "regions": ["land", "ocean", "tropics", "global"],
       "levels": []
-		},
-          {
-      "case_id": "set5_PRECT_TRMM",
-      "variables": "PRECT",
-      "ref_name": "TRMM",
-      "reference_name": "TRMM (yrs unknown)",
-      "season": ["ANN","DJF","MAM","JJA","SON"],
-      "test_units": "mm/day",
-      "diff_units": "mm/day",
-      "regions": [],
-      "levels": []
-                },
-		{
-      "case_id": "set5_T_MERRA",
-      "variables": "T",
-      "ref_name": "MERRA",
-      "reference_name": "MERRA (yrs1979-2009)",
-      "season": ["ANN","DJF","MAM","JJA","SON"],
-      "regions": ["tropics", "global"],
-      "levels": [200,850]
-		}
-	]
+                }
+          ]
+	
 }
