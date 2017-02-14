@@ -8,7 +8,7 @@ sys.path.append(os.path.join(_CIMEROOT, "tools", "unit_testing", "python"))
 
 from standard_script_setup import *
 from CIME.BuildTools.configure import configure
-from CIME.utils import run_cmd, stringify_bool
+from CIME.utils import run_cmd_no_fail, stringify_bool
 from CIME.XML.machines import Machines
 from CIME.XML.env_mach_specific import EnvMachSpecific
 from xml_test_list import TestSuiteSpec, suites_from_xml
@@ -170,7 +170,7 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
         if cmake_args is not None:
             cmake_command.extend(cmake_args.split(" "))
 
-        run_cmd(" ".join(cmake_command), verbose=True, arg_stdout=None, arg_stderr=subprocess.STDOUT)
+        run_cmd_no_fail(" ".join(cmake_command), verbose=True, arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
 def make_stage(name, output, clean=False, verbose=True):
     """Run make in the current working directory.
@@ -181,14 +181,14 @@ def make_stage(name, output, clean=False, verbose=True):
     output.print_header("Running make for "+name+".")
 
     if clean:
-        run_cmd("make clean")
+        run_cmd_no_fail("make clean")
 
     make_command = ["make"]
 
     if verbose:
         make_command.append("VERBOSE=1")
 
-    run_cmd(" ".join(make_command), arg_stdout=None, arg_stderr=subprocess.STDOUT)
+    run_cmd_no_fail(" ".join(make_command), arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
 #=================================================
 # Iterate over input suite specs, building the tests.
@@ -318,7 +318,7 @@ def _main():
             if ctest_args is not None:
                 ctest_command.extend(ctest_args.split(" "))
 
-            run_cmd(" ".join(ctest_command), from_dir=label, arg_stdout=None, arg_stderr=subprocess.STDOUT)
+            run_cmd_no_fail(" ".join(ctest_command), from_dir=label, arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
 
 

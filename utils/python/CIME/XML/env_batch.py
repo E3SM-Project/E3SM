@@ -209,7 +209,7 @@ class EnvBatch(EnvBase):
 
             walltime = self.get_max_walltime(queue) if walltime is None else walltime
             if walltime is None:
-                logger.warn("Could not find a queue matching task count %d, falling back to depreciated default walltime parameter"%task_count)
+                logger.warn("Could not find a queue matching task count %d, falling back to deprecated default walltime parameter"%task_count)
                 #if the user names a queue which is not defined in config_batch.xml and does not set a
                 #walltime, fall back to the max walltime in the default queue
                 if force_queue:
