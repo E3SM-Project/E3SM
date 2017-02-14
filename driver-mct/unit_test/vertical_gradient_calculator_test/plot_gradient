@@ -1,0 +1,180 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+
+import sys
+import traceback
+import os.path
+
+if sys.hexversion < 0x02070000:
+    print(70 * "*")
+    print("ERROR: {0} requires python >= 2.7.x. ".format(sys.argv[0]))
+    print("It appears that you are running python {0}".format(
+        ".".join(str(x) for x in sys.version_info[0:3])))
+    print(70 * "*")
+    sys.exit(1)
+
+import argparse
+#These are not generally available, avoid pylint error when not found
+#pylint: disable=import-error
+import matplotlib.pyplot as plt
+import matplotlib.pylab as pylab
+
+class GradientInfo:
+
+    def __init__(self, nelev, elevclass_bounds, topo, field, gradient):
+        """Create a GradientInfo object
+
+        nelev: int
+        elevclass_bounds: tuple of (nelev+1) floats
+        topo: tuple of (nelev) floats
+        field: tuple of (nelev) floats
+        gradient: tuple of (nelev) floats
+        """
+
+        self.nelev = nelev
+
+        if (len(elevclass_bounds) != nelev+1):
+            raise ValueError('elevclass_bounds should be of size nelev+1')
+        self.elevclass_bounds = elevclass_bounds
+
+        if (len(topo) != nelev):
+            raise ValueError('topo should be of size nelev')
+        self.topo = topo
+
+        if (len(field) != nelev):
+            raise ValueError('topo should be of size nelev')
+        self.field = field
+
+        if (len(gradient) != nelev):
+            raise ValueError('gradients should be of size nelev')
+        self.gradient = gradient
+
+    @classmethod
+    def from_file(cls, filename):
+        """Create a GradientInfo object by reading a file
+
+        File should be formatted as:
+        nelev (int)
+        elevclass_bounds (list of floats; length nelev+1)
+        topo (list of floats; length nelev)
+        field (list of floats; length nelev)
+        gradient (list of floats; length nelev)
+
+        For example:
+        3
+        0. 10. 20. 30.
+        5. 15. 25.
+        -3. 7. 15.
+        2. 1. 3.
+        """
+
+        with open(filename) as f:
+            nelev = int(f.readline())
+            elevclass_bounds = [float(x) for x in f.readline().split()]
+            topo = [float(x) for x in f.readline().split()]
+            field = [float(x) for x in f.readline().split()]
+            gradient = [float(x) for x in f.readline().split()]
+
+        return cls(nelev, elevclass_bounds, topo, field, gradient)
+
+    def draw_figure(self, output_filename):
+        """Draw a figure of this gradient info, and save it to
+        output_filename"""
+
+        field_min = min(self.field)
+        field_max = max(self.field)
+
+        plt.plot(self.topo, self.field, 'ro')
+
+        # Limit upper bound of top elevation class
+        upper_bound = min(self.elevclass_bounds[self.nelev],
+                          self.topo[self.nelev-1] +
+                          (self.topo[self.nelev-1] - self.elevclass_bounds[self.nelev-1]))
+
+        for ec in range(self.nelev):
+            if (ec < self.nelev - 1):
+                my_upper_bound = self.elevclass_bounds[ec+1]
+            else:
+                my_upper_bound = upper_bound
+            (xs, ys) = gradient_line(self.topo[ec], self.field[ec], self.gradient[ec],
+                                     self.elevclass_bounds[ec], my_upper_bound)
+            plt.plot(xs, ys, 'b')
+
+        # limit x axes
+        plt.xlim([self.elevclass_bounds[0], upper_bound])
+
+        # set y axes ourselves, rather than letting them be dynamic, for easier
+        # comparison between figures
+        y_range = field_max - field_min
+        y_max = field_max + 0.2 * y_range
+        y_min = field_min - 0.2 * y_range
+        plt.ylim([y_min, y_max])
+
+        # plot elevation class bounds - vertical lines
+        # (don't draw upper bound of last EC)
+        for ec_bound in self.elevclass_bounds[:len(self.elevclass_bounds)-1]:
+            plt.plot([ec_bound, ec_bound], [y_min, y_max], 'k')
+
+        pylab.savefig(output_filename)
+        plt.close()
+
+
+def commandline_options():
+    """Process command-line arguments"""
+
+    parser = argparse.ArgumentParser(
+        description = 'Creates plots of gradients from one or more input files',
+        epilog = """Each file is expected to be formatted as follows:
+        nelev (int)
+        elevclass_bounds (list of floats; length nelev+1)
+        topo (list of floats; length nelev)
+        field (list of floats; length nelev)
+        gradient (list of floats; length nelev)
+
+        For example:
+        3
+        0. 10. 20. 30.
+        5. 15. 25.
+        -3. 7. 15.
+        2. 1. 3."""
+        )
+
+    parser.add_argument('files', nargs='+',
+                        help='names of file(s) containing gradients to plot')
+
+    parser.add_argument('--backtrace', action='store_true',
+                        help='show exception backtraces as extra debugging output')
+
+    loptions = parser.parse_args()
+    return loptions
+
+def gradient_line(x, y, slope, x_lb, x_ub):
+    """Returns two tuples (x1, x2), (y1, y2) giving the end points of a line
+    that:
+
+    - Has center (x, y)
+    - Has slope 'slope'
+    - Has x coordinates going from x_lb to x_ub
+    """
+
+    y_lb = y + (x_lb - x)*slope
+    y_ub = y + (x_ub - x)*slope
+    return ((x_lb, x_ub), (y_lb, y_ub))
+
+def main(loptions):
+    for input_filename in loptions.files:
+        file_base = os.path.splitext(input_filename)[0]
+        gradient_info = GradientInfo.from_file(input_filename)
+        gradient_info.draw_figure(file_base + '.pdf')
+
+if __name__ == "__main__":
+    options = commandline_options()
+    try:
+        status = main(options)
+        sys.exit(status)
+    except Exception as error:
+        print(str(error))
+        if options.backtrace:
+            traceback.print_exc()
+        sys.exit(1)
