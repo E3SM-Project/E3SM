@@ -172,7 +172,7 @@ def setup_proxy():
 ###############################################################################
 class N_TestUnitTest(unittest.TestCase):
 ###############################################################################
-    def test_unit_test(self):
+    def test_a_unit_test(self):
         machine           = MACHINE.get_machine_name()
         compiler          = MACHINE.get_default_compiler()
         if (machine != "yellowstone" or compiler != "intel"):
@@ -182,6 +182,25 @@ class N_TestUnitTest(unittest.TestCase):
         test_spec_dir = os.path.join(os.path.dirname(unit_test_tool),"Examples", "interpolate_1d", "tests")
         run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s --compiler intel --use-openmp --mpirun-command mpirun.lsf"\
                             %(unit_test_tool,TEST_ROOT,test_spec_dir))
+
+    def test_b_cime_f90_unit_tests(self):
+        if (FAST_ONLY):
+            self.skipTest("Skipping slow test")
+
+        machine           = MACHINE.get_machine_name()
+        compiler          = MACHINE.get_default_compiler()
+
+        if (machine != "yellowstone" or compiler != "intel"):
+            #TODO: get rid of this restriction
+            self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+        test_spec_dir = CIME.utils.get_cime_root()
+        unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"tools","unit_testing","run_tests.py"))
+
+        run_cmd_no_fail("%s --build-dir %s --test-spec-dir %s --compiler %s --use-openmp --mpirun-command mpirun.lsf"\
+                            %(unit_test_tool,TEST_ROOT,test_spec_dir, compiler))
+
+
+
 
 ###############################################################################
 class J_TestCreateNewcase(unittest.TestCase):
