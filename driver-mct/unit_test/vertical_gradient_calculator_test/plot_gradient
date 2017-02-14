@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import sys
+import traceback
 import os.path
 
 if sys.hexversion < 0x02070000:
@@ -79,8 +80,6 @@ class GradientInfo:
         """Draw a figure of this gradient info, and save it to
         output_filename"""
 
-#        elev_min = min(self.elevclass_bounds)
-#        elev_max = max(self.elevclass_bounds)
         field_min = min(self.field)
         field_max = max(self.field)
 
@@ -174,4 +173,6 @@ if __name__ == "__main__":
         sys.exit(status)
     except Exception as error:
         print(str(error))
+        if options.backtrace:
+            traceback.print_exc()
         sys.exit(1)
