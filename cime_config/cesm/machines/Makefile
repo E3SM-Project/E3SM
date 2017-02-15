@@ -799,18 +799,18 @@ endif
 
 cleanatm:
 	$(RM) -f $(LIBROOT)/libatm.a
-	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.$(MOD_SUFFIX)
+	$(RM) -fr $(EXEROOT)/atm/obj
 
 cleancpl:
-	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.$(MOD_SUFFIX)
+	$(RM) -fr $(EXEROOT)/cpl/obj
 
 cleanocn:
 	$(RM) -f $(LIBROOT)/libocn.a
-	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
+	$(RM) -fr $(EXEROOT)/ocn/obj
 
 cleanwav:
 	$(RM) -f $(LIBROOT)/libwav.a
-	cd $(EXEROOT)/wav/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
+	$(RM) -fr $(EXEROOT)/wav/obj
 
 cleanglc:
 	$(RM) -f $(LIBROOT)/libglc.a
@@ -818,19 +818,19 @@ cleanglc:
 
 cleanesp:
 	$(RM) -f $(LIBROOT)/libesp.a
-	cd $(EXEROOT)/esp/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
+	$(RM) -fr $(EXEROOT)/esp/obj
 
 cleanice:
 	$(RM) -f $(LIBROOT)/libice.a
-	cd $(EXEROOT)/ice/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
+	$(RM) -fr $(EXEROOT)/ice/obj
 
 cleanrof:
 	$(RM) -f $(LIBROOT)/librof.a
-	cd $(EXEROOT)/rof/obj ; $(RM) -f *.o *.$(MOD_SUFFIX)
+	$(RM) -fr $(EXEROOT)/rof/obj
 
 cleanlnd:
 	$(RM) -f $(LNDLIBDIR)/$(LNDLIB)
-	cd $(LNDOBJDIR) ; $(RM) -f *.o *.$(MOD_SUFFIX)
+	$(RM) -fr $(LNDOBJDIR)
 
 cleancsmshare:
 	$(RM) -f $(CSMSHARELIB)

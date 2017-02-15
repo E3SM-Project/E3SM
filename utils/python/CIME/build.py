@@ -93,6 +93,8 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     config_dir = os.path.join(cimeroot, "driver_cpl", "cime_config")
     f = open(file_build, "w")
     bldroot = os.path.join(exeroot, "cpl", "obj")
+    if not os.path.isdir(bldroot):
+        os.makedirs(bldroot)
     stat = run_cmd("%s/buildexe %s %s %s" %
                    (config_dir, caseroot, libroot, bldroot),
                    from_dir=bldroot, verbose=True, arg_stdout=f,
@@ -503,43 +505,47 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
 
+
 ###############################################################################
-def clean(case, cleanlist=None):
+def clean(case, cleanlist=None, clean_all=False):
 ###############################################################################
+    caseroot = case.get_value("CASEROOT")
+    if clean_all:
+        # If cleanlist is empty just remove the bld directory
+        exeroot = case.get_value("EXEROOT")
+        expect(exeroot is not None,"No EXEROOT defined in case")
+        if os.path.isdir(exeroot):
+            logging.info("cleaning directory %s" %exeroot)
+            shutil.rmtree(exeroot)
+        # if clean_all is True also remove the sharedlibpath
+        sharedlibroot = case.get_value("SHAREDLIBROOT")
+        expect(sharedlibroot is not None,"No SHAREDLIBROOT defined in case")
+        if sharedlibroot != exeroot and os.path.isdir(sharedlibroot):
+            logging.warn("cleaning directory %s" %sharedlibroot)
+            shutil.rmtree(sharedlibroot)
+    else:
+        expect(cleanlist is not None and len(cleanlist) > 0,"Empty cleanlist not expected")
+        debug           = case.get_value("DEBUG")
+        use_esmf_lib    = case.get_value("USE_ESMF_LIB")
+        build_threaded  = case.get_value("BUILD_THREADED")
+        gmake           = case.get_value("GMAKE")
+        caseroot        = case.get_value("CASEROOT")
+        casetools       = case.get_value("CASETOOLS")
+        clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
 
-    clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
-    comp_lnd = case.get_value("COMP_LND")
-    if cleanlist is None:
-        cleanlist = case.get_values("COMP_CLASSES")
-        cleanlist = [x.lower().replace('drv','cpl') for x in cleanlist]
-        testcase        = case.get_value("TESTCASE")
-        # we only want to clean clm here if it is clm4_0 otherwise remove
-        # it from the cleanlist
-        if testcase is not None and comp_lnd == "clm" and \
-                clm_config_opts is not None and "lnd" in cleanlist and \
-                "clm4_0" not in clm_config_opts:
-            cleanlist.remove('lnd')
+        os.environ["DEBUG"]           = stringify_bool(debug)
+        os.environ["USE_ESMF_LIB"]    = stringify_bool(use_esmf_lib)
+        os.environ["BUILD_THREADED"]  = stringify_bool(build_threaded)
+        os.environ["CASEROOT"]        = caseroot
+        os.environ["COMP_INTERFACE"]  = case.get_value("COMP_INTERFACE")
+        os.environ["PIO_VERSION"]     = str(case.get_value("PIO_VERSION"))
+        os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
 
-    debug           = case.get_value("DEBUG")
-    use_esmf_lib    = case.get_value("USE_ESMF_LIB")
-    build_threaded  = case.get_value("BUILD_THREADED")
-    gmake           = case.get_value("GMAKE")
-    caseroot        = case.get_value("CASEROOT")
-    casetools       = case.get_value("CASETOOLS")
-
-    os.environ["DEBUG"]           = stringify_bool(debug)
-    os.environ["USE_ESMF_LIB"]    = stringify_bool(use_esmf_lib)
-    os.environ["BUILD_THREADED"]  = stringify_bool(build_threaded)
-    os.environ["CASEROOT"]        = case.get_value("CASEROOT")
-    os.environ["COMP_INTERFACE"]  = case.get_value("COMP_INTERFACE")
-    os.environ["PIO_VERSION"]     = str(case.get_value("PIO_VERSION"))
-    os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
-
-    cmd = gmake + " -f " + casetools + "/Makefile"
-    for item in cleanlist:
-        cmd = cmd + " clean" + item
-    logger.info("calling %s "%(cmd))
-    run_cmd_no_fail(cmd)
+        cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
+        for item in cleanlist:
+            tcmd = cmd + " clean" + item
+            logger.info("calling %s "%(tcmd))
+            run_cmd_no_fail(tcmd)
 
     # unlink Locked files directory
     unlock_file("env_build.xml")
@@ -552,5 +558,9 @@ def clean(case, cleanlist=None):
     case.flush()
 
     # append call of to CaseStatus
-    msg = "cleanbuild %s "%" ".join(cleanlist)
+    if cleanlist:
+        msg = "clean %s "%" ".join(cleanlist)
+    elif clean_all:
+        msg = "clean_all"
+
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
