@@ -514,13 +514,13 @@ def clean(case, cleanlist=None, clean_all=False):
         expect(exeroot is not None,"No EXEROOT defined in case")
         if os.path.isdir(exeroot):
             logging.info("cleaning directory %s" %exeroot)
-            os.rmtree(exeroot)
+            shutil.rmtree(exeroot)
         # if clean_all is True also remove the sharedlibpath
         sharedlibroot = case.get_value("SHAREDLIBROOT")
         expect(sharedlibroot is not None,"No SHAREDLIBROOT defined in case")
         if sharedlibroot != exeroot and os.path.isdir(sharedlibroot):
             logging.warn("cleaning directory %s" %sharedlibroot)
-            os.rmtree(sharedlibroot)
+            shutil.rmtree(sharedlibroot)
     else:
         expect(cleanlist is not None and len(cleanlist) > 0,"Empty cleanlist not expected")
         debug           = case.get_value("DEBUG")
