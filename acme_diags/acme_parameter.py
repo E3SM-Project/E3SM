@@ -13,7 +13,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.season = ''
         self.regrid_tool = 'esmf'
         self.regrid_method = 'linear'
-        self.output_file = ''
+        self.output_file = 'output.png'
 
         # VCS Options
         self.main_title = 'Main Title'
