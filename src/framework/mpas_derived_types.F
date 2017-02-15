@@ -10,11 +10,17 @@
 !  mpas_derived_types
 !
 !> \brief   MPAS Derived data types
-!> \author  Doug Jacobsen, Michael Duda
+!> \author  Doug Jacobsen, Michael Duda, Matt Hoffman
 !> \date    03/10/2015
-!> \details 
+!> \details
 !> This module defines derived data types related to fields, and variable structures.
-!> It also includes routines for allocating and deallocating these types.
+!> Routines for allocating and deallocating these types are located in their
+!> corresponding modules.  All of the framework derived types are collected in this
+!> module so that they can all be "use"d from this module to avoid circular
+!> dependencies.
+!> This module also includes public parameters related to the corresponding modules.
+!> Including them here provides easy access to them throughout the code without
+!> needing to use the module they "belong" to.
 !
 !-----------------------------------------------------------------------
 module mpas_derived_types
