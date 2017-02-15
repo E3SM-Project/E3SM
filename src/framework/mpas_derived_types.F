@@ -62,6 +62,8 @@ module mpas_derived_types
 
 #include "mpas_timer_types.inc"
 
+#include "mpas_log_types.inc"
+
 #include "mpas_block_types.inc"
 
 #include "mpas_decomp_types.inc"
