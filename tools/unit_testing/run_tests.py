@@ -36,7 +36,7 @@ builds and runs the tests defined via CMake."""
     parser.add_argument("--build-dir", default=".",
                         help="""Directory where tests are built and run. Will be created if it does not exist."""
                         )
-    parser.add_argument("--build-type", default="CIME_DEBUG",
+    parser.add_argument("--build-type", default="CESM_DEBUG",
                         help="""Value defined for CMAKE_BUILD_TYPE."""
                         )
 

@@ -12,4 +12,4 @@ add_test(circle_area CTest_circle_exe)
 
 # Tell CTest how to figure out that "STOP 1" fails for the current
 # compiler.
-#define_Fortran_stop_failure(circle_area)
+define_Fortran_stop_failure(circle_area)

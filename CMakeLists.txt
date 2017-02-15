@@ -3,7 +3,11 @@ include(ExternalProject)
 set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 project(cime_tests Fortran C)
+
+# We rely on pio for cmake utilities like findnetcdf.cmake, so that we don't
+# need to duplicate this cmake code
 list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/externals/pio2/cmake")
+
 list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
 include(CIME_utils)
 find_package(NetCDF)
