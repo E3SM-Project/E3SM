@@ -7,7 +7,7 @@ information from a run.
 
 from CIME.XML.standard_module_setup import *
 
-import datetime, shutil, re, gzip
+import datetime, shutil, re
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ class _TimingParser:
         finfilename = os.path.join(self.caseroot, "timing",
                                    "%s_timing_stats.%s" % (cime_model, self.lid))
         foutfilename = os.path.join(self.caseroot, "timing",
-                                    "%s_timing.%s.%s.gz" % (cime_model, caseid, self.lid))
+                                    "%s_timing.%s.%s" % (cime_model, caseid, self.lid))
 
         timingDir = os.path.join(self.caseroot, "timing")
         if not os.path.isdir(timingDir):
@@ -215,7 +215,7 @@ class _TimingParser:
             m.offset = int((maxoffset*m.rootpe)/peminmax) + extraoff
         cpl.offset = 0
         try:
-            self.fout = gzip.open(foutfilename, "wb")
+            self.fout = open(foutfilename, "w")
         except Exception, e:
             logger.critical("Could not open file for writing: %s"
                             % foutfilename)

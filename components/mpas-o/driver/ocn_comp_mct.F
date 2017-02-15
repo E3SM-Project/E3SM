@@ -788,6 +788,9 @@ contains
       ! Import state from coupler
       call ocn_import_mct(x2o_o, ierr)
 
+      ! Ensures MPAS AM write/compute startup steps are performed
+      call ocn_analysis_compute_startup(domain_ptr, ierr)
+
       ! Handle writing initial state
       call mpas_pool_get_config(domain_ptr % configs, 'config_write_output_on_startup', config_write_output_on_startup)
       if (config_write_output_on_startup) then
@@ -2002,7 +2005,7 @@ contains
           if ( keepFrazil ) then
              seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND + T0_Kelvin &
                              - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
-             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0
+             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0.0_RKIND
 
              o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = seaIceEnergy(i) / ocn_cpl_dt
              o2x_o % rAttr(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
