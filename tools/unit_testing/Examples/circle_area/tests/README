@@ -1,0 +1,2 @@
+NOTE (2-15-17): The CTest_circle_exe test is currently failing for an unknown
+reason, but the pFunittest_circle_area_exe test should pass.
