@@ -369,7 +369,7 @@ contains
        mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
           'lfrac*l2x%Flrl_rofsub'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
-          'lfrac*l2x%Flrl_rofi' !Jer: need another comment here about subtracting subshelf melt
+          'lfrac*(l2x%Flrl_rofi - o2x%Floo_qice)'
     end if
 
     do i = 1,lsize

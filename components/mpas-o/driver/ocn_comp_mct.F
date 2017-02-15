@@ -1617,8 +1617,10 @@ contains
         end if
         if ( iceRunoffFluxField % isActive ) then
            iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
-           if(iceRunoffFlux(n) < 0.0_RKIND) then
-               call shr_sys_abort ('Error: incoming rofi_F is negative')
+	   !write(shrlogunit, *) 'iceRunoffFlux(i)=',iceRunoffFlux(i) !Jer: also fixed bug
+           if(iceRunoffFlux(i) < 0.0_RKIND) then !Jer: also fixed bug here with wrong index for iceRunoffFlux
+	       iceRunoffFlux(i) = 0.0_RKIND !Jer: temporarily reset iceRunoffFlux to zero, so FW not actively removed from ocean
+               !call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
         end if
 
