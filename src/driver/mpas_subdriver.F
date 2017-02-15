@@ -155,6 +155,7 @@ module mpas_subdriver
       !
       call mpas_framework_init_phase1(domain_ptr % dminfo)
 
+
 #ifdef CORE_ATMOSPHERE
       call atm_setup_core(corelist)
       call atm_setup_domain(domain_ptr)
@@ -183,6 +184,16 @@ module mpas_subdriver
       call test_setup_core(corelist)
       call test_setup_domain(domain_ptr)
 #endif
+
+      ! Set up the log manager as early as possible so we can use it for any errors/messages during subsequent init steps
+      ! We need:
+      ! 1) domain_ptr to be allocated,
+      ! 2) dmpar_init complete to access dminfo,
+      ! 3) *_setup_core to assign the setup_log function pointer
+      ierr = domain_ptr % core % setup_log(domain_ptr % logInfo, domain_ptr)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Log setup failed for core ' // trim(domain_ptr % core % coreName))
+      end if
 
       if ( readNamelistArg ) then
          domain_ptr % namelist_filename = namelistFile
