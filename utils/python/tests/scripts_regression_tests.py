@@ -1078,7 +1078,8 @@ class R_TestUpdateACMETests(unittest.TestCase):
     def setUp(self):
     ###########################################################################
         # Grab all active tests
-        self._testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
+        files = Files()
+        self._testlist_allactive = files.get_value("TESTS_SPEC_FILE", {"component":"allactive"})
         shutil.copy2(self._testlist_allactive, ".")
 
     ###########################################################################
