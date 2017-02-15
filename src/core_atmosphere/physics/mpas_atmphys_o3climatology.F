@@ -8,7 +8,6 @@
 !=================================================================================================================
  module mpas_atmphys_o3climatology
  use mpas_kind_types
-!use mpas_derived_types
  use mpas_pool_routines
  use mpas_atmphys_date_time
  use mpas_atmphys_constants
@@ -48,6 +47,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 ! * modified sourcecode to use pools.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * moved the subroutine vinterp_ozn to its own module module_ra_rrtmg_vinterp.F in physics_wrf.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-01-27.
 
 
  contains
