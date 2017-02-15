@@ -1982,8 +1982,8 @@ class S_TestManageAndQuery(unittest.TestCase):
 
     def _run_and_assert_query_testlist(self, extra_args=""):
         """Ensure that query_testlist runs successfully with the given extra arguments"""
-
-        testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
+        files = Files()
+        testlist_allactive = files.get_value("TESTS_SPEC_FILE", {"component":"allactive"})
 
         run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s %s"%
                               (SCRIPT_DIR, testlist_allactive, extra_args))
