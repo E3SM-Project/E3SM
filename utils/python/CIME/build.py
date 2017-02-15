@@ -503,16 +503,6 @@ def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incro
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
 
-def cleantree(base, ignoredirs=None):
-    """
-    clean all files below base level, leave directories and top level files
-    """
-    ignoredirs.append(base)
-    for root, _, files in os.walk(base, topdown=False):
-        if root not in ignoredirs:
-            for name in files:
-                os.remove(os.path.join(root, name))
-
 
 ###############################################################################
 def clean(case, cleanlist=None, clean_all=False):
@@ -521,15 +511,18 @@ def clean(case, cleanlist=None, clean_all=False):
     if clean_all:
         # If cleanlist is empty just remove the bld directory
         exeroot = case.get_value("EXEROOT")
+        expect(exeroot is not None,"No EXEROOT defined in case")
         if os.path.isdir(exeroot):
             logging.info("cleaning directory %s" %exeroot)
-            cleantree(exeroot, ignoredirs=[os.path.join(exeroot,"lib")])
+            os.rmtree(exeroot)
         # if clean_all is True also remove the sharedlibpath
         sharedlibroot = case.get_value("SHAREDLIBROOT")
+        expect(sharedlibroot is not None,"No SHAREDLIBROOT defined in case")
         if sharedlibroot != exeroot and os.path.isdir(sharedlibroot):
             logging.warn("cleaning directory %s" %sharedlibroot)
-            cleantree(sharedlibroot)
+            os.rmtree(sharedlibroot)
     else:
+        expect(cleanlist is not None and len(cleanlist) > 0,"Empty cleanlist not expected")
         debug           = case.get_value("DEBUG")
         use_esmf_lib    = case.get_value("USE_ESMF_LIB")
         build_threaded  = case.get_value("BUILD_THREADED")
@@ -546,11 +539,11 @@ def clean(case, cleanlist=None, clean_all=False):
         os.environ["PIO_VERSION"]     = str(case.get_value("PIO_VERSION"))
         os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
 
-        cmd = gmake + " -f " + casetools + "/Makefile"
+        cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
         for item in cleanlist:
-            cmd = cmd + " clean" + item
-            logger.info("calling %s "%(cmd))
-            run_cmd_no_fail(cmd)
+            tcmd = cmd + " clean" + item
+            logger.info("calling %s "%(tcmd))
+            run_cmd_no_fail(tcmd)
 
     # unlink Locked files directory
     unlock_file("env_build.xml")
@@ -567,7 +560,5 @@ def clean(case, cleanlist=None, clean_all=False):
         msg = "clean %s "%" ".join(cleanlist)
     elif clean_all:
         msg = "clean_all"
-    else:
-        msg = "clean bld"
 
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
