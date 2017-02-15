@@ -45,6 +45,7 @@ module ocn_core_interface
       core % setup_packages => ocn_setup_packages
       core % setup_decompositions => ocn_setup_decompositions
       core % setup_clock => ocn_setup_clock
+      core % setup_log => ocn_setup_log
       core % get_mesh_stream => ocn_get_mesh_stream
       core % setup_immutable_streams => ocn_setup_immutable_streams
       core % setup_derived_dimensions => ocn_setup_derived_dimensions
@@ -253,6 +254,52 @@ module ocn_core_interface
 
 
    end function ocn_setup_clock!}}}
+
+
+   !***********************************************************************
+   !
+   !  function ocn_setup_log
+   !
+   !> \brief   Log setup routine
+   !> \author  Matt Hoffman
+   !> \date    14 February 2017
+   !> \details
+   !>  The purpose of this routine is to set up the logging manager
+   !>  and allow the core to specify details of the configuration.
+   !
+   !-----------------------------------------------------------------------
+   function ocn_setup_log(logInfo, domain) result(iErr)!{{{
+
+      use mpas_derived_types
+      use mpas_log
+
+      implicit none
+
+      type (mpas_log_type), intent(inout), pointer :: logInfo  !< logging information object to set up
+      type (domain_type), intent(in), pointer :: domain  !< domain object to provide info for setting up log manager
+      integer :: iErr
+
+      ! Local variables
+      integer :: local_err
+
+      iErr = 0
+
+      ! Initialize log manager
+      call mpas_log_init(logInfo, domain, local_err)
+      iErr = ior(iErr, local_err)
+
+      ! Set core specific options here
+      ! (At present, there are not any.  There could eventually be choices about the file naming conventions
+      !  or other settings controlling behavior.)
+
+      ! ATTENTION: DISABLING LOG MANAGER FOR NOW
+      logInfo % logActive = .false.
+
+      ! After core has had a chance to modify log defaults, open the output log
+      call mpas_log_open(err=local_err)
+      iErr = ior(iErr, local_err)
+
+   end function ocn_setup_log!}}}
 
 
    !***********************************************************************
