@@ -93,6 +93,8 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     config_dir = os.path.join(cimeroot, "driver_cpl", "cime_config")
     f = open(file_build, "w")
     bldroot = os.path.join(exeroot, "cpl", "obj")
+    if not os.path.isdir(bldroot):
+        os.makedirs(bldroot)
     stat = run_cmd("%s/buildexe %s %s %s" %
                    (config_dir, caseroot, libroot, bldroot),
                    from_dir=bldroot, verbose=True, arg_stdout=f,
