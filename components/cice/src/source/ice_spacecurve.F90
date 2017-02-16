@@ -1139,6 +1139,7 @@ contains
        integer (int_kind) :: i
 
        found = .false.
+       res = 0
        i=1
        do while (i<=fac%numfact .and. (.not. found))
           if(fac%used(i) == 0) then
@@ -1189,8 +1190,10 @@ contains
 
       val1 = FirstFactor(fac1)
 !JMD      print *,'Matchfactor: found value: ',val1
-      found = FindandMark(fac2,val1,.true.)
-      tmp = FindandMark(fac1,val1,found)
+      if (val1.ge.1) then
+        found = FindandMark(fac2,val1,.true.)
+        tmp = FindandMark(fac1,val1,found)
+      endif
       if (found) then
         val = val1
       else
