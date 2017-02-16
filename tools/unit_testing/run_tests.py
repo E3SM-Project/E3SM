@@ -36,9 +36,11 @@ builds and runs the tests defined via CMake."""
     parser.add_argument("--build-dir", default=".",
                         help="""Directory where tests are built and run. Will be created if it does not exist."""
                         )
-    parser.add_argument("--build-type", default="CESM_DEBUG",
-                        help="""Value defined for CMAKE_BUILD_TYPE."""
-                        )
+
+    parser.add_argument("--build-optimized", action="store_true",
+                        help="""By default, tests are built with debug flags.
+                        If this option is provided, then tests are instead built
+                        in optimized mode.""")
 
     parser.add_argument("--machine",
                         help="The machine to create build information for.")
@@ -129,18 +131,19 @@ override the command provided by Machines."""
     if args.make_j < 1:
         raise Exception("--make-j must be >= 1")
 
-    return output, args.build_dir, args.build_type, args.clean,\
+    return output, args.build_dir, args.build_optimized, args.clean,\
         args.cmake_args, args.compiler, args.enable_genf90, args.machine, args.machines_dir,\
         args.make_j, args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
         args.use_openmp, args.xml_test_list, args.verbose
 
 
-def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_args=None, clean=False, verbose=False, enable_genf90=True, color=True):
+def cmake_stage(name, test_spec_dir, build_optimized, mpirun_command, output, cmake_args=None, clean=False, verbose=False, enable_genf90=True, color=True):
     """Run cmake in the current working directory.
 
     Arguments:
     name - Name for output messages.
     test_spec_dir - Test specification directory to run CMake on.
+    build_optimized (logical) - If True, we'll build in optimized rather than debug mode
     """
     # Clear CMake cache.
     if clean:
@@ -153,6 +156,13 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
     if not os.path.isfile("CMakeCache.txt"):
 
         output.print_header("Running cmake for "+name+".")
+
+        # This build_type only has limited uses, and should probably be removed,
+        # but for now it's still needed
+        if build_optimized:
+            build_type = "CESM"
+        else:
+            build_type = "CESM_DEBUG"
 
         cmake_command = [
             "cmake",
@@ -204,7 +214,7 @@ def make_stage(name, output, make_j, clean=False, verbose=True):
 
 
 def _main():
-    output, build_dir, build_type, clean,\
+    output, build_dir, build_optimized, clean,\
         cmake_args, compiler, enable_genf90, machine, machines_dir,\
         make_j, mpilib, mpirun_command, test_spec_dir, ctest_args,\
         use_openmp, xml_test_list, verbose \
@@ -262,7 +272,7 @@ def _main():
     if compiler is None:
         compiler = machobj.get_default_compiler()
 
-    debug = False
+    debug = not build_optimized
     os_ = machobj.get_value("OS")
 
     # Create the environment, and the Macros.cmake file
@@ -305,7 +315,7 @@ def _main():
 
             if not os.path.islink("Macros.cmake"):
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
-            cmake_stage(name, directory, build_type, mpirun_command, output, verbose=verbose,
+            cmake_stage(name, directory, build_optimized, mpirun_command, output, verbose=verbose,
                         enable_genf90=enable_genf90, cmake_args=cmake_args)
             make_stage(name, output, make_j, clean=clean, verbose=verbose)
 
