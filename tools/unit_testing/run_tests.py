@@ -75,6 +75,10 @@ Not enabled by default because it creates in-source output, and because it
 requires genf90.pl to be in the user's path."""
                         )
 
+    parser.add_argument("--make-j", type=int, default=8,
+                        help="""Number of processes to use for build."""
+                        )
+
     parser.add_argument("--mpilib",
     help="""MPI Library to use in build.
 Required argument (until we can get this from config_machines)
@@ -122,9 +126,12 @@ override the command provided by Machines."""
             )
         raise Exception("Missing required argument.")
 
+    if args.make_j < 1:
+        raise Exception("--make-j must be >= 1")
+
     return output, args.build_dir, args.build_type, args.clean,\
         args.cmake_args, args.compiler, args.enable_genf90, args.machine, args.machines_dir,\
-        args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
+        args.make_j, args.mpilib, args.mpirun_command, args.test_spec_dir, args.ctest_args,\
         args.use_openmp, args.xml_test_list, args.verbose
 
 
@@ -172,18 +179,19 @@ def cmake_stage(name, test_spec_dir, build_type, mpirun_command, output, cmake_a
 
         run_cmd_no_fail(" ".join(cmake_command), verbose=True, arg_stdout=None, arg_stderr=subprocess.STDOUT)
 
-def make_stage(name, output, clean=False, verbose=True):
+def make_stage(name, output, make_j, clean=False, verbose=True):
     """Run make in the current working directory.
 
     Arguments:
     name - Name for output messages.
+    make_j (int) - number of processes to use for make
     """
     output.print_header("Running make for "+name+".")
 
     if clean:
         run_cmd_no_fail("make clean")
 
-    make_command = ["make"]
+    make_command = ["make","-j",str(make_j)]
 
     if verbose:
         make_command.append("VERBOSE=1")
@@ -198,7 +206,7 @@ def make_stage(name, output, clean=False, verbose=True):
 def _main():
     output, build_dir, build_type, clean,\
         cmake_args, compiler, enable_genf90, machine, machines_dir,\
-        mpilib, mpirun_command, test_spec_dir, ctest_args,\
+        make_j, mpilib, mpirun_command, test_spec_dir, ctest_args,\
         use_openmp, xml_test_list, verbose \
         = parse_command_line(sys.argv)
 
@@ -299,7 +307,7 @@ def _main():
                 os.symlink(os.path.join(build_dir,"Macros.cmake"), "Macros.cmake")
             cmake_stage(name, directory, build_type, mpirun_command, output, verbose=verbose,
                         enable_genf90=enable_genf90, cmake_args=cmake_args)
-            make_stage(name, output, clean=clean, verbose=verbose)
+            make_stage(name, output, make_j, clean=clean, verbose=verbose)
 
 
     for spec in suite_specs:
