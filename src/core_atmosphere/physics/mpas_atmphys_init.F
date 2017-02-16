@@ -382,13 +382,13 @@
  if(config_radt_lw_scheme.ne.'off') then    
     if(trim(config_radt_lw_scheme) .eq. 'cam_lw') then
        if(.not. init_done) then
-          call init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
+          call init_radiation_lw(dminfo,configs,mesh,atm_input,diag,state,time_lev)
        else
 !          write(0,*)
 !          write(0,*) '--- camrad lw initialization done above'
        endif
     else
-       call init_radiation_lw(dminfo)
+       call init_radiation_lw(dminfo,configs)
     endif
  endif
 

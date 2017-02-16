@@ -227,7 +227,7 @@
     !call to long wave radiation scheme:
     if(l_radtlw) then
        time_lev = 1
-       call allocate_radiation_lw(xtime_s)
+       call allocate_radiation_lw(block%configs,xtime_s)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_radiation_lw(xtime_s,block%configs,mesh,state,time_lev,diag_physics, &
@@ -251,7 +251,7 @@
     if(config_radt_sw_scheme.ne.'off' .or. config_radt_lw_scheme.ne.'off') &
        call deallocate_cloudiness
     if(config_radt_sw_scheme.ne.'off') call deallocate_radiation_sw
-    if(config_radt_lw_scheme.ne.'off') call deallocate_radiation_lw
+    if(config_radt_lw_scheme.ne.'off') call deallocate_radiation_lw(block%configs)
 
     !call to surface-layer scheme:
     if(config_sfclayer_scheme .ne. 'off') then

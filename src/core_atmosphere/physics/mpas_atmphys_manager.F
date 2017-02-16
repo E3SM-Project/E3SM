@@ -112,6 +112,9 @@
 ! * in subroutine physics_run_init, removed the initialization of the local variable radt_cld_scheme.
 !   radt_cld_scheme is no longer needed and can be replaced with config_radt_cld_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable radt_lw_scheme.
+!   radt_lw_scheme is no longer needed and can be replaced with config_radt_lw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
  contains
@@ -670,7 +673,6 @@
 
  convection_scheme = trim(config_convection_scheme)
  microp_scheme     = trim(config_microp_scheme)
- radt_lw_scheme    = trim(config_radt_lw_scheme)
  radt_sw_scheme    = trim(config_radt_sw_scheme)
 
  if(trim(config_lsm_scheme) .eq. "noah") sf_surface_physics = 2 
@@ -744,7 +746,7 @@
  if(config_microp_re) then
     if(trim(microp_scheme)=='mp_thompson' .or. &
        trim(microp_scheme)=='mp_wsm6') then
-       if(trim(radt_lw_scheme)=='rrtmg_lw' .and. trim(radt_sw_scheme)=='rrtmg_sw') then
+       if(trim(config_radt_lw_scheme)=='rrtmg_lw' .and. trim(radt_sw_scheme)=='rrtmg_sw') then
           has_reqc = 1
           has_reqi = 1
           has_reqs = 1
