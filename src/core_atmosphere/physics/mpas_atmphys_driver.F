@@ -308,19 +308,19 @@
     !call to convection scheme:
 !$OMP PARALLEL DO
     do thread=1,nThreads
-       call update_convection_step1(diag_physics,tend_physics, &
+       call update_convection_step1(block%configs,diag_physics,tend_physics, &
                             cellSolveThreadStart(thread),cellSolveThreadEnd(thread))
     end do
 !$OMP END PARALLEL DO
     if(l_conv) then
-       call allocate_convection
+       call allocate_convection(block%configs)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_convection(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics, &
                                  cellSolveThreadStart(thread), cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
-       call deallocate_convection
+       call deallocate_convection(block%configs)
     endif
     !update diagnostics:
     if(config_convection_scheme .ne. 'off') then

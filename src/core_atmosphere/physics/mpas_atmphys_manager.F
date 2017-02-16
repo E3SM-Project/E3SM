@@ -118,6 +118,9 @@
 ! * in subroutine physics_run_init, removed the initialization of the local variable radt_sw_scheme.
 !   radt_sw_scheme is no longer needed and can be replaced with config_radt_sw_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable convection_scheme.
+!   convection_scheme is no longer needed and can be replaced with config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
  contains
@@ -674,7 +677,6 @@
  num_months = nMonths
  num_soils  = nSoilLevels
 
- convection_scheme = trim(config_convection_scheme)
  microp_scheme     = trim(config_microp_scheme)
 
  if(trim(config_lsm_scheme) .eq. "noah") sf_surface_physics = 2 
