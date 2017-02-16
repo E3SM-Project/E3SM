@@ -99,7 +99,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
 ! * in subroutine physics_run_init, removed the initialization of the local variable gwdo_scheme. gwdo_scheme
 !   is no longer needed and can be replaced with config_gwdo_scheme.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-02-16.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable lsm_scheme. lsm_scheme
+!   is no longer needed and can be replaced with config_lsm_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
  contains
@@ -663,7 +666,6 @@
  num_soils  = nSoilLevels
 
  convection_scheme = trim(config_convection_scheme)
- lsm_scheme        = trim(config_lsm_scheme)
  microp_scheme     = trim(config_microp_scheme)
  pbl_scheme        = trim(config_pbl_scheme)
  radt_cld_scheme   = trim(config_radt_cld_scheme)

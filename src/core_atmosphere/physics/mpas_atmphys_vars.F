@@ -70,7 +70,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 20016-10-27.
 ! * removed the initialization local variable gwdo_scheme. gwdo_scheme is no longer needed and can be replaced
 !   with config_gwdo_scheme.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-02-16.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable lsm_scheme. lsm_scheme is no longer needed and can be replaced
+!   with config_lsm_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
 !=================================================================================================================
@@ -79,7 +82,6 @@
 
  character(len=StrKIND),public:: microp_scheme
  character(len=StrKIND),public:: convection_scheme
- character(len=StrKIND),public:: lsm_scheme
  character(len=StrKIND),public:: pbl_scheme
  character(len=StrKIND),public:: radt_cld_scheme
  character(len=StrKIND),public:: radt_lw_scheme

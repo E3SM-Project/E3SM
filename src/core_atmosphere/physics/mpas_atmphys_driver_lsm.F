@@ -81,6 +81,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-05-11.
 ! * added the calculation of surface variables over seaice cells when config_frac_seaice is set to true.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-03.
+! * since we removed the local variable lsm_scheme from mpas_atmphys_vars.F, now defines lsm_scheme as a
+!   pointer to config_lsm_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
+
 
 !
 ! DOCUMENTATION:
@@ -684,7 +688,12 @@
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: sfc_input
 
+!local pointers:
+ character(len=StrKIND),pointer:: lsm_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_lsm_scheme',lsm_scheme)
 
  lsm_select: select case (trim(lsm_scheme))
 
@@ -714,13 +723,15 @@
 
 !local pointers:
  logical,pointer:: config_sfc_albedo
+ character(len=StrKIND),pointer:: lsm_scheme
  character(len=StrKIND),pointer:: mminlu
 
 !-----------------------------------------------------------------------------------------------------------------
 !write(0,*)
 !write(0,*) '--- enter subroutine driver_lsm:'
 
- call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
+ call mpas_pool_get_config(configs,'config_sfc_albedo',config_sfc_albedo)
+ call mpas_pool_get_config(configs,'config_sfc_albedo',lsm_scheme)
  call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
 
 !formats:
@@ -729,7 +740,6 @@
 
 !copy MPAS arrays to local arrays:
  call lsm_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
-! write(0,*) '--- end lsm_from_MPAS'
 
 !call to land-surface scheme:
  lsm_select: select case (trim(lsm_scheme))
