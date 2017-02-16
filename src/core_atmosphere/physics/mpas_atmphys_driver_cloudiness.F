@@ -48,6 +48,9 @@
 !   cloud formation, but changes to the cloud water and cloud ice mixing ratios only affect the long wave and
 !   short wave radiation codes.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-05.
+! * since we removed the local variable radt_cld_scheme from mpas_atmphys_vars.F, now defines radt_cld_scheme
+!   as a pointer to config_radt_cld_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
 
 
  contains
@@ -176,12 +179,16 @@
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables:
+!local variables and pointers:
+ character(len=StrKIND),pointer:: radt_cld_scheme
+
  integer:: i,j,k
 
 !-----------------------------------------------------------------------------------------------------------------
 !write(0,*)
 !write(0,*) '--- enter subroutine driver_cloudiness:'
+
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme',radt_cld_scheme)
 
 !copy MPAS arrays to local arrays:
  call cloudiness_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
