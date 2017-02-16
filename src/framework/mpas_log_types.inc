@@ -18,6 +18,8 @@
 
       integer :: taskID !< task number for this instance of the log manager
                    !< (stored here to eliminate the need for dminfo later)
+      integer :: nTasks !<  number of total tasks associated with this instance
+                   !< (stored here to eliminate the need for dminfo later)
       character(len=StrKIND) :: coreName  !< name of the core to which this log manager instance belongs
 
       character(len=StrKIND) :: logFileName  !< Filename for the log file

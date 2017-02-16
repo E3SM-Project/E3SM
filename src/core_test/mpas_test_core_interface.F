@@ -225,7 +225,7 @@ module test_core_interface
    function test_setup_log(logInfo, domain) result(iErr)!{{{
 
       use mpas_derived_types
-      use mpas_log, only: mpas_log_instance_create, mpas_log_init
+      use mpas_log
 
       implicit none
 
@@ -246,6 +246,9 @@ module test_core_interface
       ! (At present, there are not any.  There could eventually be choices about the file naming conventions
       !  or other settings controlling behavior.)
 
+      ! After core has had a chance to modify log defaults, open the output log
+      call mpas_log_open(err=local_err)
+      iErr = ior(iErr, local_err)
 
    end function test_setup_log!}}}
 

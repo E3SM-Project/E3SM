@@ -59,7 +59,7 @@ module mpas_log
    ! Public member functions
    !--------------------------------------------------------------------
    public :: mpas_log_init, &
-             mpas_log_instance_create, &
+             mpas_log_open, &
              mpas_log_finalize, &
              mpas_log_write
 
@@ -92,15 +92,12 @@ module mpas_log
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_log_init(coreLogInfo, domain, err, logUnit)
-
-      use mpas_io_units
+   subroutine mpas_log_init(coreLogInfo, domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       type (domain_type), pointer, intent(in) :: domain !< Input: domain information
-      integer, intent(in), optional :: logUnit !< Input - Optional: Unit (already open) to set log unit to
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -118,29 +115,51 @@ module mpas_log
       ! local variables
       !-----------------------------------------------------------------
 
-      ! Variables used to inquire about info on a pre-existing file unit (if supplied)
-      logical :: isOpen
-      character(len=16) :: writeSetting, sequentialSetting, formattedSetting ! length just needs to store 'YES'
-
-      integer :: err_tmp
-
 
       err = 0
 
       ! Create log instance
-      call mpas_log_instance_create(coreLogInfo, err_tmp)
-      err = ior(err, err_tmp)
+      allocate(coreLogInfo)
 
+      ! ------
+      ! Initialize all log info members
+      ! ------
+      coreLogInfo % logUnit = -1  ! initialize to invalid unit number
+      coreLogInfo % logActive = .false.
+      coreLogInfo % errUnit = -1  ! initialize to invalid unit number
+      coreLogInfo % errUnitOpen = .false.
+
+      coreLogInfo % taskID = -1 ! initialize to invalid task ID
+      coreLogInfo % nTasks = -1 ! initialize to invalid number of tasks
+
+      ! initialize to generic name that won't conflict with old logging method
+      coreLogInfo % logFileName = 'mpaslog.out'
+      coreLogInfo % errFileName = 'mpaslog.err'
+
+      ! Initialize counters
+      coreLogInfo % standardMessageCount = 0
+      coreLogInfo % warningMessageCount = 0
+      coreLogInfo % errorMessageCount = 0
+      coreLogInfo % criticalErrorMessageCount = 0
+
+
+      ! ------
       ! Point the module-level log instance to the core's instance
       ! (From this point onward, only use the module level instance)
+      ! ------
       mpas_log_info => coreLogInfo
 
+      ! ------
+      ! Update values for some members based on model configuration
+      !   Note: these choices can be replaced by the core/driver after this routine returns
+      ! ------
       ! Store the name of this core (makes it available for inserting into messages or filenames)
       mpas_log_info % coreName = domain % core % coreName
 
       ! Store the task ID (eliminates the need for dminfo later)
       !   This will be used for 1) checking if on master task, 2) inserting task ID into the name of the abort file
       mpas_log_info % taskID = domain % dminfo % my_proc_id
+      mpas_log_info % nTasks = domain % dminfo % nprocs
 
       ! Set log file to be active or not based on master/nonmaster task and optimized/debug build
       !   * Optimized build: Only master task log is active
@@ -157,16 +176,114 @@ module mpas_log
       endif
 #endif
 
-      ! Open log file if it is active
-      if (mpas_log_info % logActive) then
+      ! Generate the log file name
+      !    Note: If log is inactive, this won't actually be used, but it is always set.
+      ! TODO: add routine to expand procid with various numbers of digits.  Unify with usage in global_abort routine.
+      write(mpas_log_info % logFileName, fmt='(a, i4.4, a)') "stick.", mpas_log_info % taskID, ".out"
+
+      ! Note: unit number is not set until file is opened
+
+      ! TODO: Set up err file name now?
+
+   !--------------------------------------------------------------------
+   end subroutine mpas_log_init
+
+
+
+!***********************************************************************
+!
+!  routine mpas_log_open
+!
+!> \brief   Connects to a log file for the log module to use
+!> \author  Matt Hoffman
+!> \date    16 February 2017
+!> \details
+!>  This routine connects to a log file for the log module to use.
+!>  By default, a new file with a new file unit is opened.
+!>  Optionally, a fileUnit can be passed in that must already be attached
+!>  to an appropriate file.
+!>  By default, an output log file is opened, but optionally this can
+!>  be an error file.
+!>  This routine assumes that the log manager has been initialized and all
+!>  log settings are set correctly, including filename, active status, etc.
+!>  It uses the module-level pointer instance of the log manager.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_log_open(logUnit, openErrorFile, err)
+
+      use mpas_io_units
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      integer, intent(in), optional :: logUnit !< Input - Optional: Unit (already open) to set log unit toa
+      logical, intent(in), optional :: openErrorFile !< Input - Optional: flag to indicate this task's error file should be opened.  Default = false, meaning open output log file
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      integer, intent(out), optional :: err !< Output - Optional: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: err_tmp
+      logical :: thisIsOutputLog
+      logical :: activeFile
+      character(len=StrKind) :: fileName
+      integer :: unitNumber
+      character (len=6) :: logTypeString
+      ! Variables used to inquire about info on a pre-existing file unit (if supplied)
+      logical :: isOpen
+      character(len=16) :: writeSetting, sequentialSetting, formattedSetting ! length just needs to store 'YES'
+
+      err = 0
+
+      thisIsOutputLog = .true.
+      if (present(openErrorFile)) then
+         if (openErrorFile) then
+            thisIsOutputLog = .false.
+            activeFile = .true.  ! A request to open the error file is always honored.
+         endif
+      endif
+
+      if (thisIsOutputLog) then
+         if (mpas_log_info % logActive) then
+            activeFile = .true.
+         else
+            activeFile = .false.
+         endif
+      endif
+
+      if (thisIsOutputLog) then
+         logTypeString = "Output"
+      else
+         logTypeString = "Error"
+      endif
+      ! Open file if it is set to be active
+      if (activeFile) then
 
          ! If a pre-opened unit is provided, just use that
          if(present(logUnit)) then
 
-            mpas_log_info % logUnit = logUnit  ! save unit number
+            unitNumber = logUnit  ! Set local variable used below
+
+            ! Save unit number provided to appropriate variable
+            if (thisIsOutputLog) then
+               mpas_log_info % logUnit = unitNumber
+            else
+               mpas_log_info % errUnit = unitNumber
+            endif
 
             ! Retrieve metadata for this unit to get the file name, and to check it is an approriate unit for a log
-            inquire(logUnit, name=mpas_log_info % logFileName, opened=isOpen, write=writeSetting, &
+            inquire(unitNumber, name=fileName, opened=isOpen, write=writeSetting, &
                sequential=sequentialSetting, formatted=formattedSetting, iostat=err_tmp)
 
             if (err_tmp > 0) then
@@ -185,103 +302,47 @@ module mpas_log
                call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to a file connected for formatted output!')
             endif
 
-         else  ! If not, we need to set the file name and unit and open it ourselves
+            ! Save file name we retrieved to appropriate field
+            if (thisIsOutputLog) then
+               mpas_log_info % logFileName = fileName
+            else
+               mpas_log_info % errFileName = fileName
+            endif
 
-            ! Generate the log file name
-            ! TODO: routine to expand procid with various numbers of digits.  Unify with usage in global_abort routine.
-            write(mpas_log_info % logFileName, fmt='(a, i4.4, a)') "stick.", mpas_log_info % taskID, ".out"
+
+         else  ! If not, we need to set the unit number and open it ourselves
 
             ! Determine the unit number
-            call mpas_new_unit(mpas_log_info % logUnit)
+            call mpas_new_unit(unitNumber)
+            if (thisIsOutputLog) then
+               mpas_log_info % logUnit = unitNumber ! save unit
+               fileName = mpas_log_info % logFileName ! get desired filename
+            else
+               mpas_log_info % errUnit = unitNumber ! save unit
+               fileName = mpas_log_info % errFileName ! get desired filenamee
+            endif
 
             ! Open the file
-            open (unit = mpas_log_info % logUnit, file = mpas_log_info % logFileName, &
-               action="WRITE", status="REPLACE", IOSTAT=err_tmp)
+            open (unit = unitNumber, file = fileName, action="WRITE", status="REPLACE", IOSTAT=err_tmp)
             if ( err_tmp /= 0 ) then
                call mpas_dmpar_global_abort('ERROR: Opening of log file failed for filename: ' // mpas_log_info % logFileName)
-            end if
-            err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error
+            endif
+            err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error  TODO: revisit if we can relax the decision to die immediately here.
 
          endif ! if logUnit was provided
 
          ! -- Write a header message --
-         !write(mpas_log_info % logUnit,*) "Hello world!"
-         write(mpas_log_info % logUnit, '(a)') '------------------------------------------------------'
-         write(mpas_log_info % logUnit, '(a,a,a,i5,a,i5)') 'Beginning MPAS-', trim(mpas_log_info % coreName), ' log file for task ', mpas_log_info % taskID, ' of ', domain % dminfo % nprocs
-         write(mpas_log_info % logUnit, '(a)') '------------------------------------------------------'
-         write(mpas_log_info % logUnit, '(a)') ''
-         flush(mpas_log_info % logUnit)  ! flush header message immediately to eliminate potential confusion
+         !write(unitNumber,*) "Hello world!"
+         write(unitNumber, '(a)') '----------------------------------------------------------------------'
+         write(unitNumber, '(a,a,a,a,a,i5,a,i5)') 'Beginning MPAS-', trim(mpas_log_info % coreName), ' ', trim(logTypeString), ' log file for task ', mpas_log_info % taskID, ' of ', mpas_log_info % nTasks
+         write(unitNumber, '(a)') '----------------------------------------------------------------------'
+         write(unitNumber, '(a)') ''
+         flush(unitNumber)  ! flush header message immediately to eliminate potential confusion
 
-      endif  ! if logActive
-
-
-   !--------------------------------------------------------------------
-   end subroutine mpas_log_init
-
-
-
-!***********************************************************************
-!
-!  routine mpas_log_instance_create
-!
-!> \brief   Creates a log manager instance
-!> \author  Matt Hoffman
-!> \date    14 February 2017
-!> \details
-!>  This routine creates an instance of the log manager.
-!>  It allocates an mpas_log_type instance and assigns initial values to
-!>  all of its members.  The initial values are intended to be invalid
-!>  for proper usage.  They should be subsequently populated by mpas_log_init.
-!
-!-----------------------------------------------------------------------
-
-   subroutine mpas_log_instance_create(logInfo, err)
-
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      ! input/output variables
-      !-----------------------------------------------------------------
-
-      type (MPAS_log_type), pointer, intent(inout) :: logInfo  !< log manager instance to create
-
-      !-----------------------------------------------------------------
-      ! output variables
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-
-
-      err = 0
-
-      allocate(logInfo)
-
-      ! Initialize log info
-      logInfo % logUnit = -1  ! initialize to invalid unit number
-      logInfo % logActive = .false.
-      logInfo % errUnit = -1  ! initialize to invalid unit number
-      logInfo % errUnitOpen = .false.
-
-      logInfo % taskID = -1 ! initialize to invalid task ID
-
-      ! initialize to generic name that won't conflict with old logging method
-      logInfo % logFileName = 'mpaslog.out'
-      logInfo % errFileName = 'mpaslog.err'
-
-      ! Initialize counters
-      logInfo % standardMessageCount = 0
-      logInfo % warningMessageCount = 0
-      logInfo % errorMessageCount = 0
-      logInfo % criticalErrorMessageCount = 0
+      endif  ! if activeFile
 
    !--------------------------------------------------------------------
-   end subroutine mpas_log_instance_create
+   end subroutine mpas_log_open
 
 
 
