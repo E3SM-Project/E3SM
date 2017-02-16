@@ -86,6 +86,9 @@
 ! * removed the initialization local variable radt_lw_scheme. radt_lw_scheme is no longer needed and can be
 !   replaced replaced with config_radt_lw_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable radt_sw_scheme. radt_sw_scheme is no longer needed and can be
+!   replaced replaced with config_radt_sw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
 !=================================================================================================================
@@ -94,7 +97,6 @@
 
  character(len=StrKIND),public:: microp_scheme
  character(len=StrKIND),public:: convection_scheme
- character(len=StrKIND),public:: radt_sw_scheme
 
 !=================================================================================================================
 !wrf-variables:these variables are needed to keep calls to different physics parameterizations
