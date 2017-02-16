@@ -92,13 +92,10 @@
 ! * removed the initialization local variable convection_scheme. convection_scheme is no longer needed and can be
 !   replaced replaced with config_convection_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable microp_scheme. microp_scheme is no longer needed and can be
+!   replaced replaced with config_microp_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
-
-!=================================================================================================================
-!list of physics parameterizations:
-!=================================================================================================================
-
- character(len=StrKIND),public:: microp_scheme
 
 !=================================================================================================================
 !wrf-variables:these variables are needed to keep calls to different physics parameterizations

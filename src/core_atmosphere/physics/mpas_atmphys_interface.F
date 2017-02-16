@@ -470,10 +470,11 @@
  end subroutine MPAS_to_physics
 
 !=================================================================================================================
- subroutine microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics,its,ite)
+ subroutine microphysics_from_MPAS(configs,mesh,state,time_lev,diag,diag_physics,its,ite)
 !=================================================================================================================
 
 !input variables:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
@@ -483,6 +484,7 @@
  integer:: time_lev
 
 !local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  integer,pointer:: index_ni,index_nr
  real(kind=RKIND),dimension(:),pointer    :: nt_c,mu_c
@@ -499,6 +501,8 @@
  integer:: i,k,j
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
@@ -607,10 +611,11 @@
  end subroutine microphysics_from_MPAS
 
 !=================================================================================================================
- subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
+ subroutine microphysics_to_MPAS(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
 !=================================================================================================================
 
 !input variables:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
 
  integer,intent(in):: itimestep,time_lev
@@ -623,6 +628,7 @@
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
+ character(len=StrKIND),pointer:: microp_scheme
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  integer,pointer:: index_ni,index_nr
  real(kind=RKIND),dimension(:),pointer    :: surface_pressure,tend_sfc_pressure
@@ -642,6 +648,8 @@
  real(kind=RKIND):: rho1,rho2,tem1,tem2
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',microp_scheme)
 
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
  call mpas_pool_get_array(mesh,'zgrid',zgrid)

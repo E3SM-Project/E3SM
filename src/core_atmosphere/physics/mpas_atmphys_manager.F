@@ -121,6 +121,9 @@
 ! * in subroutine physics_run_init, removed the initialization of the local variable convection_scheme.
 !   convection_scheme is no longer needed and can be replaced with config_convection_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable microp_scheme.
+!   microp_scheme is no longer needed and can be replaced with config_microp_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
  contains
@@ -677,8 +680,6 @@
  num_months = nMonths
  num_soils  = nSoilLevels
 
- microp_scheme     = trim(config_microp_scheme)
-
  if(trim(config_lsm_scheme) .eq. "noah") sf_surface_physics = 2 
 
 !initialization of local physics time-steps:
@@ -687,13 +688,13 @@
 !... cloud microphysics:
  dt_microp = dt_dyn
  n_microp  = 1
- if(trim(microp_scheme)=='mp_thompson') then
+ if(trim(config_microp_scheme)=='mp_thompson') then
     dt_microp = 90._RKIND
     n_microp  = max(nint(dt_dyn/dt_microp),1)
     dt_microp = dt_dyn / n_microp
     if(dt_dyn <= dt_microp) dt_microp = dt_dyn
  endif
- write(0,*) '--- specifics on cloud microphysics option microp_scheme = ',trim(microp_scheme)
+ write(0,*) '--- specifics on cloud microphysics option microp_scheme = ',trim(config_microp_scheme)
  write(0,*) '--- dt_microp = ', dt_microp
  write(0,*) '--- n_microp  = ', n_microp
 !... convection:
@@ -748,8 +749,8 @@
  has_reqi = 0
  has_reqs = 0
  if(config_microp_re) then
-    if(trim(microp_scheme)=='mp_thompson' .or. &
-       trim(microp_scheme)=='mp_wsm6') then
+    if(trim(config_microp_scheme)=='mp_thompson' .or. &
+       trim(config_microp_scheme)=='mp_wsm6') then
        if(trim(config_radt_lw_scheme)=='rrtmg_lw' .and. trim(config_radt_sw_scheme)=='rrtmg_sw') then
           has_reqc = 1
           has_reqi = 1
