@@ -68,6 +68,9 @@
 ! * moved the declarations of arrays delta_p,wstar_p,uoce_p,and voce_p since they are now used in both modules
 !   module_bl_ysu.F and module_bl_mynn.F.
 !   Laura D. Fowler (laura@ucar.edu) / 20016-10-27.
+! * removed the initialization local variable gwdo_scheme. gwdo_scheme is no longer needed and can be replaced
+!   with config_gwdo_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-02-16.
 
 
 !=================================================================================================================
@@ -76,7 +79,6 @@
 
  character(len=StrKIND),public:: microp_scheme
  character(len=StrKIND),public:: convection_scheme
- character(len=StrKIND),public:: gwdo_scheme
  character(len=StrKIND),public:: lsm_scheme
  character(len=StrKIND),public:: pbl_scheme
  character(len=StrKIND),public:: radt_cld_scheme

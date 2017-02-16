@@ -96,7 +96,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 ! * added initialization of variables has_reqc,has_reqi,and has_reqs needed in the calls to radiation codes
 !   rrtmg_lwrad and rrmtg_swrad.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-07-007.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
+! * in subroutine physics_run_init, removed the initialization of the local variable gwdo_scheme. gwdo_scheme
+!   is no longer needed and can be replaced with config_gwdo_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-02-16.
 
 
  contains
@@ -357,7 +360,6 @@
 
 !local pointers:
  character(len=StrKIND),pointer:: config_convection_scheme,      &
-                                  config_gwdo_scheme,            &
                                   config_lsm_scheme,             &
                                   config_microp_scheme,          &
                                   config_pbl_scheme,             &
@@ -397,7 +399,6 @@
 !write(0,*) '--- enter subroutine physics_run_init:'
 
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
- call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
  call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
  call mpas_pool_get_config(configs,'config_pbl_scheme'       ,config_pbl_scheme       )
@@ -665,7 +666,6 @@
  lsm_scheme        = trim(config_lsm_scheme)
  microp_scheme     = trim(config_microp_scheme)
  pbl_scheme        = trim(config_pbl_scheme)
- gwdo_scheme       = trim(config_gwdo_scheme)
  radt_cld_scheme   = trim(config_radt_cld_scheme)
  radt_lw_scheme    = trim(config_radt_lw_scheme)
  radt_sw_scheme    = trim(config_radt_sw_scheme)
