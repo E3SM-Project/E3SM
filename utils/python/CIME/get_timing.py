@@ -132,6 +132,7 @@ class _TimingParser:
         cost_pes = self.case.get_value("COST_PES")
         totalpes = self.case.get_value("TOTALPES")
         pes_per_node = self.case.get_value("PES_PER_NODE")
+        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
 
         if cost_pes > 0:
             pecost = cost_pes
@@ -250,7 +251,7 @@ class _TimingParser:
             m = self.models[k]
             self.write("  %s = %-8s   %-6u      %-6u   %-6u x %-6u  "
                        "%-6u (%-6u) \n"
-                       % (m.name.lower(), m.comp, m.ntasks, m.rootpe,
+                       % (m.name.lower(), m.comp, (m.ntasks*m.nthrds *smt_factor), m.rootpe,
                           m.ntasks, m.nthrds, m.ninst, m.pstrid))
 
         nmax  = self.gettime(' CPL:INIT ')[1]
