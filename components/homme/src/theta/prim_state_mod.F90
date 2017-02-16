@@ -602,7 +602,7 @@ contains
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           
           ddt_tot = (PEner(2)-PEner(1))/(dt)
-          ddt_diss = ddt_tot - (PEhorz+PEvert+P1)
+          ddt_diss = ddt_tot - (PEhorz+PEvert+P2)
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
 #else
           write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/(dt)
