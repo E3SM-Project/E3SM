@@ -69,7 +69,7 @@
     <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
     <default_value>none</default_value>
     <values>
-      <value compset="_CAM\d+"  >CO2A</value>
+      <value compset="_CAM"  >CO2A</value>
       <value compset="_DATM"    >none</value>
       <value compset="_DATM%S1850.+POP\d">CO2A</value>
       <value compset="_BGC%BPRP">CO2C</value>
