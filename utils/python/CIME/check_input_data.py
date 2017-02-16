@@ -191,4 +191,5 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                 else:
                     model = os.path.basename(data_list_file).split('.')[0]
                     logging.warning("Model %s no file specified for %s"%(model,description))
+
     return no_files_missing

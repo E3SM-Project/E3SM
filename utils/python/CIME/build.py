@@ -445,11 +445,11 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
         if lib == "pio":
             my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts","Tools"),
                                                           os.path.join(cimeroot,"utils","python"), my_file)
+        logger.info("Building %s with output to file %s"%(lib,file_build))
         with open(file_build, "w") as fd:
             stat = run_cmd("%s %s %s %s 2>&1" %
                            (my_file, full_lib_path, os.path.join(exeroot,sharedpath), caseroot),
-                           from_dir=exeroot,
-                           verbose=True, arg_stdout=fd)[0]
+                           from_dir=exeroot,arg_stdout=fd)[0]
 
         analyze_build_log(lib, file_build, compiler)
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
@@ -493,14 +493,15 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
 def _build_model_thread(config_dir, compclass, caseroot, libroot, bldroot, incroot, file_build,
                         thread_bad_results, smp, compiler):
 ###############################################################################
+    logger.info("Building %s with output to %s"%(compclass, file_build))
     with open(file_build, "w") as fd:
         stat = run_cmd("MODEL=%s SMP=%s %s/buildlib %s %s %s " %
                        (compclass, stringify_bool(smp), config_dir, caseroot, libroot, bldroot),
-                       from_dir=bldroot, verbose=True, arg_stdout=fd,
+                       from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
     analyze_build_log(compclass, file_build, compiler)
     if (stat != 0):
-        thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (compclass, file_build))
+        thread_bad_results.append("ERROR: %s.buildlib failed, cat %s" % (compclass, file_build))
 
     for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
