@@ -52,8 +52,12 @@ module mpas_framework
       integer, intent(in), optional :: stdoutUnit_in, stderrUnit_in
 
       allocate(dminfo)
-      call mpas_io_units_init(stdoutUnit_in, stderrUnit_in)
       call mpas_dmpar_init(dminfo, mpi_comm)
+      call mpas_io_units_init(stdoutUnit_in, stderrUnit_in)
+
+      write(stderrUnit,'(a,i5,a,i5,a)') 'task ', dminfo % my_proc_id, ' of ', dminfo % nprocs, &
+           ' is running'
+      call open_streams(dminfo % my_proc_id, dminfo % nprocs)
 
    end subroutine mpas_framework_init_phase1!}}}
 
