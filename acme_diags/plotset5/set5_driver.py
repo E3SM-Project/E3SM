@@ -90,6 +90,7 @@ for parameter in parameters:
             mv1.units = 'mm/day'
             parameter.output_file = '_'.join([ref_name,it])
             parameter.main_title = str(' '.join([var,it]))
+            print parameter.output_file
         elif var == 'PREH2O':
             f_in = cdms2.open(filename1)
             mv1 = f_in('TMQ')
