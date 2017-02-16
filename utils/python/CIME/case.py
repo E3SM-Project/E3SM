@@ -855,7 +855,6 @@ class Case(object):
 
         # set up utility files in caseroot/Tools/
         toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
-                     os.path.join(toolsdir, "lt_archive.sh"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),
                      os.path.join(machines_dir,"Makefile"),
