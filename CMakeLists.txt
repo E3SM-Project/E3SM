@@ -10,9 +10,8 @@ list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/externals/pio2/cmake")
 
 list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
 include(CIME_utils)
-find_package(NetCDF)
-include_directories(${NETCDF_INCLUDE_DIRS})
-
+find_package(NetCDF COMPONENTS C Fortran)
+include_directories(${NetCDF_C_INCLUDE_DIRS} ${NetCDF_Fortran_INCLUDE_DIRS})
 
 # TODO: Some of the below should be done in the relevant directories, not in
 # this top level CMakeLists.
