@@ -731,7 +731,7 @@
 !write(0,*) '--- enter subroutine driver_lsm:'
 
  call mpas_pool_get_config(configs,'config_sfc_albedo',config_sfc_albedo)
- call mpas_pool_get_config(configs,'config_sfc_albedo',lsm_scheme)
+ call mpas_pool_get_config(configs,'config_lsm_scheme',lsm_scheme)
  call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
 
 !formats:
