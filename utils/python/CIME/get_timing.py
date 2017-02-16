@@ -132,7 +132,7 @@ class _TimingParser:
         cost_pes = self.case.get_value("COST_PES")
         totalpes = self.case.get_value("TOTALPES")
         pes_per_node = self.case.get_value("PES_PER_NODE")
-        smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
+        smt_factor = max(1,int(self.case.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
 
         if cost_pes > 0:
             pecost = cost_pes
@@ -246,14 +246,15 @@ class _TimingParser:
                    " instances (stride) \n")
         self.write("  ---------        ------     -------   ------   "
                    "------  ---------  ------  \n")
-
+        maxthrds = 0
         for k in ['CPL', 'GLC', 'WAV', 'LND', 'ROF', 'ICE', 'ATM', 'OCN']:
             m = self.models[k]
             self.write("  %s = %-8s   %-6u      %-6u   %-6u x %-6u  "
                        "%-6u (%-6u) \n"
                        % (m.name.lower(), m.comp, (m.ntasks*m.nthrds *smt_factor), m.rootpe,
                           m.ntasks, m.nthrds, m.ninst, m.pstrid))
-
+            if m.nthrds > maxthrds:
+                maxthrds = m.nthrds
         nmax  = self.gettime(' CPL:INIT ')[1]
         tmax  = self.gettime(' CPL:RUN_LOOP ')[1]
         wtmax = self.gettime(' CPL:TPROF_WRITE ')[1]
@@ -296,7 +297,7 @@ class _TimingParser:
             tmaxr = adays*86400.0/(tmax*365.0)
 
         self.write("\n")
-        self.write("  total pes active           : %s \n" % totalpes)
+        self.write("  total pes active           : %s \n" % (totalpes*maxthrds*smt_factor ))
         self.write("  pes per node               : %s \n" % pes_per_node)
         self.write("  pe count for cost estimate : %s \n" % pecost)
         self.write("\n")

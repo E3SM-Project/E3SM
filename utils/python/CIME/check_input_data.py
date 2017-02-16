@@ -135,7 +135,7 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
 
     no_files_missing = True
     for data_list_file in data_list_files:
-        logging.info("Loading input file: '%s'" % data_list_file)
+        logging.info("Loading input file list: '%s'" % data_list_file)
         with open(data_list_file, "r") as fd:
             lines = fd.readlines()
 
@@ -160,7 +160,7 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                                 logging.warning("    Cannot download file since it lives outside of the input_data_root '%s'" % input_data_root)
                             no_files_missing = False
                         else:
-                            logging.info("  Found input file: '%s'" % full_path)
+                            logging.debug("  Found input file: '%s'" % full_path)
 
                     else:
                         # There are some special values of rel_path that
@@ -186,10 +186,9 @@ def check_input_data(case, svn_loc=None, input_data_root=None, data_list_dir="Bu
                             else:
                                 no_files_missing = False
                         else:
-                            logging.info("  Already had input file: '%s'" % full_path)
+                            logging.debug("  Already had input file: '%s'" % full_path)
 
                 else:
                     model = os.path.basename(data_list_file).split('.')[0]
                     logging.warning("Model %s no file specified for %s"%(model,description))
-
     return no_files_missing
