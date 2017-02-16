@@ -294,6 +294,7 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False):
                                cimeroot, libroot, lid, compiler)
 
     if not sharedlib_only:
+        os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
         logs.extend(build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                                 lid, caseroot, cimeroot, compiler))
 
