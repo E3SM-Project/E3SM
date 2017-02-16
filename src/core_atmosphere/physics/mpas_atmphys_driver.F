@@ -255,14 +255,14 @@
 
     !call to surface-layer scheme:
     if(config_sfclayer_scheme .ne. 'off') then
-       call allocate_sfclayer(config_frac_seaice)
+       call allocate_sfclayer(block%configs)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_sfclayer(itimestep,block%configs,mesh,diag_physics,sfc_input, &
                                cellSolveThreadStart(thread), cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
-       call deallocate_sfclayer(config_frac_seaice)
+       call deallocate_sfclayer(block%configs)
     endif
 
     !call to 1d ocean mixed-layer model

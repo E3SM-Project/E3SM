@@ -74,6 +74,9 @@
 ! * removed the initialization local variable lsm_scheme. lsm_scheme is no longer needed and can be replaced
 !   with config_lsm_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable sfclayer_scheme. sfclayer_scheme is no longer needed and can be
+!   replaced with config_sfclayer_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
 !=================================================================================================================
@@ -86,7 +89,6 @@
  character(len=StrKIND),public:: radt_cld_scheme
  character(len=StrKIND),public:: radt_lw_scheme
  character(len=StrKIND),public:: radt_sw_scheme
- character(len=StrKIND),public:: sfclayer_scheme
 
 !=================================================================================================================
 !wrf-variables:these variables are needed to keep calls to different physics parameterizations

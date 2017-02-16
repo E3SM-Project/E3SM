@@ -103,6 +103,9 @@
 ! * in subroutine physics_run_init, removed the initialization of the local variable lsm_scheme. lsm_scheme
 !   is no longer needed and can be replaced with config_lsm_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable sfclayer_scheme.
+!   sfclayer_scheme is no longer needed and can be replaced with config_sfclayer_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
  contains
@@ -368,8 +371,7 @@
                                   config_pbl_scheme,             &
                                   config_radt_cld_scheme,        &
                                   config_radt_lw_scheme,         &
-                                  config_radt_sw_scheme,         &
-                                  config_sfclayer_scheme
+                                  config_radt_sw_scheme
 
  character(len=StrKIND),pointer:: config_conv_interval,          &
                                   config_pbl_interval,           &
@@ -408,7 +410,6 @@
  call mpas_pool_get_config(configs,'config_radt_cld_scheme'  ,config_radt_cld_scheme  )
  call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
- call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
  call mpas_pool_get_config(configs,'config_conv_interval'    ,config_conv_interval    )
  call mpas_pool_get_config(configs,'config_pbl_interval'     ,config_pbl_interval     )
@@ -671,7 +672,6 @@
  radt_cld_scheme   = trim(config_radt_cld_scheme)
  radt_lw_scheme    = trim(config_radt_lw_scheme)
  radt_sw_scheme    = trim(config_radt_sw_scheme)
- sfclayer_scheme   = trim(config_sfclayer_scheme)
 
  if(trim(config_lsm_scheme) .eq. "noah") sf_surface_physics = 2 
 
