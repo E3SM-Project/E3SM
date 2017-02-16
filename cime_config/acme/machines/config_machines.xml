@@ -1195,6 +1195,9 @@
 <machine MACH="sooty">
     <DESC>PNL cluster, OS is Linux, batch system is SLURM</DESC>
     <NODENAME_REGEX>sooty</NODENAME_REGEX>
+    <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
+    <EXEROOT>/lustre/$USER/csmruns/$CASE/bld</EXEROOT>
+    <CESMSCRATCHROOT>/lustre/$USER/</CESMSCRATCHROOT>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi</COMPILERS>
     <MPILIBS>mvapich2</MPILIBS>
@@ -1240,6 +1243,7 @@
         <command name="load">perl/5.20.0</command>
         <command name="load">cmake/3.3.0</command>
         <command name="load">python/2.7.8</command>
+	    <command name="load">svn/1.8.13</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/15.0.1</command>
