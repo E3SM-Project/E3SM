@@ -106,6 +106,9 @@
 ! * in subroutine physics_run_init, removed the initialization of the local variable sfclayer_scheme.
 !   sfclayer_scheme is no longer needed and can be replaced with config_sfclayer_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * in subroutine physics_run_init, removed the initialization of the local variable pbl_scheme. pbl_scheme
+!   is no longer needed and can be replaced with config_pbl_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
  contains
@@ -368,7 +371,6 @@
  character(len=StrKIND),pointer:: config_convection_scheme,      &
                                   config_lsm_scheme,             &
                                   config_microp_scheme,          &
-                                  config_pbl_scheme,             &
                                   config_radt_cld_scheme,        &
                                   config_radt_lw_scheme,         &
                                   config_radt_sw_scheme
@@ -406,7 +408,6 @@
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
- call mpas_pool_get_config(configs,'config_pbl_scheme'       ,config_pbl_scheme       )
  call mpas_pool_get_config(configs,'config_radt_cld_scheme'  ,config_radt_cld_scheme  )
  call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
@@ -668,7 +669,6 @@
 
  convection_scheme = trim(config_convection_scheme)
  microp_scheme     = trim(config_microp_scheme)
- pbl_scheme        = trim(config_pbl_scheme)
  radt_cld_scheme   = trim(config_radt_cld_scheme)
  radt_lw_scheme    = trim(config_radt_lw_scheme)
  radt_sw_scheme    = trim(config_radt_sw_scheme)

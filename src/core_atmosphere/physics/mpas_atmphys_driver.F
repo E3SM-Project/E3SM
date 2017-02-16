@@ -188,14 +188,14 @@
     call mpas_pool_get_dimension(block % dimensions, 'cellSolveThreadEnd', cellSolveThreadEnd)
 
     !allocate arrays shared by all physics parameterizations:
-    call allocate_forall_physics
+    call allocate_forall_physics(configs)
 
     !physics prep step:
     time_lev = 1
 
 !$OMP PARALLEL DO
     do thread=1,nThreads
-       call MPAS_to_physics(mesh,state,time_lev,diag,diag_physics, &
+       call MPAS_to_physics(configs,mesh,state,time_lev,diag,diag_physics, &
                             cellSolveThreadStart(thread), cellSolveThreadEnd(thread))
     end do
 !$OMP END PARALLEL DO
@@ -282,14 +282,14 @@
 
     !call to pbl schemes:
     if(config_pbl_scheme .ne. 'off' .and. config_sfclayer_scheme .ne. 'off') then
-       call allocate_pbl
+       call allocate_pbl(configs)
 !$OMP PARALLEL DO
        do thread=1,nThreads
           call driver_pbl(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics, &
                           cellSolveThreadStart(thread),cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
-       call deallocate_pbl
+       call deallocate_pbl(configs)
     endif
 
     !call to gravity wave drag over orography scheme:
@@ -332,7 +332,7 @@
     end if
 
     !deallocate arrays shared by all physics parameterizations:
-    call deallocate_forall_physics
+    call deallocate_forall_physics(configs)
 
     block => block % next
  end do 

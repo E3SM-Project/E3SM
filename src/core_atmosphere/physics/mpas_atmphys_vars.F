@@ -77,6 +77,9 @@
 ! * removed the initialization local variable sfclayer_scheme. sfclayer_scheme is no longer needed and can be
 !   replaced with config_sfclayer_scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable pbl_scheme. pbl_scheme is no longer needed and can be replaced
+!   replaced with config_pbl_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
 
 !=================================================================================================================
@@ -85,7 +88,6 @@
 
  character(len=StrKIND),public:: microp_scheme
  character(len=StrKIND),public:: convection_scheme
- character(len=StrKIND),public:: pbl_scheme
  character(len=StrKIND),public:: radt_cld_scheme
  character(len=StrKIND),public:: radt_lw_scheme
  character(len=StrKIND),public:: radt_sw_scheme

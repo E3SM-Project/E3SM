@@ -12,7 +12,7 @@
  use mpas_dmpar
 
  use mpas_atmphys_constants, only: R_d,R_v,degrad
- use mpas_atmphys_vars, only: pbl_scheme,convection_scheme
+ use mpas_atmphys_vars, only: convection_scheme
 
  implicit none
  private
@@ -529,7 +529,7 @@
        enddo
        enddo
 
-       pbl_select: select case (trim(pbl_scheme))
+       pbl_select: select case (trim(config_pbl_scheme))
 
           case("bl_mynn")
 
@@ -713,7 +713,7 @@
        enddo
        enddo
 
-       pbl_select: select case (trim(pbl_scheme))
+       pbl_select: select case (trim(config_pbl_scheme))
 
           case("bl_mynn")
 
