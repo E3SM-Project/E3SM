@@ -404,9 +404,9 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values>
-      <value compset="DATM.+POP\d">true</value>
-      <value compset="DATM.*_MPASO">true</value>
-      <value compset="DATM.+DOCN%IAF">true</value>
+      <value compset="DATM.+POP\d">TRUE</value>
+      <value compset="DATM.*_MPASO">TRUE</value>
+      <value compset="DATM.+DOCN%IAF">TRUE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
