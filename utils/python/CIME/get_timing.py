@@ -122,7 +122,7 @@ class _TimingParser:
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
         atm_ncpl = self.case.get_value("ATM_NCPL")
         ocn_ncpl = self.case.get_value("OCN_NCPL")
-        ccsm_compset = self.case.get_value("CCSM_COMPSET")
+        ccsm_compset = self.case.get_value("COMPSET")
         if ccsm_compset is None:
             ccsm_compset = ""
         grid = self.case.get_value("GRID")
