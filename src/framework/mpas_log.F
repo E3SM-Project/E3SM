@@ -100,7 +100,7 @@ module mpas_log
       ! input variables
       !-----------------------------------------------------------------
       type (domain_type), pointer, intent(in) :: domain !< Input: domain information
-      integer, intent(in), optional :: logUnit !< Input - Optional: Unit to set log unit to
+      integer, intent(in), optional :: logUnit !< Input - Optional: Unit (already open) to set log unit to
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -117,7 +117,13 @@ module mpas_log
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+
+      ! Variables used to inquire about info on a pre-existing file unit (if supplied)
+      logical :: isOpen
+      character(len=16) :: writeSetting, sequentialSetting, formattedSetting ! length just needs to store 'YES'
+
       integer :: err_tmp
+
 
       err = 0
 
@@ -154,34 +160,59 @@ module mpas_log
       ! Open log file if it is active
       if (mpas_log_info % logActive) then
 
-         ! Generate the log file name
-         ! TODO: routine to expand procid with various numbers of digits.  Unify with usage in global_abort routine.
-         write(mpas_log_info % logFileName, fmt='(a, i4.4, a)') "stick.", mpas_log_info % taskID, ".out"
+         ! If a pre-opened unit is provided, just use that
+         if(present(logUnit)) then
 
-         ! Determine the unit number
-         if(present(logUnit)) then  ! TODO If unit number provided, that should assume the file has already been opened!
-            mpas_log_info % logUnit = logUnit
-         else
+            mpas_log_info % logUnit = logUnit  ! save unit number
+
+            ! Retrieve metadata for this unit to get the file name, and to check it is an approriate unit for a log
+            inquire(logUnit, name=mpas_log_info % logFileName, opened=isOpen, write=writeSetting, &
+               sequential=sequentialSetting, formatted=formattedSetting, iostat=err_tmp)
+
+            if (err_tmp > 0) then
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit could not be inquired!')
+            endif
+            if (.not. isOpen) then
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to an open file!')
+            endif
+            if (trim(writeSetting) /= 'YES') then
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to a file with write settings!')
+            endif
+            if (trim(sequentialSetting) /= 'YES') then
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to a file with sequential access!')
+            endif
+            if (trim(formattedSetting) /= 'YES') then
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to a file connected for formatted output!')
+            endif
+
+         else  ! If not, we need to set the file name and unit and open it ourselves
+
+            ! Generate the log file name
+            ! TODO: routine to expand procid with various numbers of digits.  Unify with usage in global_abort routine.
+            write(mpas_log_info % logFileName, fmt='(a, i4.4, a)') "stick.", mpas_log_info % taskID, ".out"
+
+            ! Determine the unit number
             call mpas_new_unit(mpas_log_info % logUnit)
-         end if
 
-         ! Open the file
-         open (unit = mpas_log_info % logUnit, file = mpas_log_info % logFileName, &
-            action="WRITE", status="REPLACE", IOSTAT=err_tmp)
-         if ( err_tmp /= 0 ) then
-            call mpas_dmpar_global_abort('ERROR: Opening of log file failed for filename: ' // mpas_log_info % logFileName)
-         end if
-         err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error
+            ! Open the file
+            open (unit = mpas_log_info % logUnit, file = mpas_log_info % logFileName, &
+               action="WRITE", status="REPLACE", IOSTAT=err_tmp)
+            if ( err_tmp /= 0 ) then
+               call mpas_dmpar_global_abort('ERROR: Opening of log file failed for filename: ' // mpas_log_info % logFileName)
+            end if
+            err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error
 
-         ! -- Test message --
+         endif ! if logUnit was provided
+
+         ! -- Write a header message --
+         !write(mpas_log_info % logUnit,*) "Hello world!"
          write(mpas_log_info % logUnit, '(a)') '------------------------------------------------------'
          write(mpas_log_info % logUnit, '(a,a,a,i5,a,i5)') 'Beginning MPAS-', trim(mpas_log_info % coreName), ' log file for task ', mpas_log_info % taskID, ' of ', domain % dminfo % nprocs
          write(mpas_log_info % logUnit, '(a)') '------------------------------------------------------'
          write(mpas_log_info % logUnit, '(a)') ''
-         !write(mpas_log_info % logUnit,*) "Hello world!"
-         flush(mpas_log_info % logUnit)
+         flush(mpas_log_info % logUnit)  ! flush header message immediately to eliminate potential confusion
 
-      endif
+      endif  ! if logActive
 
 
    !--------------------------------------------------------------------
