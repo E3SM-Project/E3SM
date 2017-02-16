@@ -946,6 +946,7 @@ int GPTLstartf (const char *name, const int namelen)    /* timer name and length
 {
   Timer *ptr;        /* linked list pointer */
   int t;             /* thread index (of this thread) */
+  int c;             /* character index */
   int numchars;      /* number of characters to copy */
   unsigned int indx; /* hash table index */
   char strname[MAX_CHARS+1]; /* null terminated version of name */
@@ -1029,7 +1030,10 @@ int GPTLstartf (const char *name, const int namelen)    /* timer name and length
     memset (ptr, 0, sizeof (Timer));
 
     numchars = MIN (namelen, MAX_CHARS);
-    strncpy (ptr->name, name, numchars);
+    //pw    strncpy (ptr->name, name, numchars);
+    for (c = 0; c < numchars; c++) {
+      ptr->name[c] = name[c];
+    }
     ptr->name[numchars] = '\0';
 
     if (update_ll_hash (ptr, t, indx) != 0)
@@ -1074,6 +1078,7 @@ int GPTLstartf_handle (const char *name,  /* timer name */
 {
   Timer *ptr;                            /* linked list pointer */
   int t;                                 /* thread index (of this thread) */
+  int c;                                 /* character index */
   int numchars;                          /* number of characters to copy */
   unsigned int indx = (unsigned int) -1; /* hash table index: init to bad value */
   char strname[MAX_CHARS+1];             /* null terminated version of name */
@@ -1161,7 +1166,10 @@ int GPTLstartf_handle (const char *name,  /* timer name */
     memset (ptr, 0, sizeof (Timer));
 
     numchars = MIN (namelen, MAX_CHARS);
-    strncpy (ptr->name, name, numchars);
+    //pw    strncpy (ptr->name, name, numchars);
+    for (c = 0; c < numchars; c++) {
+      ptr->name[c] = name[c];
+    }
     ptr->name[numchars] = '\0';
 
     if (update_ll_hash (ptr, t, indx) != 0)
@@ -1666,6 +1674,7 @@ int GPTLstopf (const char *name, const int namelen) /* timer name and length */
   unsigned int indx;         /* index into hash table */
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
+  int c;                     /* character index */
   int numchars;              /* number of characters to copy */
   char strname[MAX_CHARS+1]; /* null terminated version of name */
   double tpa = 0.0;          /* time stamp */
@@ -1713,7 +1722,10 @@ int GPTLstopf (const char *name, const int namelen) /* timer name and length */
 
   if ( ! (ptr = getentryf (hashtable[t], name, namelen, &indx))){
     numchars = MIN (namelen, MAX_CHARS);
-    strncpy (strname, name, numchars);
+    //pw    strncpy (strname, name, numchars);
+    for (c = 0; c < numchars; c++) {
+      strname[c] = name[c];
+    }
     strname[numchars] = '\0';
     return GPTLerror ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, strname);
   }
@@ -1786,6 +1798,7 @@ int GPTLstopf_handle (const char *name,     /* timer name */
   unsigned int indx;         /* index into hash table */
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
+  int c;                     /* character index */
   int numchars;              /* number of characters to copy */
   char strname[MAX_CHARS+1]; /* null terminated version of name */
   double tpa = 0.0;          /* time stamp */
@@ -1841,7 +1854,10 @@ int GPTLstopf_handle (const char *name,     /* timer name */
   } else {
     if ( ! (ptr = getentryf (hashtable[t], name, namelen, &indx))){
       numchars = MIN (namelen, MAX_CHARS);
-      strncpy (strname, name, numchars);
+      //pw      strncpy (strname, name, numchars);
+      for (c = 0; c < numchars; c++) {
+        strname[c] = name[c];
+      }
       strname[numchars] = '\0';
       return GPTLerror ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, strname);
     }
