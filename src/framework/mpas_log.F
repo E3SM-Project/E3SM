@@ -121,7 +121,12 @@ module mpas_log
 
       err = 0
 
-      ! Point the module-level log instance to the one the core already set up
+      ! Create log instance
+      call mpas_log_instance_create(coreLogInfo, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! Point the module-level log instance to the core's instance
+      ! (From this point onward, only use the module level instance)
       mpas_log_info => coreLogInfo
 
       ! Store the name of this core (makes it available for inserting into messages or filenames)
