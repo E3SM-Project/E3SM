@@ -60,7 +60,7 @@ class NamelistGenerator(object):
     _streams_variables = []
 
     #pylint:disable=too-many-arguments
-    def __init__(self, case, definition_files):
+    def __init__(self, case, definition_files, files=None):
         """Construct a namelist generator.
 
         Arguments:
@@ -74,7 +74,7 @@ class NamelistGenerator(object):
         self._din_loc_root = case.get_value('DIN_LOC_ROOT')
 
         # Create definition object - this will validate the xml schema in the definition file
-        self._definition = NamelistDefinition(definition_files[0])
+        self._definition = NamelistDefinition(definition_files[0], files=files)
 
         # Determine array of _stream_variables from definition object
         # This is only applicable to data models
@@ -98,10 +98,10 @@ class NamelistGenerator(object):
         """
         self._definition.set_nodes(skip_groups=skip_groups)
 
-        # Determine the array of entry nodes that will be acted upon 
+        # Determine the array of entry nodes that will be acted upon
         entry_nodes = self._definition.set_nodes(skip_groups=skip_groups)
 
-        # Add attributes to definition object 
+        # Add attributes to definition object
         self._definition.add_attributes(config)
 
         # Parse the infile and create namelist settings for the contents of infile
@@ -523,13 +523,13 @@ class NamelistGenerator(object):
         if current_literals != [""]:
             have_value = True
             # Do not proceed further since this has been obtained the -infile contents
-            return 
+            return
 
         # Check for input argument.
         if value is not None:
             have_value = True
             # if compression were to occur, this is where it does
-            literals = self._to_namelist_literals(name, value) 
+            literals = self._to_namelist_literals(name, value)
             current_literals = merge_literal_lists(literals, current_literals)
 
         # Check for default value.

@@ -12,10 +12,11 @@ from CIME.preview_namelists         import create_namelists
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.check_input_data          import check_all_input_data
 from CIME.case_cmpgen_namelists     import case_cmpgen_namelists
+from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
 
-def submit(case, job=None, resubmit=False, no_batch=False):
+def _submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
     caseroot = case.get_value("CASEROOT")
 
     if job is None:
@@ -61,10 +62,26 @@ def submit(case, job=None, resubmit=False, no_batch=False):
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
 
-    logger.warn("submit_jobs %s"%job)
-    job_ids = case.submit_jobs(no_batch=no_batch, job=job)
-    msg = "Submitted jobs %s"%job_ids
+    logger.warn("submit_jobs %s" % job)
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job, batch_args=batch_args)
+    msg = "Submitted jobs %s" % job_ids
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
+
+def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
+    try:
+        _submit(case, job=job, resubmit=resubmit, no_batch=no_batch, batch_args=batch_args)
+    except:
+        # If something failed in the batch system, make sure to mark
+        # the test as failed if we are running a test.
+        if case.get_value("TEST"):
+            caseroot = case.get_value("CASEROOT")
+            casebaseid = case.get_value("CASEBASEID")
+            with TestStatus(test_dir=caseroot, test_name=casebaseid, lock=True) as ts:
+                ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="batch system failure")
+
+            append_status("Batch submission failed, TestStatus file changed to read-only", caseroot=caseroot, sfile="TestStatus.log")
+
+        raise
 
 def check_case(case, caseroot):
     check_lockedfiles(caseroot)

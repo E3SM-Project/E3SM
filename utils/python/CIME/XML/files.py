@@ -18,8 +18,10 @@ class Files(EntryID):
         >>> files.get_value('CASEFILE_HEADERS',resolved=False)
         '$CIMEROOT/cime_config/config_headers.xml'
         """
-        infile = os.path.join(get_cime_root(), "cime_config", get_model(), "config_files.xml")
-        EntryID.__init__(self, infile)
+        cimeroot = get_cime_root()
+        infile = os.path.join(cimeroot, "cime_config", get_model(), "config_files.xml")
+        schema = os.path.join(cimeroot, "cime_config", "xml_schemas", "entry_id.xsd")
+        EntryID.__init__(self, infile, schema=schema)
 
     def get_schema(self, nodename):
         node = self.get_optional_node("entry", {"id":nodename})

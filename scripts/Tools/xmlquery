@@ -21,16 +21,41 @@ from standard_script_setup import *
 
 from CIME.case import Case
 from CIME.utils import expect, convert_to_string
-import textwrap
-import sys
+
+import textwrap, sys, re
 
 logger = logging.getLogger("xmlquery")
 
 ###############################################################################
 def parse_command_line(args):
 ###############################################################################
-    parser = argparse.ArgumentParser(   description="Query the xml files for attributes and return their values." ,
-                                        formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(__doc__) )
+    parser = argparse.ArgumentParser(
+usage="""%s <VAR> [<VAR> <VAR> ...]
+
+Examples:
+
+# Show NTASKS for all components
+> %s NTASKS
+
+# Show RUNDIR
+> %s RUNDIR
+
+# Show all vars containing the substring ROOT
+> %s -p ROOT
+
+# Show all vars in the case
+> %s --listall
+
+# Show everything in the run_pio subgroup
+> %s --listall --subgroup=run_pio
+
+# Show all vars containing the substring ROOT in subgroup build_def
+> %s -p ROOT --subgroup build_def""" % ((os.path.basename(sys.argv[0]), ) * 7),
+
+description="Query the xml files for attributes and return their values." ,
+formatter_class=argparse.RawDescriptionHelpFormatter,
+epilog=textwrap.dedent(__doc__))
+
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
@@ -38,7 +63,7 @@ def parse_command_line(args):
                         help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> )")
 
     parser.add_argument("-file" , "--file",
-                        help="depreciated option, do not use")
+                        help="deprecated option, do not use")
 
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
@@ -51,6 +76,9 @@ def parse_command_line(args):
 
     parser.add_argument("-no-resolve", "--no-resolve", action="store_true",
                         help="Do not resolve variable values")
+
+    parser.add_argument("-p", "--partial-match", action="store_true",
+                        help="Allow partial matches of variable names, treats args as regex.")
 
     group = parser.add_mutually_exclusive_group()
 
@@ -90,11 +118,9 @@ def parse_command_line(args):
     else:
         variables = args.variables
 
-
     return variables, args.subgroup, args.caseroot, args.listall, args.fileonly, \
         args.value, args.no_resolve, args.raw, args.description, args.group, args.full, \
-        args.type, args.valid_values
-
+        args.type, args.valid_values, args.partial_match
 
 def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
     thistype = case.get_type_info(var)
@@ -163,12 +189,40 @@ def _main_func():
     # Initialize command line parser and get command line options
     variables, subgroup, caseroot, listall,  fileonly, \
         value, no_resolve, raw, description, group, full, dtype, \
-        valid_values = parse_command_line(sys.argv)
+        valid_values, partial_match = parse_command_line(sys.argv)
 
     # Initialize case ; read in all xml files from caseroot
     with Case(caseroot) as case:
-        if listall:
-            variables = sorted(case.get_record_fields(None, "varid"))
+        if listall or partial_match:
+            all_variables = sorted(case.get_record_fields(None, "varid"))
+            if partial_match:
+                all_matching_vars = []
+                for variable in variables:
+                    regex = re.compile(variable)
+                    for all_variable in all_variables:
+                        if regex.search(all_variable):
+                            if subgroup is not None:
+                                vargroups = case.get_record_fields(all_variable, "group")
+                                if subgroup not in vargroups:
+                                    continue
+
+                            all_matching_vars.append(all_variable)
+
+                variables = all_matching_vars
+            else:
+                if subgroup is not None:
+                    all_matching_vars = []
+                    for all_variable in all_variables:
+                        vargroups = case.get_record_fields(all_variable, "group")
+                        if subgroup not in vargroups:
+                            continue
+                        else:
+                            all_matching_vars.append(all_variable)
+
+                    variables = all_matching_vars
+                else:
+                    variables = all_variables
+
         expect(variables, "No variables found")
         results = xmlquery(case, variables, subgroup, fileonly, resolved=not no_resolve,
                            raw=raw, description=description, group=group, full=full,

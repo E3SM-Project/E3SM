@@ -5,23 +5,40 @@ Common interface to XML files which follow the compsets format,
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.entry_id import EntryID
+from CIME.XML.files import Files
+
 
 logger = logging.getLogger(__name__)
 
 class Compsets(GenericXML):
 
-    def __init__(self, infile=None):
-        GenericXML.__init__(self, infile)
+    def __init__(self, infile=None, files=None):
+        if files is None:
+            files = Files()
+        schema = files.get_schema("COMPSETS_SPEC_FILE")
+        GenericXML.__init__(self, infile, schema=schema)
         self.groups={}
 
     def get_compset_match(self, name):
+        """
+        science support is used in cesm to determine if this compset and grid
+        is scientifically supported.   science_support is returned as an array of grids for this compset
+        """
         nodes = self.get_nodes("compset")
+        alias = None
+        lname = None
+        science_support = []
         for node in nodes:
-            alias = self.get_node("alias",root=node)
-            lname = self.get_node("lname",root=node)
-            if alias.text == name or lname.text == name:
-                logger.debug("Found node match with alias: %s and lname: %s" % (alias.text, lname.text))
-                return lname.text
+            alias = self.get_element_text("alias",root=node)
+            lname = self.get_element_text("lname",root=node)
+            if alias == name or lname == name:
+                science_support_nodes = self.get_nodes("science_support", root=node)
+                for node in science_support_nodes:
+                    science_support.append(node.get("grid"))
+
+                logger.debug("Found node match with alias: %s and lname: %s" % (alias, lname))
+                return (lname, alias, science_support)
+        return (None, None, False)
 
     def get_compset_var_settings(self, compset, grid):
         '''

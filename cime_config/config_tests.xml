@@ -185,6 +185,16 @@ LII    CLM initial condition interpolation test
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>22</STOP_N>
     <DOUT_S>FALSE</DOUT_S>
+    <RUN_TYPE>startup</RUN_TYPE>
+    <RUN_REFCASE>case.std</RUN_REFCASE>
+    <RUN_REFDATE>0001-01-01</RUN_REFDATE>
+    <RUN_REFTOD>00000</RUN_REFTOD>
+    <REST_OPTION>ndays</REST_OPTION>
+    <REST_N>$STOP_N</REST_N>
+    <GET_REFCASE>FALSE</GET_REFCASE>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <HIST_OPTION>never</HIST_OPTION>
+    <HIST_N>-999</HIST_N>
   </test>
 
   <test NAME="ERP">
@@ -201,6 +211,10 @@ LII    CLM initial condition interpolation test
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
+    <REST_N>$STOP_N / 2 + 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <DOUT_S>FALSE</DOUT_S>
     <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
@@ -219,8 +233,13 @@ LII    CLM initial condition interpolation test
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>7</STOP_N>
+    <REST_N>$STOP_N / 2 + 1</REST_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
     <DOUT_S>TRUE</DOUT_S>
     <RESUBMIT>1</RESUBMIT>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
   </test>
 
   <test NAME="ERT">
@@ -239,6 +258,16 @@ LII    CLM initial condition interpolation test
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
     <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="PRE">
+    <DESC>pause/resume test, default 5 hours, five pause/resume cycles, no data modification</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>nhours</STOP_OPTION>
+    <STOP_N>5</STOP_N>
+    <HIST_OPTION>nhours</HIST_OPTION>
+    <HIST_N>1</HIST_N>
     <DOUT_S>FALSE</DOUT_S>
   </test>
 

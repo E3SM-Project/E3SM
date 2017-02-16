@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<compsets>
+<compsets version="2.0">
 
   <help>
     =========================================
@@ -11,7 +11,7 @@
 
     The notation for the compset longname is
     TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
-    Where for the CAM specific compsets below the following is supported
+    Where for the specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [CAM40, CAM50, CAM60]
     LND  = [CLM45, CLM50, SLND]
@@ -25,8 +25,7 @@
 
     The OPTIONAL %phys attributes specify submodes of the given system
     For example DOCN%DOM is the data ocean model for DOCN
-    ALL the possible %phys choices for each component are listed
-    with the -list command for create_newcase
+    ALL the possible %phys choices for each component are listed.
     ALL data models must have a %phys option that corresponds to the data  model mode
 
     Each compset node is associated with the following elements
@@ -48,6 +47,7 @@
   <compset>
     <alias>B1850</alias>
     <lname>1850_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD</lname>
+    <science_support grid="f09_g16"/>
   </compset>
 
   <compset>
@@ -60,7 +60,7 @@
     <lname>1850_CAM60%WTSM_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_WW3</lname>
   </compset>
 
-  <!-- 
+  <!--
        Other B water isotope compsets that are only relevant for clm water isotope branches
        where only clm40 is supported
   -->
@@ -111,7 +111,7 @@
     <alias>BHISTWs</alias>
     <lname>HIST_CAM60_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM2%NOEVOLVE_SWAV_BGC%BDRD</lname>
   </compset>
-  
+
   <!-- <compset> -->
   <!--   <alias>B1850C4RCO2L40CNR</alias> -->
   <!--   <lname>1850_CAM40%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname> -->

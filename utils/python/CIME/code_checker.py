@@ -23,9 +23,10 @@ def _run_pylint(on_file, interactive):
         cmd_options +=",relative-import"
 
     # add init-hook option
-    cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\"))'"%\
+    cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\",\"%s\"))'"%\
         (os.path.join(cimeroot,"utils","python"),
-         os.path.join(cimeroot,"scripts","Tools"))
+         os.path.join(cimeroot,"scripts","Tools"),
+         os.path.join(cimeroot,"tools","unit_testing","python"))
 
     cmd = "%s %s %s" % (pylint, cmd_options, on_file)
     logger.debug("pylint command is %s"%cmd)
@@ -53,7 +54,7 @@ def _matches(file_path, file_ends):
 def _should_pylint_skip(filepath):
 ###############################################################################
     # TODO - get rid of this
-    list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs", "unit_test")
+    list_of_directories_to_ignore = ("xmlconvertors", "pointclm", "point_clm", "tools", "machines", "apidocs")
     for dir_to_skip in list_of_directories_to_ignore:
         if dir_to_skip in filepath:
             return True

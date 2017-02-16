@@ -209,7 +209,7 @@ class EnvBatch(EnvBase):
 
             walltime = self.get_max_walltime(queue) if walltime is None else walltime
             if walltime is None:
-                logger.warn("Could not find a queue matching task count %d, falling back to depreciated default walltime parameter"%task_count)
+                logger.warn("Could not find a queue matching task count %d, falling back to deprecated default walltime parameter"%task_count)
                 #if the user names a queue which is not defined in config_batch.xml and does not set a
                 #walltime, fall back to the max walltime in the default queue
                 if force_queue:
@@ -286,7 +286,7 @@ class EnvBatch(EnvBase):
 
         return submitargs
 
-    def submit_jobs(self, case, no_batch=False, job=None):
+    def submit_jobs(self, case, no_batch=False, job=None, batch_args=None):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
@@ -311,6 +311,7 @@ class EnvBatch(EnvBase):
                 jobs.append((job,self.get_value('dependency', subgroup=job)))
             if self.batchtype == "cobalt":
                 break
+
         depid = {}
         for job, dependency in jobs:
             if dependency is not None:
@@ -335,12 +336,13 @@ class EnvBatch(EnvBase):
                 jobid = None
 
             logger.warn("job is %s"%job)
-            depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch)
+            depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch, batch_args=batch_args)
             if self.batchtype == "cobalt":
                 break
+
         return sorted(list(depid.values()))
 
-    def submit_single_job(self, case, job, depid=None, no_batch=False):
+    def submit_single_job(self, case, job, depid=None, no_batch=False, batch_args=None):
         logger.warn("Submit job %s"%job)
         caseroot = case.get_value("CASEROOT")
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
@@ -374,6 +376,9 @@ class EnvBatch(EnvBase):
             dep_string = dep_string.replace("jobid",depid.strip()) # pylint: disable=maybe-no-member
             submitargs += " " + dep_string
 
+        if batch_args is not None:
+            submitargs += " " + batch_args
+
         batchsubmit = self.get_value("batch_submit", subgroup=None)
         expect(batchsubmit is not None,
                "Unable to determine the correct command for batch submission.")
@@ -403,7 +408,10 @@ class EnvBatch(EnvBase):
     def get_job_id(self, output):
         jobid_pattern = self.get_value("jobid_pattern", subgroup=None)
         expect(jobid_pattern is not None, "Could not find jobid_pattern in env_batch.xml")
-        jobid = re.search(jobid_pattern, output).group(1)
+        search_match = re.search(jobid_pattern, output)
+        expect(search_match is not None,
+               "Couldn't match jobid_pattern '%s' within submit output:\n '%s'" % (jobid_pattern, output))
+        jobid = search_match.group(1)
         return jobid
 
     def select_best_queue(self, num_pes, job=None):

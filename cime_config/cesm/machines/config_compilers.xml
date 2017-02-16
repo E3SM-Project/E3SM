@@ -69,6 +69,7 @@ using a fortran linker.
      compilers -->
 <compiler>
   <CPPDEFS>
+    <append> -D<env>OS</env> </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
   </CPPDEFS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
@@ -82,7 +83,7 @@ using a fortran linker.
   </CFLAGS>
   <CPPDEFS>
     <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16</append>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY</append>
     <append MODEL="pop"> -DDIR=NOOP </append>
     <append MODEL="moby"> -DDIR=NOOP </append>
   </CPPDEFS>
@@ -116,7 +117,7 @@ using a fortran linker.
   </CMAKE_OPTS>
   <CPPDEFS>
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16</append>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
   </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
@@ -177,7 +178,7 @@ using a fortran linker.
   -C              => runtime array bounds checking (runs slow)
   -qinitauto=...  => initializes automatic variables
   -->
-    <append> -DFORTRAN_SAME </append>
+    <append> -DFORTRAN_SAME -DCPRIBM </append>
   </CPPDEFS>
   <CPRE>-WF,-D</CPRE>
   <FC_AUTO_R8>
@@ -213,7 +214,7 @@ using a fortran linker.
   </CFLAGS>
   <CPPDEFS>
     <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16</append>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
   </CPPDEFS>
   <CXX_LDFLAGS>
     <base> -cxxlib </base>
@@ -275,7 +276,7 @@ using a fortran linker.
   <FFLAGS>
     <!-- The indirect flag below is to deal with MPI functions that violate    -->
     <!-- the Fortran standard, by adding a large set of arguments from a file. -->
-    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect <env>CIMEROOT</env>/cime_config/cesm/machines/nag_mpi_argument.txt</base>
+    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/cime_config/cesm/machines/nag_mpi_argument.txt</base>
     <!-- DEBUG vs. non-DEBUG runs.                                             -->
     <append DEBUG="FALSE"> -ieee=full -O2 </append>
     <!-- The "-gline" option is nice, but it doesn't work with OpenMP.         -->
@@ -290,7 +291,7 @@ using a fortran linker.
     <append MODEL="cism"> -mismatch_all </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect <env>CIMEROOT</env>/cime_config/cesm/machines/nag_mpi_argument.txt</base>
+    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/cime_config/cesm/machines/nag_mpi_argument.txt</base>
     <append DEBUG="FALSE"> -ieee=full     </append>
     <!-- Hack! If DEBUG="TRUE", put runtime checks in FFLAGS, but not into     -->
     <!-- FFLAGS_NOOPT, allowing strict checks to be removed from files by      -->
@@ -346,7 +347,7 @@ using a fortran linker.
     <!--  -Mlist          => Create a listing file             -->
     <!--  -F              => leaves file.f for each preprocessed file.F file  -->
     <!--  -time           => Print execution time for each compiler step  -->
-    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16  </append>
+    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16  -DCPRPGI </append>
   </CPPDEFS>
   <CXX_LINKER>CXX</CXX_LINKER>
   <FC_AUTO_R8>
@@ -444,9 +445,9 @@ using a fortran linker.
   <MPICC> cc </MPICC>
   <MPICXX> CC </MPICXX>
   <MPIFC> ftn </MPIFC>
-  <NETCDF_PATH><env>NETCDF_DIR</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PARALLEL_NETCDF_DIR</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PARALLEL_NETCDF_DIR}</PNETCDF_PATH>
   <SCC> cc </SCC>
   <SCXX> CC </SCXX>
   <SFC> ftn </SFC>
@@ -480,7 +481,7 @@ using a fortran linker.
     <append> -nofma </append>
   </CFLAGS>
   <CXX_LIBS>
-    <base> -lmpichf90_pgi <env>PGI_PATH</env>/linux86-64/<env>PGI_VERSION</env>/lib/f90main.o </base>
+    <base> -lmpichf90_pgi $ENV{PGI_PATH}/linux86-64/$ENV{PGI_VERSION}/lib/f90main.o </base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -502,10 +503,10 @@ using a fortran linker.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <base> -L<var>NETCDF_PATH</var>/lib -lnetcdf -lnetcdff -lpmi -L<env>MKL_PATH</env> -lmkl_rt</base>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH} -lmkl_rt</base>
   </SLIBS>
 </compiler>
 
@@ -522,10 +523,10 @@ using a fortran linker.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <base> -L<var>NETCDF_PATH</var>/lib -lnetcdf -lnetcdff -lpmi </base>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
   </SLIBS>
 </compiler>
 
@@ -586,10 +587,10 @@ using a fortran linker.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <base> -L<var>NETCDF_PATH</var>/lib -lnetcdf -lnetcdff -lpmi </base>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
   </SLIBS>
 </compiler>
 
@@ -611,10 +612,10 @@ using a fortran linker.
   <LDFLAGS>
     <append compile_threaded="false"> -nomp </append>
   </LDFLAGS>
-  <NETCDF_PATH> <env>NETCDF_HOME</env></NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <base> -L<var>NETCDF_PATH</var>/lib -lnetcdf -lnetcdff -lpmi </base>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
   </SLIBS>
 </compiler>
 
@@ -632,7 +633,7 @@ using a fortran linker.
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
   <SLIBS>
-    <append> -L<env>NETCDF_DIR</env> -lnetcdff -Wl,--as-needed,-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf </append>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
   </SLIBS>
 </compiler>
 
@@ -650,7 +651,7 @@ using a fortran linker.
   <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
   <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
   <SLIBS>
-    <append><shell>/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs</shell></append>
+    <append>$SHELL{/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -660,9 +661,9 @@ using a fortran linker.
   </CPPDEFS>
   <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
   <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
-  <NETCDF_PATH><env>NETCDF_PATH</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell></append>
+    <append>$SHELL{${NETCDF_PATH}/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -676,10 +677,10 @@ using a fortran linker.
   </FFLAGS>
   <LDFLAGS>
     <append> -lquadmath </append>
-    <append> -Wl,-rpath,<var>NETCDF_PATH</var>/lib </append>
-    <append> -Wl,-rpath,<env>COMPILER_PATH</env>/lib/intel64 </append>
-    <append> -Wl,-rpath,<env>COMPILER_PATH</env>/mkl/lib/intel64 </append>
-    <append> -Wl,-rpath,<env>MPI_PATH</env>/lib</append>
+    <append> -Wl,-rpath,${NETCDF_PATH}/lib </append>
+    <append> -Wl,-rpath,$ENV{COMPILER_PATH}/lib/intel64 </append>
+    <append> -Wl,-rpath,$ENV{COMPILER_PATH}/mkl/lib/intel64 </append>
+    <append> -Wl,-rpath,$ENV{MPI_PATH}/lib</append>
     <append> -lifcore</append>
   </LDFLAGS>
   <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_Intel_3_0</PFUNIT_PATH>
@@ -708,9 +709,9 @@ using a fortran linker.
   </FFLAGS>
   <LDFLAGS>
     <append> -lgomp </append>
-    <append> -Wl,-R<var>NETCDF_PATH</var>/lib</append>
-    <append> -Wl,-R<env>COMPILER_PATH</env>/lib</append>
-    <append> -Wl,-R<env>COMPILER_PATH</env>/libso</append>
+    <append> -Wl,-R${NETCDF_PATH}/lib</append>
+    <append> -Wl,-R$ENV{COMPILER_PATH}/lib</append>
+    <append> -Wl,-R$ENV{COMPILER_PATH}/libso</append>
   </LDFLAGS>
 </compiler>
 
@@ -741,10 +742,10 @@ using a fortran linker.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <append> <shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -lblas -llapack</append>
+    <append> $SHELL{${NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack</append>
   </SLIBS>
 </compiler>
 
@@ -755,7 +756,7 @@ using a fortran linker.
   <FFLAGS>
     <append>-qfloat=nomaf</append>
   </FFLAGS>
-  <HDF5_PATH><env>HDF5</env></HDF5_PATH>
+  <HDF5_PATH>$ENV{HDF5}</HDF5_PATH>
   <!-- This LD is a workaround for darshan initialization on mira (Darshan does -->
   <!-- not run if f90 or higher is used for linking -->
   <LD> /home/pkcoff/mpich-sandboxes/master/install-production/bin/mpixlf77_r </LD>
@@ -768,7 +769,7 @@ using a fortran linker.
   <SCC> /home/pkcoff/mpich-sandboxes/master/install-production/bin/mpixlc_r </SCC>
   <SFC> /home/pkcoff/mpich-sandboxes/master/install-production/bin/mpixlf2003_r </SFC>
   <SLIBS>
-    <append>-L<var>NETCDF_PATH</var>/lib -lnetcdff -lnetcdf -L<env>HDF5</env>/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
+    <append>-L${NETCDF_PATH}/lib -lnetcdff -lnetcdf -L$ENV{HDF5}/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
   </SLIBS>
 </compiler>
 
@@ -785,10 +786,10 @@ using a fortran linker.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <NETCDF_PATH> <env>NETCDF_LIB</env>/..</NETCDF_PATH>
+  <NETCDF_PATH> $ENV{NETCDF_LIB}/..</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <base> -L<var>NETCDF_PATH</var>/lib -lnetcdf -lnetcdff -lpmi </base>
+    <base> -L${NETCDF_PATH}/lib -lnetcdf -lnetcdff -lpmi </base>
   </SLIBS>
 </compiler>
 
@@ -798,10 +799,10 @@ using a fortran linker.
   </FFLAGS>
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPI_PATH><env>MPI_ROOT</env></MPI_PATH>
+  <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
   <SLIBS>
-    <append>-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
 </compiler>
 
@@ -811,10 +812,10 @@ using a fortran linker.
   </FFLAGS>
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPI_PATH><env>MPI_ROOT</env></MPI_PATH>
+  <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
   <SLIBS>
-    <append>-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
 </compiler>
 
@@ -824,10 +825,10 @@ using a fortran linker.
   </FFLAGS>
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPI_PATH><env>MPI_ROOT</env></MPI_PATH>
+  <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
   <SLIBS>
-    <append>-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
 </compiler>
 
@@ -837,10 +838,10 @@ using a fortran linker.
   </FFLAGS>
   <MPICC>icc</MPICC>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPI_PATH><env>MPI_ROOT</env></MPI_PATH>
+  <MPI_PATH>$ENV{MPI_ROOT}</MPI_PATH>
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
   <SLIBS>
-    <append>-L<env>NETCDF_DIR</env>/lib -lnetcdff -lnetcdf</append>
+    <append>-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
 </compiler>
 
@@ -852,7 +853,7 @@ using a fortran linker.
   <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
   <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
   <SLIBS>
-    <append><shell>/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs</shell></append>
+    <append>$SHELL{/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -867,11 +868,11 @@ using a fortran linker.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
-  <NETCDF_PATH><env>NETCDFROOT</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDFROOT</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <append> -L<var>NETCDF_PATH</var>/lib -lnetcdff -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
+    <append> -L${NETCDF_PATH}/lib -lnetcdff -L/projects/ccsm/BLAS-intel -lblas_LINUX</append>
   </SLIBS>
 </compiler>
 
@@ -879,9 +880,9 @@ using a fortran linker.
   <CPPDEFS>
     <append> -DHAVE_NANOTIME </append>
   </CPPDEFS>
-  <NETCDF_PATH><env>TACC_NETCDF_DIR</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>TACC_PNETCDF_DIR</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{TACC_PNETCDF_DIR}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="stampede" COMPILER="intel">
@@ -893,12 +894,12 @@ using a fortran linker.
     <append MPILIB="mpi-serial"> -mcmodel medium </append>
   </FFLAGS>
   <LDFLAGS>
-    <append>-L<env>TACC_HDF5_LIB</env> -lhdf5</append>
+    <append>-L$ENV{TACC_HDF5_LIB} -lhdf5</append>
   </LDFLAGS>
   <SLIBS>
-    <append><shell><var>NETCDF_PATH</var>/bin/nf-config --flibs</shell> -L<env>TACC_HDF5_LIB</env> -lhdf5</append>
+    <append>$SHELL{${NETCDF_PATH}/bin/nf-config --flibs} -L$ENV{TACC_HDF5_LIB} -lhdf5</append>
   </SLIBS>
-  <TRILINOS_PATH><env>TRILINOS_PATH</env></TRILINOS_PATH>
+  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="theta">
@@ -931,7 +932,7 @@ using a fortran linker.
   <SCC> mpixlc_r </SCC>
   <SFC> mpixlf2003_r </SFC>
   <SLIBS>
-    <append>-L<var>NETCDF_PATH</var>/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
+    <append>-L${NETCDF_PATH}/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
   </SLIBS>
 </compiler>
 
@@ -948,7 +949,7 @@ using a fortran linker.
   <NETCDF_PATH> USERDEFINED_MUST_EDIT_THIS</NETCDF_PATH>
   <PNETCDF_PATH/>
   <SLIBS>
-    <append># USERDEFINED <shell><var>NETCDF_PATH</var>/bin/nc-config --flibs</shell></append>
+    <append># USERDEFINED $SHELL{${NETCDF_PATH}/bin/nc-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -957,9 +958,9 @@ using a fortran linker.
     <!-- these flags enable nano timers -->
     <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
-  <NETCDF_PATH><env>NETCDF</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDF</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="cheyenne">
@@ -967,9 +968,9 @@ using a fortran linker.
     <!-- these flags enable nano timers -->
     <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
-  <NETCDF_PATH><env>NETCDF</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDF</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
 </compiler>
 <compiler MACH="cheyenne" COMPILER="intel">
   <CFLAGS>
@@ -988,9 +989,9 @@ using a fortran linker.
     <!-- these flags enable nano timers -->
     <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
-  <NETCDF_PATH><env>NETCDF</env></NETCDF_PATH>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH><env>PNETCDF</env></PNETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
 </compiler>
 <compiler MACH="laramie" COMPILER="intel">
   <CFLAGS>
@@ -1006,6 +1007,8 @@ using a fortran linker.
 
 <compiler MACH="yellowstone" COMPILER="gnu">
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
+  <SCC MPILIB="mpi-serial">gcc</SCC>
+  <SFC MPILIB="mpi-serial">gfortran</SFC>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="intel">
@@ -1021,16 +1024,16 @@ using a fortran linker.
   <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
   <PAPI_INC MPILIB="mpich2"> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
   <PAPI_LIB MPILIB="mpich2">/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
-  <PFUNIT_PATH><env>CESMDATAROOT</env>/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
+  <PFUNIT_PATH>$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
   <!-- Needed due to the way that netcdf is loaded on yellowstone -->
   <SCC MPILIB="mpi-serial">icc</SCC>
   <SFC MPILIB="mpi-serial">ifort</SFC>
-  <SCC MPILIB="mpich2"><var>MPICC</var></SCC>
-  <SFC MPILIB="mpich2"><var>MPIFC</var></SFC>
+  <SCC MPILIB="mpich2">${MPICC}</SCC>
+  <SFC MPILIB="mpich2">${MPIFC}</SFC>
   <SLIBS>
-    <append MPILIB="mpich2"> -Wl,-rpath <var>PAPI_LIB</var> -L<var>PAPI_LIB</var> -lpapi</append>
+    <append MPILIB="mpich2"> -Wl,-rpath ${PAPI_LIB} -L${PAPI_LIB} -lpapi</append>
   </SLIBS>
-  <TRILINOS_PATH MPILIB="mpich2"><env>TRILINOS_PATH</env></TRILINOS_PATH>
+  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="pgi">

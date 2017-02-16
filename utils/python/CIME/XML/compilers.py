@@ -53,7 +53,7 @@ class Compilers(GenericXML):
         if self.compiler is not None:
             self.set_compiler(compiler)
 
-        if self._version != "1.0":
+        if self._version > 1.0:
             # Run an XPath query to extract the list of flag variable names.
             ns = {"xs": "http://www.w3.org/2001/XMLSchema"}
             flag_xpath = ".//xs:group[@name='compilerVars']/xs:choice/xs:element[@type='flagsVar']"
@@ -139,7 +139,7 @@ class Compilers(GenericXML):
         return value
 
     def write_macros_file(self, macros_file="Macros.make", output_format="make", xml=None):
-        if self._version == "1.0":
+        if self._version <= 1.0:
             # Parse the xml settings into the $macros hash structure
             # put conditional settings in the _COND_ portion of the hash
             # and handle them seperately
@@ -208,9 +208,9 @@ class Compilers(GenericXML):
                 if value_lists[var_name].depends <= vars_written
             ]
             expect(len(ready_variables) > 0,
-                   "The config_build XML has bad <var> references. "
+                   "The file %s has bad <var> references. "
                    "Check for circular references or variables that "
-                   "are in a <var> tag but not actually defined.")
+                   "are in a <var> tag but not actually defined."%self.filename)
             big_normal_tree = None
             big_append_tree = None
             for var_name in ready_variables:

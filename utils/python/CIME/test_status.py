@@ -27,6 +27,9 @@ from CIME.XML.standard_module_setup import *
 
 from collections import OrderedDict
 
+import os
+from stat import S_IREAD, S_IRGRP, S_IROTH
+
 TEST_STATUS_FILENAME = "TestStatus"
 
 # The statuses that a phase can be in
@@ -95,7 +98,7 @@ def _test_helper2(file_contents, wait_for_run=False, check_throughput=False, che
 
 class TestStatus(object):
 
-    def __init__(self, test_dir=None, test_name=None, no_io=False):
+    def __init__(self, test_dir=None, test_name=None, no_io=False, lock=False):
         """
         Create a TestStatus object
 
@@ -110,6 +113,7 @@ class TestStatus(object):
         self._test_name = test_name
         self._ok_to_modify = False
         self._no_io = no_io
+        self._lock = lock
 
         if os.path.exists(self._filename):
             self._parse_test_status_file()
@@ -220,6 +224,9 @@ class TestStatus(object):
         if self._phase_statuses and not self._no_io:
             with open(self._filename, "w") as fd:
                 self.phase_statuses_dump(fd)
+
+            if self._lock:
+                os.chmod(self._filename, S_IREAD | S_IRGRP | S_IROTH)
 
     def _parse_test_status(self, file_contents):
         """

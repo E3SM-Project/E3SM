@@ -3,12 +3,13 @@ Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
 import logging, gzip, sys, os, time, re, shutil, glob, string, random
+import stat as statlib
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
 
-def expect(condition, error_msg, exc_type=SystemExit):
+def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
@@ -23,7 +24,7 @@ def expect(condition, error_msg, exc_type=SystemExit):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        raise exc_type("ERROR: %s" % error_msg)
+        raise exc_type("%s %s" % (error_prefix,error_msg))
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -289,13 +290,15 @@ def parse_test_name(test_name):
 
     return rv
 
-def get_full_test_name(partial_test, grid=None, compset=None, machine=None, compiler=None, testmod=None):
+def get_full_test_name(partial_test, caseopts=None, grid=None, compset=None, machine=None, compiler=None, testmod=None):
     """
     Given a partial CIME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
     Use the additional args to fill out the name if needed
 
     >>> get_full_test_name("ERS", grid="ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu'
+    >>> get_full_test_name("ERS", caseopts=["D", "P16"], grid="ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
+    'ERS_D_P16.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16.JGF", machine="melvin", compiler="gnu")
@@ -305,7 +308,7 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
     >>> get_full_test_name("ERS.ne16_fe16.JGF", machine="melvin", compiler="gnu", testmod="mods/test")
     'ERS.ne16_fe16.JGF.melvin_gnu.mods-test'
     """
-    _, _, partial_grid, partial_compset, partial_machine, partial_compiler, partial_testmod = parse_test_name(partial_test)
+    partial_testcase, partial_caseopts, partial_grid, partial_compset, partial_machine, partial_compiler, partial_testmod = parse_test_name(partial_test)
 
     required_fields = [
         (partial_grid, grid, "grid"),
@@ -333,8 +336,18 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
         else:
             result += ".%s" % testmod.replace("/", "-")
     elif (testmod is not None):
-        expect(arg_val == partial_val, # pylint: disable=undefined-loop-variable
+        expect(testmod == partial_testmod,
                "Mismatch in field testmod, partial string '%s' indicated it should be '%s' but you provided '%s'" % (partial_test, partial_testmod, testmod))
+
+    if (partial_caseopts is None):
+        if caseopts is None:
+            # No casemods for this test and that's OK
+            pass
+        else:
+            result = result.replace(partial_testcase, "%s_%s" % (partial_testcase, "_".join(caseopts)), 1)
+    elif caseopts is not None:
+        expect(caseopts == partial_caseopts,
+               "Mismatch in field caseopts, partial string '%s' indicated it should be '%s' but you provided '%s'" % (partial_test, partial_caseopts, caseopts))
 
     return result
 
@@ -508,6 +521,7 @@ def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
 def get_project(machobj=None):
     """
     Hierarchy for choosing PROJECT:
+    0. Command line flag to create_newcase or create_test
     1. Environment variable PROJECT
     2  Environment variable ACCOUNT  (this is for backward compatibility)
     3. File $HOME/.cime/config       (this is new)
@@ -863,7 +877,9 @@ def gunzip_existing_file(filepath):
 
 def gzip_existing_file(filepath):
     """
-    Gzips an existing file, removes the unzipped version, returns path to zip file
+    Gzips an existing file, removes the unzipped version, returns path to zip file.
+    Note the that the timestamp of the original file will be maintained in
+    the zipped file.
 
     >>> import tempfile
     >>> fd, filename = tempfile.mkstemp(text=True)
@@ -874,12 +890,19 @@ def gzip_existing_file(filepath):
     'Hello World'
     >>> os.remove(gzfile)
     """
+    expect(os.path.exists(filepath), "%s does not exists" % filepath)
+
+    st = os.stat(filepath)
+    orig_atime, orig_mtime = st[statlib.ST_ATIME], st[statlib.ST_MTIME]
+
     gzpath = '%s.gz' % filepath
     with open(filepath, "rb") as f_in:
         with gzip.open(gzpath, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     os.remove(filepath)
+
+    os.utime(gzpath, (orig_atime, orig_mtime))
 
     return gzpath
 
@@ -992,6 +1015,27 @@ def is_python_executable(filepath):
         first_line = f.readline()
 
     return first_line.startswith("#!") and "python" in first_line
+
+def get_umask():
+    current_umask = os.umask(0)
+    os.umask(current_umask)
+
+    return current_umask
+
+def copy_umask(src, dst):
+    """
+    Preserves all file metadata except making sure new file obeys umask
+    """
+    curr_umask = get_umask()
+    shutil.copy2(src, dst)
+    octal_base = 0o777 if os.access(src, os.X_OK) else 0o666
+    dst = os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
+    os.chmod(dst, octal_base - curr_umask)
+
+def stringify_bool(val):
+    val = False if val is None else val
+    expect(type(val) is bool, "Wrong type for val '%s'" % repr(val))
+    return "TRUE" if val else "FALSE"
 
 class SharedArea(object):
     """

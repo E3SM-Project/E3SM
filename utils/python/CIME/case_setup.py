@@ -4,7 +4,7 @@ Library for case.setup.
 
 from CIME.XML.standard_module_setup import *
 
-from CIME.check_lockedfiles import check_lockedfiles
+from CIME.check_lockedfiles import *
 from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
@@ -15,36 +15,6 @@ from CIME.test_status       import *
 import shutil
 
 logger = logging.getLogger(__name__)
-
-###############################################################################
-def _check_pelayouts_require_rebuild(case, models):
-###############################################################################
-    """
-    Create if we require a rebuild, expects cwd is caseroot
-    """
-    locked_pes = "LockedFiles/env_mach_pes.xml"
-    if os.path.exists(locked_pes):
-        # Look to see if $comp_PE_CHANGE_REQUIRES_REBUILD is defined
-        # for any component
-        env_mach_pes_locked = EnvMachPes(infile=locked_pes, components=case.get_values("COMP_CLASSES"))
-        for comp in models:
-            if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % comp):
-                # Changing these values in env_mach_pes.xml will force
-                # you to clean the corresponding component
-                old_tasks   = env_mach_pes_locked.get_value("NTASKS_%s" % comp)
-                old_threads = env_mach_pes_locked.get_value("NTHRDS_%s" % comp)
-                old_inst    = env_mach_pes_locked.get_value("NINST_%s" % comp)
-
-                new_tasks   = case.get_value("NTASKS_%s" % comp)
-                new_threads = case.get_value("NTHRDS_%s" % comp)
-                new_inst    = case.get_value("NINST_%s" % comp)
-
-                if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
-                    logger.warn("%s pe change requires clean build %s %s" % (comp, old_tasks, new_tasks))
-                    cleanflag = comp.lower()
-                    run_cmd_no_fail("./case.build --clean %s" % cleanflag)
-
-        os.remove(locked_pes)
 
 ###############################################################################
 def _build_usernl_files(case, model, comp):
@@ -171,10 +141,9 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
         else:
-            _check_pelayouts_require_rebuild(case, models)
+            check_pelayouts_require_rebuild(case, models)
 
-            if os.path.exists("LockedFiles/env_build.xml"):
-                os.remove("LockedFiles/env_build.xml")
+            unlock_file("env_build.xml")
 
             case.flush()
             check_lockedfiles()
@@ -207,6 +176,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 elif job != "case.test":
                     logger.info("Writing %s script from input template %s" % (job, input_batch_script))
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
+
             # Make sure pio settings are consistant
             for comp in models:
                 pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
@@ -224,7 +194,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             logger.info("Locking file env_mach_pes.xml")
             case.flush()
             logger.debug("at copy TOTALPES = %s"%case.get_value("TOTALPES"))
-            shutil.copy("env_mach_pes.xml", "LockedFiles")
+            lock_file("env_mach_pes.xml")
 
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):

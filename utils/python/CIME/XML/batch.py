@@ -6,20 +6,25 @@ can be defined by providing a batch_system MACH="mach" block.
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
-from CIME.utils import expect, get_cime_root, get_model
+from CIME.XML.files import Files
+from CIME.utils import expect
 
 logger = logging.getLogger(__name__)
 
 class Batch(GenericXML):
 
-    def __init__(self, batch_system=None, machine=None, infile=None):
+    def __init__(self, batch_system=None, machine=None, infile=None, files=None):
         """
         initialize an object
         """
+        if files is None:
+            files = Files()
         if infile is None:
-            infile = os.path.join(get_cime_root(), "cime_config", get_model(), "machines", "config_batch.xml")
+            infile = files.get_value("BATCH_SPEC_FILE")
 
-        GenericXML.__init__(self, infile)
+        schema = files.get_schema("BATCH_SPEC_FILE")
+
+        GenericXML.__init__(self, infile, schema=schema)
 
         self.batch_system_node = None
         self.machine_node      = None

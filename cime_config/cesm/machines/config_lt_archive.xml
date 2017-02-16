@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<config_lt_archive version="1.0.0">
+<config_lt_archive version="1.0">
     <machine name="default">
       <lt_archive_args></lt_archive_args>
     </machine>

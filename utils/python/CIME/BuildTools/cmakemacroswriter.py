@@ -76,9 +76,9 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> import io
         >>> s = io.StringIO()
         >>> CMakeMacroWriter(s).variable_string("foo")
-        '${CIME_foo}'
+        '${foo}'
         """
-        return "${CIME_" + name + "}"
+        return "${" + name + "}"
 
     def set_variable(self, name, value):
         """Write out a statement setting a variable to some value.
@@ -87,9 +87,9 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> s = io.StringIO()
         >>> CMakeMacroWriter(s).set_variable("foo", "bar")
         >>> s.getvalue()
-        u'set(CIME_foo "bar")\\n'
+        u'set(foo "bar")\\n'
         """
-        self.write_line("set(CIME_" + name + ' "' + value + '")')
+        self.write_line("set(" + name + ' "' + value + '")')
 
     def start_ifeq(self, left, right):
         """Write out a statement to start a conditional block.
@@ -113,7 +113,7 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> writer.set_variable("foo2", "bar2")
         >>> writer.end_ifeq()
         >>> s.getvalue()
-        u'if("foo" STREQUAL "bar")\\n  set(CIME_foo2 "bar2")\\nendif()\\n'
+        u'if("foo" STREQUAL "bar")\\n  set(foo2 "bar2")\\nendif()\\n'
         """
         self.indent_left()
         self.write_line("endif()")

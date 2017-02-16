@@ -37,18 +37,23 @@ Currently supported options are:
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.generic_xml import GenericXML
+from CIME.XML.files import Files
 
 logger = logging.getLogger(__name__)
 
 class Testlist(GenericXML):
 
-    def __init__(self,infile):
+    def __init__(self,infile, files=None):
         """
         initialize an object
         """
-        GenericXML.__init__(self,infile)
+        schema = None
+        if files is None:
+            files = Files()
+        schema = files.get_schema("TESTS_SPEC_FILE")
+        GenericXML.__init__(self, infile, schema=schema)
 
-    def _get_testsv1(self, machine=None, category=None, compiler=None):
+    def _get_testsv1(self, machine=None, category=None, compiler=None, compset=None, grid=None):
         tests = []
 
         machatts = {}
@@ -70,6 +75,7 @@ class Testlist(GenericXML):
                     logger.debug("      machnodes %d"%len(machnodes))
                     for mach in machnodes:
                         thistest = {}
+                        save_this = True
                         if machine is None or (machine is not None and mach.text == machine):
                             thistest["compiler"] = mach.get("compiler")
                             thistest["category"] = mach.get("testtype")
@@ -79,12 +85,24 @@ class Testlist(GenericXML):
                             thistest["compset"] = cnode.get("name")
                             if ("testmods" in mach.attrib):
                                 thistest["testmods"] = mach.get("testmods")
-                            tests.append(thistest)
+                            if compset is not None and compset != thistest["compset"]:
+                                save_this = False
+                            if grid is not None and grid != thistest["grid"]:
+                                save_this = False
+                            if save_this:
+                                tests.append(thistest)
         return tests
 
-    def _get_testsv2(self, machine=None, category=None, compiler=None):
+    def _get_testsv2(self, machine=None, category=None, compiler=None, compset=None, grid=None):
         tests = []
-        testnodes = self.get_nodes("test")
+        attributes = {}
+        if compset is not None:
+            attributes['compset'] = compset
+        if grid is not None:
+            attributes['grid'] = grid
+
+        testnodes = self.get_nodes("test", attributes=attributes)
+
         machatts = {}
         if machine is not None:
             machatts["name"]      = machine
@@ -131,11 +149,11 @@ class Testlist(GenericXML):
 
         return tests
 
-    def get_tests(self, machine=None, category=None, compiler=None):
-        if self.get_version() == "1.0":
-            return self._get_testsv1(machine, category, compiler)
-        elif self.get_version() == "2.0":
-            return self._get_testsv2(machine, category, compiler)
+    def get_tests(self, machine=None, category=None, compiler=None, compset=None, grid=None):
+        if self.get_version() == 1.0:
+            return self._get_testsv1(machine, category, compiler, compset, grid)
+        elif self.get_version() >= 2.0:
+            return self._get_testsv2(machine, category, compiler, compset, grid)
         else:
             logger.critical("Did not recognize testlist file version %s for file %s"
                              % (self.get_version(), self.filename))

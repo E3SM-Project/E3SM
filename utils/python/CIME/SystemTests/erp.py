@@ -13,6 +13,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.case_setup import case_setup
 import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from CIME.check_lockedfiles import *
 
 logger = logging.getLogger(__name__)
 
@@ -40,15 +41,15 @@ class ERP(SystemTestsCommon):
         # env_build.xml in LockedFiles if they are not there. If there
         # are already copies there then simply copy them back to
         # have the starting env_mach_pes.xml and env_build.xml
-        machpes1 = os.path.join("LockedFiles","env_mach_pes.ERP1.xml")
-        envbuild1 = os.path.join("LockedFiles","env_build.ERP1.xml")
-        if ( os.path.isfile(machpes1) ):
-            shutil.copy(machpes1,"env_mach_pes.xml")
+        machpes1 = "env_mach_pes.ERP1.xml"
+        envbuild1 = "env_build.ERP1.xml"
+        if is_locked(machpes1):
+            restore(machpes1, newname="env_mach_pes.xml")
         else:
-            shutil.copy("env_mach_pes.xml","env_mach_pes.ERP1.xml")
+            lock_file("env_mach_pes.xml", newname=machpes1)
 
-        if ( os.path.isfile(envbuild1) ):
-            shutil.copy(envbuild1,"env_build.xml")
+        if is_locked(envbuild1):
+            restore(envbuild1, newname="env_build.xml")
 
         # Build two executables, one using the original tasks and threads (ERP1) and
         # one using the modified tasks and threads (ERP2)
@@ -86,23 +87,19 @@ class ERP(SystemTestsCommon):
 
             # Make copies of the new env_mach_pes.xml and the new
             # env_build.xml to be used in the run phase
-            shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.ERP%s.xml"%bld ))
-            shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.ERP%s.xml"%bld ))
-        #
-        #
+            lock_file("env_mach_pes.xml", newname="env_mach_pes.ERP%s.xml" % bld)
+            lock_file("env_build.xml", newname="env_build.ERP%s.xml" % bld)
 
     def run_phase(self):
         # run will have values 1,2
         for run in range(1,3):
 
-            expect(os.path.isfile(os.path.join("LockedFiles","env_mach_pes.ERP%d.xml"%run)),
-                   "ERROR: LockedFiles/env_mach_pes.ERP%d.xml does not exist, run case.build"%run )
+            expect(is_locked("env_mach_pes.ERP%d.xml" % run),
+                   "ERROR: LockedFiles/env_mach_pes.ERP%d.xml does not exist, run case.build" % run )
 
             # Use the second env_mach_pes.xml and env_build.xml files
-            shutil.copy(os.path.join("LockedFiles","env_mach_pes.ERP%d.xml"%run), "env_mach_pes.xml")
-            shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.xml"))
-            shutil.copy(os.path.join("LockedFiles","env_build.ERP%d.xml")%run, "env_build.xml")
-            shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.xml"))
+            restore("env_mach_pes.ERP%d.xml" % run, newname="env_mach_pes.xml")
+            restore("env_build.ERP%d.xml" % run, newname="env_build.xml")
 
             # update the case to use the new values
             self._case.read_xml()

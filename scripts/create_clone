@@ -36,6 +36,10 @@ def parse_command_line(args):
 			"default: user-specified environment variable PROJECT or ACCOUNT"
 			"or read from ~/.cesm_proj or ~/.ccsm_proj")
 
+    parser.add_argument("--cime-output-root",
+                        help="Specify the root output directory"
+			"default: setting in case, create_clone will fail if this directory is not writable")
+
     args = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(args)
@@ -48,20 +52,21 @@ def parse_command_line(args):
         expect(False,
                "Must specify -clone as an input argument")
 
-    return args.case, args.clone, args.keepexe, args.mach_dir, args.project
+    return args.case, args.clone, args.keepexe, args.mach_dir, args.project, \
+        args.cime_output_root
 
 ##############################################################################
 def _main_func():
 ###############################################################################
 
-    case, clone, keepexe, mach_dir, project = parse_command_line(sys.argv)
+    case, clone, keepexe, mach_dir, project, cime_output_root = parse_command_line(sys.argv)
 
     cloneroot = os.path.abspath(clone)
     expect(os.path.isdir(cloneroot),
            "Missing cloneroot directory %s " % cloneroot)
 
     with Case(cloneroot, read_only=False) as clone:
-        clone.create_clone(case, keepexe, mach_dir, project)
+        clone.create_clone(case, keepexe, mach_dir, project, cime_output_root)
 
 ###############################################################################
 

@@ -12,7 +12,8 @@ import shutil, traceback, stat, threading, time, glob
 from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
-from CIME.utils import append_status, TESTS_FAILED_ERR_CODE
+from update_acme_tests import get_recommended_test_time
+from CIME.utils import append_status, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
@@ -21,6 +22,7 @@ from CIME.XML.component import Component
 from CIME.XML.tests import Tests
 from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
+from CIME.check_lockedfiles import lock_file
 import CIME.test_utils
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,46 @@ logger = logging.getLogger(__name__)
 TEST_START = "INIT" # Special pseudo-phase just for test_scheduler bookkeeping
 PHASES = [TEST_START, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
           SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
+
+###############################################################################
+def _translate_test_names_for_new_pecount(test_names, force_procs, force_threads):
+###############################################################################
+    new_test_names = []
+    for test_name in test_names:
+        testcase, caseopts, grid, compset, machine, compiler, testmod = parse_test_name(test_name)
+        rewrote_caseopt = False
+        if caseopts is not None:
+            for idx, caseopt in enumerate(caseopts):
+                if caseopt.startswith("P"):
+                    caseopt = caseopt[1:]
+                    if "x" in caseopt:
+                        old_procs, old_thrds = caseopt.split("x")
+                    else:
+                        old_procs, old_thrds = caseopt, None
+
+                    new_procs = force_procs if force_procs is not None else old_procs
+                    new_thrds = force_threads if force_threads is not None else old_thrds
+
+                    newcaseopt = ("P%s" % new_procs) if new_thrds is None else ("P%sx%s" % (new_procs, new_thrds))
+
+                    # No idea why pylint thinks this is unsubscriptable
+                    caseopts[idx] = newcaseopt # pylint: disable=unsubscriptable-object
+
+                    rewrote_caseopt = True
+                    break
+
+        if not rewrote_caseopt:
+            force_procs = "M" if force_procs is None else force_procs
+            newcaseopt = ("P%s" % force_procs) if force_threads is None else ("P%sx%s" % (force_procs, force_threads))
+            if caseopts is None:
+                caseopts = [newcaseopt]
+            else:
+                caseopts.append(newcaseopt)
+
+        new_test_name = get_full_test_name(testcase, caseopts=caseopts, grid=grid, compset=compset, machine=machine, compiler=compiler, testmod=testmod)
+        new_test_names.append(new_test_name)
+
+    return new_test_names
 
 ###############################################################################
 class TestScheduler(object):
@@ -44,16 +86,22 @@ class TestScheduler(object):
                  project=None, parallel_jobs=None,
                  walltime=None, proc_pool=None,
                  use_existing=False, save_timing=False, queue=None,
-                 allow_baseline_overwrite=False, output_root=None):
+                 allow_baseline_overwrite=False, output_root=None,
+                 force_procs=None, force_threads=None):
     ###########################################################################
-        self._cime_root  = CIME.utils.get_cime_root()
-        self._cime_model = CIME.utils.get_model()
+        self._cime_root     = CIME.utils.get_cime_root()
+        self._cime_model    = CIME.utils.get_model()
+        self._save_timing   = save_timing
+        self._queue         = queue
+        self._test_data     = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
+
         self._allow_baseline_overwrite  = allow_baseline_overwrite
-        self._save_timing = save_timing
-        self._queue       = queue
-        self._test_data   = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
 
         self._machobj = Machines(machine=machine_name)
+
+        # If user is forcing procs or threads, re-write test names to reflect this.
+        if force_procs or force_threads:
+            test_names = _translate_test_names_for_new_pecount(test_names, force_procs, force_threads)
 
         self._no_setup = no_setup
         self._no_build = no_build or no_setup or namelists_only
@@ -176,7 +224,7 @@ class TestScheduler(object):
                 expect(not os.path.exists(self._get_test_dir(test)),
                        "Cannot create new case in directory '%s', it already exists."
                        " Pick a different test-id" % self._get_test_dir(test))
-
+        logger.info("Created test in directory %s"%self._get_test_dir(test))
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
@@ -314,9 +362,13 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            (component,modspath) = test_mods.split('/',1)
-            testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
+            if CIME.utils.get_model() == "acme":
+                component = "allactive"
+                modspath = test_mods
+            else:
+                (component, modspath) = test_mods.split('/',1)
 
+            testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, modspath)
             if not os.path.exists(test_mod_file):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
@@ -342,9 +394,16 @@ class TestScheduler(object):
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
-        elif test in self._test_data and "options" in self._test_data[test] and \
-                "wallclock" in self._test_data[test]['options']:
-            create_newcase_cmd += " --walltime %s" % self._test_data[test]['options']['wallclock']
+        else:
+            # model specific ways of setting time
+            if CIME.utils.get_model() == "acme":
+                recommended_time = get_recommended_test_time(test)
+                if recommended_time is not None:
+                    create_newcase_cmd += " --walltime %s" % recommended_time
+            else:
+                if test in self._test_data and "options" in self._test_data[test] and \
+                        "wallclock" in self._test_data[test]['options']:
+                    create_newcase_cmd += " --walltime %s" % self._test_data[test]['options']['wallclock']
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
@@ -449,22 +508,19 @@ class TestScheduler(object):
                     expect(False, "Could not parse option '%s' " %opt)
 
         envtest.write()
-        lockedfiles = os.path.join(test_dir, "LockedFiles")
-        if not os.path.exists(lockedfiles):
-            os.mkdir(lockedfiles)
-        shutil.copy(os.path.join(test_dir,"env_run.xml"),
-                    os.path.join(lockedfiles, "env_run.orig.xml"))
+        lock_file("env_run.xml", caseroot=test_dir, newname="env_run.orig.xml")
 
         with Case(test_dir, read_only=False) as case:
             if self._output_root is None:
                 self._output_root = case.get_value("CIME_OUTPUT_ROOT")
-            case.set_value("SHAREDLIBROOT",
-                           os.path.join(self._output_root,
-                                        "sharedlibroot.%s"%self._test_id))
+            # if we are running a single test we don't need sharedlibroot
+            if len(self._tests) > 1:
+                case.set_value("SHAREDLIBROOT",
+                               os.path.join(self._output_root,
+                                            "sharedlibroot.%s"%self._test_id))
             envtest.set_initial_values(case)
             case.set_value("TEST", True)
-            if self._save_timing:
-                case.set_value("SAVE_TIMING", True)
+            case.set_value("SAVE_TIMING", self._save_timing)
 
         return True
 
@@ -524,7 +580,7 @@ class TestScheduler(object):
     ###########################################################################
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
-            out = run_cmd_no_fail("./xmlquery TOTALPES -value", from_dir=test_dir)
+            out = run_cmd_no_fail("./xmlquery TOTAL_CORES -value", from_dir=test_dir)
             return int(out)
         elif (phase == SHAREDLIB_BUILD_PHASE):
             # Will force serialization of sharedlib builds
@@ -591,6 +647,9 @@ class TestScheduler(object):
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
             self._update_test_status_file(test, test_phase, status)
+
+        if test_phase == XML_PHASE:
+            append_status("Case Created using: "+" ".join(sys.argv), caseroot=self._get_test_dir(test), sfile="README.case")
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line

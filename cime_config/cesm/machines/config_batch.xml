@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config_batch version="1.0.0">
+<config_batch version="2.0">
   <!--
      File:    config_batch.xml
      Purpose: abstract out the parts of run scripts that are different, and use this configuration to
@@ -11,7 +11,6 @@
      batch_directive:  The string that prepends a batch directive for the batch system.
      jobid_pattern:    A perl regular expression used to filter out the returned job id from a
 		       queue submission.
-     depend_pattern:
 
  ===============================================================
  batch_system
@@ -29,7 +28,7 @@
  jobmin:      The minimum node count required to use this queue.
  jobmax:      The maximum node count required to use this queue.
     -->
-  <batch_system type="template" version="x.y">
+  <batch_system type="template" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
     <batch_redirect></batch_redirect>
@@ -39,7 +38,7 @@
     </directives>
   </batch_system>
 
-  <batch_system type="none" version="x.y">
+  <batch_system type="none" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
     <batch_redirect></batch_redirect>
@@ -49,7 +48,7 @@
     </directives>
   </batch_system>
 
-   <batch_system type="cobalt" version="x.y">
+   <batch_system type="cobalt" >
      <batch_query>qstat</batch_query>
      <batch_submit>qsub</batch_submit>
      <batch_directive></batch_directive>
@@ -67,7 +66,7 @@
       </submit_args>
    </batch_system>
 
-  <batch_system type="cobalt_theta" version="x.y">
+  <batch_system type="cobalt_theta" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
     <batch_directive>#COBALT</batch_directive>
@@ -88,7 +87,6 @@
     <batch_redirect>&lt;</batch_redirect>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
-    <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
     <walltime_format>%H:%M</walltime_format>
     <submit_args>
@@ -107,7 +105,7 @@
     </directives>
   </batch_system>
 
-  <batch_system type="pbs" version="x.y">
+  <batch_system type="pbs" >
     <batch_query args="-f" >qstat</batch_query>
     <batch_submit>qsub </batch_submit>
     <batch_directive>#PBS</batch_directive>
@@ -129,7 +127,7 @@
     </directives>
   </batch_system>
 
-   <batch_system type="slurm" version="x.y">
+   <batch_system type="slurm" >
      <batch_query>squeue</batch_query>
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
@@ -174,7 +172,7 @@
   </batch_system>
 
   <!-- bluewaters is PBS -->
-  <batch_system MACH="bluewaters" type="pbs" version="x.y">
+  <batch_system MACH="bluewaters" type="pbs" >
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}:xe</directive>
       <directive default="/bin/bash" > -S {{ shell }} </directive>
@@ -211,7 +209,7 @@
   </batch_system>
 
    <!-- gaea is PBS -->
-   <batch_system MACH="gaea" type="pbs" version="x.y">
+   <batch_system MACH="gaea" type="pbs" >
      <directives>
        <directive>-A cpo</directive>
        <directive>-l {{ partition }}</directive>
@@ -228,7 +226,7 @@
    </batch_system>
 
   <!-- hobart is PBS -->
-  <batch_system type="pbs" MACH="hobart" version="x.y">
+  <batch_system type="pbs" MACH="hobart" >
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
@@ -293,7 +291,7 @@
 
 
   <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-has" version="x.y">
+  <batch_system type="pbs" MACH="pleiades-has" >
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -307,7 +305,7 @@
   </batch_system>
 
   <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-ivy" version="x.y">
+  <batch_system type="pbs" MACH="pleiades-ivy" >
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -320,7 +318,7 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="skybridge" type="slurm" version="x.y">
+  <batch_system MACH="skybridge" type="slurm" >
     <batch_submit>sbatch</batch_submit>
     <queues>
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
@@ -328,7 +326,7 @@
   </batch_system>
 
   <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-san" version="x.y">
+  <batch_system type="pbs" MACH="pleiades-san" >
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -342,7 +340,7 @@
   </batch_system>
 
   <!-- all pleiades machines are PBS -->
-  <batch_system MACH="pleiades-wes" version="x.y" type="pbs">
+  <batch_system MACH="pleiades-wes"  type="pbs">
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -364,14 +362,14 @@
     </directives>
   </batch_system>
 
-   <batch_system MACH="eastwind" type="slurm" version="x.y">
+   <batch_system MACH="eastwind" type="slurm" >
      <batch_submit>sbatch</batch_submit>
      <queues>
        <queue jobmin="1" jobmax="9999" default="true">batch</queue>
      </queues>
    </batch_system>
 
-   <batch_system MACH="cori-haswell" type="slurm" version="x.y">
+   <batch_system MACH="cori-haswell" type="slurm" >
      <batch_submit>sbatch</batch_submit>
      <directives>
        <directive>-C haswell </directive>
@@ -382,7 +380,7 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="cori-knl" type="slurm" version="x.y">
+   <batch_system MACH="cori-knl" type="slurm" >
      <batch_submit>sbatch</batch_submit>
      <directives>
        <directive>-C knl </directive>
@@ -393,7 +391,7 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="edison" type="slurm" version="x.y">
+   <batch_system MACH="edison" type="slurm" >
      <batch_submit>sbatch</batch_submit>
      <queues>
        <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" >regular</queue>
@@ -401,7 +399,7 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="stampede" type="slurm" version="x.y">
+   <batch_system MACH="stampede" type="slurm" >
      <batch_submit>ssh stampede.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
      <queues>
        <queue walltimemax="48:00:00" jobmin="1" jobmax="4096" >normal</queue>
@@ -409,7 +407,7 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="rosa" type="slurm" version="x.y">
+   <batch_system MACH="rosa" type="slurm" >
      <batch_submit>sbatch</batch_submit>
      <queues>
        <queue default="true">default</queue>
@@ -423,7 +421,7 @@
     </directives>
   </batch_system>
 
-  <batch_system type="slurm" MACH="constance" version="x.y">
+  <batch_system type="slurm" MACH="constance">
      <batch_submit>sbatch</batch_submit>
   </batch_system>
 

@@ -138,7 +138,7 @@
     <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/cluster/work/uwis/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/`echo $USER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
+    <DOUT_L_MSROOT>$SHELL{echo $USER | tr '[a-z]' '[A-Z]'}/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/cluster/work/uwis/ccsm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/cluster/work/uwis/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>1</GMAKE_J>
@@ -249,11 +249,10 @@
 	<command name="load">ncarcompilers/0.3.5</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">netcdf/4.4.1</command>
+	<command name="load">netcdf/4.4.1.1</command>
       </modules>
       <modules mpilib="mpt">
-	<command name="load">netcdf/4.4.1</command>
-<!--	<command name="load">netcdf-mpi/4.4.1</command> -->
+	<command name="load">netcdf-mpi/4.4.1.1</command>
 	<command name="load">pnetcdf/1.8.0</command>
       </modules>
     </module_system>
@@ -386,7 +385,6 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-	<arg name="thread_count" > -c {{ cores_per_task }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -491,7 +489,6 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n $TOTALPES</arg>
-	<arg name="thread_count" > -c {{ cores_per_task }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -835,7 +832,7 @@
     <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/`echo $USER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
+    <DOUT_L_MSROOT>$SHELL{echo $USER | tr '[a-z]' '[A-Z]'}/csm/$CASE</DOUT_L_MSROOT>
     <BASELINE_ROOT>/fs/cgd/csm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_hobart/cprnc</CCSM_CPRNC>
     <GMAKE>gmake --output-sync</GMAKE>
@@ -1702,6 +1699,7 @@
       <modules>
 	<command name="load">ncarcompilers/1.0</command>
 	<command name="load">cmake/3.0.2</command>
+	<command name="load">all-python-libs</command>
       </modules>
     </module_system>
     <environment_variables>

@@ -18,7 +18,7 @@ from CIME.namelist import fortran_namelist_base_value, \
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
-from CIME.utils import get_cime_root
+from CIME.XML.files import Files
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,17 @@ class NamelistDefinition(EntryID):
     - validate
     """
 
-    def __init__(self, infile):
+    def __init__(self, infile, files=None):
         """Construct a `NamelistDefinition` from an XML file."""
-        super(NamelistDefinition, self).__init__(infile)
+
+        # if the file is invalid we may not be able to check the version
+        # but we need to do it this way until we remove the version 1 files
+        schema = None
+        if files is None:
+            files = Files()
+        schema = files.get_schema("NAMELIST_DEFINITION_FILE")
+        expect(os.path.isfile(infile), "File %s does not exist"%infile)
+        super(NamelistDefinition, self).__init__(infile, schema=schema)
 
         self._attributes = {}
         self._entry_nodes = []
@@ -47,13 +55,6 @@ class NamelistDefinition(EntryID):
         self._entry_types = {}
         self._group_names = {}
         self._nodes = {}
-
-        # if the file is invalid we may not be able to check the version
-        # but we need to do it this way until we remove the version 1 files
-        if self.get_version() == "2.0":
-            cimeroot = get_cime_root()
-            schema = os.path.join(cimeroot,"cime_config","xml_schemas","entry_id_namelist.xsd")
-            self.validate_xml_file(infile, schema)
 
     def set_nodes(self, skip_groups=None):
         """
@@ -84,20 +85,20 @@ class NamelistDefinition(EntryID):
                 self._nodes[name] = node
                 self._entry_types[name] = self._get_type(node)
                 self._valid_values[name] = self._get_valid_values(node)
-                self._group_names[name] = self._get_group_name(node) 
+                self._group_names[name] = self._get_group_name(node)
         return default_nodes
 
     def _get_group_name(self, node=None):
-        if self.get_version() == "1.0":
+        if self.get_version() == 1.0:
             group = node.get('group')
-        elif self.get_version() == "2.0":
+        elif self.get_version() >= 2.0:
             group = self.get_element_text("group", root=node)
         return(group)
 
     def _get_type(self, node):
-        if self.get_version() == "1.0":
+        if self.get_version() == 1.0:
             type_info = node.get('type')
-        elif self.get_version() == "2.0":
+        elif self.get_version() >= 2.0:
             type_info = self._get_type_info(node)
         return(type_info)
 
@@ -106,9 +107,9 @@ class NamelistDefinition(EntryID):
         # the same effect as not specifying it.
         # Returns a list from a comma seperated string in xml
         valid_values = ''
-        if self.get_version() == "1.0":
+        if self.get_version() == 1.0:
             valid_values = node.get('valid_values')
-        elif self.get_version() == "2.0":
+        elif self.get_version() >= 2.0:
             valid_values = self._get_node_element_info(node, "valid_values")
         if valid_values == '':
             valid_values = None
@@ -120,7 +121,7 @@ class NamelistDefinition(EntryID):
         return self._group_names[name]
 
     def add_attributes(self, attributes):
-        self._attributes = attributes        
+        self._attributes = attributes
 
     def get_entry_nodes(self):
         return self._entry_nodes
@@ -138,8 +139,7 @@ class NamelistDefinition(EntryID):
     # good for that purpose anyway, so stop this function from being called.
     def set_value(self, vid, value, subgroup=None, ignore_type=True):
         """This function is not implemented."""
-        raise TypeError, \
-            "NamelistDefinition does not support `set_value`."
+        raise TypeError("NamelistDefinition does not support `set_value`.")
 
     def get_value_match(self, item, attributes=None, exact_match=True, entry_node=None):
         """Return the default value for the variable named `item`.
@@ -196,7 +196,7 @@ class NamelistDefinition(EntryID):
     def split_type_string(self, name):
         """Split a 'type' attribute string into its component parts.
 
-        The `name` argument is the variable name. 
+        The `name` argument is the variable name.
         This is used for error reporting purposes.
 
         The return value is a tuple consisting of the type itself, a length
@@ -356,7 +356,7 @@ class NamelistDefinition(EntryID):
 
                 # and has a valid value.
                 value = namelist.get_variable_value(group_name, variable_name)
-                expect(self.is_valid_value(variable_name, value), 
+                expect(self.is_valid_value(variable_name, value),
                        (variable_template + " has invalid value %r.") %
                        (str(variable_name), [str(scalar) for scalar in value]))
 
@@ -389,9 +389,9 @@ class NamelistDefinition(EntryID):
 
     def get_input_pathname(self, name):
         node = self._nodes[name]
-        if self.get_version() == "1.0":
+        if self.get_version() == 1.0:
             input_pathname = node.get('input_pathname')
-        elif self.get_version() == "2.0":
+        elif self.get_version() >= 2.0:
             input_pathname = self._get_node_element_info(node, "input_pathname")
         return(input_pathname)
 

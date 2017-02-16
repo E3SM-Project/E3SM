@@ -264,7 +264,8 @@ contains
     ! Entire domain must have reasonable values before calling xxx2xxx init
 
     do eci = 1,size(comp)
-       if (comp(eci)%iamin_compid .and. comp(eci)%present) then
+       if (comp(eci)%iamin_compid .and. comp(eci)%present .and.               &
+            (comp(1)%oneletterid /= 'e')) then
           if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
           k1 = mct_aVect_indexRa(comp(eci)%cdata_cc%dom%data, "area"  ,perrWith='aa area ')
           k2 = mct_aVect_indexRa(comp(eci)%cdata_cc%dom%data, "aream" ,perrWith='aa aream')
@@ -892,5 +893,3 @@ contains
   end subroutine component_diag
 
 end module component_mod
-
-

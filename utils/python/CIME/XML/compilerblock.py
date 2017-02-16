@@ -67,6 +67,8 @@ from CIME.XML.standard_module_setup import *
 from CIME.BuildTools.valuesetting import ValueSetting
 from CIME.BuildTools.possiblevalues import PossibleValues
 
+logger = logging.getLogger(__name__)
+
 class CompilerBlock(object):
 
     """Data used to translate a single <compiler> element.
@@ -115,6 +117,45 @@ class CompilerBlock(object):
         output = elem.text
         if output is None:
             output = ""
+        logger.debug("Initial output=%s"%output)
+        reference_re = re.compile(r'\${?(\w+)}?')
+        env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
+        shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
+        nesting_ref_re = re.compile(r'\$SHELL\{[^}]+\$\w*\{')
+
+        expect(nesting_ref_re.search(output) is None,
+               "Nesting not allowed in this syntax, use xml syntax <shell> <env> if nesting is required")
+
+        for m in reference_re.finditer(output):
+            var_name = m.groups()[0]
+            if var_name not in ("SHELL","ENV"):
+                output = output.replace(m.group(), writer.variable_string(var_name))
+                depends.add(var_name)
+
+        logger.debug("preenv pass output=%s"%output)
+
+        for m in env_ref_re.finditer(output):
+            logger.debug("look for %s in env %s" % (output,writer.environment_variable_string(m.groups()[0])))
+            output = output.replace(m.group(),
+                                    writer.environment_variable_string(m.groups()[0]))
+            logger.debug("and output %s"%output)
+
+        logger.debug("postenv pass output=%s"%output)
+
+        for s in shell_ref_re.finditer(output):
+            command = s.groups()[0]
+            logger.debug("execute %s in shell, command %s" % (output, command))
+            new_set_up, inline, new_tear_down = \
+                writer.shell_command_strings(command)
+            output = output.replace(s.group(), inline)
+            if new_set_up is not None:
+                set_up.append(new_set_up)
+            if new_tear_down is not None:
+                tear_down.append(new_tear_down)
+            logger.debug("set_up %s inline %s tear_down %s"%(new_set_up,inline,new_tear_down))
+
+        logger.debug("First pass output=%s"%output)
+
         for child in elem:
             if child.tag == "env":
                 # <env> tags just need to be expanded by the writer.
@@ -130,6 +171,7 @@ class CompilerBlock(object):
                     set_up.append(new_set_up)
                 if new_tear_down is not None:
                     tear_down.append(new_tear_down)
+                logger.debug("set_up %s inline %s tear_down %s"%(new_set_up,inline,new_tear_down))
             elif child.tag == "var":
                 # <var> commands also need expansion by the writer, and can
                 # add dependencies.
@@ -143,6 +185,9 @@ class CompilerBlock(object):
                        "according to the schema.")
             if child.tail is not None:
                 output += child.tail
+
+        logger.debug("Second pass output=%s"%output)
+
         return output
 
     def _elem_to_setting(self, elem):
