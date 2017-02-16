@@ -4,6 +4,7 @@ test_data_path = '/Users/zhang40/Documents/ACME_simulations/'
 #reference_data_path = '/Users/shaheen2/github/acme_diags/acme_diags/'
 #test_data_path = '/Users/shaheen2/github/acme_diags/acme_diags/'
 test_data_set = '20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'  # model
+test_name = '20160520.A_WCYCL1850.ne30'
 
 
 regrid_tool = 'esmf'
