@@ -49,13 +49,16 @@ lookup_tables:
 	./checkout_data_files.sh
 
 core_physics_wrf:
-	(cd physics_wrf; make all COREDEF="$(COREDEF)")
+	(cd physics_wrf; $(MAKE) all COREDEF="$(COREDEF)")
 
 core_physics_init: $(OBJS_init)
 	ar -ru libphys.a $(OBJS_init)
 
-core_physics: $(OBJS)
+core_physics: core_physics_wrf
+	($(MAKE) phys_interface COREDEF="$(COREDEF)")
 	ar -ru libphys.a $(OBJS)
+
+phys_interface: $(OBJS)
 
 # DEPENDENCIES:
 mpas_atmphys_camrad_init.o: \
@@ -107,6 +110,7 @@ mpas_atmphys_driver_microphysics.o: \
 
 mpas_atmphys_driver_oml.o: \
 	mpas_atmphys_constants.o \
+	mpas_atmphys_landuse.o \
 	mpas_atmphys_vars.o
 
 mpas_atmphys_driver_pbl.o: \
@@ -190,7 +194,7 @@ mpas_atmphys_update.o: \
 
 clean:
 	$(RM) *.o *.mod *.f90 libphys.a
-	( cd physics_wrf; make clean )
+	( cd physics_wrf; $(MAKE) clean )
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
 	$(RM) *.i

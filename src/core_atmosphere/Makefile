@@ -34,7 +34,7 @@ physcore: mpas_atm_dimensions.o
 	( cd ../..; ln -sf ./src/core_atmosphere/physics/physics_wrf/files/*TBL .)
 	( cd ../..; ln -sf ./src/core_atmosphere/physics/physics_wrf/files/*DATA* .)
 
-dycore: mpas_atm_dimensions.o
+dycore: mpas_atm_dimensions.o physcore
 	( cd dynamics; $(MAKE) all PHYSICS="$(PHYSICS)" )
 
 diagcore: physcore dycore
@@ -48,7 +48,7 @@ atmcore: physcore dycore diagcore $(OBJS)
 
 mpas_atm_core_interface.o: mpas_atm_core.o
 
-mpas_atm_core.o: dycore mpas_atm_threading.o
+mpas_atm_core.o: dycore diagcore mpas_atm_threading.o
 
 mpas_atm_dimensions.o:
 
