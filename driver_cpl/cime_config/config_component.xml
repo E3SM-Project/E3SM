@@ -361,6 +361,42 @@
     </desc>
   </entry>
 
+  <entry id="PAUSE_OPTION">
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear</valid_values>
+    <default_value>never</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Sets the pause frequency along with PAUSE_N (must be nyear(s) for _GLC compsets for restarts to resume properly).
+    </desc>
+  </entry>
+
+  <entry id="PAUSE_N">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Provides a numerical count for $PAUSE_OPTION.
+    </desc>
+  </entry>
+
+  <entry id="PAUSE_COMPONENT_LIST">
+    <type>char</type>
+    <default_value>none</default_value>
+    <values>
+      <value compset="_DESP">cpl</value>
+    </values>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      A colon-separated list of components to receive pause and resume signals
+      A value of 'all' means all components will pause and resume
+      A value of 'none' means that no components will pause or resume
+    </desc>
+  </entry>
+
   <entry id="BARRIER_N">
     <type>char</type>
     <default_value>1</default_value>
@@ -485,50 +521,6 @@
     <desc></desc>
   </entry>
 
-  <entry id="DOUT_L_MODE">
-    <type>char</type>
-    <valid_values>copy_dirs_hsi, copy_files, copy_dirs_ssh, copy_dirs_local</valid_values>
-    <default_value>copy_dirs_hsi</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Copy mode to HPSS where copy_dirs_hsi recursively copies all directories and files
-    in the DOUT_S_ROOT location to DOUT_L_MSROOT; copy_files recursively copies
-    all directories and files but only those that don't already exist on HPSS and
-    if the checksum values differ; copy_dirs_ssh works the same as copy_files
-    but copies the files to a remote machine rather than HPSS; copy_dirs_local works
-    the same as copy_dirs_ssh but copies the files to another location on the
-    same local machine.</desc>
-  </entry>
-
-  <entry id="DOUT_L_DELETE_LOC_FILES">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Delete the local files in DOUT_S_ROOT location after
-    successful copy to HPSS.</desc>
-  </entry>
-
-  <entry id="DOUT_L_SSH_LOC">
-    <type>char</type>
-    <default_value></default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Remote machine name to be used to store long term archive files rather than HPSS.
-    This option is used in conjunction with DOUT_L_MODE=copy_dirs_ssh.
-    NOTE: sshkeys to the remote login should be setup prior to running lt_archive.</desc>
-  </entry>
-
-  <entry id="DOUT_L_ARC_ROOT">
-    <type>char</type>
-    <default_value></default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Local machine directory to be used to store long term archive files rather than HPSS.
-    This option is used in conjunction with DOUT_L_MODE=copy_dirs_local.</desc>
-  </entry>
-
   <entry id="SYSLOG_N">
     <type>integer</type>
     <default_value>900</default_value>
@@ -552,7 +544,7 @@
   <entry id="BATCH_SYSTEM">
      <type>char</type>
      <default_value>none</default_value>
-     <valid_values>pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
+     <valid_values>moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
      <group>config_batch</group>
      <file>env_batch.xml</file>
      <desc>The batch system type to use for this machine.</desc>
@@ -914,6 +906,7 @@
     <desc>logical to diagnose model timing at the end of the run</desc>
   </entry>
 
+
   <entry id="TIMER_LEVEL">
     <type>integer</type>
     <default_value>12</default_value>
@@ -922,12 +915,13 @@
     <desc>timer output depth</desc>
   </entry>
 
-  <entry id="TIMER_DETAIL">
-    <type>integer</type>
-    <default_value>2</default_value>
+  <entry id="SAVE_TIMING_DIR">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>timing</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer detail FIXME - add documentation</desc>
+    <desc>Where to auto archive timing data</desc>
   </entry>
 
   <entry id="PROFILE_PAPI_ENABLE">
@@ -939,16 +933,6 @@
     <desc>Enables the papi hardware counters in gptl
     The papi library must be included in the build step for
     this to work.</desc>
-  </entry>
-
-  <entry id="TPROF_TOTAL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>run_cesm</group>
-    <file>env_run.xml</file>
-    <desc>Determines number of times profiler is called over the model run period.
-    This sets values for tprof_option and tprof_n that determine the timing output file frequency
-    </desc>
   </entry>
 
   <entry id="COMP_RUN_BARRIERS">
@@ -1105,7 +1089,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,null</valid_values>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.gis20km,mpas.ais20km,null</valid_values>
     <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
@@ -2429,7 +2413,7 @@
   </entry>
 
   <!-- ===================================================================== -->
-  <!-- history / restart frequencies -->
+  <!-- history frequencies -->
   <!-- ===================================================================== -->
 
   <entry id="HIST_OPTION">
