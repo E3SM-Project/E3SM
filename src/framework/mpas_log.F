@@ -117,7 +117,7 @@ module mpas_log
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-
+      character(len=16) :: taskString  !< variable to build the task number as a string with appropriate zero padding
 
       err = 0
 
@@ -180,15 +180,28 @@ module mpas_log
       endif
 #endif
 
-      ! Generate the log file name
+
+      ! Generate the log and err file names
       !    Note: If log is inactive, this won't actually be used, but it is always set.
-      ! TODO: add routine to expand procid with various numbers of digits.  Unify with usage in global_abort routine.
-      write(mpas_log_info % logFileName, fmt='(a, i4.4, a)') "stick.", mpas_log_info % taskID, ".out"
+      !    Note: unit number is not set until file is opened
 
-      ! Note: unit number is not set until file is opened
+      ! Expand zero padding based on number of total tasks
+      if (mpas_log_info % nTasks < 1E4) then
+         write(taskString, '(i4.4)') mpas_log_info % taskID
+      else if (mpas_log_info % nTasks < 1E5) then
+         write(taskString, '(i5.5)') mpas_log_info % taskID
+      else if (mpas_log_info % nTasks < 1E6) then
+         write(taskString, '(i6.6)') mpas_log_info % taskID
+      else if (mpas_log_info % nTasks < 1E7) then
+         write(taskString, '(i7.7)') mpas_log_info % taskID
+      else if (mpas_log_info % nTasks < 1E8) then
+         write(taskString, '(i8.8)') mpas_log_info % taskID
+      else
+         write(taskString, '(i9.9)') mpas_log_info % taskID
+      end if
 
-      ! Set up err file name now
-      write(mpas_log_info % errFileName, fmt='(a, i4.4, a)') "stick.", mpas_log_info % taskID, ".err"
+      write(mpas_log_info % logFileName, fmt='(a, a, a)') "stick.", trim(taskString), ".out"
+      write(mpas_log_info % errFileName, fmt='(a, a, a)') "stick.", trim(taskString), ".err"
 
    !--------------------------------------------------------------------
    end subroutine mpas_log_init
