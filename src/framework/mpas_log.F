@@ -426,6 +426,7 @@ module mpas_log
       logical :: masterOnlyWrite  !< local version of masterOnly
       integer :: messageTypeHere !< local version of messageType
       character(len=16) :: messagePrefix  !< the "keyword" prepended before some message types
+      logical :: flushLog !< Local variable determining if the output log should be flushed
 
       ierr = 0
 
@@ -480,9 +481,13 @@ module mpas_log
 
             ! Optionally flush the buffer (only attempt if the file is active)
             if (present(flushNow)) then
-               if (flushNow) then
-                  flush(mpas_log_info % logUnit)
-               endif
+               flushLog = flushNow
+            endif
+            if ((messageTypeHere == MPAS_LOG_ERR) .or. (messageTypeHere == MPAS_LOG_CRIT)) then
+               flushLog = .true.  ! Error messages are always flushed immediately!
+            endif
+            if (flushLog) then
+               flush(mpas_log_info % logUnit)
             endif
 
             ! Increment appropriate message counter
@@ -519,6 +524,7 @@ module mpas_log
 
             ! Now we need to repeat the message to the err file
             write(mpas_log_info % errUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(message)
+            flush(mpas_log_info % errUnit)  ! Error messages are flushed immediately!
 
             ! If this is a critical error, we need to kill the model
             if (messageTypeHere == MPAS_LOG_CRIT) then
