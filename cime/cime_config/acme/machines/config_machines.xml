@@ -290,6 +290,7 @@
       </modules>
 
       <modules>
+        <command name="load">git</command>
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
@@ -423,6 +424,7 @@
 	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
+        <command name="load">git</command>
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
