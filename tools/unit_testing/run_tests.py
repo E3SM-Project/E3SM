@@ -282,6 +282,7 @@ def _main():
     machspecific = EnvMachSpecific(build_dir)
     machspecific.load_env(compiler, debug, mpilib)
     logger.warn("Compiler is %s"%compiler)
+    os.environ["OS"] = os_
     os.environ["COMPILER"] = compiler
     os.environ["DEBUG"] = stringify_bool(debug)
     os.environ["MPILIB"] = mpilib
