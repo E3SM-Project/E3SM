@@ -66,6 +66,9 @@ module mpas_log
    !--------------------------------------------------------------------
    ! Private module variables
    !--------------------------------------------------------------------
+   character(len=16), parameter, private :: messagePrefixWarning = "WARNING: "
+   character(len=16), parameter, private :: messagePrefixError = "ERROR: "
+   character(len=16), parameter, private :: messagePrefixCritical = "CRITICAL ERROR: "
 
 
 !***********************************************************************
@@ -389,24 +392,92 @@ module mpas_log
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      integer :: ierr
+      logical :: masterOnlyWrite  !< local version of masterOnly
+      integer :: messageTypeHere !< local version of messageType
+      character(len=16) :: messagePrefix  !< the "keyword" prepended before some message types
 
+      ierr = 0
 
-      err = 0
+      if (present(messageType)) then
+         messageTypeHere = messageType
+      else
+         messageTypeHere = MPAS_LOG_OUT  ! Default is 'output' message
+      endif
+
+      if (present(masterOnly)) then
+         masterOnlyWrite = masterOnly
+      else
+         masterOnlyWrite = .false.
+      endif
 
 
       ! Construct message by expanding variable values as needed and inserting message type prefix
+      ! TODO
+
+      ! Determine message prefix
+      select case (messageTypeHere)
+      case (MPAS_LOG_OUT)
+         messagePrefix = ""  ! (not used)
+      case (MPAS_LOG_WARN)
+         messagePrefix = messagePrefixWarning
+      case (MPAS_LOG_ERR)
+         messagePrefix = messagePrefixError
+      case (MPAS_LOG_CRIT)
+         messagePrefix = messagePrefixCritical
+      case default
+         ! TODO handle this error?
+      end select
 
       ! Write message to standard log file
-      !   Accounting for debug/optimized settings
+      !   Accounting for debug/optimized settings (logActive)
       !   Accounting for optional head-node-only argument
-      write(mpas_log_info % logUnit, *) message
+      if (mpas_log_info % logActive) then
+         if ( ((masterOnlyWrite) .and. (mpas_log_info % taskID == 0)) .or. (.not. masterOnlyWrite)) then
 
-      ! Optionally flush the buffer
+            ! --- Actually write the message here! ---
+            !    We have to treat MPAS_LOG_OUT messages separately from others because that type
+            !    does not have a prefix and we want to add a space after the trimmed prefix for other types.
+            if (messageTypeHere == MPAS_LOG_OUT) then
+               write(mpas_log_info % logUnit, '(a)') trim(message)
+            else
+               write(mpas_log_info % logUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(message)
+            endif
 
-      ! Increment appropriate message counter
+            ! Optionally flush the buffer (only attempt if the file is active)
+            if (present(flushNow)) then
+               if (flushNow) then
+                  flush(mpas_log_info % logUnit)
+               endif
+            endif
+
+            ! Increment appropriate message counter
+            !   (counters only apply to the output log)
+            select case (messageTypeHere)
+            case (MPAS_LOG_OUT)
+               mpas_log_info % outputMessageCount = mpas_log_info % outputMessageCount + 1
+            case (MPAS_LOG_WARN)
+               mpas_log_info % warningMessageCount = mpas_log_info % warningMessageCount + 1
+            case (MPAS_LOG_ERR)
+               mpas_log_info % errorMessageCount = mpas_log_info % errorMessageCount + 1
+            case (MPAS_LOG_CRIT)
+               mpas_log_info % criticalErrorMessageCount = mpas_log_info % criticalErrorMessageCount + 1
+            case default
+               ! TODO handle this error? (would have encountered it above...)
+            end select
+
+
+         endif
+      endif
+
 
       ! Handle error/critical error logic if necessary
+      ! TODO
 
+      ! Pass back err code if it was requested
+      if (present(err)) then
+         err = ierr
+      endif
 
    !--------------------------------------------------------------------
    end subroutine mpas_log_write
