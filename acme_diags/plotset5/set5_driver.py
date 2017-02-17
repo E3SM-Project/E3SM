@@ -15,7 +15,8 @@ import fnmatch
 
 def make_parameters(orginal_parameter):
     #f_data = open('set5_diags.json').read()
-    f_data = open('set5_diags_MERRA.json').read()
+    #f_data = open('set5_diags_MERRA.json').read()
+    f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
@@ -28,9 +29,26 @@ def make_parameters(orginal_parameter):
             parameters.append(p)
     return parameters
 
-parser = acme_diags.acme_parser.ACMEParser()
-orginal_parameter = parser.get_parameter()
-parameters = make_parameters(orginal_parameter)
+# Below three functions are copied from uvcmetrics.
+def mask_by( var, maskvar, lo=None, hi=None ):
+    """masks a variable var to be missing except where maskvar>=lo and maskvar<=hi.  That is, the missing-data mask is True where maskvar<lo or maskvar>hi or where it was True on input. For lo and hi, None means to omit the constrint, i.e. lo=-infinity or hi=infinity. var is changed and returned; we don't make a new variable.
+var and maskvar: dimensioned the same variables.  
+lo and hi: scalars.
+    """
+    if lo is None and hi is None:
+        return var
+    if lo is None and hi is not None:
+        maskvarmask = maskvar>hi
+    elif lo is not None and hi is None:
+        maskvarmask = maskvar<lo
+    else:
+        maskvarmask = (maskvar<lo) | (maskvar>hi)
+    if var.mask is False:
+        newmask = maskvarmask
+    else:
+        newmask = var.mask | maskvarmask
+    var.mask = newmask
+    return var
 
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     """regrid transient variable toward lower resolution of two variables"""
@@ -49,6 +67,10 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     return mv1_reg, mv2_reg
     
 
+    
+parser = acme_diags.acme_parser.ACMEParser()
+orginal_parameter = parser.get_parameter()
+parameters = make_parameters(orginal_parameter)
 
 for parameter in parameters:
 
@@ -73,7 +95,7 @@ for parameter in parameters:
             filename1 = filename
  
         ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
-        for filename in fnmatch.filter(ref_files, '*'+it+'*'):
+        for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+it+'*'):
             print filename
             filename2 = filename
     
@@ -88,28 +110,51 @@ for parameter in parameters:
                 mv1 = (f_mod('PRECC') + f_mod('PRECL'))*3600.0*24.0*1000.0
                 mv2 = f_obs(var)
             mv1.units = 'mm/day'
-            parameter.output_file = '_'.join([ref_name,it])
-            parameter.main_title = str(' '.join([var,it]))
-            print parameter.output_file
         elif var == 'PREH2O':
             f_in = cdms2.open(filename1)
             mv1 = f_in('TMQ')
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
+        elif var == 'SST':
+            f_in = cdms2.open(filename1)
+            TS = f_in('TS')
+            TS = TS -273.15
+            OCNFRAC = f_in('OCNFRAC')
+            mv1 = mask_by(TS, OCNFRAC, lo = 0.9) #following AMWG
+            f_in = cdms2.open(filename2)
+            mv2 = f_in(var)
+
+            mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
+            mv1_reg=mv1_reg(squeeze=1)
+            #create common mask for SST
+            land_mask = MV2.logical_or(mv1_reg.mask,mv2_reg.mask)
+
+            # Note, NCAR plots native mv1, mv2, but mean is from newly masker mv1 and mv2.while we plot everything already masked for now.Need to modify plotting routine for accomodating printing different sets of means to plots.
+            mv1_new = MV2.masked_where(land_mask,mv1_reg)
+            mv2_new = MV2.masked_where(land_mask,mv2_reg)
+
+            plot_set_5.plot(mv2, mv1, mv2_new, mv1_new, parameter)
+        
+
         else:
             f_in = cdms2.open(filename1)
             mv1 = f_in(var)
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
-        print f_in.variables.keys()
+        parameter.output_file = '_'.join([ref_name,it])
+        parameter.main_title = str(' '.join([var,it]))
+        print parameter.output_file
 
-        if mv1.rank() == 3 and mv2.rank() == 3: #for variables without z axis:
+        #for variables without z axis:
+        if mv1.getLevel()==None and mv2.getLevel()==None:
             #regrid towards lower resolution of two variables for calculating difference
-            mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
-            plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
+            if var != 'SST':
+                mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
+                plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
 
         
-        elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
+        #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
+        elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
             plev = parameter.levels
             print 'selected pressure level', plev
     
