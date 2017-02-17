@@ -68,21 +68,34 @@
 ! * moved the declarations of arrays delta_p,wstar_p,uoce_p,and voce_p since they are now used in both modules
 !   module_bl_ysu.F and module_bl_mynn.F.
 !   Laura D. Fowler (laura@ucar.edu) / 20016-10-27.
+! * removed the initialization local variable gwdo_scheme. gwdo_scheme is no longer needed and can be replaced
+!   with config_gwdo_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable lsm_scheme. lsm_scheme is no longer needed and can be replaced
+!   with config_lsm_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable sfclayer_scheme. sfclayer_scheme is no longer needed and can be
+!   replaced with config_sfclayer_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable pbl_scheme. pbl_scheme is no longer needed and can be replaced
+!   replaced with config_pbl_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable radt_cld_scheme. radt_cld_scheme is no longer needed and can be
+!   replaced replaced with config_radt_cld_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable radt_lw_scheme. radt_lw_scheme is no longer needed and can be
+!   replaced replaced with config_radt_lw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable radt_sw_scheme. radt_sw_scheme is no longer needed and can be
+!   replaced replaced with config_radt_sw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable convection_scheme. convection_scheme is no longer needed and can be
+!   replaced replaced with config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
+! * removed the initialization local variable microp_scheme. microp_scheme is no longer needed and can be
+!   replaced replaced with config_microp_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2017-02-16.
 
-
-!=================================================================================================================
-!list of physics parameterizations:
-!=================================================================================================================
-
- character(len=StrKIND),public:: microp_scheme
- character(len=StrKIND),public:: convection_scheme
- character(len=StrKIND),public:: gwdo_scheme
- character(len=StrKIND),public:: lsm_scheme
- character(len=StrKIND),public:: pbl_scheme
- character(len=StrKIND),public:: radt_cld_scheme
- character(len=StrKIND),public:: radt_lw_scheme
- character(len=StrKIND),public:: radt_sw_scheme
- character(len=StrKIND),public:: sfclayer_scheme
 
 !=================================================================================================================
 !wrf-variables:these variables are needed to keep calls to different physics parameterizations

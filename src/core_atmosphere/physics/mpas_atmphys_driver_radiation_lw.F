@@ -84,19 +84,28 @@
 ! * substituted "use mpas_atmphys_o3climatology" with "use module_ra_rrtmg_vinterp" since we moved subroutine
 !   vinterp_ozn to is own module in physics_wrf.
 !   laura D. Fowler (laura@ucar.edu) / 2017-01-27.
+! * since we removed the local variable radt_lw_scheme from mpas_atmphys_vars.F, now defines radt_lw_scheme
+!   as a pointer to config_radt_lw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
 
 
  contains
 
 
 !=================================================================================================================
- subroutine allocate_radiation_lw(xtime_s)
+ subroutine allocate_radiation_lw(configs,xtime_s)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  real(kind=RKIND),intent(in):: xtime_s
 
+!local pointers:
+ character(len=StrKIND),pointer:: radt_lw_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme)
 
  if(.not.allocated(f_ice)        ) allocate(f_ice(ims:ime,kms:kme,jms:jme)        )
  if(.not.allocated(f_rain)       ) allocate(f_rain(ims:ime,kms:kme,jms:jme)       )
@@ -192,8 +201,18 @@
  end subroutine allocate_radiation_lw
 
 !=================================================================================================================
- subroutine deallocate_radiation_lw
+ subroutine deallocate_radiation_lw(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: radt_lw_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme)
 
  if(allocated(f_ice)        ) deallocate(f_ice        )
  if(allocated(f_rain)       ) deallocate(f_rain       )
@@ -294,6 +313,7 @@
 
 !local pointers:
  logical,pointer:: config_o3climatology
+ character(len=StrKIND),pointer:: radt_lw_scheme
 
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
@@ -310,7 +330,8 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+ call mpas_pool_get_config(configs,'config_o3climatology' ,config_o3climatology)
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme      )
 
  call mpas_pool_get_array(mesh,'latCell',latCell)
  call mpas_pool_get_array(mesh,'lonCell',lonCell)
@@ -561,16 +582,21 @@
  end subroutine radiation_lw_from_MPAS
 
 !=================================================================================================================
- subroutine radiation_lw_to_MPAS(diag_physics,tend_physics,its,ite)
+ subroutine radiation_lw_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
 
  integer,intent(in):: its,ite
 
 !local pointers:
+ character(len=StrKIND),pointer:: radt_lw_scheme
+
  real(kind=RKIND),dimension(:),pointer :: glw,lwcf,lwdnb,lwdnbc,lwdnt,lwdntc,lwupb,lwupbc, &
                                           lwupt,lwuptc,olrtoa
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw
@@ -582,6 +608,8 @@
  real(kind=RKIND),dimension(:,:),allocatable:: p1d
 
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme)
 
  call mpas_pool_get_array(diag_physics,'glw'   ,glw   )
  call mpas_pool_get_array(diag_physics,'lwcf'  ,lwcf  )
@@ -690,11 +718,12 @@
  end subroutine radiation_camlw_to_MPAS
 
 !=================================================================================================================
- subroutine init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
+ subroutine init_radiation_lw(dminfo,configs,mesh,atm_input,diag,state,time_lev)
 !=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in),optional:: mesh
  type(mpas_pool_type),intent(in),optional:: diag
 
@@ -704,7 +733,12 @@
  type(mpas_pool_type),intent(inout),optional:: atm_input
  type(mpas_pool_type),intent(inout),optional:: state
 
+!local pointers:
+ character(len=StrKIND),pointer:: radt_lw_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme)
 
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
@@ -742,6 +776,7 @@
 
 !local pointers:
  logical,pointer:: config_o3climatology
+ character(len=StrKIND),pointer:: radt_lw_scheme
 
 !local variables:
  integer:: o3input
@@ -754,7 +789,8 @@
  100 format(/,' --- enter subroutine driver_radiation_lw: ',i6)
  101 format(i8,12(1x,e15.8))
 
- call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+ call mpas_pool_get_config(configs,'config_o3climatology' ,config_o3climatology)
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme',radt_lw_scheme      )
 
 !copy MPAS arrays to local arrays:
  call radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input,its,ite)
@@ -851,7 +887,7 @@
  end select radiation_lw_select
 
 !copy local arrays to MPAS grid:
- call radiation_lw_to_MPAS(diag_physics,tend_physics,its,ite)
+ call radiation_lw_to_MPAS(configs,diag_physics,tend_physics,its,ite)
 
 !write(0,*) '--- end subroutine driver_radiation_lw.'
 

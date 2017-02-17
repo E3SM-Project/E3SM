@@ -76,19 +76,28 @@
 ! * in the call to rrtmg_swrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
 !   qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
+! * since we removed the local variable radt_sw_scheme from mpas_atmphys_vars.F, now defines radt_sw_scheme
+!   as a pointer to config_radt_sw_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2917-02-16.
 
 
  contains
 
 
 !=================================================================================================================
- subroutine allocate_radiation_sw(xtime_s)
+ subroutine allocate_radiation_sw(configs,xtime_s)
 !=================================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  real(kind=RKIND),intent(in):: xtime_s
 
+!local pointers:
+ character(len=StrKIND),pointer:: radt_sw_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme',radt_sw_scheme)
 
  if(.not.allocated(f_ice)        ) allocate(f_ice(ims:ime,kms:kme,jms:jme)        )
  if(.not.allocated(f_rain)       ) allocate(f_rain(ims:ime,kms:kme,jms:jme)       )
@@ -189,8 +198,18 @@
  end subroutine allocate_radiation_sw
 
 !=================================================================================================================
- subroutine deallocate_radiation_sw
+ subroutine deallocate_radiation_sw(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: radt_sw_scheme
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme',radt_sw_scheme)
 
  if(allocated(f_ice)        ) deallocate(f_ice        )
  if(allocated(f_rain)       ) deallocate(f_rain       )
@@ -295,6 +314,7 @@
 
 !local pointers:
  logical,pointer:: config_o3climatology
+ character(len=StrKIND),pointer:: radt_sw_scheme
 
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
@@ -306,7 +326,8 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+ call mpas_pool_get_config(configs,'config_o3climatology' ,config_o3climatology)
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme',radt_sw_scheme      )
 
  call mpas_pool_get_array(mesh,'latCell',latCell)
  call mpas_pool_get_array(mesh,'lonCell',lonCell)
@@ -601,11 +622,12 @@
  end subroutine radiation_sw_to_MPAS
 
 !=================================================================================================================
- subroutine init_radiation_sw(dminfo,mesh,atm_input,diag,state,time_lev)
+ subroutine init_radiation_sw(dminfo,configs,mesh,atm_input,diag,state,time_lev)
 !=================================================================================================================
 
 !input arguments:
  type(dm_info), intent(in):: dminfo
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in),optional:: mesh
  type(mpas_pool_type),intent(in),optional:: diag
 
@@ -615,7 +637,12 @@
  type(mpas_pool_type),intent(inout),optional:: atm_input
  type(mpas_pool_type),intent(inout),optional:: state
 
+!local pointers:
+ character(len=StrKIND),pointer:: radt_sw_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme',radt_sw_scheme)
 
 !call to shortwave radiation scheme:
  radiation_sw_select: select case (trim(radt_sw_scheme))
@@ -657,6 +684,7 @@
 
 !local pointers:
  logical,pointer:: config_o3climatology
+ character(len=StrKIND),pointer:: radt_sw_scheme
 
 !local variables:
  integer:: o3input
@@ -665,7 +693,8 @@
 !-----------------------------------------------------------------------------------------------------------------
 !write(0,100) itimestep
 
- call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+ call mpas_pool_get_config(configs,'config_o3climatology' ,config_o3climatology)
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme',radt_sw_scheme      )
 
 !formats:
  100 format(/,' --- enter subroutine driver_radiation_sw: ',i6)

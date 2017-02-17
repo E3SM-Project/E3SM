@@ -354,10 +354,10 @@
 
 !initialization of cloud microphysics processes:
  if(config_microp_scheme .ne. 'off') &
-    call microphysics_init(dminfo,mesh,sfc_input,diag_physics)
+    call microphysics_init(dminfo,configs,mesh,sfc_input,diag_physics)
 
 !initialization of surface layer processes:
- if(config_sfclayer_scheme .ne. 'off') call init_sfclayer
+ if(config_sfclayer_scheme .ne. 'off') call init_sfclayer(configs)
 
 !initialization of land-surface model:
 !if(.not. config_do_restart) then
@@ -369,10 +369,10 @@
  init_done = .false.
  if(config_radt_sw_scheme.ne.'off') then
     if(trim(config_radt_sw_scheme) .eq. 'cam_sw') then
-       call init_radiation_sw(dminfo,mesh,atm_input,diag,state,time_lev)
+       call init_radiation_sw(dminfo,configs,mesh,atm_input,diag,state,time_lev)
        init_done = .true.
     else
-       call init_radiation_sw(dminfo)
+       call init_radiation_sw(dminfo,configs)
     endif
  endif
 
@@ -382,13 +382,13 @@
  if(config_radt_lw_scheme.ne.'off') then    
     if(trim(config_radt_lw_scheme) .eq. 'cam_lw') then
        if(.not. init_done) then
-          call init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
+          call init_radiation_lw(dminfo,configs,mesh,atm_input,diag,state,time_lev)
        else
 !          write(0,*)
 !          write(0,*) '--- camrad lw initialization done above'
        endif
     else
-       call init_radiation_lw(dminfo)
+       call init_radiation_lw(dminfo,configs)
     endif
  endif
 
