@@ -23,6 +23,20 @@ from CIME.XML.files import Files
 logger = logging.getLogger(__name__)
 
 ###############################################################################
+def _get_time_in_seconds(time, unit):
+###############################################################################
+    if 'nyear' in unit:
+        dmult = 365 * 24 * 3600
+    elif 'nmonth' in unit:
+        dmult = 30 * 24 * 3600
+    elif 'nday' in unit:
+        dmult = 24 * 3600
+    else:
+        dmult = 1
+
+    return dmult * time
+
+###############################################################################
 def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 ###############################################################################
 
@@ -93,6 +107,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         expect(False, "basedt invalid overflow for NCPL_BASE_PERIOD %s " %ncpl_base_period)
 
     comps = case.get_values("COMP_CLASSES")
+    mindt = basedt
     for comp in comps:
         ncpl = case.get_value(comp.upper() + '_NCPL')
         if ncpl is not None:
@@ -101,6 +116,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
             if totaldt != basedt:
                 expect(False, " %s ncpl doesn't divide base dt evenly" %comp)
             nmlgen.set_value(comp.lower() + '_cpl_dt', value=cpl_dt)
+            mindt = min(mindt, cpl_dt)
 #        elif comp.lower() is not 'cpl':
 
     #--------------------------------
@@ -142,6 +158,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # Set up the pause_component_list if pause is active
     pauseo = case.get_value('PAUSE_OPTION')
     if pauseo != 'never' and pauseo != 'none':
+        pausen = case.get_value('PAUSE_N')
         pcl = nmlgen.get_default('pause_component_list')
         nmlgen.add_default('pause_component_list', pcl)
         # Check to make sure pause_component_list is valid
@@ -154,6 +171,13 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
                        "Invalid PAUSE_COMPONENT_LIST, %s is not a valid component type"%comp)
             # End for
         # End if
+        # Set esp interval
+        if 'nstep' in pauseo:
+            esp_time = mindt
+        else:
+            esp_time = _get_time_in_seconds(pausen, pauseo)
+
+        nmlgen.set_value('esp_cpl_dt', value=esp_time)
     # End if pause is active
 
     #--------------------------------

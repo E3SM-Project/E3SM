@@ -99,13 +99,15 @@ module cesm_comp_mod
    use seq_timemgr_mod, only: seq_timemgr_alarm_esprun
    use seq_timemgr_mod, only: seq_timemgr_alarm_barrier
    use seq_timemgr_mod, only: seq_timemgr_alarm_pause
-   use seq_timemgr_mod, only: pause_component_list=>seq_timemgr_pause_component_list
+   use seq_timemgr_mod, only: seq_timemgr_pause_active
+   use seq_timemgr_mod, only: seq_timemgr_pause_component_active
+   use seq_timemgr_mod, only: seq_timemgr_pause_component_index
 
    ! "infodata" gathers various control flags into one datatype
    use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
    use seq_infodata_mod, only: seq_infodata_init, seq_infodata_exchange
    use seq_infodata_mod, only: seq_infodata_type, seq_infodata_orb_variable_year
-   use seq_infodata_mod, only: seq_infodata_print
+   use seq_infodata_mod, only: seq_infodata_print, seq_infodata_init2
 
    ! domain related routines
    use seq_domain_mct, only : seq_domain_check
@@ -257,7 +259,6 @@ module cesm_comp_mod
    logical  :: esprun_alarm           ! esp run alarm
    logical  :: tprof_alarm            ! timing profile alarm
    logical  :: barrier_alarm          ! barrier alarm
-   logical  :: pause_alarm            ! pause alarm
    logical  :: t1hr_alarm             ! alarm every hour
    logical  :: t2hr_alarm             ! alarm every two hours
    logical  :: t3hr_alarm             ! alarm every three hours
@@ -265,6 +266,8 @@ module cesm_comp_mod
    logical  :: t12hr_alarm            ! alarm every twelve hours
    logical  :: t24hr_alarm            ! alarm every twentyfour hours
    logical  :: t1yr_alarm             ! alarm every year, at start of year
+   logical  :: pause_alarm            ! pause alarm
+   integer  :: drv_index              ! seq_timemgr index for driver
 
    real(r8) :: days_per_year = 365.0  ! days per year
 
@@ -1001,6 +1004,11 @@ subroutine cesm_pre_init2()
    if (iamroot_CPLID) then
       call seq_timemgr_clockPrint(seq_SyncClock)
    endif
+
+   !----------------------------------------------------------
+   !| Initialize infodata items which need the clocks
+   !----------------------------------------------------------
+   call seq_infodata_init2(infodata, GLOID)
 
    call seq_infodata_getData(infodata,   &
         orb_iyear=orb_iyear,             &
@@ -1967,6 +1975,11 @@ subroutine cesm_init()
    endif   ! atm present
 
    !----------------------------------------------------------
+   !| Get time manager's index for driver
+   !----------------------------------------------------------
+   drv_index = seq_timemgr_pause_component_index('drv')
+
+   !----------------------------------------------------------
    !| Read driver restart file, overwrite anything previously sent or computed
    !----------------------------------------------------------
 
@@ -2052,8 +2065,8 @@ end subroutine cesm_init
  !===============================================================================
 
  subroutine cesm_run()
-   use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
-         ocn_layout, wav_layout, esp_layout
+   use seq_comm_mct,   only: atm_layout, lnd_layout, ice_layout, glc_layout,  &
+        rof_layout, ocn_layout, wav_layout, esp_layout
    use shr_string_mod, only: shr_string_listGetIndexF
 
    ! gptl timer lookup variables
@@ -2062,6 +2075,7 @@ end subroutine cesm_init
    ! Driver pause/resume
    logical            :: drv_pause  ! Driver writes pause restart file
    character(len=CL)  :: drv_resume ! Driver resets state from restart file
+   integer            :: iamroot_ESPID
 
 101 format( A, 2i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, 2i8, A, 8L3 )
@@ -2138,49 +2152,8 @@ end subroutine cesm_init
       barrier_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_barrier)
       pause_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_pause)
 
-      ! Determine wich components need to write pause (restart) files
-      if (pause_alarm) then
-        if (trim(pause_component_list) == 'all') then
-          drv_pause = .true.
-          call seq_infodata_putData(infodata, atm_pause=.true.,               &
-               lnd_pause=.true., ocn_pause=.true., ice_pause=.true.,          &
-               glc_pause=.true., rof_pause=.true., wav_pause=.true.,          &
-               cpl_pause=.true.)
-        else if (trim(pause_component_list) /= 'none') then
-          if (shr_string_listGetIndexF(pause_component_list, 'atm') > 0) then
-            call seq_infodata_putData(infodata, atm_pause=.true.)
-          end if
-          if (shr_string_listGetIndexF(pause_component_list, 'lnd') > 0) then
-            call seq_infodata_putData(infodata, lnd_pause=.true.)
-          end if
-          if (shr_string_listGetIndexF(pause_component_list, 'ocn') > 0) then
-            call seq_infodata_putData(infodata, ocn_pause=.true.)
-          end if
-          if (shr_string_listGetIndexF(pause_component_list, 'ice') > 0) then
-            call seq_infodata_putData(infodata, ice_pause=.true.)
-          end if
-          if (shr_string_listGetIndexF(pause_component_list, 'glc') > 0) then
-            call seq_infodata_putData(infodata, glc_pause=.true.)
-          end if
-          if (shr_string_listGetIndexF(pause_component_list, 'rof') > 0) then
-            call seq_infodata_putData(infodata, rof_pause=.true.)
-          end if
-          if (shr_string_listGetIndexF(pause_component_list, 'wav') > 0) then
-            call seq_infodata_putData(infodata, wav_pause=.true.)
-          end if
-          if ( (shr_string_listGetIndexF(pause_component_list, 'cpl') > 0) .or.&
-               (shr_string_listGetIndexF(pause_component_list, 'drv') > 0)) then
-            drv_pause = .true.
-            call seq_infodata_putData(infodata, cpl_pause=.true.)
-          end if
-        end if
-      else
-        drv_pause = .false.
-        call seq_infodata_putData(infodata, atm_pause=.false.,                &
-             lnd_pause=.false., ocn_pause=.false., ice_pause=.false.,         &
-             glc_pause=.false., rof_pause=.false., wav_pause=.false.,         &
-             cpl_pause=.false.)
-      end if ! pause alarm
+      ! Does the driver need to pause?
+      drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
       
       ! this probably belongs in seq_timemgr somewhere using proper clocks
       t1hr_alarm = .false.
@@ -3726,6 +3699,10 @@ end subroutine cesm_init
               comp_prognostic=esp_prognostic, comp_num=comp_num_esp, &
               timer_barrier= 'CPL:ESP_RUN_BARRIER', timer_comp_run='CPL:ESP_RUN', &
               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=esp_layout)
+         !---------------------------------------------------------------------
+         !| ESP computes resume options for other components -- update everyone
+         !---------------------------------------------------------------------
+         call seq_infodata_exchange(infodata, CPLALLESPID, 'esp2cpl_run')
       endif
 
       !----------------------------------------------------------
@@ -3733,16 +3710,19 @@ end subroutine cesm_init
       !----------------------------------------------------------
       call seq_infodata_GetData(infodata, cpl_resume=drv_resume)
       if (len_trim(drv_resume) > 0) then
-        if (iamroot_CPLID) then
-          write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume)
-          call shr_sys_flush(logunit)
-        end if
-        if (iamin_CPLID) then
-          call seq_rest_read(drv_resume, infodata,                            &
-               atm, lnd, ice, ocn, rof, glc, wav, esp,                        &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox,        &
-               fractions_rx, fractions_gx, fractions_wx)
-        end if
+         if (iamroot_CPLID) then
+            write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume)
+            call shr_sys_flush(logunit)
+         end if
+         if (iamin_CPLID) then
+            call seq_rest_read(drv_resume, infodata,                          &
+                 atm, lnd, ice, ocn, rof, glc, wav, esp,                      &
+                 fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
+                 fractions_rx, fractions_gx, fractions_wx)
+         end if
+         ! Clear the resume file so we don't try to read it again
+         drv_resume = ' '
+         call seq_infodata_PutData(infodata, cpl_resume=drv_resume)
       end if
 
       !----------------------------------------------------------
