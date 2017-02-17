@@ -96,7 +96,6 @@ module seq_comm_mct
   !!! internal communications, and one is needed for the global space.
   !!! All instances of a component type also share a separate communicator
   !!! All instances of a component type share a communicator with the coupler
-  !!! Note that ESP models do not need coupler communicators
 
   integer, parameter, public :: num_inst_phys = num_inst_atm + num_inst_lnd + &
                                                 num_inst_ocn + num_inst_ice + &
@@ -105,7 +104,7 @@ module seq_comm_mct
   integer, parameter, public :: num_cpl_phys  = num_inst_atm + num_inst_lnd + &
                                                 num_inst_ocn + num_inst_ice + &
                                                 num_inst_glc + num_inst_rof + &
-                                                num_inst_wav
+                                                num_inst_wav + num_inst_esp
   integer, parameter :: ncomps = (1 + ncouplers + ncomptypes + nphysmod + num_inst_phys + num_cpl_phys)
 
   integer, public :: GLOID
@@ -127,7 +126,7 @@ module seq_comm_mct
   integer, public :: CPLALLGLCID
   integer, public :: CPLALLROFID
   integer, public :: CPLALLWAVID
-  integer, public, parameter :: CPLALLESPID = -1
+  integer, public :: CPLALLESPID
 
   integer, public :: ATMID(num_inst_atm)
   integer, public :: LNDID(num_inst_lnd)
@@ -166,7 +165,9 @@ module seq_comm_mct
     integer :: gloroot         ! the global task number of each comps root on all pes
     integer :: pethreads       ! max number of threads on my task
     integer :: cplpe           ! a common task in mpicom from the cpl group for join mpicoms
+                               ! cplpe is used to broadcast information from the coupler to the component
     integer :: cmppe           ! a common task in mpicom from the component group for join mpicoms
+                               ! cmppe is used to broadcast information from the component to the coupler
     logical :: set             ! has this datatype been set
     integer, pointer    :: petlist(:)  ! esmf pet list
     logical :: petlist_allocated ! whether the petlist pointer variable was allocated
@@ -394,7 +395,8 @@ contains
     num_inst_min = min(num_inst_min, num_inst_glc)
     num_inst_min = min(num_inst_min, num_inst_wav)
     num_inst_min = min(num_inst_min, num_inst_rof)
-    num_inst_min = min(num_inst_min, num_inst_esp)
+! ESP is currently limited to one instance, should not affect other comps
+!    num_inst_min = min(num_inst_min, num_inst_esp)
     num_inst_max = num_inst_atm
     num_inst_max = max(num_inst_max, num_inst_lnd)
     num_inst_max = max(num_inst_max, num_inst_ocn)
@@ -412,7 +414,10 @@ contains
     if (num_inst_glc /= num_inst_min .and. num_inst_glc /= num_inst_max) error_state = .true.
     if (num_inst_wav /= num_inst_min .and. num_inst_wav /= num_inst_max) error_state = .true.
     if (num_inst_rof /= num_inst_min .and. num_inst_rof /= num_inst_max) error_state = .true.
-    if (num_inst_esp /= num_inst_min .and. num_inst_esp /= num_inst_max) error_state = .true.
+    if (num_inst_esp /= 1) then
+       write(logunit,*) trim(subname),' ERROR: ESP restricted to one instance'
+       error_state = .true.
+    end if
 
     if (error_state) then
        write(logunit,*) trim(subname),' ERROR: num_inst inconsistent'
@@ -459,6 +464,8 @@ contains
     CPLALLROFID = count
     count = count + 1
     CPLALLWAVID = count
+    count = count + 1
+    CPLALLESPID = count
 
     do n = 1, num_inst_atm
        count = count + 1
@@ -841,6 +848,7 @@ contains
        call seq_comm_setcomm(ESPID(n), pelist, esp_nthreads, 'ESP', n, num_inst_esp)
     end do
     call seq_comm_jcommarr(ESPID,ALLESPID,'ALLESPID',1,1)
+    call seq_comm_joincomm(CPLID,ALLESPID,CPLALLESPID,'CPLALLESPID',1,1)
 
     !! Count the total number of threads
 
@@ -1155,36 +1163,6 @@ contains
        seq_comms(ID)%iam = -1
        seq_comms(ID)%iamroot = .false.
     endif
-
-! needs to be excluded until mpi_group_size is added to serial mpi in mct
-#if (1 == 0)
-    if (loglevel > 3) then
-       ! some debug code to prove the join is working ok
-       ! when joining mpicomms, the local rank may be quite different
-       !   from either the global or local ranks of the joining comms
-       call mpi_group_size(seq_comms(ID1)%mpigrp,nsize,ierr)
-       allocate(pe_t1(nsize),pe_t2(nsize))
-       do n = 1,nsize
-          pe_t1(n) = n-1
-          pe_t2(n) = -1
-       enddo
-       call mpi_group_translate_ranks(seq_comms(ID1)%mpigrp, nsize, pe_t1, mpigrp, pe_t2, ierr)
-       write(logunit,*) 'ID1      ranks ',pe_t1
-       write(logunit,*) 'ID1-JOIN ranks ',pe_t2
-       deallocate(pe_t1,pe_t2)
-
-       call mpi_group_size(seq_comms(ID2)%mpigrp,nsize,ierr)
-       allocate(pe_t1(nsize),pe_t2(nsize))
-       do n = 1,nsize
-          pe_t1(n) = n-1
-          pe_t2(n) = -1
-       enddo
-       call mpi_group_translate_ranks(seq_comms(ID2)%mpigrp, nsize, pe_t1, mpigrp, pe_t2, ierr)
-       write(logunit,*) 'ID2      ranks ',pe_t1
-       write(logunit,*) 'ID2-JOIN ranks ',pe_t2
-       deallocate(pe_t1,pe_t2)
-    endif
-#endif
 
     allocate(pe_t1(1),pe_t2(1))
     pe_t1(1) = 0

@@ -46,6 +46,7 @@ MODULE seq_infodata_mod
 ! !PUBLIC MEMBER FUNCTIONS
 
    public :: seq_infodata_Init            ! Initialize
+   public :: seq_infodata_Init2           ! Init after clocks initialized
    public :: seq_infodata_GetData         ! Get values from object
    public :: seq_infodata_PutData         ! Change values
    public :: seq_infodata_Print           ! print current info
@@ -66,14 +67,6 @@ MODULE seq_infodata_mod
    ! Type to hold pause/resume signaling information
    type seq_pause_resume_type
       private
-      logical                :: atm_pause = .false. ! atm write pause restart file
-      logical                :: lnd_pause = .false. ! lnd write pause restart file
-      logical                :: ice_pause = .false. ! ice write pause restart file
-      logical                :: ocn_pause = .false. ! ocn write pause restart file
-      logical                :: glc_pause = .false. ! glc write pause restart file
-      logical                :: rof_pause = .false. ! rof write pause restart file
-      logical                :: wav_pause = .false. ! wav write pause restart file
-      logical                :: cpl_pause = .false. ! cpl write pause restart file
       character(SHR_KIND_CL) :: atm_resume(num_inst_atm) = ' ' ! atm resume file
       character(SHR_KIND_CL) :: lnd_resume(num_inst_lnd) = ' ' ! lnd resume file
       character(SHR_KIND_CL) :: ice_resume(num_inst_ice) = ' ' ! ice resume file
@@ -293,12 +286,12 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
 
 ! !USES:
 
-   use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
-   use shr_string_mod, only : shr_string_toUpper, shr_string_listAppend
-   use shr_mpi_mod,    only : shr_mpi_bcast
-   use seq_io_read_mod
-   use pio, only : file_desc_t
-   implicit none
+   use shr_file_mod,    only : shr_file_getUnit, shr_file_freeUnit
+   use shr_string_mod,  only : shr_string_toUpper, shr_string_listAppend
+   use shr_mpi_mod,     only : shr_mpi_bcast
+   use seq_timemgr_mod, only : seq_timemgr_pause_active
+   use seq_io_read_mod, only : seq_io_read
+   use pio,             only : file_desc_t
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -859,6 +852,43 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
 END SUBROUTINE seq_infodata_Init
 
 !===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: seq_infodata_Init2 -- initialize infodata structures
+!
+! !DESCRIPTION:
+!
+!     Initialize infodata items that depend on the time manager setup
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+SUBROUTINE seq_infodata_Init2(infodata, ID)
+
+! !USES:
+
+   use seq_timemgr_mod, only : seq_timemgr_pause_active
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(seq_infodata_type), intent(INOUT) :: infodata  ! infodata object
+   integer(SHR_KIND_IN),    intent(IN)    :: ID        ! seq_comm ID
+!EOP
+
+   !----- local -----
+   integer :: mpicom             ! MPI communicator
+
+   call seq_comm_setptrs(ID, mpicom=mpicom)
+   !----------------------------------------------------------
+   !| If pause/resume is active, initialize the resume data
+   !----------------------------------------------------------
+   if (seq_timemgr_pause_active() .and. (.not. associated(infodata%pause_resume))) then
+      allocate(infodata%pause_resume)
+   end if
+   call seq_infodata_bcast(infodata, mpicom)
+
+END SUBROUTINE seq_infodata_Init2
+
+!===============================================================================
 !===============================================================================
 ! !IROUTINE: seq_infodata_GetData_explicit -- Get values from infodata object
 !
@@ -896,16 +926,15 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
-           tfreeze_option,                                                       &
+           tfreeze_option,                                                    &
            glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
            wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
            lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
            glc_nx, glc_ny, eps_frac, eps_amask,                               &
            eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
            reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
-           atm_pause, lnd_pause, ocn_pause, ice_pause, glc_pause, rof_pause,  &
-           wav_pause, cpl_pause, atm_resume, lnd_resume, ocn_resume,          &
-           ice_resume, glc_resume, rof_resume, wav_resume, cpl_resume,        &
+           atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
+           glc_resume, rof_resume, wav_resume, cpl_resume,                    &
            mct_usealltoall, mct_usevector, max_cplstep_time)
 
 
@@ -1068,14 +1097,6 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(OUT) :: glcrun_alarm            ! glc run alarm
    logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
    real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
-   logical,                optional, intent(OUT) :: atm_pause ! atm write pause restart file
-   logical,                optional, intent(OUT) :: lnd_pause ! lnd write pause restart file
-   logical,                optional, intent(OUT) :: ice_pause ! ice write pause restart file
-   logical,                optional, intent(OUT) :: ocn_pause ! ocn write pause restart file
-   logical,                optional, intent(OUT) :: glc_pause ! glc write pause restart file
-   logical,                optional, intent(OUT) :: rof_pause ! rof write pause restart file
-   logical,                optional, intent(OUT) :: wav_pause ! wav write pause restart file
-   logical,                optional, intent(OUT) :: cpl_pause ! cpl write pause restart file
    character(SHR_KIND_CL), optional, intent(OUT) :: atm_resume(:) ! atm read resume state
    character(SHR_KIND_CL), optional, intent(OUT) :: lnd_resume(:) ! lnd read resume state
    character(SHR_KIND_CL), optional, intent(OUT) :: ice_resume(:) ! ice read resume state
@@ -1257,62 +1278,6 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_
     if ( present(atm_aero)       ) atm_aero       = infodata%atm_aero
     if ( present(glcrun_alarm)   ) glcrun_alarm   = infodata%glcrun_alarm
     if ( present(glc_g2lupdate)  ) glc_g2lupdate  = infodata%glc_g2lupdate
-    if ( present(atm_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        atm_pause = infodata%pause_resume%atm_pause
-      else
-        atm_pause = .false.
-      end if
-    end if
-    if ( present(lnd_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        lnd_pause = infodata%pause_resume%lnd_pause
-      else
-        lnd_pause = .false.
-      end if
-    end if
-    if ( present(ice_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        ice_pause = infodata%pause_resume%ice_pause
-      else
-        ice_pause = .false.
-      end if
-    end if
-    if ( present(ocn_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        ocn_pause = infodata%pause_resume%ocn_pause
-      else
-        ocn_pause = .false.
-      end if
-    end if
-    if ( present(glc_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        glc_pause = infodata%pause_resume%glc_pause
-      else
-        glc_pause = .false.
-      end if
-    end if
-    if ( present(rof_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        rof_pause = infodata%pause_resume%rof_pause
-      else
-        rof_pause = .false.
-      end if
-    end if
-    if ( present(wav_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        wav_pause = infodata%pause_resume%wav_pause
-      else
-        wav_pause = .false.
-      end if
-    end if
-    if ( present(cpl_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        cpl_pause      = infodata%pause_resume%cpl_pause
-      else
-        cpl_pause = .false.
-      end if
-    end if
     if ( present(atm_resume) ) then
       if (associated(infodata%pause_resume)) then
         atm_resume(:)  = infodata%pause_resume%atm_resume(:)
@@ -1385,7 +1350,7 @@ END SUBROUTINE seq_infodata_GetData_explicit
 
 SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
            comp_present, comp_prognostic, comp_gnam, histavg_comp,            &
-           comp_phase, comp_nx, comp_ny, comp_pause, comp_resume)
+           comp_phase, comp_nx, comp_ny, comp_resume)
 
 
    implicit none
@@ -1401,7 +1366,6 @@ SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
    integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_ny         ! nx,ny 2d grid size global
    integer(SHR_KIND_IN),   optional, intent(OUT) :: comp_phase
    logical,                optional, intent(OUT) :: histavg_comp
-   logical,                optional, intent(OUT) :: comp_pause
    character(SHR_KIND_CL), optional, intent(OUT) :: comp_resume(:)
 
     !----- local -----
@@ -1413,37 +1377,37 @@ SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
       call seq_infodata_GetData(infodata, atm_present=comp_present,           &
            atm_prognostic=comp_prognostic, atm_gnam=comp_gnam,                &
            atm_phase=comp_phase, atm_nx=comp_nx, atm_ny=comp_ny,              &
-           histavg_atm=histavg_comp, atm_pause=comp_pause, atm_resume=comp_resume)
+           histavg_atm=histavg_comp, atm_resume=comp_resume)
     else if (component_firstletter == 'l') then
       call seq_infodata_GetData(infodata, lnd_present=comp_present,           &
            lnd_prognostic=comp_prognostic, lnd_gnam=comp_gnam,                &
            lnd_phase=comp_phase, lnd_nx=comp_nx, lnd_ny=comp_ny,              &
-           histavg_lnd=histavg_comp, lnd_pause=comp_pause, lnd_resume=comp_resume)
+           histavg_lnd=histavg_comp, lnd_resume=comp_resume)
     else if (component_firstletter == 'i') then
       call seq_infodata_GetData(infodata, ice_present=comp_present,           &
            ice_prognostic=comp_prognostic, ice_gnam=comp_gnam,                &
            ice_phase=comp_phase, ice_nx=comp_nx, ice_ny=comp_ny,              &
-           histavg_ice=histavg_comp, ice_pause=comp_pause, ice_resume=comp_resume)
+           histavg_ice=histavg_comp, ice_resume=comp_resume)
     else if (component_firstletter == 'o') then
       call seq_infodata_GetData(infodata, ocn_present=comp_present,           &
            ocn_prognostic=comp_prognostic, ocn_gnam=comp_gnam,                &
            ocn_phase=comp_phase, ocn_nx=comp_nx, ocn_ny=comp_ny,              &
-           histavg_ocn=histavg_comp, ocn_pause=comp_pause, ocn_resume=comp_resume)
+           histavg_ocn=histavg_comp, ocn_resume=comp_resume)
     else if (component_firstletter == 'r') then
       call seq_infodata_GetData(infodata, rof_present=comp_present,           &
            rof_prognostic=comp_prognostic, rof_gnam=comp_gnam,                &
            rof_phase=comp_phase, rof_nx=comp_nx, rof_ny=comp_ny,              &
-           histavg_rof=histavg_comp, rof_pause=comp_pause, rof_resume=comp_resume)
+           histavg_rof=histavg_comp, rof_resume=comp_resume)
     else if (component_firstletter == 'g') then
       call seq_infodata_GetData(infodata, glc_present=comp_present,           &
            glc_prognostic=comp_prognostic, glc_gnam=comp_gnam,                &
            glc_phase=comp_phase, glc_nx=comp_nx, glc_ny=comp_ny,              &
-           histavg_glc=histavg_comp, glc_pause=comp_pause, glc_resume=comp_resume)
+           histavg_glc=histavg_comp, glc_resume=comp_resume)
     else if (component_firstletter == 'w') then
       call seq_infodata_GetData(infodata, wav_present=comp_present,           &
            wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
            wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
-           histavg_wav=histavg_comp, wav_pause=comp_pause, wav_resume=comp_resume)
+           histavg_wav=histavg_comp, wav_resume=comp_resume)
     else if (component_firstletter == 'e') then
       if (present(comp_gnam)) then
         comp_gnam = ''
@@ -1467,12 +1431,6 @@ SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
         histavg_comp = .false.
         if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
           write(logunit,*) trim(subname),' Note: ESP type has no histavg property'
-        end if
-      end if
-      if (present(comp_pause)) then
-        comp_pause = .false.
-        if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no pause property'
         end if
       end if
       if (present(comp_resume)) then
@@ -1535,9 +1493,8 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
            glc_nx, glc_ny, eps_frac, eps_amask,                               &
            eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
            reprosum_use_ddpdd, reprosum_diffmax, reprosum_recompute,          &
-           atm_pause, lnd_pause, ocn_pause, ice_pause, glc_pause, rof_pause,  &
-           wav_pause, cpl_pause, atm_resume, lnd_resume, ocn_resume,          &
-           ice_resume, glc_resume, rof_resume, wav_resume, cpl_resume,        &
+           atm_resume, lnd_resume, ocn_resume, ice_resume,                    &
+           glc_resume, rof_resume, wav_resume, cpl_resume,                    &
            mct_usealltoall, mct_usevector )
 
 
@@ -1698,14 +1655,6 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
    logical,                optional, intent(IN) :: atm_aero              ! atm aerosols
    logical,                optional, intent(IN) :: glcrun_alarm          ! glc run alarm
    logical,                optional, intent(IN) :: glc_g2lupdate         ! update glc2lnd fields in lnd model
-   logical,                optional, intent(IN) :: atm_pause             ! atm pause
-   logical,                optional, intent(IN) :: lnd_pause             ! lnd pause
-   logical,                optional, intent(IN) :: ice_pause             ! ice pause
-   logical,                optional, intent(IN) :: ocn_pause             ! ocn pause
-   logical,                optional, intent(IN) :: glc_pause             ! glc pause
-   logical,                optional, intent(IN) :: rof_pause             ! rof pause
-   logical,                optional, intent(IN) :: wav_pause             ! wav pause
-   logical,                optional, intent(IN) :: cpl_pause             ! cpl pause
    character(SHR_KIND_CL), optional, intent(IN) :: atm_resume(:)         ! atm resume
    character(SHR_KIND_CL), optional, intent(IN) :: lnd_resume(:)         ! lnd resume
    character(SHR_KIND_CL), optional, intent(IN) :: ice_resume(:)         ! ice resume
@@ -1875,70 +1824,6 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, cime_model, case_name, case_
     if ( present(atm_aero)       ) infodata%atm_aero       = atm_aero
     if ( present(glcrun_alarm)   ) infodata%glcrun_alarm   = glcrun_alarm
     if ( present(glc_g2lupdate)  ) infodata%glc_g2lupdate  = glc_g2lupdate
-    if ( present(atm_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%atm_pause = atm_pause
-      else if (atm_pause) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%atm_pause = atm_pause
-      end if
-    end if
-    if ( present(lnd_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%lnd_pause = lnd_pause
-      else if (lnd_pause) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%lnd_pause = lnd_pause
-      end if
-    end if
-    if ( present(ice_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%ice_pause = ice_pause
-      else if (ice_pause) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%ice_pause = ice_pause
-      end if
-    end if
-    if ( present(ocn_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%ocn_pause = ocn_pause
-      else if (ocn_pause) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%ocn_pause = ocn_pause
-      end if
-    end if
-    if ( present(glc_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%glc_pause = glc_pause
-      else if (glc_pause) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%glc_pause = glc_pause
-      end if
-    end if
-    if ( present(rof_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%rof_pause = rof_pause
-      else if (rof_pause) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%rof_pause = rof_pause
-      end if
-    end if
-    if ( present(wav_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%wav_pause = wav_pause
-      else if (wav_pause) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%wav_pause = wav_pause
-      end if
-    end if
-    if ( present(cpl_pause) ) then
-      if (associated(infodata%pause_resume)) then
-        infodata%pause_resume%cpl_pause = cpl_pause
-      else if (cpl_pause) then
-        allocate(infodata%pause_resume)
-        infodata%pause_resume%cpl_pause = cpl_pause
-      end if
-    end if
     if ( present(atm_resume) ) then
       if (associated(infodata%pause_resume)) then
         infodata%pause_resume%atm_resume(:) = atm_resume(:)
@@ -2018,7 +1903,7 @@ END SUBROUTINE seq_infodata_PutData_explicit
 
 SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
            comp_present, comp_prognostic, comp_gnam,                          &
-           histavg_comp, comp_phase, comp_nx, comp_ny, comp_pause, comp_resume)
+           histavg_comp, comp_phase, comp_nx, comp_ny, comp_resume)
 
    implicit none
 
@@ -2033,7 +1918,6 @@ SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
    integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_ny         ! nx,ny 2d grid size global
    integer(SHR_KIND_IN),   optional, intent(IN)    :: comp_phase
    logical,                optional, intent(IN)    :: histavg_comp
-   logical,                optional, intent(IN) :: comp_pause
    character(SHR_KIND_CL), optional, intent(IN) :: comp_resume(:)
 
 !EOP
@@ -2047,37 +1931,37 @@ SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
       call seq_infodata_PutData(infodata, atm_present=comp_present,           &
            atm_prognostic=comp_prognostic, atm_gnam=comp_gnam,                &
            atm_phase=comp_phase, atm_nx=comp_nx, atm_ny=comp_ny,              &
-           histavg_atm=histavg_comp, atm_pause=comp_pause, atm_resume=comp_resume)
+           histavg_atm=histavg_comp, atm_resume=comp_resume)
     else if (component_firstletter == 'l') then
       call seq_infodata_PutData(infodata, lnd_present=comp_present,           &
            lnd_prognostic=comp_prognostic, lnd_gnam=comp_gnam,                &
            lnd_phase=comp_phase, lnd_nx=comp_nx, lnd_ny=comp_ny,              &
-           histavg_lnd=histavg_comp, lnd_pause=comp_pause, lnd_resume=comp_resume)
+           histavg_lnd=histavg_comp, lnd_resume=comp_resume)
     else if (component_firstletter == 'i') then
       call seq_infodata_PutData(infodata, ice_present=comp_present,           &
            ice_prognostic=comp_prognostic, ice_gnam=comp_gnam,                &
            ice_phase=comp_phase, ice_nx=comp_nx, ice_ny=comp_ny,              &
-           histavg_ice=histavg_comp, ice_pause=comp_pause, ice_resume=comp_resume)
+           histavg_ice=histavg_comp, ice_resume=comp_resume)
     else if (component_firstletter == 'o') then
       call seq_infodata_PutData(infodata, ocn_present=comp_present,           &
            ocn_prognostic=comp_prognostic, ocn_gnam=comp_gnam,                &
            ocn_phase=comp_phase, ocn_nx=comp_nx, ocn_ny=comp_ny,              &
-           histavg_ocn=histavg_comp, ocn_pause=comp_pause, ocn_resume=comp_resume)
+           histavg_ocn=histavg_comp, ocn_resume=comp_resume)
     else if (component_firstletter == 'r') then
       call seq_infodata_PutData(infodata, rof_present=comp_present,           &
            rof_prognostic=comp_prognostic, rof_gnam=comp_gnam,                &
            rof_phase=comp_phase, rof_nx=comp_nx, rof_ny=comp_ny,              &
-           histavg_rof=histavg_comp, rof_pause=comp_pause, rof_resume=comp_resume)
+           histavg_rof=histavg_comp, rof_resume=comp_resume)
     else if (component_firstletter == 'g') then
       call seq_infodata_PutData(infodata, glc_present=comp_present,           &
            glc_prognostic=comp_prognostic, glc_gnam=comp_gnam,                &
            glc_phase=comp_phase, glc_nx=comp_nx, glc_ny=comp_ny,              &
-           histavg_glc=histavg_comp, glc_pause=comp_pause, glc_resume=comp_resume)
+           histavg_glc=histavg_comp, glc_resume=comp_resume)
     else if (component_firstletter == 'w') then
       call seq_infodata_PutData(infodata, wav_present=comp_present,           &
            wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
            wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
-           histavg_wav=histavg_comp, wav_pause=comp_pause, wav_resume=comp_resume)
+           histavg_wav=histavg_comp, wav_resume=comp_resume)
     else if (component_firstletter == 'e') then
       if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
         if (present(comp_gnam)) then
@@ -2091,9 +1975,6 @@ SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
         end if
         if (present(histavg_comp)) then
           write(logunit,*) trim(subname),' Note: ESP type has no histavg property'
-        end if
-        if (present(comp_pause)) then
-          write(logunit,*) trim(subname),' Note: ESP type has no pause property'
         end if
         if (present(comp_resume)) then
           write(logunit,*) trim(subname),' Note: ESP type has no resume property'
@@ -2110,6 +1991,74 @@ SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
 END SUBROUTINE seq_infodata_PutData_bytype
 #endif
 ! ^ ifndef CPRPGI
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: seq_infodata_pauseresume_bcast -- Broadcast pause/resume data from root pe
+!
+! !DESCRIPTION:
+!
+! Broadcast the pause_resume data from an infodata across pes
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine seq_infodata_pauseresume_bcast(infodata, mpicom, pebcast)
+
+   use shr_mpi_mod, only : shr_mpi_bcast
+
+! !INPUT/OUTPUT PARAMETERS:
+
+  type(seq_infodata_type),        intent(INOUT) :: infodata ! assume valid on root pe
+  integer(SHR_KIND_IN),           intent(IN)    :: mpicom   ! MPI Communicator
+  integer(SHR_KIND_IN), optional, intent(IN)    :: pebcast  ! pe sending
+
+!EOP
+
+  !----- local -----
+  integer                     :: ind
+  integer(SHR_KIND_IN)        :: pebcast_local
+  character(len=*), parameter :: subname = '(seq_infodata_pauseresume_bcast) '
+
+  if (present(pebcast)) then
+    pebcast_local = pebcast
+  else
+    pebcast_local = 0
+  end if
+
+  if (associated(infodata%pause_resume)) then
+    do ind = 1, num_inst_atm
+      call shr_mpi_bcast(infodata%pause_resume%atm_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_lnd
+      call shr_mpi_bcast(infodata%pause_resume%lnd_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_ice
+      call shr_mpi_bcast(infodata%pause_resume%ice_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_ocn
+      call shr_mpi_bcast(infodata%pause_resume%ocn_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_glc
+      call shr_mpi_bcast(infodata%pause_resume%glc_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_rof
+      call shr_mpi_bcast(infodata%pause_resume%rof_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    do ind = 1, num_inst_wav
+      call shr_mpi_bcast(infodata%pause_resume%wav_resume(ind), mpicom,       &
+           pebcast=pebcast_local)
+    end do
+    call shr_mpi_bcast(infodata%pause_resume%cpl_resume,        mpicom,       &
+         pebcast=pebcast_local)
+  end if
+end subroutine seq_infodata_pauseresume_bcast
 
 !===============================================================================
 !BOP ===========================================================================
@@ -2293,38 +2242,8 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%atm_aero,                mpicom)
     call shr_mpi_bcast(infodata%glcrun_alarm,            mpicom)
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
-    if (associated(infodata%pause_resume)) then
-      call shr_mpi_bcast(infodata%pause_resume%atm_pause, mpicom)
-      call shr_mpi_bcast(infodata%pause_resume%lnd_pause, mpicom)
-      call shr_mpi_bcast(infodata%pause_resume%ice_pause, mpicom)
-      call shr_mpi_bcast(infodata%pause_resume%ocn_pause, mpicom)
-      call shr_mpi_bcast(infodata%pause_resume%glc_pause, mpicom)
-      call shr_mpi_bcast(infodata%pause_resume%rof_pause, mpicom)
-      call shr_mpi_bcast(infodata%pause_resume%wav_pause, mpicom)
-      call shr_mpi_bcast(infodata%pause_resume%cpl_pause, mpicom)
-      do ind = 1, num_inst_atm
-        call shr_mpi_bcast(infodata%pause_resume%atm_resume(ind), mpicom)
-      end do
-      do ind = 1, num_inst_lnd
-        call shr_mpi_bcast(infodata%pause_resume%lnd_resume(ind), mpicom)
-      end do
-      do ind = 1, num_inst_ice
-        call shr_mpi_bcast(infodata%pause_resume%ice_resume(ind), mpicom)
-      end do
-      do ind = 1, num_inst_ocn
-        call shr_mpi_bcast(infodata%pause_resume%ocn_resume(ind), mpicom)
-      end do
-      do ind = 1, num_inst_glc
-        call shr_mpi_bcast(infodata%pause_resume%glc_resume(ind), mpicom)
-      end do
-      do ind = 1, num_inst_rof
-        call shr_mpi_bcast(infodata%pause_resume%rof_resume(ind), mpicom)
-      end do
-      do ind = 1, num_inst_wav
-        call shr_mpi_bcast(infodata%pause_resume%wav_resume(ind), mpicom)
-      end do
-      call shr_mpi_bcast(infodata%pause_resume%cpl_resume,        mpicom)
-    end if
+
+    call seq_infodata_pauseresume_bcast(infodata,        mpicom)
 
 end subroutine seq_infodata_bcast
 
@@ -2355,7 +2274,8 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
 
   !----- local -----
   integer(SHR_KIND_IN) :: mpicom     ! mpicom
-  integer(SHR_KIND_IN) :: pebcast    ! pe sending
+  integer(SHR_KIND_IN) :: cmppe      ! component 'root' for broadcast
+  integer(SHR_KIND_IN) :: cplpe      ! coupler 'root' for broadcast
   logical :: atm2cpli,atm2cplr
   logical :: lnd2cpli,lnd2cplr
   logical :: rof2cpli,rof2cplr
@@ -2363,6 +2283,7 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
   logical :: ice2cpli,ice2cplr
   logical :: glc2cpli,glc2cplr
   logical :: wav2cpli,wav2cplr
+  logical :: esp2cpli,esp2cplr
   logical :: cpl2i,cpl2r
   logical :: logset
   logical :: deads   ! local variable to hold info temporarily
@@ -2372,8 +2293,7 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
 ! Notes:
 !-------------------------------------------------------------------------------
 
-  ! assume the comp pe is going to broadcast, change to cplpe below if appropriate
-  call seq_comm_setptrs(ID,mpicom=mpicom,cmppe=pebcast)
+  call seq_comm_setptrs(ID, mpicom=mpicom, cmppe=cmppe, cplpe=cplpe)
 
   logset = .false.
 
@@ -2391,6 +2311,8 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
   glc2cplr = .false.
   wav2cpli = .false.
   wav2cplr = .false.
+  esp2cpli = .false.
+  esp2cplr = .false.
   cpl2i = .false.
   cpl2r = .false.
 
@@ -2466,16 +2388,26 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
      logset = .true.
   endif
 
+  if (trim(type) == 'esp2cpl_init') then
+     esp2cpli = .true.
+     esp2cplr = .true.
+     logset = .true.
+  endif
+  if (trim(type) == 'esp2cpl_run') then
+     esp2cplr = .true.
+     logset = .true.
+  endif
+
   if (trim(type) == 'cpl2atm_init' .or. &
       trim(type) == 'cpl2lnd_init' .or. &
       trim(type) == 'cpl2rof_init' .or. &
       trim(type) == 'cpl2ocn_init' .or. &
       trim(type) == 'cpl2glc_init' .or. &
       trim(type) == 'cpl2wav_init' .or. &
+      trim(type) == 'cpl2esp_init' .or. &
       trim(type) == 'cpl2ice_init') then
      cpl2i = .true.
      cpl2r = .true.
-     call seq_comm_setptrs(ID,cplpe=pebcast)
      logset = .true.
   endif
 
@@ -2487,7 +2419,6 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
       trim(type) == 'cpl2wav_run' .or. &
       trim(type) == 'cpl2ice_run') then
      cpl2r = .true.
-     call seq_comm_setptrs(ID,cplpe=pebcast)
      logset = .true.
   endif
 
@@ -2501,129 +2432,143 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
   ! --- now execute exchange ---
 
   if (atm2cpli) then
-    call shr_mpi_bcast(infodata%atm_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%atm_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%atm_nx,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%atm_ny,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%atm_aero,         mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%atm_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%atm_nx,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%atm_ny,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%atm_aero,           mpicom, pebcast=cmppe)
     ! dead_comps is true if it's ever set to true
     deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                     mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
     if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
   endif
 
   if (lnd2cpli) then
-    call shr_mpi_bcast(infodata%lnd_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%lnd_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%lnd_nx,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%lnd_ny,           mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%lnd_nx,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%lnd_ny,             mpicom, pebcast=cmppe)
     ! dead_comps is true if it's ever set to true
     deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                     mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
     if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
   endif
 
   if (rof2cpli) then
-    call shr_mpi_bcast(infodata%rof_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%rofice_present,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%rof_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%rof_nx,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%rof_ny,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%flood_present,    mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%rof_nx,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%rof_ny,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%flood_present,      mpicom, pebcast=cmppe)
     ! dead_comps is true if it's ever set to true
     deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                     mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
     if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
   endif
 
   if (ocn2cpli) then
-    call shr_mpi_bcast(infodata%ocn_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ocn_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ocnrof_prognostic,mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ocn_nx,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ocn_ny,           mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%ocn_nx,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%ocn_ny,             mpicom, pebcast=cmppe)
     ! dead_comps is true if it's ever set to true
     deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                     mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
     if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
   endif
 
   if (ice2cpli) then
-    call shr_mpi_bcast(infodata%ice_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ice_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%iceberg_prognostic,mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ice_nx,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ice_ny,           mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%ice_nx,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%ice_ny,             mpicom, pebcast=cmppe)
     ! dead_comps is true if it's ever set to true
     deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                     mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
     if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
   endif
 
   if (glc2cpli) then
-    call shr_mpi_bcast(infodata%glc_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glclnd_present,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glcocn_present,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glcice_present,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glc_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glc_nx,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glc_ny,           mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%glc_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%glclnd_present,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%glcocn_present,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%glc_nx,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%glc_ny,             mpicom, pebcast=cmppe)
     ! dead_comps is true if it's ever set to true
     deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                     mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
     if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
   endif
 
   if (wav2cpli) then
-    call shr_mpi_bcast(infodata%wav_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%wav_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%wav_nx,           mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%wav_ny,           mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%wav_nx,             mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%wav_ny,             mpicom, pebcast=cmppe)
     ! dead_comps is true if it's ever set to true
     deads = infodata%dead_comps
-    call shr_mpi_bcast(deads,                     mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
     if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
   endif
 
-  if (cpl2i) then
-    call shr_mpi_bcast(infodata%atm_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%atm_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%lnd_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%lnd_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%rof_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%rofice_present,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%rof_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%flood_present,    mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ocn_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ocn_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ocnrof_prognostic,mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ice_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%ice_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%iceberg_prognostic,mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glc_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glclnd_present,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glcocn_present,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glcice_present,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glc_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%wav_present,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%wav_prognostic,   mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%dead_comps,       mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%atm_aero,         mpicom,pebcast=pebcast)
+  if (esp2cpli) then
+    call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%esp_prognostic,     mpicom, pebcast=cmppe)
+    call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cmppe)
   endif
 
+  if (cpl2i) then
+    call shr_mpi_bcast(infodata%atm_present,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%flood_present,      mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glc_present,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glclnd_present,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glcocn_present,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%esp_prognostic,     mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%dead_comps,         mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%atm_aero,           mpicom, pebcast=cplpe)
+  endif
+
+  ! Run-time data exchanges
   if (atm2cplr) then
-    call shr_mpi_bcast(infodata%nextsw_cday,      mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cmppe)
   endif
 
   if (ocn2cplr) then
-    call shr_mpi_bcast(infodata%precip_fact,      mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cmppe)
+  endif
+
+  if (esp2cplr) then
+    call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cmppe)
   endif
 
   if (cpl2r) then
-    call shr_mpi_bcast(infodata%nextsw_cday,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%precip_fact,      mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glcrun_alarm,     mpicom,pebcast=pebcast)
-    call shr_mpi_bcast(infodata%glc_g2lupdate,    mpicom,pebcast=pebcast)
+    call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glcrun_alarm,       mpicom, pebcast=cplpe)
+    call shr_mpi_bcast(infodata%glc_g2lupdate,      mpicom, pebcast=cplpe)
+    call seq_infodata_pauseresume_bcast(infodata,   mpicom, pebcast=cplpe)
   endif
 
 end subroutine seq_infodata_Exchange
@@ -2753,33 +2698,6 @@ subroutine seq_infodata_Check( infodata )
        write(logunit,'(2a)') 'ERROR vect_map not supported = ',trim(infodata%vect_map)
        call shr_sys_abort(subname//': vect_map invalid = '//trim(infodata%vect_map))
     endif
-
-    if (associated(infodata%pause_resume)) then
-      if (infodata%pause_resume%atm_pause .and. ANY(len_trim(infodata%pause_resume%atm_resume) > 0)) then
-        call shr_sys_abort(subname//': If atm_pause is .true., then atm_resume should not be set')
-      end if
-      if (infodata%pause_resume%lnd_pause .and. ANY(len_trim(infodata%pause_resume%lnd_resume) > 0)) then
-        call shr_sys_abort(subname//': If lnd_pause is .true., then lnd_resume should not be set')
-      end if
-      if (infodata%pause_resume%ocn_pause .and. ANY(len_trim(infodata%pause_resume%ocn_resume) > 0)) then
-        call shr_sys_abort(subname//': If ocn_pause is .true., then ocn_resume should not be set')
-      end if
-      if (infodata%pause_resume%ice_pause .and. ANY(len_trim(infodata%pause_resume%ice_resume) > 0)) then
-        call shr_sys_abort(subname//': If ice_pause is .true., then ice_resume should not be set')
-      end if
-      if (infodata%pause_resume%rof_pause .and. ANY(len_trim(infodata%pause_resume%rof_resume) > 0)) then
-        call shr_sys_abort(subname//': If rof_pause is .true., then rof_resume should not be set')
-      end if
-      if (infodata%pause_resume%glc_pause .and. ANY(len_trim(infodata%pause_resume%glc_resume) > 0)) then
-        call shr_sys_abort(subname//': If glc_pause is .true., then glc_resume should not be set')
-      end if
-      if (infodata%pause_resume%wav_pause .and. ANY(len_trim(infodata%pause_resume%wav_resume) > 0)) then
-        call shr_sys_abort(subname//': If wav_pause is .true., then wav_resume should not be set')
-      end if
-      if (infodata%pause_resume%cpl_pause .and. (len_trim(infodata%pause_resume%cpl_resume) > 0)) then
-        call shr_sys_abort(subname//': If cpl_pause is .true., then cpl_resume should not be set')
-      end if
-    end if
 
 END SUBROUTINE seq_infodata_Check
 
@@ -2995,14 +2913,6 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0L) subname,'glcrun_alarm             = ', infodata%glcrun_alarm
        write(logunit,F0L) subname,'glc_g2lupdate            = ', infodata%glc_g2lupdate
        if (associated(infodata%pause_resume)) then
-         write(logunit,F0L) subname,'atm_pause                = ', infodata%pause_resume%atm_pause
-         write(logunit,F0L) subname,'lnd_pause                = ', infodata%pause_resume%lnd_pause
-         write(logunit,F0L) subname,'ocn_pause                = ', infodata%pause_resume%ocn_pause
-         write(logunit,F0L) subname,'ice_pause                = ', infodata%pause_resume%ice_pause
-         write(logunit,F0L) subname,'glc_pause                = ', infodata%pause_resume%glc_pause
-         write(logunit,F0S) subname,'rof_pause                = ', infodata%pause_resume%rof_pause
-         write(logunit,F0L) subname,'wav_pause                = ', infodata%pause_resume%wav_pause
-         write(logunit,F0L) subname,'cpl_pause                = ', infodata%pause_resume%cpl_pause
          do ind = 1, num_inst_atm
            if (len_trim(infodata%pause_resume%atm_resume(ind)) > 0) then
              write(logunit,FIA) subname,'atm_resume(',ind,')        = ', trim(infodata%pause_resume%atm_resume(ind))

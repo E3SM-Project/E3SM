@@ -700,7 +700,12 @@ class Case(object):
             if compclass == "CPL":
                 continue
             key = "NINST_%s"%compclass
-            mach_pes_obj.set_value(key, ninst)
+            # ESP models are currently limited to 1 instance
+            if compclass == "ESP":
+                mach_pes_obj.set_value(key, 1)
+            else:
+                mach_pes_obj.set_value(key, ninst)
+
             key = "NTASKS_%s"%compclass
             if key not in pes_ntasks.keys():
                 mach_pes_obj.set_value(key,1)
