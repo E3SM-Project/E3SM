@@ -225,7 +225,9 @@ endif
 
 
 ifeq ($(MPILIB),mpi-serial)
-  undefine PNETCDF_PATH
+	ifdef PNETCDF_PATH
+		undefine PNETCDF_PATH
+	endif
 else
   ifdef PNETCDF_PATH
     ifndef $(INC_PNETCDF)
@@ -616,16 +618,16 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
 ifeq ($(NETCDF_SEPARATE), false)
-  CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_PATH)
+  CMAKE_OPTS += -D NetCDF_PATH:PATH=$(NETCDF_PATH)
 else ifeq ($(NETCDF_SEPARATE), true)
   # NETCDF_Fortran_DIR points to the separate
   # installation of Fortran NetCDF for PIO
-  CMAKE_OPTS += -D NETCDF_DIR:PATH=$(NETCDF_C_PATH) \
-                -D NETCDF_Fortran_DIR:PATH=$(NETCDF_FORTRAN_PATH)
+  CMAKE_OPTS += -D NetCDF_C_PATH:PATH=$(NETCDF_C_PATH) \
+                -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
 endif
 
 ifdef PNETCDF_PATH
-	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)"
+	CMAKE_OPTS += -D PnetCDF_PATH:STRING="$(PNETCDF_PATH)"
 else
         CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif

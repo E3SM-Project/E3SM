@@ -10,9 +10,8 @@ list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/externals/pio2/cmake")
 
 list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
 include(CIME_utils)
-find_package(NetCDF)
-include_directories(${NETCDF_INCLUDE_DIRS})
-
+find_package(NetCDF COMPONENTS C Fortran)
+include_directories(${NetCDF_C_INCLUDE_DIRS} ${NetCDF_Fortran_INCLUDE_DIRS})
 
 # TODO: Some of the below should be done in the relevant directories, not in
 # this top level CMakeLists.
@@ -27,7 +26,7 @@ ExternalProject_add(mct_project
   SOURCE_DIR ${MCT_ROOT}
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct
   CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR} CFLAGS=${CFLAGS} FCFLAGS=${FFLAGS} SRCDIR=${MCT_ROOT} DEBUG="-g"
-  BUILD_COMMAND make
+  BUILD_COMMAND $(MAKE)
   # Leave things in <BINARY_DIR> rather than "installing", because we have
   # no need to move things around inside of the CMake binary directory.
   INSTALL_COMMAND :

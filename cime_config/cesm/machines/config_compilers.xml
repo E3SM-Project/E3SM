@@ -214,7 +214,7 @@ using a fortran linker.
   </CFLAGS>
   <CPPDEFS>
     <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
+    <append> -DFORTRANUNDERSCORE -DCPRINTEL</append>
   </CPPDEFS>
   <CXX_LDFLAGS>
     <base> -cxxlib </base>

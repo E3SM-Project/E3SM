@@ -1078,13 +1078,14 @@ class R_TestUpdateACMETests(unittest.TestCase):
     def setUp(self):
     ###########################################################################
         # Grab all active tests
-        self._testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
-        shutil.copy2(self._testlist_allactive, ".")
+        files = Files()
+        self._testlist_drv = files.get_value("TESTS_SPEC_FILE", {"component":"drv"})
+        shutil.copy2(self._testlist_drv, ".")
 
     ###########################################################################
     def tearDown(self):
     ###########################################################################
-        shutil.copy2("testlist_allactive.xml", self._testlist_allactive)
+        shutil.copy2("testlist_drv.xml", self._testlist_drv)
 
     ###########################################################################
     def test_update_acme_tests(self):
@@ -1097,12 +1098,12 @@ class R_TestUpdateACMETests(unittest.TestCase):
         #      )
 
         # try:
-        #     update_acme_tests.update_acme_tests(os.path.basename(self._testlist_allactive), update_acme_tests.get_test_suites())
+        #     update_acme_tests.update_acme_tests(os.path.basename(self._testlist_drv), update_acme_tests.get_test_suites())
         # except:
         #     traceback.print_tb(sys.exc_info()[2])
         #     self.assertTrue(False, str(sys.exc_info()[1]))
 
-        # stat = run_cmd("grep 'jgftestmodtest/test_mod' %s" % os.path.basename(self._testlist_allactive))[0]
+        # stat = run_cmd("grep 'jgftestmodtest/test_mod' %s" % os.path.basename(self._testlist_drv))[0]
         # self.assertEqual(stat, 0, msg="update_acme_tests did not update XML")
 
     ###########################################################################
@@ -1982,11 +1983,11 @@ class S_TestManageAndQuery(unittest.TestCase):
 
     def _run_and_assert_query_testlist(self, extra_args=""):
         """Ensure that query_testlist runs successfully with the given extra arguments"""
-
-        testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
+        files = Files()
+        testlist_drv = files.get_value("TESTS_SPEC_FILE", {"component":"drv"})
 
         run_cmd_assert_result(self, "%s/query_testlists --xml-testlist %s %s"%
-                              (SCRIPT_DIR, testlist_allactive, extra_args))
+                              (SCRIPT_DIR, testlist_drv, extra_args))
 
     def test_query_testlists_runs(self):
         """Make sure that query_testlists runs successfully
