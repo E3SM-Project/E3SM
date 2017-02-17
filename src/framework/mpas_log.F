@@ -129,6 +129,7 @@ module mpas_log
       ! ------
       coreLogInfo % logUnit = -1  ! initialize to invalid unit number
       coreLogInfo % logActive = .false.
+      coreLogInfo % openedByLogModule = .false.
       coreLogInfo % errUnit = -1  ! initialize to invalid unit number
       coreLogInfo % errUnitOpen = .false.
 
@@ -332,6 +333,8 @@ module mpas_log
             endif
             err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error  TODO: revisit if we can relax the decision to die immediately here.
 
+            mpas_log_info % openedByLogModule = .true.  ! indicate that we opened it
+
          endif ! if logUnit was provided
 
          ! -- Write a header message --
@@ -492,7 +495,8 @@ module mpas_log
 !> \author  Matt Hoffman
 !> \date    14 February 2017
 !> \details
-!>  This routine finalizes the log manager. Details...
+!>  This routine finalizes the log manager.
+!>  It prints out logging statistics and closes the log file.
 !
 !-----------------------------------------------------------------------
 
@@ -516,13 +520,36 @@ module mpas_log
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-
+      character(len=strKind) :: msg  ! TODO delete once log_write can do formatting
+      integer :: outputCount
 
       err = 0
 
-      !Calculate and print out statistics of how many of each message type were printed (which will be stored as module level private variables)
+      outputCount = mpas_log_info % outputMessageCount  ! save the count before we write the header lines
 
-      !Close the log file
+      ! Print out statistics of how many of each message type were printed (which will be stored as module level private variables)
+      call mpas_log_write('')
+      call mpas_log_write('-----------------------------------------')
+      call mpas_log_write('Total log messages printed:')
+      write(msg, fmt='(a, i12.1)') '   Output messages =         ', outputCount
+      call mpas_log_write(msg)
+      write(msg, fmt='(a, i12.1)') '   Warning messages =        ', mpas_log_info % warningMessageCount
+      call mpas_log_write(msg)
+      write(msg, fmt='(a, i12.1)') '   Error messages =          ', mpas_log_info % errorMessageCount
+      call mpas_log_write(msg)
+      write(msg, fmt='(a, i12.1)') '   Critical error messages = ', mpas_log_info % criticalErrorMessageCount
+      call mpas_log_write(msg)
+      call mpas_log_write('-----------------------------------------')
+      call mpas_log_write('')
+      call mpas_log_write('Logging complete.  Normal termination.')
+
+      ! Close the log file
+      !   Only do this if:
+      !   1) the log is active AND
+      !   2) the log mgr opened the file (otherwise the driver that opened it should close it)
+      if (mpas_log_info % logActive .and. mpas_log_info % openedByLogModule) then
+         close(mpas_log_info % logUnit, iostat = err)
+      endif
 
    !--------------------------------------------------------------------
    end subroutine mpas_log_finalize

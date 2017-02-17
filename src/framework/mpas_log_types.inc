@@ -13,6 +13,8 @@
 
       integer :: logUnit  !< file unit number for the standard log file
       logical :: logActive !< logical indicating if the log file is active on this processor
+      logical :: openedByLogModule !< logical indicating if the log file was opened by the log manager;
+         !< false if a higher level driver opened it OR file was never opened
       integer :: errUnit  !< file unit number for the error/abort log file
       logical :: errUnitOpen !< logical indicating if the err file has been already opened
 

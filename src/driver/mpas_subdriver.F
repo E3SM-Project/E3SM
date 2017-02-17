@@ -345,7 +345,8 @@ module mpas_subdriver
    subroutine mpas_finalize()
 
       use mpas_stream_manager, only : MPAS_stream_mgr_finalize
-   
+      use mpas_log, only : mpas_log_finalize
+
       implicit none
 
       integer :: iErr
@@ -364,6 +365,12 @@ module mpas_subdriver
       call mpas_timer_write()
       call mpas_timer_finalize(domain_ptr)
 
+      ! Print out log stats and close log file
+      !   (do this after timer stats are printed)
+      call mpas_log_finalize(iErr)
+      if ( iErr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Log finalize failed for core ' // trim(domain_ptr % core % coreName))
+      end if
 
       !
       ! Finalize infrastructure
