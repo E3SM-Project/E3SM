@@ -223,8 +223,9 @@ module mpas_log
       ! input variables
       !-----------------------------------------------------------------
 
-      integer, intent(in), optional :: logUnit !< Input - Optional: Unit (already open) to set log unit toa
-      logical, intent(in), optional :: openErrorFile !< Input - Optional: flag to indicate this task's error file should be opened.  Default = false, meaning open output log file
+      integer, intent(in), optional :: logUnit !< Input - Optional: Unit (already open) to set log unit to
+      logical, intent(in), optional :: openErrorFile !< Input - Optional: flag to indicate this task's error file should be opened
+         !< Default = false, meaning open output log file
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -297,16 +298,20 @@ module mpas_log
                call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit could not be inquired!')
             endif
             if (.not. isOpen) then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to an open file!')
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached'//&
+                  ' to an open file!')
             endif
             if (trim(writeSetting) /= 'YES') then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to a file with write settings!')
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached'//&
+                 ' to a file with write settings!')
             endif
             if (trim(sequentialSetting) /= 'YES') then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to a file with sequential access!')
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached'//&
+                 ' to a file with sequential access!')
             endif
             if (trim(formattedSetting) /= 'YES') then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached to a file connected for formatted output!')
+               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached'//&
+                 ' to a file connected for formatted output!')
             endif
 
             ! Save file name we retrieved to appropriate field
@@ -334,7 +339,8 @@ module mpas_log
             if ( err_tmp /= 0 ) then
                call mpas_dmpar_global_abort('ERROR: Opening of log file failed for filename: ' // mpas_log_info % logFileName)
             endif
-            err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error  TODO: revisit if we can relax the decision to die immediately here.
+            err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error
+            ! TODO: revisit if we can relax the decision to die immediately here.
 
             mpas_log_info % openedByLogModule = .true.  ! indicate that we opened it
 
@@ -385,7 +391,8 @@ module mpas_log
       logical, intent(in), optional :: flushNow  !< Input: flag to force a flush of the message buffer
       integer, dimension(:), intent(in), optional :: intArgs  !< Input: integer variable values to insert into message
       real(kind=RKIND), dimension(:), intent(in), optional :: realArgs  !< Input: real variable values to insert into message
-      real(kind=RKIND), dimension(:), intent(in), optional :: expArgs  !< Input: exponential notation variable values to insert into message
+      real(kind=RKIND), dimension(:), intent(in), optional :: expArgs
+         !< Input: exponential notation variable values to insert into message
       logical, dimension(:), intent(in), optional :: logicArgs  !< Input: logical variable values to insert into message
 
       !-----------------------------------------------------------------
@@ -562,7 +569,7 @@ module mpas_log
 
       outputCount = mpas_log_info % outputMessageCount  ! save the count before we write the header lines
 
-      ! Print out statistics of how many of each message type were printed (which will be stored as module level private variables)
+      ! Print out statistics of how many of each message type were printed
       !   (use mpas_log_write, rather than writing directly to file, so that logActive is applied correctly)
       call mpas_log_write('')
       call mpas_log_write('-----------------------------------------')
@@ -641,8 +648,8 @@ module mpas_log
 
       ! Write final message to err file
       call date_and_time(date,time)
-      write(mpas_log_info % errUnit, '(a)') 'Logging complete.  Closing file at ' // date(1:4)//'/'//date(5:6)//'/'//date(7:8) // &
-         ' ' // time(1:2)//':'//time(3:4)//':'//time(5:6)
+      write(mpas_log_info % errUnit, '(a)') 'Logging complete.  Closing file at ' // &
+         date(1:4)//'/'//date(5:6)//'/'//date(7:8) // ' ' // time(1:2)//':'//time(3:4)//':'//time(5:6)
 
       ! Close the err log to be clean
       close(mpas_log_info % errUnit)
