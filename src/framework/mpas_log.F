@@ -137,7 +137,7 @@ module mpas_log
       coreLogInfo % errFileName = 'mpaslog.err'
 
       ! Initialize counters
-      coreLogInfo % standardMessageCount = 0
+      coreLogInfo % outputMessageCount = 0
       coreLogInfo % warningMessageCount = 0
       coreLogInfo % errorMessageCount = 0
       coreLogInfo % criticalErrorMessageCount = 0

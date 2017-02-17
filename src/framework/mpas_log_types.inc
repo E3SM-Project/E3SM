@@ -2,7 +2,7 @@
 
    ! mpas_log parameters
 
-   integer, parameter :: MPAS_LOG_STD = 1  !< code for message type "standard"
+   integer, parameter :: MPAS_LOG_OUT = 1  !< code for message type "output"
    integer, parameter :: MPAS_LOG_WARN = 2  !< code for message type "warning"
    integer, parameter :: MPAS_LOG_ERR = 3  !< code for message type "error"
    integer, parameter :: MPAS_LOG_CRIT = 4  !< code for message type "critical error"
@@ -25,7 +25,7 @@
       character(len=StrKIND) :: logFileName  !< Filename for the log file
       character(len=StrKIND) :: errFileName  !< Filename for the abort file
 
-      integer :: standardMessageCount  !< counter for number of standard messages printed during the run
+      integer :: outputMessageCount  !< counter for number of output messages printed during the run
       integer :: warningMessageCount  !< counter for number of warning messages printed during the run
       integer :: errorMessageCount  !< counter for number of error messages printed during the run
       integer :: criticalErrorMessageCount  !< counter for number of critical error messages printed during the run
