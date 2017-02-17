@@ -187,7 +187,8 @@ module mpas_log
 
       ! Note: unit number is not set until file is opened
 
-      ! TODO: Set up err file name now?
+      ! Set up err file name now
+      write(mpas_log_info % errFileName, fmt='(a, i4.4, a)') "stick.", mpas_log_info % taskID, ".err"
 
    !--------------------------------------------------------------------
    end subroutine mpas_log_init
@@ -247,6 +248,8 @@ module mpas_log
       ! Variables used to inquire about info on a pre-existing file unit (if supplied)
       logical :: isOpen
       character(len=16) :: writeSetting, sequentialSetting, formattedSetting ! length just needs to store 'YES'
+      character(len=8) :: date
+      character(len=10) :: time
 
       err = 0
 
@@ -340,7 +343,11 @@ module mpas_log
          ! -- Write a header message --
          !write(unitNumber,*) "Hello world!"
          write(unitNumber, '(a)') '----------------------------------------------------------------------'
-         write(unitNumber, '(a,a,a,a,a,i5,a,i5)') 'Beginning MPAS-', trim(mpas_log_info % coreName), ' ', trim(logTypeString), ' log file for task ', mpas_log_info % taskID, ' of ', mpas_log_info % nTasks
+         write(unitNumber, '(a,a,a,a,a,i7.1,a,i7.1)') 'Beginning MPAS-', trim(mpas_log_info % coreName), ' ', &
+            trim(logTypeString), ' Log File for task ', mpas_log_info % taskID, ' of ', mpas_log_info % nTasks
+         call date_and_time(date,time)
+         write(unitNumber, '(a)') '    Opened at ' // date(1:4)//'/'//date(5:6)//'/'//date(7:8) // &
+            ' ' // time(1:2)//':'//time(3:4)//':'//time(5:6)
          write(unitNumber, '(a)') '----------------------------------------------------------------------'
          write(unitNumber, '(a)') ''
          flush(unitNumber)  ! flush header message immediately to eliminate potential confusion
@@ -395,7 +402,7 @@ module mpas_log
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      integer :: ierr
+      integer :: ierr, ierr_tmp
       logical :: masterOnlyWrite  !< local version of masterOnly
       integer :: messageTypeHere !< local version of messageType
       character(len=16) :: messagePrefix  !< the "keyword" prepended before some message types
@@ -411,6 +418,10 @@ module mpas_log
       if (present(masterOnly)) then
          masterOnlyWrite = masterOnly
       else
+         masterOnlyWrite = .false.
+      endif
+      ! Critical errors do not respect the masterOnly flag!
+      if ((masterOnlyWrite) .and. (messageTypeHere == MPAS_LOG_CRIT)) then
          masterOnlyWrite = .false.
       endif
 
@@ -475,7 +486,29 @@ module mpas_log
 
 
       ! Handle error/critical error logic if necessary
-      ! TODO
+      if ((messageTypeHere == MPAS_LOG_ERR) .or. (messageTypeHere == MPAS_LOG_CRIT)) then
+         ! Error messages also need to respect the masterOnly option (but critical errors do not - handled above)
+         if ( ((masterOnlyWrite) .and. (mpas_log_info % taskID == 0)) .or. (.not. masterOnlyWrite)) then
+
+            ! if err file is not already open, we need to open it
+            if (.not. mpas_log_info % errUnitOpen) then
+               call mpas_log_open(openErrorFile = .true., err = ierr_tmp)
+               ierr = ior(ierr, ierr_tmp)
+               mpas_log_info % errUnitOpen = .true.
+            endif
+
+            ! Now we need to repeat the message to the err file
+            write(mpas_log_info % errUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(message)
+
+            ! If this is a critical error, we need to kill the model
+            if (messageTypeHere == MPAS_LOG_CRIT) then
+               ! Now abort
+               call log_abort()
+            endif
+
+         endif
+      endif
+
 
       ! Pass back err code if it was requested
       if (present(err)) then
@@ -520,14 +553,17 @@ module mpas_log
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      character(len=strKind) :: msg  ! TODO delete once log_write can do formatting
+      character(len=strKind) :: msg !< variable to build custom messages
       integer :: outputCount
+      character(len=8) :: date
+      character(len=10) :: time
 
       err = 0
 
       outputCount = mpas_log_info % outputMessageCount  ! save the count before we write the header lines
 
       ! Print out statistics of how many of each message type were printed (which will be stored as module level private variables)
+      !   (use mpas_log_write, rather than writing directly to file, so that logActive is applied correctly)
       call mpas_log_write('')
       call mpas_log_write('-----------------------------------------')
       call mpas_log_write('Total log messages printed:')
@@ -540,8 +576,10 @@ module mpas_log
       write(msg, fmt='(a, i12.1)') '   Critical error messages = ', mpas_log_info % criticalErrorMessageCount
       call mpas_log_write(msg)
       call mpas_log_write('-----------------------------------------')
-      call mpas_log_write('')
-      call mpas_log_write('Logging complete.  Normal termination.')
+      call date_and_time(date,time)
+      write(msg, '(a)') 'Logging complete.  Closing file at ' // date(1:4)//'/'//date(5:6)//'/'//date(7:8) // &
+         ' ' // time(1:2)//':'//time(3:4)//':'//time(5:6)
+      call mpas_log_write(msg)
 
       ! Close the log file
       !   Only do this if:
@@ -553,6 +591,70 @@ module mpas_log
 
    !--------------------------------------------------------------------
    end subroutine mpas_log_finalize
+
+
+!***********************************************************************
+! PRIVATE ROUTINES
+!***********************************************************************
+
+
+!***********************************************************************
+!
+!  routine log_abort
+!
+!> \brief   Kills the model
+!> \author  Matt Hoffman
+!> \date    14 February 2017
+!> \details
+!>  This routine kills the model.
+!
+!-----------------------------------------------------------------------
+
+   subroutine log_abort()
+
+#ifdef _MPI
+#ifndef NOMPIMOD
+      use mpi
+#endif
+#endif
+
+      implicit none
+
+#ifdef _MPI
+#ifdef NOMPIMOD
+      include 'mpif.h'
+#endif
+#endif
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+#ifdef _MPI
+      integer :: mpi_ierr, mpi_errcode, err
+#endif
+      character(len=8) :: date
+      character(len=10) :: time
+
+
+      ! Close the output log since we can (and provides stats)
+      call mpas_log_finalize(err)
+
+      ! Write final message to err file
+      call date_and_time(date,time)
+      write(mpas_log_info % errUnit, '(a)') 'Logging complete.  Closing file at ' // date(1:4)//'/'//date(5:6)//'/'//date(7:8) // &
+         ' ' // time(1:2)//':'//time(3:4)//':'//time(5:6)
+
+      ! Close the err log to be clean
+      close(mpas_log_info % errUnit)
+
+#ifdef _MPI
+      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
+#else
+      stop
+#endif
+
+   !--------------------------------------------------------------------
+   end subroutine log_abort
 
 
 end module mpas_log
