@@ -29,7 +29,7 @@ module DUSTMod
   use FrictionVelocityType , only : frictionvel_type
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
-  use PatchType            , only : pft_pp
+  use VegetationType            , only : veg_pp
   !  
   ! !PUBLIC TYPES
   implicit none
@@ -273,12 +273,12 @@ contains
       tlai_lu(bounds%begl : bounds%endl) = spval
       sumwt(bounds%begl : bounds%endl) = 0._r8
       do p = bounds%begp,bounds%endp
-         if (ttlai(p) /= spval .and. pft_pp%active(p) .and. pft_pp%wtlunit(p) /= 0._r8) then
-            c = pft_pp%column(p)
-            l = pft_pp%landunit(p)
+         if (ttlai(p) /= spval .and. veg_pp%active(p) .and. veg_pp%wtlunit(p) /= 0._r8) then
+            c = veg_pp%column(p)
+            l = veg_pp%landunit(p)
             if (sumwt(l) == 0._r8) tlai_lu(l) = 0._r8
-            tlai_lu(l) = tlai_lu(l) + ttlai(p) * pft_pp%wtlunit(p)
-            sumwt(l) = sumwt(l) + pft_pp%wtlunit(p)
+            tlai_lu(l) = tlai_lu(l) + ttlai(p) * veg_pp%wtlunit(p)
+            sumwt(l) = sumwt(l) + veg_pp%wtlunit(p)
          end if
       end do
       found = .false.
@@ -303,8 +303,8 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft_pp%column(p)
-         l = pft_pp%landunit(p)
+         c = veg_pp%column(p)
+         l = veg_pp%landunit(p)
 
          ! the following code from subr. lnd_frc_mbl_get was adapted for lsm use
          ! purpose: return fraction of each gridcell suitable for dust mobilization
@@ -348,9 +348,9 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft_pp%column(p)
-         l = pft_pp%landunit(p)
-         g = pft_pp%gridcell(p)
+         c = veg_pp%column(p)
+         l = veg_pp%landunit(p)
+         g = veg_pp%gridcell(p)
 
          ! only perform the following calculations if lnd_frc_mbl is non-zero 
 
@@ -525,9 +525,9 @@ contains
          )
 
       do p = bounds%begp,bounds%endp
-         if (pft_pp%active(p)) then
-            g = pft_pp%gridcell(p)
-            c = pft_pp%column(p)
+         if (veg_pp%active(p)) then
+            g = veg_pp%gridcell(p)
+            c = veg_pp%column(p)
 
             ! from subroutine dst_dps_dry (consider adding sanity checks from line 212)
             ! when code asks to use midlayer density, pressure, temperature,
@@ -555,9 +555,9 @@ contains
 
       do m = 1, ndst
          do p = bounds%begp,bounds%endp
-            if (pft_pp%active(p)) then
-               g = pft_pp%gridcell(p)
-               c = pft_pp%column(p)
+            if (veg_pp%active(p)) then
+               g = veg_pp%gridcell(p)
+               c = veg_pp%column(p)
 
                stk_nbr = vlc_grv(p,m) * fv(p) * fv(p) / (grav * vsc_knm_atm(p))  ![frc] SeP97 p.965
                dff_aer = SHR_CONST_BOLTZ * forc_t(c) * slp_crc(p,m) / &          ![m2 s-1]
@@ -582,7 +582,7 @@ contains
 
       do m = 1, ndst
          do p = bounds%begp,bounds%endp
-            if (pft_pp%active(p)) then
+            if (veg_pp%active(p)) then
                rss_trb = ram1(p) + rss_lmn(p,m) + ram1(p) * rss_lmn(p,m) * vlc_grv(p,m) ![s m-1]
                vlc_trb(p,m) = 1.0_r8 / rss_trb                                          ![m s-1]
             end if
@@ -590,7 +590,7 @@ contains
       end do
 
       do p = bounds%begp,bounds%endp
-         if (pft_pp%active(p)) then
+         if (veg_pp%active(p)) then
             vlc_trb_1(p) = vlc_trb(p,1)
             vlc_trb_2(p) = vlc_trb(p,2)
             vlc_trb_3(p) = vlc_trb(p,3)

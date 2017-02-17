@@ -12,7 +12,7 @@ module FrictionVelocityMod
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use FrictionVelocityType , only : frictionvel_type
   use LandunitType         , only : lun_pp                
-  use PatchType            , only : pft_pp                
+  use VegetationType            , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -121,7 +121,7 @@ contains
          if (present(landunit_index)) then
             g = lun_pp%gridcell(n) 
          else
-            g = pft_pp%gridcell(n)  
+            g = veg_pp%gridcell(n)  
          end if
 
          ! Wind profile

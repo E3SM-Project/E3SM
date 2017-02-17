@@ -22,7 +22,7 @@ module BalanceCheckMod
   use GridcellType       , only : grc_pp                
   use LandunitType       , only : lun_pp                
   use ColumnType         , only : col_pp                
-  use PatchType          , only : pft_pp                
+  use VegetationType          , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -522,10 +522,10 @@ contains
        ! Energy balance checks
 
        do p = bounds%begp, bounds%endp
-          if (pft_pp%active(p)) then
-             c = pft_pp%column(p)
-             l = pft_pp%landunit(p)
-             g = pft_pp%gridcell(p)
+          if (veg_pp%active(p)) then
+             c = veg_pp%column(p)
+             l = veg_pp%landunit(p)
+             g = veg_pp%gridcell(p)
 
              ! Solar radiation energy balance
              ! Do not do this check for an urban pft since it will not balance on a per-column
@@ -572,11 +572,11 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft_pp%active(p)) then
+          if (veg_pp%active(p)) then
              if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-3_r8) ) then
                 found = .true.
                 indexp = p
-                indexg = pft_pp%gridcell(indexp)
+                indexg = veg_pp%gridcell(indexp)
              end if
           end if
        end do
@@ -600,7 +600,7 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft_pp%active(p)) then
+          if (veg_pp%active(p)) then
              if ( (errlon(p) /= spval) .and. (abs(errlon(p)) > 1.e-3_r8) ) then
                 found = .true.
                 indexp = p
@@ -618,11 +618,11 @@ contains
 
        found = .false.
        do p = bounds%begp, bounds%endp
-          if (pft_pp%active(p)) then
+          if (veg_pp%active(p)) then
              if (abs(errseb(p)) > 1.e-3_r8 ) then
                 found = .true.
                 indexp = p
-                indexc = pft_pp%column(indexp)
+                indexc = veg_pp%column(indexp)
              end if
           end if
        end do

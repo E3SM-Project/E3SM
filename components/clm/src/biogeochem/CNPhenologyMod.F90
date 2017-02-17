@@ -31,7 +31,7 @@ module CNPhenologyMod
   use WaterstateType      , only : waterstate_type
   use ColumnType          , only : col_pp                
   use GridcellType        , only : grc_pp                
-  use PatchType           , only : pft_pp                
+  use VegetationType           , only : veg_pp                
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use clm_varctl          , only : nu_com 
@@ -451,7 +451,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                    & 
-         ivt        => pft_pp%itype                , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt        => veg_pp%itype                , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
          evergreen  => veg_vp%evergreen     , & ! Input:  [real(r8) (:) ]  binary flag for evergreen leaf habit (0 or 1)     
          leaf_long  => veg_vp%leaf_long     , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
@@ -514,7 +514,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                             & 
-         ivt                                 =>    pft_pp%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
+         ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
          dayl                                =>    grc_pp%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
          prev_dayl                           =>    grc_pp%prev_dayl                                         , & ! Input:  [real(r8)  (:)   ]  daylength from previous time step (s)
          
@@ -626,8 +626,8 @@ contains
       ! start pft loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          if (season_decid(ivt(p)) == 1._r8) then
 
@@ -880,7 +880,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                             & 
-         ivt                                 =>    pft_pp%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
+         ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:)   ]  pft vegetation type                                
          dayl                                =>    grc_pp%dayl                                              , & ! Input:  [real(r8)  (:)   ]  daylength (s)
          
          leaf_long                           =>    veg_vp%leaf_long                                  , & ! Input:  [real(r8)  (:)   ]  leaf longevity (yrs)                              
@@ -998,8 +998,8 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          if (stress_decid(ivt(p)) == 1._r8) then
             soilt = t_soisno(c,3)
@@ -1365,7 +1365,7 @@ contains
     !------------------------------------------------------------------------
 
     associate(                                                             & 
-         ivt               =>    pft_pp%itype                               , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt               =>    veg_pp%itype                               , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
          leaf_long         =>    veg_vp%leaf_long                    , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)                              
          leafcn            =>    veg_vp%leafcn                       , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
@@ -1425,8 +1425,8 @@ contains
 
       do fp = 1, num_pcropp
          p = filter_pcropp(fp)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
          h = inhemi(p)
 
          ! background litterfall and transfer rates; long growing season factor
@@ -1840,7 +1840,7 @@ contains
 
     ! Figure out what hemisphere each PFT is in
     do p = bounds%begp, bounds%endp
-       g = pft_pp%gridcell(p)
+       g = veg_pp%gridcell(p)
        ! Northern hemisphere
        if ( grc_pp%latdeg(g) > 0.0_r8 )then
           inhemi(p) = inNH
@@ -1908,7 +1908,7 @@ contains
          huigrain    => cnstate_vars%huigrain_patch          & ! Output: [real(r8) (:) ]  heat unit index needed to reach vegetative maturity
          )
 
-      c = pft_pp%column(p)
+      c = veg_pp%column(p)
 
       ! for all equations - temperatures must be in degrees (C)
       ! calculate temperature of crown of crop (e.g., 3 cm soil temperature)
@@ -2034,7 +2034,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                             & 
-         ivt                                 =>    pft_pp%itype                                             , & ! Input:  [integer   (:) ]  pft vegetation type                                
+         ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:) ]  pft vegetation type                                
 
          woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
          
@@ -2193,7 +2193,7 @@ contains
    real(r8):: cgrain                        ! amount of carbon in the grain
    !-------------------------------------------------------------------------
    associate(&
-   ivt                   =>    pft_pp%itype                                   , & ! Input:  [integer (:)]  pft vegetation type
+   ivt                   =>    veg_pp%itype                                   , & ! Input:  [integer (:)]  pft vegetation type
    offset_flag           =>    cnstate_vars%offset_flag_patch              , & ! Input:  [real(r8) (:) ]  offset flag      
    offset_counter        =>    cnstate_vars%offset_counter_patch           , & ! Input:  [real(r8) (:) ]  offset days counter
 
@@ -2304,7 +2304,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                     & 
-         ivt                   =>    pft_pp%itype                                   , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt                   =>    veg_pp%itype                                   , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
          leafcn                =>    veg_vp%leafcn                           , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
          lflitcn               =>    veg_vp%lflitcn                          , & ! Input:  [real(r8) (:) ]  leaf litter C:N (gC/gN)                           
@@ -2487,7 +2487,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                               & 
-         ivt               =>    pft_pp%itype                                 , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt               =>    veg_pp%itype                                 , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
          leafcn            =>    veg_vp%leafcn                         , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
          lflitcn           =>    veg_vp%lflitcn                        , & ! Input:  [real(r8) (:) ]  leaf litter C:N (gC/gN)                           
@@ -2594,7 +2594,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                             & 
-         ivt                      =>    pft_pp%itype                                        , & ! Input:  [integer  (:) ]  pft vegetation type                                
+         ivt                      =>    veg_pp%itype                                        , & ! Input:  [integer  (:) ]  pft vegetation type                                
 
          woody                    =>    veg_vp%woody                                 , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
          livewdcn                 =>    veg_vp%livewdcn                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:N (gC/gN) 
@@ -2716,8 +2716,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                       & 
-         ivt                                 =>    pft_pp%itype                                       , & ! Input:  [integer  (:)   ]  pft vegetation type                                
-         wtcol                               =>    pft_pp%wtcol                                       , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
+         ivt                                 =>    veg_pp%itype                                       , & ! Input:  [integer  (:)   ]  pft vegetation type                                
+         wtcol                               =>    veg_pp%wtcol                                       , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)    
 
          lf_flab                             =>    veg_vp%lf_flab                              , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction                       
          lf_fcel                             =>    veg_vp%lf_fcel                              , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction                    
@@ -2761,7 +2761,7 @@ contains
 
                if ( pi <=  col_pp%npfts(c) ) then
                   p = col_pp%pfti(c) + pi - 1
-                  if (pft_pp%active(p)) then
+                  if (veg_pp%active(p)) then
 
                      ! leaf litter carbon fluxes
                      phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
@@ -2878,8 +2878,8 @@ contains
    !-----------------------------------------------------------------------
 
    associate(&
-   ivt                                 =>   pft_pp%itype                                    , & ! Input:  [integer (:)]  pft vegetation type
-   wtcol                               =>   pft_pp%wtcol                                    , & ! Input:  [real(r8) (:)]  pft weight relative to column (0-1)
+   ivt                                 =>   veg_pp%itype                                    , & ! Input:  [integer (:)]  pft vegetation type
+   wtcol                               =>   veg_pp%wtcol                                    , & ! Input:  [real(r8) (:)]  pft weight relative to column (0-1)
    phrv_leafc_to_prod1c                =>   carbonflux_vars%hrv_leafc_to_prod1c_patch    , & ! Input:  [real(r8) (:)] crop leafc harvested
    phrv_livestemc_to_prod1c            =>   carbonflux_vars%hrv_livestemc_to_prod1c_patch, & ! Input:  [real(r8) (:)] crop stemc harvested
    phrv_grainc_to_prod1c               =>   carbonflux_vars%hrv_grainc_to_prod1c_patch   , & ! Input:  [real(r8) (:)] crop grainc harvested
@@ -2904,7 +2904,7 @@ contains
          if (pi <=  col_pp%npfts(c)) then
             p = col_pp%pfti(c) + pi - 1
 
-            if (pft_pp%active(p)) then
+            if (veg_pp%active(p)) then
 
                 phrv_cropc_to_prod1c(p) = phrv_leafc_to_prod1c(p) + phrv_livestemc_to_prod1c(p) + &
                                          phrv_grainc_to_prod1c(p)

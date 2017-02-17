@@ -27,7 +27,7 @@ module PDynamicsMod
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use PatchType           , only : pft_pp
+  use VegetationType           , only : veg_pp
   use VegetationPropertiesType      , only : veg_vp
   !
   implicit none
@@ -641,13 +641,13 @@ contains
             c = filter_soilc(fc)
             biochem_pmin_vr(c,j) = 0.0_r8
             do p = col_pp%pfti(c), col_pp%pftf(c)
-                if (pft_pp%active(p).and. (pft_pp%itype(p) .ne. noveg)) then
+                if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                     !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
                     lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
                     biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
                         vmax_ptase_vr(j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * froot_prof(p,j) * pft_pp%wtcol(p)
+                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) * froot_prof(p,j) * veg_pp%wtcol(p)
                 end if
             enddo
         enddo

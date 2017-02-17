@@ -25,7 +25,7 @@ module UrbanRadiationMod
   use EnergyFluxType    , only : energyflux_type
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
-  use PatchType         , only : pft_pp                
+  use VegetationType         , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -254,9 +254,9 @@ contains
 
       do fp = 1,num_urbanp
          p = filter_urbanp(fp)
-         c = pft_pp%column(p)
-         l = pft_pp%landunit(p)
-         g = pft_pp%gridcell(p)
+         c = veg_pp%column(p)
+         l = veg_pp%landunit(p)
+         g = veg_pp%gridcell(p)
 
          ! Solar absorbed and longwave out and net
          ! per unit ground area (roof, road) and per unit wall area (sunwall, shadewall)

@@ -19,7 +19,7 @@ module histFileMod
   use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
-  use PatchType      , only : pft_pp                
+  use VegetationType , only : veg_pp                
   use ncdio_pio 
   use EDtypesMod     , only : nlevsclass_ed, nlevage_ed
   use EDtypesMod     , only : nfsc, ncwd
@@ -1123,7 +1123,7 @@ contains
        ! to determine whether that point should be assigned spval
        if (type1d == namep) then
           check_active = .true.
-          active => pft_pp%active
+          active => veg_pp%active
        else if (type1d == namec) then
           check_active = .true.
           active => col_pp%active
@@ -1396,7 +1396,7 @@ contains
        ! to determine whether that point should be assigned spval
        if (type1d == namep) then
           check_active = .true.
-          active => pft_pp%active
+          active => veg_pp%active
        else if (type1d == namec) then
           check_active = .true.
           active => col_pp%active
@@ -1568,7 +1568,7 @@ contains
        if (type1d == namec) then
           c = point
        else if (type1d == namep) then
-          c = pft_pp%column(point)
+          c = veg_pp%column(point)
        else
           write(iulog,*) trim(subname), ' ERROR: Only implemented for pft and col-level fields'
           write(iulog,*) 'type1d = ', trim(type1d)
@@ -2965,36 +2965,36 @@ contains
        ! Write pft info
 
        do p = bounds%begp,bounds%endp
-         rparr(p) = grc_pp%londeg(pft_pp%gridcell(p))
+         rparr(p) = grc_pp%londeg(veg_pp%gridcell(p))
        enddo
        call ncd_io(varname='pfts1d_lon', data=rparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         rparr(p) = grc_pp%latdeg(pft_pp%gridcell(p))
+         rparr(p) = grc_pp%latdeg(veg_pp%gridcell(p))
        enddo
        call ncd_io(varname='pfts1d_lat', data=rparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         iparr(p) = mod(ldecomp%gdc2glo(pft_pp%gridcell(p))-1,ldomain%ni) + 1
+         iparr(p) = mod(ldecomp%gdc2glo(veg_pp%gridcell(p))-1,ldomain%ni) + 1
        enddo
        call ncd_io(varname='pfts1d_ixy', data=iparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         iparr(p) = (ldecomp%gdc2glo(pft_pp%gridcell(p))-1)/ldomain%ni + 1
+         iparr(p) = (ldecomp%gdc2glo(veg_pp%gridcell(p))-1)/ldomain%ni + 1
        enddo
        call ncd_io(varname='pfts1d_jxy'      , data=iparr        , dim1name=namep, ncid=ncid, flag='write')
        ! --- EBK Do NOT write out indices that are incorrect 4/1/2011 --- Bug 1310
-       !call ncd_io(varname='pfts1d_gi'       , data=pft_pp%gridcell, dim1name=namep, ncid=ncid, flag='write')
-       !call ncd_io(varname='pfts1d_li'       , data=pft_pp%landunit, dim1name=namep, ncid=ncid, flag='write')
-       !call ncd_io(varname='pfts1d_ci'       , data=pft_pp%column  , dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_gi'       , data=veg_pp%gridcell, dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_li'       , data=veg_pp%landunit, dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_ci'       , data=veg_pp%column  , dim1name=namep, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
-       call ncd_io(varname='pfts1d_wtgcell'  , data=pft_pp%wtgcell , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_wtlunit'  , data=pft_pp%wtlunit , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_wtcol'    , data=pft_pp%wtcol   , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_itype_veg', data=pft_pp%itype   , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtgcell'  , data=veg_pp%wtgcell , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtlunit'  , data=veg_pp%wtlunit , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtcol'    , data=veg_pp%wtcol   , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_itype_veg', data=veg_pp%itype   , dim1name=namep, ncid=ncid, flag='write')
 
        do p = bounds%begp,bounds%endp
-          iparr(p) = lun_pp%itype(pft_pp%landunit(p))
+          iparr(p) = lun_pp%itype(veg_pp%landunit(p))
        enddo
        call ncd_io(varname='pfts1d_itype_lunit', data=iparr      , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_active'   , data=pft_pp%active  , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_active'   , data=veg_pp%active  , dim1name=namep, ncid=ncid, flag='write')
 
        deallocate(rgarr,rlarr,rcarr,rparr)
        deallocate(igarr,ilarr,icarr,iparr)
@@ -4249,37 +4249,37 @@ contains
        clmptr_rs(hpindex)%ptr => ptr_patch
        if (present(set_lake)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (lun_pp%lakpoi(l)) ptr_patch(p) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (.not.(lun_pp%lakpoi(l))) ptr_patch(p) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (lun_pp%urbpoi(l)) ptr_patch(p) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (.not.(lun_pp%urbpoi(l))) ptr_patch(p) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (lun_pp%ifspecial(l)) ptr_patch(p) = set_spec
           end do
        end if
        if (present(set_noglcmec)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (.not.(lun_pp%glcmecpoi(l))) ptr_patch(p) = set_noglcmec
           end do
        end if
@@ -4563,31 +4563,31 @@ contains
        clmptr_ra(hpindex)%ptr => ptr_patch
        if (present(set_lake)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (lun_pp%lakpoi(l)) ptr_patch(p,:) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (.not.(lun_pp%lakpoi(l))) ptr_patch(p,:) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (lun_pp%urbpoi(l)) ptr_patch(p,:) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (.not.(lun_pp%urbpoi(l))) ptr_patch(p,:) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do p = bounds%begp,bounds%endp
-             l =pft_pp%landunit(p)
+             l =veg_pp%landunit(p)
              if (lun_pp%ifspecial(l)) ptr_patch(p,:) = set_spec
           end do
        end if

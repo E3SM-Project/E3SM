@@ -18,7 +18,7 @@ module dynpftFileMod
   use clm_varcon          , only : grlnd, nameg
   use LandunitType        , only : lun_pp                
   !DW  not use at all     !   use ColumnType          , only : col                
-  use PatchType           , only : pft_pp                
+  use VegetationType           , only : veg_pp                
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -265,18 +265,18 @@ contains
     call wtpatch%get_current_data(wtpatch_cur)
 
     do p = bounds%begp,bounds%endp
-       g = pft_pp%gridcell(p)
-       l = pft_pp%landunit(p)
+       g = veg_pp%gridcell(p)
+       l = veg_pp%landunit(p)
 
        ! Note that we only deal with the istsoil landunit here, NOT the istcrop landunit
        ! (if there is one)
        ! (However, currently [as of 5-9-13] the code won't let you run with transient
        ! Patches combined with create_crop_landunit anyway, so it's a moot point.)
        if (lun_pp%itype(l) == istsoil) then
-          m = pft_pp%itype(p)
+          m = veg_pp%itype(p)
 
           ! Note that the following assignment assumes that all Patches share a single column
-          pft_pp%wtcol(p) = wtpatch_cur(g,m)
+          veg_pp%wtcol(p) = wtpatch_cur(g,m)
        end if
 
     end do

@@ -25,7 +25,7 @@ module UrbanFluxesMod
   use GridcellType         , only : grc_pp                
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
-  use PatchType            , only : pft_pp                
+  use VegetationType            , only : veg_pp                
   use SurfaceResistanceMod , only : do_soilevap_beta
   !
   ! !PUBLIC TYPES:
@@ -667,9 +667,9 @@ contains
       do f = 1, num_urbanp
 
          p = filter_urbanp(f)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
-         l = pft_pp%landunit(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
+         l = veg_pp%landunit(p)
 
          ram1(p) = ramu(l)  !pass value to global variable
 
@@ -868,7 +868,7 @@ contains
       do j = 1, nlevgrnd
          do f = 1, num_urbanp
             p = filter_urbanp(f)
-            c = pft_pp%column(p)
+            c = veg_pp%column(p)
             if (ctype(c) == icol_road_perv) then
                rootr(p,j) = rootr_road_perv(c,j)
             else
@@ -880,9 +880,9 @@ contains
       do f = 1, num_urbanp
 
          p = filter_urbanp(f)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
-         l = pft_pp%landunit(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
+         l = veg_pp%landunit(p)
 
          ! Use urban canopy air temperature and specific humidity to represent 
          ! 2-m temperature and humidity

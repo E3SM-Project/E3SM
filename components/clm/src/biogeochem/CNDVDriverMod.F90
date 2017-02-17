@@ -16,7 +16,7 @@ module CNDVDriverMod
   use CNCarbonFluxType  , only : carbonflux_type
   use clm_varcon        , only : grlnd
   use LandunitType      , only : lun_pp                
-  use PatchType         , only : pft_pp                
+  use VegetationType         , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -373,18 +373,18 @@ contains
 
       rbuf2dg(bounds%begg : bounds%endg, :) = 0._r8
       do p = bounds%begp,bounds%endp
-         g = pft_pp%gridcell(p)
-         l = pft_pp%landunit(p)
-         if (.not. lun_pp%ifspecial(l)) rbuf2dg(g,pft_pp%mxy(p)) = fpcgrid(p)*100._r8
+         g = veg_pp%gridcell(p)
+         l = veg_pp%landunit(p)
+         if (.not. lun_pp%ifspecial(l)) rbuf2dg(g,veg_pp%mxy(p)) = fpcgrid(p)*100._r8
       end do
       call ncd_io(ncid=ncid, varname='FPCGRID', dim1name=grlnd, data=rbuf2dg, &
            nt=1, flag='write')
 
       rbuf2dg(bounds%begg : bounds%endg, :) = 0._r8
       do p = bounds%begp,bounds%endp
-         g = pft_pp%gridcell(p)
-         l = pft_pp%landunit(p)
-         if (.not. lun_pp%ifspecial(l)) rbuf2dg(g,pft_pp%mxy(p)) = nind(p)
+         g = veg_pp%gridcell(p)
+         l = veg_pp%landunit(p)
+         if (.not. lun_pp%ifspecial(l)) rbuf2dg(g,veg_pp%mxy(p)) = nind(p)
       end do
       call ncd_io(ncid=ncid, varname='NIND', dim1name=grlnd, data=rbuf2dg, &
            nt=1, flag='write')

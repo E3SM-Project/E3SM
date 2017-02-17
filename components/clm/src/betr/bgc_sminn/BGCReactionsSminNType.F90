@@ -272,7 +272,7 @@ contains
     use BeTRTracerType           , only : BeTRTracer_Type
     use tracerstatetype          , only : tracerstate_type
     use WaterstateType           , only : waterstate_type
-    use PatchType                , only : pft_pp
+    use VegetationType                , only : veg_pp
     use clm_varcon               , only : spval, ispval
     use landunit_varcon          , only : istsoil, istcrop
 

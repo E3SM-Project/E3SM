@@ -19,7 +19,7 @@ module LakeFluxesMod
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp                
   use ColumnType           , only : col_pp                
-  use PatchType            , only : pft_pp                
+  use VegetationType            , only : veg_pp                
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -229,7 +229,7 @@ contains
 
       do fp = 1, num_lakep
          p = filter_lakep(fp)
-         c = pft_pp%column(p)
+         c = veg_pp%column(p)
          g = col_pp%gridcell(c)
 
          ! Set fetch for prognostic roughness length-- if not found in surface data.
@@ -312,8 +312,8 @@ contains
 
       do fp = 1, num_lakep
          p = filter_lakep(fp)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          nmozsgn(p) = 0
          obuold(p) = 0._r8
@@ -361,8 +361,8 @@ contains
 
          do fp = 1, fncopy
             p = fpcopy(fp)
-            c = pft_pp%column(p)
-            g = pft_pp%gridcell(p)
+            c = veg_pp%column(p)
+            g = veg_pp%gridcell(p)
 
             tgbef(c) = t_grnd(c)
             if (t_grnd(c) > tfrz .and. t_lake(c,1) > tfrz .and. snl(c) == 0) then
@@ -510,8 +510,8 @@ contains
 
       do fp = 1, num_lakep
          p = filter_lakep(fp)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          ! If there is snow on the ground or lake is frozen and t_grnd > tfrz: reset t_grnd = tfrz.
          ! Re-evaluate ground fluxes.
@@ -611,7 +611,7 @@ contains
 
       do fp = 1, num_lakep
          p = filter_lakep(fp)
-         c = pft_pp%column(p)
+         c = veg_pp%column(p)
          t_veg(p) = forc_t(c)
          eflx_lwrad_net(p)  = eflx_lwrad_out(p) - forc_lwrad(c)
          qflx_prec_grnd(p) = forc_rain(c) + forc_snow(c)

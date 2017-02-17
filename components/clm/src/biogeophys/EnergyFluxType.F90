@@ -9,7 +9,7 @@ module EnergyFluxType
   use decompMod      , only : bounds_type
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
-  use PatchType      , only : pft_pp                
+  use VegetationType      , only : veg_pp                
   !
   implicit none
   save
@@ -606,8 +606,8 @@ contains
     end do
 
       do p = bounds%begp, bounds%endp 
-         c = pft_pp%column(p)
-         l = pft_pp%landunit(p)
+         c = veg_pp%column(p)
+         l = veg_pp%landunit(p)
 
          if (.not. lun_pp%urbpoi(l)) then ! non-urban
             this%eflx_lwrad_net_u_patch(p) = spval
@@ -623,7 +623,7 @@ contains
     end associate
 
     do p = bounds%begp, bounds%endp 
-       l = pft_pp%landunit(p)
+       l = veg_pp%landunit(p)
 
        if (.not. lun_pp%urbpoi(l)) then
           this%eflx_traffic_lun(l)        = spval

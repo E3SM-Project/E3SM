@@ -16,7 +16,7 @@ module PlantSoilnutrientFluxType
   use clm_varcon             , only : spval, ispval
   use decompMod              , only : bounds_type
   use ColumnType             , only : col_pp
-  use PatchType              , only : pft_pp
+  use VegetationType              , only : veg_pp
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -251,7 +251,7 @@ module PlantSoilnutrientFluxType
 
     num_special_patch = 0
     do p = bounds%begp,bounds%endp
-       l = pft_pp%landunit(p)
+       l = veg_pp%landunit(p)
        if (lun_pp%ifspecial(l)) then
           num_special_patch = num_special_patch + 1
           special_patch(num_special_patch) = p
@@ -348,7 +348,7 @@ module PlantSoilnutrientFluxType
   !new approach
   do fp = 1, num_soilp
     p = filter_soilp(fp)
-    c = pft_pp%column(p)
+    c = veg_pp%column(p)
     this%plant_minn_uptake_potential_patch(p) = Vmax_minn*max(frootc_patch(p),10._r8)
     if(abs(grc_pp%latdeg(col_pp%gridcell(c)))<20._r8)this%plant_minn_uptake_potential_patch(p) = this%plant_minn_uptake_potential_patch(p) * 1.e3_r8
   enddo

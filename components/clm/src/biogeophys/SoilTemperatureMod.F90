@@ -25,7 +25,7 @@ module SoilTemperatureMod
   use TemperatureType   , only : temperature_type
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
-  use PatchType         , only : pft_pp                
+  use VegetationType         , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -1771,10 +1771,10 @@ end subroutine SolveTemperature
             c = filter_nolakec(fc)
             if ( pi <= col_pp%npfts(c) ) then
                p = col_pp%pfti(c) + pi - 1
-               l = pft_pp%landunit(p)
-               g = pft_pp%gridcell(p)
+               l = veg_pp%landunit(p)
+               g = veg_pp%gridcell(p)
 
-               if (pft_pp%active(p)) then
+               if (veg_pp%active(p)) then
                   if (.not. lun_pp%urbpoi(l)) then
                      eflx_gnet(p) = sabg(p) + dlrad(p) &
                           + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit(c) &
@@ -1819,11 +1819,11 @@ end subroutine SolveTemperature
                      eflx_gnet_h2osfc = eflx_gnet(p)
                   end if
                   dgnetdT(p) = - cgrnd(p) - dlwrad_emit(c)
-                  hs(c) = hs(c) + eflx_gnet(p) * pft_pp%wtcol(p)
-                  dhsdT(c) = dhsdT(c) + dgnetdT(p) * pft_pp%wtcol(p)
+                  hs(c) = hs(c) + eflx_gnet(p) * veg_pp%wtcol(p)
+                  dhsdT(c) = dhsdT(c) + dgnetdT(p) * veg_pp%wtcol(p)
                   ! separate surface fluxes for soil/snow
-                  hs_soil(c) = hs_soil(c) + eflx_gnet_soil * pft_pp%wtcol(p)
-                  hs_h2osfc(c) = hs_h2osfc(c) + eflx_gnet_h2osfc * pft_pp%wtcol(p)
+                  hs_soil(c) = hs_soil(c) + eflx_gnet_soil * veg_pp%wtcol(p)
+                  hs_h2osfc(c) = hs_h2osfc(c) + eflx_gnet_h2osfc * veg_pp%wtcol(p)
 
                end if
             end if
@@ -1850,15 +1850,15 @@ end subroutine SolveTemperature
             lyr_top = snl(c) + 1
             if ( pi <= col_pp%npfts(c) ) then
                p = col_pp%pfti(c) + pi - 1
-               if (pft_pp%active(p)) then
-                  g = pft_pp%gridcell(p)
-                  l = pft_pp%landunit(p)
+               if (veg_pp%active(p)) then
+                  g = veg_pp%gridcell(p)
+                  l = veg_pp%landunit(p)
                   if (.not. lun_pp%urbpoi(l)) then
 
                      eflx_gnet_top = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
                           - lwrad_emit(c) - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
-                     hs_top(c) = hs_top(c) + eflx_gnet_top*pft_pp%wtcol(p)
+                     hs_top(c) = hs_top(c) + eflx_gnet_top*veg_pp%wtcol(p)
 
                      eflx_gnet_snow = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
                           - lwrad_emit_snow(c) - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
@@ -1866,16 +1866,16 @@ end subroutine SolveTemperature
                      eflx_gnet_soil = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
                           - lwrad_emit_soil(c) - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
 
-                     hs_top_snow(c) = hs_top_snow(c) + eflx_gnet_snow*pft_pp%wtcol(p)
+                     hs_top_snow(c) = hs_top_snow(c) + eflx_gnet_snow*veg_pp%wtcol(p)
 
                      do j = lyr_top,1,1
-                        sabg_lyr_col(c,j) = sabg_lyr_col(c,j) + sabg_lyr(p,j) * pft_pp%wtcol(p)
+                        sabg_lyr_col(c,j) = sabg_lyr_col(c,j) + sabg_lyr(p,j) * veg_pp%wtcol(p)
                      enddo
                   else
 
-                     hs_top(c)      = hs_top(c) + eflx_gnet(p)*pft_pp%wtcol(p)
-                     hs_top_snow(c) = hs_top_snow(c) + eflx_gnet(p)*pft_pp%wtcol(p)
-                     sabg_lyr_col(c,lyr_top) = sabg_lyr_col(c,lyr_top) + sabg(p) * pft_pp%wtcol(p)
+                     hs_top(c)      = hs_top(c) + eflx_gnet(p)*veg_pp%wtcol(p)
+                     hs_top_snow(c) = hs_top_snow(c) + eflx_gnet(p)*veg_pp%wtcol(p)
+                     sabg_lyr_col(c,lyr_top) = sabg_lyr_col(c,lyr_top) + sabg(p) * veg_pp%wtcol(p)
 
                   endif
                endif

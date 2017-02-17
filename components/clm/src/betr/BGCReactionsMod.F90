@@ -210,7 +210,7 @@ module BGCReactionsMod
        use WaterstateType           , only : waterstate_type
        use LandunitType             , only : lun_pp
        use ColumnType               , only : col_pp
-       use PatchType                , only : pft_pp
+       use VegetationType                , only : veg_pp
        use decompMod                , only : bounds_type
 
        ! !ARGUMENTS:

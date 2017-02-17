@@ -16,8 +16,8 @@ module decompInitMod
   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
-  use PatchType       , only : pft_pp               
   use FatesInterfaceMod, only : fates_maxElementsPerSite
+  use VegetationType  , only : veg_pp                
   use decompMod
   use mct_mod
   !
@@ -839,7 +839,7 @@ contains
     allocate(gindex(begp:endp))
     ioff(:) = 0
     do pi = begp,endp
-       gi = pft_pp%gridcell(pi)
+       gi = veg_pp%gridcell(pi)
        gindex(pi) = pstart(gi) + ioff(gi)
        ioff(gi) = ioff(gi) + 1 
        ! check that this is less than [pstart(gi) + pcount(gi)]

@@ -10,7 +10,7 @@ module PhotosynthesisType
   use clm_varctl     , only : iulog, use_cn, use_c13, use_c14
   use clm_varcon     , only : spval
   use LandunitType   , only : lun_pp                
-  use PatchType      , only : pft_pp                
+  use VegetationType      , only : veg_pp                
   !
   implicit none
   save
@@ -322,7 +322,7 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp,bounds%endp
-       l = pft_pp%landunit(p)
+       l = veg_pp%landunit(p)
 
        this%lmrcanopy_patch(p) =  0.0_r8 
 
@@ -396,7 +396,7 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
-       l = pft_pp%landunit(p)
+       l = veg_pp%landunit(p)
        if (.not. lun_pp%lakpoi(l)) then
           this%psnsun_patch(p)    = 0._r8
           this%psnsun_wc_patch(p) = 0._r8

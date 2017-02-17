@@ -85,7 +85,7 @@ contains
     use shr_log_mod    , only : errMsg => shr_log_errMsg   
     use decompMod      , only : bounds_type
     use pftvarcon      , only : noveg, roota_par, rootb_par  !these pars shall be moved to here and set as private in the future
-    use PatchType      , only : pft_pp
+    use VegetationType      , only : veg_pp
     use ColumnType     , only : col_pp
     !
     ! !ARGUMENTS:
@@ -107,16 +107,16 @@ contains
 
     do p = bounds%begp,bounds%endp   
 
-       if (pft_pp%itype(p) /= noveg .and. .not.pft_pp%is_fates(p)) then
-          c = pft_pp%column(p)
+       if (veg_pp%itype(p) /= noveg .and. .not.veg_pp%is_fates(p)) then
+          c = veg_pp%column(p)
           do lev = 1, ubj-1
-             rootfr(p,lev) = .5_r8*( exp(-roota_par(pft_pp%itype(p)) * col_pp%zi(c,lev-1))  &
-                  + exp(-rootb_par(pft_pp%itype(p)) * col_pp%zi(c,lev-1))  &
-                  - exp(-roota_par(pft_pp%itype(p)) * col_pp%zi(c,lev  ))  &
-                  - exp(-rootb_par(pft_pp%itype(p)) * col_pp%zi(c,lev  )) )
+             rootfr(p,lev) = .5_r8*( exp(-roota_par(veg_pp%itype(p)) * col_pp%zi(c,lev-1))  &
+                  + exp(-rootb_par(veg_pp%itype(p)) * col_pp%zi(c,lev-1))  &
+                  - exp(-roota_par(veg_pp%itype(p)) * col_pp%zi(c,lev  ))  &
+                  - exp(-rootb_par(veg_pp%itype(p)) * col_pp%zi(c,lev  )) )
           end do
-          rootfr(p,ubj) = .5_r8*( exp(-roota_par(pft_pp%itype(p)) * col_pp%zi(c,ubj-1))  &
-               + exp(-rootb_par(pft_pp%itype(p)) * col_pp%zi(c,ubj-1)) )
+          rootfr(p,ubj) = .5_r8*( exp(-roota_par(veg_pp%itype(p)) * col_pp%zi(c,ubj-1))  &
+               + exp(-rootb_par(veg_pp%itype(p)) * col_pp%zi(c,ubj-1)) )
 
        else
           rootfr(p,1:ubj) = 0._r8

@@ -63,7 +63,7 @@ Module DryDepVelocity
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp                
   use LandunitType         , only : lun_pp                
-  use PatchType            , only : pft_pp                
+  use VegetationType            , only : veg_pp                
   !
   implicit none 
   save 
@@ -243,12 +243,12 @@ CONTAINS
       ! Begin loop through patches
 
       pft_loop: do pi = bounds%begp,bounds%endp
-         l = pft_pp%landunit(pi)
+         l = veg_pp%landunit(pi)
 
-         active: if (pft_pp%active(pi)) then
+         active: if (veg_pp%active(pi)) then
 
-            c = pft_pp%column(pi)
-            g = pft_pp%gridcell(pi)
+            c = veg_pp%column(pi)
+            g = veg_pp%gridcell(pi)
             !solar_flux = forc_lwrad  !rename CLM variables to fit with Dry Dep variables 
 
             pg         = forc_psrf(c)  
@@ -258,7 +258,7 @@ CONTAINS
             solar_flux = forc_solad(g,1) 
             lat        = grc_pp%latdeg(g) 
             lon        = grc_pp%londeg(g) 
-            clmveg     = pft_pp%itype(pi) 
+            clmveg     = veg_pp%itype(pi) 
             soilw      = h2osoi_vol(c,1)
 
             !map CLM veg type into Wesely veg type  

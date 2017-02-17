@@ -77,7 +77,7 @@ contains
     use GridcellType , only : grc_pp                
     use LandunitType , only : lun_pp                
     use ColumnType   , only : col_pp                
-    use PatchType    , only : pft_pp                
+    use VegetationType    , only : veg_pp                
     !
     ! Arguments:
     integer          , intent(in) :: decomp_index
@@ -123,9 +123,9 @@ contains
     else if (trim(clmlevel) == namep) then
 
        ipft = decomp_index
-       icol = pft_pp%column(ipft)
-       ilun = pft_pp%landunit(ipft)
-       igrc = pft_pp%gridcell(ipft)
+       icol = veg_pp%column(ipft)
+       ilun = veg_pp%landunit(ipft)
+       igrc = veg_pp%gridcell(ipft)
        write(iulog,*)'local  pft      index = ',ipft
        write(iulog,*)'global pft      index = ',GetGlobalIndex(decomp_index=ipft, clmlevel=namep)
        write(iulog,*)'global column   index = ',GetGlobalIndex(decomp_index=icol, clmlevel=namec)
@@ -133,7 +133,7 @@ contains
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
        write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
-       write(iulog,*)'pft      type         = ',pft_pp%itype(ipft)
+       write(iulog,*)'pft      type         = ',veg_pp%itype(ipft)
        write(iulog,*)'column   type         = ',col_pp%itype(icol)
        write(iulog,*)'landunit type         = ',lun_pp%itype(ilun)
 

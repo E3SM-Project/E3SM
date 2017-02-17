@@ -19,7 +19,7 @@ module BareGroundFluxesMod
   use WaterstateType       , only : waterstate_type
   use LandunitType         , only : lun_pp                
   use ColumnType           , only : col_pp                
-  use PatchType            , only : pft_pp                
+  use VegetationType            , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -199,8 +199,8 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          ! Initialization variables
 
@@ -240,8 +240,8 @@ contains
 
          do f = 1, fn
             p = filterp(f)
-            c = pft_pp%column(p)
-            g = pft_pp%gridcell(p)
+            c = veg_pp%column(p)
+            g = veg_pp%gridcell(p)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
@@ -265,9 +265,9 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         c = pft_pp%column(p)
-         g = pft_pp%gridcell(p)
-         l = pft_pp%landunit(p)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
+         l = veg_pp%landunit(p)
 
          ! Determine aerodynamic resistances
 

@@ -26,7 +26,7 @@ module CNAllocationBetrMod
   use VegetationPropertiesType      , only : veg_vp
   use LandunitType        , only : lun_pp                
   use ColumnType          , only : col_pp                
-  use PatchType           , only : pft_pp                
+  use VegetationType           , only : veg_pp                
   !
   implicit none
   save
@@ -234,7 +234,7 @@ contains
     !-----------------------------------------------------------------------
 
   associate(                                                                               &
-     ivt                          => pft_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                
+     ivt                          => veg_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
      woody                        => veg_vp%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
      froot_leaf                   => veg_vp%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
@@ -318,7 +318,7 @@ contains
 
    do fp=1,num_soilp
       p = filter_soilp(fp)
-      c = pft_pp%column(p)
+      c = veg_pp%column(p)
 
          ! set some local allocation variables
       f1 = froot_leaf(ivt(p))
@@ -580,7 +580,7 @@ contains
   real(r8)                                 :: dayscrecover                                       !
   
   associate(                                                                              &
-    ivt                          => pft_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                       
+    ivt                          => veg_pp%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                       
     woody                        => veg_vp%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
     froot_leaf                   => veg_vp%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
     croot_stem                   => veg_vp%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)

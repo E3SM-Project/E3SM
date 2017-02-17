@@ -32,7 +32,7 @@ module CLMFatesInterfaceMod
    !  use ed_driver_interface, only: 
    
    ! Used CLM Modules
-   use PatchType         , only : pft_pp
+   use VegetationType    , only : veg_pp
    use shr_kind_mod      , only : r8 => shr_kind_r8
    use decompMod         , only : bounds_type
    use WaterStateType    , only : waterstate_type
@@ -424,7 +424,7 @@ contains
             c = this%f2hmap(nc)%fcolumn(s)
             pi = col_pp%pfti(c)+1
             pf = col_pp%pftf(c)
-            pft_pp%is_fates(pi:pf) = .true.
+            veg_pp%is_fates(pi:pf) = .true.
          end do
 
       end do
@@ -762,9 +762,9 @@ contains
        ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
        ! but only for FATES columns.
 
-       pft_pp%is_veg(bounds_clump%begp:bounds_clump%endp)        = .false.
-       pft_pp%is_bareground(bounds_clump%begp:bounds_clump%endp) = .false.
-       pft_pp%wt_ed(bounds_clump%begp:bounds_clump%endp)         = 0.0_r8
+       veg_pp%is_veg(bounds_clump%begp:bounds_clump%endp)        = .false.
+       veg_pp%is_bareground(bounds_clump%begp:bounds_clump%endp) = .false.
+       veg_pp%wt_ed(bounds_clump%begp:bounds_clump%endp)         = 0.0_r8
 
        do s = 1,this%fates(nc)%nsites
           
@@ -788,9 +788,9 @@ contains
           frac_veg_nosno_alb(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
 
           ! Set the bareground patch indicator
-          pft_pp%is_bareground(col_pp%pfti(c)) = .true.
+          veg_pp%is_bareground(col_pp%pfti(c)) = .true.
           npatch = this%fates(nc)%sites(s)%youngest_patch%patchno
-          pft_pp%wt_ed(col_pp%pfti(c)) = 1.0-sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))
+          veg_pp%wt_ed(col_pp%pfti(c)) = 1.0-sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))
 
           if(sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch))>1.0_r8)then
              write(iulog,*)'Projected Canopy Area of all FATES patches'
@@ -806,8 +806,8 @@ contains
              ! the site's total ground area that is occupied by the 
              ! area footprint of the current patch's vegetation canopy 
 
-             pft_pp%is_veg(p) = .true.
-             pft_pp%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
+             veg_pp%is_veg(p) = .true.
+             veg_pp%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
              elai(p) = this%fates(nc)%bc_out(s)%elai_pa(ifp)
              tlai(p) = this%fates(nc)%bc_out(s)%tlai_pa(ifp)
              esai(p) = this%fates(nc)%bc_out(s)%esai_pa(ifp)
@@ -1594,7 +1594,7 @@ contains
       ! ---------------------------------------------------------------------------------
       do icp = 1,fn
          p = filterp(icp)
-         c = pft_pp%column(p)
+         c = veg_pp%column(p)
          s = this%f2hmap(nc)%hsites(c)
          ! do if structure here and only pass natveg columns
          ifp = p-col_pp%pfti(c)
@@ -1637,7 +1637,7 @@ contains
     ! Run a check on the filter
     do icp = 1,fn
        p = filterp(icp)
-       c = pft_pp%column(p)
+       c = veg_pp%column(p)
        s = this%f2hmap(nc)%hsites(c)
        ifp = p-col_pp%pfti(c)
        if(this%fates(nc)%bc_in(s)%filter_photo_pa(ifp) /= 3)then
@@ -1725,7 +1725,7 @@ contains
     ! -----------------------------------------------------------------------------------
     do icp = 1,num_vegsol
        p = filter_vegsol(icp)
-       c = pft_pp%column(p)
+       c = veg_pp%column(p)
        s = this%f2hmap(nc)%hsites(c)
        ! do if structure here and only pass natveg columns
        ifp = p-col_pp%pfti(c)

@@ -779,7 +779,7 @@ contains
     use WaterstateType  , only : waterstate_type
     use LandunitType    , only : lun_pp
     use ColumnType      , only : col_pp
-    use PatchType       , only : pft_pp
+    use VegetationType       , only : veg_pp
     use clm_varcon      , only : spval, ispval
 
     ! !ARGUMENTS:

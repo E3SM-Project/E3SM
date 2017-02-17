@@ -31,7 +31,7 @@ module clm_pflotran_interfaceMod
   use GridcellType        , only : grc_pp
   use LandunitType        , only : lun_pp
   use ColumnType          , only : col_pp 
-  use PatchType           , only : pft_pp
+  use VegetationType           , only : veg_pp
 
   use decompMod           , only : bounds_type
 
@@ -1489,8 +1489,8 @@ endif
     zi                => col_pp%zi                , & ! Input: (:,:) soil layer interface depth (m)
     dz                => col_pp%dz                , & ! Input: (:,:) soil layer thickness (m)
     pfti              => col_pp%pfti                                , &! beginning pft index for each column
-    pwtgcell          => pft_pp%wtgcell                             , &! weight relative to gridcell for each pft
-    pwtcol            => pft_pp%wtcol                               , &! weight relative to column for each pft
+    pwtgcell          => veg_pp%wtgcell                             , &! weight relative to gridcell for each pft
+    pwtcol            => veg_pp%wtcol                               , &! weight relative to column for each pft
     !
     bsw               => clm_bgc_data%bsw_col                  , &! Clapp and Hornberger "b" (nlevgrnd)
     hksat             => clm_bgc_data%hksat_col                , &! hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
@@ -1833,8 +1833,8 @@ endif
     clandunit         => col_pp%landunit                            , &! column's landunit
     dz                => col_pp%dz                                  , &! layer thickness depth (m)
     pfti              => col_pp%pfti                                , &! beginning pft index for each column
-    pwtgcell          => pft_pp%wtgcell                             , &! weight relative to gridcell for each pft
-    pwtcol            => pft_pp%wtcol                               , &! weight relative to column for each pft
+    pwtgcell          => veg_pp%wtgcell                             , &! weight relative to gridcell for each pft
+    pwtcol            => veg_pp%wtcol                               , &! weight relative to column for each pft
     !
     frac_sno          => clm_bgc_data%frac_sno_eff_col               , & ! Input: fraction of ground covered by snow (0 to 1)
     frac_h2osfc       => clm_bgc_data%frac_h2osfc_col                , & ! Input: fraction of ground covered by surface water (0 to 1)

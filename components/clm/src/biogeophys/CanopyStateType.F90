@@ -13,7 +13,7 @@ module CanopyStateType
   use clm_varctl      , only : iulog, use_cn, use_ed
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
-  use PatchType       , only : pft_pp                
+  use VegetationType       , only : veg_pp                
   !
   implicit none
   save
@@ -426,7 +426,7 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
-       l = pft_pp%landunit(p)
+       l = veg_pp%landunit(p)
 
        this%frac_veg_nosno_patch(p) = 0._r8
        this%tlai_patch(p)       = 0._r8

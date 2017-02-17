@@ -21,7 +21,7 @@ module UrbanAlbedoMod
   use SurfaceAlbedoType , only : surfalb_type
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
-  use PatchType         , only : pft_pp                
+  use VegetationType         , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -179,7 +179,7 @@ contains
 
          do fp = 1,num_urbanp  
             p = filter_urbanp(fp)
-            l = pft_pp%landunit(p)
+            l = veg_pp%landunit(p)
             albd(p,ib)     = 1._r8
             albi(p,ib)     = 1._r8
             fabd(p,ib)     = 0._r8
@@ -398,7 +398,7 @@ contains
             end do
             do fp = 1,num_urbanp
                p = filter_urbanp(fp)
-               c = pft_pp%column(p)
+               c = veg_pp%column(p)
                albd(p,ib) = albgrd(c,ib)
                albi(p,ib) = albgri(c,ib)
             end do

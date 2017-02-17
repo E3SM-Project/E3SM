@@ -21,7 +21,7 @@ module CNMRespMod
   use PhotosynthesisType  , only : photosyns_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use PatchType           , only : pft_pp                
+  use VegetationType           , only : veg_pp                
   !
   implicit none
   save
@@ -104,7 +104,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                        &    
-         ivt            =>    pft_pp%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type                                
+         ivt            =>    veg_pp%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type                                
          woody          =>    veg_vp%woody                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
 
          frac_veg_nosno =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
@@ -193,7 +193,7 @@ contains
       do j = 1,nlevgrnd
          do fp = 1,num_soilp
             p = filter_soilp(fp)
-            c = pft_pp%column(p)
+            c = veg_pp%column(p)
 
             ! Fine root MR
             ! rootfr(j) sums to 1.0 over all soil layers, and

@@ -131,7 +131,7 @@ module clm_driver
   use GridcellType           , only : grc_pp                
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
-  use PatchType              , only : pft_pp
+  use VegetationType              , only : veg_pp
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
 
@@ -1443,7 +1443,7 @@ contains
       ! Initialize fraction of vegetation not covered by snow 
 
       do p = bounds%begp,bounds%endp
-         if (pft_pp%active(p)) then
+         if (veg_pp%active(p)) then
             frac_veg_nosno(p) = frac_veg_nosno_alb(p)
          else
             frac_veg_nosno(p) = 0._r8

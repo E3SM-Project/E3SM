@@ -21,7 +21,7 @@ module SoilStateType
   use ch4varcon       , only : allowlakeprod
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
-  use PatchType       , only : pft_pp                
+  use VegetationType       , only : veg_pp                
   !
   implicit none
   save
@@ -447,7 +447,7 @@ contains
     end if
 
     do p = bounds%begp,bounds%endp
-       g = pft_pp%gridcell(p)
+       g = veg_pp%gridcell(p)
        if ( sand3d(g,1)+clay3d(g,1) == 0.0_r8 )then
           if ( any( sand3d(g,:)+clay3d(g,:) /= 0.0_r8 ) )then
              call endrun(msg='found depth points that do NOT sum to zero when surface does'//&

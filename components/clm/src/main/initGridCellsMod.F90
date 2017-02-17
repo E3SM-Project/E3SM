@@ -19,7 +19,7 @@ module initGridCellsMod
   use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
-  use PatchType      , only : pft_pp                
+  use VegetationType , only : veg_pp                
   use initSubgridMod , only : clm_ptrs_compdown, clm_ptrs_check
   use initSubgridMod , only : add_landunit, add_column, add_patch
   !
@@ -210,7 +210,7 @@ contains
        ! responsible for all columns and pfts in L.
        call clm_ptrs_check(bounds_clump)
 
-       ! Set pft_pp%wtlunit, pft_pp%wtgcell and col_pp%wtgcell
+       ! Set veg_pp%wtlunit, veg_pp%wtgcell and col_pp%wtgcell
        call compute_higher_order_weights(bounds_clump)
 
     end do
@@ -928,7 +928,7 @@ contains
 
     max_npft_local = 0
     do p = bounds_proc%begp, bounds_proc%endp
-       g       = pft_pp%gridcell(p)
+       g       = veg_pp%gridcell(p)
        npft(g) = npft(g) + 1
        if (npft(g) > max_npft_local) max_npft_local = npft(g)
     enddo
@@ -996,16 +996,16 @@ contains
     npft = 0
     do p = bounds_proc%begp, bounds_proc%endp
 
-       g = pft_pp%gridcell(p)
-       l = pft_pp%landunit(p)
-       c = pft_pp%column(p)
+       g = veg_pp%gridcell(p)
+       l = veg_pp%landunit(p)
+       c = veg_pp%column(p)
 
        beg_idx            = (g-bounds_proc%begg)*nblocks + npft(g)*nvals + 1
-       ctype              = col%itype(pft_pp%column(p))
+       ctype              = col%itype(veg_pp%column(p))
        data_send(beg_idx) = real(ctype)
 
        beg_idx            = beg_idx + 1
-       ltype              = lun_pp%itype(pft_pp%landunit(p))
+       ltype              = lun_pp%itype(veg_pp%landunit(p))
        data_send(beg_idx) = real(ltype)
 
        beg_idx            = beg_idx + 1
@@ -1058,9 +1058,9 @@ contains
                 values(1:nvals_pft) = data_recv(beg_idx:end_idx)
                 call SetValuesForPatch(p, values)
 
-                pft_pp%gridcell(p) = g
-                pft_pp%landunit(p) = landunit_index(g,ltype) + l_rank - 1
-                pft_pp%column(p)   = lun_pp%coli(pft_pp%landunit(p)) + c_rank - 1
+                veg_pp%gridcell(p) = g
+                veg_pp%landunit(p) = landunit_index(g,ltype) + l_rank - 1
+                veg_pp%column(p)   = lun_pp%coli(veg_pp%landunit(p)) + c_rank - 1
 
              endif
 
@@ -1125,8 +1125,8 @@ contains
        enddo
 
        do p = lun_pp%pfti(l), lun_pp%pftf(l)
-          if (pft_pp%landunit(p) /= l) then
-             call endrun(msg="ERROR pft_pp%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
+          if (veg_pp%landunit(p) /= l) then
+             call endrun(msg="ERROR veg_pp%landunit(c) /= l "//errmsg(__FILE__, __LINE__))
              stop
           endif
        enddo
@@ -1134,8 +1134,8 @@ contains
 
     do c = bounds_proc%endc + 1, bounds_proc%endc_all
        do p = col%pfti(c), col%pftf(c)
-          if (pft_pp%column(p) /= c) then
-             call endrun(msg="ERROR pft_pp%column(c) /= c "//errmsg(__FILE__, __LINE__))
+          if (veg_pp%column(p) /= c) then
+             call endrun(msg="ERROR veg_pp%column(c) /= c "//errmsg(__FILE__, __LINE__))
           endif
        enddo
     enddo

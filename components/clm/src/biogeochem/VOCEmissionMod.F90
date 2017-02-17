@@ -29,7 +29,7 @@ module VOCEmissionMod
   use SoilStateType      , only : soilstate_type
   use SolarAbsorbedType  , only : solarabs_type
   use TemperatureType    , only : temperature_type
-  use PatchType          , only : pft_pp                
+  use VegetationType          , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -528,8 +528,8 @@ contains
     !_______________________________________________________________________________
     do fp = 1,num_soilp
        p = filter_soilp(fp)
-       g = pft_pp%gridcell(p)
-       c = pft_pp%column(p)
+       g = veg_pp%gridcell(p)
+       c = veg_pp%column(p)
 
        ! initialize EF
        epsilon=0._r8
@@ -539,7 +539,7 @@ contains
        vocflx_meg(:) = 0._r8
 
        ! calculate VOC emissions for non-bare ground Patches
-       if (pft_pp%itype(p) > 0) then 
+       if (veg_pp%itype(p) > 0) then 
           gamma=0._r8
 
           ! Calculate PAR: multiply w/m2 by 4.6 to get umol/m2/s for par (added 8/14/02)
@@ -559,7 +559,7 @@ contains
 
           ! Activity factor for soil moisture: all species (commented out for now)
           !          gamma_sm = get_gamma_SM(clayfrac(p), sandfrac(p), h2osoi_vol(c,:), h2osoi_ice(c,:), &
-          !               col_pp%dz(c,:), soilstate_vars%bsw_col(c,:), watsat(c,:), sucsat(c,:), root_depth(pft_pp%itype(p)))
+          !               col_pp%dz(c,:), soilstate_vars%bsw_col(c,:), watsat(c,:), sucsat(c,:), root_depth(veg_pp%itype(p)))
           gamma_sm = 1.0_r8
 
           ! Loop through VOCs for light, temperature and leaf age activity factor & apply
@@ -574,9 +574,9 @@ contains
              ! set emis factor
              ! if specified, set EF for isoprene with mapped values
              if ( trim(meg_cmp%name) == 'isoprene' .and. shr_megan_mapped_emisfctrs) then
-                epsilon = get_map_EF(pft_pp%itype(p),g, vocemis_vars)
+                epsilon = get_map_EF(veg_pp%itype(p),g, vocemis_vars)
              else
-                epsilon = meg_cmp%emis_factors(pft_pp%itype(p))
+                epsilon = meg_cmp%emis_factors(veg_pp%itype(p))
              end if
 
              class_num = meg_cmp%class_number
@@ -590,7 +590,7 @@ contains
                                    betaT(class_num),LDF(class_num), Ceo(class_num), Eopt, topt)
 
              ! Activity factor for Leaf Age
-             gamma_a = get_gamma_A(pft_pp%itype(p), elai_p(p),elai(p),class_num)
+             gamma_a = get_gamma_A(veg_pp%itype(p), elai_p(p),elai(p),class_num)
 
              ! Activity factor for CO2 (only for isoprene)
              if (trim(meg_cmp%name) == 'isoprene') then 
@@ -655,7 +655,7 @@ contains
              vocflx_tot(p) = vocflx_tot(p) + vocflx(p,imech) ! moles/m2/sec
           enddo
 
-       end if ! pft_pp%itype(1:15 only)
+       end if ! veg_pp%itype(1:15 only)
 
     enddo ! fp 
 

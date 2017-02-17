@@ -12,7 +12,7 @@ module PStateUpdate2Mod
   use clm_varctl          , only : iulog
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
-  use PatchType           , only : pft_pp
+  use VegetationType           , only : veg_pp
   use pftvarcon           , only : npcropmin
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
@@ -145,7 +145,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                      & 
-         ivt => pft_pp%itype           , & ! Input:  [integer  (:) ]  pft vegetation type
+         ivt => veg_pp%itype           , & ! Input:  [integer  (:) ]  pft vegetation type
          pf => phosphorusflux_vars  , &
          ps => phosphorusstate_vars   &
          )

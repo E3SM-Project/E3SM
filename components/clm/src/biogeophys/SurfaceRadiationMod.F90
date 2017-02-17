@@ -19,7 +19,7 @@ module SurfaceRadiationMod
   use GridcellType      , only : grc_pp                
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp                
-  use PatchType         , only : pft_pp
+  use VegetationType    , only : veg_pp                
 
   !
   ! !PRIVATE TYPES:
@@ -478,8 +478,8 @@ contains
 
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
-          l = pft_pp%landunit(p)
-          g = pft_pp%gridcell(p)
+          l = veg_pp%landunit(p)
+          g = veg_pp%gridcell(p)
 
           sabg_soil(p)  = 0._r8
           sabg_snow(p)  = 0._r8
@@ -509,9 +509,9 @@ contains
        do ib = 1, nband
           do fp = 1,num_nourbanp
              p = filter_nourbanp(fp)
-             c = pft_pp%column(p)
-             l = pft_pp%landunit(p)
-             g = pft_pp%gridcell(p)
+             c = veg_pp%column(p)
+             l = veg_pp%landunit(p)
+             g = veg_pp%gridcell(p)
 
              ! Absorbed by canopy
 
@@ -578,8 +578,8 @@ contains
 
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
-          c = pft_pp%column(p)
-          l = pft_pp%landunit(p)
+          c = veg_pp%column(p)
+          l = veg_pp%landunit(p)
           sabg_snl_sum = 0._r8
 
           sub_surf_abs_SW(c) = 0._r8
@@ -719,7 +719,7 @@ contains
        
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
-          g = pft_pp%gridcell(p)
+          g = veg_pp%gridcell(p)
 
           ! NDVI and reflected solar radiation
 
@@ -756,7 +756,7 @@ contains
 
           ! diagnostic variables (downwelling and absorbed radiation partitioning) for history files
           ! (OPTIONAL)
-          c = pft_pp%column(p)
+          c = veg_pp%column(p)
           if (snl(c) < 0) then
              fsds_sno_vd(p) = forc_solad(g,1)
              fsds_sno_nd(p) = forc_solad(g,2)
@@ -782,7 +782,7 @@ contains
 
        do fp = 1,num_urbanp
           p = filter_urbanp(fp)
-          g = pft_pp%gridcell(p)
+          g = veg_pp%gridcell(p)
 
           local_secp1 = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
           local_secp1 = mod(local_secp1,isecspday)
@@ -930,7 +930,7 @@ contains
            ! If sun/shade big leaf code, nrad=1 and fluxes from SurfaceAlbedo
            ! are canopy integrated so that layer values equal big leaf values.
            
-           g = pft_pp%gridcell(p)
+           g = veg_pp%gridcell(p)
            
            do iv = 1, nrad(p)
               parsun_z(p,iv) = forc_solad(g,ipar)*fabd_sun_z(p,iv) + forc_solai(g,ipar)*fabi_sun_z(p,iv)

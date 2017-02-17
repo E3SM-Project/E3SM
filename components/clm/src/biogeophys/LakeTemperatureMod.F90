@@ -20,7 +20,7 @@ module LakeTemperatureMod
   use WaterfluxType     , only : waterflux_type
   use WaterstateType    , only : waterstate_type
   use ColumnType        , only : col_pp                
-  use PatchType         , only : pft_pp                
+  use VegetationType         , only : veg_pp                
   !    
   ! !PUBLIC TYPES:
   implicit none
@@ -321,7 +321,7 @@ contains
 
     do fp = 1, num_lakep
        p = filter_lakep(fp)
-       c = pft_pp%column(p)
+       c = veg_pp%column(p)
 
        ! fin(c) = betaprime * sabg(p) + forc_lwrad(c) - (eflx_lwrad_out(p) + &
        !     eflx_sh_tot(p) + eflx_lh_tot(p)) 
@@ -433,7 +433,7 @@ contains
     do j = 1, nlevlak
        do fp = 1, num_lakep
           p = filter_lakep(fp)
-          c = pft_pp%column(p)
+          c = veg_pp%column(p)
 
           ! If no eta from surface data,
           ! Set eta, the extinction coefficient, according to L Hakanson, Aquatic Sciences, 1995
@@ -535,7 +535,7 @@ contains
     do j = -nlevsno+1,1
        do fp = 1, num_lakep
           p = filter_lakep(fp)
-          c = pft_pp%column(p)
+          c = veg_pp%column(p)
 
           if (j >= jtop(c)) then
              if (j == jtop(c)) sabg_col(c) = sabg(p)
@@ -1024,7 +1024,7 @@ contains
     ! Check energy conservation.
     do fp = 1, num_lakep
        p = filter_lakep(fp)
-       c = pft_pp%column(p)
+       c = veg_pp%column(p)
        errsoi(c) = (ncvts(c)-ocvts(c)) / dtime - fin(c)
        if (abs(errsoi(c)) < 0.10_r8) then ! else send to Balance Check and abort
           eflx_sh_tot(p)    = eflx_sh_tot(p)    - errsoi(c)
