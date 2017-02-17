@@ -302,6 +302,50 @@ baroCamMoist.cmake
 
 
 
+thetah-test22.cmake
+              Dcmip 2012 test 2-2 for 20 levels and hydrostatic theta target. 
+              The test was made short, with only 500 timesteps and 20 vertical levels.
+              For non-BFB changes, run the same namelist thetah-test22.nl 
+              with two changes, nmax=36000 and output_frequency=36000
+              and 60 levels (executable theta-nlev60) and compare with this output (how?):
+                    
+ nstep=       36000  time=   3600.00000000000       [s]
+  u     =  -0.384211299593031E-01  0.844404012681270E+02  0.101595450732835E+09
+  v     =  -0.176396938958909E+01  0.176396938958285E+01  0.132224024810765E-06
+  w     =   0.000000000000000E+00  0.000000000000000E+00  0.000000000000000E+00
+  tdiag =   0.296938180065318E+03  0.301803787487702E+03  0.688851462598451E+09
+  dz(m) =  -0.206140102744447E+04  0.120757362913911E+05  0.110159098759704E+10
+      qv=   0.000000000000000E+00  0.000000000000000E+00  0.000000000000000E+00
+      ps=   0.971714587005650E+05  0.100023495894416E+06  0.383501005601515E+10
+      M =   0.101845602235248E+05 kg/m^2  0.998714270815195E+05 mb     
+     fu =  -0.189989782189504E+00  0.120957044300511E+00  0.804746918799042E+02
+     fv =  -0.670180874381933E-01  0.670180874383680E-01 -0.203499117177545E-08
+
+              Also, use ncl script dcmip2012-test22.ncl and plot u,T, and (maybe)
+              omega before and after non-BFF changes for the long run.
+              On skybridge on 8 nodes 1 long run takes 20 min.
+
+thetanh-test22.cmake
+              Dcmip 2012 test 2-2 for 20 levels and nonhydrostatic theta target.
+              The test was made short, with only 500 timesteps and 20 vertical levels.
+              For non-BFB changes, run the same namelist thetanh-test22.nl 
+              with two changes, nmax=36000 and output_frequency=36000
+              and 60 levels (executable theta-nlev60) and compare with this output (how?):
+
+ nstep=       36000  time=   3600.00000000000       [s]
+  u     =  -0.725676674864872E-01  0.797969901431164E+02  0.101600918127577E+09
+  v     =  -0.389293394936865E+01  0.389293394938721E+01  0.108819471059118E-06
+  w     =  -0.146294789824120E+02  0.152508606116617E+02  0.245050239414138E+04
+  tdiag =  -0.219039146676905E+01  0.365161947532301E+01  0.230498515487967E+07
+  dz(m) =   0.486425964652948E+03  0.509496261078774E+03  0.112894181311480E+10
+      qv=   0.000000000000000E+00  0.000000000000000E+00  0.000000000000000E+00
+      ps=   0.972857246390883E+05  0.100237423120880E+06  0.383499695894105E+10
+      M =   0.101845602235248E+05 kg/m^2  0.998714270815195E+05 mb     
+     fu =  -0.577204918333902E-02  0.587013372071801E-02 -0.346388583484244E+01
+     fv =  -0.343649040594542E-02  0.343649040587817E-02 -0.211566962028936E-08
+
+              Also, use ncl script dcmip2012-test22.ncl and plot u and T
+              before and after non-BFF changes for the long run.
 
 
 ======================================================================================
