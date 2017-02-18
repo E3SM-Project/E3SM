@@ -143,9 +143,7 @@ module mpas_block_decomp
                                    partial_global_graph_info % nVerticesTotal, ' cells.'
               call mpas_dmpar_abort(dminfo)
            end if
-     
-           allocate(global_cell_list(partial_global_graph_info % nVerticesTotal))
-  
+
            global_start(1) = 1
            do i=2,dminfo % nprocs
               global_start(i) = global_start(i-1) + local_nvertices(i-1)
