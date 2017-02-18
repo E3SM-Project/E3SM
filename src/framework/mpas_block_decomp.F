@@ -63,8 +63,7 @@ module mpas_block_decomp
       character (len=*), intent(in) :: blockFilePrefix, & !< Input: File prefix for block decomposition
                                        procFilePrefix !< Input: File prefix for processor decomposition
 
-      integer, dimension(:), pointer :: global_block_list
-      integer, dimension(:), pointer :: global_cell_list
+      integer, dimension(:), pointer :: global_list
       integer, dimension(:), pointer :: global_start
 
       integer, dimension(:), allocatable :: local_block_list
@@ -93,8 +92,7 @@ module mpas_block_decomp
       if(dminfo % total_blocks > 1) then
         allocate(local_nvertices(dminfo % nprocs))
         allocate(global_start(dminfo % nprocs))
-        allocate(global_cell_list(partial_global_graph_info % nVerticesTotal))
-        allocate(global_block_list(partial_global_graph_info % nVerticesTotal))
+        allocate(global_list(partial_global_graph_info % nVerticesTotal))
   
         if (dminfo % my_proc_id == IO_NODE) then
   
@@ -157,8 +155,7 @@ module mpas_block_decomp
               read(unit=iunit, fmt=*, iostat=err) global_block_id
               call mpas_get_owning_proc(dminfo, global_block_id, owning_proc)
   
-              global_cell_list(global_start(owning_proc+1)) = i
-              global_block_list(global_start(owning_proc+1)) = global_block_id
+              global_list(global_start(owning_proc+1)) = i
               global_start(owning_proc+1) = global_start(owning_proc+1) + 1
            end do
 
@@ -167,17 +164,38 @@ module mpas_block_decomp
               global_start(i) = global_start(i-1) + local_nvertices(i-1)
            end do
 
-           close(unit=iunit)
-
            call mpas_dmpar_bcast_ints(dminfo, dminfo % nprocs, local_nvertices)
            allocate(local_cell_list(local_nvertices(dminfo % my_proc_id + 1)))
            allocate(local_block_list(local_nvertices(dminfo % my_proc_id + 1)))
 
            call mpas_dmpar_scatter_ints(dminfo, dminfo % nprocs, local_nvertices(dminfo % my_proc_id + 1), &
-                                   global_start, local_nvertices, global_cell_list, local_cell_list)
+                                   global_start, local_nvertices, global_list, local_cell_list)
+
+           ! Reset global start for second read of global_block_list
+           global_start(1) = 1
+           do i=2,dminfo % nprocs
+              global_start(i) = global_start(i-1) + local_nvertices(i-1)
+           end do
+
+           rewind(unit=iunit)
+
+           do i=1,partial_global_graph_info % nVerticesTotal
+              read(unit=iunit, fmt=*) global_block_id
+              call mpas_get_owning_proc(dminfo, global_block_id, owning_proc)
+              global_list(global_start(owning_proc+1)) = global_block_id
+              global_start(owning_proc+1) = global_start(owning_proc+1) + 1
+           end do
+
+           ! Recompute global start after second read of global_block_list
+           global_start(1) = 0
+           do i=2,dminfo % nprocs
+              global_start(i) = global_start(i-1) + local_nvertices(i-1)
+           end do
 
            call mpas_dmpar_scatter_ints(dminfo, dminfo % nprocs, local_nvertices(dminfo % my_proc_id + 1), &
-                                   global_start, local_nvertices, global_block_list, local_block_list)
+                                   global_start, local_nvertices, global_list, local_block_list)
+
+           close(unit=iunit)
 
         else
 
@@ -186,10 +204,10 @@ module mpas_block_decomp
            allocate(local_block_list(local_nvertices(dminfo % my_proc_id + 1)))
   
            call mpas_dmpar_scatter_ints(dminfo, dminfo % nprocs, local_nvertices(dminfo % my_proc_id + 1), &
-                                   global_start, local_nvertices, global_cell_list, local_cell_list)
+                                   global_start, local_nvertices, global_list, local_cell_list)
 
            call mpas_dmpar_scatter_ints(dminfo, dminfo % nprocs, local_nvertices(dminfo % my_proc_id + 1), &
-                                   global_start, local_nvertices, global_block_list, local_block_list)
+                                   global_start, local_nvertices, global_list, local_block_list)
         end if
 
         if(blocks_per_proc == 0) then
@@ -241,8 +259,7 @@ module mpas_block_decomp
            deallocate(local_block_list)
            deallocate(local_nvertices)
            deallocate(global_start)
-           deallocate(global_cell_list)
-           deallocate(global_block_list)
+           deallocate(global_list)
         end if
       else
 
