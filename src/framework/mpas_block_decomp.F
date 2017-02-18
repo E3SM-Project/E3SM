@@ -47,7 +47,8 @@ module mpas_block_decomp
 !>  This routine determines a list of cells for each processor, and what blocks the live in.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_block_decomp_cells_for_proc(dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, block_count, numBlocks, explicitProcDecomp, blockFilePrefix, procFilePrefix)!{{{
+   subroutine mpas_block_decomp_cells_for_proc(dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, &
+                                               block_count, numBlocks, explicitProcDecomp, blockFilePrefix, procFilePrefix)!{{{
 
       implicit none
 
@@ -93,9 +94,9 @@ module mpas_block_decomp
         allocate(local_nvertices(dminfo % nprocs))
         allocate(global_start(dminfo % nprocs))
         allocate(global_list(partial_global_graph_info % nVerticesTotal))
-  
+
         if (dminfo % my_proc_id == IO_NODE) then
-  
+
            iunit = 50 + dminfo % my_proc_id
            if (dminfo % total_blocks < 10) then
               write(filename,'(a,i1)') trim(blockFilePrefix), dminfo % total_blocks
@@ -114,15 +115,15 @@ module mpas_block_decomp
            else if (dminfo % total_blocks < 100000000) then
               write(filename,'(a,i8)') trim(blockFilePrefix), dminfo % total_blocks
            end if
-         
+
            open(unit=iunit, file=trim(filename), form='formatted', status='old', iostat=istatus)
-     
+
            if (istatus /= 0) then
               write(stderrUnit,*) 'ERROR: Could not open block decomposition file for ',dminfo % total_blocks,' blocks.'
               write(stderrUnit,*) 'Filename: ',trim(filename)
               call mpas_dmpar_abort(dminfo)
            end if
-  
+
            local_nvertices(:) = 0
            do i=1,partial_global_graph_info % nVerticesTotal
               read(unit=iunit, fmt=*, iostat=err) global_block_id
@@ -148,13 +149,12 @@ module mpas_block_decomp
            do i=2,dminfo % nprocs
               global_start(i) = global_start(i-1) + local_nvertices(i-1)
            end do
-     
+
            rewind(unit=iunit)
-     
+
            do i=1,partial_global_graph_info % nVerticesTotal
               read(unit=iunit, fmt=*, iostat=err) global_block_id
               call mpas_get_owning_proc(dminfo, global_block_id, owning_proc)
-  
               global_list(global_start(owning_proc+1)) = i
               global_start(owning_proc+1) = global_start(owning_proc+1) + 1
            end do
@@ -202,7 +202,7 @@ module mpas_block_decomp
            call mpas_dmpar_bcast_ints(dminfo, dminfo % nprocs, local_nvertices)
            allocate(local_cell_list(local_nvertices(dminfo % my_proc_id + 1)))
            allocate(local_block_list(local_nvertices(dminfo % my_proc_id + 1)))
-  
+
            call mpas_dmpar_scatter_ints(dminfo, dminfo % nprocs, local_nvertices(dminfo % my_proc_id + 1), &
                                    global_start, local_nvertices, global_list, local_cell_list)
 
