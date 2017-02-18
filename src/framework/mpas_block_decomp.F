@@ -113,6 +113,8 @@ module mpas_block_decomp
               write(filename,'(a,i6)') trim(blockFilePrefix), dminfo % total_blocks
            else if (dminfo % total_blocks < 10000000) then
               write(filename,'(a,i7)') trim(blockFilePrefix), dminfo % total_blocks
+           else if (dminfo % total_blocks < 100000000) then
+              write(filename,'(a,i8)') trim(blockFilePrefix), dminfo % total_blocks
            end if
          
            open(unit=iunit, file=trim(filename), form='formatted', status='old', iostat=istatus)
