@@ -1036,7 +1036,7 @@
 	 <PROJECT>HiRes_EarthSys_2</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <mpirun mpilib="default">
-           <executable>runjob</executable>
+           <executable>/usr/bin/runjob</executable>
              <arguments>
                <arg name="label"> --label short</arg>
                <!-- Ranks per node!! -->
@@ -1063,7 +1063,7 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="MPI_TYPE_MAX">100000</env>
+      <env name="MPI_TYPE_MAX">10000</env>
       <env name="OMP_DYNAMIC">FALSE</env>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
