@@ -9,7 +9,6 @@ begin
   fall   = addfiles(fnames,"r")       ; Open netCDF files.	
 
   fcnt = dimsizes(fnames)
-  fps=fall[0];   file with ps
   f=fall[0];     f has zeta
   
   NE=f@ne
@@ -22,10 +21,10 @@ begin
   output_format = "pdf"
 
 
-  ntimes = dimsizes(fps->time)
-  nlev = dimsizes(fps->lev)
-  nlat = dimsizes(fps->lat)
-  nlon = dimsizes(fps->lon)
+  ntimes = dimsizes(f->time)
+  nlev = dimsizes(f->lev)
+  nlat = dimsizes(f->lat)
+  nlon = dimsizes(f->lon)
   print ("ntimes="+ntimes+" nlev="+nlev+" nlat x nlon "+nlat+"x"+nlon)
 
 
@@ -39,11 +38,12 @@ begin
   lasttime=firsttime
 
 
-  time = f->time
   wks = gsn_open_wks(output_format,"zeta")
   print ("Writing file zeta"+"."+output_format)
 
   do n=firsttime,lasttime,timeinc
+  do kf = 0,fcnt-1
+    f=fall[kf];     f has zeta
 
     res                     = True
     res@gsnMaximize         = True         ; Maximize size of plot in frame
@@ -103,8 +103,8 @@ begin
     xscalestr = sprintf("%.0f",xscale)
     
 
-    ps = fps->ps(n,:,:)
-    copyatt( ps, fps->ps(n,:,:))
+    ps = f->ps(n,:,:)
+    copyatt( ps, f->ps(n,:,:))
     if ( "Pa" .ne. ps@units) then
       print("converting ps to Pascals")
       ps=ps*100
@@ -146,6 +146,7 @@ begin
     print("Contour complete: "+res@tiMainString)
     
     
-end do 
+  end do 
+  end do 
 end
 
