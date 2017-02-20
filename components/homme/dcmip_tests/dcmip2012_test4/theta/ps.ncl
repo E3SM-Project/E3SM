@@ -8,8 +8,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 ;***********************************************************************;
 begin
 
-fnames =  systemfunc("ls movies/dcmip2012_test41.nc")
-;fnames =  systemfunc("ls -r x*/movies/dcmip2012_test41.nc")
+fnames =  systemfunc("ls movies/*dcmip2012_test41.nc")
  f      = addfiles(fnames,"r")       ; Open netCDF files.	
 
 

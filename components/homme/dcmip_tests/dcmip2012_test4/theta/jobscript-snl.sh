@@ -1,9 +1,9 @@
 #!/bin/tcsh 
 #
-#SBATCH --job-name d4
+#SBATCH --job-name dcmip4
 #SBATCH --account=FY150001
-#SBATCH -N 54
-#SBATCH --time=00:05:00
+#SBATCH -N 12
+#SBATCH --time=0:10:00
 #SBATCH -p ec
 
 
@@ -18,23 +18,14 @@ endif
 # 2 min on 54 nodes on skybridge
 # NH model x1000 case
 set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
-set namelist = nh-x1000.nl
+#set namelist = nh-x1.nl           # 2592000 timesteps, 54 nodes - 320min?
+#set namelist = nh-x10.nl          #  648000 timsteps,  54 nodes - 80min ?
+#set namelist = nh-x100.nl         #  64800  timesteps, 12 nodes - 51min 
+set namelist = nh-x1000.nl        #  6480 timesteps, 12 nodes - 5.9min
+#set namelist = h-x1.nl            #  4320 timesteps, 12 nodes, 3.3min
 
-# 320? minutes on 54 nodes on skybridge
-# NH model x1 case
-#set namelist = nh-x1.nl
-
-# 80 min on 54 nodes on skybridge
-# NH model x10 case
-#set namelist = nh-x10.nl
-
-# 15 min on 54 nodes on skybridge
-# NH model x100 case
-#set namelist = nh-x100.nl
-
-# <10 minutes on 12 nodes on skybridge
-# H  model x1 case
-#set namelist = h-x1.nl
+#set EXEC = ../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp        # set name of executable
+#set namelist = preqx-x1.nl   # 4320 timesteps,   12 nodes, 2.2min
 
 
 cp -f $namelist input.nl
@@ -43,5 +34,6 @@ mpirun -np $NCPU $EXEC < input.nl
 date
 
 
-cd movies
-ncl ../ps.ncl
+ncl ps.ncl
+ncl zeta.ncl
+
