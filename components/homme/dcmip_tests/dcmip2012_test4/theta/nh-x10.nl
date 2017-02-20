@@ -1,7 +1,7 @@
 &ctl_nl
-theta_hydrostatic_mode = .true.
+theta_hydrostatic_mode = .false.
 dcmip4_moist  = 0
-dcmip4_X      = 1000.0
+dcmip4_X      = 10.0
 vert_num_threads = 1
 NThreads=1
 partmethod    = 4
@@ -10,10 +10,9 @@ test_case     = "dcmip2012_test4"
 u_perturb = 1
 rotate_grid = 0
 ne=30
-qsize = 1
-nmax = 6480
-ndays          = 0
-statefreq=60
+qsize = 0
+nmax = 648000
+statefreq=6000
 runtype       = 0
 mesh_file='/dev/null'
 tstep=0.2
@@ -23,11 +22,11 @@ tstep_type = 5
 energy_fixer  = -1
 integration   = "explicit"
 smooth        = 0
-nu=1e6
-nu_div=1e6
-nu_p=1e6
-nu_q=1e6
-nu_s=1e6
+nu=1e12
+nu_div=1e12
+nu_p=1e12
+nu_q=1e12
+nu_s=1e12
 nu_top = 0
 se_ftype     = 0
 limiter_option = 8
@@ -36,21 +35,6 @@ hypervis_scaling=0
 hypervis_order = 2
 hypervis_subcycle=3
 hypervis_subcycle=3
-/
-&solver_nl
-precon_method = "identity"
-maxits        = 500
-tol           = 1.e-9
-/
-&filter_nl
-filter_type   = "taylor"
-transfer_type = "bv"
-filter_freq   = 0
-filter_mu     = 0.04D0
-p_bv          = 12.0D0
-s_bv          = .666666666666666666D0
-wght_fm       = 0.10D0
-kcut_fm       = 2
 /
 &vert_nl
 vform         = "ccm"
@@ -69,13 +53,14 @@ profile_single_file             = .true.
 ! interp_nlon = 1024
  interp_gridtype=2
 
- output_timeunits=0              ! 1 is days, 2 is hours?
- output_frequency=432
- output_start_time=3024
+ output_timeunits=0              ! 1 is days, 2- hours, 0 - tsteps
+ output_frequency=43200
+ output_start_time=302400
  output_end_time=300000000
  output_varnames1='ps','zeta','u','v','T'
  io_stride=8
  output_type = 'netcdf'
+ output_prefix= 'nonhydro-X10-'
 /
 
 
