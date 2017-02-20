@@ -427,6 +427,7 @@ module mpas_log
       integer :: messageTypeHere !< local version of messageType
       character(len=16) :: messagePrefix  !< the "keyword" prepended before some message types
       logical :: flushLog !< Local variable determining if the output log should be flushed
+      character(len=strKind) :: messageExpanded !< message after expansion of $ variable insertions
 
       ierr = 0
 
@@ -448,7 +449,7 @@ module mpas_log
 
 
       ! Construct message by expanding variable values as needed and inserting message type prefix
-      ! TODO
+      call log_expand_string(message, messageExpanded, intArgs=intArgs, logicArgs=logicArgs, realArgs=realArgs, expArgs=expArgs)
 
       ! Determine message prefix
       select case (messageTypeHere)
@@ -474,9 +475,9 @@ module mpas_log
             !    We have to treat MPAS_LOG_OUT messages separately from others because that type
             !    does not have a prefix and we want to add a space after the trimmed prefix for other types.
             if (messageTypeHere == MPAS_LOG_OUT) then
-               write(mpas_log_info % logUnit, '(a)') trim(message)
+               write(mpas_log_info % logUnit, '(a)') trim(messageExpanded)
             else
-               write(mpas_log_info % logUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(message)
+               write(mpas_log_info % logUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(messageExpanded)
             endif
 
             ! Optionally flush the buffer (only attempt if the file is active)
@@ -523,7 +524,7 @@ module mpas_log
             endif
 
             ! Now we need to repeat the message to the err file
-            write(mpas_log_info % errUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(message)
+            write(mpas_log_info % errUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(messageExpanded)
             flush(mpas_log_info % errUnit)  ! Error messages are flushed immediately!
 
             ! If this is a critical error, we need to kill the model
@@ -681,6 +682,165 @@ module mpas_log
 
    !--------------------------------------------------------------------
    end subroutine log_abort
+
+
+   !-----------------------------------------------------------------------
+   !  routine log_expand_string
+   !
+   !> \brief This is a utility routine that inserts formatted variables into a string.
+   !> \author Michael Duda, Doug Jacobsen, Matt Hoffman
+   !> \date   02/20/2017
+   !> \details This routine inserts formatted variables into a string.
+   !>   The variables to be expanded are represented with a '$' symbol followed
+   !>   by one of these indicators:
+   !>   $i -> integer, formatted to be length of integer
+   !>   $l -> logical, fomatted as 'TRUE' or 'FALSE'
+   !>   $f -> float, formatted as 9 digits of precision for SP mode, 17 for DP mode
+   !>   $e -> float represented in scientific notation, same precision as float
+   !>   The variable values to expand are supplied as optional arguments to this
+   !>   routine.  The substitution indicators are expanded as they are encountered.
+   !>   Thus, extra variable values will be ignored.  Too few variable values
+   !>   will be skipped.  I.e., no error is returned if the variable numbers do
+   !>   not match the number of substitution instances.
+   !>   If the user prefers more specific formatting, they have to do it external
+   !>   to this routine in a local string variable.  Similarly, character variables
+   !>   can be handled by the string concatenation command (//).
+   !-----------------------------------------------------------------------
+   subroutine log_expand_string(inString, outString, intArgs, logicArgs, realArgs, expArgs)
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      character (len=*), intent(in) :: inString  !< Input: message to be expanded
+
+      integer, dimension(:), intent(in), optional :: intArgs
+         !< Input, Optional: array of integer variable values to be used in expansion
+      logical, dimension(:), intent(in), optional :: logicArgs
+         !< Input, Optional: array of logical variable values to be used in expansion
+      real(kind=RKIND), dimension(:), intent(in), optional :: realArgs
+         !< Input, Optional: array of real variable values to be used in expansion
+      real(kind=RKIND), dimension(:), intent(in), optional :: expArgs
+         !< Input, Optional: array of real variable values to be used in expansion to be formatted with exponential notation
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      character (len=StrKIND), intent(out) :: outString  !< Output: expanded version of input message after expansion
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: i, curLen
+      integer :: nInts, nLogicals, nReals, nExps  !< the length of the variable arrays passed in
+      integer :: iInt, iLogical, iReal, iExp !< Counter for the current index into each variable array
+
+      character (len=ShortStrKIND) :: varPart
+      logical :: charExpand
+
+      ! Initialize the current index for each variable array to 1
+      iInt = 1
+      iLogical = 1
+      iReal = 1
+!      iExp = 1
+
+      ! For each variable array, get the size.  Size is 0 if not present.
+      if (present(intArgs)) then
+         nInts = size(intArgs)
+      else
+         nInts = 0
+      endif
+
+      if (present(logicArgs)) then
+         nLogicals = size(logicArgs)
+      else
+         nLogicals = 0
+      endif
+
+      if (present(realArgs)) then
+         nReals = size(realArgs)
+      else
+         nReals = 0
+      endif
+
+!      if (present(expArgs)) then
+!         nExps = size(expArgs)
+!      else
+!         nExps = 0
+!      endif
+
+      ! Initialize strings
+      write(outString,*) ''
+      write(varPart,*) ''
+
+      !Initialize char info
+      curLen = 0
+      charExpand = .false.
+
+      ! Loop over character positions in inString
+      do i = 1, len_trim(inString)
+         if (inString(i:i) == '$' ) then
+             charExpand = .true.
+         else if (inString(i:i) /= '$') then
+             if (charExpand) then
+                select case (inString(i:i))
+                   case ('i')
+                      ! make the format large enough to include a large integer (up to 17 digits for 8-byte int)
+                      ! it will be trimmed below
+                      if (iInt <= nInts) then
+                         write(varPart,'(i17)') intArgs(iInt)
+                         iInt = iInt + 1
+                      else
+                         varPart = ''
+                      endif
+                   case ('l')
+                      if (iLogical <= nLogicals) then
+                         if (logicArgs(iLogical)) then
+                            write(varPart ,'(a)') "TRUE"
+                         else
+                            write(varPart ,'(a)') "FALSE"
+                         endif
+                         iLogical = iLogical + 1
+                      else
+                         varPart = ''
+                      endif
+                   case ('r')
+                      if (iReal <= nReals) then
+                         write(varPart,'(G0.12)') realArgs(iReal)
+                         iReal = iReal + 1
+                      else
+                         varPart = ''
+                      endif
+!                   case ('e')
+!                      if (iExp <= nExps) then
+!                         write(varPart,'()') expArgs(iExp)
+!                         iExp = iExp + 1
+!                      else
+!                         varPart = ''
+!                      endif
+                   case default
+                      ! Ignore this error
+                      varPart = ''
+                end select
+                outString = trim(outString) // trim(adjustl(varPart))
+
+                curLen = len_trim(outString)
+                charExpand = .false.
+             else
+                outString(curLen+1:curLen+1) = inString(i:i)
+                curLen = curLen+1
+             end if
+         else
+         end if
+      end do
+
+   !--------------------------------------------------------------------
+   end subroutine log_expand_string
 
 
 end module mpas_log
