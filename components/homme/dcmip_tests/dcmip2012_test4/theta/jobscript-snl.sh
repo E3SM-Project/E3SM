@@ -1,9 +1,9 @@
 #!/bin/tcsh 
 #
-#SBATCH --job-name d21
+#SBATCH --job-name d4
 #SBATCH --account=FY150001
-#SBATCH -N 25
-#SBATCH --time=3:00:00
+#SBATCH -N 54
+#SBATCH --time=00:05:00
 #SBATCH -p ec
 
 
@@ -15,14 +15,27 @@ if ( ${?SLURM_NNODES} ) then   # redsky
     @ NCPU /= $OMP_NUM_THREADS
 endif
 
-# NH model
+# 2 min on 54 nodes on skybridge
+# NH model x1000 case
 set EXEC = ../../../test_execs/theta-nlev30/theta-nlev30
-set namelist = namelist-nh-default.nl
+set namelist = nh-x1000.nl
 
+# 320? minutes on 54 nodes on skybridge
+# NH model x1 case
+#set namelist = nh-x1.nl
 
-# hydrostatic preqx
-#set EXEC = ../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp        # set name of executable
-#set namelist = namelist-default.nl
+# 80 min on 54 nodes on skybridge
+# NH model x10 case
+#set namelist = nh-x10.nl
+
+# 15 min on 54 nodes on skybridge
+# NH model x100 case
+#set namelist = nh-x100.nl
+
+# <10 minutes on 12 nodes on skybridge
+# H  model x1 case
+#set namelist = h-x1.nl
+
 
 cp -f $namelist input.nl
 date

@@ -14,5 +14,5 @@
 
 #EXEC=../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp        # set name of executable
 EXEC=../../../test_execs/theta-nlev30/theta-nlev30
-srun -n 600 $EXEC < ./namelist-default.nl                               # launch simulation
+srun -n 600 $EXEC < ./nh-x1000.nl                               # launch simulation
 

@@ -6,4 +6,4 @@
 
 #EXEC=../../../test_execs/preqx-nlev30-interp/preqx-nlev30-interp        # set name of executable
 EXEC=../../../test_execs/theta-nlev30/theta-nlev30
-openmpiexec -n 6 $EXEC < ./namelist-lowres.nl                           # launch simulation
+openmpiexec -n 6 $EXEC < ./nh-x1000.nl                           # launch simulation

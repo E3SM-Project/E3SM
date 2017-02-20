@@ -10,9 +10,8 @@ test_case     = "dcmip2012_test4"
 u_perturb = 1
 rotate_grid = 0
 ne=30
-qsize = 1
+qsize = 0
 nmax = 6480
-ndays          = 0
 statefreq=60
 runtype       = 0
 mesh_file='/dev/null'
@@ -37,21 +36,6 @@ hypervis_order = 2
 hypervis_subcycle=3
 hypervis_subcycle=3
 /
-&solver_nl
-precon_method = "identity"
-maxits        = 500
-tol           = 1.e-9
-/
-&filter_nl
-filter_type   = "taylor"
-transfer_type = "bv"
-filter_freq   = 0
-filter_mu     = 0.04D0
-p_bv          = 12.0D0
-s_bv          = .666666666666666666D0
-wght_fm       = 0.10D0
-kcut_fm       = 2
-/
 &vert_nl
 vform         = "ccm"
 vfile_mid = '../vcoord/camm-30.ascii'
@@ -69,13 +53,14 @@ profile_single_file             = .true.
 ! interp_nlon = 1024
  interp_gridtype=2
 
- output_timeunits=0              ! 1 is days, 2 is hours?
+ output_timeunits=0              ! 1 is days, 2- hours, 0 - tsteps
  output_frequency=432
  output_start_time=3024
  output_end_time=300000000
  output_varnames1='ps','zeta','u','v','T'
  io_stride=8
  output_type = 'netcdf'
+ output_prefix= 'nonhydro-X1000-'
 /
 
 
