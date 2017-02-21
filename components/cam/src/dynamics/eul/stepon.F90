@@ -271,6 +271,8 @@ subroutine stepon_run3( ztodt, cam_out, phys_state, dyn_in, dyn_out )
      
      ! Update IOP properties e.g. omega, divT, divQ
      
+     ! Update IOP properties e.g. omega, divT, divQ
+     
      iop_update_surface = .false.
      if (doiopupdate) then
        call scm_setinitial()
