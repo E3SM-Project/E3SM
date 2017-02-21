@@ -100,12 +100,12 @@ for mct, etc.
   -C              => runtime array bounds checking (runs slow)
   -qinitauto=...  => initializes automatic variables
   -->
-  <ADD_CPPDEFS> -DFORTRAN_SAME </ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DFORTRAN_SAME -DCPRIBM</ADD_CPPDEFS>
   <CPRE>-WF,-D</CPRE>
-  <CFLAGS> -g -qfullpath -qmaxmem=-1 </CFLAGS>
+  <CFLAGS> -g -qfullpath -qmaxmem=-1 -qphsinfo </CFLAGS>
   <FIXEDFLAGS>  -qsuffix=f=f -qfixed=132 </FIXEDFLAGS>
   <FREEFLAGS> -qsuffix=f=f90:cpp=F90  </FREEFLAGS>
-  <FFLAGS> -g -qfullpath -qmaxmem=-1 </FFLAGS>
+  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qphsinfo </FFLAGS>
   <FC_AUTO_R8> -qrealsize=8 </FC_AUTO_R8>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -Q </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
@@ -893,7 +893,7 @@ for mct, etc.
 
 
 <compiler COMPILER="ibm" OS="BGQ">
-  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush </FFLAGS>
+  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush -qphsinfo </FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -Q </ADD_FFLAGS>
   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
   <CONFIG_ARGS> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </CONFIG_ARGS>
