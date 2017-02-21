@@ -1684,10 +1684,10 @@
 	<command name="load"> esmf-6.3.0rp1-ncdfio-uni-O</command>
       </modules>
       <modules compiler="pgi">
-	<command name="load">pgi/16.5</command>
+	<command name="load">pgi/15.10</command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">gnu/6.1.0</command>
+	<command name="load">gnu/5.2.0</command>
       </modules>
       <modules mpilib="mpi-serial">
 	<command name="load">netcdf/4.3.3.1</command>
