@@ -60,8 +60,8 @@ module subcol
 !   use subcol_CloudObj, only: cloudobj_scheme_name, subcol_register_CloudObj, &
 !                              subcol_init_CloudObj, subcol_gen_CloudObj
 !   use subcol_CloudObj, only: subcol_ptend_avg_CloudObj
-!   use subcol_SILHS,    only: subcol_register_SILHS, subcol_init_SILHS,       &
-!                              subcol_gen_SILHS
+    use subcol_SILHS,    only: subcol_register_SILHS, subcol_init_SILHS,       &
+                               subcol_gen_SILHS, subcol_ptend_avg_SILHS
 !   use subcol_vamp,     only: subcol_gen_vamp, subcol_register_vamp, subcol_init_vamp
 
    implicit none
@@ -91,8 +91,8 @@ contains
    subroutine subcol_readnl(nlfile)
       use subcol_utils,    only: subcol_get_scheme, subcol_utils_readnl
       use subcol_tstcp,    only: subcol_readnl_tstcp
-!      use subcol_SILHS,    only: subcol_readnl_SILHS
-!      use subcol_vamp,     only: subcol_readnl_vamp
+      use subcol_SILHS,    only: subcol_readnl_SILHS
+!     use subcol_vamp,     only: subcol_readnl_vamp
 
       character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -108,8 +108,8 @@ contains
       select case(trim(subcol_scheme_init))
       case('tstcp')
          call subcol_readnl_tstcp(nlfile)
-!      case ('SILHS')
-!         call subcol_readnl_SILHS(nlfile)
+      case ('SILHS')
+         call subcol_readnl_SILHS(nlfile)
 !      case (cloudobj_scheme_name)
 !         call subcol_readnl_CloudObj(nlfile)
 !      case ('vamp')
@@ -130,8 +130,8 @@ contains
       select case(subcol_get_scheme())
          case('tstcp')
             call subcol_register_tstcp()
-!         case ('SILHS')
-!            call subcol_register_SILHS()
+         case ('SILHS')
+            call subcol_register_SILHS()
 !         case (cloudobj_scheme_name)
 !            call subcol_register_CloudObj()
 !         case ('vamp')
@@ -214,8 +214,8 @@ contains
       select case(trim(subcol_scheme_init))
         case ('tstcp')
            ! none needed for this scheme
-!        case ('SILHS')
-!           call subcol_init_SILHS(pbuf2d)
+        case ('SILHS')
+           call subcol_init_SILHS(pbuf2d)
 !        case (cloudobj_scheme_name)
 !           call subcol_init_CloudObj(pbuf2d)
 !        case ('vamp')
@@ -267,8 +267,8 @@ contains
       select case(trim(subcol_scheme_gen))
          case('tstcp')
             call subcol_gen_tstcp(state, tend, state_sc, tend_sc, pbuf)
-!         case ('SILHS')
-!            call subcol_gen_SILHS(state, tend, state_sc, tend_sc, pbuf)
+         case ('SILHS')
+            call subcol_gen_SILHS(state, tend, state_sc, tend_sc, pbuf)
 !         case (cloudobj_scheme_name)
 !            call subcol_gen_CloudObj(state, tend, state_sc, tend_sc, pbuf)
 !         case ('vamp')
@@ -441,6 +441,8 @@ contains
       select case(trim(subcol_scheme_avg))
          case ('tstcp')
             call subcol_ptend_avg_tstcp(ptend_sc, ngrdcol, lchnk, ptend)
+         case ('SILHS')
+            call subcol_ptend_avg_SILHS(ptend_sc, ngrdcol, lchnk, ptend)
          case default
             ! If filters and/or weights have been set, they are automatically used by this averager
             call subcol_ptend_avg_shr(ptend_sc, ngrdcol, lchnk, ptend, is_filter_set(), is_weight_set())

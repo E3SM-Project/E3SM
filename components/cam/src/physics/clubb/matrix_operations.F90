@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: matrix_operations.F90 7016 2014-07-07 16:48:40Z betlej@uwm.edu $
+! $Id: matrix_operations.F90 7655 2015-04-29 19:22:26Z raut@uwm.edu $
 !===============================================================================
 module matrix_operations
 
@@ -8,8 +8,8 @@ module matrix_operations
 
   public :: symm_covar_matrix_2_corr_matrix, Cholesky_factor, &
     row_mult_lower_tri_matrix, print_lower_triangular_matrix, &
-    get_lower_triangular_matrix, set_lower_triangular_matrix_dp, &
-    set_lower_triangular_matrix, mirror_lower_triangular_matrix
+    get_lower_triangular_matrix, set_lower_triangular_matrix, &
+    mirror_lower_triangular_matrix
 
   private :: Symm_matrix_eigenvalues
 
@@ -29,7 +29,7 @@ module matrix_operations
 !-----------------------------------------------------------------------
 
     use clubb_precision, only: &
-      dp ! double precision
+      core_rknd ! double precision
 
     implicit none
 
@@ -39,11 +39,11 @@ module matrix_operations
     ! Input Variables
     integer, intent(in) :: ndim
 
-    real( kind = dp ), dimension(ndim,ndim), intent(in) :: &
+    real( kind = core_rknd ), dimension(ndim,ndim), intent(in) :: &
       covar ! Covariance Matrix [units vary]
 
     ! Output Variables
-    real( kind = dp ), dimension(ndim,ndim), intent(out) :: & 
+    real( kind = core_rknd ), dimension(ndim,ndim), intent(out) :: & 
       corr ! Correlation Matrix [-]
 
     ! Local Variables
@@ -51,7 +51,7 @@ module matrix_operations
 
     ! ---- Begin Code ----
 
-    corr = 0._dp ! Initialize to 0
+    corr = 0._core_rknd ! Initialize to 0
 
     do i = 1, ndim
       do j = 1, i
@@ -71,7 +71,7 @@ module matrix_operations
 !-----------------------------------------------------------------------
 
     use clubb_precision, only: &
-      dp ! double precision
+      core_rknd ! double precision
 
     implicit none
 
@@ -79,15 +79,15 @@ module matrix_operations
     ! Input Variables
     integer, intent(in) :: ndim
 
-    real( kind = dp ), dimension(ndim), intent(in) :: & 
+    real( kind = core_rknd ), dimension(ndim), intent(in) :: & 
       xvector ! Factors to be multiplied across a row [units vary]
 
     ! Input Variables
-    real( kind = dp ), dimension(ndim,ndim), intent(in) :: &
+    real( kind = core_rknd ), dimension(ndim,ndim), intent(in) :: &
       tmatrix_in ! nxn matrix (usually a correlation matrix) [units vary]
 
     ! Output Variables
-    real( kind = dp ), dimension(ndim,ndim), intent(inout) :: &
+    real( kind = core_rknd ), dimension(ndim,ndim), intent(inout) :: &
       tmatrix_out ! nxn matrix (usually a covariance matrix) [units vary]
 
     ! Local Variables
@@ -123,13 +123,13 @@ module matrix_operations
       fstderr ! Constant
 
     use clubb_precision, only: & 
-      dp, & ! double precision
       core_rknd
 
     implicit none
 
     ! External
-    external :: dpotrf, dpoequ, dlaqsy ! LAPACK subroutines
+    external :: dpotrf, dpoequ, dlaqsy, & ! LAPACK subroutines
+                spotrf, spoequ, slaqsy
 
     ! Constant Parameters
     integer, parameter :: itermax = 10 ! Max iterations of the modified method
@@ -140,26 +140,28 @@ module matrix_operations
     ! Input Variables
     integer, intent(in) :: ndim
 
-    real( kind = dp ), dimension(ndim,ndim), intent(in) :: a_input
+    real( kind = core_rknd ), dimension(ndim,ndim), intent(in) :: a_input
 
     ! Output Variables
-    real( kind = dp ), dimension(ndim), intent(out) :: a_scaling
+    real( kind = core_rknd ), dimension(ndim), intent(out) :: a_scaling
 
-    real( kind = dp ), dimension(ndim,ndim), intent(out) :: a_Cholesky
+    real( kind = core_rknd ), dimension(ndim,ndim), intent(out) :: a_Cholesky
 
     logical, intent(out) :: l_scaled
 
     ! Local Variables
-    real( kind = dp ), dimension(ndim) :: a_eigenvalues
-    real( kind = dp ), dimension(ndim,ndim) ::  a_corr, a_scaled
+    real( kind = core_rknd ), dimension(ndim) :: a_eigenvalues
+    real( kind = core_rknd ), dimension(ndim,ndim) ::  a_corr, a_scaled
 
-    real( kind = dp ) :: tau, d_smallest
+    real( kind = core_rknd ) :: tau, d_smallest
 
-    real( kind = dp ) :: amax, scond
+    real( kind = core_rknd ) :: amax, scond
     integer :: info
     integer :: i, j, iter
 
     character :: equed
+
+    logical :: l_dp
 
     ! ---- Begin code ----
 
@@ -175,12 +177,28 @@ module matrix_operations
 
     equed = 'N'
 
+    if ( kind( 0.0_core_rknd ) == kind( 0.0d0 ) ) then
+      l_dp = .true.
+    else if ( kind( 0.0_core_rknd ) == kind( 0.0 ) ) then
+      l_dp = .false.
+    else
+      stop "Precision is not single or double precision in Cholesky_factor"
+    end if
+
     ! Compute scaling for a_input
-    call dpoequ( ndim, a_input, ndim, a_scaling, scond, amax, info )
+    if ( l_dp ) then
+      call dpoequ( ndim, a_input, ndim, a_scaling, scond, amax, info )
+    else
+      call spoequ( ndim, a_input, ndim, a_scaling, scond, amax, info )
+    end if
 
     if ( info == 0 ) then
       ! Apply scaling to a_input
-      call dlaqsy( 'Lower', ndim, a_scaled, ndim, a_scaling, scond, amax, equed )
+      if ( l_dp ) then
+        call dlaqsy( 'Lower', ndim, a_scaled, ndim, a_scaling, scond, amax, equed )
+      else
+        call slaqsy( 'Lower', ndim, a_scaled, ndim, a_scaling, scond, amax, equed )
+      end if
     end if
 
     ! Determine if scaling was necessary
@@ -193,7 +211,12 @@ module matrix_operations
     end if
 
     do iter = 1, itermax
-      call dpotrf( 'Lower', ndim, a_Cholesky, ndim, info )
+
+      if ( l_dp ) then
+        call dpotrf( 'Lower', ndim, a_Cholesky, ndim, info )
+      else
+        call spotrf( 'Lower', ndim, a_Cholesky, ndim, info )
+      end if
 
       select case( info )
       case( :-1 )
@@ -279,7 +302,7 @@ module matrix_operations
           if ( d_smallest > a_Cholesky(i,i) ) d_smallest = a_Cholesky(i,i)
         end do
         ! Use the smallest element * d_coef * iteration
-        tau = d_smallest * real(d_coef, kind = dp) * real( iter, kind=dp ) 
+        tau = d_smallest * d_coef * real( iter, kind=core_rknd ) 
 
 !       print *, "tau =", tau, "d_smallest = ", d_smallest
 
@@ -322,12 +345,12 @@ module matrix_operations
       fstderr ! Constant
 
     use clubb_precision, only: &
-      dp ! double precision
+      core_rknd ! double precision
 
     implicit none
 
     ! External
-    external :: dsyev ! LAPACK subroutine
+    external :: dsyev, ssyev ! LAPACK subroutine(s)
 
     ! Parameters
     integer, parameter :: &
@@ -336,15 +359,15 @@ module matrix_operations
     ! Input Variables
     integer, intent(in) :: ndim
 
-    real( kind = dp ), dimension(ndim,ndim), intent(in) :: a_input
+    real( kind = core_rknd ), dimension(ndim,ndim), intent(in) :: a_input
 
     ! Output Variables
-    real( kind = dp ), dimension(ndim), intent(out) :: a_eigenvalues
+    real( kind = core_rknd ), dimension(ndim), intent(out) :: a_eigenvalues
 
     ! Local Variables
-    real( kind = dp ), dimension(ndim,ndim) :: a_scratch
+    real( kind = core_rknd ), dimension(ndim,ndim) :: a_scratch
 
-    real( kind = dp ), dimension(lwork) :: work
+    real( kind = core_rknd ), dimension(lwork) :: work
 
     integer :: info
 !   integer :: i, j
@@ -360,8 +383,15 @@ module matrix_operations
 !   end do
 !   pause
 
-    call dsyev( 'No eigenvectors', 'Lower', ndim, a_scratch, ndim, &
-                a_eigenvalues, work, lwork, info )
+    if ( kind( 0.0_core_rknd ) == kind( 0.0d0 ) ) then
+      call dsyev( 'No eigenvectors', 'Lower', ndim, a_scratch, ndim, &
+                  a_eigenvalues, work, lwork, info )
+    else if ( kind( 0.0_core_rknd ) == kind( 0.0 ) ) then
+      call ssyev( 'No eigenvectors', 'Lower', ndim, a_scratch, ndim, &
+                  a_eigenvalues, work, lwork, info )
+    else
+      stop "Precision is not single or double in Symm_matrix_eigenvalues"
+    end if
 
     select case( info )
     case( :-1 )
@@ -421,50 +451,7 @@ module matrix_operations
 
     return
   end subroutine set_lower_triangular_matrix
-
 !-------------------------------------------------------------------------------
-  subroutine set_lower_triangular_matrix_dp( d_variables, index1, index2, xpyp, &
-                                             matrix )
-! Description:
-!   Set a value for the lower triangular portion of a matrix.
-! References:
-!   None
-!-------------------------------------------------------------------------------
-
-    use clubb_precision, only: &
-      dp ! double precision
-
-    implicit none
-
-    ! External
-    intrinsic :: max, min
-
-    ! Input Variables
-    integer, intent(in) :: &
-      d_variables, & ! Number of variates
-      index1, index2 ! Indices for 2 variates (the order doesn't matter)
-
-    real( kind = dp ), intent(in) :: &
-      xpyp ! Value for the matrix (usually a correlation or covariance) [units vary]
-
-    ! Input/Output Variables
-    real( kind = dp ), dimension(d_variables,d_variables), intent(inout) :: &
-      matrix ! The lower triangular matrix
-
-    integer :: i,j
-
-    ! ---- Begin Code ----
-
-    ! Reverse these to set the values of upper triangular matrix
-    i = max( index1, index2 )
-    j = min( index1, index2 )
-
-    if( i > 0 .and. j > 0 ) then
-      matrix(i,j) = xpyp
-    end if
-
-    return
-  end subroutine set_lower_triangular_matrix_dp
 
 !-------------------------------------------------------------------------------
   subroutine get_lower_triangular_matrix( d_variables, index1, index2, matrix, &

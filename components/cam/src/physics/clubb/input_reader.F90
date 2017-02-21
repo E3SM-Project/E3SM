@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!$Id: input_reader.F90 6849 2014-04-22 21:52:30Z charlass@uwm.edu $
+!$Id: input_reader.F90 8014 2016-03-12 00:54:18Z raut@uwm.edu $
 !===============================================================================
 module input_reader
 
@@ -41,7 +41,7 @@ module input_reader
     character(len=30) :: dim_name           ! Name of the dimension that the
     !                                         variable varies along
 
-    real( kind = core_rknd ), dimension(:), pointer :: values   ! Values of that variable
+    real( kind = core_rknd ), dimension(:), allocatable :: values   ! Values of that variable
 
   end type one_dim_read_var
 
@@ -57,7 +57,7 @@ module input_reader
     character(len=30) :: dim2_name           ! Name of the other variable that
     !                                          the variable varies along
 
-    real( kind = core_rknd ), dimension(:,:), pointer :: values  ! Values of that variable
+    real( kind = core_rknd ), dimension(:,:), allocatable :: values  ! Values of that variable
 
   end type two_dim_read_var
 
@@ -525,7 +525,7 @@ module input_reader
     implicit none
 
     ! External functions
-    intrinsic :: associated
+    intrinsic :: allocated
 
     ! Input Variable(s)
     integer, intent(in) :: num_vars ! Number of elements in one_dim_vars
@@ -540,7 +540,7 @@ module input_reader
 
     do i=1, num_vars
 
-      if ( associated( one_dim_vars(i)%values ) ) then
+      if ( allocated( one_dim_vars(i)%values ) ) then
 
         deallocate( one_dim_vars(i)%values )
 
@@ -564,7 +564,7 @@ module input_reader
     implicit none
 
     ! External Functions
-    intrinsic :: associated
+    intrinsic :: allocated
 
     ! Input Variable(s)
     integer, intent(in) :: num_vars ! Number of elements in one_dim_vars
@@ -582,7 +582,7 @@ module input_reader
 
     do i=1, num_vars
 
-      if ( associated( two_dim_vars(i)%values ) ) then
+      if ( allocated( two_dim_vars(i)%values ) ) then
 
         deallocate(two_dim_vars(i)%values)
 
@@ -590,7 +590,7 @@ module input_reader
 
     end do
 
-    if ( associated( other_dim%values ) ) then
+    if ( allocated( other_dim%values ) ) then
 
       deallocate(other_dim%values)
 

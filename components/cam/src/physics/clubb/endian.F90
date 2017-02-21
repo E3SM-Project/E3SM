@@ -1,5 +1,5 @@
 !----------------------------------------------------------------------
-! $Id: endian.F90 6849 2014-04-22 21:52:30Z charlass@uwm.edu $
+! $Id: endian.F90 7920 2015-11-07 04:01:20Z raut@uwm.edu $
 !----------------------------------------------------------------------
 module endian
 
@@ -25,7 +25,7 @@ module endian
 
   private ! Default scope
   ! External
-  intrinsic :: selected_real_kind, selected_int_kind, ichar, transfer
+  intrinsic :: selected_int_kind, ichar, transfer
 
   ! Parameters
   integer, parameter :: &
@@ -92,7 +92,12 @@ module endian
 
     IMPLICIT NONE
 
-    REAL(KIND=selected_real_kind(6)), INTENT(INOUT):: realInOut      ! a single 32 bit, 4 byte
+    ! Added by Eric Raut, Nov 2015
+    integer, parameter :: &
+      sp = selected_real_kind( 6 ), & ! 32-bit floating point kind
+      int32 = selected_int_kind( 9 )  ! 32-bit integer kind
+
+    REAL(KIND=sp), INTENT(INOUT):: realInOut      ! a single 32 bit, 4 byte
                                                    ! REAL data element
 !   Modified 8/1/05 
 !   I found transfer does not work on pgf90 when -r8 is used and the mold
@@ -108,8 +113,8 @@ module endian
 !----------------------------------------------------------------------
 ! Local variables (generic 32 bit INTEGER spaces):
 
-    INTEGER(KIND=4)                               :: i_element
-    INTEGER(KIND=4)                               :: i_element_br
+    INTEGER(KIND=int32)                               :: i_element
+    INTEGER(KIND=int32)                               :: i_element_br
 !----------------------------------------------------------------------
 ! Transfer 32 bits of realIn to generic 32 bit INTEGER space:
     i_element = TRANSFER( realInOut, i_element )
@@ -133,17 +138,25 @@ module endian
 !   This is just a modification of the above routine for 64 bit data
 !-------------------------------------------------------------------------------
 
+    ! Added by Eric Raut, Nov 2015
+    use clubb_precision, only: &
+      dp      ! Constant (64-bit floating point kind)
+
     implicit none
+
+    ! Added by Eric Raut, Nov 2015
+    integer, parameter :: &
+      int64 = selected_int_kind( 18 )  ! 64-bit integer kind
 
     ! External
     intrinsic :: mvbits, transfer
 
-    real(kind=selected_real_kind(12)), intent(inout) :: realInOut   ! a single 64 bit, 8 byte
+    real(kind=dp), intent(inout) :: realInOut   ! a single 64 bit, 8 byte
                                                    ! REAL data element
     ! Local variables (generic 64 bit INTEGER spaces):
 
-    integer(kind=selected_int_kind(13)) :: i_element
-    integer(kind=selected_int_kind(13)) :: i_element_br
+    integer(kind=int64) :: i_element
+    integer(kind=int64) :: i_element_br
 
 !-------------------------------------------------------------------------------
 

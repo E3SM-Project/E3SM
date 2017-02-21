@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: variables_prognostic_module.F90 7309 2014-09-20 17:06:28Z betlej@uwm.edu $
+! $Id: variables_prognostic_module.F90 8020 2016-03-21 22:28:37Z raut@uwm.edu $
 !===============================================================================
 module variables_prognostic_module
 
@@ -48,8 +48,7 @@ module variables_prognostic_module
     rtp2,    & ! rt'^2                         [(kg/kg)^2]
     thlp2,   & ! thl'^2                        [K^2]
     rtpthlp    ! rt'thl'                       [kg/kg K]
-!$omp   threadprivate( temp_clubb)
-
+!$omp threadprivate( temp_clubb )
 #else
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
     um,      & ! u wind                        [m/s]
@@ -157,7 +156,7 @@ module variables_prognostic_module
 #ifdef GFDL
   real( kind = core_rknd ), target, allocatable, dimension( : , : , : ), public :: & 
     RH_crit  ! critical relative humidity for droplet and ice nucleation
-!$omp   threadprivate(RH_crit)
+!$omp threadprivate( RH_crit )
 #endif
 !<--- h1g, 2010-06-16
 
@@ -360,79 +359,83 @@ module variables_prognostic_module
     sigma_sqd_w           = 0.0_core_rknd ! PDF width parameter (momentum levels)
 
     ! Variables for PDF closure scheme
-    pdf_params(:)%w_1              = zero
-    pdf_params(:)%w_2              = zero
-    pdf_params(:)%varnce_w_1       = zero
-    pdf_params(:)%varnce_w_2       = zero
-    pdf_params(:)%rt_1              = zero
-    pdf_params(:)%rt_2              = zero
-    pdf_params(:)%varnce_rt_1       = zero
-    pdf_params(:)%varnce_rt_2       = zero
-    pdf_params(:)%thl_1             = zero
-    pdf_params(:)%thl_2             = zero
-    pdf_params(:)%varnce_thl_1      = zero
-    pdf_params(:)%varnce_thl_2      = zero
-    pdf_params(:)%rrtthl           = zero
-    pdf_params(:)%alpha_thl        = zero
-    pdf_params(:)%alpha_rt         = zero
-    pdf_params(:)%crt_1             = zero
-    pdf_params(:)%crt_2             = zero
-    pdf_params(:)%cthl_1            = zero
-    pdf_params(:)%cthl_2            = zero
-    pdf_params(:)%chi_1            = zero
-    pdf_params(:)%chi_2            = zero
-    pdf_params(:)%stdev_chi_1      = zero
-    pdf_params(:)%stdev_chi_2      = zero
-    pdf_params(:)%stdev_eta_1      = zero
-    pdf_params(:)%stdev_eta_2      = zero
-    pdf_params(:)%covar_chi_eta_1  = zero
-    pdf_params(:)%covar_chi_eta_2  = zero
-    pdf_params(:)%corr_chi_eta_1   = zero
-    pdf_params(:)%corr_chi_eta_2   = zero
-    pdf_params(:)%rsatl_1           = zero
-    pdf_params(:)%rsatl_2           = zero
-    pdf_params(:)%rc_1              = zero
-    pdf_params(:)%rc_2              = zero
-    pdf_params(:)%cloud_frac_1     = zero
-    pdf_params(:)%cloud_frac_2     = zero
-    pdf_params(:)%mixt_frac        = zero
+    pdf_params(:)%w_1                 = zero
+    pdf_params(:)%w_2                 = zero
+    pdf_params(:)%varnce_w_1          = zero
+    pdf_params(:)%varnce_w_2          = zero
+    pdf_params(:)%rt_1                = zero
+    pdf_params(:)%rt_2                = zero
+    pdf_params(:)%varnce_rt_1         = zero
+    pdf_params(:)%varnce_rt_2         = zero
+    pdf_params(:)%thl_1               = zero
+    pdf_params(:)%thl_2               = zero
+    pdf_params(:)%varnce_thl_1        = zero
+    pdf_params(:)%varnce_thl_2        = zero
+    pdf_params(:)%rrtthl              = zero
+    pdf_params(:)%alpha_thl           = zero
+    pdf_params(:)%alpha_rt            = zero
+    pdf_params(:)%crt_1               = zero
+    pdf_params(:)%crt_2               = zero
+    pdf_params(:)%cthl_1              = zero
+    pdf_params(:)%cthl_2              = zero
+    pdf_params(:)%chi_1               = zero
+    pdf_params(:)%chi_2               = zero
+    pdf_params(:)%stdev_chi_1         = zero
+    pdf_params(:)%stdev_chi_2         = zero
+    pdf_params(:)%stdev_eta_1         = zero
+    pdf_params(:)%stdev_eta_2         = zero
+    pdf_params(:)%covar_chi_eta_1     = zero
+    pdf_params(:)%covar_chi_eta_2     = zero
+    pdf_params(:)%corr_chi_eta_1      = zero
+    pdf_params(:)%corr_chi_eta_2      = zero
+    pdf_params(:)%rsatl_1             = zero
+    pdf_params(:)%rsatl_2             = zero
+    pdf_params(:)%rc_1                = zero
+    pdf_params(:)%rc_2                = zero
+    pdf_params(:)%cloud_frac_1        = zero
+    pdf_params(:)%cloud_frac_2        = zero
+    pdf_params(:)%mixt_frac           = zero
+    pdf_params(:)%ice_supersat_frac_1 = zero
+    pdf_params(:)%ice_supersat_frac_2 = zero
 
-    pdf_params_frz(:)%w_1               = zero
-    pdf_params_frz(:)%w_2               = zero
-    pdf_params_frz(:)%varnce_w_1        = zero
-    pdf_params_frz(:)%varnce_w_2        = zero
-    pdf_params_frz(:)%rt_1              = zero
-    pdf_params_frz(:)%rt_2              = zero
-    pdf_params_frz(:)%varnce_rt_1       = zero
-    pdf_params_frz(:)%varnce_rt_2       = zero
-    pdf_params_frz(:)%thl_1             = zero
-    pdf_params_frz(:)%thl_2             = zero
-    pdf_params_frz(:)%varnce_thl_1      = zero
-    pdf_params_frz(:)%varnce_thl_2      = zero
-    pdf_params_frz(:)%rrtthl           = zero
-    pdf_params_frz(:)%alpha_thl        = zero
-    pdf_params_frz(:)%alpha_rt         = zero
-    pdf_params_frz(:)%crt_1             = zero
-    pdf_params_frz(:)%crt_2             = zero
-    pdf_params_frz(:)%cthl_1            = zero
-    pdf_params_frz(:)%cthl_2            = zero
-    pdf_params_frz(:)%chi_1            = zero
-    pdf_params_frz(:)%chi_2            = zero
-    pdf_params_frz(:)%stdev_chi_1      = zero
-    pdf_params_frz(:)%stdev_chi_2      = zero
-    pdf_params_frz(:)%stdev_eta_1      = zero
-    pdf_params_frz(:)%stdev_eta_2      = zero
-    pdf_params_frz(:)%covar_chi_eta_1  = zero
-    pdf_params_frz(:)%covar_chi_eta_2  = zero
-    pdf_params_frz(:)%corr_chi_eta_1    = zero
-    pdf_params_frz(:)%corr_chi_eta_2    = zero
+    pdf_params_frz(:)%w_1                 = zero
+    pdf_params_frz(:)%w_2                 = zero
+    pdf_params_frz(:)%varnce_w_1          = zero
+    pdf_params_frz(:)%varnce_w_2          = zero
+    pdf_params_frz(:)%rt_1                = zero
+    pdf_params_frz(:)%rt_2                = zero
+    pdf_params_frz(:)%varnce_rt_1         = zero
+    pdf_params_frz(:)%varnce_rt_2         = zero
+    pdf_params_frz(:)%thl_1               = zero
+    pdf_params_frz(:)%thl_2               = zero
+    pdf_params_frz(:)%varnce_thl_1        = zero
+    pdf_params_frz(:)%varnce_thl_2        = zero
+    pdf_params_frz(:)%rrtthl              = zero
+    pdf_params_frz(:)%alpha_thl           = zero
+    pdf_params_frz(:)%alpha_rt            = zero
+    pdf_params_frz(:)%crt_1               = zero
+    pdf_params_frz(:)%crt_2               = zero
+    pdf_params_frz(:)%cthl_1              = zero
+    pdf_params_frz(:)%cthl_2              = zero
+    pdf_params_frz(:)%chi_1               = zero
+    pdf_params_frz(:)%chi_2               = zero
+    pdf_params_frz(:)%stdev_chi_1         = zero
+    pdf_params_frz(:)%stdev_chi_2         = zero
+    pdf_params_frz(:)%stdev_eta_1         = zero
+    pdf_params_frz(:)%stdev_eta_2         = zero
+    pdf_params_frz(:)%covar_chi_eta_1     = zero
+    pdf_params_frz(:)%covar_chi_eta_2     = zero
+    pdf_params_frz(:)%corr_chi_eta_1      = zero
+    pdf_params_frz(:)%corr_chi_eta_2      = zero
     pdf_params_frz(:)%rsatl_1             = zero
     pdf_params_frz(:)%rsatl_2             = zero
-    pdf_params_frz(:)%rc_1              = zero
-    pdf_params_frz(:)%rc_2              = zero
-    pdf_params_frz(:)%cloud_frac_1      = zero
-    pdf_params_frz(:)%cloud_frac_2      = zero
-    pdf_params_frz(:)%mixt_frac        = zero
+    pdf_params_frz(:)%rc_1                = zero
+    pdf_params_frz(:)%rc_2                = zero
+    pdf_params_frz(:)%cloud_frac_1        = zero
+    pdf_params_frz(:)%cloud_frac_2        = zero
+    pdf_params_frz(:)%mixt_frac           = zero
+    pdf_params_frz(:)%ice_supersat_frac_1 = zero
+    pdf_params_frz(:)%ice_supersat_frac_2 = zero
 
     ! Surface fluxes
     wpthlp_sfc = 0.0_core_rknd
@@ -473,90 +476,92 @@ module variables_prognostic_module
     implicit none
 
     ! Prognostic variables
+    ! TODO: use a more appropriate condition
+    if (allocated(um)) then
+      deallocate( um )        ! u wind
+      deallocate( vm )        ! v wind
 
-    deallocate( um )        ! u wind
-    deallocate( vm )        ! v wind
+      deallocate( upwp )      ! vertical u momentum flux
+      deallocate( vpwp )      ! vertical v momentum flux
 
-    deallocate( upwp )      ! vertical u momentum flux
-    deallocate( vpwp )      ! vertical v momentum flux
+      deallocate( up2, vp2 )
 
-    deallocate( up2, vp2 )
-
-    deallocate( thlm )      ! liquid potential temperature
+      deallocate( thlm )      ! liquid potential temperature
 
 !---> h1g, 2010-06-16
 #ifdef GFDL
-    deallocate( temp_clubb )
+      deallocate( temp_clubb )
 #endif
 !<--- h1g, 2010-06-16
 
-    deallocate( rtm )       ! total water mixing ratio
-    deallocate( wprtp )     ! w'rt'
-    deallocate( wpthlp )    ! w'thl'
-    deallocate( wprcp )     ! w'rc'
-    deallocate( wp2 )       ! w'^2
-    deallocate( wp3 )       ! w'^3
-    deallocate( rtp2 )      ! rt'^2
-    deallocate( thlp2 )     ! thl'^2
-    deallocate( rtpthlp )   ! rt'thl'
+      deallocate( rtm )       ! total water mixing ratio
+      deallocate( wprtp )     ! w'rt'
+      deallocate( wpthlp )    ! w'thl'
+      deallocate( wprcp )     ! w'rc'
+      deallocate( wp2 )       ! w'^2
+      deallocate( wp3 )       ! w'^3
+      deallocate( rtp2 )      ! rt'^2
+      deallocate( thlp2 )     ! thl'^2
+      deallocate( rtpthlp )   ! rt'thl'
 
-    deallocate( p_in_Pa )         ! pressure
-    deallocate( exner )           ! exner
-    deallocate( rho )             ! density: t points
-    deallocate( rho_zm )          ! density: m points
-    deallocate( rho_ds_zm )       ! dry, static density: m-levs
-    deallocate( rho_ds_zt )       ! dry, static density: t-levs
-    deallocate( invrs_rho_ds_zm ) ! inv. dry, static density: m-levs
-    deallocate( invrs_rho_ds_zt ) ! inv. dry, static density: t-levs
-    deallocate( thv_ds_zm )       ! dry, base-state theta_v: m-levs
-    deallocate( thv_ds_zt )       ! dry, base-state theta_v: t-levs
+      deallocate( p_in_Pa )         ! pressure
+      deallocate( exner )           ! exner
+      deallocate( rho )             ! density: t points
+      deallocate( rho_zm )          ! density: m points
+      deallocate( rho_ds_zm )       ! dry, static density: m-levs
+      deallocate( rho_ds_zt )       ! dry, static density: t-levs
+      deallocate( invrs_rho_ds_zm ) ! inv. dry, static density: m-levs
+      deallocate( invrs_rho_ds_zt ) ! inv. dry, static density: t-levs
+      deallocate( thv_ds_zm )       ! dry, base-state theta_v: m-levs
+      deallocate( thv_ds_zt )       ! dry, base-state theta_v: t-levs
 
-    deallocate( thlm_forcing )    ! thlm large-scale forcing
-    deallocate( rtm_forcing )     ! rtm large-scale forcing
-    deallocate( um_forcing )      ! u forcing
-    deallocate( vm_forcing )      ! v forcing
-    deallocate( wprtp_forcing )   ! <w'r_t'> forcing (microphysics)
-    deallocate( wpthlp_forcing )  ! <w'th_l'> forcing (microphysics)
-    deallocate( rtp2_forcing )    ! <r_t'^2> forcing (microphysics)
-    deallocate( thlp2_forcing )   ! <th_l'^2> forcing (microphysics)
-    deallocate( rtpthlp_forcing ) ! <r_t'th_l'> forcing (microphysics)
+      deallocate( thlm_forcing )    ! thlm large-scale forcing
+      deallocate( rtm_forcing )     ! rtm large-scale forcing
+      deallocate( um_forcing )      ! u forcing
+      deallocate( vm_forcing )      ! v forcing
+      deallocate( wprtp_forcing )   ! <w'r_t'> forcing (microphysics)
+      deallocate( wpthlp_forcing )  ! <w'th_l'> forcing (microphysics)
+      deallocate( rtp2_forcing )    ! <r_t'^2> forcing (microphysics)
+      deallocate( thlp2_forcing )   ! <th_l'^2> forcing (microphysics)
+      deallocate( rtpthlp_forcing ) ! <r_t'th_l'> forcing (microphysics)
 
-    ! Imposed large scale w
+      ! Imposed large scale w
 
-    deallocate( wm_zm )     ! momentum levels
-    deallocate( wm_zt )     ! thermodynamic levels
+      deallocate( wm_zm )     ! momentum levels
+      deallocate( wm_zt )     ! thermodynamic levels
 
-    ! Cloud water variables
+      ! Cloud water variables
 
-    deallocate( rcm )
-    deallocate( cloud_frac )
-    deallocate( ice_supersat_frac )
-    deallocate( rcm_in_layer )
-    deallocate( cloud_cover )
+      deallocate( rcm )
+      deallocate( cloud_frac )
+      deallocate( ice_supersat_frac )
+      deallocate( rcm_in_layer )
+      deallocate( cloud_cover )
 
-    deallocate( sigma_sqd_w )    ! PDF width parameter (momentum levels)
+      deallocate( sigma_sqd_w )    ! PDF width parameter (momentum levels)
 
-    ! Variable for pdf closure scheme
-    deallocate( pdf_params )
-    deallocate( pdf_params_frz )
+      ! Variable for pdf closure scheme
+      deallocate( pdf_params )
+      deallocate( pdf_params_frz )
 
-    ! Passive scalars
-    deallocate( wpsclrp_sfc, wpedsclrp_sfc )
-    deallocate( sclrm )
-    deallocate( sclrp2 )
-    deallocate( sclrprtp )
-    deallocate( sclrpthlp )
-    deallocate( sclrm_forcing )
-    deallocate( wpsclrp )
+      ! Passive scalars
+      deallocate( wpsclrp_sfc, wpedsclrp_sfc )
+      deallocate( sclrm )
+      deallocate( sclrp2 )
+      deallocate( sclrprtp )
+      deallocate( sclrpthlp )
+      deallocate( sclrm_forcing )
+      deallocate( wpsclrp )
 
-    deallocate( edsclrm )
-    deallocate( edsclrm_forcing )
+      deallocate( edsclrm )
+      deallocate( edsclrm_forcing )
 
 !---> h1g, 2010-06-16
 #ifdef GFDL
-    deallocate( RH_crit )
+      deallocate( RH_crit )
 #endif
 ! <--- h1g, 2010-06-16
+    end if
 
     return
   end subroutine cleanup_prognostic_variables

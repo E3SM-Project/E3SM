@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: csr_matrix_module.F90 7012 2014-07-07 14:18:31Z schemena@uwm.edu $
+! $Id: csr_matrix_module.F90 8014 2016-03-12 00:54:18Z raut@uwm.edu $
 !===============================================================================
 module csr_matrix_module
 
@@ -76,7 +76,7 @@ module csr_matrix_module
 
   private ! Default scope
 
-  integer, pointer, dimension(:) :: &
+  integer, allocatable, dimension(:) :: &
     csr_tridiag_ia, & !_ia array description for a tridiagonal matrix
     csr_tridiag_ja, & !_ja array description for a tridiagonal matrix
     csr_banddiag5_135_ia, & !_ia array description for a 5-band matrix

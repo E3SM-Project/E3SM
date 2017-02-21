@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: advance_xm_wpxp_module.F90 7373 2014-11-08 00:44:20Z dschanen@uwm.edu $
+! $Id: advance_xm_wpxp_module.F90 8119 2016-05-30 17:18:23Z raut@uwm.edu $
 !===============================================================================
 module advance_xm_wpxp_module
 
@@ -49,7 +49,8 @@ module advance_xm_wpxp_module
                               invrs_rho_ds_zt, thv_ds_zm, rtp2, thlp2, &
                               w_1_zm, w_2_zm, varnce_w_1_zm, varnce_w_2_zm, &
                               mixt_frac_zm, l_implemented, em, &
-                              sclrpthvp, sclrm_forcing, sclrp2, &
+                              sclrpthvp, sclrm_forcing, sclrp2, exner, rcm, &
+                              p_in_Pa, cloud_frac, thvm, Cx_fnc_Richardson, &
                               rtm, wprtp, thlm, wpthlp, &
                               err_code, &
                               sclrm, wpsclrp )
@@ -108,7 +109,8 @@ module advance_xm_wpxp_module
         zt2zm
 
     use model_flags, only: &
-        l_clip_semi_implicit ! Variable(s)
+        l_clip_semi_implicit, & ! Variable(s)
+        l_use_C7_Richardson
 
     use mono_flux_limiter, only: &
         calc_turb_adv_range ! Procedure(s)
@@ -147,6 +149,9 @@ module advance_xm_wpxp_module
         rtm_sponge_damp_profile, &
         thlm_sponge_damp_profile, &
         sponge_damp_xm ! Procedure(s)
+
+    use advance_helper_module, only: &
+        compute_Cx_fnc_Richardson ! Procedure
 
     implicit none
 
@@ -206,6 +211,14 @@ module advance_xm_wpxp_module
     real( kind = core_rknd ), intent(in), dimension(gr%nz,sclr_dim) ::  & 
       sclrpthvp, sclrm_forcing,  & !                           [Units vary]
       sclrp2                       ! For clipping Vince Larson [Units vary]
+
+    real( kind = core_rknd ), intent(in), dimension(gr%nz) ::  &
+      exner,           & ! Exner function                            [-]
+      rcm,             & ! cloud water mixing ratio, r_c             [kg/kg]
+      p_in_Pa,         & ! Air pressure                              [Pa]
+      cloud_frac,      & ! Cloud fraction                            [-]
+      thvm,            & ! Virutal potential temperature             [K]
+      Cx_fnc_Richardson  ! Cx_fnc computed from Richardson_num       [-]
 
     ! Input/Output Variables
     real( kind = core_rknd ), intent(inout), dimension(gr%nz) ::  & 
@@ -300,16 +313,24 @@ module advance_xm_wpxp_module
       C6thl_Skw_fnc(1:gr%nz) = C6thlb
     endif
 
-    if ( C7 /= C7b ) then
-      C7_Skw_fnc(1:gr%nz) = C7b + (C7-C7b) & 
-        *EXP( -one_half * (Skw_zm(1:gr%nz)/C7c)**2 )
+    ! Compute C7_Skw_fnc
+    if ( l_use_C7_Richardson ) then
+      ! New formulation based on Richardson number
+      C7_Skw_fnc = Cx_fnc_Richardson
     else
-      C7_Skw_fnc(1:gr%nz) = C7b
-    endif
+      if ( C7 /= C7b ) then
+        C7_Skw_fnc(1:gr%nz) = C7b + (C7-C7b) & 
+          *EXP( -one_half * (Skw_zm(1:gr%nz)/C7c)**2 )
+      else
+        C7_Skw_fnc(1:gr%nz) = C7b
+      endif
 
-    ! Damp C6 and C7 as a function of Lscale in stably stratified regions
-    C7_Skw_fnc = damp_coefficient( C7, C7_Skw_fnc, &
-                                   C7_Lscale0, wpxp_L_thresh, Lscale )
+      ! Damp C7 as a function of Lscale in stably stratified regions
+      C7_Skw_fnc = damp_coefficient( C7, C7_Skw_fnc, &
+                                     C7_Lscale0, wpxp_L_thresh, Lscale )
+    end if ! l_use_C7_Richardson
+
+    ! Damp C6 as a function of Lscale in stably stratified regions
     C6rt_Skw_fnc = damp_coefficient( C6rt, C6rt_Skw_fnc, &
                                      C6rt_Lscale0, wpxp_L_thresh, Lscale )
     C6thl_Skw_fnc = damp_coefficient( C6thl, C6thl_Skw_fnc, &
@@ -382,7 +403,7 @@ module advance_xm_wpxp_module
                         C6rt_Skw_fnc, rho_ds_zm, rho_ds_zt, & ! Intent(in)
                         invrs_rho_ds_zm, invrs_rho_ds_zt,  & ! Intent(in)
                         wpxp_upper_lim, wpxp_lower_lim, l_implemented, & ! Intent(in)
-                        em, Lscale, thlm, & ! Intent(in)
+                        em, Lscale, thlm, exner, rtm, rcm, p_in_Pa, cloud_frac, thvm, & ! Intent(in)
                         lhs ) ! Intent(out)
 
       ! Compute the explicit portion of the r_t and w'r_t' equations.
@@ -456,7 +477,7 @@ module advance_xm_wpxp_module
                         C6thl_Skw_fnc, rho_ds_zm, rho_ds_zt, & ! Intent(in)
                         invrs_rho_ds_zm, invrs_rho_ds_zt, & ! Intent(in)
                         wpxp_upper_lim, wpxp_lower_lim, l_implemented, & ! Intent(in)
-                        em, Lscale, thlm, & ! Intent(in)
+                        em, Lscale, thlm, exner, rtm, rcm, p_in_Pa, cloud_frac, thvm, & ! Intent(in)
                         lhs ) ! Intent(out)
 
       ! Compute the explicit portion of the th_l and w'th_l' equations.
@@ -541,7 +562,8 @@ module advance_xm_wpxp_module
                           C6rt_Skw_fnc, rho_ds_zm, rho_ds_zt,  &  ! Intent(in)
                           invrs_rho_ds_zm, invrs_rho_ds_zt,  &  ! Intent(in)
                           wpxp_upper_lim, wpxp_lower_lim, l_implemented, & ! Intent(in)
-                          em, Lscale, thlm, & ! Intent(in)
+                          em, Lscale, thlm, exner, rtm, rcm, p_in_Pa, cloud_frac, & ! Intent(in)
+                          thvm, & ! Intent(in)
                           lhs ) ! Intent(out)
 
         ! Compute the explicit portion of the sclrm and w'sclr' equations.
@@ -603,7 +625,7 @@ module advance_xm_wpxp_module
                         C6rt_Skw_fnc, rho_ds_zm, rho_ds_zt,  & ! Intent(in)
                         invrs_rho_ds_zm, invrs_rho_ds_zt,  & ! Intent(in)
                         dummy_1d, dummy_1d, l_implemented,  & ! Intent(in)
-                        em, Lscale, thlm, & ! Intent(in)
+                        em, Lscale, thlm, exner, rtm, rcm, p_in_Pa, cloud_frac, thvm, & ! Intent(in)
                         lhs ) ! Intent(out)
 
       ! Compute the explicit portion of the r_t and w'r_t' equations.
@@ -813,6 +835,7 @@ module advance_xm_wpxp_module
       if( l_stats_samp ) then
         call stat_begin_update( irtm_sdmp, rtm / dt, stats_zt )
       end if
+
       rtm(1:gr%nz) = sponge_damp_xm( dt, rtm_ref(1:gr%nz), rtm(1:gr%nz), &
                                        rtm_sponge_damp_profile )
 
@@ -843,7 +866,7 @@ module advance_xm_wpxp_module
                           C6x_Skw_fnc, rho_ds_zm, rho_ds_zt,  &
                           invrs_rho_ds_zm, invrs_rho_ds_zt,  &
                           wpxp_upper_lim, wpxp_lower_lim, l_implemented,  &
-                          em, Lscale, thlm, &
+                          em, Lscale, thlm, exner, rtm, rcm, p_in_Pa, cloud_frac, thvm, &
                           lhs )
 
     ! Description:
@@ -975,6 +998,12 @@ module advance_xm_wpxp_module
       Lscale,          & ! Turbulent mixing length                   [m]
       em,              & ! Turbulent Kinetic Energy (TKE)            [m^2/s^2]
       thlm,            & ! th_l (thermo. levels)                     [K]
+      exner,           & ! Exner function                            [-]
+      rtm,             & ! total water mixing ratio, r_t             [-]
+      rcm,             & ! cloud water mixing ratio, r_c             [kg/kg]
+      p_in_Pa,         & ! Air pressure                              [Pa]
+      cloud_frac,      & ! Cloud fraction                            [-]
+      thvm,            & ! Virtual potential temperature             [K]
       wm_zm,           & ! w wind component on momentum levels       [m/s]
       wm_zt,           & ! w wind component on thermodynamic levels  [m/s]
       wp2,             & ! w'^2 (momentum levels)                    [m^2/s^2]
@@ -1024,7 +1053,8 @@ module advance_xm_wpxp_module
     constant_nu = 0.1_core_rknd
 
     if ( l_stability_correct_Kh_N2_zm ) then
-      Kh_N2_zm = Kh_zm / calc_stability_correction( thlm, Lscale, em)
+      Kh_N2_zm = Kh_zm / calc_stability_correction( thlm, Lscale, em, exner, rtm, rcm, &
+                                                    p_in_Pa, cloud_frac, thvm )
     else
       Kh_N2_zm = Kh_zm
     end if
@@ -3279,6 +3309,6 @@ module advance_xm_wpxp_module
     return
 
   end function damp_coefficient
-!===============================================================================
+  !-----------------------------------------------------------------------
 
 end module advance_xm_wpxp_module

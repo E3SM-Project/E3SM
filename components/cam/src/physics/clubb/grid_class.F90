@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------
-! $Id: grid_class.F90 7200 2014-08-13 15:15:12Z betlej@uwm.edu $
+! $Id: grid_class.F90 8014 2016-03-12 00:54:18Z raut@uwm.edu $
 !===============================================================================
 module grid_class
 
@@ -171,21 +171,17 @@ module grid_class
 
     integer :: nz ! Number of points in the grid
     !   Note: Fortran 90/95 prevents an allocatable array from appearing
-    !   within a derived type.  However, a pointer can be used in the same
-    !   manner as an allocatable array, as we have done here (the grid
-    !   pointers are always allocated rather than assigned and nullified
-    !   like real pointers).  Note that these must be de-allocated to prevent
-    !   memory leaks.
-    real( kind = core_rknd ), pointer, dimension(:) :: &
+    !   within a derived type.  However, Fortran 2003 does not!!!!!!!!
+    real( kind = core_rknd ), allocatable, dimension(:) :: &
       zm, & ! Momentum grid
       zt    ! Thermo grid
-    real( kind = core_rknd ), pointer, dimension(:) :: &
+    real( kind = core_rknd ), allocatable, dimension(:) :: &
       invrs_dzm, & ! The inverse spacing between thermodynamic grid
                    ! levels; centered over momentum grid levels.
       invrs_dzt    ! The inverse spacing between momentum grid levels;
                    ! centered over thermodynamic grid levels.
 
-    real( kind = core_rknd ), pointer, dimension(:) :: &
+    real( kind = core_rknd ), allocatable, dimension(:) :: &
       dzm, &  ! Spacing between thermodynamic grid levels; centered over
               ! momentum grid levels
       dzt     ! Spcaing between momentum grid levels; centered over
@@ -195,7 +191,7 @@ module grid_class
     ! where a momentum level variable is being
     ! solved for implicitly in an equation and
     ! needs to be interpolated to the thermodynamic grid levels.
-    real( kind = core_rknd ), pointer, dimension(:,:) :: weights_zm2zt, & 
+    real( kind = core_rknd ), allocatable, dimension(:,:) :: weights_zm2zt, & 
     ! These weights are normally used in situations where a
     ! thermodynamic level variable is being solved for implicitly in an equation
     ! and needs to be interpolated to the momentum grid levels.
@@ -206,10 +202,10 @@ module grid_class
   !   The grid is defined here so that it is common throughout the module.
   !   The implication is that only one grid can be defined !
 
-  type (grid) gr
+  type (grid), target :: gr
 
 !   Modification for using CLUBB in a host model (i.e. one grid per column)
-!$omp   threadprivate(gr)
+!$omp threadprivate(gr)
 
   ! Interfaces provided for function overloading
 
@@ -899,8 +895,9 @@ module grid_class
         stop
       endif
 
+!$omp critical
       ! Open the file zt_grid_fname.
-      open( unit=file_unit, file=zt_grid_fname,  & 
+      open( unit=file_unit, file=zt_grid_fname,  &
             status='old', action='read' )
 
       ! Find the number of thermodynamic level altitudes listed
@@ -917,6 +914,7 @@ module grid_class
 
       ! Close the file zt_grid_fname.
       close( unit=file_unit )
+!$omp end critical
 
       ! Check that the number of thermodynamic grid altitudes in the input file
       ! matches the declared number of CLUBB grid levels (nzmax).

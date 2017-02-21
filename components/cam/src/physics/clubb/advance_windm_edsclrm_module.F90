@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------
-! $Id: advance_windm_edsclrm_module.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
+! $Id: advance_windm_edsclrm_module.F90 8099 2016-05-17 20:54:09Z raut@uwm.edu $
 !===============================================================================
 module advance_windm_edsclrm_module
 
@@ -31,7 +31,7 @@ module advance_windm_edsclrm_module
 
   !=============================================================================
   subroutine advance_windm_edsclrm &
-             ( dt, wm_zt, Km_zm, ug, vg, um_ref, vm_ref, &
+             ( dt, wm_zt, Km_zm, Kmh_zm, ug, vg, um_ref, vm_ref, &
                wp2, up2, vp2, um_forcing, vm_forcing, &
                edsclrm_forcing, &
                rho_ds_zm, invrs_rho_ds_zt, &
@@ -122,6 +122,7 @@ module advance_windm_edsclrm_module
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  &
       wm_zt,           & ! w wind component on thermodynamic levels     [m/s]
       Km_zm,           & ! Eddy diffusivity of winds on momentum levels [m^2/s]
+      Kmh_zm,          & ! Eddy diffusivity of themo on momentum levels [m^s/s]
       ug,              & ! u (west-to-east) geostrophic wind comp.      [m/s]
       vg,              & ! v (south-to-north) geostrophic wind comp.    [m/s]
       um_ref,          & ! Reference u wind component for nudging       [m/s]
@@ -446,7 +447,7 @@ module advance_windm_edsclrm_module
 !HPF$ INDEPENDENT
       do i = 1, edsclr_dim
         rhs(1:gr%nz,i)  &
-        = windm_edsclrm_rhs( windm_edsclrm_scalar, dt, dummy_nu, Km_zm, &            ! in
+        = windm_edsclrm_rhs( windm_edsclrm_scalar, dt, dummy_nu, Kmh_zm, &            ! in
                              edsclrm(:,i), edsclrm_forcing,  &             ! in
                              rho_ds_zm, invrs_rho_ds_zt,  &                ! in
                              l_imp_sfc_momentum_flux, wpedsclrp(1,i) )     ! in
@@ -465,7 +466,7 @@ module advance_windm_edsclrm_module
 !HPF$ INDEPENDENT, REDUCTION(wpedsclrp)
       forall( i = 1:edsclr_dim )
         wpedsclrp(2:gr%nz-1,i) = &
-          - 0.5_core_rknd * xpwp_fnc( Km_zm(2:gr%nz-1), edsclrm(2:gr%nz-1,i), & ! in
+          - 0.5_core_rknd * xpwp_fnc( Kmh_zm(2:gr%nz-1), edsclrm(2:gr%nz-1,i), & ! in
                             edsclrm(3:gr%nz,i), gr%invrs_dzm(2:gr%nz-1) )   ! in
       end forall
 
@@ -477,7 +478,7 @@ module advance_windm_edsclrm_module
 
       ! Compute the implicit portion of the xm (eddy-scalar) equations.
       ! Build the left-hand side matrix.
-      call windm_edsclrm_lhs( dt, dummy_nu, wm_zt, Km_zm, wind_speed, u_star_sqd,  & ! in
+      call windm_edsclrm_lhs( dt, dummy_nu, wm_zt, Kmh_zm, wind_speed, u_star_sqd,  & ! in
                               rho_ds_zm, invrs_rho_ds_zt,  &               ! in
                               l_implemented, l_imp_sfc_momentum_flux,  &   ! in
                               lhs )                                        ! out
@@ -506,7 +507,7 @@ module advance_windm_edsclrm_module
 !HPF$ INDEPENDENT, REDUCTION(wpedsclrp)
       forall( i = 1:edsclr_dim )
         wpedsclrp(2:gr%nz-1,i) = wpedsclrp(2:gr%nz-1,i) &
-          - 0.5_core_rknd * xpwp_fnc( Km_zm(2:gr%nz-1), edsclrm(2:gr%nz-1,i), & ! in
+          - 0.5_core_rknd * xpwp_fnc( Kmh_zm(2:gr%nz-1), edsclrm(2:gr%nz-1,i), & ! in
                             edsclrm(3:gr%nz,i), gr%invrs_dzm(2:gr%nz-1) )   ! in
       end forall
 

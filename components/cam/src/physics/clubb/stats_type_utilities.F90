@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: stats_type_utilities.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
+! $Id: stats_type_utilities.F90 8014 2016-03-12 00:54:18Z raut@uwm.edu $
 !===============================================================================
 module stats_type_utilities
 
@@ -57,7 +57,7 @@ module stats_type_utilities
     ! Input/Output Variable
 
     ! Which grid the variable is located on (e.g., zt, zm, sfc)
-    type(stats), intent(inout) :: grid_kind
+    type(stats), target, intent(inout) :: grid_kind
 
     grid_kind%file%var(var_index)%ptr => grid_kind%accum_field_values(:,:,:,var_index)
     grid_kind%file%var(var_index)%name = var_name

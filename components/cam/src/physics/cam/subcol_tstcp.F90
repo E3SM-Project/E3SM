@@ -7,11 +7,11 @@ module subcol_tstcp
    !
    !---------------------------------------------------------------------------
 
-   use shr_kind_mod,  only: r8=>shr_kind_r8
-   use physics_types, only: physics_state, physics_tend, physics_ptend
-   use ppgrid,        only: pcols, psubcols, pver, pverp
-   use constituents,  only: pcnst
-   use cam_abortutils,    only: endrun
+   use shr_kind_mod,    only: r8=>shr_kind_r8
+   use physics_types,   only: physics_state, physics_tend, physics_ptend
+   use ppgrid,          only: pcols, psubcols, pver, pverp
+   use constituents,    only: pcnst
+   use cam_abortutils,  only: endrun
    use spmd_utils,      only: masterproc
    use cam_logfile,     only: iulog
 
@@ -42,6 +42,10 @@ module subcol_tstcp
 
    logical :: subcol_tstcp_perturb ! if set, turns on the perturbation test which changes the state temperatures
                                    ! to make sure subcolumns differ
+
+   logical :: subcol_tstcp_restart ! if set, sets up weights so that they are more adequately tested in restart,
+                                   ! but will not be BFB with non-subcolumnized run
+
    integer :: tstcpy_scol_idx      ! pbuf index for subcolumn-only test field
 
 contains
@@ -67,7 +71,8 @@ contains
       ! Local variables
       integer :: unitn, ierr
 
-      namelist /subcol_tstcp_nl/ subcol_tstcp_noAvg, subcol_tstcp_filter, subcol_tstcp_weight, subcol_tstcp_perturb
+      namelist /subcol_tstcp_nl/ subcol_tstcp_noAvg, subcol_tstcp_filter, subcol_tstcp_weight, subcol_tstcp_perturb, &
+                                 subcol_tstcp_restart
 
       !-----------------------------------------------------------------------------
 
@@ -91,6 +96,7 @@ contains
       call mpi_bcast(subcol_tstcp_filter,  1, mpi_logical, masterprocid, mpicom, ierr)
       call mpi_bcast(subcol_tstcp_weight,  1, mpi_logical, masterprocid, mpicom, ierr)
       call mpi_bcast(subcol_tstcp_perturb, 1, mpi_logical, masterprocid, mpicom, ierr)
+      call mpi_bcast(subcol_tstcp_restart, 1, mpi_logical, masterprocid, mpicom, ierr)
 #endif
    end subroutine subcol_readnl_tstcp
 
@@ -129,46 +135,62 @@ contains
       ! number of subcolumns to vary within a run.  Cannot be done in init as ngrdcol is not known
       ! at init
       !----------------------
-      ! Test differing number of subcolumns by setting columns > 45 degrees to
-      ! have 1 subcolumn, columns < -45 to 2 subcolumns and others to 3 subcols
+      ! Set two subcolumns to 1 to test random number of subcols
+      ! Index logic is arithmetic as some compilers balk when hardcoded larger than pcols
       if (is_first_step()) then
-         nsubcol = 0
-         do i = 1, ngrdcol
-            if (state%lat(i) > 0.7854_r8) then
-               nsubcol(i) = 1
-            else if (state%lat(i) < -0.7854_r8) then
-               nsubcol(i) = 2
-            else
-               nsubcol(i) = psubcols
-            end if
-         end do
+         nsubcol(:) = psubcols  ! For test, set all to max number of sub-columns, then reset a few values
+         indx1      = anint(pcols/2._r8)
+         indx2      = anint(pcols/5._r8)
+         if (pcols >= 6) nsubcol(indx1) = 1
+         if (pcols >= 11) nsubcol(indx2) = 1
+         if (ngrdcol+1 <= pcols) nsubcol(ngrdcol+1:) = 0
+
+         ! Set up the weights once and do not modify - this will test the restart ability to correctly retrieve them
+         if(subcol_tstcp_restart) then
+           weight=0._r8
+           indx=1
+           do i=1,ngrdcol
+              weight(indx:indx+nsubcol(i)-1)=1._r8/nsubcol(i)
+              if (state%lon(i) < -0.5236_r8) then
+                if (nsubcol(i) >= 3) then
+                  weight(indx) = 2*1._r8/nsubcol(i)
+                  weight(indx+1) = 1._r8 - weight(indx)
+                  weight(indx+2:indx+nsubcol(i)-1)=0._r8
+                end if
+              end if
+              indx = indx+nsubcol(i)
+           end do
+           call subcol_set_weight(state%lchnk, weight)
+         end if
       else
          call subcol_get_nsubcol(state%lchnk, nsubcol)
          ! Since this is a test generator, check for nsubcol correctness.
+         indx1      = anint(pcols/2._r8)
+         indx2      = anint(pcols/5._r8)
 10       format(a,i3,a,i5)
          do i = 1, pcols
-            if (i > ngrdcol) then
-               if (nsubcol(i) /= 0) then
-                  write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
-                       i,') = ',nsubcol(i),', /= 0'
-                  call endrun(errmsg)
-               end if
-            else if (state%lat(i) > 0.7854_r8) then
+            if ((pcols >= 11) .and. (i == indx2)) then
                if (nsubcol(i) /= 1) then
                   write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
-                       i,') = ',nsubcol(i),', /= 1'
+                       i,') = ',nsubcol(i)
                   call endrun(errmsg)
                end if
-            else if (state%lat(i) < -0.7854_r8) then
-               if (nsubcol(i) /= 2) then
+            else if ((pcols >= 6) .and. (i == indx1)) then
+               if (nsubcol(i) /= 1) then
                   write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
-                       i,') = ',nsubcol(i),', /= 2'
+                       i,') = ',nsubcol(i)
+                  call endrun(errmsg)
+               end if
+            else if (i > ngrdcol) then
+               if (nsubcol(i) /= 0) then
+                  write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
+                       i,') = ',nsubcol(i)
                   call endrun(errmsg)
                end if
             else
                if (nsubcol(i) /= psubcols) then
                   write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
-                       i,') = ',nsubcol(i),', /=',psubcols
+                       i,') = ',nsubcol(i)
                   call endrun(errmsg)
                end if
             end if
@@ -277,13 +299,6 @@ subroutine subcol_field_avg_tstcp_1dr (field_sc, ngrdcol, lchnk, field)
       integer,  intent(in)                        :: lchnk         ! chunk index
       real(r8), intent(out)                       :: field(:)
 
-      !
-      ! Local variables
-      !
-      real(r8),pointer :: weight(:)
-      integer, pointer :: filter(:)
-
-
       ! Unless specialized averaging is needed, most subcolumn schemes will be handled here
       if (subcol_tstcp_noAvg) then
          call subcol_field_get_firstsubcol(field_sc, .true., ngrdcol, lchnk, field)
@@ -306,13 +321,6 @@ subroutine subcol_field_avg_tstcp_1di (field_sc, ngrdcol, lchnk, field)
       integer, intent(in)                         :: lchnk         ! chunk index
       integer, intent(out)                        :: field(:)
 
-      !
-      ! Local variables
-      !
-      real(r8),pointer :: weight(:)
-      integer, pointer :: filter(:)
-
-
       ! Unless specialized averaging is needed, most subcolumn schemes will be handled here
       if (subcol_tstcp_noAvg) then
          call subcol_field_get_firstsubcol(field_sc, .true., ngrdcol, lchnk, field)
@@ -334,14 +342,6 @@ subroutine subcol_field_avg_tstcp_2dr (field_sc, ngrdcol, lchnk, field)
       integer,  intent(in)                        :: ngrdcol       ! # grid cols
       integer,  intent(in)                        :: lchnk         ! chunk index
       real(r8), intent(out)                       :: field(:,:)
-
-      !
-      ! Local variables
-      !
-      real(r8),pointer :: weight(:)
-      integer, pointer :: filter(:)
-      logical :: lw,lf
-
 
       ! Unless specialized averaging is needed, most subcolumn schemes will be handled here
       if (subcol_tstcp_noAvg) then
