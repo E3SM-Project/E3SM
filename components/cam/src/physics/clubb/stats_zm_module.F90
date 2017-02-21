@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: stats_zm_module.F90 7377 2014-11-11 02:43:45Z bmg2@uwm.edu $
+! $Id: stats_zm_module.F90 8116 2016-05-25 18:38:29Z raut@uwm.edu $
 !===============================================================================
 module stats_zm_module
 
@@ -10,7 +10,7 @@ module stats_zm_module
   public :: stats_init_zm
 
   ! Constant parameters
-  integer, parameter, public :: nvarmax_zm = 250  ! Maximum variables allowed
+  integer, parameter, public :: nvarmax_zm = 300  ! Maximum variables allowed
 
   contains
 
@@ -38,7 +38,9 @@ module stats_zm_module
         irtpthlp, & 
         iwprtp, & 
         iwpthlp, & 
-        iwp3_zm, & 
+        iwp3_zm, &
+        ithlp3_zm, &
+        irtp3_zm, &
         iwp4, & 
         iwpthvp, & 
         irtpthvp, & 
@@ -51,7 +53,9 @@ module stats_zm_module
         ithlprcp, & 
         irtprcp, & 
         ircp2,   &
-        iSkw_zm
+        iSkw_zm, &
+        iSkthl_zm, &
+        iSkrt_zm
 
     use stats_variables, only: &
         iupwp, & 
@@ -246,13 +250,24 @@ module stats_zm_module
         iC6thl_Skw_fnc, &
         iC7_Skw_fnc, &
         iC1_Skw_fnc, &
+        ibrunt_vaisala_freq_sqd, &
+        iRichardson_num, &
+        ishear_sqd, &
         ihydrometp2, &
         iwphydrometp, &
         irtphmp, &
-        ithlphmp
+        ithlphmp, &
+        ihmxphmyp
 
     use stats_variables, only: &
         irtp2_from_chi
+
+    use stats_variables, only: &
+        ilh_rtp2_mc, &
+        ilh_thlp2_mc, &
+        ilh_wprtp_mc, &
+        ilh_wpthlp_mc, &
+        ilh_rtpthlp_mc
 
     use stats_type_utilities, only: & 
         stat_assign ! Procedure
@@ -280,13 +295,11 @@ module stats_zm_module
     ! Local Varables
     integer :: tot_zm_loops
 
-    integer :: hm_idx
+    integer :: hm_idx, hmx_idx, hmy_idx
 
-    character(len=10) :: hm_type
+    character(len=10) :: hm_type, hmx_type, hmy_type
 
     integer :: i, j, k
-
-    logical :: l_found
 
     character(len=50) :: sclr_idx
 
@@ -297,12 +310,14 @@ module stats_zm_module
     allocate( iwphydrometp(1:hydromet_dim) )
     allocate( irtphmp(1:hydromet_dim) )
     allocate( ithlphmp(1:hydromet_dim) )
+    allocate( ihmxphmyp(1:hydromet_dim,1:hydromet_dim) )
     allocate( iK_hm(1:hydromet_dim) )
 
     ihydrometp2(:) = 0
     iwphydrometp(:) = 0
     irtphmp(:) = 0
     ithlphmp(:) = 0
+    ihmxphmyp(:,:) = 0
     iK_hm(:) = 0
 
     ! Allocate and then zero out passive scalar arrays on the stats_zm grid (fluxes,
@@ -369,13 +384,113 @@ module stats_zm_module
        tot_zm_loops = tot_zm_loops + 1
     endif
 
+    if ( any( vars_zm == "hmxphmyp" ) ) then
+       ! Correct for number of variables found under "hmxphmyp".
+       ! Subtract the number of overall covariances of two hydrometeors, which
+       ! is found by:  (1/2) * hydromet_dim * ( hydromet_dim - 1 );
+       ! from the loop size.
+       tot_zm_loops = tot_zm_loops - hydromet_dim * ( hydromet_dim - 1 ) / 2
+       ! Add 1 for "hmxphmyp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
     if ( any( vars_zm == "K_hm" ) ) then
        ! Correct for number of variables found under "K_hm".
        ! Subtract 1 from the loop size for each hydrometeor.
        tot_zm_loops = tot_zm_loops - hydromet_dim
-       ! Add 1 for "thlphmp" to the loop size.
+       ! Add 1 for "K_hm" to the loop size.
        tot_zm_loops = tot_zm_loops + 1
     endif
+
+     if ( any( vars_zm == "sclrprtp" ) ) then
+       ! Correct for number of variables found under "sclrprtp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "sclrprtp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif   
+
+    if ( any( vars_zm == "sclrp2" ) ) then
+       ! Correct for number of variables found under "sclrp2".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "sclrp2" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "sclrpthvp" ) ) then 
+       ! Correct for number of variables found under "sclrpthvp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "sclrpthvp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "sclrpthlp" ) ) then 
+       ! Correct for number of variables found under "sclrpthlp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "sclrpthlp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "sclrprcp" ) ) then 
+       ! Correct for number of variables found under "sclrprcp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "sclrprcp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "wpsclrp" ) ) then 
+       ! Correct for number of variables found under "wpsclrp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "wpsclrp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "wpsclrp2" ) ) then 
+       ! Correct for number of variables found under "wpsclrp2".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "wpsclrp2" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "wp2sclrp" ) ) then 
+       ! Correct for number of variables found under "wp2sclrp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "wp2sclrp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "wpsclrprtp" ) ) then 
+       ! Correct for number of variables found under "wpsclrprtp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "wpsclrprtp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "wpsclrpthlp" ) ) then 
+       ! Correct for number of variables found under "wpsclrpthlp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - sclr_dim
+       ! Add 1 for "wpsclrpthlp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+    endif
+
+    if ( any( vars_zm == "wpedsclrp" ) ) then 
+       ! Correct for number of variables found under "wpedsclrp".
+       ! Subtract 1 from the loop size for each scalar.
+       tot_zm_loops = tot_zm_loops - edsclr_dim
+       ! Add 1 for "wpedsclrp" to the loop size.
+       tot_zm_loops = tot_zm_loops + 1
+  endif
+
+
 
     k = 1
 
@@ -432,6 +547,20 @@ module stats_zm_module
         call stat_assign( var_index=iwp3_zm, var_name="wp3_zm", &
              var_description="w'^3 interpolated to moment. levels [m^3/s^3]", &
              var_units="(m^3)/(s^3)", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ('thlp3_zm')
+        ithlp3_zm = k
+        call stat_assign( var_index=ithlp3_zm, var_name="thlp3_zm", &
+             var_description="thl'^3 interpolated to moment. levels [K^3]", &
+             var_units="K^3", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ('rtp3_zm')
+        irtp3_zm = k
+        call stat_assign( var_index=irtp3_zm, var_name="rtp3_zm", &
+             var_description="rt'^3 interpolated to moment. levels [kg^3/kg^3]", &
+             var_units="(kg^3)/(kg^3)", l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ('wp4')
@@ -804,6 +933,71 @@ module stats_zm_module
             k = k + 1
 
          enddo ! hm_idx = 1, hydromet_dim, 1
+
+      case ('hmxphmyp')
+
+         do hmx_idx = 1, hydromet_dim, 1
+
+            hmx_type = hydromet_list(hmx_idx)
+
+            do hmy_idx = hmx_idx+1, hydromet_dim, 1
+
+               hmy_type = hydromet_list(hmy_idx)
+
+               ! The covariance (overall) of hmx and hmy.
+               ihmxphmyp(hmy_idx,hmx_idx) = k
+
+               if ( l_mix_rat_hm(hmx_idx) .and. l_mix_rat_hm(hmy_idx) ) then
+
+                  ! Both hydrometeors are mixing ratios.
+                  call stat_assign( var_index=ihmxphmyp(hmy_idx,hmx_idx), &
+                                    var_name=trim( hmx_type(1:2) )//"p" &
+                                    // trim( hmy_type(1:2) )//"p", &
+                                    var_description="Covariance of " &
+                                    // hmx_type(1:1)//"_"//trim(hmx_type(2:2)) &
+                                    // " and " &
+                                    // hmy_type(1:1)//"_"//trim(hmy_type(2:2)) &
+                                    // " [(kg/kg)^2]", &
+                                    var_units="(kg/kg)^2", l_silhs=.false., &
+                                    grid_kind=stats_zm )
+
+               elseif ( ( .not. l_mix_rat_hm(hmx_idx) ) &
+                        .and. ( .not. l_mix_rat_hm(hmy_idx) ) ) then
+
+                  ! Both hydrometeors are concentrations.
+                  call stat_assign( var_index=ihmxphmyp(hmy_idx,hmx_idx), &
+                                    var_name=trim( hmx_type(1:2) )//"p" &
+                                    // trim( hmy_type(1:2) )//"p", &
+                                    var_description="Covariance of " &
+                                    // hmx_type(1:1)//"_"//trim(hmx_type(2:2)) &
+                                    // " and " &
+                                    // hmy_type(1:1)//"_"//trim(hmy_type(2:2)) &
+                                    // " [(num/kg)^2]", &
+                                    var_units="(num/kg)^2", l_silhs=.false., &
+                                    grid_kind=stats_zm )
+
+               else
+
+                  ! One hydrometeor is a mixing ratio and the other hydrometeor
+                  ! is a concentration.
+                  call stat_assign( var_index=ihmxphmyp(hmy_idx,hmx_idx), &
+                                    var_name=trim( hmx_type(1:2) )//"p" &
+                                    // trim( hmy_type(1:2) )//"p", &
+                                    var_description="Covariance of " &
+                                    // hmx_type(1:1)//"_"//trim(hmx_type(2:2)) &
+                                    // " and " &
+                                    // hmy_type(1:1)//"_"//trim(hmy_type(2:2)) &
+                                    // " [(kg/kg) num/kg]", &
+                                    var_units="(kg/kg) num/kg", &
+                                    l_silhs=.false., grid_kind=stats_zm )
+
+               endif
+
+               k = k + 1
+
+            enddo ! hmy_idx = hmx_idx+1, hydromet_dim, 1
+
+         enddo ! hmx_idx = 1, hydromet_dim, 1
 
       case ('VNr')
         iVNr = k
@@ -1704,7 +1898,7 @@ module stats_zm_module
       case ('cloud_frac_zm')
         icloud_frac_zm = k
         call stat_assign( var_index=icloud_frac_zm, var_name="cloud_frac_zm", &
-          var_description="Cloud fraction", var_units="count", l_silhs=.false., grid_kind=stats_zm)
+          var_description="Cloud fraction [-]", var_units="-", l_silhs=.false., grid_kind=stats_zm)
         k = k + 1
       
       case ('ice_supersat_frac_zm')
@@ -1745,35 +1939,56 @@ module stats_zm_module
       case ( 'gamma_Skw_fnc' )
         igamma_Skw_fnc = k
         call stat_assign( var_index=igamma_Skw_fnc, var_name="gamma_Skw_fnc", &
-             var_description="Gamma as a function of skewness [-]", var_units="count", &
+             var_description="Gamma as a function of skewness [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ( 'C6rt_Skw_fnc' )
         iC6rt_Skw_fnc = k
         call stat_assign( var_index=iC6rt_Skw_fnc, var_name="C6rt_Skw_fnc", &
-             var_description="C_6rt parameter with Sk_w applied [-]", var_units="count", &
+             var_description="C_6rt parameter with Sk_w applied [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ( 'C6thl_Skw_fnc' )
         iC6thl_Skw_fnc = k
         call stat_assign( var_index=iC6thl_Skw_fnc, var_name="C6thl_Skw_fnc", &
-             var_description="C_6thl parameter with Sk_w applied [-]", var_units="count", &
+             var_description="C_6thl parameter with Sk_w applied [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ( 'C7_Skw_fnc' )
         iC7_Skw_fnc = k
         call stat_assign( var_index=iC7_Skw_fnc, var_name="C7_Skw_fnc", &
-             var_description="C_7 parameter with Sk_w applied [-]", var_units="count", &
+             var_description="C_7 parameter with Sk_w applied [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ( 'C1_Skw_fnc' )
         iC1_Skw_fnc = k
         call stat_assign( var_index=iC1_Skw_fnc, var_name="C1_Skw_fnc", &
-             var_description="C_1 parameter with Sk_w applied [-]", var_units="count", &
+             var_description="C_1 parameter with Sk_w applied [-]", var_units="-", &
+             l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'brunt_vaisala_freq_sqd' )
+        ibrunt_vaisala_freq_sqd = k
+        call stat_assign( var_index=ibrunt_vaisala_freq_sqd, var_name="brunt_vaisala_freq_sqd", &
+             var_description="Brunt-Vaisala freqency squared, N^2 [1/s^2]", var_units="1/s^2", &
+             l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'Richardson_num' )
+        iRichardson_num = k
+        call stat_assign( var_index=iRichardson_num, var_name="Richardson_num", &
+             var_description="Richardson number [-]", var_units="-", &
+             l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'shear_sqd' )
+        ishear_sqd = k
+        call stat_assign( var_index=ishear_sqd, var_name="shear_sqd", &
+             var_description="shear_sqd [-]", var_units="-", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
@@ -1798,6 +2013,20 @@ module stats_zm_module
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
+      case ( 'Skthl_zm' )
+        iSkthl_zm = k
+        call stat_assign( var_index=iSkthl_zm, var_name="Skthl_zm", &
+             var_description="Skewness of thl on momentum levels [-]", var_units="-", &
+             l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'Skrt_zm' )
+        iSkrt_zm = k
+        call stat_assign( var_index=iSkrt_zm, var_name="Skrt_zm", &
+             var_description="Skewness of rt on momentum levels [-]", var_units="-", &
+             l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
       case ( 'stability_correction' )
         istability_correction = k
         call stat_assign( var_index=istability_correction, var_name="stability_correction", &
@@ -1810,135 +2039,167 @@ module stats_zm_module
         call stat_assign( var_index=irtp2_from_chi, var_name="rtp2_from_chi", &
              var_description="Variance of rt, computed from the chi/eta distribution [(kg/kg)^2]", &
              var_units="(kg/kg)^2", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
 
+      case ( 'lh_rtp2_mc' )
+        ilh_rtp2_mc = k
+        call stat_assign( var_index=ilh_rtp2_mc, var_name="lh_rtp2_mc", &
+             var_description="LH est. of rtp2_mc [(kg/kg)^2/s]", &
+             var_units="(kg/kg)^2/s", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'lh_thlp2_mc' )
+        ilh_thlp2_mc = k
+        call stat_assign( var_index=ilh_thlp2_mc, var_name="lh_thlp2_mc", &
+             var_description="LH est. of thlp2_mc [K^2/s]", &
+             var_units="K^2/s", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'lh_wprtp_mc' )
+        ilh_wprtp_mc = k
+        call stat_assign( var_index=ilh_wprtp_mc, var_name="lh_wprtp_mc", &
+             var_description="LH est. of wprtp_mc [(m kg/kg)/s^2]", &
+             var_units="(m kg/kg)/s^2", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'lh_wpthlp_mc' )
+        ilh_wpthlp_mc = k
+        call stat_assign( var_index=ilh_wpthlp_mc, var_name="lh_wpthlp_mc", &
+             var_description="LH est. of wpthlp_mc [(m K)/s^2]", &
+             var_units="(m K)/s^2", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'lh_rtpthlp_mc' )
+        ilh_rtpthlp_mc = k
+        call stat_assign( var_index=ilh_rtpthlp_mc, var_name="lh_rtpthlp_mc", &
+             var_description="LH est. of rtpthlp_mc [(K kg/kg)/s]", &
+             var_units="(K kg/kg)/s", l_silhs=.false., grid_kind=stats_zm )
+        k = k + 1
+
+      case ( 'sclrprtp' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          isclrprtp(j) = k
+          call stat_assign( var_index=isclrprtp(j), var_name="sclr"//trim(sclr_idx)//"prtp", &
+            var_description="scalar("//trim(sclr_idx)//")'rt'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'sclrp2' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          isclrp2(j) = k
+          call stat_assign( var_index=isclrp2(j), var_name="sclr"//trim(sclr_idx)//"p2", &
+            var_description="scalar("//trim(sclr_idx)//")'^2'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'sclrpthvp' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          isclrpthvp(j) = k
+          call stat_assign( var_index=isclrpthvp(j), var_name="sclr"//trim(sclr_idx)//"pthvp", &
+            var_description="scalar("//trim(sclr_idx)//")'th_v'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'sclrpthlp' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          isclrpthlp(j) = k
+          call stat_assign( var_index=isclrpthlp(j), var_name="sclr"//trim(sclr_idx)//"pthlp", &
+            var_description="scalar("//trim(sclr_idx)//")'th_l'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'sclrprcp' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          isclrprcp(j) = k
+          call stat_assign( var_index=isclrprcp(j), var_name="sclr"//trim(sclr_idx)//"prcp", &
+            var_description="scalar("//trim(sclr_idx)//")'rc'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'wpsclrp' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          iwpsclrp(j) = k
+          call stat_assign( var_index=iwpsclrp(j), var_name="wpsclr"//trim(sclr_idx)//"p", &
+            var_description="'w'scalar("//trim(sclr_idx)//")", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'wpsclrp2' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          iwpsclrp2(j) = k
+          call stat_assign( var_index=iwpsclrp2(j), var_name="wpsclr"//trim(sclr_idx)//"p2", &
+            var_description="'w'scalar("//trim(sclr_idx)//")'^2'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'wp2sclrp' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          iwp2sclrp(j) = k          
+          call stat_assign( var_index=iwp2sclrp(j), var_name="wp2sclr"//trim(sclr_idx)//"p", &
+            var_description="'w'^2 scalar("//trim(sclr_idx)//")", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'wpsclrprtp' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          iwpsclrprtp(j) = k
+          call stat_assign( var_index=iwpsclrprtp(j), var_name="wpsclr"//trim(sclr_idx)//"prtp", &
+            var_description="'w' scalar("//trim(sclr_idx)//")'rt'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'wpsclrpthlp' )
+        do j = 1, sclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          iwpsclrpthlp(j) = k
+          call stat_assign( var_index=iwpsclrpthlp(j), var_name="wpsclr"//trim(sclr_idx)//"pthlp", &
+            var_description="'w' scalar("//trim(sclr_idx)//")'th_l'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+
+      case ( 'wpedsclrp' )
+        do j = 1, edsclr_dim, 1
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+          iwpedsclrp(j) = k
+          call stat_assign( var_index=iwpedsclrp(j), var_name="wpedsclr"//trim(sclr_idx)//"p", &
+            var_description="eddy scalar("//trim(sclr_idx)//")'w'", var_units="unknown", &
+            l_silhs=.false., grid_kind=stats_zm )
+          k = k + 1
+        end do
+          
       case default
-        l_found = .false.
-
-        j = 1
-
-        do while( j <= sclr_dim .and. .not. l_found )
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-
-          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'prtp'.and. .not. l_found ) then
-            isclrprtp(j) = k
-
-        call stat_assign( var_index=isclrprtp(j), var_name="sclr"//trim(sclr_idx)//"prtp", &
-             var_description="scalar("//trim(sclr_idx)//")'rt'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'p2'.and. .not. l_found ) then
-            isclrp2(j) = k
-        call stat_assign( var_index=isclrp2(j), var_name="sclr"//trim(sclr_idx)//"p2", &
-             var_description="scalar("//trim(sclr_idx)//")'^2'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'pthvp'.and. .not. l_found ) then
-            isclrpthvp(j) = k
-        call stat_assign( var_index=isclrpthvp(j), var_name="sclr"//trim(sclr_idx)//"pthvp", &
-             var_description="scalar("//trim(sclr_idx)//")'th_v'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'pthlp'.and. .not. l_found ) then
-            isclrpthlp(j) = k
-
-        call stat_assign( var_index=isclrpthlp(j), var_name="sclr"//trim(sclr_idx)//"pthlp", &
-             var_description="scalar("//trim(sclr_idx)//")'th_l'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'prcp'.and. .not. l_found ) then
-
-            isclrprcp(j) = k
-
-        call stat_assign( var_index=isclrprcp(j), var_name="sclr"//trim(sclr_idx)//"prcp", &
-             var_description="scalar("//trim(sclr_idx)//")'rc'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'wpsclr'//trim(sclr_idx)//'p'.and. .not. l_found ) then
-            iwpsclrp(j) = k
-
-        call stat_assign( var_index=iwpsclrp(j), var_name="wpsclr"//trim(sclr_idx)//"p", &
-             var_description="'w'scalar("//trim(sclr_idx)//")", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'wpsclr'//trim(sclr_idx)//'p2'.and. .not. l_found ) then
-
-            iwpsclrp2(j) = k
-
-        call stat_assign( var_index=iwpsclrp2(j), var_name="wpsclr"//trim(sclr_idx)//"p2", &
-             var_description="'w'scalar("//trim(sclr_idx)//")'^2'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'wp2sclr'//trim(sclr_idx)//'p'.and. .not. l_found ) then
-
-            iwp2sclrp(j) = k
-
-        call stat_assign( var_index=iwp2sclrp(j), var_name="wp2sclr"//trim(sclr_idx)//"p", &
-             var_description="'w'^2 scalar("//trim(sclr_idx)//")", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'wpsclr'//trim(sclr_idx)//'prtp'.and. .not. l_found ) then
-            iwpsclrprtp(j) = k
-
-        call stat_assign( var_index=iwpsclrprtp(j), var_name="wpsclr"//trim(sclr_idx)//"prtp", &
-             var_description="'w' scalar("//trim(sclr_idx)//")'rt'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          if( trim(vars_zm(i)) == 'wpsclr'//trim(sclr_idx)//'pthlp'.and. .not. l_found ) then
-            iwpsclrpthlp(j) = k
-
-        call stat_assign( var_index=iwpsclrpthlp(j), var_name="wpsclr"//trim(sclr_idx)//"pthlp", &
-             var_description="'w' scalar("//trim(sclr_idx)//")'th_l'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-          j = j + 1
-        end do
-
-        j = 1
-
-        do while( j <= edsclr_dim .and. .not. l_found )
-
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-
-          if( trim(vars_zm(i)) == 'wpedsclr'//trim(sclr_idx)//'p'.and. .not. l_found ) then
-            iwpedsclrp(j) = k
-
-        call stat_assign( var_index=iwpedsclrp(j), var_name="wpedsclr"//trim(sclr_idx)//"p", &
-             var_description="eddy scalar("//trim(sclr_idx)//")'w'", var_units="unknown", &
-             l_silhs=.false., grid_kind=stats_zm )
-            k = k + 1
-            l_found = .true.
-          end if
-
-          j = j + 1
-
-        end do
-
-        if ( .not. l_found ) then
-          write(fstderr,*) 'Error:  unrecognized variable in vars_zm:  ',  trim(vars_zm(i))
-          l_error = .true.  ! This will stop the run.
-        end if
+        write(fstderr,*) 'Error:  unrecognized variable in vars_zm:  ',  trim(vars_zm(i))
+        l_error = .true.  ! This will stop the run.
 
       end select
 

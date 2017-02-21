@@ -2132,6 +2132,12 @@ Sub-version number for MG microphysics
 Default: 0
 </entry>
 
+<entry id="ice_supersat" type="logical"  category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Apply ice supersaturation adjustment code
+Default: .false.
+</entry>
+
 <entry id="micro_mg_do_cldice" type="logical" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Switch to control whether MG microphysics should prognose
@@ -2617,6 +2623,116 @@ Default: '.true.'
        group="subcol_silhs_nl" valid_values="" >
 Number of subcolumns/samples to use in this simulation. Must be less than psubcols.
 Default: 4
+</entry>
+
+<entry id="subcol_silhs_corr_file_path" type="char*256" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Location of SILHS correlation input files - usually the path to the SILHS code directory.
+</entry>
+
+<entry id="subcol_silhs_corr_file_name" type="char*16" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Correlation input file run name (as in 'rico' or 'arm97' or 'default')
+</entry>
+
+<entry id="subcol_silhs_meanice" type="logical" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+A special configuration that sends mean ice mixing ratios and number concentrations to microphysics but allows cloud liquid water and number concentrations to vary. Should reduce the impact of negative condensate. Default False. 
+</entry> 
+
+<entry id="subcol_silhs_q_to_micro" type="logical" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Whether to send SILHS liq and ice mixing ratios to microphysics (if false, uses grid mean values).
+</entry> 
+
+<entry id="subcol_silhs_n_to_micro" type="logical" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Whether to send SILHS liq and ice num concentrations to microphysics (if false, uses grid mean values).
+</entry> 
+
+<entry id="subcol_silhs_constrainmn" type="logical" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Whether to constrain samples of ice, liquid and vapor to the same subcolumn mean as the grid mean value.
+</entry> 
+
+<entry id="subcol_silhs_use_clear_col" type="logical" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Whether to use a clear-air only column to ensure consistant subcolumn cloud fraction
+</entry>
+
+<entry id="subcol_silhs_ncnp2_on_ncnm2" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Prescribed in-cloud ratio [N_cn'^2] / [N_cn]^2 [no units]
+</entry>
+
+<entry id="hmp2_ip_on_hmm2_ip_ratios%rrp2_ip_on_rrm2_ip" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Prescribed in-cloud ratio [r_r'^2] / [r_r]^2   [no units]
+</entry>
+
+<entry id="hmp2_ip_on_hmm2_ip_ratios%nrp2_ip_on_nrm2_ip" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Prescribed in-cloud ratio [N_r'^2] / [N_r]^2   [no units]
+</entry>
+
+<entry id="hmp2_ip_on_hmm2_ip_ratios%rsp2_ip_on_rsm2_ip" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Prescribed in-cloud ratio [r_s'^2] / [r_s]^2   [no units]
+</entry>
+
+<entry id="hmp2_ip_on_hmm2_ip_ratios%nsp2_ip_on_nsm2_ip" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Prescribed in-cloud ratio [N_s'^2] / [N_s]^2   [no units]
+</entry>
+
+<entry id="hmp2_ip_on_hmm2_ip_ratios%rip2_ip_on_rim2_ip" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+       Prescribed in-cloud ratio [r_i'^2] / [r_i]^2   [no units]
+</entry>
+
+<entry id="hmp2_ip_on_hmm2_ip_ratios%nip2_ip_on_nim2_ip" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Prescribed in-cloud ratio [N_i'^2] / [N_i]^2   [no units]
+</entry>
+
+<entry id="subcol_silhs_c6rt" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Low Skewness in C6rt Skw. Function    [-]
+</entry>
+
+<entry id="subcol_silhs_c7" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Low Skewness in C7 Skw. Function    [-]
+</entry>
+
+<entry id="subcol_silhs_c8" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Coef. #1 in C8 Skewness Equation    [-]
+</entry>
+
+<entry id="subcol_silhs_c11" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Low Skewness in C11 Skw. Function   [-]
+</entry>
+
+<entry id="subcol_silhs_c11b" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+High Skewness in C11 Skw. Function  [-]
+</entry>
+
+<entry id="subcol_silhs_gamma_coef" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Low Skw.: gamma coef. Skw. Fnct.   [-]
+</entry>
+
+<entry id="subcol_silhs_mult_coef" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Coef. applied to log(avg dz/thresh)[-]
+</entry>
+
+<entry id="subcol_silhs_mu" type="real" category="conv"
+       group="subcol_silhs_nl" valid_values="" >
+Fract entrain rate per unit alt  [1/m]
 </entry>
 
 <!-- VAMP Sub-Column Generator -->

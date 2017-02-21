@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: stats_type.F90 6952 2014-06-17 15:59:47Z schemena@uwm.edu $
+! $Id: stats_type.F90 8014 2016-03-12 00:54:18Z raut@uwm.edu $
 !===============================================================================
 module stats_type
 
@@ -35,21 +35,21 @@ module stats_type
       kk    ! Vertical extent of the variables (Usually gr%nz from grid_class)
 
     ! Vertical levels
-    real( kind = core_rknd ), pointer, dimension(:) :: z ! altitude [m]
+    real( kind = core_rknd ), allocatable, dimension(:) :: z ! altitude [m]
 
     ! Array to store sampled fields
 
-    real(kind=stat_rknd), pointer, dimension(:,:,:,:) :: accum_field_values
+    real(kind=stat_rknd), allocatable, dimension(:,:,:,:) :: accum_field_values
         ! The variable accum_field_values contains the cumulative sums
         ! of accum_num_samples sample values of each
         ! of the num_output_fields (e.g. the sum of the sampled rain rate values)
 
-    integer(kind=stat_nknd), pointer, dimension(:,:,:,:) :: accum_num_samples
+    integer(kind=stat_nknd), allocatable, dimension(:,:,:,:) :: accum_num_samples
         ! accum_num_samples is the number of samples for each of the num_output_fields fields
         ! and each of the kk vertical levels
 
     ! Tracks if a field is in the process of an update
-    logical, pointer, dimension(:,:,:,:) :: l_in_update
+    logical, allocatable, dimension(:,:,:,:) :: l_in_update
 
     ! Data for GrADS / netCDF output
 

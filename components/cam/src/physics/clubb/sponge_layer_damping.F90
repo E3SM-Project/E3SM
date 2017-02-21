@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------
-!$Id: sponge_layer_damping.F90 7185 2014-08-11 17:45:21Z betlej@uwm.edu $
+!$Id: sponge_layer_damping.F90 8014 2016-03-12 00:54:18Z raut@uwm.edu $
 !===============================================================================
 module sponge_layer_damping
 ! Description:
@@ -31,7 +31,7 @@ module sponge_layer_damping
   end type sponge_damp_settings
 
   type sponge_damp_profile
-    real( kind = core_rknd ), pointer, dimension(:) :: &
+    real( kind = core_rknd ), allocatable, dimension(:) :: &
       tau_sponge_damp ! Damping factor
 
     integer :: &
@@ -44,15 +44,14 @@ module sponge_layer_damping
     thlm_sponge_damp_settings, &
     rtm_sponge_damp_settings, &
     uv_sponge_damp_settings
-
-!$omp threadprivate(thlm_sponge_damp_settings, rtm_sponge_damp_settings, uv_sponge_damp_settings)
+!$omp threadprivate( thlm_sponge_damp_settings, rtm_sponge_damp_settings, uv_sponge_damp_settings )
 
   type(sponge_damp_profile), public :: &
     thlm_sponge_damp_profile, &
     rtm_sponge_damp_profile, &
     uv_sponge_damp_profile
+!$omp threadprivate( thlm_sponge_damp_profile, rtm_sponge_damp_profile, uv_sponge_damp_profile )
 
-!$omp threadprivate(thlm_sponge_damp_profile, rtm_sponge_damp_profile,  uv_sponge_damp_profile)
 
   private
 
@@ -78,7 +77,7 @@ module sponge_layer_damping
     implicit none
 
     ! External
-    intrinsic :: associated
+    intrinsic :: allocated
 
     ! Input Variable(s)
     real( kind = core_rknd ), intent(in) :: dt ! Model Timestep
@@ -101,10 +100,10 @@ module sponge_layer_damping
 
     ! ---- Begin Code ----
 
-    if ( associated( damping_profile%tau_sponge_damp ) ) then
+    if ( allocated( damping_profile%tau_sponge_damp ) ) then
 
       xm_p = xm
-
+     
       do k = gr%nz, gr%nz-damping_profile%n_sponge_damp, -1
 
 ! Vince Larson used implicit discretization in order to 

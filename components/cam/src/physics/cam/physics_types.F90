@@ -4,9 +4,9 @@
 module physics_types
 
   use shr_kind_mod, only: r8 => shr_kind_r8
-  use ppgrid,       only: pcols, pver, psubcols
+  use ppgrid,       only: pcols, pver, pverp, psubcols
   use constituents, only: pcnst, qmin, cnst_name
-  use geopotential, only: geopotential_dse
+  use geopotential, only: geopotential_dse, geopotential_t
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
   use dycore,       only: dycore_is
   use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
@@ -200,17 +200,30 @@ contains
 
   end subroutine physics_type_alloc
 !===============================================================================
-  subroutine physics_update(state, ptend, dt, tend)
+  subroutine physics_update(state, ptend, dt, tend, do_hole_fill)
 !-----------------------------------------------------------------------
 ! Update the state and or tendency structure with the parameterization tendencies
 !-----------------------------------------------------------------------
     use shr_sys_mod,  only: shr_sys_flush
-    use geopotential, only: geopotential_dse
     use constituents, only: cnst_get_ind, cnst_mw
     use scamMod,      only: scm_crm_mode, single_column
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
+
+#ifdef CLUBB_SGS
+    !--- Needed for CLUBB's hole filling code <janhft 09/17/2014> ------
+    use shr_const_mod, only: &
+        shr_const_pi, &
+        shr_const_rhofw
+
+    use physconst, only: rair, cpair, latvap, latice
+
+    use clubb_api_module, only: setup_grid_heights_api, &
+                                fill_holes_vertical_api, &
+                                zt2zm_api
+    !-------------------------------------------------------------------
+#endif
 
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
@@ -221,12 +234,14 @@ contains
 
     type(physics_tend ), intent(inout), optional  :: tend  ! Physics tendencies over timestep
                     ! This is usually only needed by calls from physpkg.
+
+    logical, optional, intent(in) :: do_hole_fill
 !
 !---------------------------Local storage-------------------------------
     integer :: i,k,m                               ! column,level,constituent indices
     integer :: ixcldice, ixcldliq                  ! indices for CLDICE and CLDLIQ
     integer :: ixnumice, ixnumliq
-    integer :: ixnumsnow, ixnumrain
+    integer :: ixsnow, ixnumsnow, ixrain, ixnumrain, ixrelevant_mixing_ratio
     integer :: ncol                                ! number of columns
     character*40 :: name    ! param and tracer name for qneg3
 
@@ -248,7 +263,49 @@ contains
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
 
+#ifdef CLUBB_SGS
+    ! Whether to do hole filling rather than hard clipping (default false)
+    logical :: clubb_hole_fill = .false.  
+
+    !--- Needed for CLUBB's hole filling code <janhft 09/17/2014> ------
+    real( r8 ), parameter :: & 
+      four_third   = 4/3_r8,           &
+      rho_ice      = 917.0_r8,         & ! Accepted value is 0.40 (+/-) 0.01      [-]
+      rho_lw       = shr_const_rhofw,  & ! Density of liquid water    
+      pi           = shr_const_pi,     &
+      mvr_rain_max = 5.0E-3_r8, & ! Max. avg. mean vol. rad. rain    [m]
+      mvr_ice_max  = 1.3E-4_r8    ! Max. avg. mean vol. rad. ice     [m]
+
+    logical, parameter :: l_implemented = .true.
+
+    integer, parameter :: grid_type = 3
+
+    real(r8), parameter :: p0_clubb = 100000._r8
+
+    integer :: ixwatervapor
+
+    real( r8 ) :: sfc_elevation  ! Input to CLUBB setup_grid call
+
+    integer :: begin_height, end_height  ! Output from setup_grid call
+
+    real( r8 ), dimension( pver ) :: dz_g
+
+    real( r8 ), dimension( pverp ) :: &
+      constituent_flipped, &
+      rho_ds_zm, &
+      rho_ds_zt, &
+      zt_g, zi_g  
+      
+    real( r8 ) :: Nxm_min_coef, latheat
+
+    real( r8 ) :: rtdt
+
+   ! CHARACTER(LEN=80) :: FMT
+
+    integer :: icol
+
     !-----------------------------------------------------------------------
+#endif
 
     ! The column radiation model does not update the state
     if(single_column.and.scm_crm_mode) return
@@ -303,6 +360,14 @@ contains
     !-----------------------------------------------------------------------
     call phys_getopts(state_debug_checks_out=state_debug_checks)
 
+#ifdef CLUBB_SGS
+    if(present(do_hole_fill)) then
+      clubb_hole_fill = do_hole_fill
+    else
+      clubb_hole_fill = .false.
+    endif
+#endif
+
     ncol = state%ncol
 
     ! Update u,v fields
@@ -329,15 +394,217 @@ contains
     ! the indices will be set to -1)
     call cnst_get_ind('NUMICE', ixnumice, abort=.false.)
     call cnst_get_ind('NUMLIQ', ixnumliq, abort=.false.)
+    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('NUMRAI', ixnumrain, abort=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
     call cnst_get_ind('NUMSNO', ixnumsnow, abort=.false.)
   
+#ifdef CLUBB_SGS
+    call cnst_get_ind('Q', ixwatervapor, abort=.false.)
+#endif
+
     do m = 1, pcnst
        if(ptend%lq(m)) then
           do k = ptend%top_level, ptend%bot_level
              state%q(:ncol,k,m) = state%q(:ncol,k,m) + ptend%q(:ncol,k,m) * dt
           end do
 
+#ifdef CLUBB_SGS
+
+          rtdt = 1._r8/dt
+
+
+          ! now test for mixing ratios which are too small
+          if( clubb_hole_fill ) then
+             !<janhft 09/17/2014>
+             
+             do icol= 1, ncol
+
+             ! Create a Clubb grid object. This must be done for each
+             ! column as the z-distance between hybrid pressure levels can 
+             ! change easily. This code is taken directly from clubb_intr.F90.
+             sfc_elevation = state%zi(icol,pver+1)
+             ! Define the CLUBB momentum grid (in height, units of m)
+             do k=1,pverp
+               zi_g(k) = state%zi(icol,pverp-k+1)-sfc_elevation
+             enddo
+             ! Define the CLUBB thermodynamic grid (in units of m)
+             do k=1,pver
+                zt_g(k+1) = state%zm(icol,pver-k+1)-state%zi(icol,pver+1)
+                dz_g(k) = state%zi(icol,k)-state%zi(icol,k+1) ! compute thickness for SILHS
+             enddo
+             ! Thermodynamic ghost point is below surface
+             zt_g(1) = -1._r8*zt_g(2)
+             ! allocate grid object
+             call setup_grid_heights_api(l_implemented, grid_type, &
+                         zi_g(2), zi_g(1), zi_g(1:pverp), &
+                         zt_g(1:pverp))
+
+             ! Calculate rho for each column once to be used for liq & ice
+
+             do k=1,pver
+                rho_ds_zt(k+1) = (1._r8/gravit)*(state%pdel(icol,pver-k+1)/dz_g(pver-k+1))
+             enddo
+             rho_ds_zt(1) = rho_ds_zt(2) ! Set the ghost point to avoid Nan's
+             rho_ds_zm = zt2zm_api(rho_ds_zt)
+
+             ! Call CLUBB hole filling code for rain & ice mixing ratios 
+
+             if( m.eq.ixcldliq .or. m.eq.ixcldice .or. m.eq.ixrain .or. m.eq.ixsnow ) then
+
+                ! We need to flip the cloud ice/cloud liquid mixing ratio arrays in order to use 
+                ! the hole filling algorithm on those
+                do k=1, pver
+                   constituent_flipped(k+1) = state%q(icol,pver-k+1,m)
+                enddo ! k=1, pver
+
+                constituent_flipped(1) = constituent_flipped(2)
+                
+                call fill_holes_vertical_api( 6, qmin(m), "zt", &
+                                              rho_ds_zt, rho_ds_zm, &
+                                              constituent_flipped )
+
+                ! Flip the cloud ice/cloud liquid mixing ratios back to CAM's grid
+                do k=1, pver
+                   state%q(icol,k,m) = constituent_flipped(pver-k+2)
+                enddo ! k=1, pver 
+
+                ! Water vaper hole filling (fills holes in ice or liquid mixing ratios)
+                if (any(state%q(icol,1:pver,m) < qmin(m))) then
+
+                   do k = 1, pver
+
+                      if ( ( state%q(icol,k,m) < qmin(m) ) .and. &
+                           ( state%q(icol,k,ixwatervapor) - qmin(ixwatervapor) >= qmin(m) - state%q(icol,k,m) ) ) &
+                      then
+
+                         ! Adjust the vapor mixing ratio rvm accordingly
+                         state%q(icol,k,ixwatervapor) = state%q(icol,k,ixwatervapor) - ( qmin(m) - state%q(icol,k,m) )
+
+                         ! Adjust the temperature according to whether the effect is evaporation
+                         ! or sublimation.
+                         if ( m.eq.ixcldliq .or. m.eq.ixrain ) then
+                            latheat = latvap
+                         elseif ( m.eq.ixcldice .or. m.eq.ixsnow ) then
+                            latheat = latvap+latice
+                         else
+                            stop "Shouldn't be here in physics_update"
+                         endif
+
+!                        V. Larson updated ptend%s here so that tend%dtdt is updated later
+                         ptend%s(icol,k) = ptend%s(icol,k) + &
+                           (latheat) * (qmin(m)-state%q(icol,k,m)) / dt
+
+                         ! Set the mixing ratio to 0
+                         state%q(icol,k,m) = qmin(m)
+
+                      endif ! state%q(icol,k,m) < qmin(m)
+
+                   enddo ! k = 1, pver
+                endif ! any(state%q(icol,1:pver,m) < qmin(m)   
+
+                ! If the hole filling was not able to fill all the holes, we use the hard clipping
+                if (any(state%q(icol,1:pver,m) < qmin(m))) then
+                   if(use_mass_borrower) then 
+                      call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
+                      call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
+                   else
+                      call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
+                   end if 
+                endif ! any(state%q(icol,1:pver,m) < qmin(m)      
+
+             ! Clipping on the ice number concentration to ensure a reasonable droplet size
+             elseif ( (m.eq.ixnumice) .or. (m.eq.ixnumsnow) ) then
+
+                Nxm_min_coef = 1._r8 / ( four_third * pi * rho_ice * mvr_ice_max**3 )
+                   do k = 1, pver, 1
+                      if (m .eq. ixnumice) then
+                        ixrelevant_mixing_ratio = ixcldice
+                      else if (m .eq. ixnumsnow) then
+                        ixrelevant_mixing_ratio = ixsnow
+                      else
+                        stop "Error: shouldn't be here"
+                      end if
+                      if ( state%q(icol,k,ixrelevant_mixing_ratio) > 0._r8 ) then
+
+                         ! Hydrometeor mixing ratio, <rx>, is found at the grid level.
+                         state%q(icol,k,m) = &
+                            max( state%q(icol,k,m), Nxm_min_coef * state%q(icol,k,ixrelevant_mixing_ratio) )
+
+                      else ! <rx> = 0
+  
+                         state%q(icol,k,m) = 0._r8
+
+                      endif ! state%q(icol,k,ixrelevant_mixing_ratio) > 0._r8
+ 
+                   enddo ! k = 1, pver, 1
+
+             ! Clipping on the cloud liquid number concentration to ensure a reasonable droplet size
+             elseif ( (m.eq.ixnumliq) .or. (m.eq.ixnumrain) ) then
+
+                Nxm_min_coef = 1._r8 / ( four_third * pi * rho_lw * mvr_rain_max**3 )
+                   do k = 1, pver, 1
+                      if (m .eq. ixnumliq) then
+                        ixrelevant_mixing_ratio = ixcldliq
+                      else if (m .eq. ixnumrain) then
+                        ixrelevant_mixing_ratio = ixrain
+                      else
+                        stop "Error: shouldn't be here"
+                      end if
+                      if ( state%q(icol,k,ixrelevant_mixing_ratio) > 0._r8 ) then
+
+                         ! Hydrometeor mixing ratio, <rx>, is found at the grid level.
+                         state%q(icol,k,m) = &
+                            max( state%q(icol,k,m), Nxm_min_coef * state%q(icol,k,ixrelevant_mixing_ratio) )
+
+                      else ! <rx> = 0
+  
+                         state%q(icol,k,m) = 0._r8
+
+                      endif ! state%q(icol,k,ixrelevant_mixing_ratio) > 0._r8
+ 
+                   enddo ! k = 1, pver, 1
+
+             else ! For all other advected consituents do the old hard clipping
+
+                name = trim(ptend%name) // '/' // trim(cnst_name(m))
+                if(use_mass_borrower) then 
+                   call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
+                   call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
+                else
+                   call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
+                end if 
+
+             end if    
+
+             enddo ! icol=1,ncol
+
+          else  ! ~clubb_hole_fill
+
+            ! Original code for hard clipping negative values is unchanged
+            !     don't call qneg3 for number concentration variables
+
+            ! don't call qneg3 for number concentration variables
+            if (m /= ixnumice  .and.  m /= ixnumliq .and. &
+                m /= ixnumrain .and.  m /= ixnumsnow ) then
+                name = trim(ptend%name) // '/' // trim(cnst_name(m))
+                if(use_mass_borrower) then 
+                   call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.False.)
+                   call massborrow(trim(name), state%lchnk, ncol, state%psetcols, m, m, qmin(m), state%q(1,1,m), state%pdel)
+                else
+                   call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver, m, m, qmin(m), state%q(1,1,m),.True.)
+                end if 
+            else
+                do k = ptend%top_level, ptend%bot_level
+                   ! checks for number concentration
+                   state%q(:ncol,k,m) = max(1.e-12_r8,state%q(:ncol,k,m))
+                   state%q(:ncol,k,m) = min(1.e10_r8,state%q(:ncol,k,m))
+                end do
+            end if
+
+
+          end if ! clubb_hole_fill
+#else
           ! now test for mixing ratios which are too small
           ! don't call qneg3 for number concentration variables
           if (m /= ixnumice  .and.  m /= ixnumliq .and. &
@@ -359,9 +626,10 @@ contains
              end do
           end if
 
-       end if
+#endif
+       end if ! ptend%lq(m)
 
-    end do
+    end do  ! m=1,pcnst
 
     !------------------------------------------------------------------------
     ! This is a temporary fix for the large H, H2 in WACCM-X
@@ -423,23 +691,30 @@ contains
       zvirv(:,:) = zvir    
     endif
 
-    !-------------------------------------------------------------------------------------------
-    ! Update dry static energy(moved from above for WACCM-X so updating after cpairv_loc update)
-    !-------------------------------------------------------------------------------------------
+    !-------------------------------------------------------------------------------------------------------------
+    ! Update temperature from dry static energy (moved from above for WACCM-X so updating after cpairv_loc update)
+    !-------------------------------------------------------------------------------------------------------------
+
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
-          state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
+          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)*dt/cpairv_loc(:ncol,k,state%lchnk)
           if (present(tend)) &
                tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
        end do
     end if
 
-    ! Derive new temperature and geopotential fields if heating or water tendency not 0.
+    ! Derive new geopotential fields if heating or water tendency not 0.
+
     if (ptend%ls .or. ptend%lq(1)) then
-       call geopotential_dse(  &
+       call geopotential_t  (                                                                    &
             state%lnpint, state%lnpmid, state%pint  , state%pmid  , state%pdel  , state%rpdel  , &
-            state%s     , state%q(:,:,1),state%phis , rairv_loc(:,:,state%lchnk), gravit  , cpairv_loc(:,:,state%lchnk), &
-            zvirv    , state%t     , state%zi    , state%zm    , ncol         )
+            state%t     , state%q(:,:,1), rairv_loc(:,:,state%lchnk), gravit  , zvirv          , &
+            state%zi    , state%zm      , ncol         )
+       ! update dry static energy for use in next process
+       do k = ptend%top_level, ptend%bot_level
+          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk) &
+                           + gravit*state%zm(:ncol,k) + state%phis(:ncol)
+       end do
     end if
 
     ! Good idea to do this regularly.
@@ -1177,6 +1452,7 @@ end subroutine physics_ptend_copy
     !-----------------------------------------------------------------------
 
     use constituents, only : cnst_get_type_byind
+    use ppgrid,       only : begchunk, endchunk
 
     implicit none
     !
@@ -1198,6 +1474,9 @@ end subroutine physics_ptend_copy
     real(r8) :: vtmp(pcols)   ! temp variable for recalculating the initial v values
 
     real(r8) :: zvirv(pcols,pver)    ! Local zvir array pointer
+
+    real(r8),allocatable :: cpairv_loc(:,:,:)
+
     !
     !-----------------------------------------------------------------------
     ! verify that the dycore is FV
@@ -1205,6 +1484,9 @@ end subroutine physics_ptend_copy
 
     if (state%psetcols .ne. pcols) then
        call endrun('physics_dme_adjust: cannot pass in a state which has sub-columns')
+    end if
+    if (adjust_te) then
+       call endrun('physics_dme_adjust: must update code based on the "correct" energy before turning on "adjust_te"')
     end if
 
     lchnk = state%lchnk
@@ -1256,11 +1538,27 @@ end subroutine physics_ptend_copy
 
 ! compute new T,z from new s,q,dp
     if (adjust_te) then
+! cpairv_loc needs to be allocated to a size which matches state and ptend
+! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
+! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
+
+       if (state%psetcols == pcols) then
+          allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+          cpairv_loc(:,:,:) = cpairv(:,:,:)
+       else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+          allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+          cpairv_loc(:,:,:) = cpair
+       else
+          call endrun('physics_dme_adjust: cpairv is not allowed to vary when subcolumns are turned on')
+       end if
+
        call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
             state%pmid  , state%pdel    , state%rpdel,  &
             state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
-	    gravit, cpairv(:,:,state%lchnk), zvirv, &
+            gravit, cpairv_loc(:,:,state%lchnk), zvirv, &
             state%t     , state%zi      , state%zm   , ncol)
+
+       deallocate(cpairv_loc)
     end if
 
   end subroutine physics_dme_adjust

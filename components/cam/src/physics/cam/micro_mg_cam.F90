@@ -131,6 +131,7 @@ real(r8)          :: ice_sed_ai                  = 700.0_r8      ! Fall speed pa
 
 logical, public :: do_cldliq ! Prognose cldliq flag
 logical, public :: do_cldice ! Prognose cldice flag
+logical, public :: do_icesuper ! ice supersaturation code
 
 integer :: num_steps ! Number of MG substeps
 
@@ -268,6 +269,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   logical :: micro_mg_do_cldice = .true. ! do_cldice = .true., MG microphysics is prognosing cldice
   logical :: micro_mg_do_cldliq = .true. ! do_cldliq = .true., MG microphysics is prognosing cldliq
   integer :: micro_mg_num_steps = 1      ! Number of substepping iterations done by MG (1.5 only for now).
+  logical :: ice_supersat         = .false.! ice supersaturation code
 
 
   ! Local variables
@@ -279,7 +281,8 @@ subroutine micro_mg_cam_readnl(nlfile)
 !!== KZ_DCS
        micro_mg_dcs_tdep, & 
 !!== KZ_DCS
-       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, micro_mg_berg_eff_factor
+       microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
+       ice_supersat
 
   !-----------------------------------------------------------------------------
 
@@ -300,6 +303,7 @@ subroutine micro_mg_cam_readnl(nlfile)
      do_cldice = micro_mg_do_cldice
      do_cldliq = micro_mg_do_cldliq
      num_steps = micro_mg_num_steps
+     do_icesuper = ice_supersat
 
      ! Verify that version numbers are valid.
      select case (micro_mg_version)
@@ -340,6 +344,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(micro_mg_berg_eff_factor,    1, mpir8,  0, mpicom)
   call mpibcast(ice_sed_ai,                  1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
+  call mpibcast(do_icesuper,                 1, mpilog, 0, mpicom)
 
 #endif
 
@@ -769,6 +774,8 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('MPDQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Q tendency - Morrison microphysics'                      )
    call addfld ('MPDLIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDLIQ tendency - Morrison microphysics'                 )
    call addfld ('MPDICE', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDICE tendency - Morrison microphysics'                 )
+   call addfld ('MPDNLIQ',    (/ 'lev' /), 'A', '1/kg/s',   'NUMLIQ tendency - Morrison microphysics'            )
+   call addfld ('MPDNICE',    (/ 'lev' /), 'A', '1/kg/s',   'NUMICE tendency - Morrison microphysics'            )
    call addfld ('MPDW2V', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Vapor tendency - Morrison microphysics'       )
    call addfld ('MPDW2I', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Ice tendency - Morrison microphysics'         )
    call addfld ('MPDW2P', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Precip tendency - Morrison microphysics'      )
@@ -789,6 +796,10 @@ subroutine micro_mg_cam_init(pbuf2d)
    if (use_subcol_microp) then
       call addfld('FICE_SCOL', (/'psubcols','lev     '/), 'I', 'fraction', &
            'Sub-column fractional ice content within cloud', flag_xyfill=.true., fill_value=1.e30_r8)
+      call addfld('MPDICE_SCOL', (/'psubcols','lev     '/), 'I', 'kg/kg/s', &
+           'Sub-column CLDICE tendency - Morrison microphysics', flag_xyfill=.true., fill_value=1.e30_r8)
+      call addfld('MPDLIQ_SCOL', (/'psubcols','lev     '/), 'I', 'kg/kg/s', &
+           'Sub-column CLDLIQ tendency - Morrison microphysics', flag_xyfill=.true., fill_value=1.e30_r8)
    end if
 
    ! Averaging for cloud particle number and size
@@ -2920,6 +2931,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call outfld('MPDQ',        qvlat,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MPDLIQ',      qcten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MPDICE',      qiten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MPDNLIQ',     ncten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MPDNICE',     niten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('EVAPSNOW',    evapsnow,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QCSEVAP',     qcsevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QISEVAP',     qisevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
@@ -2952,6 +2965,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    ! Example subcolumn outfld call
    if (use_subcol_microp) then
       call outfld('FICE_SCOL',   nfice,       psubcols*pcols, lchnk)
+      call outfld('MPDLIQ_SCOL', qcten,       psubcols*pcols, lchnk)
+      call outfld('MPDICE_SCOL', qiten,       psubcols*pcols, lchnk)
    end if
 
    ! Output fields which are already on the grid

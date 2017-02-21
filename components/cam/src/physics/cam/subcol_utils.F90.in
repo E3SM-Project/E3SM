@@ -480,7 +480,7 @@ contains
       integer :: ngrdcol
 
       if (.not. allocated(state_sc%lat)) then
-         call endrun('subcol_state_copy: user must allocate state_sc prior to calling this routine')
+         call physics_state_alloc(state_sc, state%lchnk, state%psetcols)
       end if
 
       ngrdcol       = state%ngrdcol
