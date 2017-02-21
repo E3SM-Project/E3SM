@@ -5,13 +5,14 @@ case_id = 'set5_ANN_PRECT_TRMM'
 #test_data_path = '/Users/shaheen2/github/acme_diags/acme_diags/'
 reference_data_path = '/Users/zhang40/Documents/obs_for_diagnostics/'
 test_data_path = '/Users/zhang40/Documents/ACME_simulations/'
-reference_data_set = 'TRMM_ANN_climo.nc'  # observation
+reference_data_set = 'GPCP_ANN_climo.nc'  # observation
 test_data_set = '20160520.A_WCYCL1850.ne30_oEC.edison.alpha6_01_ANN_climo.nc'  # model
 
 variables = 'PRECT'
 season = 'ANN'
 regrid_tool = 'esmf'
 regrid_method = 'linear'
+#regrid_method = 'conservative'
 
 output_file = 'test'
 

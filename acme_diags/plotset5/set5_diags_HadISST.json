@@ -1,0 +1,14 @@
+{
+	"set5": [
+
+	  {
+      "case_id": "set5_SST_HadISST",
+      "variables": "SST",
+      "ref_name": "HadISST_CL",
+      "reference_name": "HadISST (climatology)",
+      "season": ["ANN"],
+      "levels": []
+		}
+          ]
+	
+}
