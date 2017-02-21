@@ -227,6 +227,9 @@
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
 
+<!-- coupling -->
+<config_ssh_grad_relax_timescale>86400.0</config_ssh_grad_relax_timescale>
+
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
 <config_jerlov_water_type>3</config_jerlov_water_type>
