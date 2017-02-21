@@ -7,16 +7,12 @@ class TestACMEDerivations(unittest.TestCase):
 
     def test_convert_units(self):
         precc_file = cdms2.open('precc.nc')
-        var1 = precc_file('PRECC')
+        var = precc_file('PRECC')
         precc_file.close()
 
-        precl_file = cdms2.open('precl.nc')
-        var2 = precl_file('PRECL')
-        precl_file.close()
+        new_var = acme._convert_units(var, 'mm/day')
 
-        new_var1, new_var2 = acme._convert_units(var1, var2, 'mm/day')
-
-        self.assertEqual(new_var1.units, new_var2.units)
+        self.assertEqual(new_var.units, 'mm/day')
 
 if __name__ == '__main__':
     unittest.main()
