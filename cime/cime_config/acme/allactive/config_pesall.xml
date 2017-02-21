@@ -4060,6 +4060,39 @@
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
+      <pes compset="any" pesize="L">
+        <comment>115 nodes x 6 MPI x 6 OMP</comment>
+        <ntasks>
+          <ntasks_atm>675</ntasks_atm>
+          <ntasks_lnd>12</ntasks_lnd>
+          <ntasks_rof>12</ntasks_rof>
+          <ntasks_ice>12</ntasks_ice>
+          <ntasks_ocn>12</ntasks_ocn>
+          <ntasks_cpl>12</ntasks_cpl>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>6</nthrds_atm>
+          <nthrds_lnd>6</nthrds_lnd>
+          <nthrds_rof>6</nthrds_rof>
+          <nthrds_ice>6</nthrds_ice>
+          <nthrds_ocn>6</nthrds_ocn>
+          <nthrds_cpl>6</nthrds_cpl>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>675</rootpe_lnd>
+          <rootpe_rof>675</rootpe_rof>
+          <rootpe_ice>675</rootpe_ice>
+          <rootpe_ocn>675</rootpe_ocn>
+          <rootpe_cpl>675</rootpe_cpl>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+        </rootpe>
+      </pes>
     </mach>
   </grid>
   <grid name="any">
@@ -5982,6 +6015,80 @@
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
           <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30.*_r%r05_m%oEC60to30.*_g%null_w%null">
+    <mach name="anvil">
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 32 nodes pure-MPI </comment>
+        <PES_PER_NODE>32</PES_PER_NODE>
+        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>675</ntasks_atm>
+          <ntasks_lnd>64</ntasks_lnd>
+          <ntasks_rof>64</ntasks_rof>
+          <ntasks_ice>640</ntasks_ice>
+          <ntasks_ocn>320</ntasks_ocn>
+          <ntasks_cpl>640</ntasks_cpl>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>640</rootpe_lnd>
+          <rootpe_rof>640</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>704</rootpe_ocn>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+        </rootpe>
+      </pes>
+      <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 59 nodes pure-MPI </comment>
+        <PES_PER_NODE>32</PES_PER_NODE>
+        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>1350</ntasks_atm>
+          <ntasks_lnd>352</ntasks_lnd>
+          <ntasks_rof>352</ntasks_rof>
+          <ntasks_ice>1024</ntasks_ice>
+          <ntasks_ocn>512</ntasks_ocn>
+          <ntasks_cpl>1024</ntasks_cpl>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>1024</rootpe_lnd>
+          <rootpe_rof>1024</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>1376</rootpe_ocn>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
         </rootpe>
       </pes>
     </mach>
