@@ -75,9 +75,8 @@ parameters = make_parameters(orginal_parameter)
 for parameter in parameters:
 
     reference_data_path = parameter.reference_data_path
-#    reference_data_set = parameter.reference_data_set # observation
-
     test_data_path = parameter.test_data_path
+#    reference_data_set = parameter.reference_data_set # observation
 #    test_data_set = parameter.test_data_set # model
 #    filename1=test_data_path + test_data_set
 #    filename2=reference_data_path + reference_data_set
@@ -132,10 +131,12 @@ for parameter in parameters:
             # Note, NCAR plots native mv1, mv2, but mean is from newly masker mv1 and mv2.while we plot everything already masked for now.Need to modify plotting routine for accomodating printing different sets of means to plots.
             mv1_new = MV2.masked_where(land_mask,mv1_reg)
             mv2_new = MV2.masked_where(land_mask,mv2_reg)
+            parameter.output_file = '_'.join([ref_name,it])
+            parameter.main_title = str(' '.join([var,it]))
 
+            # Plotting for SST
             plot_set_5.plot(mv2, mv1, mv2_new, mv1_new, parameter)
         
-
         else:
             f_in = cdms2.open(filename1)
             mv1 = f_in(var)
@@ -148,7 +149,7 @@ for parameter in parameters:
         #for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
             #regrid towards lower resolution of two variables for calculating difference
-            if var != 'SST':
+            if var != 'SST': #special case
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
                 plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
 
@@ -203,7 +204,7 @@ for parameter in parameters:
                 # Regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
         
-                # Ploting
+                # Plotting
                 plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
         else:
             print "Dimensions of two variables are difference. Abort"

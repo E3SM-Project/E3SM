@@ -141,6 +141,9 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     vcs_canvas.plot(test, template_test, test_isofill)
     vcs_canvas.plot(reference, template_ref, reference_isofill)
     vcs_canvas.plot(diff, template_diff, diff_isofill)
+    #vcs_canvas.plot(test, template_test, 'boxfill')
+    #vcs_canvas.plot(reference, template_ref, 'boxfill')
+    #vcs_canvas.plot(diff, template_diff, 'boxfill')
 
     plot_rmse_and_corr(vcs_canvas, test_regrid, reference_regrid)
 

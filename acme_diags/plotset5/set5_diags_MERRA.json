@@ -1,0 +1,14 @@
+{
+	"set5": [
+
+	  {
+      "case_id": "set5_T_MERRA",
+      "variables": "T",
+      "ref_name": "MERRA",
+      "reference_name": "MERRA",
+      "season": ["ANN"],
+      "levels": [200.0,850]
+		}
+          ]
+	
+}
