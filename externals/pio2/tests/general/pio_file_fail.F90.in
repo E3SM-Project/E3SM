@@ -1,0 +1,51 @@
+PIO_TF_TEST_SUB_BEGIN create_file_always_fail(iotype, filename)
+  implicit none
+  integer,  intent(in)  :: iotype
+  character(len=PIO_TF_MAX_STR_LEN),  intent(in)  :: filename
+
+  type(file_desc_t) :: pio_file
+  integer ierr
+
+  ! Original file creation
+  ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotype, filename)
+  PIO_TF_PASSERT(ierr /= PIO_NOERR, "PIO_createfile did not fail as expected")
+
+PIO_TF_TEST_SUB_END create_file_always_fail
+
+PIO_TF_TEST_SUB_BEGIN open_file_always_fail(iotype, filename)
+  implicit none
+  integer,  intent(in)  :: iotype
+  character(len=PIO_TF_MAX_STR_LEN),  intent(in)  :: filename
+
+  type(file_desc_t) :: pio_file
+  integer ierr
+
+  ! Test opening of file
+  ierr = PIO_openfile(pio_tf_iosystem_, pio_file, iotype, filename, PIO_nowrite)
+  PIO_TF_PASSERT(ierr /= PIO_NOERR, "PIO_openfile did not fail as expected")
+
+PIO_TF_TEST_SUB_END open_file_always_fail
+
+PIO_TF_TEST_DRIVER_BEGIN
+  implicit none
+  character(len=PIO_TF_MAX_STR_LEN) :: dummy_file
+  integer :: i
+  ! uiotypes = undefined nc io types
+  integer, dimension(:), allocatable :: uiotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: uiotype_descs
+  integer :: num_uiotypes
+
+  num_uiotypes = 0
+  call PIO_TF_Get_undef_iotypes(uiotypes, uiotype_descs, num_uiotypes)
+  dummy_file = "test_pio_file_fail.testfile"
+  do i=1,num_uiotypes
+    PIO_TF_TEST_RUN(create_file_always_fail(uiotypes(i), dummy_file), trim(uiotype_descs(i)))
+    PIO_TF_TEST_RUN(open_file_always_fail(uiotypes(i), dummy_file), trim(uiotype_descs(i)))
+  end do
+  if(allocated(uiotypes)) then
+    deallocate(uiotypes)
+    deallocate(uiotype_descs)
+  end if
+
+PIO_TF_TEST_DRIVER_END
+

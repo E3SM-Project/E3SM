@@ -1,0 +1,147 @@
+#!/usr/bin/env python
+
+"""
+ This utility allows the user to change a env_*xml file via a commandline interface.
+
+ The command is echoed to the CaseStatus file, unless -noecho is given. The
+ purpose of this echoing is to provide a "paper trail" of changes made by the
+ user, so calls to xmlchange by the cime scripts that are part of the normal case
+ setup/build process should generally use -noecho.
+
+"""
+
+from standard_script_setup import *
+
+from CIME.utils import expect, convert_to_type, append_status
+from CIME.case import Case
+
+import argparse, doctest, shutil, glob, time, re
+
+# Set logger
+logger = logging.getLogger("xmlchange")
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [<changeargs>] [--verbose][--file file][--id id][--val value][--noecho][--append][--warn][--force]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# xmlchange REST_OPT=ndays,REST_N=4 \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("listofsettings", nargs="?", default='',
+                        help="Comma seperated list of settings in the form: var1=value,var2=value,...")
+
+    parser.add_argument("--caseroot", default=os.getcwd(),
+                        help="Case directory to build")
+    # Need to support older single dash version of arguments for compatibility with components
+    parser.add_argument("-loglevel",
+                        help="ignored, backward compatibility only")
+
+    parser.add_argument("-file", "--file",
+                        help="xml file to edit")
+
+    parser.add_argument("-id", "--id",
+                        help="the xml entry id")
+
+    parser.add_argument("-val","--val",
+                        help="the value to set")
+
+    parser.add_argument("-delimiter","--delimiter", type=str, default="," ,
+                        help="set delimiter string, default is ,")
+
+    parser.add_argument("-dryrun","--dryrun", type=bool , default=False,
+                        help="parse settings and print key value pairs only")
+
+    parser.add_argument("-noecho", "--noecho", action="store_true",
+                        help="do not update CaseStatus with this change")
+
+    parser.add_argument("-append","--append", action="store_true",
+                        help="append to the existing value")
+
+    parser.add_argument("-warn","--warn", action="store_true",
+                        help="not implemented")
+
+    parser.add_argument("-subgroup","--subgroup",
+                        help="apply to this subgroup only")
+
+    parser.add_argument("-f","--force", action="store_true",
+                        help="ignore typing checks and store value")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    listofsettings = []
+    if( len(args.listofsettings )):
+        delimiter = re.escape(args.delimiter)
+        listofsettings = re.split(r'(?<!\\)'+ delimiter , args.listofsettings)
+
+    return args.caseroot, listofsettings, args.file, args.id, args.val, args.subgroup, args.append, args.noecho, args.warn, args.force , args.dryrun
+
+def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=None, subgroup=None,
+              append=None, noecho=False, warn=None, force=False , dryrun=False):
+    with Case(caseroot, read_only=False) as case:
+
+        if len(listofsettings):
+            logger.debug("List of attributes to change: %s" , listofsettings)
+
+            # Change values         
+            for setting in listofsettings:
+                
+                pair = setting.split("=",1)
+                expect(len(pair) == 2 , "Expecting a key value pair in the form of key=value. Got %s" % (pair) ) 
+                (xmlid, xmlval) = pair
+                
+                type_str = case.get_type_info(xmlid)
+                if(append is True):
+                    value = case.get_value(xmlid, resolved=False,
+                                           subgroup=subgroup)
+                    xmlval = "%s %s" %(xmlval, value)
+                if not force:
+                    xmlval = convert_to_type(xmlval, type_str, xmlid)
+
+                if not dryrun :    
+                    case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+                else :
+                    logger.warning("'%s' = '%s'" , xmlid , xmlval )
+        else:
+            if append is True:
+                value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
+                xmlval = "%s %s" %(xmlval, value)
+            type_str = case.get_type_info(xmlid)
+            if not force:
+                xmlval = convert_to_type(xmlval, type_str, xmlid)
+            case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
+
+    if not noecho:
+        argstr = ""
+        for arg in sys.argv:
+            argstr += "%s "%arg
+        msg = "<command> %s </command>" % (argstr)
+        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
+
+def _main_func(description):
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn, force , dry = parse_command_line(sys.argv, description)
+
+    xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn, force , dry)
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
