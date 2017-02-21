@@ -290,6 +290,7 @@
       </modules>
 
       <modules>
+        <command name="load">git</command>
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
@@ -424,6 +425,7 @@
 	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
+        <command name="load">git</command>
 	<command name="load">cmake/3.3.2</command>
 	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
@@ -1034,7 +1036,7 @@
 	 <PROJECT>HiRes_EarthSys_2</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <mpirun mpilib="default">
-           <executable>runjob</executable>
+           <executable>/usr/bin/runjob</executable>
              <arguments>
                <arg name="label"> --label short</arg>
                <!-- Ranks per node!! -->
@@ -1061,7 +1063,7 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="MPI_TYPE_MAX">100000</env>
+      <env name="MPI_TYPE_MAX">10000</env>
       <env name="OMP_DYNAMIC">FALSE</env>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
