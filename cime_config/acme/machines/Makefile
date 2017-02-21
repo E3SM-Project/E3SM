@@ -455,6 +455,7 @@ FFLAGS += $(FPPDEFS)
 FFLAGS_NOOPT += $(FPPDEFS)
 
 
+
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
 # The following is for the COSP simulator code:
 COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
@@ -471,15 +472,15 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
 
 
-  ifdef COSP_LIBDIR
-    INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
-    $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
-    $(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
-    F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
-    F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
+ifdef COSP_LIBDIR
+INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
+$(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
+	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
+	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
+	F90FLAGS_fixed='$(INCLDIR) $(INCS) $(FIXEDFLAGS) $(FFLAGS) $(FC_AUTO_R8)'
 
-    cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
-  endif
+cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
+endif
 
 endif
 
