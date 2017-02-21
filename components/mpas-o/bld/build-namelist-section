@@ -225,6 +225,7 @@ add_default($nl, 'config_cvmix_convective_viscosity');
 add_default($nl, 'config_cvmix_convective_basedOnBVF');
 add_default($nl, 'config_cvmix_convective_triggerBVF');
 add_default($nl, 'config_use_cvmix_shear');
+add_default($nl, 'config_cvmix_num_ri_smooth_loops');
 add_default($nl, 'config_cvmix_shear_mixing_scheme');
 add_default($nl, 'config_cvmix_shear_PP_nu_zero');
 add_default($nl, 'config_cvmix_shear_PP_alpha');
