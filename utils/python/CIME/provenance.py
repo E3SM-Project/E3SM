@@ -16,7 +16,7 @@ def _get_batch_job_id_for_syslog(case):
     mach_syslog only works on certain machines
     """
     mach = case.get_value("MACH")
-    if mach == 'titan':
+    if mach in ['anvil', 'titan']:
         return os.environ["PBS_JOBID"]
     elif mach in ['cori-haswell', 'cori-knl', 'edison']:
         return os.environ["SLURM_JOB_ID"]
@@ -134,6 +134,12 @@ def save_prerun_provenance_acme(case, lid=None):
         mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce." + lid)
         run_cmd_no_fail("./mdiag_reduce.csh > %s" % mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
         gzip_existing_file(mdiag_reduce)
+    elif mach == "anvil":
+        for cmd, filename in [("qstat -f acme >", "qstatf"),
+                              ("qstat -f %s >" % job_id, "qstatf_jobid")]:
+            full_cmd = cmd + " " + filename
+            run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
+            gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
     # copy/tar SourceModes
     source_mods_dir = os.path.join(caseroot, "SourceMods")
@@ -256,6 +262,8 @@ def save_postrun_provenance_acme(case, lid):
     globs_to_copy = []
     if mach == "titan":
         globs_to_copy.append("%s*OU" % job_id)
+    elif mach == "anvil":
+        globs_to_copy.append("/home/%s/%s*OU" % (getpass.getuser(), job_id) )
     elif mach == "mira":
         globs_to_copy.append("%s*output" % job_id)
         globs_to_copy.append("%s*cobaltlog" % job_id)
