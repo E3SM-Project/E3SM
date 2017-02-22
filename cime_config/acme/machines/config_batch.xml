@@ -380,25 +380,21 @@
 
    <batch_system MACH="lawrencium-lr2" type="slurm" version="x.y">
      <directives>
-       <directive>--partition=lr2</directive>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--account={{ project }}</directive>
        <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr2</queue>
     </queues>
    </batch_system>
 
    <batch_system MACH="lawrencium-lr3" type="slurm" version="x.y">
      <directives>
-       <directive>--partition=lr3</directive>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--account={{ project }}</directive>
        <directive>--exclusive</directive>
      </directives>
     <queues>
-      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+      <queue walltimemin="0" walltimemax="01:00:00" jobmin="0" jobmax="64" default="true">lr3</queue>
     </queues>
    </batch_system>
 
