@@ -11,6 +11,7 @@ import plot_set_5
 import glob
 import os
 import fnmatch
+from acme_diags.derivations import acme
 
 
 def make_parameters(orginal_parameter):
@@ -65,7 +66,7 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv2_reg = mv2
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
-    
+
 
     
 parser = acme_diags.acme_parser.ACMEParser()
@@ -92,13 +93,23 @@ for parameter in parameters:
         for filename in fnmatch.filter(test_files, '*'+it+'*'):
             print filename
             filename1 = filename
- 
+
         ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
         for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+it+'*'):
             print filename
             filename2 = filename
-    
 
+        #print filename1, filename2
+        f_mod = cdms2.open(filename1)
+        f_obs = cdms2.open(filename2)
+
+        mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
+        mv2 = f_obs(var)
+
+        parameter.output_file = '_'.join([ref_name,it])
+        parameter.main_title = str(' '.join([var,it]))
+
+        '''
         if var == 'PRECT':
             f_mod = cdms2.open(filename1)
             f_obs = cdms2.open(filename2)
@@ -122,6 +133,7 @@ for parameter in parameters:
             mv1 = mask_by(TS, OCNFRAC, lo = 0.9) #following AMWG
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
+         '''
 
             mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
             mv1_reg=mv1_reg(squeeze=1)
@@ -142,6 +154,7 @@ for parameter in parameters:
             mv1 = f_in(var)
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
+
         parameter.output_file = '_'.join([ref_name,it])
         parameter.main_title = str(' '.join([var,it]))
         print parameter.output_file
