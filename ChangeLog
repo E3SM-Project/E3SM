@@ -1,6 +1,29 @@
 ======================================================================
 
 Originator: Bill Sacks
+Date: 02-21-2017
+Tag: cime5.2.0-alpha.25
+Answer Changes: Likely answer changes on yellowstone
+Tests: One CLM test that failed in alpha.24
+Dependencies: none
+
+Brief Summary: Back out the compiler update on yellowstone
+
+User interface changes: none
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+
+bac0ce7 Merge pull request #1174 from jedwards4b/compiler_backout
+
+Modified files: git diff --name-status [previous_tag]
+
+M       cime_config/cesm/machines/config_machines.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Bill Sacks
 Date: 02-17-2017
 Tag: cime5.2.0-alpha.24
 Answer Changes: None documented in merge log messages for 'Test status'
