@@ -238,7 +238,7 @@
 	<command name="load">ncarenv/1.0</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/16.0.3</command>
+	<command name="load">intel/17.0.1</command>
 	<command name="load">mkl</command>
       </modules>
       <modules compiler="gnu">

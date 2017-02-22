@@ -1,5 +1,253 @@
 ======================================================================
 
+Originator: Bill Sacks
+Date: 02-21-2017
+Tag: cime5.2.0-alpha.25
+Answer Changes: Likely answer changes on yellowstone relative to
+                alpha.24, but not relative to alpha.23
+Tests: One CLM test that failed in alpha.24
+Dependencies: none
+
+Brief Summary: Back out the compiler update on yellowstone
+
+User interface changes: none
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+
+bac0ce7 Merge pull request #1174 from jedwards4b/compiler_backout
+
+Modified files: git diff --name-status [previous_tag]
+
+M       cime_config/cesm/machines/config_machines.xml
+
+======================================================================
+
+======================================================================
+
+Originator: Bill Sacks
+Date: 02-17-2017
+Tag: cime5.2.0-alpha.24
+Answer Changes: None documented in merge log messages for 'Test status'
+Tests: scripts_regression_tests.py run on some changes, but not this tag
+Dependencies:
+
+Brief Summary: Major changes include:
+- Bring in ACME changes up to 5.1
+- Fix Fortran unit tests
+
+User interface changes: The following changes were documented:
+- create_newcase --mach is now --machine to match create_test
+- Removes PRE test from cime_developer
+- Many changes in PR #1123 ("Merge the maint-cime5.1 branch along with ACME's
+  changes to 5.1"), most (all?) of which just affect ACME
+- -p flag to xmlquery
+- -a option to case.submit
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+
+980a6b8 Merge pull request #1167 from fischer-ncar/drip_annual_changes_test_fix
+e8929e2 Merge pull request #1165 from ESMCI/jayeshkrishna/cond_incl_make_undefine
+9554cce Merge pull request #1160 from jedwards4b/get_timing_correction
+642cc32 Merge pull request #1164 from billsacks/unit_tests_local
+938e9b0 Merge pull request #1157 from billsacks/unit_test_parallel
+3929369 Merge pull request #1149 from jedwards4b/correct_path_query_for_testlistxml
+9b1630f Merge pull request #1152 from jedwards4b/pio_bld_fix
+db95da1 Merge pull request #1151 from ESMCI/agsalin/gitignore
+c80c65c Merge pull request #1145 from billsacks/unit_test_cleanup
+e8d8c67 fix pylint issue
+7ef40c0 Merge pull request #1140 from jedwards4b/cleanbld_refactor
+bd3fc66 Merge pull request #1135 from jedwards4b/unit_test_refactor
+534aade Merge branch 'jgfouca/allow_arbitrary_batch_args' (PR #1137)
+d0a1616 Merge pull request #1136 from ESMCI/jgfouca/handle_batch_errors_better
+26cd982 Merge pull request #1131 from bertinia/master
+26dd1e2 Merge pull request #1126 from ESMCI/jgfouca/bless_test_update
+98c0ff1 Merge pull request #1127 from ESMCI/jgfouca/namelist_allow_star
+a51fb8c Merge pull request #1128 from ESMCI/jgfouca/xmlquery_partial_match
+77cf83e Merge branch 'worleyph/timing/non-null-terminated_string_support_fix' into master (PR #895)
+21ea438 Merge pull request #1122 from gold2718/DAEfix
+7248aef Merge branch 'jgfouca/acme5.1_to_esmci_try2' (PR #1123)
+69627c8 Hotfix for minor whitespace issue in exception text
+2456b56 Merge pull request #1110 from ESMCI/jgfouca/fixes_to_recent_new_tests
+18734f3 Merge pull request #1104 from jedwards4b/tested_msg
+11e30d6 Merge pull request #1109 from gold2718/TimeMgrFix
+e367fb4 Merge pull request #1098 from ESMCI/mfdeakin-sandia/map_field_build
+ff4f207 Merge pull request #1095 from gold2718/DAdesp
+a93184d Merge pull request #1097 from jedwards4b/tie_timers_to_xml
+618f515 Merge pull request #1092 from mgduda/esmf_timemgr/i8_interval_division
+654504c Merge pull request #1094 from ESMCI/jgfouca/err_resub_fix
+f56a446 Merge pull request #1090 from jedwards4b/lt_archive_issues
+ccd1e96 Merge pull request #1082 from jedwards4b/addback_mask_grid
+81f08e1 Merge pull request #1081 from jedwards4b/fix_no_nesting_fail
+1d083cc fix pylint issue
+9e2764c Merge pull request #1080 from jedwards4b/config_compilers_conformity
+ccb7c22 Revert "Change over acme env usage to correct syntax"
+
+Modified files: git diff --name-status [previous_tag]
+
+M	.gitignore
+M	CMakeLists.txt
+M	README.unit_testing
+M	cime_config/acme/allactive/config_compsets.xml
+M	cime_config/acme/allactive/config_compsets.xml.cime2
+M	cime_config/acme/allactive/config_pes.xml
+M	cime_config/acme/allactive/config_pes.xml.cime2
+M	cime_config/acme/allactive/config_pesall.xml
+D	cime_config/acme/allactive/testmods_dirs/cam/outfrq9s/user_nl_cam
+D	cime_config/acme/allactive/testmods_dirs/cam/outfrq9s/user_nl_clm
+M	cime_config/acme/config_files.xml
+M	cime_config/acme/config_grids.xml
+M	cime_config/acme/machines/Depends.cetus
+M	cime_config/acme/machines/Depends.intel
+M	cime_config/acme/machines/Depends.intel14
+M	cime_config/acme/machines/Depends.intelmic
+M	cime_config/acme/machines/Depends.intelmic14
+M	cime_config/acme/machines/Depends.mira
+D	cime_config/acme/machines/Depends.titan.pgi_acc
+A	cime_config/acme/machines/Depends.titan.pgiacc
+D	cime_config/acme/machines/Depends.titan.pgicuda
+M	cime_config/acme/machines/Makefile
+M	cime_config/acme/machines/config_batch.xml
+M	cime_config/acme/machines/config_compilers.xml
+M	cime_config/acme/machines/config_machines.xml
+M	cime_config/acme/machines/config_pio.xml
+D	cime_config/acme/machines/env_mach_specific.blues
+D	cime_config/acme/machines/env_mach_specific.cascade
+D	cime_config/acme/machines/env_mach_specific.cetus
+D	cime_config/acme/machines/env_mach_specific.constance
+D	cime_config/acme/machines/env_mach_specific.corip1
+D	cime_config/acme/machines/env_mach_specific.edison
+D	cime_config/acme/machines/env_mach_specific.eos
+D	cime_config/acme/machines/env_mach_specific.juqueen
+D	cime_config/acme/machines/env_mach_specific.lawrencium-lr2
+D	cime_config/acme/machines/env_mach_specific.linux-generic
+D	cime_config/acme/machines/env_mach_specific.mac
+D	cime_config/acme/machines/env_mach_specific.mira
+D	cime_config/acme/machines/env_mach_specific.mustang
+D	cime_config/acme/machines/env_mach_specific.oic2
+D	cime_config/acme/machines/env_mach_specific.oic5
+D	cime_config/acme/machines/env_mach_specific.sierra
+D	cime_config/acme/machines/env_mach_specific.sooty
+D	cime_config/acme/machines/env_mach_specific.stampede
+D	cime_config/acme/machines/env_mach_specific.titan
+D	cime_config/acme/machines/env_mach_specific.userdefined
+D	cime_config/acme/machines/env_mach_specific.wolf
+M	cime_config/acme/machines/syslog.cetus
+A	cime_config/acme/machines/syslog.cori-haswell
+A	cime_config/acme/machines/syslog.cori-knl
+D	cime_config/acme/machines/syslog.corip1
+M	cime_config/acme/machines/syslog.edison
+M	cime_config/acme/machines/syslog.mira
+M	cime_config/acme/machines/syslog.titan
+A	cime_config/acme/testmods_dirs/allactive/cam/outfrq9s/user_nl_cam
+A	cime_config/acme/testmods_dirs/allactive/cam/outfrq9s/user_nl_clm
+M	cime_config/buildlib.pio
+M	cime_config/cesm/allactive/testlist_allactive.xml
+M	cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/user_nl_clm
+M	cime_config/cesm/config_archive.xml
+M	cime_config/cesm/config_files.xml
+M	cime_config/cesm/machines/Makefile
+M	cime_config/cesm/machines/config_compilers.xml
+M	cime_config/cesm/machines/config_lt_archive.xml
+M	cime_config/cesm/machines/config_machines.xml
+M	cime_config/config_tests.xml
+M	cime_config/xml_schemas/config_machines.xsd
+M	components/data_comps/datm/cime_config/config_component.xml
+A	components/data_comps/desp/cime_config/buildlib
+A	components/data_comps/desp/cime_config/buildnml
+A	components/data_comps/desp/cime_config/config_component.xml
+A	components/data_comps/desp/cime_config/namelist_definition_desp.xml
+A	components/data_comps/desp/cime_config/user_nl_desp
+A	components/data_comps/desp/desp_comp_mod.F90
+A	components/data_comps/desp/esp_comp_mct.F90
+A	components/data_comps/desp/esp_utils.F90
+M	components/data_comps/dlnd/cime_config/config_component.xml
+M	components/data_comps/docn/cime_config/config_component.xml
+M	driver_cpl/cime_config/buildnml
+M	driver_cpl/cime_config/config_component.xml
+M	driver_cpl/cime_config/config_component_acme.xml
+M	driver_cpl/cime_config/config_component_cesm.xml
+M	driver_cpl/cime_config/config_compsets.xml
+M	driver_cpl/cime_config/namelist_definition_drv.xml
+M	driver_cpl/cime_config/user_nl_cpl
+M	driver_cpl/driver/cesm_comp_mod.F90
+M	driver_cpl/driver/component_mod.F90
+M	driver_cpl/driver/seq_flux_mct.F90
+M	driver_cpl/driver/seq_io_mod.F90
+M	driver_cpl/shr/seq_infodata_mod.F90
+M	driver_cpl/shr/seq_timemgr_mod.F90
+M	driver_cpl/unit_test/vertical_gradient_calculator_test/plot_gradient
+M	externals/CMake/CESM_utils.cmake
+A	externals/CMake/CIME_utils.cmake
+M	externals/CMake/Compilers.cmake
+D	externals/CMake/FindNETCDF.cmake
+D	externals/CMake/FindNETCDF_C.cmake
+D	externals/CMake/FindNETCDF_Fortran.cmake
+D	externals/CMake/FindPnetcdf.cmake
+M	externals/CMake/FindpFUnit.cmake
+D	externals/CMake/LibFindMacros.cmake
+M	externals/CMake/README.md
+M	externals/pio1/pio/CMakeLists.txt
+M	externals/pio2/src/flib/piolib_mod.F90
+M	scripts/Tools/bless_test_results
+M	scripts/Tools/case.build
+M	scripts/Tools/case.submit
+A	scripts/Tools/cron_script
+M	scripts/Tools/xmlquery
+M	scripts/create_newcase
+M	scripts/create_test
+M	share/csm_share/shr/shr_flux_mod.F90
+M	share/csm_share/test/unit/dynamic_vector/CMakeLists.txt
+M	share/esmf_wrf_timemgr/ESMF_TimeIntervalMod.F90
+M	share/esmf_wrf_timemgr/ESMF_TimeMod.F90
+M	share/timing/ChangeLog
+M	share/timing/f_wrappers.c
+M	share/timing/gptl.c
+M	tools/configure
+M	tools/mapping/map_field/INSTALL
+M	tools/unit_testing/Examples/circle_area/tests/CMakeLists.txt
+M	tools/unit_testing/Examples/circle_area/tests/pFUnit/CMakeLists.txt
+M	tools/unit_testing/Examples/interpolate_1d/tests/CMakeLists.txt
+M	tools/unit_testing/Examples/interpolate_1d/tests/pFUnit/CMakeLists.txt
+M	tools/unit_testing/README
+M	tools/unit_testing/run_tests.py
+M	utils/data_assimilation/da_no_data_mod.sh
+M	utils/python/CIME/BuildTools/cmakemacroswriter.py
+M	utils/python/CIME/SystemTests/dae.py
+M	utils/python/CIME/SystemTests/err.py
+M	utils/python/CIME/SystemTests/homme.py
+A	utils/python/CIME/SystemTests/pre.py
+M	utils/python/CIME/SystemTests/system_tests_common.py
+M	utils/python/CIME/XML/compilerblock.py
+M	utils/python/CIME/XML/compilers.py
+M	utils/python/CIME/XML/entry_id.py
+M	utils/python/CIME/XML/env_batch.py
+M	utils/python/CIME/XML/grids.py
+M	utils/python/CIME/XML/namelist_definition.py
+M	utils/python/CIME/XML/pes.py
+M	utils/python/CIME/bless_test_results.py
+M	utils/python/CIME/build.py
+M	utils/python/CIME/case.py
+M	utils/python/CIME/case_cmpgen_namelists.py
+M	utils/python/CIME/case_lt_archive.py
+M	utils/python/CIME/case_run.py
+M	utils/python/CIME/case_st_archive.py
+M	utils/python/CIME/case_submit.py
+M	utils/python/CIME/check_input_data.py
+M	utils/python/CIME/code_checker.py
+M	utils/python/CIME/compare_namelists.py
+M	utils/python/CIME/compare_test_results.py
+M	utils/python/CIME/get_timing.py
+M	utils/python/CIME/provenance.py
+M	utils/python/CIME/test_scheduler.py
+M	utils/python/CIME/test_status.py
+M	utils/python/CIME/utils.py
+M	utils/python/tests/scripts_regression_tests.py
+M	utils/python/update_acme_tests.py
+
+======================================================================
+
+======================================================================
+
 Originator: Jim Edwards
 Date: 01-30-2017
 Tag: cime5.2.0-alpha.23

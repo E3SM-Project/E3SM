@@ -225,7 +225,9 @@ endif
 
 
 ifeq ($(MPILIB),mpi-serial)
-  undefine PNETCDF_PATH
+	ifdef PNETCDF_PATH
+		undefine PNETCDF_PATH
+	endif
 else
   ifdef PNETCDF_PATH
     ifndef $(INC_PNETCDF)

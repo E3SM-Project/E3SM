@@ -93,7 +93,7 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
         generate = case.get_value("GENERATE_BASELINE")
 
     if not compare and not generate:
-        logging.info("Nothing to do")
+        logging.debug("No namelists compares requested")
         return True
 
     # create namelists for case if they haven't been already
