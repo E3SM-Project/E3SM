@@ -57,7 +57,7 @@ module mpas_framework
 
       write(stderrUnit,'(a,i5,a,i5,a)') 'task ', dminfo % my_proc_id, ' of ', dminfo % nprocs, &
            ' is running'
-      call open_streams(dminfo % my_proc_id)
+      call open_streams(dminfo % my_proc_id, dminfo % nprocs)
 
    end subroutine mpas_framework_init_phase1!}}}
 
