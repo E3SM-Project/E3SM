@@ -2,7 +2,7 @@ include_directories(.)
 
 # Because these tests use type parameterization, unfortunately we need to
 # preprocess *before* running the pFUnit preprocessor, then again *after*.
-if(${CMAKE_C_COMPILER_ID} STREQUAL GNU)
+if(${CMAKE_C_COMPILER_ID} STREQUAL GNU OR ${CMAKE_C_COMPILER_ID} STREQUAL Clang)
   function(make_cpp_command varname start_file end_file)
     set(${varname} ${CMAKE_C_COMPILER} -E -x c ${start_file} -o ${end_file}
       PARENT_SCOPE)
