@@ -15,9 +15,9 @@ from acme_diags.derivations import acme
 
 
 def make_parameters(orginal_parameter):
-    #f_data = open('set5_diags.json').read()
+    f_data = open('set5_diags.json').read()
     #f_data = open('set5_diags_MERRA.json').read()
-    f_data = open('set5_diags_HADISST.json').read()
+    #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
@@ -101,8 +101,9 @@ for parameter in parameters:
         mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
         mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
 
-        parameter.output_file = '_'.join([ref_name,it])
-        parameter.main_title = str(' '.join([var,it]))
+        parameter.output_file = '_'.join([ref_name, season])
+        parameter.main_title = str(' '.join([var, season]))
+        print parameter.output_file
 
         '''
         if var == 'PRECT':
@@ -149,10 +150,6 @@ for parameter in parameters:
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
         '''
-
-        parameter.output_file = '_'.join([ref_name,it])
-        parameter.main_title = str(' '.join([var,it]))
-        print parameter.output_file
 
         #for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
