@@ -1,0 +1,40 @@
+/******************************************************************************
+ *
+ *
+ *
+ * Copyright (C) 2009
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation under the terms of the GNU General Public License is hereby
+ * granted. No representations are made about the suitability of this software
+ * for any purpose. It is provided "as is" without express or implied warranty.
+ * See the GNU General Public License for more details.
+ *
+ * Documents produced by Doxygen are derivative works derived from the
+ * input used in their production; they are not affected by this license.
+ *
+ */
+/*!
+
+\mainpage CESM Scripts API Documentation
+
+\author CESM Software Engineering Group
+
+This is the CESM scripts API documentation for development tags.
+It is the responsibility of the programmer to
+include accurate code documentation in-line with their code. Here are the general
+work-flow steps for including Doxygen compartible markup in CESM API script code.
+<ol>
+<li>become familiar with the Doxygen markup language and syntax for your script flavor</li>
+<li> document your code accurately and concisely</li>
+<li> follow the normal CESM workflow for testing and repo check-in</li>
+</ol>
+As new development tags become available, this website will be updated accordingly to
+reflect the code.
+
+Please refer to the links below for detailed information
+regarding documentation standards for CESM scripts codes to accomodate inclusion in this Doxygen web.
+
+ - \ref python
+ - \ref perl
+*/

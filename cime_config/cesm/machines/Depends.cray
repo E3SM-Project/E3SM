@@ -1,0 +1,6 @@
+NOOPTOBJS= ice_boundary.o dyn_comp.o unicon.o
+
+$(NOOPTOBJS): %.o: %.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+
+
