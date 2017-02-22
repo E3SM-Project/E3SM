@@ -1386,7 +1386,7 @@ if __name__ == "__main__":
 
 	if not args.model_runtime:
 		config.set('script_input_arguments', 'model_runtime', '%s/runtime_definitions/mpirun.xml'%(config.get('script_paths', 'script_path')))
-		print ' WARNING: No runtime definition selected. Using the deafult of %s'%(config.get('script_input_arguments', 'model_runtime'))
+		print ' WARNING: No runtime definition selected. Using the default of %s'%(config.get('script_input_arguments', 'model_runtime'))
 	else:
 		config.set('script_input_arguments', 'model_runtime', args.model_runtime)
 
