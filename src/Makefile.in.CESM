@@ -13,7 +13,7 @@ else
 endif
 # End duplicated logic
 
-include $(CASEROOT)/Macros
+include $(CASEROOT)/Macros.make
 
 ifneq ($(wildcard core_$(CORE)/build_options.mk), ) # Check for build_options.mk
     include core_$(CORE)/build_options.mk
