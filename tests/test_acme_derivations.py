@@ -1,12 +1,15 @@
 import unittest
+import os
 import cdms2
 from acme_diags.derivations import acme
 
+def get_abs_file_path(relative_path):
+    return os.path.dirname(os.path.abspath(__file__)) + '/' + relative_path
 
 class TestACMEDerivations(unittest.TestCase):
 
     def test_convert_units(self):
-        precc_file = cdms2.open('precc.nc')
+        precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         var = precc_file('PRECC')
         precc_file.close()
 
@@ -22,7 +25,7 @@ class TestACMEDerivations(unittest.TestCase):
             ],
         }
 
-        precc_file = cdms2.open('precc.nc')
+        precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         acme.process_derived_var('PRECT', derived_var, precc_file)
         precc_file.close()
 
@@ -35,7 +38,7 @@ class TestACMEDerivations(unittest.TestCase):
             ],
         }
 
-        precc_file = cdms2.open('precc.nc')
+        precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         with self.assertRaises(RuntimeError):
             acme.process_derived_var('PRECT', wrong_derived_var, precc_file)
         precc_file.close()
