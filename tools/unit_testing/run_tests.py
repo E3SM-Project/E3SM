@@ -282,6 +282,7 @@ def _main():
     machspecific = EnvMachSpecific(build_dir)
     machspecific.load_env(compiler, debug, mpilib)
     logger.warn("Compiler is %s"%compiler)
+    os.environ["OS"] = os_
     os.environ["COMPILER"] = compiler
     os.environ["DEBUG"] = stringify_bool(debug)
     os.environ["MPILIB"] = mpilib
@@ -289,7 +290,6 @@ def _main():
         os.environ["compile_threaded"] = "true"
     os.environ["CC"] = find_executable("mpicc")
     os.environ["FC"] = find_executable("mpif90")
-    os.environ["NETCDF_PATH"] = os.environ.get("NETCDF")
 
 #=================================================
 # Run tests.

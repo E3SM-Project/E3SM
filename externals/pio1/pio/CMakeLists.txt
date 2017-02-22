@@ -31,7 +31,7 @@ endif()
 # Netcdf is required
 
 #SET (NETCDF_FIND_COMPONENTS F90)
-FIND_PACKAGE(NetCDF "4.3.3" COMPONENTS Fortran)
+FIND_PACKAGE(NetCDF "4.3.3" COMPONENTS C Fortran)
 IF (${NetCDF_Fortran_FOUND})
   MESSAGE("Building PIO with netcdf support ")
   SET(pio_include_dirs_ ${pio_include_dirs_} ${NetCDF_Fortran_INCLUDE_DIR})
@@ -39,8 +39,6 @@ IF (${NetCDF_Fortran_FOUND})
 ELSE()
   MESSAGE("Building PIO without netcdf support ${NetCDF_C_FOUND} ${NetCDF_Fortran_FOUND}")
 ENDIF ()
-#    SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NETCDF4)
-
 
 
 # PNetcdf is optional but used by default
@@ -78,6 +76,9 @@ ENDIF()
 IF(NetCDF_Fortran_FOUND)
   SET(pio_include_dirs_ ${pio_include_dirs_} ${NetCDF_Fortran_INCLUDE_DIR})
   SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NETCDF ${NetCDF_Fortran_DEFINITIONS})
+  if (${NetCDF_C_HAS_PARALLEL})
+    SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NETCDF4)
+  ENDIF()
 ELSE()
   SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NONETCDF)
 ENDIF()
