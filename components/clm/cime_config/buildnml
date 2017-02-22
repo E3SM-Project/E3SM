@@ -161,7 +161,7 @@ while ($inst_counter <= $NINST_LND) {
 
     my $glc_opts = "";
     if ("$COMP_GLC" ne "sglc" ) {
-        my $GLC_SMB		= `./xmlquery  GLC_SMB		   -value`;
+        my $GLC_SMB		= lc `cd $CASEROOT; ./xmlquery  GLC_SMB		   -value`;
         $glc_opts = "-glc_present -glc_smb .$GLC_SMB. ";
     }
 
