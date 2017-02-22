@@ -558,7 +558,7 @@
 
 <machine MACH="sandia-srn-sems">
     <DESC>Linux workstation at Sandia on SRN with SEMS TPL modules</DESC>
-    <NODENAME_REGEX>(s999964|climate)</NODENAME_REGEX>
+    <NODENAME_REGEX>(s999964|climate|penn)</NODENAME_REGEX>
     <PROXY>wwwproxy.sandia.gov:80</PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
@@ -1065,29 +1065,6 @@
       <env name="OMP_DYNAMIC">FALSE</env>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
-</machine>
-
-<machine MACH="penn">
-    <DESC>Linux workstation: Andy's at SNL</DESC>
-    <NODENAME_REGEX>penn</NODENAME_REGEX>
-    <TESTS>acme_developer</TESTS>
-    <OS>LINUX</OS>
-    <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <DIN_LOC_ROOT>$ENV{HOME}/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/acme/ptclmdata</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-
-    <BASELINE_ROOT>/home/agsalin/acme/baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
-    <SUPPORTED_BY>agsalin at sandia dot gov</SUPPORTED_BY>
-    <GMAKE_J>20</GMAKE_J>
-    <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>2</PES_PER_NODE>
 </machine>
 
 <machine MACH="sierra">

@@ -329,7 +329,7 @@ sub writeXML
             $newfilename = "$cimeroot/cime_config/${model}/allactive/testlist_allactive.xml";
 	}
 	elsif ($component eq 'drv') {
-            $newfilename = "$cimeroot/driver_cpl/cime_config/testdefs//testlist_drv.xml";
+            $newfilename = "$cimeroot/src/driver_cpl/cime_config/testdefs//testlist_drv.xml";
 	}
 	else {
             my $dir = "$cimeroot/../components/$component/cime_config/testdefs";
@@ -1189,7 +1189,7 @@ sub setTestlist{
     if ($component =~ /^allactive/) {
 	$list = "$cimeroot/cime_config/${model}/allactive/testlist_allactive.xml";
     } elsif ($component =~ /^drv/) {
-	$list = "$cimeroot/driver_cpl/cime_config/testdefs/testlist_drv.xml";
+	$list = "$cimeroot/src/driver_cpl/cime_config/testdefs/testlist_drv.xml";
     } else {
 	$list = "$srcroot/components/$component/cime_config/testdefs/testlist_$component.xml";
     }

@@ -13,7 +13,7 @@ set GMAKE_J	= `./xmlquery  GMAKE_J	 -value `
 set MACH	= `./xmlquery  MACH	 -value `
 set OS		= `./xmlquery  OS	 -value `
 
-setenv MCT_DIR    $CIMEROOT/externals/mct   # mct directory
+setenv MCT_DIR    $CIMEROOT/src/externals/mct   # mct directory
 setenv MCT_LIBDIR $1
 setenv LIBDIR $2
 

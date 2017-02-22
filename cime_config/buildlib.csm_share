@@ -45,19 +45,19 @@ mkpath($libdir) unless -d $libdir;
 chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
 my @filepath = ( "$CASEROOT/SourceMods/src.share",
-		 "$CIMEROOT/driver_cpl/shr",
-		 "$CIMEROOT/components/xcpl_models/xshare",
-		 "$CIMEROOT/share/csm_share/shr",
-		 "$CIMEROOT/share/shr_RandNum/src",
-		 "$CIMEROOT/share/shr_RandNum/src/dsfmt_f03",
-		 "$CIMEROOT/share/shr_RandNum/src/kissvec",
-		 "$CIMEROOT/share/shr_RandNum/src/mt19937",
+		 "$CIMEROOT/src/driver_cpl/shr",
+		 "$CIMEROOT/src/components/xcpl_models/xshare",
+		 "$CIMEROOT/src/share/csm_share/shr",
+		 "$CIMEROOT/src/share/shr_RandNum/src",
+		 "$CIMEROOT/src/share/shr_RandNum/src/dsfmt_f03",
+		 "$CIMEROOT/src/share/shr_RandNum/src/kissvec",
+		 "$CIMEROOT/src/share/shr_RandNum/src/mt19937",
 		 );
 
 if($useesmf eq "noesmf"){
-    push(@filepath,"$CIMEROOT/share/esmf_wrf_timemgr");
+    push(@filepath,"$CIMEROOT/src/share/esmf_wrf_timemgr");
 }else{
-    push(@filepath,"$CIMEROOT/driver_cpl/shr_esmf");
+    push(@filepath,"$CIMEROOT/src/driver_cpl/shr_esmf");
 }
 
 my @fp;

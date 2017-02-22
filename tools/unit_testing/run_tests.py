@@ -167,7 +167,7 @@ def cmake_stage(name, test_spec_dir, build_optimized, mpirun_command, output, cm
         cmake_command = [
             "cmake",
             test_spec_dir,
-            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"externals","CMake")),
+            "-DCIME_CMAKE_MODULE_DIRECTORY="+os.path.abspath(os.path.join(_CIMEROOT,"src","externals","CMake")),
             "-DCMAKE_BUILD_TYPE="+build_type,
             "-DPFUNIT_MPIRUN="+mpirun_command,
             ]
@@ -177,7 +177,7 @@ def cmake_stage(name, test_spec_dir, build_optimized, mpirun_command, output, cm
         if enable_genf90:
             cmake_command.append("-DENABLE_GENF90=ON")
             genf90_dir = os.path.join(
-                _CIMEROOT, "externals", "genf90"
+                _CIMEROOT,"src","externals","genf90"
                 )
             cmake_command.append("-DCMAKE_PROGRAM_PATH="+genf90_dir)
 

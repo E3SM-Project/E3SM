@@ -90,7 +90,7 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     cime_model = get_model()
     file_build = os.path.join(exeroot, "%s.bldlog.%s" % (cime_model, lid))
 
-    config_dir = os.path.join(cimeroot, "driver_cpl", "cime_config")
+    config_dir = os.path.join(cimeroot, "src", "driver_cpl", "cime_config")
     f = open(file_build, "w")
     bldroot = os.path.join(exeroot, "cpl", "obj")
     if not os.path.isdir(bldroot):

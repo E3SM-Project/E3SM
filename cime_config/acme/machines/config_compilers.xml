@@ -29,7 +29,7 @@ if $MPILIB is set to mpi-serial then
    FC = $SFC
    MPICC = $SCC
    MPIFC = $SFC
-   INC_MPI = $(CIMEROOT)/externals/mct/mpi-serial
+   INC_MPI = $(CIMEROOT)/src/externals/mct/mpi-serial
 
 ========================================================================
  Options for including C++ code in the build

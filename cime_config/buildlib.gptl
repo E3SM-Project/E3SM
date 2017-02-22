@@ -12,7 +12,7 @@ set GMAKE	= `./xmlquery  GMAKE	-value `
 # NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in
 # the $CASE.build script
 
-setenv GPTL_DIR $CIMEROOT/share/timing   # gptl directory
+setenv GPTL_DIR $CIMEROOT/src/share/timing   # gptl directory
 setenv GPTL_LIBDIR $1
 setenv SHAREDPATH  $2
 
