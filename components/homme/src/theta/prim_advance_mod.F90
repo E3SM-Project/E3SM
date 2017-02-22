@@ -105,9 +105,10 @@ contains
     logical,               intent(in)            :: compute_diagnostics
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
+    real (kind=real_kind) ::  statetemp(np,np,nlev,2), dampfac
 
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
-    integer :: n,i,j,lx,lenx
+    integer :: n,i,j,lx,lenx,ktolcounter,ktol
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -141,6 +142,10 @@ contains
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
+!
+!   tstep_type=6  Heun's method (CFL=?)
+!
+!   tstep_type=7  Implicit Euler method
 !
 ! integration = "full_imp"
 !
@@ -293,7 +298,6 @@ contains
        ! u4 = u0 + 2dt/3 RHS(u3)
        call compute_and_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
-
        ! compute (5*u1/4 - u0/4) in timelevel nm1:
        do ie=nets,nete
           elem(ie)%state%v(:,:,:,:,nm1)= (5*elem(ie)%state%v(:,:,:,:,nm1) &
@@ -313,9 +317,52 @@ contains
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
        call t_stopf("U3-5stage_timestep")
-
-
-    else
+    else if (method == 6 ) then 
+       ! Heun's method, has to use t_startf("LF_timestep") for now?
+       ! this is only here to make sure that I know what I'm talking about
+       call t_startf("LF_timestep")
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       call compute_and_apply_rhs(np1,np1,n0,qn0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       call t_stopf("LF_timestep") 
+    else if (method == 7) then ! use implicit Euler method
+       call t_startf("LF_timestep")
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       ktol=10
+       ktolcounter=1
+       dampfac=1d-4
+       print *, 'hey'
+   !   classic fixed point iteration
+   !    do while ( ktolcounter < ktol)
+   !       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+   !           deriv,nets,nete,.false.,0d0)
+   !       ktolcounter=ktolcounter+1
+   !       print *, ktolcounter
+   !    end do
+       do while (ktolcounter < ktol)
+          do ie=nets,nete
+            elem(ie)%state%v(:,:,:,:,nm1)= dampfac*elem(ie)%state%v(:,:,:,:,n0) &
+            +(1.d0-dampfac)*elem(ie)%state%v(:,:,:,:,np1)
+            elem(ie)%state%theta(:,:,:,nm1)= dampfac*elem(ie)%state%theta(:,:,:,n0) &
+            +(1.d0-dampfac)*elem(ie)%state%theta(:,:,:,np1)
+            elem(ie)%state%dp3d(:,:,:,nm1)= dampfac*elem(ie)%state%dp3d(:,:,:,n0) &
+            +(1.d0-dampfac)*elem(ie)%state%dp3d(:,:,:,np1) 
+            elem(ie)%state%w(:,:,:,nm1)= elem(ie)%state%w(:,:,:,nm1) &
+            +(1.d0-dampfac)* elem(ie)%state%w(:,:,:,np1)
+            elem(ie)%state%phi(:,:,:,nm1)= dampfac*elem(ie)%state%phi(:,:,:,nm1) &
+            +(1.d0-dampfac)* elem(ie)%state%phi(:,:,:,np1)
+          enddo
+          call compute_and_apply_rhs(np1,nm1,np1,qn0,dampfac*dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)   
+          ktolcounter=ktolcounter+1
+          print *, ktolcounter
+       end do
+       call t_stopf("LF_timestep")
+    else 
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
@@ -1087,7 +1134,7 @@ contains
                   -phi(i,j,k)*divdp(i,j,k) - dp3d(i,j,k)*v_gradphi(i,j,k)      
                !  Form PEvert1
                   elem(ie)%accum%PEvert1(i,j) = (elem(ie)%accum%PEvert1(i,j))   &
-                  -phi(i,j,k)*eta_dot_dpdn(i,j,k)                               &
+                  -phi(i,j,k)*d_eta_dot_dpdn_dn                                 &
                   -dp3d(i,j,k)*s_vadv(i,j,k,3)
                !  Form T1
                   elem(ie)%accum%T1(i,j)=elem(ie)%accum%T1(i,j)                 &
@@ -1102,7 +1149,7 @@ contains
                !  Form T2 
                   elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 
                   (g*(elem(ie)%state%w(i,j,k,n0))-                              &
-                  v_gradphi(i,j,k))*dp3d(i,j,k)                                 
+                  v_gradphi(i,j,k))*dpnh(i,j,k)                                 
                !  Form S2
                   elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j)                 &
                   -(g*(elem(ie)%state%w(i,j,k,n0))-v_gradphi(i,j,k))            &
