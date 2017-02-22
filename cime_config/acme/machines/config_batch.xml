@@ -381,7 +381,6 @@
    <batch_system MACH="lawrencium-lr2" type="slurm" version="x.y">
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--account={{ project }}</directive>
        <directive>--exclusive</directive>
      </directives>
     <queues>
@@ -392,7 +391,6 @@
    <batch_system MACH="lawrencium-lr3" type="slurm" version="x.y">
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--account={{ project }}</directive>
        <directive>--exclusive</directive>
      </directives>
     <queues>
