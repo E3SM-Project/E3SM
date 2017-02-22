@@ -2599,6 +2599,9 @@ module init_atm_cases
       integer, pointer :: config_theta_adv_order
       real (kind=RKIND), pointer :: config_coef_3rd_order
 
+      character (len=StrKIND), pointer :: config_extrap_airtemp
+      integer :: extrap_airtemp
+      
       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
       real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge
       real (kind=RKIND), dimension(:), pointer :: angleEdge
@@ -2670,6 +2673,20 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_smooth_surfaces', config_smooth_surfaces)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
+      
+      call mpas_pool_get_config(configs, 'config_extrap_airtemp', config_extrap_airtemp)
+      if (trim(config_extrap_airtemp) == 'constant') then
+         extrap_airtemp = 0
+      else if (trim(config_extrap_airtemp) == 'linear') then
+         extrap_airtemp = 1
+      else if (trim(config_extrap_airtemp) == 'lapse-rate') then
+         extrap_airtemp = 2
+      else
+          call mpas_dmpar_global_abort('*************************************************************', deferredAbort=.true.)
+          call mpas_dmpar_global_abort('* Invalid value for namelist variable config_extrap_airtemp *', deferredAbort=.true.)
+          call mpas_dmpar_global_abort('*************************************************************')
+      end if
+      write(0,*) "Using option '" // trim(config_extrap_airtemp) // "' for vertical extrapolation of temperature"
 
       parinfo => block % parinfo
       dminfo => block % domain % dminfo
@@ -3991,7 +4008,7 @@ write(0,*) 'Interpolating SKINTEMP'
 
             !
             ! In addition to interpolating wind fields to cell edges, we should
-            ! also intperolate to cell centers at the surface in order to
+            ! also interpolate to cell centers at the surface in order to
             ! produce U10 and V10 fields
             !
             is_sfc_field = .false.
@@ -4407,7 +4424,14 @@ write(0,*) 'PROCESSING OMLD'
          do k = 1, nVertLevels
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
             t(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-                                  sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+                                         sorted_arr(:,1:nfglevels_actual-1), order=1, &
+                                         extrap=extrap_airtemp, ierr=istatus)
+            if (istatus /= 0) then
+               write(errstring,'(a,i4,a,i10)') 'Error in interpolation of t(k,iCell) for k=', k, ', iCell=', iCell
+               call mpas_dmpar_global_abort('*****************************************************************', deferredAbort=.true.)
+               call mpas_dmpar_global_abort(trim(errstring),                                                     deferredAbort=.true.)
+               call mpas_dmpar_global_abort('*****************************************************************')
+            end if
          end do
 
 
