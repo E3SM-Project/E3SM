@@ -17,6 +17,11 @@ ELSE ()
   SET (ADD_LINKER_FLAGS " ${NFCONFIG_OUTPUT} " CACHE STRING "")
 ENDIF ()
 
-SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
+SET (HOMME_USE_MKL "TRUE" CACHE FILEPATH "") # for Intel
 SET (USE_QUEUING FALSE CACHE BOOL "")
+
+# suppress "-openmp deprecated" warning number 10411
+SET (ADD_Fortran_FLAGS "-diag-disable 10411" CACHE STRING "")
+SET (ADD_C_FLAGS "-diag-disable 10411" CACHE STRING "")
+SET (ADD_CXX_FLAGS "-diag-disable 10411" CACHE STRING "")
 
