@@ -861,6 +861,8 @@ contains
   
   real (kind=real_kind) :: v_gradw(np,np,nlev)     
   real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
+  real (kind=real_kind) :: v_theta(np,np,2)
+  real (kind=real_kind) :: div_v_theta(np,np)
   real (kind=real_kind) :: v_gradphi(np,np,nlev)
   real (kind=real_kind) :: v_gradKE(np,np,nlev)     
   real (kind=real_kind) :: vdp(np,np,2,nlev)
@@ -1089,9 +1091,15 @@ contains
         elem(ie)%accum%P2=0
         ! See element_state.F90 for an account of what these variables are defined as
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,vtemp,KE,d_eta_dot_dpdn_dn)
+!$omp parallel do private(k,i,j,v1,v2,vtemp,KE,d_eta_dot_dpdn_dn,v_theta,div_v_theta)
 #endif
         do k =1,nlev
+          v_theta(:,:,1) = cp*dp3d(:,:,k)*                             &
+          elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%state%theta(:,:,k,n0)
+          v_theta(:,:,2) = cp*dp3d(:,:,k)*                             &
+          elem(ie)%state%v(:,:,2,k,n0)*elem(ie)%state%theta(:,:,k,n0)
+          div_v_theta(:,:)=divergence_sphere(v_theta(:,:,:),           &
+          deriv,elem(ie))
           do j=1,np
             do i=1,np                
                   d_eta_dot_dpdn_dn=0.5*(eta_dot_dpdn(i,j,k+1)-                &
@@ -1099,14 +1107,6 @@ contains
                !  Form KEhoriz1
                   elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
                   -v_gradKE(i,j,k)*dp3d(i,j,k) - KE(i,j,k)*divdp(i,j,k)
-               !    print*, v_gradKE(i,j,k), dp3d(i,j,k), divdp(i,j,k)
-               !   v1 = elem(ie)%state%v(i,j,1,k,n0)
-               !   v2 = elem(ie)%state%v(i,j,2,k,n0)
-               !   print*, 'v1',  elem(ie)%state%v(i,j,1,k,n0)
-               !   print*, 'v2',  elem(ie)%state%v(i,j,2,k,n0)
-               !   print*, 'KE',  KE(i,j,k)
-               !  print*, 'gradKE', gradKE(i,j,1,k), gradKE(i,j,2,k)
-               !  Form KE1,KE2
                   elem(ie)%accum%KE1(i,j)=elem(ie)%accum%KE1(i,j)              &
                   -v_gradKE(i,j,k)*dp3d(i,j,k) 
                   elem(ie)%accum%KE2(i,j)=elem(ie)%accum%KE2(i,j)              &
@@ -1140,12 +1140,11 @@ contains
                   elem(ie)%accum%T1(i,j)=elem(ie)%accum%T1(i,j)                 &
                   -elem(ie)%state%theta(i,j,k,n0)                               &
                   *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
-                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))*dp3d(i,j,k)             
-               !   print *, 'gradexner', gradexner(i,j,1,k), gradexner(i,j,2,k)
+                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))*cp*          &
+                  dp3d(i,j,k)
                !  Form S1 
                   elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
-                  -exner(i,j,k)*(dp3d(i,j,k)*v_gradtheta(i,j,k)+                &
-                  elem(ie)%state%theta(i,j,k,n0)* divdp(i,j,k))
+                  -exner(i,j,k)*div_v_theta(i,j)
                !  Form T2 
                   elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 
                   (g*(elem(ie)%state%w(i,j,k,n0))-                              &
@@ -1153,7 +1152,7 @@ contains
                !  Form S2
                   elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j)                 &
                   -(g*(elem(ie)%state%w(i,j,k,n0))-v_gradphi(i,j,k))            &
-                  *dp3d(i,j,k)
+                  *dpnh(i,j,k)
                !  Form P1
                   elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j)                 &
                   -g*(elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)
