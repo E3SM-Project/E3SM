@@ -13,7 +13,7 @@ from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
 from update_acme_tests import get_recommended_test_time
-from CIME.utils import append_status, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name
+from CIME.utils import append_status, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
@@ -90,7 +90,7 @@ class TestScheduler(object):
                  force_procs=None, force_threads=None):
     ###########################################################################
         self._cime_root     = CIME.utils.get_cime_root()
-        self._cime_model    = CIME.utils.get_model()
+        self._cime_model    = get_model()
         self._save_timing   = save_timing
         self._queue         = queue
         self._test_data     = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
@@ -362,7 +362,7 @@ class TestScheduler(object):
 
         if test_mods is not None:
             files = Files()
-            if CIME.utils.get_model() == "acme":
+            if get_model() == "acme":
                 component = "allactive"
                 modspath = test_mods
             else:
@@ -396,7 +396,7 @@ class TestScheduler(object):
             create_newcase_cmd += " --walltime %s" % self._walltime
         else:
             # model specific ways of setting time
-            if CIME.utils.get_model() == "acme":
+            if get_model() == "acme":
                 recommended_time = get_recommended_test_time(test)
                 if recommended_time is not None:
                     create_newcase_cmd += " --walltime %s" % recommended_time
@@ -514,7 +514,7 @@ class TestScheduler(object):
             if self._output_root is None:
                 self._output_root = case.get_value("CIME_OUTPUT_ROOT")
             # if we are running a single test we don't need sharedlibroot
-            if len(self._tests) > 1:
+            if len(self._tests) > 1 and get_model() != "acme":
                 case.set_value("SHAREDLIBROOT",
                                os.path.join(self._output_root,
                                             "sharedlibroot.%s"%self._test_id))
@@ -586,9 +586,10 @@ class TestScheduler(object):
             # Will force serialization of sharedlib builds
             # TODO - instead of serializing, compute all library configs needed and build
             # them all in parallel
-            for _, _, running_phase in threads_in_flight.values():
-                if (running_phase == SHAREDLIB_BUILD_PHASE):
-                    return self._proc_pool + 1
+            if get_model() == "cesm":
+                for _, _, running_phase in threads_in_flight.values():
+                    if (running_phase == SHAREDLIB_BUILD_PHASE):
+                        return self._proc_pool + 1
 
             return 1
         elif (phase == MODEL_BUILD_PHASE):
@@ -746,7 +747,7 @@ class TestScheduler(object):
                 os.chmod(cs_submit_file,
                          os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
 
-            if CIME.utils.get_model == "cesm":
+            if get_model == "cesm":
                 testreporter =  os.path.join(self._test_root,"testreporter.pl")
                 shutil.copy(os.path.join(self._cime_root,"scripts","Testing","testreporter.pl"),
                             testreporter)
