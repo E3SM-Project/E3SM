@@ -4819,7 +4819,7 @@ write(0,*) 'PROCESSING OMLD'
    end function nearest_edge
 
 
-   real (kind=RKIND) function vertical_interp(target_z, nz, zf, order, extrap, surface_val, sealev_val)
+   real (kind=RKIND) function vertical_interp(target_z, nz, zf, order, extrap, surface_val, sealev_val, ierr)
 
       implicit none
 
@@ -4827,10 +4827,11 @@ write(0,*) 'PROCESSING OMLD'
       integer, intent(in) :: nz 
       real (kind=RKIND), dimension(2,nz), intent(in) :: zf      ! zf(1,:) is column of vertical coordinate values, zf(2,:) is column of field values
       integer, intent(in), optional :: order
-      integer, intent(in), optional :: extrap
+      integer, intent(in), optional :: extrap                   ! can take values 0 = constant, 1 = linear (default), 2 = lapse-rate
       real (kind=RKIND), intent(in), optional :: surface_val
       real (kind=RKIND), intent(in), optional :: sealev_val
-
+      integer, intent(out), optional :: ierr
+      
       integer :: k, lm, lp
       real (kind=RKIND) :: wm, wp
       real (kind=RKIND) :: slope
@@ -4838,7 +4839,8 @@ write(0,*) 'PROCESSING OMLD'
       integer :: interp_order, extrap_type
       real (kind=RKIND) :: surface, sealevel
 
-
+      if (present(ierr)) ierr = 0
+      
       if (present(order)) then
          interp_order = order
       else
@@ -4883,6 +4885,10 @@ write(0,*) 'PROCESSING OMLD'
          else if (extrap_type == 1) then
             slope = (zf(2,nz) - zf(2,nz-1)) / (zf(1,nz) - zf(1,nz-1))
             vertical_interp = zf(2,nz) + slope * (target_z - zf(1,nz))
+         else if (extrap_type == 2) then
+             write(0,*) 'ERROR: extrap_type == 2 not implemented for target_z >= zf(1,nz)'
+             if (present(ierr)) ierr = 1
+             return
          end if
          return
       end if
