@@ -1401,7 +1401,17 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         while self._curr() not in separators:
             self._advance()
         text = self._text[old_pos:self._pos]
-        if not is_valid_fortran_name(text):
+
+        # @ is used in a namelist to put the same namelist variable in multiple groups
+        # in the write phase, all characters in the namelist variable name after 
+        # the @ and including the @ should be removed
+        if "%" in text:
+            text_check = re.sub('%.+$', "", text)
+        elif "@" in text:
+            text_check = re.sub('@.+$', "", text)
+        else:
+            text_check = text
+        if not is_valid_fortran_name(text_check):
             raise _NamelistParseError("%r is not a valid variable name at %s" %
                                       (str(text), self._line_col_string()))
         return text.lower()
