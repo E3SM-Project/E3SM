@@ -54,7 +54,7 @@ OR
     parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "
                         "To see list of supported mpilibs for each machine, use the utility manage_case in this directory. "
-                        "The default is the first listing in MPILIBS in config_machines.xml")
+                        "The default is mpi-serial, but will be replaced by default mpi library for the target machine.")
 
     parser.add_argument("--project", "-project",
                         help="Specify a project id")
