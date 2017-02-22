@@ -239,7 +239,7 @@ module test_core_interface
       iErr = 0
 
       ! Initialize log manager
-      call mpas_log_init(logInfo, domain, local_err)
+      call mpas_log_init(logInfo, domain, err=local_err)
       iErr = ior(iErr, local_err)
 
       ! Set core specific options here

@@ -90,55 +90,65 @@ module mpas_log
 !>  on the model configuration.  mpas_log_info is a module level pointer
 !>  of the active core's mpas_log_type instance.  This allows the core
 !>  domain instance to "own" the log manager, while the log module has
-!>  internal access to it
-!>  It also opens the log file(s) and sends a "Hello World"-like message.
+!>  internal access to it.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_log_init(coreLogInfo, domain, err)
+   subroutine mpas_log_init(coreLogInfo, domain, unitNumbers, err)
+
+      use mpas_io_units
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       type (domain_type), pointer, intent(in) :: domain !< Input: domain information
+      integer, dimension(2), intent(in), optional :: unitNumbers
+         !< Input - optional: list of already opened unit numbers for output and error, respectively, to use
 
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
       type (mpas_log_type), pointer, intent(inout) :: coreLogInfo !< Input/Output: log manager info (already set up by the core)
 
-
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out), optional :: err !< Output - Optional: error flag
 
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
       character(len=16) :: taskString  !< variable to build the task number as a string with appropriate zero padding
+      integer :: unitNumber !< local variable used to get a unit number
+      character(len=strKind) :: proposedLogFileName, proposedErrFileName
+      logical :: isOpen
+      character(len=StrKind) :: fileName
+      integer :: err_tmp
 
       err = 0
 
       ! Create log instance
       allocate(coreLogInfo)
+      allocate(coreLogInfo % outputLog)
+      allocate(coreLogInfo % errorLog)
 
       ! ------
       ! Initialize all log info members
       ! ------
-      coreLogInfo % logUnit = -1  ! initialize to invalid unit number
-      coreLogInfo % logActive = .false.
-      coreLogInfo % openedByLogModule = .false.
-      coreLogInfo % errUnit = -1  ! initialize to invalid unit number
-      coreLogInfo % errUnitOpen = .false.
+      coreLogInfo % outputLog % unitNum = -1  ! initialize to invalid unit number
+      coreLogInfo % outputLog % fileName = 'mpaslog.out'
+      coreLogInfo % outputLog % isOpen = .false.
+      coreLogInfo % outputLog % isActive = .false.
+      coreLogInfo % outputLog % openedByLogModule = .false.
+
+      coreLogInfo % errorLog % unitNum = -1  ! initialize to invalid unit number
+      coreLogInfo % errorLog % fileName = 'mpaslog.err'
+      coreLogInfo % errorLog % isOpen = .false.
+      coreLogInfo % errorLog % isActive = .true.  ! error files are always active
+      coreLogInfo % errorLog % openedByLogModule = .false.
 
       coreLogInfo % taskID = -1 ! initialize to invalid task ID
       coreLogInfo % nTasks = -1 ! initialize to invalid number of tasks
-
-      ! initialize to generic name that won't conflict with old logging method
-      coreLogInfo % logFileName = 'mpaslog.out'
-      coreLogInfo % errFileName = 'mpaslog.err'
 
       ! Initialize counters
       coreLogInfo % outputMessageCount = 0
@@ -170,21 +180,18 @@ module mpas_log
       !   * Debug build: All tasks active
 #ifdef MPAS_DEBUG
       ! in debug mode, all tasks have active logs
-      mpas_log_info % logActive = .true.
+      mpas_log_info % outputLog % isActive = .true.
 #else
       ! in non-debug mode, only task 0 has active log
       if (mpas_log_info % taskID == 0) then
-         mpas_log_info % logActive = .true.
+         mpas_log_info % outputLog % isActive = .true.
       else
-         mpas_log_info % logActive = .false.
+         mpas_log_info % outputLog % isActive = .false.
       endif
 #endif
 
-
-      ! Generate the log and err file names
-      !    Note: If log is inactive, this won't actually be used, but it is always set.
-      !    Note: unit number is not set until file is opened
-
+      ! Generate proposed file names that we will use if an open file has not already been supplied
+      ! We might need the task number as a string to build filenames below
       ! Expand zero padding based on number of total tasks
       if (mpas_log_info % nTasks < 1E4) then
          write(taskString, '(i4.4)') mpas_log_info % taskID
@@ -199,10 +206,76 @@ module mpas_log
       else
          write(taskString, '(i9.9)') mpas_log_info % taskID
       end if
+      write(proposedLogFileName, fmt='(a, a, a)') "stick.", trim(taskString), ".out"
+      write(proposedErrFileName, fmt='(a, a, a)') "stick.", trim(taskString), ".err"
 
-      write(mpas_log_info % logFileName, fmt='(a, a, a)') "stick.", trim(taskString), ".out"
-      write(mpas_log_info % errFileName, fmt='(a, a, a)') "stick.", trim(taskString), ".err"
+      ! Set the log and err file names and unit numbers
+      if (present(unitNumbers)) then
+         ! We know the number but nothing else about it
 
+         ! ---
+         ! First process the log unit
+         ! ---
+         mpas_log_info % outputLog % unitNum = unitNumbers(1)
+
+         ! Retrieve metadata for this unit to see if it is open and, if so, what it's name is
+         inquire(mpas_log_info % outputLog % unitNum, name=fileName, opened=isOpen, iostat=err_tmp)
+         if (err_tmp > 0) then
+            call mpas_dmpar_global_abort('ERROR: Log initialization failed because externally supplied log unit could not be inquired!')
+         endif
+         ! Determine if this file was already opened or if this is just a unit number 'reservation'
+         if (isOpen) then
+            mpas_log_info % outputLog % isOpen = .true.
+            mpas_log_info % outputLog % openedByLogModule = .false.
+            ! If already open, let's record the file name for completeness
+            mpas_log_info % outputLog % fileName = fileName
+         else
+            mpas_log_info % outputLog % openedByLogModule = .true.
+            ! If not already open, we'll use the proposed name defined above
+            mpas_log_info % outputLog % fileName = proposedLogFileName
+         endif
+
+         ! ---
+         ! Now process the err unit
+         ! ---
+         mpas_log_info % errorLog % unitNum = unitNumbers(2)
+
+         ! Retrieve metadata for this unit to see if it is open and, if so, what it's name is
+         inquire(mpas_log_info % errorLog % unitNum, name=fileName, opened=isOpen, iostat=err_tmp)
+         if (err_tmp > 0) then
+            call mpas_dmpar_global_abort('ERROR: Log initialization failed because externally supplied err unit could not be inquired!')
+         endif
+         ! Determine if this file was already opened or if this is just a unit number 'reservation'
+         if (isOpen) then
+            mpas_log_info % errorLog % isOpen = .true.
+            mpas_log_info % errorLog % openedByLogModule = .false.
+            ! If already open, let's record the file name for completeness
+            mpas_log_info % errorLog % fileName = fileName
+         else
+            mpas_log_info % errorLog % openedByLogModule = .false.
+            ! If not already open, we'll use the proposed name defined above
+            mpas_log_info % errorLog % fileName = proposedErrFileName
+         endif
+
+      else
+         ! We need to set both filename and unit number
+         !    Note: If log is inactive, these won't actually be used, but they are always set.
+
+         ! Set filenames that will be used
+         mpas_log_info % outputLog % fileName = proposedLogFileName
+         mpas_log_info % errorLog % fileName = proposedErrFileName
+
+         ! Set unit numbers that will be used
+         call mpas_new_unit(unitNumber)
+         mpas_log_info % outputLog % unitNum = unitNumber
+         call mpas_new_unit(unitNumber)
+         mpas_log_info % errorLog % unitNum = unitNumber
+
+      endif
+
+      if (present(err)) then
+         err = err_tmp ! !Currently a nonzero err_tmp will never get this far!)
+      endif
    !--------------------------------------------------------------------
    end subroutine mpas_log_init
 
@@ -228,15 +301,12 @@ module mpas_log
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_log_open(logUnit, openErrorFile, err)
-
-      use mpas_io_units
+   subroutine mpas_log_open(openErrorFile, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
-      integer, intent(in), optional :: logUnit !< Input - Optional: Unit (already open) to set log unit to
       logical, intent(in), optional :: openErrorFile !< Input - Optional: flag to indicate this task's error file should be opened
          !< Default = false, meaning open output log file
 
@@ -253,9 +323,10 @@ module mpas_log
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      type(mpas_log_file_type), pointer :: logFileInfo
       integer :: err_tmp
       logical :: thisIsOutputLog
-      logical :: activeFile
+      logical :: activeFile  !< local indicating if this file should actually be opened!
       character(len=StrKind) :: fileName
       integer :: unitNumber
       character (len=6) :: logTypeString
@@ -264,102 +335,84 @@ module mpas_log
       character(len=16) :: writeSetting, sequentialSetting, formattedSetting ! length just needs to store 'YES'
       character(len=8) :: date
       character(len=10) :: time
+      logical :: alreadyOpen
 
       err = 0
 
       thisIsOutputLog = .true.
+      alreadyOpen = .false.
+
+      ! Determine if this is an output or error file and get correct object
       if (present(openErrorFile)) then
          if (openErrorFile) then
             thisIsOutputLog = .false.
-            activeFile = .true.  ! A request to open the error file is always honored.
          endif
       endif
-
       if (thisIsOutputLog) then
-         if (mpas_log_info % logActive) then
-            activeFile = .true.
-         else
-            activeFile = .false.
-         endif
-      endif
-
-      if (thisIsOutputLog) then
-         logTypeString = "Output"
+         logFileInfo => mpas_log_info % outputLog
       else
-         logTypeString = "Error"
+         logFileInfo => mpas_log_info % errorLog
       endif
-      ! Open file if it is set to be active
+
+      ! Get attributes needed
+      unitNumber = logFileInfo % unitNum
+      activeFile = logFileInfo % isActive
+      alreadyOpen = logFileInfo % isOpen
+      fileName = logFileInfo % fileName
+
+      ! Open file if it was determined to be active
+      if (activeFile .and. .not. alreadyOpen) then
+         ! Open the file
+         open (unit = unitNumber, file = fileName, action="WRITE", status="REPLACE", IOSTAT=err_tmp)
+         if ( err_tmp /= 0 ) then
+            call mpas_dmpar_global_abort('ERROR: Opening of log file failed for filename: ' // logFileInfo % fileName)
+         endif
+         err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error
+         ! TODO: revisit if we can relax the decision to die immediately here.
+
+         logFileInfo % isOpen = .true.
+         logFileInfo % openedByLogModule = .true.
+
+      endif
+
+      ! if the file is already open, let's make sure it's valid
+      if (alreadyOpen) then
+
+         ! Retrieve metadata for this unit to get the file name, and to check it is an approriate unit for a log
+         inquire(unitNumber, name=fileName, opened=isOpen, write=writeSetting, &
+            sequential=sequentialSetting, formatted=formattedSetting, iostat=err_tmp)
+
+         if (err_tmp > 0) then
+            call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied unit could not be inquired!')
+         endif
+         if (.not. isOpen) then
+            call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied unit is not attached'//&
+               ' to an open file!')
+         endif
+         if (trim(writeSetting) /= 'YES') then
+            call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied unit is not attached'//&
+              ' to a file with write settings!')
+         endif
+         if (trim(sequentialSetting) /= 'YES') then
+            call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied unit is not attached'//&
+              ' to a file with sequential access!')
+         endif
+         if (trim(formattedSetting) /= 'YES') then
+            call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied unit is not attached'//&
+              ' to a file connected for formatted output!')
+         endif
+
+      endif ! already open
+
+
       if (activeFile) then
 
-         ! If a pre-opened unit is provided, just use that
-         if(present(logUnit)) then
-
-            unitNumber = logUnit  ! Set local variable used below
-
-            ! Save unit number provided to appropriate variable
-            if (thisIsOutputLog) then
-               mpas_log_info % logUnit = unitNumber
-            else
-               mpas_log_info % errUnit = unitNumber
-            endif
-
-            ! Retrieve metadata for this unit to get the file name, and to check it is an approriate unit for a log
-            inquire(unitNumber, name=fileName, opened=isOpen, write=writeSetting, &
-               sequential=sequentialSetting, formatted=formattedSetting, iostat=err_tmp)
-
-            if (err_tmp > 0) then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit could not be inquired!')
-            endif
-            if (.not. isOpen) then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached'//&
-                  ' to an open file!')
-            endif
-            if (trim(writeSetting) /= 'YES') then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached'//&
-                 ' to a file with write settings!')
-            endif
-            if (trim(sequentialSetting) /= 'YES') then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached'//&
-                 ' to a file with sequential access!')
-            endif
-            if (trim(formattedSetting) /= 'YES') then
-               call mpas_dmpar_global_abort('ERROR: Log initialization failed because supplied log unit is not attached'//&
-                 ' to a file connected for formatted output!')
-            endif
-
-            ! Save file name we retrieved to appropriate field
-            if (thisIsOutputLog) then
-               mpas_log_info % logFileName = fileName
-            else
-               mpas_log_info % errFileName = fileName
-            endif
-
-
-         else  ! If not, we need to set the unit number and open it ourselves
-
-            ! Determine the unit number
-            call mpas_new_unit(unitNumber)
-            if (thisIsOutputLog) then
-               mpas_log_info % logUnit = unitNumber ! save unit
-               fileName = mpas_log_info % logFileName ! get desired filename
-            else
-               mpas_log_info % errUnit = unitNumber ! save unit
-               fileName = mpas_log_info % errFileName ! get desired filenamee
-            endif
-
-            ! Open the file
-            open (unit = unitNumber, file = fileName, action="WRITE", status="REPLACE", IOSTAT=err_tmp)
-            if ( err_tmp /= 0 ) then
-               call mpas_dmpar_global_abort('ERROR: Opening of log file failed for filename: ' // mpas_log_info % logFileName)
-            endif
-            err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error
-            ! TODO: revisit if we can relax the decision to die immediately here.
-
-            mpas_log_info % openedByLogModule = .true.  ! indicate that we opened it
-
-         endif ! if logUnit was provided
-
          ! -- Write a header message --
+         if (thisIsOutputLog) then
+            logTypeString = "Output"
+         else
+            logTypeString = "Error"
+         endif
          !write(unitNumber,*) "Hello world!"
          write(unitNumber, '(a)') '----------------------------------------------------------------------'
          write(unitNumber, '(a,a,a,a,a,i7.1,a,i7.1)') 'Beginning MPAS-', trim(mpas_log_info % coreName), ' ', &
@@ -468,16 +521,16 @@ module mpas_log
       ! Write message to standard log file
       !   Accounting for debug/optimized settings (logActive)
       !   Accounting for optional head-node-only argument
-      if (mpas_log_info % logActive) then
+      if (mpas_log_info % outputLog % isActive) then
          if ( ((masterOnlyWrite) .and. (mpas_log_info % taskID == 0)) .or. (.not. masterOnlyWrite)) then
 
             ! --- Actually write the message here! ---
             !    We have to treat MPAS_LOG_OUT messages separately from others because that type
             !    does not have a prefix and we want to add a space after the trimmed prefix for other types.
             if (messageTypeHere == MPAS_LOG_OUT) then
-               write(mpas_log_info % logUnit, '(a)') trim(messageExpanded)
+               write(mpas_log_info % outputLog % unitNum, '(a)') trim(messageExpanded)
             else
-               write(mpas_log_info % logUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(messageExpanded)
+               write(mpas_log_info % outputLog % unitNum, '(a,a,a)') trim(messagePrefix), ' ', trim(messageExpanded)
             endif
 
             ! Optionally flush the buffer (only attempt if the file is active)
@@ -488,7 +541,7 @@ module mpas_log
                flushLog = .true.  ! Error messages are always flushed immediately!
             endif
             if (flushLog) then
-               flush(mpas_log_info % logUnit)
+               flush(mpas_log_info % outputLog % unitNum)
             endif
 
             ! Increment appropriate message counter
@@ -514,18 +567,18 @@ module mpas_log
       ! Handle error/critical error logic if necessary
       if ((messageTypeHere == MPAS_LOG_ERR) .or. (messageTypeHere == MPAS_LOG_CRIT)) then
          ! Error messages also need to respect the masterOnly option (but critical errors do not - handled above)
-         if ( ((masterOnlyWrite) .and. (mpas_log_info % taskID == 0)) .or. (.not. masterOnlyWrite)) then
+         if ( ( ((masterOnlyWrite) .and. (mpas_log_info % taskID == 0)) .or. (.not. masterOnlyWrite)) .and. &  ! Check masterOnly
+               mpas_log_info % errorLog % isActive ) then ! By default, all error logs are active, but a core could override that!
 
             ! if err file is not already open, we need to open it
-            if (.not. mpas_log_info % errUnitOpen) then
+            if (.not. mpas_log_info % errorLog % isOpen) then
                call mpas_log_open(openErrorFile = .true., err = ierr_tmp)
                ierr = ior(ierr, ierr_tmp)
-               mpas_log_info % errUnitOpen = .true.
             endif
 
             ! Now we need to repeat the message to the err file
-            write(mpas_log_info % errUnit, '(a,a,a)') trim(messagePrefix), ' ', trim(messageExpanded)
-            flush(mpas_log_info % errUnit)  ! Error messages are flushed immediately!
+            write(mpas_log_info % errorLog % unitNum, '(a,a,a)') trim(messagePrefix), ' ', trim(messageExpanded)
+            flush(mpas_log_info % errorLog % unitNum)  ! Error messages are flushed immediately!
 
             ! If this is a critical error, we need to kill the model
             if (messageTypeHere == MPAS_LOG_CRIT) then
@@ -612,10 +665,18 @@ module mpas_log
       !   Only do this if:
       !   1) the log is active AND
       !   2) the log mgr opened the file (otherwise the driver that opened it should close it)
-      if (mpas_log_info % logActive .and. mpas_log_info % openedByLogModule) then
-         close(mpas_log_info % logUnit, iostat = err)
+      if (mpas_log_info % outputLog % isActive .and. mpas_log_info % outputLog % openedByLogModule) then
+         close(mpas_log_info % outputLog % unitNum, iostat = err)
       endif
 
+      ! Note: should not need to close an err file.  If these are open, they are intended to quickly lead to abort
+      ! where the abort routine will close them, and this routine is never reached.
+
+      ! deallocate data structures
+      ! (this would have to be in a separate routine)
+      !deallocate(mpas_log_info % errorLog)
+      !deallocate(mpas_log_info % outputLog)
+      !deallocate(mpas_log_info)
    !--------------------------------------------------------------------
    end subroutine mpas_log_finalize
 
@@ -668,11 +729,15 @@ module mpas_log
 
       ! Write final message to err file
       call date_and_time(date,time)
-      write(mpas_log_info % errUnit, '(a)') 'Logging complete.  Closing file at ' // &
+      write(mpas_log_info % errorLog % unitNum, '(a)') 'Logging complete.  Closing file at ' // &
          date(1:4)//'/'//date(5:6)//'/'//date(7:8) // ' ' // time(1:2)//':'//time(3:4)//':'//time(5:6)
 
       ! Close the err log to be clean
-      close(mpas_log_info % errUnit)
+      close(mpas_log_info % errorLog % unitNum)
+
+      deallocate(mpas_log_info % errorLog)
+      deallocate(mpas_log_info % outputLog)
+      deallocate(mpas_log_info)
 
 #ifdef _MPI
       call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)

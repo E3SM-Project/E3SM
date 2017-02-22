@@ -280,7 +280,7 @@ write(0,*) ''
       iErr = 0
 
       ! Initialize log manager
-      call mpas_log_init(logInfo, domain, local_err)
+      call mpas_log_init(logInfo, domain, err=local_err)
       iErr = ior(iErr, local_err)
 
       ! Set core specific options here
@@ -288,7 +288,8 @@ write(0,*) ''
       !  or other settings controlling behavior.)
 
       ! ATTENTION: DISABLING LOG MANAGER FOR NOW
-      logInfo % logActive = .false.
+      logInfo % outputLog % isActive = .false.
+      logInfo % errorLog % isActive = .false.
 
       ! After core has had a chance to modify log defaults, open the output log
       call mpas_log_open(err=local_err)
