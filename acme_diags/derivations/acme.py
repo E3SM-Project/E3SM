@@ -17,6 +17,10 @@ def _get_correct_derivation(var_key, derived_vars_dict, nc_file):
     derived_var_list = derived_vars_dict[var_key]
     derived_var_inputs = []  # store a list of all inputs visited, so if Exception, we get a good msg.
 
+    # When nc_file is obs, there is var_key in nc_file, i.e. nc_file(var_key)
+    if var_key in nc_file.variables.keys():
+        return [var_key], lambda x: x  # var_key needs to be in a list
+
     # get the first function and inputs from the derived_vars_dict dict
     for inputs, func in derived_var_list:
         derived_var_inputs.append(inputs)

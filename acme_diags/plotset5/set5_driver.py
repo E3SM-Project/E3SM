@@ -33,7 +33,7 @@ def make_parameters(orginal_parameter):
 # Below three functions are copied from uvcmetrics.
 def mask_by( var, maskvar, lo=None, hi=None ):
     """masks a variable var to be missing except where maskvar>=lo and maskvar<=hi.  That is, the missing-data mask is True where maskvar<lo or maskvar>hi or where it was True on input. For lo and hi, None means to omit the constrint, i.e. lo=-infinity or hi=infinity. var is changed and returned; we don't make a new variable.
-var and maskvar: dimensioned the same variables.  
+var and maskvar: dimensioned the same variables.
 lo and hi: scalars.
     """
     if lo is None and hi is None:
@@ -68,7 +68,7 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     return mv1_reg, mv2_reg
 
 
-    
+
 parser = acme_diags.acme_parser.ACMEParser()
 orginal_parameter = parser.get_parameter()
 parameters = make_parameters(orginal_parameter)
@@ -77,25 +77,20 @@ for parameter in parameters:
 
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
-#    reference_data_set = parameter.reference_data_set # observation
-#    test_data_set = parameter.test_data_set # model
-#    filename1=test_data_path + test_data_set
-#    filename2=reference_data_path + reference_data_set
 
     var = parameter.variables
-    season = parameter.season
+    seasons = parameter.season
     ref_name = parameter.ref_name
     test_name = parameter.test_name
 
-
-    for it in season:
+    for season in seasons:
         test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
-        for filename in fnmatch.filter(test_files, '*'+it+'*'):
+        for filename in fnmatch.filter(test_files, '*'+season+'*'):
             print filename
             filename1 = filename
 
         ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
-        for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+it+'*'):
+        for filename in fnmatch.filter(ref_files, '*'+season+'*'):
             print filename
             filename2 = filename
 
@@ -104,7 +99,7 @@ for parameter in parameters:
         f_obs = cdms2.open(filename2)
 
         mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
-        mv2 = f_obs(var)
+        mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
 
         parameter.output_file = '_'.join([ref_name,it])
         parameter.main_title = str(' '.join([var,it]))
@@ -133,7 +128,6 @@ for parameter in parameters:
             mv1 = mask_by(TS, OCNFRAC, lo = 0.9) #following AMWG
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
-         '''
 
             mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
             mv1_reg=mv1_reg(squeeze=1)
@@ -148,12 +142,13 @@ for parameter in parameters:
 
             # Plotting for SST
             plot_set_5.plot(mv2, mv1, mv2_new, mv1_new, parameter)
-        
+
         else:
             f_in = cdms2.open(filename1)
             mv1 = f_in(var)
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
+        '''
 
         parameter.output_file = '_'.join([ref_name,it])
         parameter.main_title = str(' '.join([var,it]))
@@ -166,17 +161,17 @@ for parameter in parameters:
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
                 plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
 
-        
+
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
             plev = parameter.levels
             print 'selected pressure level', plev
-    
+
             for filename in [filename1, filename2]:
                 f_in = cdms2.open(filename)
                 mv = f_in[var] # Square brackets for metadata preview
                 mv_plv = mv.getLevel()
-    
+
                 if mv_plv.long_name.lower().find('hybrid') != -1: # var(time,lev,lon,lat) convert from hybrid level to pressure
                     mv = f_in (var) # Parentheses actually load the transient variable
                     hyam = f_in('hyam')
@@ -186,8 +181,8 @@ for parameter in parameters:
                     levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
                     levels_orig.units = 'mb'
                     mv_p=cdutil.vertical.logLinearInterpolation(mv, levels_orig, plev)
-                   
-    
+
+
                 elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
                     mv = f_in (var)
                     #Construct pressure level for interpolation
@@ -196,27 +191,27 @@ for parameter in parameters:
                     mv,levels_orig = genutil.grower(mv,levels_orig) # grow 1d levels_orig to mv dimention
                     #levels_orig.info()
                     mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,], levels_orig[:,::-1,], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
-    
+
                 else:
                     print( 'Vertical level is neither hybrid nor pressure. Abort')
                     quit()
-           
+
                 if filename == filename1:
                     mv1_p = mv_p
-        
+
                 if filename == filename2:
                     mv2_p = mv_p
 
             for ilev in range(len(plev)):
                 mv1 = mv1_p[:,ilev,]
                 mv2 = mv2_p[:,ilev,]
-    
+
                 parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', it]))
                 parameter.output_file = str('_'.join([ref_name,it, str(int(plev[ilev]))]))
 
                 # Regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
-        
+
                 # Plotting
                 plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
         else:
