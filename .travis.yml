@@ -22,8 +22,10 @@ before_install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
+
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION cdp cdms2 -c conda-forge -c uvcdat -y
   - source activate test-environment
+  - export UVCDAT_ANONYMOUS_LOG=False
 
 install:
   - python setup.py install
