@@ -23,7 +23,7 @@ before_install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION cdp cdms2 -c conda-forge -c uvcdat -y
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION cdp cdms2 unidata -c conda-forge -c uvcdat -y
   - source activate test-environment
   - export UVCDAT_ANONYMOUS_LOG=False
 
