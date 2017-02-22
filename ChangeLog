@@ -3,7 +3,8 @@
 Originator: Bill Sacks
 Date: 02-21-2017
 Tag: cime5.2.0-alpha.25
-Answer Changes: Likely answer changes on yellowstone
+Answer Changes: Likely answer changes on yellowstone relative to
+                alpha.24, but not relative to alpha.23
 Tests: One CLM test that failed in alpha.24
 Dependencies: none
 
