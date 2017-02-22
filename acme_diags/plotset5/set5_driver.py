@@ -11,11 +11,12 @@ import plot_set_5
 import glob
 import os
 import fnmatch
+from acme_diags.derivations import acme
 
 
 def make_parameters(orginal_parameter):
-    #f_data = open('set5_diags.json').read()
-    f_data = open('set5_diags_NVA.json').read()
+    f_data = open('set5_diags.json').read()
+    #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
     parameters = []
@@ -46,7 +47,7 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv2_reg = mv2
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
-    
+
 
 
 for parameter in parameters:
@@ -70,14 +71,23 @@ for parameter in parameters:
         for filename in fnmatch.filter(test_files, '*'+it+'*'):
             print filename
             filename1 = filename
- 
+
         ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
         for filename in fnmatch.filter(ref_files, '*'+it+'*'):
             print filename
             filename2 = filename
-    
-        print filename1, filename2
 
+        #print filename1, filename2
+        f_mod = cdms2.open(filename1)
+        f_obs = cdms2.open(filename2)
+
+        mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
+        mv2 = f_obs(var)
+
+        parameter.output_file = '_'.join([ref_name,it])
+        parameter.main_title = str(' '.join([var,it]))
+
+        '''
         if var == 'PRECT':
             f_mod = cdms2.open(filename1)
             f_obs = cdms2.open(filename2)
@@ -101,18 +111,19 @@ for parameter in parameters:
             mv1 = f_in(var)
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
+        '''
 
-            
+
 #        elif var == 'T':
-#    
+#
 #            plev = parameter.levels[0]
 #            print 'selected pressure level', plev
-#    
+#
 #            for filename in [filename1,filename2]:
 #                f_in = cdms2.open(filename)
 #                mv = f_in[var] # Square brackets for metadata preview
 #                mv_plv = mv.getLevel()
-#    
+#
 #                if mv_plv.long_name.lower().find('hybrid') != -1: # var(time,lev,lon,lat) convert from hybrid level to pressure
 #                    mv = f_in (var) # Parentheses actually load the transient variable
 #                    hyam = f_in('hyam')
@@ -122,13 +133,13 @@ for parameter in parameters:
 #                    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
 #                    levels_orig.units = 'mb'
 #                    mv_p=cdutil.vertical.logLinearInterpolation(mv, levels_orig, plev)
-#    
+#
 #                elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
 #                    # if desired plev exists, read from input file, otherwise, interpolate
 #                    try:
 #                        plev_ind = mv_plv[:].tolist().index(plev)
 #                        mv_p = f_in(var,level= plev)
-#    
+#
 #                    except Exception as e:
 #                        print str(plev)+ ' is not standard pressure level, execute vertical interpolation'
 #                        mv = f_in (var)
@@ -137,22 +148,22 @@ for parameter in parameters:
 #                        levels_orig.setAxis(0,mv_plv)
 #                        mv,levels_orig = genutil.grower(mv,levels_orig) # grow 1d levels_orig to mv dimention
 #                        #levels_orig.info()
-#    
+#
 #                        mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,], levels_orig[:,::-1,], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
-#    
+#
 #                else:
 #                    print( 'Vertical level is neither hybrid nor pressure. Abort')
 #                    quit()
 #                print filename
 #                parameter.output_file = '_'.join([ref_name,it, str(plev)+'mb'])
 #                print parameter.output_file
-#    
+#
 #                if filename == filename1:
 #                    mv1 = mv_p
-#    
+#
 #                if filename == filename2:
 #                    mv2 = mv_p
-    
+
         #regrid towards lower resolution of two variables for calculating difference
         mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
         #if var == 'T' and plev == 850:
@@ -167,13 +178,13 @@ for parameter in parameters:
         #    parameter.reference_levels = levels
         #    parameter.test_levels = levels
         #    parameter.diff_levels = diff_levels
-    
+
     ###not working
     #    if var == 'T':
     #        #parameter.main_title = ' '.join([var, str(plev), 'mb', season])
     #        parameter.main_title = ' '.join([var, season])
     #    else:
     #        parameter.main_title = ' '.join([var, season])
-    
+
         print mv2_reg.shape, mv1_reg.shape
         plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)

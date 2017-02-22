@@ -35,14 +35,15 @@ def aplusb(var1, var2, target_units=None):
     it tries to convert both of their units to target_units '''
 
     if target_units is not None:
-        var1, var2 = _convert_units(var1, var2, target_units)
+        var1 = _convert_units(var1, target_units)
+        var2 = _convert_units(var2, target_units)
 
     return var1 + var2
 
 def _convert_units(var, target_units):
     ''' Converts units of var to target_units.
     var is a cdms.TransientVariable. '''
-    
+
     temp = udunits(1.0, var.units)
     coeff, offset= temp.how(target_units)
 
@@ -55,7 +56,5 @@ derived_variables = {
     'PRECT': [
         (['pr'],  rename),
         (['PRECC','PRECL'], lambda a, b: aplusb(a, b, target_units="mm/day"))
-        #(['PRECC','PRECL'], lambda x, y: '%s and %s are in the file' % (x.id, y.id))
-        #(['nothing','nothing2'], lambda x, y: 'hi')
     ],
 }
