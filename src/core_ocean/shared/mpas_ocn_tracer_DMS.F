@@ -284,7 +284,7 @@ contains
       integer :: numColumns, column, iCell, iTracer, iLevelSurface
 
       real (kind=RKIND), dimension(:), pointer :: &
-         seaSurfacePressure,   &
+         atmosphericPressure,   &
          iceFraction,          &
          landIceFraction,      &
          windSpeedSquared10m,  &
@@ -312,7 +312,7 @@ contains
 
       call mpas_timer_start("DMS surface flux")
 
-      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
@@ -342,7 +342,7 @@ contains
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
 
-         DMS_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
+         DMS_forcing%surfacePressure(column) = atmosphericPressure(iCell)*PascalsToAtmospheres
          DMS_forcing%iceFraction(column) = iceFraction(iCell)
 !maltrud assume for now that if there is any land ice, it is all land ice
          if (associated(landIceFraction)) then

@@ -449,7 +449,7 @@ contains
       !-----------------------------------------------------------------
       ! define some arrays in z-coordinates, obtained from diagnostics and forcing
       !-----------------------------------------------------------------
-      real(KIND=RKIND), dimension(:), pointer :: seaSurfacePressure
+      real(KIND=RKIND), dimension(:), pointer :: atmosphericPressure
       real(KIND=RKIND), dimension(:,:), pointer :: zMid
       real(KIND=RKIND), dimension(:,:), pointer :: zTop
       real(KIND=RKIND), dimension(:,:), pointer :: density
@@ -666,7 +666,7 @@ contains
          !--------------------------------------------------
          ! assign pointers used from forcing pool
          !--------------------------------------------------
-         call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+         call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
 
          !--------------------------------------------------
          ! get diagnostic variables
@@ -977,7 +977,7 @@ contains
          !-------------------------------------------------------------
          ! using data interpolated to buoyancy space, compute Montgomery potential
          !-------------------------------------------------------------
-         call computeMontgomeryPotential(nBuoyancyLayers, nCells, seaSurfacePressure, &
+         call computeMontgomeryPotential(nBuoyancyLayers, nCells, atmosphericPressure, &
             densityMidBuoyCoor, potentialDensityMidRef, heightInterfaceBuoyCoor, montgPotBuoyCoor)
 
          !-------------------------------------------------------------
