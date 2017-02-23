@@ -1492,35 +1492,45 @@
         <command name="rm">cray-parallel-netcdf</command>
         <command name="rm">subversion</command>
         <command name="rm">cmake</command>
+        <command name="rm">python</command>
 
         <command name="load">python/2.7.9</command>
-        <command name="load">subversion</command>
+        <command name="load">subversion/1.8.3</command>
         <command name="load">cmake/2.8.10.2</command>
         -->
       </modules>
 
       <modules compiler="pgiacc"> <!-- changing pgi_acc to pgiacc -->
         <command name="use">/ccs/home/norton/.modules</command>
-	<command name="load">PrgEnv-pgi</command>
-	<command name="switch">pgi pgi/15.9.lustre</command>
+	      <command name="load">PrgEnv-pgi</command>
+	      <command name="switch">pgi pgi/15.9.lustre</command>
+        <command name="rm">cray-mpich/7.4.0</command>
+        <command name="rm">cray-libsci/16.06.1</command>
+        <command name="rm">atp/2.0.2</command>
         <command name="load">cray-mpich/7.4.0</command>
         <command name="load">cray-libsci/16.06.1</command>
-        <command name="load">esmf/5.2.0rp2</command>
         <command name="load">atp/2.0.2</command>
+        <command name="load">esmf/5.2.0rp2</command>
         <command name="load">cudatoolkit</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">PrgEnv-pgi</command>
         <command name="switch">pgi pgi/15.7.0</command>
+        <command name="rm">cray-mpich/7.4.0</command>
+        <command name="rm">cray-libsci/16.06.1</command>
+        <command name="rm">atp/2.0.2</command>
         <command name="load">cray-mpich/7.4.0</command>
         <command name="load">cray-libsci/16.06.1</command>
-        <command name="load">esmf/5.2.0rp2</command>
         <command name="load">atp/2.0.2</command>
+        <command name="load">esmf/5.2.0rp2</command>
       </modules>
       <modules compiler="intel">
         <command name="rm">PrgEnv-pgi</command>
         <command name="load">PrgEnv-intel</command>
-        <!-- command name="switch">intel intel/15.0.2.164</command -->
+        <command name="rm">intel/15.0.2.164</command>
+        <command name="rm">cray-libsci/16.06.1</command>
+        <command name="rm">cray-mpich/7.4.0</command>
+        <command name="rm">atp/2.0.2</command>
         <command name="load">intel/15.0.2.164</command>
         <command name="load">cray-libsci/16.06.1</command>
         <command name="load">cray-mpich/7.4.0</command>
@@ -1529,6 +1539,8 @@
       <modules compiler="cray">
         <command name="rm">PrgEnv-pgi</command>
         <command name="load">PrgEnv-cray</command>
+        <command name="rm">cce/8.5.0</command>
+        <command name="rm">cray-mpich/7.4.0</command>
         <command name="load">cce/8.5.0</command>
         <command name="load">cray-mpich/7.4.0</command>
       </modules>
@@ -1539,10 +1551,6 @@
       <modules mpilib="!mpi-serial">
         <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
         <command name="load">cray-parallel-netcdf/1.7.0</command>
-      </modules>
-         <modules>
-        <command name="load">subversion/1.8.3</command>
-        <command name="load">cmake/2.8.10.2</command>
       </modules>
       <!-- Default -->
       <!--
