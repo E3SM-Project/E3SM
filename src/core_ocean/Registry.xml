@@ -1251,6 +1251,7 @@
 
 			<var name="surfaceStress"/>
 			<var name="seaIcePressure"/>
+			<var name="atmosphericPressure"/>
 			<var name="windStressZonal"/>
 			<var name="windStressMeridional"/>
 			<var_struct name="forcing"/>
@@ -1408,6 +1409,7 @@
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
 			<var name="seaIcePressure"/>
+			<var name="atmosphericPressure"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -1491,6 +1493,7 @@
 				mode="forward">
 
 			<var name="seaIcePressure"/>
+			<var name="atmosphericPressure"/>
 			<var name="windStressZonal"/>
 			<var name="windStressMeridional"/>
 			<var_struct name="tracersSurfaceRestoringFields"/>
@@ -1563,6 +1566,7 @@
 			<var name="windStressMeridional"/>
 			<var name="surfaceBuoyancyForcing"/>
 			<var name="seaIcePressure"/>
+			<var name="atmosphericPressure"/>
 		</stream>
 
 		<stream name="Cartesian"
@@ -2592,7 +2596,10 @@
 
 			 ********************************************************************* -->
 		<var name="seaIcePressure" type="real" dimensions="nCells Time" units="Pa"
-			 description="Pressure defined at the sea surface due to sea ice."
+			 description="Pressure at the sea surface due to sea ice."
+		/>
+		<var name="atmosphericPressure" type="real" dimensions="nCells Time" units="Pa"
+			 description="Pressure at the sea surface due to the atmosphere."
 		/>
 		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}"
 			 description="Energy per unit area trapped in frazil ice formation. Always $\ge$ 0.0."
