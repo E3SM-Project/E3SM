@@ -1,5 +1,74 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 2-23-2017
+Tag: cime5.2.0-alpha.26
+Answer Changes: None
+Tests: scripts_regression_tests on some for PRs #1159,#1172
+       B1850 test for PR#1159
+Dependencies:  For allactive configurations, https://github.com/CESM-Development/cime_config
+               is needed.
+
+Brief Summary: 
+   -Move cesm/allactive out of the cime tag. 
+   -Pop namelist changes,
+   -Make sure pio1 finds netcdf4
+   -add --mpilib option to create_test 
+   -Add S-case test to cime_developers 
+
+User interface changes: adds --mpilib optional argument to create_test 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+fd200f6 Merge pull request #1181 from ESMCI/agsalin/add_S_case_test
+d33e6a2 Merge pull request #1180 from jedwards4b/create_test_mpilib_option
+d210e0b Merge pull request #1159 from bertinia/master
+ad5ff79 Merge pull request #1172 from ESMCI/mvertens/pop_python_namelist
+4ab605f Merge pull request #1177 from jedwards4b/pio1_bld_fixes
+
+Modified files: git diff --name-status [previous_tag]
+D       cime_config/cesm/allactive/config_compsets.xml
+D       cime_config/cesm/allactive/config_pes.xml
+D       cime_config/cesm/allactive/testlist_allactive.xml
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cesm2dev01/include_user_mods
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cesm2dev01io/include_user_mods
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cism/oneway/README 
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cism/oneway/shell_commands
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cism/trilinos/README
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cism/trilinos/include_user_mods
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cism/trilinos/shell_commands
+D       cime_config/cesm/allactive/testmods_dirs/allactive/cism/trilinos/user_nl_cism
+D       cime_config/cesm/allactive/testmods_dirs/allactive/default/user_nl_cam 
+D       cime_config/cesm/allactive/testmods_dirs/allactive/default/user_nl_cice 
+D       cime_config/cesm/allactive/testmods_dirs/allactive/default/user_nl_clm
+D       cime_config/cesm/allactive/testmods_dirs/allactive/default/user_nl_mosart
+D       cime_config/cesm/allactive/testmods_dirs/allactive/default/user_nl_pop
+D       cime_config/cesm/allactive/testmods_dirs/allactive/default/user_nl_rtm
+D       cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/include_user_mods
+D       cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/user_nl_cam
+D       cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/user_nl_cice
+D       cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/user_nl_cism
+D       cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/user_nl_clm
+D       cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/user_nl_mosart
+D       cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/user_nl_pop
+D       cime_config/cesm/allactive/testmods_dirs/allactive/defaultio/user_nl_rtm
+D       cime_config/cesm/allactive/usermods_dirs/b1850/shell_commands 
+D       cime_config/cesm/allactive/usermods_dirs/b1850/user_nl_clm
+D       cime_config/cesm/allactive/usermods_dirs/b1850/user_nl_cpl
+D       cime_config/cesm/allactive/usermods_dirs/b1850_cism/include_user_mods
+D       cime_config/cesm/allactive/usermods_dirs/b1850_cism/user_nl_cism
+M       cime_config/cesm/machines/Makefile
+M       externals/pio1/pio/CMakeLists.txt
+M       scripts/create_newcase
+M       scripts/create_test
+M       utils/python/CIME/build.py
+M       utils/python/CIME/namelist.py
+M       utils/python/CIME/test_scheduler.py
+M       utils/python/update_acme_tests.py
+
+======================================================================
+
+======================================================================
+
 Originator: Bill Sacks
 Date: 02-21-2017
 Tag: cime5.2.0-alpha.25
