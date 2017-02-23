@@ -244,7 +244,7 @@ contains
          config_forcing_restart_file)
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
-    forcingReferenceTimeMonthly = "2000-01-15_00:00:00"
+    forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
 
     call MPAS_forcing_init_field(&
          domain % streamManager, &
@@ -1191,7 +1191,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
-    forcingReferenceTimeMonthly = "2000-01-15_00:00:00"
+    forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
 
     ! create the sea surface temperature forcing group
     call MPAS_forcing_init_group(&
