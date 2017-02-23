@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+
+"""
+Wait for a queued set of ACME tests to finish by watching the
+TestStatus files.  If all tests pass, 0 is returned, otherwise a
+non-zero error code is returned. Note that this program waits
+for the RUN phase specifically and will not terminate if the
+RUN phase didn't happen.
+"""
+
+from standard_script_setup import *
+
+import CIME.wait_for_tests
+
+import argparse, sys, os
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s [<Path to TestStatus> <Path to TestStatus> ...]  [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Wait for test in current dir\033[0m
+    > %s
+    \033[1;32m# Wait for test in user specified tests\033[0m
+    > %s path/to/testdir
+    \033[1;32m# Wait for all tests in a test area\033[0m
+    > %s path/to/testarea/*/TestStatus
+""" % ((os.path.basename(args[0]), ) * 6),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("paths", default=".", nargs="*", help="Paths to test directories or status file. Pwd default.")
+
+    parser.add_argument("-n", "--no-wait", action="store_true",
+                        help="Do not wait for tests to finish")
+
+    parser.add_argument("-t", "--check-throughput", action="store_true",
+                        help="Fail if throughput check fails (fail if tests slow down)")
+
+    parser.add_argument("-m", "--check-memory", action="store_true",
+                        help="Fail if memory check fails (fail if tests footprint grows)")
+
+    parser.add_argument("-i", "--ignore-namelist-diffs", action="store_true",
+                        help="Do not fail a test if the only problem is diffing namelists")
+
+    parser.add_argument("--ignore-memleak", action="store_true",
+                        help="Do not fail a test if the only problem is a memleak")
+
+    parser.add_argument("-b", "--cdash-build-name",
+                        help="Build name, implies you want results send to Cdash")
+
+    parser.add_argument("-p", "--cdash-project", default=CIME.wait_for_tests.ACME_MAIN_CDASH,
+                        help="The name of the CDash project where results should be uploaded")
+
+    parser.add_argument("-g", "--cdash-build-group", default=CIME.wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
+                        help="The build group to be used to display results on the CDash dashboard.")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.ignore_memleak, args.cdash_build_name, args.cdash_project, args.cdash_build_group
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        CIME.utils.run_cmd_no_fail("python -m doctest %s/wait_for_tests.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        return
+
+    test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, ignore_memleak, cdash_build_name, cdash_project, cdash_build_group = \
+        parse_command_line(sys.argv, description)
+
+    sys.exit(0 if CIME.wait_for_tests.wait_for_tests(test_paths,
+                                                no_wait=no_wait,
+                                                check_throughput=check_throughput,
+                                                check_memory=check_memory,
+                                                ignore_namelists=ignore_namelist_diffs,
+                                                ignore_memleak=ignore_memleak,
+                                                cdash_build_name=cdash_build_name,
+                                                cdash_project=cdash_project,
+                                                cdash_build_group=cdash_build_group)
+             else CIME.utils.TESTS_FAILED_ERR_CODE)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
