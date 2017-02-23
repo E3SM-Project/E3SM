@@ -4,7 +4,6 @@ Interface to the env_archive.xml file.  This class inherits from GenericXML
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.generic_xml import GenericXML
-from CIME.XML.archive import Archive
 from CIME.XML.headers import Headers
 
 logger = logging.getLogger(__name__)
