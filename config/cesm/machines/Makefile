@@ -388,8 +388,8 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/src/share/csm_share/shr \
-		-I$(CIMEROOT)/src/share/csm_share/include -I$(CIMEROOT)/src/share/RandNum/include
+INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/src/share/util \
+		-I$(CIMEROOT)/src/share/include -I$(CIMEROOT)/src/share/RandNum/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #

@@ -58,7 +58,7 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
 
 # csm_share (we don't build it here because it seems to be built differently
 # by different tests?)
-set(SHARE_ROOT "${CIME_ROOT}/share/csm_share")
+set(SHARE_ROOT "${CIME_ROOT}/share")
 add_subdirectory(${SHARE_ROOT}/util csm_share)
 include_directories(${SHARE_ROOT}/include)
 
@@ -68,4 +68,4 @@ include_directories(${CIME_ROOT}/share/esmf_wrf_timemgr)
 
 # Now the actual test directories.
 add_subdirectory(drivers/mct/unit_test)
-add_subdirectory(share/csm_share/test/unit)
+add_subdirectory(share/test/unit)

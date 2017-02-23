@@ -14,7 +14,7 @@ add_definitions(
 # Add source directories from stubs. This should be done first, so that in the
 # case of name collisions, the drv versions take precedence (when there are two
 # files with the same name, the one added later wins).
-add_subdirectory(${CIME_ROOT}/share/csm_share/unit_test_stubs/pio pio)
+add_subdirectory(${CIME_ROOT}/share/unit_test_stubs/pio pio)
 
 # Add drv source directories
 add_subdirectory(${DRV_ROOT}/shr drv_shr)
