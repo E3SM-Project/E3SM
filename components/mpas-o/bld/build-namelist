@@ -671,12 +671,6 @@ add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
 add_default($nl, 'config_flux_attenuation_coefficient_runoff');
 
-############################
-# Namelist group: coupling #
-############################
-
-add_default($nl, 'config_ssh_grad_relax_timescale');
-
 ######################################
 # Namelist group: shortwaveRadiation #
 ######################################
@@ -1800,7 +1794,6 @@ my @groups = qw(run_modes
                 vmix_tanh
                 cvmix
                 forcing
-                coupling
                 shortwaveradiation
                 frazil_ice
                 land_ice_fluxes

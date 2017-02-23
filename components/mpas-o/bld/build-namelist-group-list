@@ -23,7 +23,6 @@ my @groups = qw(run_modes
                 vmix_tanh
                 cvmix
                 forcing
-                coupling
                 shortwaveradiation
                 frazil_ice
                 land_ice_fluxes

@@ -1157,17 +1157,6 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- coupling -->
-
-<entry id="config_ssh_grad_relax_timescale" type="real"
-	category="coupling" group="coupling">
-Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 removes any relaxation and gives instantaneous response.
-
-Valid values: Any positive real number.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- shortwaveRadiation -->
 
 <entry id="config_sw_absorption_type" type="char*1024"
