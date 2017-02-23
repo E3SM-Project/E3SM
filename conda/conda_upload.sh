@@ -1,5 +1,5 @@
 PKG_NAME=acme_diags
-USER=UVCDAT
+USER=uvcdat
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     OS=linux-64
 else
