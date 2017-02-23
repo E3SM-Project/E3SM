@@ -1,13 +1,14 @@
 from numbers import Number
 from unidata import udunits
 
-def process_derived_var(var_key, derived_vars_dict, nc_file):
+def process_derived_var(var_key, derived_vars_dict, nc_file, region):
     ''' Given a key (var_key) to the derived_vars_dict dict, compute and return
      whatever is described in derived_vars_dict[var_key] for the nc_file'''
     if var_key in derived_vars_dict.keys():
         inputs, func = _get_correct_derivation(var_key, derived_vars_dict, nc_file)
         # get all of the variables from nc_file
-        args = [nc_file(var)(squeeze=1) for var in inputs]
+        args = [nc_file(var, region)(squeeze=1) for var in inputs]
+        #args = [nc_file(var)(squeeze=1) for var in inputs]
         return func(*args)
     else:
         raise RuntimeError('The variable %s was not in the derived variables dictionary' % var_key)

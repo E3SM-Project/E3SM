@@ -9,7 +9,7 @@
       "season": ["ANN","DJF","MAM","JJA","SON"],
       "test_units": "mm/day",
       "diff_units": "mm/day",
-      "regions": ["land", "ocean", "tropics", "global"],
+      "region": ["TROPICS"],
       "levels": []
                 }
           ]

@@ -12,6 +12,7 @@ import glob
 import os
 import fnmatch
 from acme_diags.derivations import acme
+from acme_diags.derivations.default_regions import regions_specs
 
 
 def make_parameters(orginal_parameter):
@@ -82,6 +83,10 @@ for parameter in parameters:
     seasons = parameter.season
     ref_name = parameter.ref_name
     test_name = parameter.test_name
+    region = parameter.region
+    print region[0]
+    domain = regions_specs[region[0]]['domain']
+#    domain = regions_specs[region]
 
     for season in seasons:
         test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
@@ -98,8 +103,8 @@ for parameter in parameters:
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
 
-        mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
-        mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
+        mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod, domain)
+        mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
 
         parameter.output_file = '_'.join([ref_name, season])
         parameter.main_title = str(' '.join([var, season]))

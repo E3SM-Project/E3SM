@@ -62,6 +62,14 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '-r', '--region',
+            type=str,
+            nargs='+',
+            dest='region',
+            help='region to use',
+            required=False)
+
+        self.add_argument(
             '--case_id',
             dest='case_id',
             help='Defines a subdirectory to the metrics output, so multiple' +
