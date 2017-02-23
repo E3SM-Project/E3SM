@@ -176,7 +176,7 @@ for parameter in parameters:
                     mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
                     plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
     
-    
+            ''' 
             #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
             elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
                 plev = parameter.levels
@@ -229,5 +229,7 @@ for parameter in parameters:
     
                     # Plotting
                     plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
+            
             else:
                 print "Dimensions of two variables are difference. Abort"
+            '''
