@@ -117,7 +117,7 @@ contains
       real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu,div_huTransport,div_huGMBolus
 
       real (kind=RKIND), dimension(:), pointer :: &
-        bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaIcePressure, frazilSurfacePressure, &
+        bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh,  seaIcePressure, atmosphericPressure, frazilSurfacePressure, &
         pressureAdjustedSSH, gradSSH, landIcePressure, landIceDraft
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, &
@@ -233,6 +233,7 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
       call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
+      call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
       call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
@@ -655,10 +656,9 @@ contains
            ! Pressure for generalized coordinates.
            ! Pressure at top surface may be due to atmospheric pressure
            ! or an ice-shelf depression.
-           pressure(1,iCell) = 0.0_RKIND
+           pressure(1,iCell) = atmosphericPressure(iCell) + seaIcePressure(iCell)
            if ( associated(frazilSurfacePressure) ) pressure(1,iCell) = pressure(1,iCell) + frazilSurfacePressure(iCell)
            if ( associated(landIcePressure) ) pressure(1,iCell) = pressure(1,iCell) + landIcePressure(iCell)
-           pressure(1,iCell) = pressure(1,iCell) + seaIcePressure(iCell)
            pressure(1,iCell) = pressure(1,iCell) + density(1,iCell)*gravity*0.5_RKIND*layerThickness(1,iCell)
 
            do k = 2, maxLevelCell(iCell)
@@ -2126,8 +2126,21 @@ contains
             write(debugUnit, *) 'ERROR: NaN Detected in layerThickness.'
             write(debugUnit, *) '  -- Statistics information for layerThickness fields'
 
-            ! Test rainFlux
+            ! Test seaIcePressure
             fieldName = 'seaIcePressure'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test atmosphericPressure
+            fieldName = 'atmosphericPressure'
             minValue = HUGE(minValue)
             maxValue = -HUGE(maxValue)
             call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
@@ -2227,6 +2240,19 @@ contains
 
             ! Test seaIcePressure
             fieldName = 'seaIcePressure'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test atmosphericPressure
+            fieldName = 'atmosphericPressure'
             minValue = HUGE(minValue)
             maxValue = -HUGE(maxValue)
             call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
