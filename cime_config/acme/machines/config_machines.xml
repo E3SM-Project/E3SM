@@ -1279,8 +1279,8 @@
          <DIN_LOC_ROOT_CLMFORC>/dtemp/sing201/inputdata/CAM/CSMDATA_CAM/aerocom/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/dtemp/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/dtemp/sing201/acme_testing/acme_baselines/</BASELINE_ROOT>
-             <CIME_OUTPUT_ROOT>/dtemp/$USER/csmruns</CIME_OUTPUT_ROOT>
+         <CCSM_BASELINE>/dtemp/sing201/acme_testing/acme_baselines/</CCSM_BASELINE>
+             <CESMSCRATCHROOT>/dtemp/$USER/csmruns</CESMSCRATCHROOT>
          <CCSM_CPRNC>/home/sing201/CAM/cprnc/cprnc</CCSM_CPRNC>
 	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>balwinder.singh at pnnl dot gov</SUPPORTED_BY>
