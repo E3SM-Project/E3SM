@@ -33,4 +33,5 @@ script:
   - bash tests/test.sh
 
 after_success:
+  - source deactivate test-environment
   - conda install conda-build && conda install anaconda-client && bash conda/conda_upload.sh
