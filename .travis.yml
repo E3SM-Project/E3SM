@@ -32,3 +32,6 @@ install:
 
 script:
   - bash tests/test.sh
+
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master" -a "$TRAVIS_PULL_REQUEST" == "false" ]; then conda install conda-build && conda install anaconda-client && bash conda/conda_upload.sh; fi
