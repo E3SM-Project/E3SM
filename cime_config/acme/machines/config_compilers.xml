@@ -775,7 +775,7 @@ for mct, etc.
       <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
       <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
       <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
-      <ADD_LDFLAGS compile_threaded="true"> -L$(GCC_ROOT)/lib64/gcc/x86_64-unknown-linux-gnu/5.3.0 -fopenmp </ADD_LDFLAGS>
+      <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
       <ADD_CMAKE_OPTS MODEL="cism"> -D CISM_GNU=ON </ADD_CMAKE_OPTS>
       <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
       <FREEFLAGS> -ffree-form </FREEFLAGS>
@@ -785,24 +785,26 @@ for mct, etc.
       <FFLAGS> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</FFLAGS>
       <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
       <FC_AUTO_R8> -fdefault-real-8 </FC_AUTO_R8>
-      <!-- user install gcc -->
-      <SFC>/software/tools/spack/opt/spack/linux-x86_64/gcc-4.8.5/gcc-5.3.0-5hy3c4b3xqemygnfwyl5dsc753gbvzrc/bin/gfortran</SFC>
-      <SCC>/software/tools/spack/opt/spack/linux-x86_64/gcc-4.8.5/gcc-5.3.0-5hy3c4b3xqemygnfwyl5dsc753gbvzrc/bin/gcc</SCC>
-      <SCXX>/software/tools/spack/opt/spack/linux-x86_64/gcc-4.8.5/gcc-5.3.0-5hy3c4b3xqemygnfwyl5dsc753gbvzrc/bin/gcpp</SCXX>
-      <MPIFC>/software/tools/spack/opt/spack/linux-x86_64/gcc-5.3.0/openmpi-1.10.2-w26llp27jmybo7wlgoqxjrtptltmripg/bin/mpif90</MPIFC>
-      <MPICC>/software/tools/spack/opt/spack/linux-x86_64/gcc-5.3.0/openmpi-1.10.2-w26llp27jmybo7wlgoqxjrtptltmripg/bin/mpicc</MPICC>
-      <MPICXX>/software/tools/spack/opt/spack/linux-x86_64/gcc-5.3.0/openmpi-1.10.2-w26llp27jmybo7wlgoqxjrtptltmripg/bin/mpic++</MPICXX>
+      <SFC>gfortran</SFC>
+      <SCC>gcc</SCC>
+      <SCXX>gcpp</SCXX>
+      <MPIFC>mpif90</MPIFC>
+      <MPICC>mpicc</MPICC>
+      <MPICXX>mpic++</MPICXX>
       <CXX_LINKER>FORTRAN</CXX_LINKER>
       <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-      <!-- user installed/loaded NETCDF/HDF5/LAPACK libraries, install directories MUST be specified in 'env_mach_specific.cades -->
-      <NETCDF_PATH>/software/user_tools/current/cades-ccsi/netcdf4/4.4.0/openmpi-1.10.2-gcc-5.3</NETCDF_PATH>
-      <HDF5_ROOT>/software/user_tools/current/cades-ccsi/hdf5/1.8.16/openmpi-1.10.2-gcc-5.3</HDF5_ROOT>
-      <LAPACK_LIBDIR>/software/tools/spack/opt/spack/linux-x86_64/gcc-5.3.0/netlib-lapack-3.5.0-ktb3cldqesiba6ndoiifvr3irojqhdhc/lib/</LAPACK_LIBDIR>
-      <BLAS_LIBDIR>/software/tools/spack/opt/spack/linux-x86_64/gcc-5.3.0/netlib-blas-3.5.0-cxsdr3okwvgr6u7kusa5ee5vhsyqxwgg/lib/</BLAS_LIBDIR>
+      <NETCDF_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0</NETCDF_PATH>
+      <HDF5_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/hdf5-parallel/1.8.17/centos7.2_gnu5.3.0</HDF5_PATH>
+      <LAPACK_LIBDIR>/software/tools/compilers/intel_2017/mkl/lib/intel64</LAPACK_LIBDIR>
+      <BLAS_LIBDIR>/software/tools/compilers/intel_2017/mkl/lib/intel64</BLAS_LIBDIR>
       <ADD_LDFLAGS MODEL="driver" > -L$(NETCDF_PATH)/lib -Wl,-rpath=$(NETCDF_PATH)/lib -lnetcdff -lnetcdf \
-              -L$(HDF5_ROOT)/lib -Wl,-rpath=$(HDF5_ROOT)/lib -lhdf5_hl -lhdf5 \
+              -L$(HDF5_PATH)/lib -Wl,-rpath=$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 \
               -L$(LAPACK_LIBDIR) -Wl,-rpath=$(LAPACK_LIBDIR) \
-              -L$(BLAS_LIBDIR) -Wl,-rpath=$(BLAS_LIBDIR)
+              -L$(BLAS_LIBDIR) -Wl,-rpath=$(BLAS_LIBDIR) \
+              -Wl,--start-group -lmkl_blas95_lp64 -lmkl_lapack95_lp64 \
+              -lmkl_scalapack_lp64 -lmkl_gf_lp64 -lmkl_intel_lp64 \
+              -lmkl_core -lmkl_gnu_thread -lmkl_blacs_openmpi_lp64 \
+              -Wl,--end-group -lgomp -lrt
       </ADD_LDFLAGS>
       <PFUNIT_PATH></PFUNIT_PATH>
 </compiler>

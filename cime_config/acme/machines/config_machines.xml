@@ -1352,28 +1352,28 @@
    <!-- customize these fields as appropriate for your system (max tasks) and
                               desired layout (change '${group}/${USER}' to your
         prefered location). -->
-      <DESC> OR-CONDO, CADES-CCSI, os is Linux, 32 pes/nodes, batch system is PBS</DESC>
+      <DESC> OR-CONDO, CADES-CCSI, os is Linux, 16 pes/nodes, batch system is PBS</DESC>
       <NODENAME_REGEX>or-condo-*.ornl.gov</NODENAME_REGEX>
       <TESTS>acme_developer</TESTS>
       <OS>LINUX</OS>
       <COMPILERS>gnu,intel</COMPILERS>
       <MPILIBS>openmpi,mpi-serial</MPILIBS>
-      <RUNDIR>/lustre/pfs1/cades-ccsi/scratch/$USER/$CASE/run</RUNDIR>
-      <EXEROOT>/lustre/pfs1/cades-ccsi/scratch/$USER/$CASE/bld</EXEROOT>
-      <DIN_LOC_ROOT>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/ACME_inputdata</DIN_LOC_ROOT>
-      <DIN_LOC_ROOT_CLMFORC>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-      <DOUT_S_ROOT>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/archives/$CASE</DOUT_S_ROOT>
+      <RUNDIR>/lustre/or-hydra/cades-ccsi/scratch/$USER/$CASE/run</RUNDIR>
+      <EXEROOT>/lustre/or-hydra/cades-ccsi/scratch/$USER/$CASE/bld</EXEROOT>
+      <DIN_LOC_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata</DIN_LOC_ROOT>
+      <DIN_LOC_ROOT_CLMFORC>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+      <DOUT_S_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/archives/$CASE</DOUT_S_ROOT>
       <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-      <CESMSCRATCHROOT>/lustre/pfs1/cades-ccsi/scratch</CESMSCRATCHROOT>
-      <CCSM_BASELINE>/lustre/pfs1/cades-ccsi/proj-shared/project_acme/baselines</CCSM_BASELINE>
+      <CESMSCRATCHROOT>/lustre/or-hydra/cades-ccsi/scratch</CESMSCRATCHROOT>
+      <CCSM_BASELINE>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/baselines</CCSM_BASELINE>
       <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
-      <SUPPORTED_BY>Fengming Yuan</SUPPORTED_BY>
+      <SUPPORTED_BY>yinj -at- ornl.gov</SUPPORTED_BY>
       <GMAKE_J>4</GMAKE_J>
       <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-      <PES_PER_NODE>32</PES_PER_NODE>
+      <PES_PER_NODE>16</PES_PER_NODE>
       <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
       <mpirun mpilib="openmpi" compiler="gnu">
-        <executable args="default">/software/tools/spack/opt/spack/linux-x86_64/gcc-5.3.0/openmpi-1.10.2-w26llp27jmybo7wlgoqxjrtptltmripg/bin/mpirun</executable>
+        <executable args="default">/software/dev_tools/swtree/cs400/xalt/0.7.5/centos7.3/bin/mpirun</executable>
         <arguments>
           <arg name="num_tasks"> -np {{ num_tasks }}</arg>
           <arg name="machine_file">--hostfile $ENV{PBS_NODEFILE}</arg>
@@ -1383,21 +1383,28 @@
         <executable> </executable>
       </mpirun>
       <module_system type="module">
-	<init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-	<init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-	<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-	<init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-	<cmd_path lang="sh">module</cmd_path>
-	<cmd_path lang="csh">module</cmd_path>
-	<cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-	<cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-	<modules compiler="gnu">
-	  <command name="load">linux-x86_64/gcc@5.3.0%gcc@4.8.5+gold-5hy3c4b</command>
-	  <command name="load">linux-x86_64/openmpi@1.10.2%gcc@5.3.0~psm~tm~verbs-w26llp2</command>
-	  <command name="load">linux-x86_64/netlib-lapack@3.5.0%gcc@5.3.0+shared-ktb3cld</command>
-	  <command name="load">linux-x86_64/netlib-blas@3.5.0%gcc@5.3.0+fpic-cxsdr3o</command>
-	  <command name="load">linux-x86_64/cmake@3.4.0%gcc@5.3.0+ncurses-sr4jjqc</command>
-	</modules>
+        <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+        <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+        <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+        <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+        <cmd_path lang="sh">module</cmd_path>
+        <cmd_path lang="csh">module</cmd_path>
+        <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+        <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+        <modules>
+          <command name="purge"/>
+        </modules>
+        <modules compiler="gnu">
+          <command name="load">PE-gnu</command>
+        </modules>
+        <modules>
+          <command name="load">mkl/2017</command>
+          <command name="load">cmake/3.6.1</command>
+          <command name="load">python/2.7.12</command>
+          <command name="load">nco/4.6.4</command>
+          <command name="load">hdf5-parallel/1.8.17</command>
+          <command name="load">netcdf-hdf5parallel/4.3.3.1</command>
+        </modules>
       </module_system>
 </machine>
 
