@@ -9,37 +9,55 @@ use pfunit_mod
 
 contains
 
+  logical function unreachable_function(macro_name)
+    character(len=*), intent(in) :: macro_name
+
+    call throw("NDEBUG failed to turn off " // macro_name)
+  end function unreachable_function
+
 @Test
 subroutine ndebug_controls_assert_macro()
-  SHR_ASSERT(unreachable_function(), "Fake message.")
-contains
-  logical function unreachable_function()
-    unreachable_function = .false.
-    call throw("NDEBUG failed to turn off SHR_ASSERT.", &
-         SourceLocation(__FILE__, __LINE__))
-  end function unreachable_function
+  SHR_ASSERT(unreachable_function("SHR_ASSERT"), "Fake message.")
 end subroutine ndebug_controls_assert_macro
 
 @Test
+subroutine ndebug_controls_assert_fl_macro()
+  SHR_ASSERT_FL(unreachable_function("SHR_ASSERT_FL"), "my_file", 42)
+end subroutine ndebug_controls_assert_fl_macro
+
+@Test
+subroutine ndebug_controls_assert_mfl_macro()
+  SHR_ASSERT_MFL(unreachable_function("SHR_ASSERT_MFL"), "Fake message.", "my_file", 42)
+end subroutine ndebug_controls_assert_mfl_macro
+
+@Test
 subroutine ndebug_controls_assert_all_macro()
-  SHR_ASSERT_ALL(unreachable_function(), "Fake message.")
-contains
-  logical function unreachable_function()
-    unreachable_function = .false.
-    call throw("NDEBUG failed to turn off SHR_ASSERT_ALL.", &
-         SourceLocation(__FILE__, __LINE__))
-  end function unreachable_function
+  SHR_ASSERT_ALL(unreachable_function("SHR_ASSERT_ALL"), "Fake message.")
 end subroutine ndebug_controls_assert_all_macro
 
 @Test
+subroutine ndebug_controls_assert_all_fl_macro()
+  SHR_ASSERT_ALL_FL(unreachable_function("SHR_ASSERT_ALL_FL"), "my_file", 42)
+end subroutine ndebug_controls_assert_all_fl_macro
+
+@Test
+subroutine ndebug_controls_assert_all_mfl_macro()
+  SHR_ASSERT_ALL_MFL(unreachable_function("SHR_ASSERT_ALL_MFL"), "Fake message.", "my_file", 42)
+end subroutine ndebug_controls_assert_all_mfl_macro
+
+@Test
 subroutine ndebug_controls_assert_any_macro()
-  SHR_ASSERT_ANY(unreachable_function(), "Fake message.")
-contains
-  logical function unreachable_function()
-    unreachable_function = .false.
-    call throw("NDEBUG failed to turn off SHR_ASSERT_ANY.", &
-         SourceLocation(__FILE__, __LINE__))
-  end function unreachable_function
+  SHR_ASSERT_ANY(unreachable_function("SHR_ASSERT_ANY"), "Fake message.")
 end subroutine ndebug_controls_assert_any_macro
+
+@Test
+subroutine ndebug_controls_assert_any_fl_macro()
+  SHR_ASSERT_ANY_FL(unreachable_function("SHR_ASSERT_ANY_FL"), "my_file", 42)
+end subroutine ndebug_controls_assert_any_fl_macro
+
+@Test
+subroutine ndebug_controls_assert_any_mfl_macro()
+  SHR_ASSERT_ANY_MFL(unreachable_function("SHR_ASSERT_ANY_MFL"), "Fake message.", "my_file", 42)
+end subroutine ndebug_controls_assert_any_mfl_macro
 
 end module test_ndebug
