@@ -217,7 +217,7 @@ class EnvBatch(EnvBase):
                 walltime = self._default_walltime
 
             self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
-            logger.info("Job %s queue %s walltime %s"%(job, queue, walltime))
+            logger.debug("Job %s queue %s walltime %s"%(job, queue, walltime))
 
     def get_batch_directives(self, case, job, raw=False):
         """
