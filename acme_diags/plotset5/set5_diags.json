@@ -6,10 +6,8 @@
       "variables": "PRECT",
       "ref_name": "GPCP",
       "reference_name": "GPCP (yrs1979-2009)",
-      "season": ["ANN","DJF","MAM","JJA","SON"],
-      "test_units": "mm/day",
-      "diff_units": "mm/day",
-      "region": ["TROPICS"],
+      "season": ["ANN"],
+      "region": ["TROPICS","TRMM_region","global"],
       "levels": []
                 }
           ]

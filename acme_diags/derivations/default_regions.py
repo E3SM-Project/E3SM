@@ -5,6 +5,7 @@ regions_specs = {
     'SHEX': {'domain': cdutil.region.domain(latitude=(-90., -30, 'ccb'))},
     'TROPICS': {'domain': cdutil.region.domain(latitude=(-30., 30, 'ccb'))},
     "global": {},
+    'TRMM_region': {'domain': cdutil.region.domain(latitude=(-38., 38, 'ccb'))},
     '90S50S': {'domain': cdutil.region.domain(latitude=(-90., -50, 'ccb'))},
     '50S20S': {'domain': cdutil.region.domain(latitude=(-50., -20, 'ccb'))},
     '20S20N': {'domain': cdutil.region.domain(latitude=(-20., 20, 'ccb'))},

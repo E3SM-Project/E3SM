@@ -83,9 +83,7 @@ for parameter in parameters:
     seasons = parameter.season
     ref_name = parameter.ref_name
     test_name = parameter.test_name
-    region = parameter.region
-    print region[0]
-    domain = regions_specs[region[0]]['domain']
+    regions = parameter.region
 #    domain = regions_specs[region]
 
     for season in seasons:
@@ -103,118 +101,133 @@ for parameter in parameters:
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
 
-        mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod, domain)
-        mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
+        # domain can pass in process_derived_var after Charles fix cdutil.domain'unit problem
+        #mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod, domain)
+        #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
+        mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
+        mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
 
-        parameter.output_file = '_'.join([ref_name, season])
-        parameter.main_title = str(' '.join([var, season]))
-        print parameter.output_file
+        for region in regions: 
+            print region
+            if region != 'global':
+                domain = regions_specs[region]['domain']
+                # below 7 lines are temporary solution for the cdutil error
+                unit0 = mv1.units
+                mv1 = mv1(domain)
+                mv2 = mv2(domain)
+                mv1.units = unit0
+                mv2.units = unit0
+                parameter.output_file = '_'.join([ref_name, season,region])
+                parameter.main_title = str(' '.join([var, season,region]))
 
-        '''
-        if var == 'PRECT':
-            f_mod = cdms2.open(filename1)
-            f_obs = cdms2.open(filename2)
-            if ref_name == 'TRMM': #TRMM region following AMWG  latitude=(-38,38)
-                mv1 = (f_mod('PRECC', latitude=(-38,38)) + f_mod('PRECL', latitude=(-38,38)))*3600.0*24.0*1000.0
-                mv2 = f_obs(var, latitude=(-38,38))
             else:
-                mv1 = (f_mod('PRECC') + f_mod('PRECL'))*3600.0*24.0*1000.0
-                mv2 = f_obs(var)
-            mv1.units = 'mm/day'
-        elif var == 'PREH2O':
-            f_in = cdms2.open(filename1)
-            mv1 = f_in('TMQ')
-            f_in = cdms2.open(filename2)
-            mv2 = f_in(var)
-        elif var == 'SST':
-            f_in = cdms2.open(filename1)
-            TS = f_in('TS')
-            TS = TS -273.15
-            OCNFRAC = f_in('OCNFRAC')
-            mv1 = mask_by(TS, OCNFRAC, lo = 0.9) #following AMWG
-            f_in = cdms2.open(filename2)
-            mv2 = f_in(var)
-
-            mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
-            mv1_reg=mv1_reg(squeeze=1)
-            #create common mask for SST
-            land_mask = MV2.logical_or(mv1_reg.mask,mv2_reg.mask)
-
-            # Note, NCAR plots native mv1, mv2, but mean is from newly masker mv1 and mv2.while we plot everything already masked for now.Need to modify plotting routine for accomodating printing different sets of means to plots.
-            mv1_new = MV2.masked_where(land_mask,mv1_reg)
-            mv2_new = MV2.masked_where(land_mask,mv2_reg)
-            parameter.output_file = '_'.join([ref_name,it])
-            parameter.main_title = str(' '.join([var,it]))
-
-            # Plotting for SST
-            plot_set_5.plot(mv2, mv1, mv2_new, mv1_new, parameter)
-
-        else:
-            f_in = cdms2.open(filename1)
-            mv1 = f_in(var)
-            f_in = cdms2.open(filename2)
-            mv2 = f_in(var)
-        '''
-
-        #for variables without z axis:
-        if mv1.getLevel()==None and mv2.getLevel()==None:
-            #regrid towards lower resolution of two variables for calculating difference
-            if var != 'SST': #special case
-                mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
-                plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
-
-
-        #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
-        elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
-            plev = parameter.levels
-            print 'selected pressure level', plev
-
-            for filename in [filename1, filename2]:
-                f_in = cdms2.open(filename)
-                mv = f_in[var] # Square brackets for metadata preview
-                mv_plv = mv.getLevel()
-
-                if mv_plv.long_name.lower().find('hybrid') != -1: # var(time,lev,lon,lat) convert from hybrid level to pressure
-                    mv = f_in (var) # Parentheses actually load the transient variable
-                    hyam = f_in('hyam')
-                    hybm = f_in('hybm')
-                    ps = f_in('PS')/100.    #convert unit from 'Pa' to mb
-                    p0 = 1000. #mb
-                    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
-                    levels_orig.units = 'mb'
-                    mv_p=cdutil.vertical.logLinearInterpolation(mv, levels_orig, plev)
-
-
-                elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
-                    mv = f_in (var)
-                    #Construct pressure level for interpolation
-                    levels_orig = MV2.array(mv_plv[:])
-                    levels_orig.setAxis(0,mv_plv)
-                    mv,levels_orig = genutil.grower(mv,levels_orig) # grow 1d levels_orig to mv dimention
-                    #levels_orig.info()
-                    mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,], levels_orig[:,::-1,], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
-
+                parameter.output_file = '_'.join([ref_name, season])
+                parameter.main_title = str(' '.join([var, season]))
+            '''
+            if var == 'PRECT':
+                f_mod = cdms2.open(filename1)
+                f_obs = cdms2.open(filename2)
+                if ref_name == 'TRMM': #TRMM region following AMWG  latitude=(-38,38)
+                    mv1 = (f_mod('PRECC', latitude=(-38,38)) + f_mod('PRECL', latitude=(-38,38)))*3600.0*24.0*1000.0
+                    mv2 = f_obs(var, latitude=(-38,38))
                 else:
-                    print( 'Vertical level is neither hybrid nor pressure. Abort')
-                    quit()
-
-                if filename == filename1:
-                    mv1_p = mv_p
-
-                if filename == filename2:
-                    mv2_p = mv_p
-
-            for ilev in range(len(plev)):
-                mv1 = mv1_p[:,ilev,]
-                mv2 = mv2_p[:,ilev,]
-
-                parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', it]))
-                parameter.output_file = str('_'.join([ref_name,it, str(int(plev[ilev]))]))
-
-                # Regrid towards lower resolution of two variables for calculating difference
+                    mv1 = (f_mod('PRECC') + f_mod('PRECL'))*3600.0*24.0*1000.0
+                    mv2 = f_obs(var)
+                mv1.units = 'mm/day'
+            elif var == 'PREH2O':
+                f_in = cdms2.open(filename1)
+                mv1 = f_in('TMQ')
+                f_in = cdms2.open(filename2)
+                mv2 = f_in(var)
+            elif var == 'SST':
+                f_in = cdms2.open(filename1)
+                TS = f_in('TS')
+                TS = TS -273.15
+                OCNFRAC = f_in('OCNFRAC')
+                mv1 = mask_by(TS, OCNFRAC, lo = 0.9) #following AMWG
+                f_in = cdms2.open(filename2)
+                mv2 = f_in(var)
+    
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
-
-                # Plotting
-                plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
-        else:
-            print "Dimensions of two variables are difference. Abort"
+                mv1_reg=mv1_reg(squeeze=1)
+                #create common mask for SST
+                land_mask = MV2.logical_or(mv1_reg.mask,mv2_reg.mask)
+    
+                # Note, NCAR plots native mv1, mv2, but mean is from newly masker mv1 and mv2.while we plot everything already masked for now.Need to modify plotting routine for accomodating printing different sets of means to plots.
+                mv1_new = MV2.masked_where(land_mask,mv1_reg)
+                mv2_new = MV2.masked_where(land_mask,mv2_reg)
+                parameter.output_file = '_'.join([ref_name,it])
+                parameter.main_title = str(' '.join([var,it]))
+    
+                # Plotting for SST
+                plot_set_5.plot(mv2, mv1, mv2_new, mv1_new, parameter)
+    
+            else:
+                f_in = cdms2.open(filename1)
+                mv1 = f_in(var)
+                f_in = cdms2.open(filename2)
+                mv2 = f_in(var)
+            '''
+    
+            #for variables without z axis:
+            if mv1.getLevel()==None and mv2.getLevel()==None:
+                #regrid towards lower resolution of two variables for calculating difference
+                if var != 'SST': #special case
+                    mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
+                    plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
+    
+    
+            #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
+            elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
+                plev = parameter.levels
+                print 'selected pressure level', plev
+    
+                for filename in [filename1, filename2]:
+                    f_in = cdms2.open(filename)
+                    mv = f_in[var] # Square brackets for metadata preview
+                    mv_plv = mv.getLevel()
+    
+                    if mv_plv.long_name.lower().find('hybrid') != -1: # var(time,lev,lon,lat) convert from hybrid level to pressure
+                        mv = f_in (var) # Parentheses actually load the transient variable
+                        hyam = f_in('hyam')
+                        hybm = f_in('hybm')
+                        ps = f_in('PS')/100.    #convert unit from 'Pa' to mb
+                        p0 = 1000. #mb
+                        levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps,hyam,hybm,p0)
+                        levels_orig.units = 'mb'
+                        mv_p=cdutil.vertical.logLinearInterpolation(mv, levels_orig, plev)
+    
+    
+                    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
+                        mv = f_in (var)
+                        #Construct pressure level for interpolation
+                        levels_orig = MV2.array(mv_plv[:])
+                        levels_orig.setAxis(0,mv_plv)
+                        mv,levels_orig = genutil.grower(mv,levels_orig) # grow 1d levels_orig to mv dimention
+                        #levels_orig.info()
+                        mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,], levels_orig[:,::-1,], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
+    
+                    else:
+                        print( 'Vertical level is neither hybrid nor pressure. Abort')
+                        quit()
+    
+                    if filename == filename1:
+                        mv1_p = mv_p
+    
+                    if filename == filename2:
+                        mv2_p = mv_p
+    
+                for ilev in range(len(plev)):
+                    mv1 = mv1_p[:,ilev,]
+                    mv2 = mv2_p[:,ilev,]
+    
+                    parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', it]))
+                    parameter.output_file = str('_'.join([ref_name,it, str(int(plev[ilev]))]))
+    
+                    # Regrid towards lower resolution of two variables for calculating difference
+                    mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
+    
+                    # Plotting
+                    plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
+            else:
+                print "Dimensions of two variables are difference. Abort"
