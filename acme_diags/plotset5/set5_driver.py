@@ -108,27 +108,38 @@ for parameter in parameters:
         mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
         print regions,"regions"
          
-        if regions is None:
-            parameter.output_file = '_'.join([ref_name, season])
-            parameter.main_title = str(' '.join([var, season]))
-        
-        else:
-            for region in regions: 
-                print region
-                if region != 'global':
-                    domain = regions_specs[region]['domain']
-                    # below 7 lines are temporary solution for the cdutil error
-                    unit0 = mv1.units
-                    mv1 = mv1(domain)
-                    mv2 = mv2(domain)
-                    mv1.units = unit0
-                    mv2.units = unit0
-                    parameter.output_file = '_'.join([ref_name, season,region])
-                    parameter.main_title = str(' '.join([var, season,region]))
+        if len(regions) == 0:
+            regions = ['global']
+
+        for region in regions: 
+            print region
+            if region != 'global':
+                domain = regions_specs[region]['domain']
+                # below 7 lines are temporary solution for the cdutil error
+                unit0 = mv1.units
+                mv1 = mv1(domain)
+                mv2 = mv2(domain)
+                mv1.units = unit0
+                mv2.units = unit0
+                parameter.output_file = '_'.join([ref_name, season,region])
+                parameter.main_title = str(' '.join([var, season,region]))
     
-                else:
-                    parameter.output_file = '_'.join([ref_name, season])
-                    parameter.main_title = str(' '.join([var, season]))
+            else:
+                parameter.output_file = '_'.join([ref_name, season])
+                parameter.main_title = str(' '.join([var, season]))
+
+            #for variables without z axis:
+            if mv1.getLevel()==None and mv2.getLevel()==None:
+                #regrid towards lower resolution of two variables for calculating difference
+                mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
+
+                if var is 'SST': #special case
+                    #mv1_reg = mv1_reg(squeeze=1)
+                    land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
+                    mv1_reg = MV2.masked_where(land_mask, mv1_reg)
+                    mv2_reg = MV2.masked_where(land_mask, mv2_reg)
+
+            
             '''
             if var == 'PRECT':
                 f_mod = cdms2.open(filename1)
@@ -175,16 +186,6 @@ for parameter in parameters:
                 mv2 = f_in(var)
             '''
     
-            #for variables without z axis:
-            if mv1.getLevel()==None and mv2.getLevel()==None:
-                #regrid towards lower resolution of two variables for calculating difference
-                mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
-
-                if var != 'SST': #special case
-                    mv1_reg = mv1_reg(squeeze=1)
-                    land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
-                    mv1_reg = MV2.masked_where(land_mask, mv1_reg)
-                    mv2_reg = MV2.masked_where(land_mask, mv2_reg)
     
             ''' 
             #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
