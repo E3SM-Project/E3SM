@@ -22,8 +22,7 @@ before_install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION cdp cdms2 unidata -c conda-forge -c uvcdat -y
-  - source activate test-environment
+  - conda install python=$TRAVIS_PYTHON_VERSION cdp cdms2 unidata -c conda-forge -c uvcdat -y
   - export UVCDAT_ANONYMOUS_LOG=False
 
 install:
@@ -33,5 +32,4 @@ script:
   - bash tests/test.sh
 
 after_success:
-  - source deactivate test-environment
   - conda install conda-build && conda install anaconda-client && bash conda/conda_upload.sh
