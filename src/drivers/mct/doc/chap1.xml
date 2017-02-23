@@ -20,8 +20,8 @@ and carries out mapping (interpolation), merging, diagnostics,
 and other calculations.   The name cpl7 refers to the source
 code associated with both the driver and the coupler
 parts of the model.  cpl7 code is located in the CIME source
-tree under driver_cpl/ and the main program of CESM2 is 
-driver_cpl/driver/cesm_driver.F90.
+tree under drivers/mct/ and the main program of CESM2 is 
+drivers/mct/main/cesm_driver.F90.
 </para>
 <para>
 This document provides a general overview of the cpl7 design.  Then

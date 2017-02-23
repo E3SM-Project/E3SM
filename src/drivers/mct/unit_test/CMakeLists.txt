@@ -1,4 +1,4 @@
-set(DRV_ROOT "${CIME_ROOT}/src/driver_cpl")
+set(DRV_ROOT "${CIME_ROOT}/src/drivers/mct")
 
 add_definitions(
   -DNUM_COMP_INST_ATM=1
@@ -18,7 +18,7 @@ add_subdirectory(${CIME_ROOT}/share/csm_share/unit_test_stubs/pio pio)
 
 # Add drv source directories
 add_subdirectory(${DRV_ROOT}/shr drv_shr)
-add_subdirectory(${DRV_ROOT}/driver drv_driver)
+add_subdirectory(${DRV_ROOT}/main drv_main)
 
 # Add general unit test directories (stubbed out files, etc.)
 add_subdirectory(utils drv_unit_test_utils)

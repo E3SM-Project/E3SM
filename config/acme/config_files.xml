@@ -84,7 +84,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$CIMEROOT/config/$MODEL/allactive/config_compsets.xml</value>
-      <value component="drv"      >$CIMEROOT/src/driver_cpl/cime_config/config_compsets.xml</value>
+      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/config_compsets.xml</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/config_compsets.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/config_compsets.xml</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_compsets.xml</value>
@@ -105,7 +105,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
-      <value component="drv"      >$CIMEROOT/src/driver_cpl/cime_config/config_pes.xml</value>
+      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/config_pes.xml</value>
       <value component="cam"      >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="cism"     >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="clm"      >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
@@ -141,7 +141,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$CIMEROOT/config/$MODEL/allactive/testlist_allactive.xml</value>
-      <value component="drv"      >$CIMEROOT/src/driver_cpl/cime_config/testdefs/testlist_drv.xml</value>
+      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/testdefs/testlist_drv.xml</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/testdefs/testlist_cam.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/testdefs/testlist_cism.xml</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/testdefs/testlist_clm.xml</value>
@@ -179,7 +179,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$CIMEROOT/config/$MODEL/allactive/usermods_dirs</value>
-      <value component="drv"      >$CIMEROOT/src/driver_cpl/cime_config/usermods_dirs</value>
+      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/usermods_dirs</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/usermods_dirs</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/usermods_dirs</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/usermods_dirs</value>
@@ -197,9 +197,9 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="modelio"      >$CIMEROOT/src/driver_cpl/cime_config/namelist_definition_modelio.xml</value>
-      <value component="drv_flds"      >$CIMEROOT/src/driver_cpl/bld/namelist_files/namelist_definition_drv_flds.xml</value>
-      <value component="drv"      >$CIMEROOT/src/driver_cpl/cime_config/namelist_definition_drv.xml</value>
+      <value component="modelio"      >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_modelio.xml</value>
+      <value component="drv_flds"      >$CIMEROOT/src/drivers/mct/bld/namelist_files/namelist_definition_drv_flds.xml</value>
+      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/namelist_definition_drof.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps/datm/cime_config/namelist_definition_datm.xml</value>
@@ -237,7 +237,7 @@
 
   <entry id="CONFIG_CPL_FILE">
     <type>char</type>
-    <default_value>$CIMEROOT/src/driver_cpl/cime_config/config_component.xml</default_value>
+    <default_value>$CIMEROOT/src/drivers/mct/cime_config/config_component.xml</default_value>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
@@ -245,7 +245,7 @@
 
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
     <type>char</type>
-    <default_value>$CIMEROOT/src/driver_cpl/cime_config/config_component_$MODEL.xml</default_value>
+    <default_value>$CIMEROOT/src/drivers/mct/cime_config/config_component_$MODEL.xml</default_value>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all component specific driver configuration variables (for documentation only - DO NOT EDIT)</desc>

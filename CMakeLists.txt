@@ -67,5 +67,5 @@ add_subdirectory(${CIME_ROOT}/share/esmf_wrf_timemgr esmf_wrf_timemgr)
 include_directories(${CIME_ROOT}/share/esmf_wrf_timemgr)
 
 # Now the actual test directories.
-add_subdirectory(driver_cpl/unit_test)
+add_subdirectory(drivers/mct/unit_test)
 add_subdirectory(share/csm_share/test/unit)

@@ -45,7 +45,7 @@ mkpath($libdir) unless -d $libdir;
 chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
 my @filepath = ( "$CASEROOT/SourceMods/src.share",
-		 "$CIMEROOT/src/driver_cpl/shr",
+		 "$CIMEROOT/src/drivers/mct/shr",
 		 "$CIMEROOT/src/components/xcpl_models/xshare",
 		 "$CIMEROOT/src/share/csm_share/shr",
 		 "$CIMEROOT/src/share/shr_RandNum/src",
@@ -57,7 +57,7 @@ my @filepath = ( "$CASEROOT/SourceMods/src.share",
 if($useesmf eq "noesmf"){
     push(@filepath,"$CIMEROOT/src/share/esmf_wrf_timemgr");
 }else{
-    push(@filepath,"$CIMEROOT/src/driver_cpl/shr_esmf");
+    push(@filepath,"$CIMEROOT/src/drivers/mct/shr_esmf");
 }
 
 my @fp;
