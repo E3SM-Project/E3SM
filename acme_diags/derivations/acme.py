@@ -1,5 +1,6 @@
 from numbers import Number
 from unidata import udunits
+import cdms2
 
 def process_derived_var(var_key, derived_vars_dict, nc_file):
     ''' Given a key (var_key) to the derived_vars_dict dict, compute and return
@@ -56,9 +57,38 @@ def _convert_units(var, target_units):
 
     return var
 
+def mask_by( var, maskvar, lo=None, hi=None ):
+    """ masks a variable var to be missing except where maskvar>=lo and maskvar<=hi.
+    That is, the missing-data mask is True where maskvar<lo or maskvar>hi or where
+    it was True on input. For lo and hi, None means to omit the constrint, i.e.
+    lo=-infinity or hi=infinity. var is changed and returned; we don't make a new variable.
+    var and maskvar: dimensioned the same variables.
+    lo and hi: scalars. """
+    if lo is None and hi is None:
+        return var
+    if lo is None and hi is not None:
+        maskvarmask = maskvar>hi
+    elif lo is not None and hi is None:
+        maskvarmask = maskvar<lo
+    else:
+        maskvarmask = (maskvar<lo) | (maskvar>hi)
+    if var.mask is False:
+        newmask = maskvarmask
+    else:
+        newmask = var.mask | maskvarmask
+    var.mask = newmask
+    return var
+
+
 derived_variables = {
     'PRECT': [
         (['pr'],  rename),
         (['PRECC','PRECL'], lambda a, b: aplusb(a, b, target_units="mm/day"))
     ],
+    'SST': [
+        (['TS', 'OCNFRAC'], lambda ts, ocnfrac: mask_by(ts - 273.15, ocnfrac, lo = 0.9))
+    ],
+    'PREH2O': [
+        (['TMQ'], rename)
+    ]
 }

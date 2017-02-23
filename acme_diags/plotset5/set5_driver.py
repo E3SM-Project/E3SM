@@ -15,9 +15,9 @@ from acme_diags.derivations import acme
 
 
 def make_parameters(orginal_parameter):
-    f_data = open('set5_diags.json').read()
+    #f_data = open('set5_diags.json').read()
     #f_data = open('set5_diags_MERRA.json').read()
-    #f_data = open('set5_diags_HADISST.json').read()
+    f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
@@ -30,26 +30,6 @@ def make_parameters(orginal_parameter):
             parameters.append(p)
     return parameters
 
-# Below three functions are copied from uvcmetrics.
-def mask_by( var, maskvar, lo=None, hi=None ):
-    """masks a variable var to be missing except where maskvar>=lo and maskvar<=hi.  That is, the missing-data mask is True where maskvar<lo or maskvar>hi or where it was True on input. For lo and hi, None means to omit the constrint, i.e. lo=-infinity or hi=infinity. var is changed and returned; we don't make a new variable.
-var and maskvar: dimensioned the same variables.
-lo and hi: scalars.
-    """
-    if lo is None and hi is None:
-        return var
-    if lo is None and hi is not None:
-        maskvarmask = maskvar>hi
-    elif lo is not None and hi is None:
-        maskvarmask = maskvar<lo
-    else:
-        maskvarmask = (maskvar<lo) | (maskvar>hi)
-    if var.mask is False:
-        newmask = maskvarmask
-    else:
-        newmask = var.mask | maskvarmask
-    var.mask = newmask
-    return var
 
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     """regrid transient variable toward lower resolution of two variables"""
@@ -152,12 +132,15 @@ for parameter in parameters:
         '''
 
         #for variables without z axis:
-        if mv1.getLevel()==None and mv2.getLevel()==None:
+        if mv1.getLevel() is None and mv2.getLevel() is None:
             #regrid towards lower resolution of two variables for calculating difference
-            if var != 'SST': #special case
-                mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
-                plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
+            mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
 
+            if var is 'SST':  # special case
+                mv1_reg = mv1_reg(squeeze=1)
+                land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
+                mv1_reg = MV2.masked_where(land_mask, mv1_reg)
+                mv2_reg = MV2.masked_where(land_mask, mv2_reg)
 
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
@@ -190,8 +173,7 @@ for parameter in parameters:
                     mv_p=cdutil.vertical.logLinearInterpolation(mv[:,::-1,], levels_orig[:,::-1,], plev)   #logLinearInterpolation only takes positive down plevel: "I :      interpolation field (usually Pressure or depth) from TOP (level 0) to BOTTOM (last level), i.e P value going up with each level"
 
                 else:
-                    print( 'Vertical level is neither hybrid nor pressure. Abort')
-                    quit()
+                    raise RuntimeError("Vertical level is neither hybrid nor pressure. Abort")
 
                 if filename == filename1:
                     mv1_p = mv_p
@@ -208,8 +190,7 @@ for parameter in parameters:
 
                 # Regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
-
-                # Plotting
-                plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
         else:
-            print "Dimensions of two variables are difference. Abort"
+            raise RuntimeError("Dimensions of two variables are difference. Abort")
+
+        plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
