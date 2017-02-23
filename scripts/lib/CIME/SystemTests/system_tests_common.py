@@ -439,7 +439,7 @@ class TESTRUNPASS(FakeTest):
 """
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+cp %s/scripts/lib/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 """ % (rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
@@ -462,9 +462,9 @@ class TESTRUNDIFF(FakeTest):
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
-  cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+  cp %s/scripts/lib/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 else
-  cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc
+  cp %s/scripts/lib/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc
 fi
 """ % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
@@ -481,8 +481,8 @@ class TESTTESTDIFF(FakeTest):
 """
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
-cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.rest
+cp %s/scripts/lib/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
+cp %s/scripts/lib/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.rest
 """ % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
         super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
@@ -540,7 +540,7 @@ class TESTRUNSLOWPASS(FakeTest):
 sleep 300
 echo Slow pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+cp %s/scripts/lib/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 """ % (rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
@@ -551,12 +551,12 @@ class TESTMEMLEAKFAIL(FakeTest):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
-        testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.failmemleak.gz")
+        testfile = os.path.join(cimeroot,"scripts","lib","tests","cpl.log.failmemleak.gz")
         script = \
 """
 echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+cp %s/scripts/lib/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 """ % (testfile, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,
@@ -567,12 +567,12 @@ class TESTMEMLEAKPASS(FakeTest):
         rundir = self._case.get_value("RUNDIR")
         cimeroot = self._case.get_value("CIMEROOT")
         case = self._case.get_value("CASE")
-        testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.passmemleak.gz")
+        testfile = os.path.join(cimeroot,"scripts","lib","tests","cpl.log.passmemleak.gz")
         script = \
 """
 echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
+cp %s/scripts/lib/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc
 """ % (testfile, rundir, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build_phase(self,

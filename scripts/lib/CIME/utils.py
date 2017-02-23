@@ -69,7 +69,7 @@ def get_python_libs_location_within_cime():
     """
     From within CIME, return subdirectory of python libraries
     """
-    return os.path.join("utils", "python")
+    return os.path.join("scripts", "lib")
 
 def get_cime_root(case=None):
     """

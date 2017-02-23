@@ -122,7 +122,7 @@
   <entry id="SYSTEM_TESTS_DIR">
     <type>char</type>
     <values>
-      <value component="any">$CIMEROOT/utils/python/CIME/SystemTests</value>
+      <value component="any">$CIMEROOT/scripts/lib/CIME/SystemTests</value>
       <value component="clm">$SRCROOT/components/clm/cime_config/SystemTests</value>
       <value component="cam">$SRCROOT/components/cam/cime_config/SystemTests</value>
       <value component="pop">$SRCROOT/components/pop/cime_config/SystemTests</value>

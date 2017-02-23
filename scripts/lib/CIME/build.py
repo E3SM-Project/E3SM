@@ -444,7 +444,7 @@ def build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid,
         my_file = os.path.join(cimeroot, "src", "build_scripts", "buildlib.%s" % lib)
         if lib == "pio":
             my_file = "PYTHONPATH=%s:%s:$PYTHONPATH %s"%(os.path.join(cimeroot,"scripts","Tools"),
-                                                          os.path.join(cimeroot,"utils","python"), my_file)
+                                                          os.path.join(cimeroot,"scripts","lib"), my_file)
         logger.info("Building %s with output to file %s"%(lib,file_build))
         with open(file_build, "w") as fd:
             stat = run_cmd("%s %s %s %s 2>&1" %

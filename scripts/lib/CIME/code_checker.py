@@ -24,7 +24,7 @@ def _run_pylint(on_file, interactive):
 
     # add init-hook option
     cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\",\"%s\"))'"%\
-        (os.path.join(cimeroot,"utils","python"),
+        (os.path.join(cimeroot,"scripts","lib"),
          os.path.join(cimeroot,"scripts","Tools"),
          os.path.join(cimeroot,"tools","unit_testing","python"))
 
