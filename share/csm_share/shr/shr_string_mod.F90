@@ -1732,7 +1732,7 @@ function shr_string_listCreateField( numFields, strBase ) result ( retString )
    ! this assert isn't that accurate since it counts all integers as being one
    ! digit, but it should catch most errors and under rather than overestimates
    !
-   SHR_ASSERT( ( ( ( len(strBase) + 3 ) * numFields ) <= 1024 ) , errMsg(__FILE__, __LINE__) )
+   SHR_ASSERT_FL( ( ( ( len(strBase) + 3 ) * numFields ) <= 1024 ) , __FILE__, __LINE__)
 
    retString = ''
    do idx = 1,numFields
