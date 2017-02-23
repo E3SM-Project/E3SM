@@ -3500,7 +3500,7 @@
   <entry id="BFBFLAG">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
+    <default_value>TRUE</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>turns on coupler bit-for-bit reproducibility with varying pe counts</desc>
