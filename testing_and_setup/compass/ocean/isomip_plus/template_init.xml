@@ -72,7 +72,8 @@
 				<member name="seaIceHeatFlux" type="var"/>
 				<member name="seaIceSalinityFlux" type="var"/>
 				<member name="landIceSurfaceTemperature" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
+				<member name="seaIcePressure" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>

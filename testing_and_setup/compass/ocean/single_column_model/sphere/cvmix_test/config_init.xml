@@ -68,7 +68,7 @@
 				<member name="layerThickness" type="var"/>
 				<member name="restingThickness" type="var"/>
 				<member name="surfaceStress" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
 				<member name="boundaryLayerDepth" type="var"/>
 				<member name="refBottomDepth" type="var"/>
 				<member name="bottomDepth" type="var"/>

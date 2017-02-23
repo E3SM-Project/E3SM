@@ -50,7 +50,8 @@
 				<member name="indexSurfaceLayerDepth" type="var"/>
 				<member name="surfaceFrictionVelocity" type="var"/>
 				<member name="surfaceBuoyancyForcing" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
+				<member name="seaIcePressure" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
 				<member name="windStressZonal" type="var"/>
 				<member name="windStressMeridional" type="var"/>
 				<member name="BruntVaisalaFreqTop" type="var"/>
