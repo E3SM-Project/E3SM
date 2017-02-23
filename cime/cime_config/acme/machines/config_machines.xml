@@ -185,7 +185,7 @@
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
+    <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch/m26haswella</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
@@ -247,6 +247,7 @@
         <command name="rm">cmake</command>
         <command name="rm">cray-petsc</command>
         <command name="rm">esmf</command>
+        <command name="rm">git</command>
       </modules>
 
       <modules>
@@ -295,6 +296,7 @@
 	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
 	<command name="load">zlib</command>
+	<command name="load">git/2.9.1</command>
 	<!--command name="load">cray-petsc/3.7.0.0</command-->
       </modules>
     </module_system>
@@ -381,6 +383,7 @@
         <command name="rm">cmake</command>
         <command name="rm">cray-petsc</command>
         <command name="rm">esmf</command>
+        <command name="rm">git</command>
       </modules>
 
       <modules compiler="intel">
@@ -406,22 +409,27 @@
       <modules>
 	<command name="rm">craype</command>
 	<command name="load">craype/2.5.7</command>
+	<!--command name="load">craype/2.5.9</command-->
 
-	<command name="load">craype-haswell</command>
-	<!--command name="load">craype-mic-knl</command-->
+	<!--command name="load">craype-haswell</command-->
+	<command name="load">craype-mic-knl</command>
 
 	<command name="load">cray-mpich/7.4.4</command>
+	<!--command name="load">cray-mpich/7.5.2</command-->
       </modules>
 
       <modules mpilib="mpi-serial">
 	<command name="rm">cray-netcdf-hdf5parallel</command>
 	<command name="load">cray-hdf5/1.8.16</command>
 	<command name="load">cray-netcdf/4.4.0</command>
+	<!--command name="load">cray-netcdf/4.4.1</command-->
       </modules>
       <modules mpilib="!mpi-serial">
 	<command name="rm">cray-netcdf-hdf5parallel</command>
 	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+	<!--command name="load">cray-netcdf-hdf5parallel/4.4.1</command-->
 	<command name="load">cray-hdf5-parallel/1.8.16</command>
+        <!--command name="load">cray-hdf5-parallel/1.10.0.1</command-->
 	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
@@ -430,6 +438,7 @@
 	<command name="load">pmi/5.0.10-1.0000.11050.0.0.ari</command>
 	<command name="load">papi/5.4.3.2</command>
 	<command name="load">zlib</command>
+	<command name="load">git/2.9.1</command>
 	<!--command name="load">cray-petsc/3.7.0.0</command-->
       </modules>
     </module_system>

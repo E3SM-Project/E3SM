@@ -216,7 +216,12 @@ module lapack_wrap
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
-
+#ifndef NDEBUG
+#ifdef ARCH_MIC_KNL
+    use, intrinsic :: ieee_exceptions
+    !use, intrinsic :: ieee_arithmetic
+#endif
+#endif
     implicit none
 
     ! External
@@ -265,9 +270,24 @@ module lapack_wrap
 !       SUBROUTINE DGTSV( N, NRHS, DL, D, DU, B, LDB, INFO )
 !-----------------------------------------------------------------------
 
+
     if ( kind( diag(1) ) == dp ) then
-      call dgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  & 
+#ifndef NDEBUG
+#ifdef ARCH_MIC_KNL
+      ! when floating-point exceptions are turned on, this call was failing with a div-by-zero on KNL with Intel/MKL. Solution 
+      ! was to turn off exceptions only here at this call (and only for machine with ARCH_MIC_KNL defined) (github 1183)
+      call ieee_set_halting_mode(IEEE_DIVIDE_BY_ZERO, .false.) ! Turn off stopping on div-by-zero only
+      !call ieee_set_halting_mode(ieee_usual, .false.)  ! Turn off stopping on all floating-point exceptions
+#endif
+#endif
+      call dgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  &
                   rhs, ndim, info )
+#ifndef NDEBUG
+#ifdef ARCH_MIC_KNL
+      call ieee_set_halting_mode(IEEE_DIVIDE_BY_ZERO, .true.) ! Turn back on stopping on div-by-zero only
+      !call ieee_set_halting_mode(ieee_usual, .true.)  ! Turn off stopping on all floating-point exceptions
+#endif
+#endif
 
     else if ( kind( diag(1) ) == sp ) then
       call sgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  & 
