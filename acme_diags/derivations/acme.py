@@ -57,21 +57,20 @@ def _convert_units(var, target_units):
 
     return var
 
-def mask_by( var, maskvar, lo=None, hi=None ):
-    """ masks a variable var to be missing except where maskvar>=lo and maskvar<=hi.
-    That is, the missing-data mask is True where maskvar<lo or maskvar>hi or where
-    it was True on input. For lo and hi, None means to omit the constrint, i.e.
-    lo=-infinity or hi=infinity. var is changed and returned; we don't make a new variable.
+def mask_by( var, maskvar, low_limit=None, high_limit=None ):
+    """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
+    None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
     var and maskvar: dimensioned the same variables.
-    lo and hi: scalars. """
-    if lo is None and hi is None:
+    low_limit and high_limit: scalars.
+    """
+    if low_limit is None and high_limit is None:
         return var
-    if lo is None and hi is not None:
-        maskvarmask = maskvar>hi
-    elif lo is not None and hi is None:
-        maskvarmask = maskvar<lo
+    if low_limit is None and high_limit is not None:
+        maskvarmask = maskvar > high_limit
+    elif low_limit is not None and high_limit is None:
+        maskvarmask = maskvar < low_limit
     else:
-        maskvarmask = (maskvar<lo) | (maskvar>hi)
+        maskvarmask = (maskvar < low_limit) | (maskvar > high_limit)
     if var.mask is False:
         newmask = maskvarmask
     else:
@@ -86,7 +85,7 @@ derived_variables = {
         (['PRECC','PRECL'], lambda a, b: aplusb(a, b, target_units="mm/day"))
     ],
     'SST': [
-        (['TS', 'OCNFRAC'], lambda ts, ocnfrac: mask_by(ts - 273.15, ocnfrac, lo = 0.9))
+        (['TS', 'OCNFRAC'], lambda ts, ocnfrac: mask_by(ts - 273.15, ocnfrac, low_limit = 0.9))
     ],
     'PREH2O': [
         (['TMQ'], rename)

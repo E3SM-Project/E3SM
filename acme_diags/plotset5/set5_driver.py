@@ -31,26 +31,6 @@ def make_parameters(orginal_parameter):
             parameters.append(p)
     return parameters
 
-# Below three functions are copied from uvcmetrics.
-def mask_by( var, maskvar, lo=None, hi=None ):
-    """masks a variable var to be missing except where maskvar>=lo and maskvar<=hi.  That is, the missing-data mask is True where maskvar<lo or maskvar>hi or where it was True on input. For lo and hi, None means to omit the constrint, i.e. lo=-infinity or hi=infinity. var is changed and returned; we don't make a new variable.
-var and maskvar: dimensioned the same variables.
-lo and hi: scalars.
-    """
-    if lo is None and hi is None:
-        return var
-    if lo is None and hi is not None:
-        maskvarmask = maskvar>hi
-    elif lo is not None and hi is None:
-        maskvarmask = maskvar<lo
-    else:
-        maskvarmask = (maskvar<lo) | (maskvar>hi)
-    if var.mask is False:
-        newmask = maskvarmask
-    else:
-        newmask = var.mask | maskvarmask
-    var.mask = newmask
-    return var
 
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     """regrid transient variable toward lower resolution of two variables"""

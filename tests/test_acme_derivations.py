@@ -43,6 +43,15 @@ class TestACMEDerivations(unittest.TestCase):
             acme.process_derived_var('PRECT', wrong_derived_var, precc_file)
         precc_file.close()
 
+    def test_mask_by_passes(self):
+        precc_file = cdms2.open(get_abs_file_path('precc.nc'))
+        prcc = precc_file('PRECC')
+        precl_file = cdms2.open(get_abs_file_path('precl.nc'))
+        prcl = precl_file('PRECL')
+        
+        acme.mask_by(prcc, prcl, low_limit = 2.0)
+        precc_file.close()
+        precl_file.close()
 
 if __name__ == '__main__':
     unittest.main()
