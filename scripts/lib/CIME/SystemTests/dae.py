@@ -20,7 +20,7 @@ class DAE(SystemTestsCompareTwo):
     Implementation of the CIME data assimilation test: Tests simple DA script
     which does not change the CAM input. Compares answers to non-DA run.
     Refers to a faux data assimilation script in the
-    cime/utils/data_assimilation directory
+    cime/scripts/data_assimilation directory
     """
 
     ###########################################################################
@@ -41,7 +41,7 @@ class DAE(SystemTestsCompareTwo):
     def _case_two_setup(self):
     ###########################################################################
         # Set up data assimilation in config_tests.xml once that's ready
-        # We need to find the utils/data_assimilation directory
+        # We need to find the scripts/data_assimilation directory
         # LIB_DIR should be our parent dir
         da_dir = os.path.join(os.path.dirname(sms.LIB_DIR), "data_assimilation")
         expect(os.path.isdir(da_dir), "ERROR: da_dir, '%s', does not exist"%da_dir)
