@@ -86,7 +86,7 @@ OR
 
     parser.add_argument("--gridfile",
                         help="Full pathname of config grid file to use"
-                        "This should be a copy of cime_config/config_grids.xml"
+                        "This should be a copy of config/config_grids.xml"
                         "with the new user grid changes added to it"
 			"This argument is required if --user-grid is True")
 

@@ -16,7 +16,7 @@ class Archive(GenericXML):
         initialize an object
         """
         if infile is None:
-            infile = os.path.join(get_cime_root(), "cime_config", get_model(), "config_archive.xml")
+            infile = os.path.join(get_cime_root(), "config", get_model(), "config_archive.xml")
 
         GenericXML.__init__(self, infile)
 

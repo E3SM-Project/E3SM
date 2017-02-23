@@ -276,7 +276,7 @@ using a fortran linker.
   <FFLAGS>
     <!-- The indirect flag below is to deal with MPI functions that violate    -->
     <!-- the Fortran standard, by adding a large set of arguments from a file. -->
-    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/cime_config/cesm/machines/nag_mpi_argument.txt</base>
+    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/config/cesm/machines/nag_mpi_argument.txt</base>
     <!-- DEBUG vs. non-DEBUG runs.                                             -->
     <append DEBUG="FALSE"> -ieee=full -O2 </append>
     <!-- The "-gline" option is nice, but it doesn't work with OpenMP.         -->
@@ -291,7 +291,7 @@ using a fortran linker.
     <append MODEL="cism"> -mismatch_all </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/cime_config/cesm/machines/nag_mpi_argument.txt</base>
+    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/config/cesm/machines/nag_mpi_argument.txt</base>
     <append DEBUG="FALSE"> -ieee=full     </append>
     <!-- Hack! If DEBUG="TRUE", put runtime checks in FFLAGS, but not into     -->
     <!-- FFLAGS_NOOPT, allowing strict checks to be removed from files by      -->

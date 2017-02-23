@@ -133,7 +133,7 @@ def get_model():
         set_model(model)
         return model
 
-    modelroot = os.path.join(get_cime_root(), "cime_config")
+    modelroot = os.path.join(get_cime_root(), "config")
     models = os.listdir(modelroot)
     msg = ".cime/config or environment variable CIME_MODEL must be set to one of: "
     msg += ", ".join([model for model in models
@@ -400,7 +400,7 @@ def get_cime_location_within_acme():
 
 def get_model_config_location_within_cime(model=None):
     model = get_model() if model is None else model
-    return os.path.join("cime_config", model)
+    return os.path.join("config", model)
 
 def get_acme_root():
     """

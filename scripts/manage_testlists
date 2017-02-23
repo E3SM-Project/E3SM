@@ -326,7 +326,7 @@ sub writeXML
 
 	my $newfilename;
 	if ($component eq 'allactive') {
-            $newfilename = "$cimeroot/cime_config/${model}/allactive/testlist_allactive.xml";
+            $newfilename = "$cimeroot/config/${model}/allactive/testlist_allactive.xml";
 	}
 	elsif ($component eq 'drv') {
             $newfilename = "$cimeroot/src/driver_cpl/cime_config/testdefs//testlist_drv.xml";
@@ -1073,7 +1073,7 @@ sub formattedOutput {
                          "Compset", "TestName", "Grid", "Machine_compiler", "Test Category", "TestMods (optional)", "Comment(Optional)");
 
    my %configcompsets;
-   my $xml = XML::LibXML->new()->parse_file("$cimeroot/cime_config/${model}/config_files.xml");
+   my $xml = XML::LibXML->new()->parse_file("$cimeroot/config/${model}/config_files.xml");
    my @nodes= $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/*");
    foreach my $node (@nodes) {
        my $file = $node->textContent();
@@ -1187,7 +1187,7 @@ sub setTestlist{
     my $list;
 
     if ($component =~ /^allactive/) {
-	$list = "$cimeroot/cime_config/${model}/allactive/testlist_allactive.xml";
+	$list = "$cimeroot/config/${model}/allactive/testlist_allactive.xml";
     } elsif ($component =~ /^drv/) {
 	$list = "$cimeroot/src/driver_cpl/cime_config/testdefs/testlist_drv.xml";
     } else {
