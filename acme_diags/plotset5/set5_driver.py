@@ -12,8 +12,7 @@ import glob
 import os
 import fnmatch
 from acme_diags.derivations import acme
-
-
+from acme_diags.derivations.default_regions import regions_specs
 def make_parameters(orginal_parameter):
     #f_data = open('set5_diags.json').read()
     #f_data = open('set5_diags_MERRA.json').read()
@@ -109,21 +108,17 @@ for parameter in parameters:
             mv1 = mask_by(TS, OCNFRAC, lo = 0.9) #following AMWG
             f_in = cdms2.open(filename2)
             mv2 = f_in(var)
-
             mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
             mv1_reg=mv1_reg(squeeze=1)
             #create common mask for SST
             land_mask = MV2.logical_or(mv1_reg.mask,mv2_reg.mask)
-
             # Note, NCAR plots native mv1, mv2, but mean is from newly masker mv1 and mv2.while we plot everything already masked for now.Need to modify plotting routine for accomodating printing different sets of means to plots.
             mv1_new = MV2.masked_where(land_mask,mv1_reg)
             mv2_new = MV2.masked_where(land_mask,mv2_reg)
             parameter.output_file = '_'.join([ref_name,it])
             parameter.main_title = str(' '.join([var,it]))
-
             # Plotting for SST
             plot_set_5.plot(mv2, mv1, mv2_new, mv1_new, parameter)
-
         else:
             f_in = cdms2.open(filename1)
             mv1 = f_in(var)
@@ -194,3 +189,4 @@ for parameter in parameters:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
 
         plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
+

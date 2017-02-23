@@ -11,6 +11,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
 
         self.variables = ''
         self.season = ''
+        self.region = ''
         self.regrid_tool = 'esmf'
         self.regrid_method = 'linear'
         self.output_file = 'output.png'
