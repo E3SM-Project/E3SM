@@ -36,8 +36,6 @@ class EnvArchive(GenericXML):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
             self.root.append(headernode)
-            archive = Archive()
-            self.root.append(archive.root)
 
     def get_entries(self):
         return self.get_nodes('comp_archive_spec')

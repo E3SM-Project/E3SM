@@ -21,6 +21,7 @@ from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
 from CIME.XML.pio                   import PIO
+from CIME.XML.archive               import Archive
 
 from CIME.XML.env_test              import EnvTest
 from CIME.XML.env_mach_specific     import EnvMachSpecific
@@ -734,6 +735,18 @@ class Case(object):
         env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue)
         self.schedule_rewrite(env_batch)
 
+        #--------------------------------------------
+        # archiving system
+        #--------------------------------------------
+        env_archive = self.get_env("archive")
+        infile_node = files.get_node("entry", {"id":"ARCHIVE_SPEC_FILE"})
+        infile = files.get_default_value(infile_node)
+        infile = self.get_resolved_value(infile)
+        logger.debug("archive defaults located in %s"%infile)
+        archive = Archive(infile=infile, files=files)
+        archive.setup(env_archive, self._components)
+        self.schedule_rewrite(env_archive)
+
         self.set_value("COMPSET",self._compsetname)
 
         self._set_pio_xml()
@@ -746,6 +759,7 @@ class Case(object):
                 logger.info("\nThis is a CESM scientifically supported compset at this resolution.\n")
             else:
                 self._check_testlists(compset_alias, grid_name, files)
+
 
 
         # Set project id

@@ -4,6 +4,7 @@
  <!-- definition of attributes -->
  <xs:attribute name="compname" type="xs:string"/>
  <xs:attribute name="compclass" type="xs:string"/>
+ <xs:attribute name="version" type="xs:string"/>
 
  <!-- definition of simple elements -->
  <xs:element name="rest_file_extension" type="xs:string"/>
@@ -40,8 +41,9 @@
       <xs:sequence>
         <xs:element ref="comp_archive_spec" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
+      <xs:attribute ref="version" />
     </xs:complexType>
   </xs:element>
 
-</xs:schema> 
+</xs:schema>
 

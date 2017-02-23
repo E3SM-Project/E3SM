@@ -56,6 +56,7 @@ class Pes(GenericXML):
         logger.info("Pes setting: grid          is %s " %grid)
         logger.info("Pes setting: compset       is %s " %compset)
         logger.info("Pes setting: tasks       is %s " %pes_ntasks)
+
         logger.info("Pes other settings: %s"%other_settings)
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings
 
@@ -133,9 +134,13 @@ class Pes(GenericXML):
             # if the value is already upper case its something else we are trying to set
                 elif vid == node.tag:
                     other_settings[vid] = node.text
-            logger.info("Pes setting: grid match    is %s " %grid_choice )
-            logger.info("Pes setting: machine match is %s " %mach_choice)
-            logger.info("Pes setting: compset_match is %s " %compset_choice)
-            logger.info("Pes setting: pesize match  is %s " %pesize_choice)
+            if grid_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
+                logger.info("Pes setting: grid match    is %s " %grid_choice )
+            if mach_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
+                logger.info("Pes setting: machine match is %s " %mach_choice)
+            if compset_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
+                logger.info("Pes setting: compset_match is %s " %compset_choice)
+            if pesize_choice != 'any' or logger.isEnabledFor(logging.DEBUG):
+                logger.info("Pes setting: pesize match  is %s " %pesize_choice)
 
         return pes_ntasks, pes_nthrds, pes_rootpe, other_settings
