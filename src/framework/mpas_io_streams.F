@@ -153,6 +153,10 @@ module mpas_io_streams
       type (MPAS_Time_type) :: sliceTime, startTime
       type (MPAS_TimeInterval_type) :: timeDiff, minTimeDiff
 
+      character (len=StrKIND) :: xtime0, xtime1, xtime2, xtimeGuess
+      type (MPAS_Time_type) :: time0, time1, time2, timeGuess, timeGuessData
+      type (MPAS_TimeInterval_type) :: timeInterval
+
 !      write(stderrUnit,*) 'Called MPAS_seekStream'
 
       !
@@ -190,6 +194,49 @@ module mpas_io_streams
 
 !write(stderrUnit,*) 'Found xtime variable'
 
+      ! for exact time attempt to get exact time assuming evenly spaced times
+      if (seekPosition == MPAS_STREAM_EXACT_TIME .and. timeDim > 20) then
+
+         ! first time
+         call MPAS_io_set_frame(stream % fileHandle, 1, io_err)
+         call MPAS_io_get_var(stream % fileHandle, 'xtime', xtime1, io_err)
+         call mpas_set_time(curr_time=time1, dateTimeString=trim(xtime1(1:32)))
+
+         ! second time
+         call MPAS_io_set_frame(stream % fileHandle, 2, io_err)
+         call MPAS_io_get_var(stream % fileHandle, 'xtime', xtime2, io_err)
+         call mpas_set_time(curr_time=time2, dateTimeString=trim(xtime2(1:32)))
+
+         ! get interval of first two times
+         timeInterval = time2 - time1
+
+         ! get time we desire to find
+         call mpas_set_time(curr_time=time0, dateTimeString=trim(seekTime))
+
+         ! guess assuming constant intervals what index we want
+         timeGuess = time1
+         do i = 1, timeDim
+
+            if (timeGuess == time0) then
+
+               call MPAS_io_set_frame(stream % fileHandle, i, io_err)
+               call MPAS_io_get_var(stream % fileHandle, 'xtime', xtimeGuess, io_err)
+
+               call mpas_set_time(curr_time=timeGuessData, dateTimeString=trim(xtimeGuess(1:32)))
+               if (timeGuessData == timeGuess) then
+                  ! found the correct time
+                  MPAS_seekStream = i
+                  write(actualTime, '(a)') trim(xtimeGuess(1:32))
+                  return
+               endif
+
+            endif
+
+            timeGuess = timeGuess + timeInterval
+         enddo ! i
+
+      endif
+
       allocate(xtimes(timeDim))
 
       do i=1,timeDim
@@ -203,6 +250,7 @@ module mpas_io_streams
       else
          write(strTemp, '(a)') trim(seekTime)
       end if
+
       call mpas_set_timeInterval(interval=minTimeDiff, DD=10000)
       call mpas_set_time(curr_time=startTime, dateTimeString=strTemp)
 
