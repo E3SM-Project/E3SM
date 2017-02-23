@@ -332,37 +332,92 @@ contains
        call t_startf("LF_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
-       ktol=10
+       ktol=20
        ktolcounter=1
        dampfac=1d-4
        print *, 'hey'
    !   classic fixed point iteration
-   !    do while ( ktolcounter < ktol)
-   !       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-   !           deriv,nets,nete,.false.,0d0)
+       do while ( ktolcounter < ktol)
+          call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+              deriv,nets,nete,.false.,0d0)
+          ktolcounter=ktolcounter+1
+          print *, ktolcounter
+       end do
+   !    do while (ktolcounter < ktol)
+   !       do ie=nets,nete
+   !         elem(ie)%state%v(:,:,:,:,nm1)= dampfac*elem(ie)%state%v(:,:,:,:,n0) &
+   !         +(1.d0-dampfac)*elem(ie)%state%v(:,:,:,:,np1)
+   !         elem(ie)%state%theta(:,:,:,nm1)= dampfac*elem(ie)%state%theta(:,:,:,n0) &
+   !         +(1.d0-dampfac)*elem(ie)%state%theta(:,:,:,np1)
+   !         elem(ie)%state%dp3d(:,:,:,nm1)= dampfac*elem(ie)%state%dp3d(:,:,:,n0) &
+   !         +(1.d0-dampfac)*elem(ie)%state%dp3d(:,:,:,np1) 
+   !         elem(ie)%state%w(:,:,:,nm1)= elem(ie)%state%w(:,:,:,nm1) &
+   !         +(1.d0-dampfac)* elem(ie)%state%w(:,:,:,np1)
+   !         elem(ie)%state%phi(:,:,:,nm1)= dampfac*elem(ie)%state%phi(:,:,:,nm1) &
+   !         +(1.d0-dampfac)* elem(ie)%state%phi(:,:,:,np1)
+   !       enddo
+   !       call compute_and_apply_rhs(np1,nm1,np1,qn0,dampfac*dt,elem,hvcoord,hybrid,&
+   !         deriv,nets,nete,.false.,0d0)   
    !       ktolcounter=ktolcounter+1
    !       print *, ktolcounter
    !    end do
-       do while (ktolcounter < ktol)
-          do ie=nets,nete
-            elem(ie)%state%v(:,:,:,:,nm1)= dampfac*elem(ie)%state%v(:,:,:,:,n0) &
-            +(1.d0-dampfac)*elem(ie)%state%v(:,:,:,:,np1)
-            elem(ie)%state%theta(:,:,:,nm1)= dampfac*elem(ie)%state%theta(:,:,:,n0) &
-            +(1.d0-dampfac)*elem(ie)%state%theta(:,:,:,np1)
-            elem(ie)%state%dp3d(:,:,:,nm1)= dampfac*elem(ie)%state%dp3d(:,:,:,n0) &
-            +(1.d0-dampfac)*elem(ie)%state%dp3d(:,:,:,np1) 
-            elem(ie)%state%w(:,:,:,nm1)= elem(ie)%state%w(:,:,:,nm1) &
-            +(1.d0-dampfac)* elem(ie)%state%w(:,:,:,np1)
-            elem(ie)%state%phi(:,:,:,nm1)= dampfac*elem(ie)%state%phi(:,:,:,nm1) &
-            +(1.d0-dampfac)* elem(ie)%state%phi(:,:,:,np1)
-          enddo
-          call compute_and_apply_rhs(np1,nm1,np1,qn0,dampfac*dt,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0)   
+       call t_stopf("LF_timestep")
+    else if (method == 8) then ! use BDF2
+       call t_startf("LF_timestep")
+
+       if (tl%nm1 == 0) then
+          call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       else
+          call compute_and_apply_rhs(np1,n0,n0,qn0,0.d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       end if
+       ktol=100
+       ktolcounter=1
+       dampfac=1d-4
+   !    print *, 'hey'
+   !   classic fixed point iteration
+       do ie=nets,nete
+         elem(ie)%state%v(:,:,:,:,n0)= dampfac*elem(ie)%state%v(:,:,:,:,nm1)/3.d0  &
+          +4.d0*elem(ie)%state%v(:,:,:,:,n0)/3.d0
+         elem(ie)%state%theta(:,:,:,n0)= dampfac*elem(ie)%state%theta(:,:,:,nm1)/3.d0   &
+          +4.d0*elem(ie)%state%theta(:,:,:,n0)/3.d0
+         elem(ie)%state%dp3d(:,:,:,n0)= dampfac*elem(ie)%state%dp3d(:,:,:,nm1)/3.d0 &
+          +4.d0*elem(ie)%state%dp3d(:,:,:,n0)/3.d0
+         elem(ie)%state%w(:,:,:,n0)= elem(ie)%state%w(:,:,:,nm1)/3.d0 &
+          +4.d0* elem(ie)%state%w(:,:,:,n0)/3.d0
+         elem(ie)%state%phi(:,:,:,n0)= dampfac*elem(ie)%state%phi(:,:,:,nm1)/3.d0 &
+          +4.d0* elem(ie)%state%phi(:,:,:,np1)/3.d0
+       enddo
+       do while ( ktolcounter < ktol)
+          call compute_and_apply_rhs(np1,n0,np1,qn0,2.d0*dt/3.d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
           ktolcounter=ktolcounter+1
           print *, ktolcounter
        end do
        call t_stopf("LF_timestep")
-    else 
+    else if (method == 9) then ! trapezoidal method
+       call t_startf("LF_timestep")
+       if (tl%nm1 == 0) then
+          call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       else
+          call compute_and_apply_rhs(np1,n0,n0,qn0,0.d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       end if
+       ktol=20
+       ktolcounter=1
+       dampfac=1d-4
+       print *, 'hey'
+   !   classic fixed point iteration
+       do while ( ktolcounter < ktol)
+          call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+              deriv,nets,nete,.false.,0d0)
+          ktolcounter=ktolcounter+1
+          print *, ktolcounter
+       end do
+       call t_stopf("LF_timestep")
+    else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
 
@@ -1102,7 +1157,7 @@ contains
           deriv,elem(ie))
           do j=1,np
             do i=1,np                
-                  d_eta_dot_dpdn_dn=0.5*(eta_dot_dpdn(i,j,k+1)-                &
+                  d_eta_dot_dpdn_dn=(eta_dot_dpdn(i,j,k+1)-                    &
                   eta_dot_dpdn(i,j,k))
                !  Form KEhoriz1
                   elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
@@ -1116,7 +1171,7 @@ contains
                   dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    &
                   -0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k) 
                !  Form KEvert1
-                  elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j)+     &
+                  elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j)-     &
                   (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &
                   elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k))*dp3d(i,j,k)-  &      
                   0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
