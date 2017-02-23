@@ -59,7 +59,7 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
 # csm_share (we don't build it here because it seems to be built differently
 # by different tests?)
 set(SHARE_ROOT "${CIME_ROOT}/share/csm_share")
-add_subdirectory(${SHARE_ROOT}/shr csm_share)
+add_subdirectory(${SHARE_ROOT}/util csm_share)
 include_directories(${SHARE_ROOT}/include)
 
 # esmf_wrf_timemgr not built here because it depends on csm_share.

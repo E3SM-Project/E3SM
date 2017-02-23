@@ -77,7 +77,7 @@
 	The <emphasis>strdata</emphasis> (short for "stream data") input is
 	set via a fortran namelist called shr_strdata_nml.  That namelist, the
 	strdata datatype, and the methods are contained in the share source
-	code file, models/csm_share/shr/shr_strdata_mod.F90.  In general,
+	code file, models/csm_share/util/shr_strdata_mod.F90.  In general,
 	strdata input defines an array of input streams and operations to
 	perform on those streams.  Therefore, many namelist inputs are arrays
 	of character strings.  Different variable of the same index are
