@@ -35,6 +35,7 @@ module ocn_comp_mct
    use mpas_bootstrapping
    use mpas_dmpar
    use mpas_constants
+   use mpas_log
 
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
    use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
@@ -92,12 +93,13 @@ module ocn_comp_mct
 
    type(seq_infodata_type), pointer :: infodata   
    type (iosystem_desc_t), pointer :: io_system 
+   integer :: ocnLogUnit ! unit number for ocn log
 
    !! MPAS-O Datatypes
-   type (core_type), save, pointer :: corelist => null()
-   type (domain_type), save, pointer:: domain
-   integer :: itimestep, ocn_cpl_dt
-   integer :: ocnStdErrUnit, ocnStdOutUnit
+   type (core_type), pointer :: corelist => null()
+   type (domain_type), pointer:: domain
+   integer :: itimestep, &  ! time step number for MPAS
+              ocn_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
 
 !=======================================================================
 
@@ -133,7 +135,9 @@ contains
     type (domain_type), pointer :: domain_ptr
 
     integer :: OCNID, mpicom_o, lsize, start_ymd, start_tod, start_year, start_day,   &
-       start_month, start_hour, iyear, mpas_o_cpl_dt, shrloglev, shrlogunit, stdout_shr, pio_iotype
+       start_month, start_hour, iyear, mpas_o_cpl_dt, pio_iotype
+    integer :: shrloglev, shrlogunit !< shr log level and log unit
+    integer :: ocnPossibleErrUnit !< unit number to reserve for if a err log needs to be opened
 
     type(mct_gsMap), pointer :: gsMap_o
 
@@ -268,20 +272,6 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call mpaso_cpl_indices_set()
-    call seq_infodata_GetData( infodata, start_type=starttype)
-
-    if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
-       runtype = "initial"
-    else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
-       runtype = "continue"
-    else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
-       runtype = "branch"
-    else
-       write(stderrUnit, *) 'Start type is:', trim(starttype)
-       call mpas_dmpar_global_abort(' ocn_comp_mct ERROR: unknown starttype')
-    end if
-   
 !-----------------------------------------------------------------------
 !
 !   first initializaiton phase of mpas-o
@@ -290,7 +280,6 @@ contains
 !   call mpas-o initialization routines
 !
 !-----------------------------------------------------------------------
-    inst_suffix = seq_comm_suffix(OCNID)
 
     call t_startf('mpas-o_init1')
 
@@ -299,42 +288,64 @@ contains
     pio_iotype = shr_pio_getiotype(ocnid)
     call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
 
-    stdout_shr = shr_file_getUnit()
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       write (scratchFName,'(a,i9.9)') 'scratch_ocn_',iam
-       open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
-       if (ioerr /= 0) then
-          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in ocn_init_mct open stdout_shr '//trim(ioerrstr))
-       endif
-    else
-       inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
-       if(exists) then
-          call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix),stdout_shr)
-       endif
-    end if
-#else
-    inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
-    if(exists) then
-       call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix),stdout_shr)
-    endif
-#endif
+    ! ----------------
+    ! Set up log file information
+    ! ----------------
+    inst_suffix = seq_comm_suffix(ocnID) ! a suffix to append to log file name
+    ocnLogUnit = shr_file_getUnit() ! reserve unit number for log unit
+    ocnPossibleErrUnit = shr_file_getUnit() ! reserve unit number for possible error log file
 
-    call shr_file_getLogUnit (shrlogunit)
+    ! Note: In following code, a file ocn_modelio.nml is queried to determine the log file name to use.
+    ! This file is generated when a case is created.  The default file name in there is currently ocn.log.DATE-TIME.
+    if (iam==0) then
+       inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
+       call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix), ocnLogUnit)
+    endif
+
+    ! Store shr log unit and level so we can reassign them later when OCN control is complete
+    call shr_file_getLogUnit(shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (stdout_shr)
+    ! Set the shr log unit to be the ocnLogUnit
+    call shr_file_setLogUnit(ocnLogUnit)
 
     domain_ptr => domain
-    ocnStdErrUnit = stdout_shr
-    ocnStdOutUnit = stdout_shr
-    write(ocnStdErrUnit,'(a,i6)') '=== Beginning ocn_init_mct: rank=',iam
-    call mpas_framework_init_phase1(domain_ptr % dminfo, mpicom_o, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
+
+    ! Write to ocnLogUnit here, because the log module is not open yet.
+    if (iam==0) write(ocnLogUnit,'(a,i6)') '=== Beginning ocn_init_mct: rank=',iam
+
+    call mpas_framework_init_phase1(domain % dminfo, mpicom_o)
 
     ! Setup function pointers for MPAS-O core and domain types
     call ocn_setup_core(corelist)
     call ocn_setup_domain(domain_ptr)
 
+    ! ===========
+    ! Initialize log manager
+    call mpas_log_init(domain % logInfo, domain, unitNumbers=(/ocnLogUnit, ocnPossibleErrUnit/), err=ierr)
+    if ( ierr /= 0 ) then
+       write(ocnLogUnit,*) 'ERROR: log init failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+
+    ! Set core specific options here
+    ! Disable output from all but the master task for ACME!
+    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
+    if (iam /= 0) then
+       domain % logInfo % outputLog % isActive = .false.
+    endif
+
+    ! After core has had a chance to modify log defaults, open the output log
+    call mpas_log_open(err=ierr)
+    if ( ierr /= 0 ) then
+       write(ocnLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+    ! ===========
+
+
+    ! ----------
+    ! Process namelist and streams files
+    ! ----------
     ! Override the names of the stream and namelist files
     domain_ptr % namelist_filename = 'mpas-o_in'
     domain_ptr % streams_filename = 'streams.ocean'
@@ -342,7 +353,7 @@ contains
     ! Setup namelist variables, and read the namelist
     ierr = domain_ptr % core % setup_namelist(domain_ptr % configs, domain_ptr % namelist_filename, domain_ptr % dminfo)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Namelist setup failed for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Namelist setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     call mpas_framework_init_phase2(domain_ptr, io_system)
@@ -350,22 +361,36 @@ contains
     ! Define package variables
     ierr = domain_ptr % core % define_packages(domain_ptr % packages)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Package definition failed for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Package definition failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Setup packages (i.e. determine if they should be on or off)
     ierr = domain_ptr % core % setup_packages(domain_ptr % configs, domain_ptr % packages, domain_ptr % ioContext)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Package setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Setup decompositions available for dimensions
     ierr = domain_ptr % core % setup_decompositions(domain_ptr % decompositions)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Decomposition setup failed for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Decomposition setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
+
+    ! ----------
     ! Override namelist options based on start type
+    ! ----------
+    call mpaso_cpl_indices_set()
+    call seq_infodata_GetData( infodata, start_type=starttype)
+    if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
+       runtype = "initial"
+    else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
+       runtype = "continue"
+    else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
+       runtype = "branch"
+    else
+       call mpas_log_write('ocn_comp_mct ERROR: infodata provided unknown starttype: ' // trim(starttype), MPAS_LOG_CRIT)
+    end if
     if (runtype == "initial") then ! Start up run
         ! Turn off restart
         call mpas_pool_get_config(domain_ptr % configs, "config_do_restart", tempLogicalConfig)
@@ -395,14 +420,14 @@ contains
     ! Setup MPAS-O simulation clock
     ierr = domain_ptr % core % setup_clock(domain_ptr % clock, domain_ptr % configs)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Clock setup failed for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Clock setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
-    write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain_ptr % streams_filename)
-    inquire(file=trim(domain_ptr % streams_filename), exist=streamsExists)
+    call mpas_log_write('Reading streams configuration from file '//trim(domain % streams_filename))
+    inquire(file=trim(domain % streams_filename), exist=streamsExists)
 
     if ( .not. streamsExists ) then
-       call mpas_dmpar_global_abort('ERROR: Streams file '//trim(domain_ptr % streams_filename)//' does not exist.')
+       call mpas_log_write('Streams file '//trim(domain % streams_filename)//' does not exist.', MPAS_LOG_CRIT)
     end if
 
     !
@@ -411,7 +436,7 @@ contains
     !
     ierr = domain_ptr % core % get_mesh_stream(domain_ptr % configs, mesh_stream)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Failed to find mesh stream for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Failed to find mesh stream for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
 
@@ -422,7 +447,7 @@ contains
                                    c_mesh_filename_temp, c_ref_time_temp, &
                                    c_filename_interval_temp, c_iotype, c_ierr)
     if (c_ierr /= 0) then
-       call mpas_dmpar_abort(domain_ptr % dminfo)
+       call mpas_log_write('xml_stream_get_attributes failed.', MPAS_LOG_CRIT)
     end if
     call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
     call mpas_c_to_f_string(c_ref_time_temp, ref_time_temp)
@@ -455,7 +480,7 @@ contains
     end if
 
     ! Bootstrap framework (1). Here data structures are setup, but dimensions and arrays are not finalized.
-    write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
+    call mpas_log_write(' ** Attempting to bootstrap MPAS framework using stream: ' // trim(mesh_stream))
     call mpas_bootstrap_framework_phase1(domain_ptr, mesh_filename, mesh_iotype)
 
     !
@@ -469,14 +494,14 @@ contains
     ! Setup all immutable streams for the core
     ierr = domain_ptr % core % setup_immutable_streams(domain_ptr % streamManager)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Immutable streams setup failed for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Immutable streams setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Parse / read all streams configuration
     mgr_p = c_loc(domain_ptr % streamManager)
     call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
     if (c_ierr /= 0) then
-       call mpas_dmpar_abort(domain_ptr % dminfo)
+       call mpas_log_write('xml_stream_parser failed.', MPAS_LOG_CRIT)
     end if
 
     my_task = domain_ptr % dminfo % my_proc_id
@@ -491,7 +516,7 @@ contains
     ! Initialize the MPAS-O core
     ierr = domain_ptr % core % core_init(domain_ptr, timeStamp)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Core init failed for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Core init failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
     call t_stopf('mpas-o_init2')
 
@@ -511,27 +536,15 @@ contains
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_START_TIME, ierr)
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_NOW, ierr)
-
-       currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
-       call mpas_get_time(curr_time=currTime, YYYY=iyear0, MM=imonth0, ierr=ierr)
-       call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
-       call shr_cal_date2ymd(start_ymd,start_year,start_month,start_day)
-
-       if (iyear0 /= start_year) then
-          write(shrlogunit, *) ' Iyear0 is: ', iyear0
-          write(shrlogunit,*) ' start_year is: ', start_year
-          call mpas_dmpar_global_abort(' iyear0 does not match start_year')
-       end if
-       if (imonth0 /= start_month) then
-          write(shrlogunit, *) ' Imonth0 is: ', imonth0
-          write(shrlogunit, *) ' start_month is: ', start_month
-          call mpas_dmpar_global_abort(' imonth0 does not match start_month')
-       end if
     else if (runtype == 'continue' .or. runtype == 'branch') then
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_START_TIME, ierr)
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_NOW, ierr)
     end if
+    ! Doublecheck that clocks are synced here.  
+    ! (Note that if this is an initial run, a section below will advance the ocean clock
+    ! by one coupling interval, at which point we expect the clocks to be OUT of sync.)
+    call check_clocks_sync(domain % clock, Eclock, ierr)
 
 !-----------------------------------------------------------------------
 !
@@ -583,11 +596,10 @@ contains
     call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
-       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
-       write(stderrUnit, *) '        OCN Model time step is: ', trim(tempCharConfig)
-
-       write(stderrUnit, *) '        The model time step cannot be longer then the coupling interval'
-       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+       call mpas_log_write('Coupling interval is: ' // trim(coupleTimeStamp), MPAS_LOG_ERR)
+       call mpas_log_write('        OCN Model time step is: ' // trim(tempCharConfig), MPAS_LOG_ERR)
+       call mpas_log_write('        The model time step cannot be longer then the coupling interval', MPAS_LOG_ERR)
+       call mpas_log_write('Model is not properly configured for coupling interval.', MPAS_LOG_CRIT)
     end if
 
     if ( remInterval > zeroInterval ) then
@@ -598,14 +610,11 @@ contains
     call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
-       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
-       write(stderrUnit, *) '        OCN Model time step is: ', trim(tempCharConfig)
-
-       write(stderrUnit, *) '        These are not synchronized, so time steps'
-       write(stderrUnit, *) '        will not match to coupling interval boundaries.'
-       write(stderrUnit, *) '        Please reconfigure either the coupling interval, '
-       write(stderrUnit, *) '        or the time step.'
-       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+       call mpas_log_write('Coupling interval is: ' // trim(coupleTimeStamp), MPAS_LOG_ERR)
+       call mpas_log_write('        OCN Model time step is: ' // trim(tempCharConfig), MPAS_LOG_ERR)
+       call mpas_log_write('        These are not synchronized, so time steps will not match to coupling interval boundaries.', MPAS_LOG_ERR)
+       call mpas_log_write('        Please reconfigure either the coupling interval or the time step.', MPAS_LOG_ERR)
+       call mpas_log_write('Model is not properly configured for coupling interval.', MPAS_LOG_CRIT)
     end if
 
     ! set coupling alarm
@@ -663,7 +672,7 @@ contains
 
     call ocn_export_mct(o2x_o, errorCode)  
     if (errorCode /= 0) then
-       call mpas_dmpar_global_abort('ERROR in ocn_export_mct')
+       call mpas_log_write('ERROR in ocn_export_mct', MPAS_LOG_CRIT)
     endif
 
     ! Setup clock for initial runs
@@ -695,7 +704,7 @@ contains
 
     call ocn_import_mct(x2o_o, errorCode)  
     if (errorCode /= 0) then
-       call mpas_dmpar_global_abort('ERROR in ocn_import_mct')
+       call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
     endif
 
     ! Build forcing arrays.
@@ -720,7 +729,7 @@ contains
 
     currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
     call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-    write(stderrUnit,*) 'Initial time ', trim(timeStamp)
+    call mpas_log_write( 'Initial time '//trim(timeStamp))
 
     itimestep = 0
 
@@ -729,11 +738,8 @@ contains
     call mpas_stream_mgr_reset_alarms(domain_ptr % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
 !----------------------------------------------------------------------------
-!
 !   Reset shr logging to original values
-!
 !----------------------------------------------------------------------------
-
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
 
@@ -744,8 +750,8 @@ contains
         call memmon_reset_addr()
     endif
 #endif
-    write(ocnStdErrUnit,'(a,i6)') '=== Completed ocn_init_mct: rank=',iam
-    call shr_sys_flush(stderrUnit)
+
+    call mpas_log_write('=== Completed ocn_init_mct ===', flushNow=.true.)
 
 !-----------------------------------------------------------------------
 !EOC
@@ -803,8 +809,6 @@ contains
       real (kind=RKIND) :: timeFilterFactor
 
       iam = domain % dminfo % my_proc_id
-      call mpas_io_units_set_stdout(ocnStdOutUnit)
-      call mpas_io_units_set_stderr(ocnStdErrUnit)
 
       debugOn = .false.
 #ifdef MPAS_DEBUG
@@ -813,12 +817,16 @@ contains
  
       domain_ptr => domain
 
+      ! Set MPAS Log module instance
+      mpas_log_info => domain % logInfo
+      call mpas_log_write("=== Beginning ocn_run_mct ===")
+
       call mpas_pool_get_config(domain_ptr % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
       call shr_file_getLogLevel(shrloglev)
-      call shr_file_setLogUnit (stdoutUnit)
+      call shr_file_setLogUnit (ocnLogUnit)
 
       timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
       call mpas_get_timeInterval(timeStep, dt=dt)
@@ -859,10 +867,10 @@ contains
 
          currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
+         call mpas_log_write( 'Doing timestep '//trim(timeStamp))
 
          ! Build forcing arrays.
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Building forcing arrays'
+         if (debugOn) call mpas_log_write('   Building forcing arrays')
          block_ptr => domain_ptr % blocklist
          do while(associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -882,14 +890,15 @@ contains
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
             block_ptr => block_ptr % next
          end do
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished building forcing arrays'
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Performing forward update'
+         if (debugOn) call mpas_log_write('   Finished building forcing arrays')
+
+         if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
          !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
          call ocn_timestep(domain, dt, timeStamp)
          !$omp end parallel
          call mpas_timer_stop("time integration")
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished performing forward update'
+         if (debugOn) call mpas_log_write('   Finished performing forward update')
 
          ! Move time level 2 fields back into time level 1 for next time step
          block_ptr => domain_ptr % blocklist
@@ -899,22 +908,22 @@ contains
             block_ptr => block_ptr % next
          end do
 
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Computing analysis members'
+         if (debugOn) call mpas_log_write('   Computing analysis members')
          call ocn_analysis_compute(domain_ptr, ierr) 
          if (iam==0.and.debugOn) then
-            write(stderrUnit,*) '   Finished computing analysis members'
-            write(stderrUnit,*) '   Preparing analysis members for restart'
+            call mpas_log_write( '   Finished computing analysis members')
+            call mpas_log_write('   Preparing analysis members for restart')
          endif
          call ocn_analysis_restart(domain_ptr, ierr) 
          if (iam==0.and.debugOn) then
-            write(stderrUnit,*) '   Finished preparing analysis members for restart'
-            write(stderrUnit,*) '   Writing analysis member output'
+            call mpas_log_write('   Finished preparing analysis members for restart')
+            call mpas_log_write('   Writing analysis member output')
          endif
          call ocn_analysis_write(domain_ptr, ierr)
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished writing analysis member output'
+         if (debugOn) call mpas_log_write('   Finished writing analysis member output')
 
          ! Reset any restart alarms to prevent restart files being written without the coupler requesting it.
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Resetting restart alarms'
+         if (debugOn) call mpas_log_write('   Resetting restart alarms')
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
 
          do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
@@ -924,21 +933,21 @@ contains
                call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
             end if
          end do
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished resetting restart alarms'
+         if (debugOn) call mpas_log_write('   Finished resetting restart alarms')
 
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Writing output streams'
+         if (debugOn) call mpas_log_write('   Writing output streams')
          call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
          if (iam==0.and.debugOn) then
-            write(stderrUnit,*) '   Finished writing output streams'
-            write(stderrUnit,*) '   Validating ocean state'
+            call mpas_log_write('   Finished writing output streams')
+            call mpas_log_write('   Validating ocean state')
          endif
          call ocn_validate_state(domain, timeLevel=1)
-         if (iam==0.and.debugOn) write(stderrUnit,*) '   Completed validating ocean state'
-         if (iam==0.and.debugOn) write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
+         if (debugOn) call mpas_log_write('   Completed validating ocean state')
+         if (debugOn) call mpas_log_write('Completed timestep '//trim(timeStamp))
       end do
 
       ! update coupled variables that get calculated on coupling intervals
@@ -970,16 +979,16 @@ contains
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
-         if (iam==0.and.debugOn) write(stderrUnit,*) 'Writing restart streams'
+         if (debugOn) call mpas_log_write('Writing restart streams')
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
 
          do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive ) )
 
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
-               if (iam==0.and.debugOn) write(stderrUnit,*) '   Writing stream ' // trim(streamName)
+               if (debugOn) call mpas_log_write('   Writing stream ' // trim(streamName))
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, ierr=ierr)
-               if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished writing stream ' // trim(streamName)
+               if (debugOn) call mpas_log_write('   Finished writing stream ' // trim(streamName))
             end if
          end do
 
@@ -988,31 +997,22 @@ contains
             write(22, *) trim(timeStamp)
             close(22)
          end if
-         if (iam==0.and.debugOn) write(stderrUnit,*) 'Finished writing restart streams'
+         if (debugOn) call mpas_log_write('Finished writing restart streams')
       end if
 
       ! Export state to coupler
-      if (iam==0.and.debugOn) write(stderrUnit,*) 'Exporting ocean state'
+      if (debugOn) call mpas_log_write('Exporting ocean state')
       call ocn_export_mct(o2x_o, ierr)
-      if (iam==0.and.debugOn) write(stderrUnit,*) 'Finished exporting ocean state'
+      if (debugOn) call mpas_log_write('Finished exporting ocean state')
 
-      ! Check if clocks are in sync
-      currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)
-      call mpas_get_time(curr_time=currTime, YYYY=iyear, MM=imonth, DD=iday, H=ihour, M=iminute, S=isecond, ierr=ierr)
-      call seq_timemgr_EClockGetData(EClock, curr_ymd=curr_ymd, curr_tod=curr_tod)
- 
-      ymd = iyear * 10000 + imonth * 100 + iday
-      tod = ihour * 3600 + iminute * 60 + isecond
-      if (.not. seq_timemgr_EClockDateInSync( EClock, ymd, tod)) then
-         write(stderrUnit,*) 'MPAS ymd=',ymd,' MPAS tod=', tod
-         write(stderrUnit,*) 'sync ymd=',curr_ymd,' sync tod=', curr_tod
-         write(stderrUnit,*) 'Internal mpas clock not in sync with sync clock'
-      end if
+      call check_clocks_sync(domain % clock, Eclock, ierr)
 
       ! Reset I/O logs
-      call shr_sys_flush(stderrUnit)
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
+
+      call mpas_log_write('=== Completed ocn_run_mct. ===', flushNow=.true.)
+
 
 !-----------------------------------------------------------------------
 !EOC
@@ -1060,39 +1060,37 @@ contains
 !-----------------------------------------------------------------------
     iam = domain % dminfo % my_proc_id
 
-    call mpas_io_units_set_stdout(ocnStdOutUnit)
-    call mpas_io_units_set_stderr(ocnStdErrUnit)
-
     domain_ptr => domain
+
+    ! Set MPAS Log module instance
+    mpas_log_info => domain % logInfo
 
     ! Setup I/O logs
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (stdoutUnit)
+    call shr_file_setLogUnit (ocnLogUnit)
 
     ! Finalize MPAS-O
     iErr = domain_ptr % core % core_finalize(domain_ptr)
     if ( iErr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Core finalize failed for core ' // trim(domain_ptr % core % coreName))
+       call mpas_log_write('Core finalize failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     call mpas_timer_write()
-    call MPAS_stream_mgr_finalize(domain_ptr % streamManager)
-    call mpas_framework_finalize(domain_ptr % dminfo, domain_ptr, io_system)
+
+    call MPAS_stream_mgr_finalize(domain % streamManager)
+
+    call mpas_log_finalize(iErr)
+    if ( iErr /= 0 ) then
+       write(ocnLogUnit,*) 'ERROR: log finalize failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+
+    call mpas_framework_finalize(domain % dminfo, domain, io_system)
 
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       close(ocnStdErrUnit, status='DELETE', iostat=ioerr)
-       if (ioerr /= 0) then
-          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',ocnStdErrUnit,',iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in ocn_final_mct close ocnStdErrUnit '//trim(ioerrstr))
-       endif
-    end if
-#endif
 
   end subroutine ocn_final_mct!}}}
 
@@ -2124,6 +2122,38 @@ contains
 !EOC
 
  end subroutine ocn_export_mct!}}}
+
+ subroutine check_clocks_sync(MPASclock, Eclock, err)
+    type (MPAS_Clock_type), intent(in) :: MPASclock
+    type(ESMF_Clock), intent(in)       :: EClock
+    integer, intent(out)               :: err
+    ! local variables
+    type (MPAS_Time_Type) :: currTime
+    integer :: iyear, imonth, iday, ihour, iminute, isecond
+    integer :: ymd, tod
+    integer :: curr_ymd, curr_tod
+    integer :: err_tmp
+
+    err = 0
+
+    ! Check if clocks are in sync
+    currTime = mpas_get_clock_time(MPASclock, MPAS_NOW, err_tmp)
+    err = ior(err,err_tmp)
+    call mpas_get_time(curr_time=currTime, YYYY=iyear, MM=imonth, DD=iday, H=ihour, M=iminute, S=isecond, ierr=err_tmp)
+    err = ior(err,err_tmp)
+    ymd = iyear * 10000 + imonth * 100 + iday
+    tod = ihour * 3600 + iminute * 60 + isecond
+
+    call seq_timemgr_EClockGetData(EClock, curr_ymd=curr_ymd, curr_tod=curr_tod)
+
+    if (.not. seq_timemgr_EClockDateInSync( EClock, ymd, tod)) then
+       call mpas_log_write('MPAS ymd=$i  MPAS tod=$i', MPAS_LOG_ERR, intArgs=(/ymd, tod/))
+       call mpas_log_write('sync ymd=$i  sync tod=$i', MPAS_LOG_ERR, intArgs=(/curr_ymd, curr_tod/))
+       call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_ERR)
+       call mpas_log_write("Internal MPAS clock not in sync with ACME sync clock. Aborting...", MPAS_LOG_CRIT)
+    end if
+
+ end subroutine check_clocks_sync
 
  subroutine convert_seconds_to_timestamp(seconds, timeStamp)!{{{
    integer, intent(in) :: seconds

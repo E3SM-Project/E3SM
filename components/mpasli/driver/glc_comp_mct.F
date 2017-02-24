@@ -42,6 +42,7 @@ module glc_comp_mct
   use mpas_bootstrapping
   use mpas_dmpar
   use mpas_constants
+  use mpas_log
 
   use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
   use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
@@ -85,6 +86,8 @@ module glc_comp_mct
   type(seq_infodata_type), pointer :: infodata  ! coupler infodata
   type (iosystem_desc_t), pointer :: io_system  ! ?
 
+  integer :: glcLogUnit ! unit number for glc log
+
   ! MPAS Datatypes
   !type (dm_info), pointer :: dminfo
   type (core_type), pointer :: corelist => null()
@@ -92,7 +95,6 @@ module glc_comp_mct
   integer :: itimestep, &  ! time step number for MPAS
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
-  integer :: glcStdErrUnit, glcStdOutUnit
 
 !=======================================================================
 
@@ -123,8 +125,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    integer :: glcID, mpicom_g, lsize, start_ymd, start_tod, start_year, start_day,   &
-       start_month, start_hour, iyear, mpas_li_cpl_dt, shrloglev, shrlogunit, stdout_shr, pio_iotype
+    integer :: glcID !< task number
+    integer :: mpicom_g, lsize, start_ymd, start_tod, start_year, start_day,   &
+       start_month, start_hour, iyear, mpas_li_cpl_dt, pio_iotype
+    integer :: shrloglev, shrlogunit !< shr log level and log unit
+    integer :: glcPossibleErrUnit !< unit number to reserve for if a err log needs to be opened
 
     type(mct_gsMap), pointer :: gsMap_g
 
@@ -233,7 +238,7 @@ contains
     call seq_cdata_setptrs(cdata_g, ID=glcID, mpicom=mpicom_g, &
          gsMap=gsMap_g, dom=dom_g, infodata=infodata)
 
-    MPASLI_MCT_glcID =  glcID
+    MPASLI_MCT_glcID =  glcID  ! task number
     MPASLI_MCT_gsMap_g => gsMap_g
     MPASLI_MCT_dom_g   => dom_g
 
@@ -245,29 +250,6 @@ contains
      endif
 #endif
 
-     ! Determine coupling type
-     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
-
-!-----------------------------------------------------------------------
-!
-!   initialize the model run
-!
-!-----------------------------------------------------------------------
-
-    call glc_cpl_indices_set()
-    call seq_infodata_GetData( infodata, start_type=starttype)
-
-    if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
-       runtype = "initial"
-    else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
-       runtype = "continue"
-    else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
-       runtype = "branch"
-    else
-       write(stderrUnit, *) 'Start type is:', trim(starttype)
-       call mpas_dmpar_global_abort(' glc_comp_mct ERROR: unknown starttype')
-    end if
-
 !-----------------------------------------------------------------------
 !
 !   first initializaiton phase of mpasli
@@ -276,7 +258,6 @@ contains
 !   call mpasli initialization routines
 !
 !-----------------------------------------------------------------------
-    inst_suffix = seq_comm_suffix(glcID)
 
     call t_startf('mpasli_init')
 
@@ -285,43 +266,63 @@ contains
     pio_iotype = shr_pio_getiotype(glcid)
     call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
 
-    stdout_shr = shr_file_getUnit()
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       write (scratchFName,'(a,i9.9)') 'scratch_glc_',iam
-       open(stdout_shr, file=trim(scratchFName), iostat=ioerr)
-       if (ioerr /= 0) then
-          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',stdout_shr,',iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in glc_init_mct open stdout_shr '//trim(ioerrstr))
-       endif
-    else
+    ! ----------------
+    ! Set up log file information
+    ! ----------------
+    inst_suffix = seq_comm_suffix(glcID) ! a suffix to append to log file name
+    glcLogUnit = shr_file_getUnit() ! reserve unit number for log unit
+    glcPossibleErrUnit = shr_file_getUnit() ! reserve unit number for possible error log file
+
+    ! Note: In following code, a file glc_modelio.nml is queried to determine the log file name to use.
+    ! This file is generated when a case is created.  The default file name in there is currently glc.log.DATE-TIME.
+    if (iam==0) then
        inquire(file='glc_modelio.nml'//trim(inst_suffix),exist=exists)
-       if(exists) then
-          call shr_file_setio('glc_modelio.nml'//trim(inst_suffix),stdout_shr)
-       endif
-    end if
-#else
-    inquire(file='glc_modelio.nml'//trim(inst_suffix),exist=exists)
-    if(exists) then
-       call shr_file_setio('glc_modelio.nml'//trim(inst_suffix),stdout_shr)
+       call shr_file_setio('glc_modelio.nml'//trim(inst_suffix), glcLogUnit)
     endif
-#endif
 
-    call shr_file_getLogUnit (shrlogunit)
+    ! Store shr log unit and level so we can reassign them later when GLC control is complete
+    call shr_file_getLogUnit(shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (stdout_shr)
-    glcStdErrUnit = stdout_shr
-    glcStdOutUnit = stdout_shr
+    ! Set the shr log unit to be the glcLogUnit
+    !  (I believe this is so that shr routines called from the GLC driver write any messages to the GLC log file.)
+    call shr_file_setLogUnit(glcLogUnit)
 
-    ! Write to glcStdErrUnit here, because stderrUnit is not correctly set until the mpas_framework_init_phase1 call
-    write(glcStdErrUnit,'(a,i6)') '=== Beginning glc_init_mct: rank=',iam
+    ! Write to glcLogUnit here, because the log module is not open yet.
+    if (iam==0) write(glcLogUnit,'(a,i6)') '=== Beginning glc_init_mct: rank=',iam
 
-    call mpas_framework_init_phase1(domain % dminfo, mpicom_g, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
+    call mpas_framework_init_phase1(domain % dminfo, mpicom_g)
 
     ! Setup function pointers for MPASLI core and domain types
     call li_setup_core(corelist)
     call li_setup_domain(domain)
 
+    ! ===========
+    ! Initialize log manager
+    call mpas_log_init(domain % logInfo, domain, unitNumbers=(/glcLogUnit, glcPossibleErrUnit/), err=ierr)
+    if ( ierr /= 0 ) then
+       write(glcLogUnit,*) 'ERROR: log init failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+
+    ! Set core specific options here
+    ! Disable output from all but the master task for ACME!
+    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
+    if (iam /= 0) then
+       domain % logInfo % outputLog % isActive = .false.
+    endif
+
+    ! After core has had a chance to modify log defaults, open the output log
+    call mpas_log_open(err=ierr)
+    if ( ierr /= 0 ) then
+       write(glcLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+    ! ===========
+
+
+    ! ----------
+    ! Process namelist and streams files
+    ! ----------
     ! Override the names of the stream and namelist files
     domain % namelist_filename = 'mpasli_in'
     domain % streams_filename = 'streams.landice'
@@ -329,7 +330,7 @@ contains
     ! Setup namelist variables, and read the namelist
     ierr = domain % core % setup_namelist(domain % configs, domain % namelist_filename, domain % dminfo)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Namelist setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Namelist setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     call mpas_framework_init_phase2(domain, io_system)
@@ -337,22 +338,35 @@ contains
     ! Define package variables
     ierr = domain % core % define_packages(domain % packages)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Package definition failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Package definition failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Setup packages (i.e. determine if they should be on or off)
     ierr = domain % core % setup_packages(domain % configs, domain % packages, domain % iocontext)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Package setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Setup decompositions available for dimensions
     ierr = domain % core % setup_decompositions(domain % decompositions)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Decomposition setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Decomposition setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
+
+    ! ----------
     ! Override namelist options based on start type
+    ! ----------
+    call seq_infodata_GetData( infodata, start_type=starttype)
+    if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
+       runtype = "initial"
+    else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
+       runtype = "continue"
+    else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
+       runtype = "branch"
+    else
+       call mpas_log_write('glc_comp_mct ERROR: infodata provided unknown starttype: ' // trim(starttype), MPAS_LOG_CRIT)
+    end if
     if (runtype == "initial") then ! Start up run
 
         ! Turn off restart
@@ -386,14 +400,14 @@ contains
     ! Setup MPASLI simulation clock
     ierr = domain % core % setup_clock(domain % clock, domain % configs)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Clock setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Clock setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
-    write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain % streams_filename)
+    call mpas_log_write('Reading streams configuration from file '//trim(domain % streams_filename))
     inquire(file=trim(domain % streams_filename), exist=streamsExists)
 
     if ( .not. streamsExists ) then
-       call mpas_dmpar_global_abort('ERROR: Streams file '//trim(domain % streams_filename)//' does not exist.')
+       call mpas_log_write('Streams file '//trim(domain % streams_filename)//' does not exist.', MPAS_LOG_CRIT)
     end if
 
     !
@@ -402,7 +416,7 @@ contains
     !
     ierr = domain % core % get_mesh_stream(domain % configs, mesh_stream)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Failed to find mesh stream for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Failed to find mesh stream for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
 
@@ -413,7 +427,7 @@ contains
                                    c_mesh_filename_temp, c_ref_time_temp, &
                                    c_filename_interval_temp, c_iotype, c_ierr)
     if (c_ierr /= 0) then
-       call mpas_dmpar_abort(domain % dminfo)
+       call mpas_log_write('xml_stream_get_attributes failed.', MPAS_LOG_CRIT)
     end if
     call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
     call mpas_c_to_f_string(c_ref_time_temp, ref_time_temp)
@@ -445,7 +459,7 @@ contains
         call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, -1, mesh_filename, ierr)
     end if
 
-    write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
+    call mpas_log_write(' ** Attempting to bootstrap MPAS framework using stream: ' // trim(mesh_stream))
 
     ! Bootstrap framework (1). Here data structures are setup, but dimensions and arrays are not finalized.
     call mpas_bootstrap_framework_phase1(domain, mesh_filename, mesh_iotype)
@@ -460,14 +474,14 @@ contains
     ! Setup all immutable streams for the core
     ierr = domain % core % setup_immutable_streams(domain % streamManager)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Immutable streams setup failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Immutable streams setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     ! Parse / read all streams configuration
     mgr_p = c_loc(domain % streamManager)
     call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
     if (c_ierr /= 0) then
-       call mpas_dmpar_abort(domain % dminfo)
+       call mpas_log_write('xml_stream_parser failed.', MPAS_LOG_CRIT)
     end if
 
     my_task = domain % dminfo % my_proc_id
@@ -477,11 +491,13 @@ contains
     !
     call mpas_bootstrap_framework_phase2(domain)
 
+    ! Determine coupling type (not currently needed by MPASLI)
+    call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
 
     ! Initialize the MPASLI core
     ierr = domain % core % core_init(domain, timeStamp)
     if ( ierr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Core init failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Core init failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
 !-----------------------------------------------------------------------
@@ -501,27 +517,14 @@ contains
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
        call mpas_set_clock_time(domain % clock, currTime, MPAS_START_TIME, ierr)
        call mpas_set_clock_time(domain % clock, currTime, MPAS_NOW, ierr)
-
-       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-       call mpas_get_time(curr_time=currTime, YYYY=iyear0, MM=imonth0, ierr=ierr)
-       call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
-       call shr_cal_date2ymd(start_ymd,start_year,start_month,start_day)
-
-       if (iyear0 /= start_year) then
-          write(shrlogunit, *) ' Iyear0 is: ', iyear0
-          write(shrlogunit,*) ' start_year is: ', start_year
-          call mpas_dmpar_global_abort(' iyear0 does not match start_year')
-       end if
-       if (imonth0 /= start_month) then
-          write(shrlogunit, *) ' Imonth0 is: ', imonth0
-          write(shrlogunit, *) ' start_month is: ', start_month
-          call mpas_dmpar_global_abort(' imonth0 does not match start_month')
-       end if
     else if (runtype == 'continue' .or. runtype == 'branch') then
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
        call mpas_set_clock_time(domain % clock, currTime, MPAS_START_TIME, ierr)
        call mpas_set_clock_time(domain % clock, currTime, MPAS_NOW, ierr)
     end if
+    call check_clocks_sync(domain % clock, Eclock, err_tmp)
+    ierr = ior(ierr,err_tmp)
+
 
 !-----------------------------------------------------------------------
 !
@@ -531,9 +534,11 @@ contains
 
     call t_startf ('mpasli_mct_init')
 
+    call glc_cpl_indices_set()
+
     call glc_SetGSMap_mct( mpicom_g, glcID, GSMap_g )
     lsize = mct_gsMap_lsize(gsMap_g, mpicom_g)
-    write(shrlogunit, *) ' MPASLI gsMap lsize is: ', lsize
+    call mpas_log_write('MPASLI gsMap lsize = $i', intArgs=(/lsize/))
 
     ! Initialize mct glc domain (needs glc initialization info)
     call glc_domain_mct( lsize, gsMap_g, dom_g )
@@ -561,7 +566,7 @@ contains
     call mpas_set_timeInterval(alarmTimeStep, S=glc_cpl_dt, ierr=err_tmp)
     call mpas_get_timeInterval(alarmTimeStep, timeString=coupleTimeStamp, ierr=ierr)
     ierr = ior(ierr,err_tmp)
-    write (stderrUnit,*) 'Applying GLC coupling dt (s) of: ', glc_cpl_dt
+    call mpas_log_write( 'Applying GLC coupling dt (s) of: $i', intArgs=(/glc_cpl_dt/))
 
     ! Verify the mpas time step fits into a coupling interval
     call mpas_pool_get_config(domain % configs, 'config_dt', tempCharConfig)
@@ -578,11 +583,11 @@ contains
     call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
-       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
-       write(stderrUnit, *) '        GLC Model time step is: ', trim(tempCharConfig)
+       call mpas_log_write('Coupling interval is: ' // trim(coupleTimeStamp), MPAS_LOG_ERR)
+       call mpas_log_write('        GLC Model time step is: ' // trim(tempCharConfig), MPAS_LOG_ERR)
 
-       write(stderrUnit, *) '        The model time step cannot be longer then the coupling interval'
-       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+       call mpas_log_write('        The model time step cannot be longer then the coupling interval', MPAS_LOG_ERR)
+       call mpas_log_write('Model is not properly configured for coupling interval.', MPAS_LOG_CRIT)
     end if
 
     if ( remInterval > zeroInterval ) then
@@ -593,14 +598,11 @@ contains
     call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
-       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
-       write(stderrUnit, *) '        GLC Model time step is: ', trim(tempCharConfig)
-
-       write(stderrUnit, *) '        These are not synchronized, so time steps'
-       write(stderrUnit, *) '        will not match to coupling interval boundaries.'
-       write(stderrUnit, *) '        Please reconfigure either the coupling interval, '
-       write(stderrUnit, *) '        or the time step.'
-       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+       call mpas_log_write('Coupling interval is: ' // trim(coupleTimeStamp), MPAS_LOG_ERR)
+       call mpas_log_write('        GLC Model time step is: ' // trim(tempCharConfig), MPAS_LOG_ERR)
+       call mpas_log_write('        These are not synchronized, so time steps will not match to coupling interval boundaries.', MPAS_LOG_ERR)
+       call mpas_log_write('        Please reconfigure either the coupling interval or the time step.', MPAS_LOG_ERR)
+       call mpas_log_write('Model is not properly configured for coupling interval.', MPAS_LOG_CRIT)
     end if
 
     ! set coupling alarm
@@ -683,7 +685,7 @@ contains
 
     call glc_export_mct(g2x_g, errorCode)
     if (errorCode /= 0) then
-       call mpas_dmpar_global_abort('ERROR in glc_export_mct')
+       call mpas_log_write('Error in glc_export_mct', MPAS_LOG_CRIT)
     endif
 
     ! Setup clock for initial runs
@@ -707,11 +709,8 @@ contains
 
 
 !----------------------------------------------------------------------------
-!
 !   Reset shr logging to original values
-!
 !----------------------------------------------------------------------------
-
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
 
@@ -722,13 +721,8 @@ contains
         call memmon_reset_addr()
     endif
 #endif
-    call shr_sys_flush(stderrUnit)
 
-    call check_clocks_sync(domain % clock, Eclock, stderrUnit, err_tmp)
-    ierr = ior(ierr,err_tmp)
-
-    write(glcStdErrUnit,'(a,i6)') '=== Completed glc_init_mct: rank=',iam
-    call shr_sys_flush(glcStdErrUnit)
+    call mpas_log_write('=== Completed glc_init_mct ===', flushNow=.true.)
 
 !-----------------------------------------------------------------------
 !EOC
@@ -784,8 +778,9 @@ contains
 
       iam = domain % dminfo % my_proc_id
 
-      call mpas_io_units_set_stdout(glcStdOutUnit)
-      call mpas_io_units_set_stderr(glcStdErrUnit)
+      ! Set MPAS Log module instance
+      mpas_log_info => domain % logInfo
+      call mpas_log_write("=== Beginning glc_run_mct ===")
 
       err = 0
       err_tmp = 0
@@ -794,9 +789,7 @@ contains
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
       call shr_file_getLogLevel(shrloglev)
-      call shr_file_setLogUnit (stdoutUnit)
-
-      write(stdoutUnit,*) '=== Beginning glc_run_mct.'
+      call shr_file_setLogUnit (glcLogUnit)
 
       ! Get config options that will be needed
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
@@ -831,7 +824,7 @@ contains
 
          itimestep = itimestep + 1
 
-         write(stderrUnit,*) 'Starting timestep number ', iTimeStep
+         call mpas_log_write('Starting timestep number $i', intArgs=(/iTimeStep/))
 
          ! ===
          ! === Perform Timestep
@@ -919,10 +912,10 @@ contains
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
          if (globalErr > 0) then
-             call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
+             call mpas_log_write("An error has occurred in mpas_core_run. Aborting...", MPAS_LOG_CRIT)
          endif
 
-         write(stderrUnit,*) 'Completed timestep number ', iTimeStep
+         call mpas_log_write('Completed timestep number $i', intArgs=(/iTimeStep/))
       end do
       err = ior(err, err_tmp)
 
@@ -978,12 +971,10 @@ contains
          block => block % next
       end do
 
-      call check_clocks_sync(domain % clock, Eclock, stderrUnit, err_tmp)
+      call check_clocks_sync(domain % clock, Eclock, err_tmp)
       err = ior(err,err_tmp)
 
-      write(stdoutUnit,*) '=== Completed glc_run_mct.'
-      call shr_sys_flush(stdoutUnit)
-      call shr_sys_flush(stderrUnit)
+      call mpas_log_write('=== Completed glc_run_mct. ===', flushNow=.true.)
 
       ! Reset I/O logs
       call shr_file_setLogUnit (shrlogunit)
@@ -1032,37 +1023,35 @@ contains
 
     iam = domain % dminfo % my_proc_id
 
-    call mpas_io_units_set_stdout(glcStdOutUnit)
-    call mpas_io_units_set_stderr(glcStdErrUnit)
+    ! Set MPAS Log module instance
+    mpas_log_info => domain % logInfo
 
     ! Setup I/O logs
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (stdoutUnit)
+    call shr_file_setLogUnit (glcLogUnit)
 
     ! Finalize MPASLI
     iErr = domain % core % core_finalize(domain)
     if ( iErr /= 0 ) then
-       call mpas_dmpar_global_abort('ERROR: Core finalize failed for core ' // trim(domain % core % coreName))
+       call mpas_log_write('Core finalize failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
 
     call mpas_timer_write()
+
     call MPAS_stream_mgr_finalize(domain % streamManager)
+
+    call mpas_log_finalize(iErr)
+    if ( iErr /= 0 ) then
+       write(glcLogUnit,*) 'ERROR: log finalize failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+
     call mpas_framework_finalize(domain % dminfo, domain, io_system)
 
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-
-#ifndef MPAS_DEBUG
-    if ( iam /= 0 ) then
-       close(glcStdErrUnit, status='DELETE', iostat=ioerr)
-       if (ioerr /= 0) then
-          write (ioerrstr,'(a,i9,a,i6,a,i9)') 'rank=',iam,',unit=',glcStdErrUnit,',iostat=',ioerr
-          call mpas_dmpar_global_abort('ERROR in glc_final_mct close glcStdErrUnit '//trim(ioerrstr))
-       endif
-    end if
-#endif
 
   end subroutine glc_final_mct!}}}
 
@@ -1473,10 +1462,9 @@ contains
 !=================================================================================
 
 
-  subroutine check_clocks_sync(MPASclock, Eclock, stderrUnit, err)
+  subroutine check_clocks_sync(MPASclock, Eclock, err)
     type (MPAS_Clock_type), intent(in) :: MPASclock
     type(ESMF_Clock), intent(in)       :: EClock
-    integer, intent(in)                :: stderrUnit
     integer, intent(out)               :: err
     ! local variables
     type (MPAS_Time_Type) :: currTime
@@ -1498,10 +1486,10 @@ contains
     call seq_timemgr_EClockGetData(EClock, curr_ymd=curr_ymd, curr_tod=curr_tod)
 
     if (.not. seq_timemgr_EClockDateInSync( EClock, ymd, tod)) then
-       write(stderrUnit,*) 'MPAS ymd=',ymd,' MPAS tod=', tod
-       write(stderrUnit,*) 'sync ymd=',curr_ymd,' sync tod=', curr_tod
-       write(stderrUnit,*) 'Internal mpas clock not in sync with sync clock'
-       call mpas_dmpar_global_abort("Internal MPAS clock not in sync with ACME sync clock. Aborting...")
+       call mpas_log_write('MPAS ymd=$i  MPAS tod=$i', MPAS_LOG_ERR, intArgs=(/ymd, tod/))
+       call mpas_log_write('sync ymd=$i  sync tod=$i', MPAS_LOG_ERR, intArgs=(/curr_ymd, curr_tod/))
+       call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_ERR)
+       call mpas_log_write("Internal MPAS clock not in sync with ACME sync clock. Aborting...", MPAS_LOG_CRIT)
     end if
 
    end subroutine check_clocks_sync
