@@ -50,7 +50,7 @@ module mpas_log
    !--------------------------------------------------------------------
    ! (Public parameters found in mpas_log_types.inc)
 
-   type (mpas_log_type), pointer :: mpas_log_info => null() !< derived type holding the metadata for a logging manager instance
+   type (mpas_log_type), pointer, public :: mpas_log_info => null() !< derived type holding the metadata for a logging manager instance
       !< Each core needs to set this up.  Note that this pointer can be externally
       !< reassigned if the logging instance needs to be swapped
       !< (e.g., when multiple logging instances are running in an ESM).
