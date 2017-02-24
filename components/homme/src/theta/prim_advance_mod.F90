@@ -105,9 +105,10 @@ contains
     logical,               intent(in)            :: compute_diagnostics
 
     real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
+    real (kind=real_kind) ::  statetemp(np,np,nlev,2), dampfac
 
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
-    integer :: n,i,j,lx,lenx
+    integer :: n,i,j,lx,lenx,ktolcounter,ktol
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -141,6 +142,10 @@ contains
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
+!
+!   tstep_type=6  Heun's method (CFL=?)
+!
+!   tstep_type=7  Implicit Euler method
 !
 ! integration = "full_imp"
 !
@@ -293,7 +298,6 @@ contains
        ! u4 = u0 + 2dt/3 RHS(u3)
        call compute_and_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
-
        ! compute (5*u1/4 - u0/4) in timelevel nm1:
        do ie=nets,nete
           elem(ie)%state%v(:,:,:,:,nm1)= (5*elem(ie)%state%v(:,:,:,:,nm1) &
@@ -313,8 +317,106 @@ contains
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
        call t_stopf("U3-5stage_timestep")
+    else if (method == 6 ) then 
+       ! Heun's method, has to use t_startf("LF_timestep") for now?
+       ! this is only here to make sure that I know what I'm talking about
+       call t_startf("LF_timestep")
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       call compute_and_apply_rhs(np1,np1,n0,qn0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       call t_stopf("LF_timestep") 
+    else if (method == 7) then ! use implicit Euler method
+       call t_startf("LF_timestep")
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       ktol=20
+       ktolcounter=1
+       dampfac=1d-4
+       print *, 'hey'
+   !   classic fixed point iteration
+       do while ( ktolcounter < ktol)
+          call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+              deriv,nets,nete,.false.,0d0)
+          ktolcounter=ktolcounter+1
+          print *, ktolcounter
+       end do
+   !    do while (ktolcounter < ktol)
+   !       do ie=nets,nete
+   !         elem(ie)%state%v(:,:,:,:,nm1)= dampfac*elem(ie)%state%v(:,:,:,:,n0) &
+   !         +(1.d0-dampfac)*elem(ie)%state%v(:,:,:,:,np1)
+   !         elem(ie)%state%theta(:,:,:,nm1)= dampfac*elem(ie)%state%theta(:,:,:,n0) &
+   !         +(1.d0-dampfac)*elem(ie)%state%theta(:,:,:,np1)
+   !         elem(ie)%state%dp3d(:,:,:,nm1)= dampfac*elem(ie)%state%dp3d(:,:,:,n0) &
+   !         +(1.d0-dampfac)*elem(ie)%state%dp3d(:,:,:,np1) 
+   !         elem(ie)%state%w(:,:,:,nm1)= elem(ie)%state%w(:,:,:,nm1) &
+   !         +(1.d0-dampfac)* elem(ie)%state%w(:,:,:,np1)
+   !         elem(ie)%state%phi(:,:,:,nm1)= dampfac*elem(ie)%state%phi(:,:,:,nm1) &
+   !         +(1.d0-dampfac)* elem(ie)%state%phi(:,:,:,np1)
+   !       enddo
+   !       call compute_and_apply_rhs(np1,nm1,np1,qn0,dampfac*dt,elem,hvcoord,hybrid,&
+   !         deriv,nets,nete,.false.,0d0)   
+   !       ktolcounter=ktolcounter+1
+   !       print *, ktolcounter
+   !    end do
+       call t_stopf("LF_timestep")
+    else if (method == 8) then ! use BDF2
+       call t_startf("LF_timestep")
 
-
+       if (tl%nm1 == 0) then
+          call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       else
+          call compute_and_apply_rhs(np1,n0,n0,qn0,0.d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       end if
+       ktol=100
+       ktolcounter=1
+       dampfac=1d-4
+   !    print *, 'hey'
+   !   classic fixed point iteration
+       do ie=nets,nete
+         elem(ie)%state%v(:,:,:,:,n0)= dampfac*elem(ie)%state%v(:,:,:,:,nm1)/3.d0  &
+          +4.d0*elem(ie)%state%v(:,:,:,:,n0)/3.d0
+         elem(ie)%state%theta(:,:,:,n0)= dampfac*elem(ie)%state%theta(:,:,:,nm1)/3.d0   &
+          +4.d0*elem(ie)%state%theta(:,:,:,n0)/3.d0
+         elem(ie)%state%dp3d(:,:,:,n0)= dampfac*elem(ie)%state%dp3d(:,:,:,nm1)/3.d0 &
+          +4.d0*elem(ie)%state%dp3d(:,:,:,n0)/3.d0
+         elem(ie)%state%w(:,:,:,n0)= elem(ie)%state%w(:,:,:,nm1)/3.d0 &
+          +4.d0* elem(ie)%state%w(:,:,:,n0)/3.d0
+         elem(ie)%state%phi(:,:,:,n0)= dampfac*elem(ie)%state%phi(:,:,:,nm1)/3.d0 &
+          +4.d0* elem(ie)%state%phi(:,:,:,np1)/3.d0
+       enddo
+       do while ( ktolcounter < ktol)
+          call compute_and_apply_rhs(np1,n0,np1,qn0,2.d0*dt/3.d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+          ktolcounter=ktolcounter+1
+          print *, ktolcounter
+       end do
+       call t_stopf("LF_timestep")
+    else if (method == 9) then ! trapezoidal method
+       call t_startf("LF_timestep")
+       if (tl%nm1 == 0) then
+          call compute_and_apply_rhs(np1,n0,n0,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       else
+          call compute_and_apply_rhs(np1,n0,n0,qn0,0.d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       end if
+       ktol=20
+       ktolcounter=1
+       dampfac=1d-4
+       print *, 'hey'
+   !   classic fixed point iteration
+       do while ( ktolcounter < ktol)
+          call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+              deriv,nets,nete,.false.,0d0)
+          ktolcounter=ktolcounter+1
+          print *, ktolcounter
+       end do
+       call t_stopf("LF_timestep")
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
@@ -814,6 +916,8 @@ contains
   
   real (kind=real_kind) :: v_gradw(np,np,nlev)     
   real (kind=real_kind) :: v_gradtheta(np,np,nlev)     
+  real (kind=real_kind) :: v_theta(np,np,2)
+  real (kind=real_kind) :: div_v_theta(np,np)
   real (kind=real_kind) :: v_gradphi(np,np,nlev)
   real (kind=real_kind) :: v_gradKE(np,np,nlev)     
   real (kind=real_kind) :: vdp(np,np,2,nlev)
@@ -1042,24 +1146,22 @@ contains
         elem(ie)%accum%P2=0
         ! See element_state.F90 for an account of what these variables are defined as
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,vtemp,KE,d_eta_dot_dpdn_dn)
+!$omp parallel do private(k,i,j,v1,v2,vtemp,KE,d_eta_dot_dpdn_dn,v_theta,div_v_theta)
 #endif
         do k =1,nlev
+          v_theta(:,:,1) = cp*dp3d(:,:,k)*                             &
+          elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%state%theta(:,:,k,n0)
+          v_theta(:,:,2) = cp*dp3d(:,:,k)*                             &
+          elem(ie)%state%v(:,:,2,k,n0)*elem(ie)%state%theta(:,:,k,n0)
+          div_v_theta(:,:)=divergence_sphere(v_theta(:,:,:),           &
+          deriv,elem(ie))
           do j=1,np
             do i=1,np                
-                  d_eta_dot_dpdn_dn=0.5*(eta_dot_dpdn(i,j,k+1)-                &
+                  d_eta_dot_dpdn_dn=(eta_dot_dpdn(i,j,k+1)-                    &
                   eta_dot_dpdn(i,j,k))
                !  Form KEhoriz1
                   elem(ie)%accum%KEhoriz1(i,j)=elem(ie)%accum%KEhoriz1(i,j)    &
                   -v_gradKE(i,j,k)*dp3d(i,j,k) - KE(i,j,k)*divdp(i,j,k)
-               !    print*, v_gradKE(i,j,k), dp3d(i,j,k), divdp(i,j,k)
-               !   v1 = elem(ie)%state%v(i,j,1,k,n0)
-               !   v2 = elem(ie)%state%v(i,j,2,k,n0)
-               !   print*, 'v1',  elem(ie)%state%v(i,j,1,k,n0)
-               !   print*, 'v2',  elem(ie)%state%v(i,j,2,k,n0)
-               !   print*, 'KE',  KE(i,j,k)
-               !  print*, 'gradKE', gradKE(i,j,1,k), gradKE(i,j,2,k)
-               !  Form KE1,KE2
                   elem(ie)%accum%KE1(i,j)=elem(ie)%accum%KE1(i,j)              &
                   -v_gradKE(i,j,k)*dp3d(i,j,k) 
                   elem(ie)%accum%KE2(i,j)=elem(ie)%accum%KE2(i,j)              &
@@ -1069,7 +1171,7 @@ contains
                   dp3d(i,j,k) * elem(ie)%state%w(i,j,k,n0) * v_gradw(i,j,k)    &
                   -0.5*(elem(ie)%state%w(i,j,k,n0))**2 * divdp(i,j,k) 
                !  Form KEvert1
-                  elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j)+     &
+                  elem(ie)%accum%KEvert1(i,j)=elem(ie)%accum%KEvert1(i,j)-     &
                   (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &
                   elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k))*dp3d(i,j,k)-  &      
                   0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
@@ -1087,26 +1189,25 @@ contains
                   -phi(i,j,k)*divdp(i,j,k) - dp3d(i,j,k)*v_gradphi(i,j,k)      
                !  Form PEvert1
                   elem(ie)%accum%PEvert1(i,j) = (elem(ie)%accum%PEvert1(i,j))   &
-                  -phi(i,j,k)*eta_dot_dpdn(i,j,k)                               &
+                  -phi(i,j,k)*d_eta_dot_dpdn_dn                                 &
                   -dp3d(i,j,k)*s_vadv(i,j,k,3)
                !  Form T1
                   elem(ie)%accum%T1(i,j)=elem(ie)%accum%T1(i,j)                 &
                   -elem(ie)%state%theta(i,j,k,n0)                               &
                   *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
-                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))*dp3d(i,j,k)             
-               !   print *, 'gradexner', gradexner(i,j,1,k), gradexner(i,j,2,k)
+                  gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))*cp*          &
+                  dp3d(i,j,k)
                !  Form S1 
                   elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
-                  -exner(i,j,k)*(dp3d(i,j,k)*v_gradtheta(i,j,k)+                &
-                  elem(ie)%state%theta(i,j,k,n0)* divdp(i,j,k))
+                  -exner(i,j,k)*div_v_theta(i,j)
                !  Form T2 
                   elem(ie)%accum%T2(i,j)=elem(ie)%accum%T2(i,j)+                & 
                   (g*(elem(ie)%state%w(i,j,k,n0))-                              &
-                  v_gradphi(i,j,k))*dp3d(i,j,k)                                 
+                  v_gradphi(i,j,k))*dpnh(i,j,k)                                 
                !  Form S2
                   elem(ie)%accum%S2(i,j)=elem(ie)%accum%S2(i,j)                 &
                   -(g*(elem(ie)%state%w(i,j,k,n0))-v_gradphi(i,j,k))            &
-                  *dp3d(i,j,k)
+                  *dpnh(i,j,k)
                !  Form P1
                   elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j)                 &
                   -g*(elem(ie)%state%w(i,j,k,n0)) * dp3d(i,j,k)

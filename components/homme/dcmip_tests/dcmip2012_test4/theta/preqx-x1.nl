@@ -1,5 +1,5 @@
 &ctl_nl
-theta_hydrostatic_mode = .false.
+theta_hydrostatic_mode = .true.
 dcmip4_moist  = 0
 dcmip4_X      = 1.0
 vert_num_threads = 1
@@ -11,11 +11,11 @@ u_perturb = 1
 rotate_grid = 0
 ne=30
 qsize = 0
-nmax = 2592000
-statefreq=24000
+ndays = 15
+statefreq=288
 runtype       = 0
 mesh_file='/dev/null'
-tstep=0.5
+tstep=300
 rsplit=3
 qsplit = 1
 tstep_type = 5
@@ -53,14 +53,14 @@ profile_single_file             = .true.
 ! interp_nlon = 1024
  interp_gridtype=2
 
- output_timeunits=1              ! 1 is days, 2- hours, 0 - tsteps
+ output_timeunits=1              ! 1- days, 2 hours, 0 - tsteps
  output_frequency=1
  output_start_time=7
- output_end_time=30
+ output_end_time=3000
  output_varnames1='ps','zeta','u','v','T'
  io_stride=8
  output_type = 'netcdf'
- output_prefix= 'nonhydro-X1-'
+ output_prefix = 'preqx-X1-'
 /
 
 

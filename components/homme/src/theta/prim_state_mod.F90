@@ -126,9 +126,9 @@ contains
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
-    real (kind=real_kind) :: KEvert,IEvert,PEvert,T1,T2,S1,S2,P1,P2
+    real (kind=real_kind) :: KEvertu,KEvertw,IEvert,PEvert,T1,T2,S1,S2,P1,P2
     real (kind=real_kind) :: KEhorz,KEhorz2,PEhorz,IEhorz,KEH1,KEH2
-    real (kind=real_kind) :: ddt_tot,ddt_diss
+    real (kind=real_kind) :: ddt_tot,ddt_diss_tot,ddt_diss
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
     
@@ -502,10 +502,17 @@ contains
     KEhorz2 = KEhorz2*scale
 
     do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%KEvert1 + elem(ie)%accum%KEvert2
+       tmp(:,:,ie) = elem(ie)%accum%KEvert1
     enddo
-    KEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    KEvert = KEvert*scale
+    KEvertu = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEvertu = KEvertu*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%KEvert2
+    enddo
+    KEvertw = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    KEvertw = KEvertw*scale
+
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert1 
@@ -585,7 +592,7 @@ contains
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
           write(iulog,'(a,2e22.14)')'horiz adv KE-u terms abs/rel, should = 0 :',KEhorz, abs(KEH1+KEH2)/dsqrt(KEH1**2+KEH2**2)
           write(iulog,'(a,2e22.14)')'horiz adv KE-u terms, should+to 0        :',KEH1,KEH2
-          write(iulog,'(a,2e22.14)')'vert adv etadot KE-uw terms = 0          :',KEvert
+          write(iulog,'(a,2e22.14)')'vert adv etadot KE-u,w terms = 0         :',KEvertu,KEvertw
           write(iulog,'(a,2e22.14)')'horiz adv KE-w terms, possibly nonzero   :',KEhorz2
           write(iulog,'(a,2e22.14)')'Tot IE advection vert =0                 :',IEvert
           write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert = 0         :',PEhorz,PEvert       
@@ -594,16 +601,21 @@ contains
           write(iulog,'(a,2e22.14)')'(T2+S2 = 0)                              :',T2+S2
           
           ddt_tot =  (KEner(2)-KEner(1))/(dt)
-          ddt_diss = ddt_tot -(KEhorz+KEhorz2+KEvert+T1+T2+P1) 
+          ddt_diss_tot = ddt_tot -(KEhorz+KEhorz2+KEvertu+KEvertw+T1+T2+P1) 
+         ddt_diss = ddt_tot -(T1+T2+P1)
           write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
+          write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
           
           ddt_tot =  (IEner(2)-IEner(1))/(dt)
           ddt_diss = ddt_tot - (S1+S2+IEVert)
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
+   !       write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
           
           ddt_tot = (PEner(2)-PEner(1))/(dt)
-          ddt_diss = ddt_tot - (PEhorz+PEvert+P2)
+          ddt_diss_tot = ddt_tot - (PEhorz+PEvert+P2)
+          ddt_diss = ddt_tot - (P2)
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
+          write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
 #else
           write(iulog,'(a,3E22.14)') "KE,d/dt      ",KEner(2),(KEner(2)-KEner(1))/(dt)
           write(iulog,'(a,3E22.14)') "IE,d/dt      ",IEner(2),(IEner(2)-IEner(1))/(dt)

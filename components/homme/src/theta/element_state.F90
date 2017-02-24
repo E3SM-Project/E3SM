@@ -78,7 +78,7 @@ module element_state
     ! Energy equation:
     ! KE_t  = KE1 + KE2 + KEhoriz2 +  KEvert1 + KEvert2 + P1 + T1 + T2 + D1 + Err
     ! IE_t  = S1 + S2 + IEvert1 + d(p dphi/dt)/deta + ptop dphitop/dt + D2 
-    ! PE_t  = PEhoriz1 + PEvert1 + P1
+    ! PE_t  = PEhoriz1 + PEvert1 + P2
     !
     ! d(p dphi/dt)/deta + ptop dphitop/dt should vertically integrate to zero
     !
