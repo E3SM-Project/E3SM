@@ -19,8 +19,7 @@ before_install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
+  - conda config --set anaconda_upload no
 
   - conda install python=$TRAVIS_PYTHON_VERSION cdp cdms2 unidata -c conda-forge -c uvcdat -y
   - export UVCDAT_ANONYMOUS_LOG=False
