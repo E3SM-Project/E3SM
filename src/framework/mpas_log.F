@@ -125,7 +125,7 @@ module mpas_log
       character(len=StrKind) :: fileName
       integer :: err_tmp
 
-      err = 0
+      err_tmp = 0
 
       ! Create log instance
       allocate(coreLogInfo)
@@ -337,7 +337,7 @@ module mpas_log
       character(len=10) :: time
       logical :: alreadyOpen
 
-      err = 0
+      err_tmp = 0
 
       thisIsOutputLog = .true.
       alreadyOpen = .false.
@@ -367,7 +367,9 @@ module mpas_log
          if ( err_tmp /= 0 ) then
             call mpas_dmpar_global_abort('ERROR: Opening of log file failed for filename: ' // logFileInfo % fileName)
          endif
-         err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error
+         if (present(err)) then
+            err = ior(err, err_tmp)  ! This is unnecessary because we just die with an error
+         end if
          ! TODO: revisit if we can relax the decision to die immediately here.
 
          logFileInfo % isOpen = .true.
