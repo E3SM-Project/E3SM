@@ -1,0 +1,21 @@
+machine:
+  environment:
+    PATH: ${HOME}/miniconda/bin:${PATH}
+  pre:
+    - sudo apt-get update
+    - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - ${HOME}/miniconda/bin/conda config --set always_yes yes --set changeps1 no
+    - ${HOME}/miniconda/bin/conda update -q conda
+    - ${HOME}/miniconda/bin/conda config --set anaconda_upload no
+
+dependencies:
+  override:
+    - ${HOME}/miniconda/bin/conda install python=2.7.13 cdp cdms2 unidata -c conda-forge -c uvcdat -y
+    - export UVCDAT_ANONYMOUS_LOG=False
+    - python setup.py install
+
+test:
+  override:
+    - PATH=${HOME}/miniconda/bin:${PATH} UVCDAT_ANONYMOUS_LOG=False bash ./tests/test.sh
+    - PATH=${HOME}/miniconda/bin:${PATH} if [ $? == 0 -a $CIRCLE_BRANCH == "master" ]; then bash ./conda/conda_upload.sh ; fi
