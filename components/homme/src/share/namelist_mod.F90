@@ -451,6 +451,7 @@ module namelist_mod
            test_case(1:10)== "baroclinic"     .or. &
            test_case(1:13)== "jw_baroclinic"  .or. &
            test_case(1:5) == "dcmip"          .or. &
+           test_case(1:5) == "mtest"          .or. &
            test_case(1:4) == "asp_")  then
          write(iulog,*) "reading vertical namelist..."
 
