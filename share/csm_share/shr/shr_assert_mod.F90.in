@@ -16,6 +16,8 @@ use shr_log_mod, only: &
 
 use shr_infnan_mod, only: shr_infnan_isnan
 
+use shr_strconvert_mod, only: toString
+
 implicit none
 private
 save
@@ -66,38 +68,64 @@ end interface
 
 contains
 
-subroutine shr_assert(var, msg)
+subroutine shr_assert(var, msg, file, line)
 
-  ! Logical being asserted.
+  ! Logical being asserted
   logical, intent(in) :: var
-  ! Optional error message if assert fails.
-  character(len=*), intent(in) :: msg
+  ! Optional error message if assert fails
+  character(len=*), intent(in), optional :: msg
+  ! Optional file and line of the caller, written out if given
+  ! (line is ignored if file is absent)
+  character(len=*), intent(in), optional :: file
+  integer         , intent(in), optional :: line
 
-  if (.not. var) call shr_sys_abort(msg)
+  character(len=:), allocatable :: full_msg
+
+  if (.not. var) then
+     full_msg = 'ERROR'
+     if (present(file)) then
+        full_msg = full_msg // ' in ' // trim(file)
+        if (present(line)) then
+           full_msg = full_msg // ' at line ' // toString(line)
+        end if
+     end if
+     if (present(msg)) then
+        full_msg = full_msg // ': ' // msg
+     end if
+     call shr_sys_abort(full_msg)
+  end if
 
 end subroutine shr_assert
 
 ! DIMS 1,2,3,4,5,6,7
-subroutine shr_assert_all_{DIMS}d(var, msg)
+subroutine shr_assert_all_{DIMS}d(var, msg, file, line)
 
-  ! Logical being asserted.
+  ! Logical being asserted
   logical, intent(in) :: var{DIMSTR}
-  ! Optional error message if assert fails.
-  character(len=*), intent(in) :: msg
+  ! Optional error message if assert fails
+  character(len=*), intent(in), optional :: msg
+  ! Optional file and line of the caller, written out if given
+  ! (line is ignored if file is absent)
+  character(len=*), intent(in), optional :: file
+  integer         , intent(in), optional :: line
 
-  call shr_assert(all(var), msg)
+  call shr_assert(all(var), msg=msg, file=file, line=line)
 
 end subroutine shr_assert_all_{DIMS}d
 
 ! DIMS 1,2,3,4,5,6,7
-subroutine shr_assert_any_{DIMS}d(var, msg)
+subroutine shr_assert_any_{DIMS}d(var, msg, file, line)
 
-  ! Logical being asserted.
+  ! Logical being asserted
   logical, intent(in) :: var{DIMSTR}
-  ! Optional error message if assert fails.
-  character(len=*), intent(in) :: msg
+  ! Optional error message if assert fails
+  character(len=*), intent(in), optional :: msg
+  ! Optional file and line of the caller, written out if given
+  ! (line is ignored if file is absent)
+  character(len=*), intent(in), optional :: file
+  integer         , intent(in), optional :: line
 
-  call shr_assert(any(var), msg)
+  call shr_assert(any(var), msg=msg, file=file, line=line)
 
 end subroutine shr_assert_any_{DIMS}d
 

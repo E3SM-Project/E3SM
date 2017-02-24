@@ -224,8 +224,8 @@ contains
     !-----------------------------------------------------------------------
 
     npts = size(glc_elevclass)
-    SHR_ASSERT((size(glc_ice_covered) == npts), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT((size(glc_topo) == npts), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL((size(glc_ice_covered) == npts), __FILE__, __LINE__)
+    SHR_ASSERT_FL((size(glc_topo) == npts), __FILE__, __LINE__)
 
     do glc_pt = 1, npts
        if (abs(glc_ice_covered(glc_pt) - 1._r8) < ice_covered_tol) then
@@ -287,7 +287,7 @@ contains
     character(len=*), parameter :: subname = 'map_bare_land'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT(associated(data_g_bare_land), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL(associated(data_g_bare_land), __FILE__, __LINE__)
 
     lsize_g = size(data_g_bare_land)
     elevclass_as_string = glc_elevclass_as_string(0)
@@ -379,7 +379,7 @@ contains
     !-----------------------------------------------------------------------
 
     lsize_g = size(data_g_thisEC)
-    SHR_ASSERT((size(topo_g) == lsize_g), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_FL((size(topo_g) == lsize_g), __FILE__, __LINE__)
 
     ! ------------------------------------------------------------------------
     ! Create temporary attribute vectors
