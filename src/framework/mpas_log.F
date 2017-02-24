@@ -927,3 +927,57 @@ module mpas_log
 
 
 end module mpas_log
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! C interface routines for building streams at run-time
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!***********************************************************************
+!
+!  routine mpas_log_write_c
+!
+!> \brief   Wrapper to mpas_log_write for C code
+!> \author  Michael Duda
+!> \date    24 February 2017
+!> \details
+!>  This routine writes a message to the log file, and is intended to be
+!>  called from C code.
+!>
+!>  This routine should be declared in C code with:
+!>      void mpas_log_write_c(const char *message_c);
+!>
+!>  To call this routine from C, e.g.,
+!>      char msgbuf[MSGSIZE];
+!>      sprintf(msgbuf, "%s\n", "Here is a test message from C...");
+!>      mpas_log_write_c(msgbuf);
+!
+!-----------------------------------------------------------------------
+subroutine mpas_log_write_c(message_c) bind(c)
+
+   use mpas_c_interfacing, only : mpas_c_to_f_string
+   use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
+   use mpas_log, only : mpas_log_write
+   use mpas_kind_types, only : StrKIND
+
+   implicit none
+
+   !-----------------------------------------------------------------
+   ! input variables
+   !-----------------------------------------------------------------
+   character(kind=c_char), intent(in) :: message_c(*)
+
+   !-----------------------------------------------------------------
+   ! local variables
+   !-----------------------------------------------------------------
+   character(len=StrKIND) :: message
+
+
+   call mpas_c_to_f_string(message_c, message)
+
+   call mpas_log_write(message)
+
+end subroutine mpas_log_write_c
