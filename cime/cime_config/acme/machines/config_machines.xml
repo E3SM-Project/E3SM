@@ -1457,56 +1457,26 @@
                          if compiler and mpilib condition applies -->
       <!-- Always execute -->
       <modules>
-<!--        <command name="purge"></command>
-
-        <command name="load">eswrap</command>
-        <command name="load">PrgEnv-pgi cray-mpich</command>
-        <command name="add">craype-interlagos</command>
-        <command name="add">DefApps site-aprun</command>
-        <command name="add">aprun-usage altd</command>
-        <command name="load">cmake/2.8.10.2</command>
--->
-        <!-- reinstate old section -->
-        <command name="rm">PrgEnv-intel</command>
-        <command name="rm">pgi</command>
-        <command name="rm">PrgEnv-pgi</command>
-        <command name="rm">PrgEnv-cray</command>
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="rm">PrgEnv-pathscale</command>
-        <command name="rm">intel</command>
-        <command name="rm">pgi</command>
-        <command name="rm">gcc</command>
-        <command name="rm">cray</command>
-        <command name="rm">pathscale</command>
-        <command name="rm">parallel-netcdf</command>
-        <command name="rm">netcdf</command>
-        <command name="rm">cray-mpich</command>
-        <command name="rm">cray-mpich2</command>
-        <command name="rm">cray-libsci</command>
-        <command name="rm">esmf</command>
-        <command name="rm">atp</command>
-        <command name="rm">cudatoolkit</command>
-        <command name="rm">xt-libsci</command>
-        <command name="rm">cray-netcdf</command>
-        <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="rm">cray-parallel-netcdf</command>
-        <command name="rm">subversion</command>
-        <command name="rm">cmake</command>
-        <command name="rm">python</command>
-
         <command name="load">python/2.7.9</command>
+        <command name="unload">subversion</command>
         <command name="load">subversion/1.8.3</command>
+        <command name="unload">cmake</command>
         <command name="load">cmake/2.8.10.2</command>
-        -->
       </modules>
 
       <modules compiler="pgiacc"> <!-- changing pgi_acc to pgiacc -->
         <command name="use">/ccs/home/norton/.modules</command>
-	      <command name="load">PrgEnv-pgi</command>
-	      <command name="switch">pgi pgi/15.9.lustre</command>
-        <command name="rm">cray-mpich/7.4.0</command>
-        <command name="rm">cray-libsci/16.06.1</command>
-        <command name="rm">atp/2.0.2</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-pathscale</command>
+        <command name="load">PrgEnv-pgi</command>
+        <command name="switch">pgi pgi/15.9.lustre</command>
+        <command name="rm">cray-mpich</command>
+        <command name="rm">cray-libsci</command>
+        <command name="rm">atp</command>
+        <command name="rm">esmf</command>
+        <command name="rm">cudatoolkit</command>
         <command name="load">cray-mpich/7.4.0</command>
         <command name="load">cray-libsci/16.06.1</command>
         <command name="load">atp/2.0.2</command>
@@ -1514,11 +1484,16 @@
         <command name="load">cudatoolkit</command>
       </modules>
       <modules compiler="pgi">
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-pathscale</command>
         <command name="load">PrgEnv-pgi</command>
         <command name="switch">pgi pgi/15.7.0</command>
-        <command name="rm">cray-mpich/7.4.0</command>
-        <command name="rm">cray-libsci/16.06.1</command>
-        <command name="rm">atp/2.0.2</command>
+        <command name="rm">cray-mpich</command>
+        <command name="rm">cray-libsci</command>
+        <command name="rm">atp</command>
+        <command name="rm">esmf</command>
         <command name="load">cray-mpich/7.4.0</command>
         <command name="load">cray-libsci/16.06.1</command>
         <command name="load">atp/2.0.2</command>
@@ -1526,11 +1501,14 @@
       </modules>
       <modules compiler="intel">
         <command name="rm">PrgEnv-pgi</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-pathscale</command>
         <command name="load">PrgEnv-intel</command>
-        <command name="rm">intel/15.0.2.164</command>
-        <command name="rm">cray-libsci/16.06.1</command>
-        <command name="rm">cray-mpich/7.4.0</command>
-        <command name="rm">atp/2.0.2</command>
+        <command name="rm">intel</command>
+        <command name="rm">cray-libsci</command>
+        <command name="rm">cray-mpich</command>
+        <command name="rm">atp</command>
         <command name="load">intel/15.0.2.164</command>
         <command name="load">cray-libsci/16.06.1</command>
         <command name="load">cray-mpich/7.4.0</command>
@@ -1538,9 +1516,12 @@
       </modules>
       <modules compiler="cray">
         <command name="rm">PrgEnv-pgi</command>
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-intel</command>
+        <command name="rm">PrgEnv-pathscale</command>
         <command name="load">PrgEnv-cray</command>
-        <command name="rm">cce/8.5.0</command>
-        <command name="rm">cray-mpich/7.4.0</command>
+        <command name="rm">cce</command>
+        <command name="rm">cray-mpich</command>
         <command name="load">cce/8.5.0</command>
         <command name="load">cray-mpich/7.4.0</command>
       </modules>
@@ -1554,10 +1535,10 @@
       </modules>
       <!-- Default -->
       <!--
-                                         set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
-                                         if($status == 0) then
-                                -->
-       <environment_variables>
+       set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+       if($status == 0) then
+      -->
+      <environment_variables>
         <env name="COMPILER">$COMPILER</env>
         <env name="MPILIB">$MPILIB</env>
         <env name="CESM_REPO">$CESM_REPO</env>
