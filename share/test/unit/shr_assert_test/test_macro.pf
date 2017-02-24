@@ -19,8 +19,20 @@ subroutine macro_assert_can_fail()
   SHR_ASSERT(.false., "Expected failure.")
   ! When this was written, the preprocessor did not recognize this assert,
   ! so call it directly instead of using an "@".
-  call assertExceptionRaised("ABORTED: Expected failure.")
+  call assertExceptionRaised("ABORTED: ERROR: Expected failure.")
 end subroutine macro_assert_can_fail
+
+@Test
+subroutine macro_assert_fl()
+  SHR_ASSERT_FL(.false., "my_file", 42)
+  call assertExceptionRaised("ABORTED: ERROR in my_file at line 42")
+end subroutine macro_assert_fl
+
+@Test
+subroutine macro_assert_mfl()
+  SHR_ASSERT_MFL(.false., "Expected failure.", "my_file", 42)
+  call assertExceptionRaised("ABORTED: ERROR in my_file at line 42: Expected failure.")
+end subroutine macro_assert_mfl
 
 @Test
 subroutine macro_assert_all_can_pass()
@@ -32,8 +44,20 @@ subroutine macro_assert_all_can_fail()
   SHR_ASSERT_ALL(([.true., .false.]), "Expected failure.")
   ! When this was written, the preprocessor did not recognize this assert,
   ! so call it directly instead of using an "@".
-  call assertExceptionRaised("ABORTED: Expected failure.")
+  call assertExceptionRaised("ABORTED: ERROR: Expected failure.")
 end subroutine macro_assert_all_can_fail
+
+@Test
+subroutine macro_assert_all_fl()
+  SHR_ASSERT_ALL_FL(([.true., .false.]), "my_file", 42)
+  call assertExceptionRaised("ABORTED: ERROR in my_file at line 42")
+end subroutine macro_assert_all_fl
+
+@Test
+subroutine macro_assert_all_mfl()
+  SHR_ASSERT_ALL_MFL(([.true., .false.]), "Expected failure.", "my_file", 42)
+  call assertExceptionRaised("ABORTED: ERROR in my_file at line 42: Expected failure.")
+end subroutine macro_assert_all_mfl
 
 @Test
 subroutine macro_assert_any_can_pass()
@@ -45,8 +69,19 @@ subroutine macro_assert_any_can_fail()
   SHR_ASSERT_ANY(([.false., .false.]), "Expected failure.")
   ! When this was written, the preprocessor did not recognize this assert,
   ! so call it directly instead of using an "@".
-  call assertExceptionRaised("ABORTED: Expected failure.")
+  call assertExceptionRaised("ABORTED: ERROR: Expected failure.")
 end subroutine macro_assert_any_can_fail
 
+@Test
+subroutine macro_assert_any_fl()
+  SHR_ASSERT_ANY_FL(([.false., .false.]), "my_file", 42)
+  call assertExceptionRaised("ABORTED: ERROR in my_file at line 42")
+end subroutine macro_assert_any_fl
+
+@Test
+subroutine macro_assert_any_mfl()
+  SHR_ASSERT_ANY_MFL(([.false., .false.]), "Expected failure.", "my_file", 42)
+  call assertExceptionRaised("ABORTED: ERROR in my_file at line 42: Expected failure.")
+end subroutine macro_assert_any_mfl
 
 end module test_macro
