@@ -7,7 +7,8 @@
       "ref_name": "MERRA",
       "reference_name": "MERRA",
       "season": ["ANN"],
-      "levels": [200.0,850]
+      "levels": [200.0,850],
+      "region": ["TROPICS","global"]
 		}
           ]
 	

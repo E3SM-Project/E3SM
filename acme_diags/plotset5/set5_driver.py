@@ -101,31 +101,36 @@ for parameter in parameters:
     
             for region in regions: 
                 print region
+                domain = None
                 if region != 'global':
                     domain = regions_specs[region]['domain']
                     # below 7 lines are temporary solution for the cdutil error
-                    unit0 = mv1.units
-                    mv1 = mv1(domain)
-                    mv2 = mv2(domain)
-                    mv1.units = unit0
-                    mv2.units = unit0
-                    parameter.output_file = '_'.join([ref_name, season,region])
-                    parameter.main_title = str(' '.join([var, season]))
+                mv1_domain = mv1(domain)
+                mv2_domain = mv2(domain)
+                mv1_domain.units = mv1.units
+                mv2_domain.units = mv2.units
+                parameter.output_file = '_'.join([ref_name, season,region])
+                parameter.main_title = str(' '.join([var, season]))
         
-                else:
-                    parameter.output_file = '_'.join([ref_name, season])
-                    parameter.main_title = str(' '.join([var, season]))
+                #else:
+                #    
+                #    parameter.output_file = '_'.join([ref_name, season])
+                #    parameter.main_title = str(' '.join([var, season]))
+
+                #parameter.output_file = '_'.join([ref_name, season,region])
+                #parameter.main_title = str(' '.join([var, season]))
+        
     
-                    #regrid towards lower resolution of two variables for calculating difference
-                    mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
+                #regrid towards lower resolution of two variables for calculating difference
+                mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
-                    if var is 'SST': #special case
+                if var is 'SST': #special case
 
-                        land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
-                        mv1_reg = MV2.masked_where(land_mask, mv1_reg)
-                        mv2_reg = MV2.masked_where(land_mask, mv2_reg)
+                    land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
+                    mv1_reg = MV2.masked_where(land_mask, mv1_reg)
+                    mv2_reg = MV2.masked_where(land_mask, mv2_reg)
            
-                    plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
+                plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
  
     
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
@@ -173,32 +178,26 @@ for parameter in parameters:
 
                 if len(regions) == 0:
                     regions = ['global']
-        
+    
                 for region in regions: 
                     print region
+                    domain = None
                     if region != 'global':
                         domain = regions_specs[region]['domain']
                         # below 7 lines are temporary solution for the cdutil error
-                        unit0 = mv1.units
-                        mv1 = mv1(domain)
-                        mv2 = mv2(domain)
-                        mv1.units = unit0
-                        mv2.units = unit0
-                        parameter.output_file = '_'.join([ref_name, season,region,var, str(int(plev[ilev])), 'mb'])
-                        parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))
-            
-                    else:
-                        parameter.output_file = '_'.join([ref_name, season,var, str(int(plev[ilev])), 'mb'])
-                        parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))
+                    mv1_domain = mv1(domain)
+                    mv2_domain = mv2(domain)
+                    mv1_domain.units = mv1.units
+                    mv2_domain.units = mv2.units
 
-#                parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', it]))
-#                parameter.output_file = str('_'.join([ref_name,it, str(int(plev[ilev]))]))
+                    parameter.output_file = '_'.join([ref_name, season,region,var, str(int(plev[ilev])), 'mb'])
+                    parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))
 
                     # Regrid towards lower resolution of two variables for calculating difference
-                    mv1_reg, mv2_reg = regrid_to_lower_res(mv1, mv2, parameter.regrid_tool, parameter.regrid_method)
+                    mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                     # Plotting
-                    plot_set_5.plot(mv2, mv1, mv2_reg, mv1_reg, parameter)
+                    plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
         
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
