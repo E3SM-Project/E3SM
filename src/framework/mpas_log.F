@@ -448,6 +448,8 @@ module mpas_log
    subroutine mpas_log_write(message, messageType, masterOnly, flushNow, &
                  intArgs, realArgs, expArgs, logicArgs, err)
 
+      use mpas_threading
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -481,6 +483,7 @@ module mpas_log
       logical :: masterOnlyWrite  !< local version of masterOnly
       integer :: messageTypeHere !< local version of messageType
       character(len=16) :: messagePrefix  !< the "keyword" prepended before some message types
+      character(len=32) :: messageExtendedPrefix  !< the thread number plus "keyword" prepended before some message types
       logical :: flushLog !< Local variable determining if the output log should be flushed
       character(len=strKind) :: messageExpanded !< message after expansion of $ variable insertions
 
@@ -520,6 +523,12 @@ module mpas_log
          ! TODO handle this error?
       end select
 
+      if (mpas_threading_in_parallel()) then
+         write(messageExtendedPrefix,'(a,i4.4,a)') '[THREAD ', mpas_threading_get_thread_num(), ']'//trim(messagePrefix)
+      else
+         write(messageExtendedPrefix,'(a)') trim(messagePrefix)
+      end if
+
       ! Write message to standard log file
       !   Accounting for debug/optimized settings (logActive)
       !   Accounting for optional head-node-only argument
@@ -529,11 +538,8 @@ module mpas_log
             ! --- Actually write the message here! ---
             !    We have to treat MPAS_LOG_OUT messages separately from others because that type
             !    does not have a prefix and we want to add a space after the trimmed prefix for other types.
-            if (messageTypeHere == MPAS_LOG_OUT) then
-               write(mpas_log_info % outputLog % unitNum, '(a)') trim(messageExpanded)
-            else
-               write(mpas_log_info % outputLog % unitNum, '(a,a,a)') trim(messagePrefix), ' ', trim(messageExpanded)
-            endif
+!$OMP CRITICAL (mpas_log_write)
+            write(mpas_log_info % outputLog % unitNum, '(a,a,a)') trim(messageExtendedPrefix), ' ', trim(messageExpanded)
 
             ! Optionally flush the buffer (only attempt if the file is active)
             if (present(flushNow)) then
@@ -560,7 +566,7 @@ module mpas_log
             case default
                ! TODO handle this error? (would have encountered it above...)
             end select
-
+!$OMP END CRITICAL (mpas_log_write)
 
          endif
       endif
@@ -572,6 +578,7 @@ module mpas_log
          if ( ( ((masterOnlyWrite) .and. (mpas_log_info % taskID == 0)) .or. (.not. masterOnlyWrite)) .and. &  ! Check masterOnly
                mpas_log_info % errorLog % isActive ) then ! By default, all error logs are active, but a core could override that!
 
+!$OMP CRITICAL (mpas_log_critical_write)
             ! if err file is not already open, we need to open it
             if (.not. mpas_log_info % errorLog % isOpen) then
                call mpas_log_open(openErrorFile = .true., err = ierr_tmp)
@@ -579,7 +586,7 @@ module mpas_log
             endif
 
             ! Now we need to repeat the message to the err file
-            write(mpas_log_info % errorLog % unitNum, '(a,a,a)') trim(messagePrefix), ' ', trim(messageExpanded)
+            write(mpas_log_info % errorLog % unitNum, '(a,a,a)') trim(messageExtendedPrefix), ' ', trim(messageExpanded)
             flush(mpas_log_info % errorLog % unitNum)  ! Error messages are flushed immediately!
 
             ! If this is a critical error, we need to kill the model
@@ -587,6 +594,7 @@ module mpas_log
                ! Now abort
                call log_abort()
             endif
+!$OMP END CRITICAL (mpas_log_critical_write)
 
          endif
       endif

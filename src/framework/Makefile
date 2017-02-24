@@ -60,7 +60,7 @@ mpas_abort.o: mpas_kind_types.o mpas_io_units.o mpas_threading.o
 
 mpas_constants.o: mpas_kind_types.o
 
-mpas_log.o: mpas_derived_types.o mpas_io_units.o mpas_abort.o
+mpas_log.o: mpas_derived_types.o mpas_io_units.o mpas_abort.o mpas_threading.o
 
 mpas_attlist.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o
 
