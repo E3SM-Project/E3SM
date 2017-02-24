@@ -31,7 +31,7 @@
   <file name ="env_mach_specific.xml">
     <header>
     These variables control the machine dependent environment including
-    the paths to compilers and libraries external to cime such as netcdf, 
+    the paths to compilers and libraries external to cime such as netcdf,
     environment variables for use in the running job should also be set	here.
     </header>
   </file>
@@ -73,12 +73,11 @@
 
   <file name="env_archive.xml">
     <header>
-    These are the variables specific to the short term archiver. 
-    For a detailed listing of the env_archive.xml file, run
-    ./st_archive -help
-    To validate the env_archive.xml file using xmllint, run
-    xmllint -schema Tools/archive.xsd env_archive.xml
-    from the case root.
+      These are the variables specific to the short term archiver.
+      See  ./case.st_archive --help for details on running the short term archiver script.
+      To validate the env_archive.xml file using xmllint, run
+      xmllint -schema $SRCROOT/cime/cime_config/xml_schemas/config_archive.xsd env_archive.xml
+      from the case root. (Currently broken - see issue #1185)
     </header>
   </file>
 
