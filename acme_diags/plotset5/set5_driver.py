@@ -17,8 +17,8 @@ from acme_diags.derivations.default_regions import regions_specs
 
 def make_parameters(orginal_parameter):
     #f_data = open('set5_diags.json').read()
-    f_data = open('set5_diags_MERRA.json').read()
-    #f_data = open('set5_diags_HADISST.json').read()
+    #f_data = open('set5_diags_MERRA.json').read()
+    f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
@@ -105,10 +105,11 @@ for parameter in parameters:
                 if region != 'global':
                     domain = regions_specs[region]['domain']
                     # below 7 lines are temporary solution for the cdutil error
+                print mv1.units
                 mv1_domain = mv1(domain)
                 mv2_domain = mv2(domain)
                 mv1_domain.units = mv1.units
-                mv2_domain.units = mv2.units
+                mv2_domain.units = mv1.units
                 parameter.output_file = '_'.join([ref_name, season,region])
                 parameter.main_title = str(' '.join([var, season]))
         

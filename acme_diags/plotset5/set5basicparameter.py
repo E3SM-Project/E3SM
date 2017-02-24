@@ -11,9 +11,10 @@ test_name = '20160520.A_WCYCL1850.ne30'
 regrid_tool = 'esmf'
 regrid_method = 'linear'
 
-test_title = 'Model'
-reference_title = 'Observation'
-diff_title = 'Model - Observation'
+#test_title = 'Model'
+#reference_title = 'Observation'
+#diff_title = 'Model - Observation'
+diff_title = 'test - reference'
 diff_colormap = 'bl_to_darkred'
 
 canvas_size_w = 1212

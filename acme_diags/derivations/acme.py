@@ -85,7 +85,7 @@ derived_variables = {
         (['PRECC','PRECL'], lambda a, b: aplusb(a, b, target_units="mm/day"))
     ],
     'SST': [
-        (['TS', 'OCNFRAC'], lambda ts, ocnfrac: mask_by(ts - 273.15, ocnfrac, low_limit = 0.9))
+        (['TS', 'OCNFRAC'], lambda ts, ocnfrac: mask_by(_convert_units(ts, target_units="degC"), ocnfrac, low_limit = 0.9))
     ],
     'PREH2O': [
         (['TMQ'], rename)
