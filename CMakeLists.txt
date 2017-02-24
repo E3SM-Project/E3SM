@@ -6,7 +6,7 @@ project(cime_tests Fortran C)
 
 # We rely on pio for cmake utilities like findnetcdf.cmake, so that we don't
 # need to duplicate this cmake code
-list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/externals/pio2/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CIME_ROOT}/src/externals/pio2/cmake")
 
 list(APPEND CMAKE_MODULE_PATH ${CIME_CMAKE_MODULE_DIRECTORY})
 include(CIME_utils)
@@ -19,7 +19,7 @@ include_directories(${NetCDF_C_INCLUDE_DIRS} ${NetCDF_Fortran_INCLUDE_DIRS})
 # ------------------------------------------------------------------------
 # Build mct
 # ------------------------------------------------------------------------
-set(MCT_ROOT "${CIME_ROOT}/externals/mct")
+set(MCT_ROOT "${CIME_ROOT}/src/externals/mct")
 
 ExternalProject_add(mct_project
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}
@@ -58,14 +58,14 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
 
 # csm_share (we don't build it here because it seems to be built differently
 # by different tests?)
-set(SHARE_ROOT "${CIME_ROOT}/share")
+set(SHARE_ROOT "${CIME_ROOT}/src/share")
 add_subdirectory(${SHARE_ROOT}/util csm_share)
 include_directories(${SHARE_ROOT}/include)
 
 # esmf_wrf_timemgr not built here because it depends on csm_share.
-add_subdirectory(${CIME_ROOT}/share/esmf_wrf_timemgr esmf_wrf_timemgr)
-include_directories(${CIME_ROOT}/share/esmf_wrf_timemgr)
+add_subdirectory(${SHARE_ROOT}/esmf_wrf_timemgr esmf_wrf_timemgr)
+include_directories(${SHARE_ROOT}/esmf_wrf_timemgr)
 
 # Now the actual test directories.
-add_subdirectory(drivers/mct/unit_test)
-add_subdirectory(share/test/unit)
+add_subdirectory(${CIME_ROOT}/src/drivers/mct/unit_test)
+add_subdirectory(${SHARE_ROOT}/test/unit)
