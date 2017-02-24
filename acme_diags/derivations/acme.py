@@ -89,5 +89,7 @@ derived_variables = {
     ],
     'PREH2O': [
         (['TMQ'], rename)
-    ]
+    ],
+    'TREFHT_LAND':[ (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(_convert_units(trefht, target_units="K"), landfrac, low_limit = 0.65) )
+    ],
 }

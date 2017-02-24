@@ -1,0 +1,14 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_TREFHT_LAND_CRU",
+      "variables": "TREFHT_LAND",
+      "ref_name": "CRU",
+      "reference_name": "IPCC/CRU climatology1961-90",
+      "season": ["ANN","DJF","MAM","JJA","SON"],
+      "region": [],
+      "levels": []
+                }
+          ]
+}

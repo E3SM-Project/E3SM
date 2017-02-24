@@ -18,7 +18,8 @@ from acme_diags.derivations.default_regions import regions_specs
 def make_parameters(orginal_parameter):
     #f_data = open('set5_diags.json').read()
     #f_data = open('set5_diags_MERRA.json').read()
-    f_data = open('set5_diags_HADISST.json').read()
+    #f_data = open('set5_diags_HADISST.json').read()
+    f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
@@ -125,13 +126,14 @@ for parameter in parameters:
                 #regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
-                if var is 'SST': #special case
-
+                #if var is 'SST' or var is 'TREFHT_LAND': #special case
+                if var == 'TREFHT_LAND'or var == 'SST': #use "==" instead of "is"
                     land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
                     mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                     mv2_reg = MV2.masked_where(land_mask, mv2_reg)
            
                 plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                #plot_set_5.plot(mv2_reg, mv1_reg, mv2_reg, mv1_reg, parameter)
  
     
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
