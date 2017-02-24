@@ -95,9 +95,10 @@ def build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
     bldroot = os.path.join(exeroot, "cpl", "obj")
     if not os.path.isdir(bldroot):
         os.makedirs(bldroot)
+    logger.info("Building %s with output to %s"%(cime_model, file_build))
     stat = run_cmd("%s/buildexe %s %s %s" %
                    (config_dir, caseroot, libroot, bldroot),
-                   from_dir=bldroot, verbose=True, arg_stdout=f,
+                   from_dir=bldroot, verbose=False, arg_stdout=f,
                    arg_stderr=subprocess.STDOUT)[0]
     f.close()
     analyze_build_log("%s exe"%cime_model, file_build, compiler)
