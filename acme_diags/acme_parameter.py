@@ -16,6 +16,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.regrid_method = 'linear'
 
         self.backend = 'vcs'
+        self.format = ['png']
         self.output_file = 'output.png'
 
         # VCS Options
