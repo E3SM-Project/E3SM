@@ -572,7 +572,7 @@ contains
 
 
 #else
-    T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; KEvert=0; IEvert=0; KEhorz=0; IEhorz=0
+    T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; KEvertu=0; KEvertw=0; IEvert=0; KEhorz=0; IEhorz=0
     KEhorz2=0;
 #endif
 
