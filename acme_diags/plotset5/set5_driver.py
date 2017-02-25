@@ -16,8 +16,9 @@ from acme_diags.derivations.default_regions import regions_specs
 
 
 def make_parameters(orginal_parameter):
+    f_data = open('set5_diags_default.json').read()
     #f_data = open('set5_diags.json').read()
-    f_data = open('set5_diags_MERRA.json').read()
+    #f_data = open('set5_diags_MERRA.json').read()
     #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()

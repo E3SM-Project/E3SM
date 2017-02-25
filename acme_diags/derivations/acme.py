@@ -109,6 +109,9 @@ derived_variables = {
     ],
     'U': [
         (['U'], lambda u: _convert_units(u, target_units="m/s"))
+    ],
+    'TREFHT': [
+        (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
     ]
 }
 
