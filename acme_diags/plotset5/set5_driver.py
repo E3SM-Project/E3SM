@@ -17,7 +17,8 @@ from acme_diags.derivations.default_regions import regions_specs
 
 def make_parameters(orginal_parameter):
     #f_data = open('set5_diags.json').read()
-    f_data = open('set5_diags_MERRA.json').read()
+    f_data = open('set5_diags_GPCP.json').read()
+    #f_data = open('set5_diags_MERRA.json').read()
     #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
@@ -93,6 +94,10 @@ for parameter in parameters:
         except:
             mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
         print regions,"regions"
+
+        # Temporary fix to bypass bug (Zeshawn or Jill will fix)
+        mv1.units = parameter.test_units
+        mv2.units = parameter.test_units
          
         #for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
