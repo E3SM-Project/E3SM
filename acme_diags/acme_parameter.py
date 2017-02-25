@@ -14,6 +14,8 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.region = ''
         self.regrid_tool = 'esmf'
         self.regrid_method = 'linear'
+
+        self.backend = 'vcs'
         self.output_file = 'output.png'
 
         # VCS Options
