@@ -26,9 +26,8 @@ class EnvArchive(GenericXML):
         else:
             fullpath = os.path.join(case_root, infile)
 
-        # Initialize self
-        # If env_archive.xml file does not exists in case directory read default from config
-        GenericXML.__init__(self, fullpath)
+        schema = os.path.join(get_cime_root(), "cime_config", "xml_schemas", "env_archive.xsd")
+        GenericXML.__init__(self, fullpath, schema=schema)
 
         # The following creates the CASEROOT/env_archive.xml contents in self.root
         if not os.path.isfile(fullpath):

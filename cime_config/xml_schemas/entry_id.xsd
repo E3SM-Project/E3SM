@@ -2,6 +2,9 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
   <xs:include schemaLocation="entry_id_base.xsd"/>
   <xs:element name="type" type="xs:NCName"/>
+  <xs:element name="group" type="xs:NCName"/>
+  <xs:element name="file" type="xs:NCName"/>
+
 <!-- complex elements -->
   <xs:element name="entry">
     <xs:complexType>

@@ -5,7 +5,6 @@ be used by other XML interface modules and not directly.
 from CIME.XML.standard_module_setup import *
 from distutils.spawn import find_executable
 from xml.dom import minidom
-from CIME.utils import expect, get_cime_root
 
 import getpass
 
@@ -41,6 +40,7 @@ class GenericXML(object):
             root = ET.Element("xml")
             self.root = ET.SubElement(root, "file")
             self.root.set("id", os.path.basename(infile))
+            self.root.set("version", "2.0")
             self.tree = ET.ElementTree(root)
 
     def read(self, infile, schema=None):
