@@ -5,7 +5,8 @@ import cdms2
 def process_derived_var(var_key, derived_vars_dict, nc_file):
     ''' Given a key (var_key) to the derived_vars_dict dict, compute and return
      whatever is described in derived_vars_dict[var_key] for the nc_file'''
-    if var_key in derived_vars_dict.keys():
+    #if var_key in derived_vars_dict.keys():
+    if var_key:
         inputs, func = _get_correct_derivation(var_key, derived_vars_dict, nc_file)
         # get all of the variables from nc_file
         args = [nc_file(var)(squeeze=1) for var in inputs]
@@ -90,6 +91,24 @@ derived_variables = {
     'PREH2O': [
         (['TMQ'], rename)
     ],
-    'TREFHT_LAND':[ (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(_convert_units(trefht, target_units="K"), landfrac, low_limit = 0.65) )
+    'TREFHT_LAND':[ 
+        (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(_convert_units(trefht, target_units="K"), landfrac, low_limit = 0.65) )
     ],
+    'PRECT_LAND':[ 
+        (['PRECC','PRECL', 'LANDFRAC'], lambda a, b , landfrac: mask_by(aplusb(a, b, target_units="mm/day"), landfrac, low_limit = 0.65) ),
+        (['PRECIP_LAND'],rename)
+    ],
+    'Z3': [
+        (['Z3'], lambda z3: _convert_units(z3, target_units="hectometers"))
+    ],
+    'PSL': [
+        (['PSL'], lambda psl: _convert_units(psl, target_units="mb"))
+    ],
+    'T': [
+        (['T'], lambda t: _convert_units(t, target_units="K"))
+    ],
+    'U': [
+        (['U'], lambda u: _convert_units(u, target_units="m/s"))
+    ]
 }
+

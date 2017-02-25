@@ -17,9 +17,11 @@ from acme_diags.derivations.default_regions import regions_specs
 
 def make_parameters(orginal_parameter):
     #f_data = open('set5_diags.json').read()
-    #f_data = open('set5_diags_MERRA.json').read()
+    f_data = open('set5_diags_MERRA.json').read()
     #f_data = open('set5_diags_HADISST.json').read()
-    f_data = open('set5_diags_CRU.json').read()
+    #f_data = open('set5_diags_CRU.json').read()
+    #f_data = open('set5_diags_LEGATES.json').read()
+    #f_data = open('set5_diags_WILLMOTT.json').read()
     #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
@@ -85,15 +87,22 @@ for parameter in parameters:
         # domain can pass in process_derived_var after Charles fix cdutil.domain'unit problem
         #mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod, domain)
         #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
-        try:
-            mv1 = f_mod(var)
-        except:
-            mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
-        try:
-            mv2 = f_obs(var)
-        except:
-            mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
-        print regions,"regions"
+        mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
+        mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
+        #try:
+        #    mv1 = f_mod(var)
+        #except:
+        #    mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
+        #try:
+        #    mv2 = f_obs(var)
+        #except:
+        #    mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
+        # special case, cdms didn't properly convert mask with fill value -999.0, filed issue with denise
+        if ref_name == 'WILLMOTT':
+            #mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
+            mv2=MV2.masked_where(mv2==-999.,mv2)
+            mv1 = mv1 * 30. #approximate way to convert to seasonal cumulative precipitation, need to have solution in derived variable, unit convert from mm/day to cm
+
          
         #for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
@@ -111,7 +120,7 @@ for parameter in parameters:
                 mv2_domain = mv2(domain)
                 mv1_domain.units = mv1.units
                 mv2_domain.units = mv1.units
-                parameter.output_file = '_'.join([ref_name, season,region])
+                parameter.output_file = '_'.join([ref_name,var, season,region])
                 parameter.main_title = str(' '.join([var, season]))
         
                 #else:
@@ -127,7 +136,15 @@ for parameter in parameters:
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                 #if var is 'SST' or var is 'TREFHT_LAND': #special case
+                
                 if var == 'TREFHT_LAND'or var == 'SST': #use "==" instead of "is"
+                    if ref_name == 'WILLMOTT':
+                       mv2_reg=MV2.masked_where(mv2_reg==mv2_reg.fill_value,mv2_reg)
+                       print ref_name
+                        
+                        #if mv.mask is False: 
+                        #    mv = MV2.masked_less_equal(mv, mv._FillValue)
+                        #    print "*************",mv.count()
                     land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
                     mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                     mv2_reg = MV2.masked_where(land_mask, mv2_reg)
@@ -193,7 +210,7 @@ for parameter in parameters:
                     mv1_domain.units = mv1.units
                     mv2_domain.units = mv2.units
 
-                    parameter.output_file = '_'.join([ref_name, season,region,var, str(int(plev[ilev])), 'mb'])
+                    parameter.output_file = '_'.join([ref_name,var,str(int(plev[ilev])),season,region,var, str(int(plev[ilev])), 'mb'])
                     parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))
 
                     # Regrid towards lower resolution of two variables for calculating difference
