@@ -363,6 +363,35 @@ endif
 
 INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
 		-I$(CIMEROOT)/share/csm_share/include -I$(CIMEROOT)/share/shr_RandNum/include
+
+ifeq ($(MODEL),driver)
+  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
+# nagfor and gcc have incompatible LDFLAGS.
+# nagfor requires the weird "-Wl,-Wl,," syntax.
+# If done in config_compilers.xml, we break MCT.
+  ifeq ($(strip $(COMPILER)),nag)
+    ifeq ($(NETCDF_SEPARATE), false)
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
+    else ifeq ($(NETCDF_SEPARATE), true)
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_C_PATH)/lib
+      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_FORTRAN_PATH)/lib
+    endif
+  endif
+else
+  ifeq ($(strip $(COMPILER)),nag)
+    ifeq ($(DEBUG), TRUE)
+      ifeq ($(strip $(MACH)),hobart)
+       # GCC needs to be able to link to
+       # nagfor runtime to get autoconf
+       # tests to work.
+	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+       endif
+    endif
+  endif
+endif
+
+
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
@@ -389,8 +418,8 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
-# The following is for the COSP simulator code:
-COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
+  # The following is for the COSP simulator code:
+  COSP_LIBDIR:=$(EXEROOT)/atm/obj/cosp
 endif
 
 ifeq ($(MODEL),cam)
@@ -431,34 +460,6 @@ ifeq ($(NETCDF_SEPARATE), false)
   SLIBS += -L$(LIB_NETCDF) -lnetcdff -lnetcdf
 else ifeq ($(NETCDF_SEPARATE), true)
   SLIBS += -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
-endif
-
-
-ifeq ($(MODEL),driver)
-  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
-# nagfor and gcc have incompatible LDFLAGS.
-# nagfor requires the weird "-Wl,-Wl,," syntax.
-# If done in config_compilers.xml, we break MCT.
-  ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($(NETCDF_SEPARATE), false)
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_PATH)/lib
-    else ifeq ($(NETCDF_SEPARATE), true)
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_C_PATH)/lib
-      SLIBS += -Wl,-Wl,,-rpath=$(NETCDF_FORTRAN_PATH)/lib
-    endif
-  endif
-else
-  ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($(DEBUG), TRUE)
-      ifeq ($(strip $(MACH)),hobart)
-       # GCC needs to be able to link to
-       # nagfor runtime to get autoconf
-       # tests to work.
-	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
-       endif
-    endif
-  endif
 endif
 
 ifdef LIB_PNETCDF
