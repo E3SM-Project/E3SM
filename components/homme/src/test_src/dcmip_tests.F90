@@ -383,8 +383,8 @@ subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing m test'
 
-  !set \tau to 25/3 for this test, [\tau]=[sec]
-  tau = 25.0d0/3.0d0
+  !set \tau to 25*3 for this test, [\tau]=[sec], X=500/3
+  tau = 75.0d0
 
   ! set analytic vertical coordinates
   call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                    ! get evenly spaced z levels
