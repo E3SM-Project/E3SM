@@ -20,7 +20,7 @@ module physpkg
        physics_ptend, physics_tend_init, physics_update,    &
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
-  use phys_grid,        only: get_ncols_p, chunks, npchunks !BSINGH-added  chunks
+  use phys_grid,        only: get_ncols_p, chunks, npchunks,knuhcs, ngcols_p, latlon_to_dyn_gcol_map !BSINGH-added  chunks
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
@@ -771,10 +771,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
 
     !BSINGH - Exit if it is not an FV dycore
-    if(.not.dycore_is('LR')) then
-       write(iulog,*)'ERROR: The dycore used is not FV. This code only works for FV dycore'
-       call endrun
-    endif
+    !if(.not.dycore_is('LR')) then
+    !   write(iulog,*)'ERROR: The dycore used is not FV. This code only works for FV dycore'
+    !   call endrun
+    !endif
 
 
     !BSINGH - Build lat lon relationship to chunk and column
@@ -1071,7 +1071,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
     !BSINGH - variables req for building rng for lw and sw
     integer  :: tot_colslw,tot_colssw, ilat,ilon, iown, ilchnk
-    integer  :: icol, ilev,isubcol, ichnk, ierr
+    integer  :: i, icol, ilev,isubcol, ichnk, ierr, igcol,chunkid
     real(r8) :: rng
 
     call t_startf ('physpkg_st1')
@@ -1140,22 +1140,23 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           rnglw_mstr(1:nsubcollw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
           rngsw_mstr(1:nsubcolsw,1:pcols,1:pver,1:max_chnks_in_blk,1:npes) = huge(1.0_r8)
           
-          do ilat = 1, plat
-             do ilon = 1,plon
-                ichnk  = lat_lon_to_chnk(ilat,ilon) !Get Chunk 
-                icol   = lat_lon_to_cols(ilat,ilon) !Get Column
-                iown   = chunks(ichnk)%owner        !Processor which owns this lat-lon
-                !ilchnk is a counter which goes from 1 to no. of chunks assigned to a processor
-                ilchnk = (chunks(ichnk)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
-                do ilev = 1, pver               
-                   do isubcol = 1, nsubcollw
-                      call kissvec(s1,s2,s3,s4,rng)
-                      rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !long wave
-                   enddo
-                   do isubcol = 1, nsubcolsw
-                      call kissvec(s1,s2,s3,s4,rng) 
-                      rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !short wave
-                   enddo
+
+          do igcol = 1, ngcols_p
+             i = latlon_to_dyn_gcol_map(igcol)
+             chunkid  = knuhcs(i)%chunkid
+             icol = knuhcs(i)%col
+             iown  = chunks(chunkid)%owner
+             write(102,*)'BALLI:',igcol,i,chunks(chunkid)%lat(icol),chunks(chunkid)%lon(icol)
+             ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
+             
+             do ilev = 1, pver
+                do isubcol = 1, nsubcollw
+                   call kissvec(s1,s2,s3,s4,rng)
+                   rnglw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !long wave
+                enddo
+                do isubcol = 1, nsubcolsw
+                   call kissvec(s1,s2,s3,s4,rng)
+                   rngsw_mstr(isubcol,icol,ilev,ilchnk,iown+1) = rng !short wave
                 enddo
              enddo
           enddo
