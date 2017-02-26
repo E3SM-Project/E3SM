@@ -38,6 +38,7 @@ real(rl), parameter ::              &
 real(rl), dimension(:,:,:,:), allocatable :: u0, v0                     ! storage for dcmip2-x sponge layer
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
+real(rl):: tau
 
 contains
 
@@ -320,6 +321,9 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-x: steady state atmosphere with orography'
 
+  !set \tau to 25.0, bound to X, [\tau]=[sec]
+  tau = 25.0d0
+
   ! set analytic vertical coordinates
   call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                    ! get evenly spaced z levels
   hvcoord%etai  = exp(-zi/H)                                            ! set eta levels from z in orography-free region
@@ -379,6 +383,9 @@ subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing m test'
 
+  !set \tau to 25/3 for this test, [\tau]=[sec]
+  tau = 25.0d0/3.0d0
+
   ! set analytic vertical coordinates
   call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                    ! get evenly spaced z levels
   hvcoord%etai  = exp(-zi/H)                                            ! set eta levels from z in orography-free region
@@ -423,7 +430,6 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
   integer :: ie, k
 
   real(rl), parameter ::  &
-    tau     = 25.0,       &   ! rayleigh function relaxation time
     ztop    = 30000.d0,		&   ! model top
     zh      = 20000.d0        ! sponge-layer cutoff height
 

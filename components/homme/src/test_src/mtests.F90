@@ -82,7 +82,7 @@ IMPLICIT NONE
 !     test case parameters
 !----------------------------------------------------------------------- 
   real(8), parameter ::   &
-  X       = 500.d0,     &   ! Reduced Earth reduction factor
+  X       = 166.7d0,     &   ! Reduced Earth reduction factor
   Om      = 0.d0,       &   ! Rotation Rate of Earth
   as      = a/X,        &   ! New Radius of small Earth
   Teq     = 300.d0,     &   ! Temperature at Equator
