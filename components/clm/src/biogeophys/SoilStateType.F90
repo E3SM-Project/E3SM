@@ -604,11 +604,6 @@ contains
                    clay = clay3d(g,lev)
                    sand = sand3d(g,lev)
                    om_frac = (organic3d(g,lev)/organic_max)**2._r8
-		   if(do_varsoil .and. lev > nlevsoi) then
-		     clay = clay3d(g,nlevbed)
-		     sand = sand3d(g,nlevbed)
-		     om_frac = 0._r8
-		   end if
                 else
                    clay = clay3d(g,nlevsoi)
                    sand = sand3d(g,nlevsoi)
