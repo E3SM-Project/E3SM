@@ -1422,6 +1422,8 @@
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
 			<var name="frazilSurfacePressure"/>
+			<var name="filteredSSHGradientZonal"/>
+			<var name="filteredSSHGradientMeridional"/>
 		</stream>
 
 		<stream name="output"
