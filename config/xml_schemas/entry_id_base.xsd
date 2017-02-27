@@ -12,11 +12,10 @@
   <!-- simple elements -->
   <xs:element name="help" type="xs:string"/>
   <xs:element name="default_value" type="xs:string"/>
-  <xs:element name="file" type="xs:NCName"/>
-  <xs:element name="group" type="xs:NCName"/>
   <xs:element name="valid_values" type="xs:string"/>
   <xs:element name="schema" type="xs:string"/>
   <xs:element name="category" type="xs:string"/>
+  <xs:element name="header" type="xs:string"/>
 
   <!-- complex elements -->
   <xs:element name="value">

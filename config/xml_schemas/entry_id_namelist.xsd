@@ -10,6 +10,8 @@
   <!-- simple elements -->
   <xs:element name="type" type="xs:string"/>
   <xs:element name="input_pathname" type="xs:NCName"/>
+  <xs:element name="group" type="xs:NCName"/>
+  <xs:element name="file" type="xs:NCName"/>
 
 <!-- complex elements -->
   <xs:element name="entry">

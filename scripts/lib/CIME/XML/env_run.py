@@ -16,7 +16,8 @@ class EnvRun(EnvBase):
         self._components = components
         self._component_value_list = ["PIO_TYPENAME", "PIO_STRIDE", "PIO_REARRANGER",
                                       "PIO_NUMTASKS", "PIO_ROOT"]
-        EnvBase.__init__(self, case_root, infile)
+        schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_entry_id.xsd")
+        EnvBase.__init__(self, case_root, infile, schema=schema)
 
 
 

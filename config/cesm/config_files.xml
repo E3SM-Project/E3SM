@@ -185,7 +185,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/cime_config/$MODEL//allactive/testmods_dirs</value>
+      <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/testmods_dirs</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/testdefs/testmods_dirs</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/testdefs/testmods_dirs</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/testdefs/testmods_dirs</value>

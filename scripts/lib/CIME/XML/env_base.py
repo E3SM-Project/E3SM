@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class EnvBase(EntryID):
 
-    def __init__(self, case_root, infile):
+    def __init__(self, case_root, infile, schema=None):
         if case_root is None:
             case_root = os.getcwd()
 
@@ -19,7 +19,7 @@ class EnvBase(EntryID):
         else:
             fullpath = os.path.join(case_root, infile)
 
-        EntryID.__init__(self, fullpath)
+        EntryID.__init__(self, fullpath, schema=schema)
         if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
