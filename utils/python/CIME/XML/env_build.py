@@ -13,4 +13,5 @@ class EnvBuild(EnvBase):
         """
         initialize an object interface to file env_build.xml in the case directory
         """
-        EnvBase.__init__(self, case_root, infile)
+        schema = os.path.join(get_cime_root(), "cime_config", "xml_schemas", "env_entry_id.xsd")
+        EnvBase.__init__(self, case_root, infile, schema=schema)
