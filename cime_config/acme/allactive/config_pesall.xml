@@ -5949,14 +5949,14 @@
     <mach name="anvil">
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment> -compset A_WCYCL* -res ne4_oQU240 on 7 nodes pure-MPI </comment>
-        <PES_PER_NODE>16</PES_PER_NODE>
-        <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+        <PES_PER_NODE>32</PES_PER_NODE>
+        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
-          <ntasks_lnd>16</ntasks_lnd>
+          <ntasks_lnd>32</ntasks_lnd>
           <ntasks_rof>96</ntasks_rof>
-          <ntasks_ice>96</ntasks_ice>
-          <ntasks_ocn>16</ntasks_ocn>
+          <ntasks_ice>32</ntasks_ice>
+          <ntasks_ocn>32</ntasks_ocn>
           <ntasks_cpl>96</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
@@ -5975,7 +5975,7 @@
           <rootpe_atm>0</rootpe_atm>
           <rootpe_lnd>96</rootpe_lnd>
           <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ice>96</rootpe_ice>
           <rootpe_ocn>96</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
           <rootpe_glc>0</rootpe_glc>
@@ -5984,14 +5984,14 @@
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
         <comment> -compset A_WCYCL2000 -res ne4_oQU240 on 24 nodes MPI-OpenMP </comment>
-        <PES_PER_NODE>16</PES_PER_NODE>
-        <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+        <PES_PER_NODE>32</PES_PER_NODE>
+        <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
-          <ntasks_lnd>16</ntasks_lnd>
+          <ntasks_lnd>32</ntasks_lnd>
           <ntasks_rof>96</ntasks_rof>
           <ntasks_ice>96</ntasks_ice>
-          <ntasks_ocn>16</ntasks_ocn>
+          <ntasks_ocn>32</ntasks_ocn>
           <ntasks_cpl>96</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
