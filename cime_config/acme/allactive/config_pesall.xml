@@ -5955,7 +5955,7 @@
           <ntasks_atm>96</ntasks_atm>
           <ntasks_lnd>16</ntasks_lnd>
           <ntasks_rof>96</ntasks_rof>
-          <ntasks_ice>16</ntasks_ice>
+          <ntasks_ice>96</ntasks_ice>
           <ntasks_ocn>16</ntasks_ocn>
           <ntasks_cpl>96</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
@@ -5975,7 +5975,7 @@
           <rootpe_atm>0</rootpe_atm>
           <rootpe_lnd>96</rootpe_lnd>
           <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>96</rootpe_ice>
+          <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>96</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
           <rootpe_glc>0</rootpe_glc>
@@ -5988,10 +5988,10 @@
         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
-          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_lnd>16</ntasks_lnd>
           <ntasks_rof>96</ntasks_rof>
           <ntasks_ice>96</ntasks_ice>
-          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_ocn>16</ntasks_ocn>
           <ntasks_cpl>96</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
@@ -6002,16 +6002,16 @@
           <nthrds_rof>4</nthrds_rof>
           <nthrds_ice>4</nthrds_ice>
           <nthrds_ocn>4</nthrds_ocn>
-          <nthrds_glc>4</nthrds_glc>
-          <nthrds_wav>4</nthrds_wav>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
           <nthrds_cpl>4</nthrds_cpl>
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_lnd>96</rootpe_lnd>
           <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
+          <rootpe_ocn>96</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
