@@ -83,7 +83,6 @@ module physpkg
   integer :: nchunks,max_chnks_in_blk
   integer :: firstblock, lastblock      ! global block indices
   integer, allocatable,dimension(:) :: tot_chnk_till_this_prc !total number of chunks till this processor
-  integer, allocatable,dimension(:,:) :: lat_lon_to_chnk, lat_lon_to_cols   
   real(r8),allocatable,dimension(:,:,:,:) :: rnglw,rngsw  
   real(r8),allocatable,dimension(:,:,:,:,:) :: rnglw_mstr ,rngsw_mstr  
   
@@ -95,7 +94,6 @@ module physpkg
   character(len=15), parameter :: seedrstarr_name = 'rrtmg_randn_seed'
   character(len=19), parameter :: seedrstarr_dim  = 'rrtmg_randn_seed_dim'
   type(trfile) :: file
-  integer      :: plat, plon
   !BSINGH -Ends
 
 
@@ -748,7 +746,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use nudging,            only: Nudge_Model,nudging_init
     
     !BSINGH -  added for fixing random number generation
-    use dyn_grid,           only: get_dyn_grid_parm,get_block_bounds_d
+    use dyn_grid,           only: get_block_bounds_d
     use ppgrid,             only: pver 
     use dycore,              only: dycore_is
 
@@ -826,22 +824,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        call endrun
     end if
 
-    !build array describing lat-lon mapping with chunks and columns
     if(masterproc) then
-      plat = get_dyn_grid_parm('plat')
-      plon = get_dyn_grid_parm('plon')
-      allocate(lat_lon_to_chnk(plat,plon), stat=astat )
-      if( astat /= 0 ) then
-         write(iulog,*) 'physpkg-phys_init: failed to allocate lat_lon_to_chnk; error = ',astat
-         call endrun
-      end if
-      allocate(lat_lon_to_cols(plat,plon), stat=astat )
-      if( astat /= 0 ) then
-         write(iulog,*) 'physpkg-phys_init: failed to allocate lat_lon_to_cols; error = ',astat
-         call endrun
-      end if
-      call bld_lat_lon_chnk_col_rel(lat_lon_to_chnk,lat_lon_to_cols)
-
       !Initialize seeds to fixed values for both LW and SW at first time step
       s1 = 1
       s2 = 2
@@ -1070,8 +1053,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #endif
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
     !BSINGH - variables req for building rng for lw and sw
-    integer  :: tot_colslw,tot_colssw, ilat,ilon, iown, ilchnk
-    integer  :: i, icol, ilev,isubcol, ichnk, ierr, igcol,chunkid
+    integer  :: tot_colslw,tot_colssw, iown, ilchnk
+    integer  :: i, icol, ilev,isubcol, ierr, igcol, chunkid
     real(r8) :: rng
 
     call t_startf ('physpkg_st1')
@@ -1146,7 +1129,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
              chunkid  = knuhcs(i)%chunkid
              icol = knuhcs(i)%col
              iown  = chunks(chunkid)%owner
-             write(102,*)'BALLI:',igcol,i,chunks(chunkid)%lat(icol),chunks(chunkid)%lon(icol)
              ilchnk = (chunks(chunkid)%lcid - lastblock) - tot_chnk_till_this_prc(iown)
              
              do ilev = 1, pver
@@ -3123,28 +3105,6 @@ subroutine read_rand_seed_restart( pioFile )
   call read_trc_restart( 'rand_seed', piofile, file )
   
 end subroutine read_rand_seed_restart
-
-subroutine bld_lat_lon_chnk_col_rel(lat_lon_to_chnk,lat_lon_to_cols)
-
-  integer, intent(out) :: lat_lon_to_chnk(:,:),lat_lon_to_cols(:,:)
-
-  !local
-  integer:: ichnk, icol, ilat,ilon  
-  integer :: ilchnk, iown
-
-  lat_lon_to_chnk(:,:) = huge(1)
-  lat_lon_to_cols(:,:) = huge(1)
-  do ichnk = 1, nchunks
-     ilchnk = chunks(ichnk)%lcid 
-     do icol = 1, chunks(ichnk)%ncols
-        ilat = chunks(ichnk)%lat(icol)
-        ilon = chunks(ichnk)%lon(icol)
-        lat_lon_to_chnk(ilat,ilon) = ichnk 
-        lat_lon_to_cols(ilat,ilon)  = icol
-     enddo     
-  enddo
-
-end subroutine bld_lat_lon_chnk_col_rel
 !BSINGH -ENDS
 
 
