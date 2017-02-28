@@ -29,7 +29,7 @@ def get_ax_size(fig,ax):
     height *= fig.dpi
     return width, height
 
-def plot_panel(n, fig, proj, var, norm, levels, cmap, title, stats=None):
+def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
 
     var_min = float(var.min())
     var_max = float(var.max())
@@ -39,6 +39,14 @@ def plot_panel(n, fig, proj, var, norm, levels, cmap, title, stats=None):
     lat = var.getLatitude()
     var = ma.squeeze( var.asma() )
 
+    # Contour levels
+    levels = None
+    norm = None
+    if len(clevels) > 0:
+        levels = [-1.0e8] + clevels + [1.0e8]
+        norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
+
+    # Contour plot
     ax = fig.add_axes(panel[n],projection=proj)
     ax.set_global()
     p1 = ax.contourf(lon, lat, var,
@@ -94,29 +102,13 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     proj = ccrs.PlateCarree(central_longitude=180)
 
     # First two panels
-    levels = None
-    norm = None
-    if len(parameter.test_levels) > 0:
-        levels = [-1.0e8] + parameter.test_levels + [1.0e8]
-        norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
-    plot_panel(0, fig, proj, test, norm, levels, 'viridis', (parameter.test_name,parameter.test_title,test.units))
-
-    levels = None
-    norm = None
-    if len(parameter.test_levels) > 0:
-        levels = [-1.0e8] + parameter.reference_levels + [1.0e8]
-        norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
-    plot_panel(1, fig, proj, reference, norm, levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
+    plot_panel(0, fig, proj, test, parameter.test_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units))
+    plot_panel(1, fig, proj, reference, parameter.reference_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
 
     # Third panel
     r = rmse(reference_regrid, test_regrid)
     c = corr(reference_regrid, test_regrid)
-    levels = None
-    norm = None
-    if len(parameter.test_levels) > 0:
-        levels = [-1.0e8] + parameter.diff_levels + [1.0e8]
-        norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
-    plot_panel(2, fig, proj, test_regrid-reference_regrid, norm, levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
+    plot_panel(2, fig, proj, test_regrid-reference_regrid, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)
