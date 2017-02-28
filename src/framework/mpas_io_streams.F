@@ -194,7 +194,19 @@ module mpas_io_streams
 
 !write(stderrUnit,*) 'Found xtime variable'
 
-      ! for exact time attempt to get exact time assuming evenly spaced times
+      ! the following section of code improves performance for forcing files
+      ! that have large numbers of evenly spaced times by reducing the number
+      ! of PIO character string reads needed. The following section of code is
+      ! only exercised for an extact time whence in the stream manager routine.
+      ! In that case the first two times in the stream file are read, their
+      ! interval calculated and the desired time index inferred. This time is
+      ! read and checked to be identical with the desired time. This way for
+      ! evenly spaced input files with n times only 3 reads instead of n is needed.
+      ! Should this method fail to produce the right time index or the seek is
+      ! desired for a non-exact whence the original method is used. The limit of
+      ! timeDIm > 20 ensures optimal performance for the sea ice core by avoiding
+      ! using the new method for monthly forcing files which dont have even time
+      ! spacing.
       if (seekPosition == MPAS_STREAM_EXACT_TIME .and. timeDim > 20) then
 
          ! first time
