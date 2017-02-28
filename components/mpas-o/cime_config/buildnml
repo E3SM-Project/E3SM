@@ -312,7 +312,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '	<var name="indexSurfaceLayerDepth"/>' . "\n";
 	print $stream_file '	<var name="surfaceFrictionVelocity"/>' . "\n";
 	print $stream_file '	<var name="surfaceBuoyancyForcing"/>' . "\n";
-	print $stream_file '	<var name="seaSurfacePressure"/>' . "\n";
+	print $stream_file '	<var name="atmosphericPressure"/>' . "\n";
+	print $stream_file '	<var name="seaIcePressure"/>' . "\n";
 	print $stream_file '	<var name="frazilLayerThicknessTendency"/>' . "\n";
 	print $stream_file '	<var_struct name="tracersSurfaceFlux"/>' . "\n";
 	print $stream_file '	<var name="surfaceStressMagnitude"/>' . "\n";
