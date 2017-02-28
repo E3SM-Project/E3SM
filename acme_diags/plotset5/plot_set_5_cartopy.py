@@ -67,17 +67,16 @@ def plot_panel(n, fig, proj, var, norm, levels, cmap, title, stats=None):
     # Color bar
     cbax = fig.add_axes((panel[n][0]+0.6635,panel[n][1]+0.0215,0.0326,0.1792))
     cbar = fig.colorbar(p1, cax=cbax)
-    cbar.set_ticks(levels[1:-1])
-    labels = ["%4.1f" % l for l in levels[1:-1]]
-    cbar.ax.set_yticklabels(labels,ha='right')
-
     w,h = get_ax_size(fig,cbax)
-    cbar.ax.tick_params(labelsize=9.0, pad=25, length=w-2)
 
-    #cbar.ax.tick_params(labelsize=9.0, pad=25, length=0)
-    #for l in levels[1:-1]:
-    #    print(l)
-    #    cbax.axhline(y=l)
+    if levels == None:
+        cbar.ax.tick_params(labelsize=9.0, length=w-2)
+
+    else:
+        cbar.set_ticks(levels[1:-1])
+        labels = ["%4.1f" % l for l in levels[1:-1]]
+        cbar.ax.set_yticklabels(labels,ha='right')
+        cbar.ax.tick_params(labelsize=9.0, pad=25, length=w-2)
 
     # Min, Mean, Max
     fig.text(panel[n][0]+0.6635,panel[n][1]+0.2107,"Max\nMean\nMin",ha='left',fontdict=plotSideTitle)
@@ -95,19 +94,28 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     proj = ccrs.PlateCarree(central_longitude=180)
 
     # First two panels
-    levels = [-1.0e8] + parameter.test_levels + [1.0e8]
-    norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
+    levels = None
+    norm = None
+    if len(parameter.test_levels) > 0:
+        levels = [-1.0e8] + parameter.test_levels + [1.0e8]
+        norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
     plot_panel(0, fig, proj, test, norm, levels, 'viridis', (parameter.test_name,parameter.test_title,test.units))
 
-    levels = [-1.0e8] + parameter.reference_levels + [1.0e8]
-    norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
+    levels = None
+    norm = None
+    if len(parameter.test_levels) > 0:
+        levels = [-1.0e8] + parameter.reference_levels + [1.0e8]
+        norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
     plot_panel(1, fig, proj, reference, norm, levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
 
     # Third panel
     r = rmse(reference_regrid, test_regrid)
     c = corr(reference_regrid, test_regrid)
-    levels = [-1.0e8] + parameter.diff_levels + [1.0e8]
-    norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
+    levels = None
+    norm = None
+    if len(parameter.test_levels) > 0:
+        levels = [-1.0e8] + parameter.diff_levels + [1.0e8]
+        norm = colors.BoundaryNorm(boundaries=levels, ncolors=256)
     plot_panel(2, fig, proj, test_regrid-reference_regrid, norm, levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
 
     # Figure title
