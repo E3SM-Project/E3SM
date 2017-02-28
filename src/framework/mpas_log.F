@@ -835,9 +835,9 @@ module mpas_log
                    case default
                       varPart = errVarPart
                 end select
-                outString = trim(outString) // trim(adjustl(varPart))
+                outString = outString(1:curLen) // trim(adjustl(varPart))
 
-                curLen = len_trim(outString)
+                curLen = curLen + len_trim(adjustl(varPart))
                 charExpand = .false.
              else
                 outString(curLen+1:curLen+1) = inString(i:i)
