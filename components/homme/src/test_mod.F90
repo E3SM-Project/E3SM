@@ -130,9 +130,9 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
   select case(test_case)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
-    case('mcase1');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
-    case('mcase2');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
-    case('mcase3');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
+    case('mtest1');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
+    case('mtest2');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
+    case('mtest3');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
     case('held_suarez0');       
        do ie=nets,nete
           call hs_forcing(elem(ie),hvcoord,n,n_tracer,dt)
