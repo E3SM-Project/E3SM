@@ -1450,8 +1450,8 @@ contains
                                   seaIceSalinityFluxField, &
                                   riverRunoffFluxField, iceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
-                                  seaSurfacePressureField, iceFractionField, &
-                                  windSpeedSquared10mField, &
+                                  atmosphericPressureField, iceFractionField, &
+                                  seaIcePressureField, windSpeedSquared10mField, &
                                   iceFluxDICField, &
                                   iceFluxDONField, &
                                   iceFluxNO3Field, &
@@ -1476,8 +1476,8 @@ contains
                                                seaIceSalinityFlux, &
                                                riverRunoffFlux, iceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
-                                               seaSurfacePressure, iceFraction, &
-                                               windSpeedSquared10m, &
+                                               atmosphericPressure, iceFraction, &
+                                               seaIcePressure, windSpeedSquared10m, &
                                                iceFluxDIC,       &
                                                iceFluxDON, &
                                                iceFluxNO3, &
@@ -1544,7 +1544,8 @@ contains
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'rainFlux', rainFluxField)
-      call mpas_pool_get_field(forcingPool, 'seaSurfacePressure', seaSurfacePressureField)
+      call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
+      call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
       call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
 
@@ -1563,7 +1564,8 @@ contains
       iceRunoffFlux => iceRunoffFluxField % array
       shortWaveHeatFlux => shortWaveHeatFluxField % array
       rainFlux => rainFluxField % array
-      seaSurfacePressure => seaSurfacePressureField % array
+      atmosphericPressure => atmosphericPressureField % array
+      seaIcePressure => seaIcePressureField % array
       iceFraction => iceFractionField % array
       iceRunoffFlux => iceRunoffFluxField % array
 
@@ -1666,11 +1668,12 @@ contains
         if ( rainFluxField % isActive ) then
            rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
         end if
-        if ( seaSurfacePressureField % isActive ) then
-           ! Set seaSurfacePressure to be the sum of atmospheric bottom pressure 
-           ! and a limited version of sea ice pressure where it limits it to 5m of pressure
-           seaSurfacePressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n) &
-                                 + min( x2o_o % rAttr(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
+        if ( atmosphericPressureField % isActive ) then
+           atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n)
+        end if
+        if ( seaIcePressureField % isActive ) then
+           ! Set seaIcePressure to be limited to 5m of pressure
+           seaIcePressure(i) =  min( x2o_o % rAttr(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
         end if
         if ( iceFractionField % isActive ) then
            iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
@@ -1753,7 +1756,8 @@ contains
    call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
    call mpas_pool_get_field(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'rainFlux', rainFluxField)
-   call mpas_pool_get_field(forcingPool, 'seaSurfacePressure', seaSurfacePressureField)
+   call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
+   call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
    call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
    call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
 
@@ -1831,8 +1835,11 @@ contains
    if ( rainFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(rainFluxField)
    end if
-   if ( seaSurfacePressureField % isActive ) then
-      call mpas_dmpar_exch_halo_field(seaSurfacePressureField)
+   if ( atmosphericPressureField % isActive ) then
+      call mpas_dmpar_exch_halo_field(atmosphericPressureField)
+   end if
+   if ( seaIcePressureField % isActive ) then
+      call mpas_dmpar_exch_halo_field(seaIcePressureField)
    end if
    if ( iceFractionField % isActive ) then
       call mpas_dmpar_exch_halo_field(iceFractionField)
