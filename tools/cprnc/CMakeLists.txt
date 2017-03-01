@@ -8,7 +8,7 @@ ENABLE_LANGUAGE(Fortran)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CIME_ROOT}/externals/pio2/cmake)
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CIME_ROOT}/src/externals/pio2/cmake)
 
 # Defining NETCDF_LIBRARIES and NETCDF_INCLUDE_DIR enables bypassing
 #   the search for Netcdf
@@ -20,7 +20,7 @@ ENDIF ()
 
 ADD_CUSTOM_COMMAND(
   OUTPUT ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
-  COMMAND perl ${PROJECT_SOURCE_DIR}/../../externals/genf90/genf90.pl
+  COMMAND perl ${PROJECT_SOURCE_DIR}/../../src/externals/genf90/genf90.pl
     ${PROJECT_SOURCE_DIR}/compare_vars_mod.F90.in > ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
 )
 

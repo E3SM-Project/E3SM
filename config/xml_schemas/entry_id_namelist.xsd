@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <!-- base schema -->
+  <xs:include schemaLocation="entry_id_base.xsd"/>
+  <!-- attributes -->
+  <xs:attribute name="modify_via_xml" type="xs:string"/>
+  <xs:attribute name="skip_default_entry" type="xs:boolean"/>
+  <xs:attribute name="per_stream_entry" type="xs:boolean"/>
+
+  <!-- simple elements -->
+  <xs:element name="type" type="xs:string"/>
+  <xs:element name="input_pathname" type="xs:NCName"/>
+  <xs:element name="group" type="xs:NCName"/>
+  <xs:element name="file" type="xs:NCName"/>
+
+<!-- complex elements -->
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+	<xs:element ref="type"/>
+	<xs:element ref="valid_values"/>
+	<xs:element ref="default_value"/>
+	<xs:element ref="file"/>
+	<xs:element ref="group"/>
+	<xs:element ref="values"/>
+	<xs:element ref="desc"/>
+	<xs:element ref="category"/>
+	<xs:element ref="input_pathname"/>
+	<xs:element ref="schema" minOccurs="0"/>
+      </xs:choice>
+      <xs:attribute ref="id" use="required"/>
+      <xs:attribute ref="modify_via_xml"/>
+      <xs:attribute ref="skip_default_entry"/>
+      <xs:attribute ref="per_stream_entry"/>
+    </xs:complexType>
+  </xs:element>
+
+
+
+
+</xs:schema>

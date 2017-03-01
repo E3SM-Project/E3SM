@@ -1,0 +1,23 @@
+#! /bin/csh -f
+
+#==============================================================================
+# Purpose: Build gptl library
+#==============================================================================
+
+cd $CASEROOT # CASEROOT is always assumed to be an environment variable
+
+set CIMEROOT	= `./xmlquery  CIMEROOT	-value `
+set GMAKE	= `./xmlquery  GMAKE	-value `
+
+# NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in
+# the $CASE.build script
+
+setenv GPTL_DIR $CIMEROOT/src/share/timing   # gptl directory
+setenv GPTL_LIBDIR $1
+setenv SHAREDPATH  $2
+
+cd $GPTL_LIBDIR
+
+$GMAKE  -f $GPTL_DIR/Makefile install  MACFILE=$CASEROOT/Macros.make MODEL=gptl || exit 1
+
+exit 0
