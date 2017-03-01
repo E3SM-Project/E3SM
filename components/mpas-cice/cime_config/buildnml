@@ -62,8 +62,8 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '161222';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30v3_ICG' ) {
-        $grid_date .= '170213';
-	$grid_prefix .= 'seaice.EC60to30v3.a16q_smRi_yr102';
+        $grid_date .= '170301';
+	$grid_prefix .= 'seaice.EC60to30v3.restartFrom_anvil0221';
 	$decomp_date .= '161222';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30wLI' ) {
@@ -276,8 +276,17 @@ if ( -e "$CASEROOT/SourceMods/src.mpascice/$STREAM_NAME" ) {
 	print $stream_file '        type="output"' . "\n";
 	print $stream_file '        filename_template="mpascice.hist.$Y-$M-$D_$S.nc"' . "\n";
 	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
-	print $stream_file '        clobber_mode="replace_files"' . "\n";
-	print $stream_file '        output_interval="none" >' . "\n";
+	print $stream_file '        clobber_mode="truncate"' . "\n";
+	print $stream_file '        output_interval="00-01-00_00:00:00">' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '    <stream name="mesh"/>' . "\n";
+	print $stream_file '    <var name="xtime"/>' . "\n";
+	print $stream_file '    <var name="daysSinceStartOfSim"/>' . "\n";
+	print $stream_file '    <var name="iceAreaCell"/>' . "\n";
+	print $stream_file '    <var name="iceVolumeCell"/>' . "\n";
+	print $stream_file '    <var name="snowVolumeCell"/>' . "\n";
+	print $stream_file '    <var name="uVelocityGeo"/>' . "\n";
+	print $stream_file '    <var name="vVelocityGeo"/>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
