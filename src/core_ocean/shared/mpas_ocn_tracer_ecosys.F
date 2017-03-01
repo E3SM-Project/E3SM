@@ -639,7 +639,7 @@ contains
 
 ! input flux components in forcing pool
       real (kind=RKIND), dimension(:), pointer :: &
-         seaSurfacePressure,   &
+         atmosphericPressure,   &
          iceFraction,          &
          landIceFraction
 
@@ -699,7 +699,7 @@ contains
       call mpas_timer_start("ecosys surface flux")
       err = 0
 
-      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
@@ -755,7 +755,7 @@ contains
       do iCell=1,nCellsSolve
 
 !maltrud we really want sea level pressure for this, but it isnt available so just use 1 atm
-!        BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
+!        BGC_forcing%surfacePressure(column) = atmosphericPressure(iCell)*PascalsToAtmospheres
          BGC_forcing%surfacePressure(column) = 1.0_RKIND
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
 !maltrud assume for now that if there is any land ice, it is all land ice

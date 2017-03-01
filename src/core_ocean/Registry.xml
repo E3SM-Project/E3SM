@@ -1250,7 +1250,8 @@
 				mode="init">
 
 			<var name="surfaceStress"/>
-			<var name="seaSurfacePressure"/>
+			<var name="seaIcePressure"/>
+			<var name="atmosphericPressure"/>
 			<var name="windStressZonal"/>
 			<var name="windStressMeridional"/>
 			<var_struct name="forcing"/>
@@ -1407,7 +1408,8 @@
 			<var name="landIceDraft"/>
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
-			<var name="seaSurfacePressure"/>
+			<var name="seaIcePressure"/>
+			<var name="atmosphericPressure"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -1420,6 +1422,8 @@
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
 			<var name="frazilSurfacePressure"/>
+			<var name="filteredSSHGradientZonal"/>
+			<var name="filteredSSHGradientMeridional"/>
 		</stream>
 
 		<stream name="output"
@@ -1490,7 +1494,8 @@
 				runtime_format="single_file"
 				mode="forward">
 
-			<var name="seaSurfacePressure"/>
+			<var name="seaIcePressure"/>
+			<var name="atmosphericPressure"/>
 			<var name="windStressZonal"/>
 			<var name="windStressMeridional"/>
 			<var_struct name="tracersSurfaceRestoringFields"/>
@@ -1562,7 +1567,8 @@
 			<var name="windStressZonal"/>
 			<var name="windStressMeridional"/>
 			<var name="surfaceBuoyancyForcing"/>
-			<var name="seaSurfacePressure"/>
+			<var name="seaIcePressure"/>
+			<var name="atmosphericPressure"/>
 		</stream>
 
 		<stream name="Cartesian"
@@ -2591,8 +2597,11 @@
 				are outputs.
 
 			 ********************************************************************* -->
-		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
-			 description="Pressure defined at the sea surface."
+		<var name="seaIcePressure" type="real" dimensions="nCells Time" units="Pa"
+			 description="Pressure at the sea surface due to sea ice."
+		/>
+		<var name="atmosphericPressure" type="real" dimensions="nCells Time" units="Pa"
+			 description="Pressure at the sea surface due to the atmosphere."
 		/>
 		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}"
 			 description="Energy per unit area trapped in frazil ice formation. Always $\ge$ 0.0."

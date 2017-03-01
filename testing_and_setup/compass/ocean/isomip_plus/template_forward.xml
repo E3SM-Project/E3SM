@@ -61,7 +61,8 @@
 				<member name="seaIceHeatFlux" type="var"/>
 				<member name="seaIceSalinityFlux" type="var"/>
 				<member name="landIceSurfaceTemperature" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
+				<member name="seaIcePressure" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="output">
@@ -81,7 +82,8 @@
 				<member name="zMid" type="var"/>
 				<member name="ssh" type="var"/>
 				<member name="landIcePressure" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
+				<member name="seaIcePressure" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
 				<member name="tracersSurfaceValue" type="var_array"/>
 				<member name="surfaceVelocity" type="var_array"/>
 				<member name="tracersSurfaceFlux" type="var_struct"/>

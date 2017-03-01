@@ -176,7 +176,7 @@ except OSError as e:
 inFileName = '%s/init.nc'%(options.inFolder)
 print inFileName
 inFile = Dataset(inFileName,'r')
-#sspRef = numpy.array(inFile.variables['seaSurfacePressure'])
+#sspRef = numpy.array(inFile.variables['atmosphericPressure'])
 oceanThickness = numpy.sum(inFile.variables['layerThickness'][0,:,:],axis=1)
 bottomDepth = numpy.array(inFile.variables['bottomDepth'])
 landIceFraction = inFile.variables['landIceFraction'][0,:]

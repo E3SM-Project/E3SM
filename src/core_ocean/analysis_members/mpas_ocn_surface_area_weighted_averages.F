@@ -193,7 +193,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: surfaceStressMagnitude
       real (kind=RKIND), dimension(:), pointer :: windStressZonal
       real (kind=RKIND), dimension(:), pointer :: windStressMeridional
-      real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure
+      real (kind=RKIND), dimension(:), pointer :: atmosphericPressure
       real (kind=RKIND), dimension(:), pointer :: ssh
       real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
@@ -334,7 +334,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
-         call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+         call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth',boundaryLayerDepth)
@@ -366,7 +366,7 @@ contains
          workArray(20,:) = surfaceStressMagnitude(:)
          if (activeTracersBulkRestoringPKG) workArray(21,:) = windStressZonal(:)
          if (activeTracersBulkRestoringPKG) workArray(22,:) = windStressMeridional(:)
-         workArray(23,:) = seaSurfacePressure(:)
+         workArray(23,:) = atmosphericPressure(:)
          workArray(24,:) = ssh(:)
          workArray(25,:) = activeTracers(indexTemperature,1,:)
          workArray(26,:) = activeTracers(indexSalinity,1,:)
