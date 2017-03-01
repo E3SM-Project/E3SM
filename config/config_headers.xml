@@ -77,7 +77,7 @@
       See  ./case.st_archive --help for details on running the short term archiver script.
       To validate the env_archive.xml file using xmllint, run
       xmllint -schema $SRCROOT/cime/config/xml_schemas/env_archive.xsd env_archive.xml
-      from the case root. 
+      from the case root.
     </header>
   </file>
 
