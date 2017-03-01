@@ -1,4 +1,4 @@
-set(DRV_ROOT "${CIME_ROOT}/driver_cpl")
+set(DRV_ROOT "${CIME_ROOT}/src/drivers/mct")
 
 add_definitions(
   -DNUM_COMP_INST_ATM=1
@@ -14,17 +14,17 @@ add_definitions(
 # Add source directories from stubs. This should be done first, so that in the
 # case of name collisions, the drv versions take precedence (when there are two
 # files with the same name, the one added later wins).
-add_subdirectory(${CIME_ROOT}/share/csm_share/unit_test_stubs/pio pio)
+add_subdirectory(${CIME_ROOT}/src/share/unit_test_stubs/pio pio)
 
 # Add drv source directories
 add_subdirectory(${DRV_ROOT}/shr drv_shr)
-add_subdirectory(${DRV_ROOT}/driver drv_driver)
+add_subdirectory(${DRV_ROOT}/main drv_main)
 
 # Add general unit test directories (stubbed out files, etc.)
 add_subdirectory(utils drv_unit_test_utils)
 add_subdirectory(stubs drv_unit_test_stubs)
 
-# Build libraries containing stuff needed for the unit tests. 
+# Build libraries containing stuff needed for the unit tests.
 # Eventually, these add_library calls should probably be distributed into the
 # correct location, rather than being in this top-level CMakeLists.txt file.
 # Note that we are including the stub pio in the csm_share library for simplicity.
