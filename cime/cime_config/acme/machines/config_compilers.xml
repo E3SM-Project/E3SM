@@ -1124,6 +1124,7 @@ for mct, etc.
 <compiler COMPILER="pgi" MACH="constance">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
