@@ -426,9 +426,6 @@ class FakeTest(SystemTestsCommon):
             os.environ["MPI_SHEPHERD"] = "true"
         super(FakeTest, self).run_indv(suffix, st_archive)
 
-
-
-
 class TESTRUNPASS(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):

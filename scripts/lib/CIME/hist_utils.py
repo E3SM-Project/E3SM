@@ -393,6 +393,10 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
     #make sure permissions are open in baseline directory
     for root, _, files in os.walk(basegen_dir):
         for name in files:
-            os.chmod(os.path.join(root,name), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
+            try:
+                os.chmod(os.path.join(root,name), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
+            except OSError:
+                # We tried. Not worth hard failure here.
+                pass
 
     return True, comments
