@@ -1,0 +1,21 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_PRECT_GPCP",
+      "variables": "PRECT",
+      "ref_name": "GPCP",
+      "reference_name": "GPCP (yrs1979-2009)",
+      "season": ["ANN"],
+      "region": ["global"],
+      "test_units": "mm/day",
+      "diff_units": "mm/day",
+      "backend":"cartopy",
+      "format":["png","ps","pdf","svg"],
+      "test_levels":[0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17],
+      "reference_levels":[0, 0.2, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 17],
+      "diff_levels":[-6, -5, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 5, 6],
+      "levels": []
+                }
+          ]
+}
