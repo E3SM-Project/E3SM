@@ -46,6 +46,8 @@ def create_namelists(case):
     """
     case.flush()
 
+    create_dirs(case)
+
     casebuild = case.get_value("CASEBUILD")
     caseroot = case.get_value("CASEROOT")
     rundir = case.get_value("RUNDIR")
