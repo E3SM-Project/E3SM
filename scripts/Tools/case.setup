@@ -46,7 +46,10 @@ OR
                         help="Does a clean followed by setup")
 
     parser.add_argument("--no-adjust-pio", action="store_true",
-                        help="Do NOT adjust pio settings for new pelayout")
+                        help="Do NOT adjust pio settings for new pelayout."
+                                  "By default if the pelayout is changed the pio layout will be adjusted."
+                                  "This option overrides that feature and leaves the pio layout as currently set.")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -66,7 +69,6 @@ def _main_func(description):
 
 if __name__ == "__main__":
     _main_func(__doc__)
-
 
 
 
