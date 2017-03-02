@@ -201,12 +201,13 @@ class N_TestUnitTest(unittest.TestCase):
 
         machine           = MACHINE.get_machine_name()
         compiler          = MACHINE.get_default_compiler()
-        test_dir = os.path.join(cls._testroot,"driver_f90_tests")
-        cls._testdirs.append(test_dir)
-        os.makedirs(test_dir)
         if (machine != "yellowstone" or compiler != "intel"):
             #TODO: get rid of this restriction
             self.skipTest("Skipping TestUnitTest - only supported on yellowstone with intel")
+
+        test_dir = os.path.join(cls._testroot,"driver_f90_tests")
+        cls._testdirs.append(test_dir)
+        os.makedirs(test_dir)
         test_spec_dir = CIME.utils.get_cime_root()
         unit_test_tool = os.path.abspath(os.path.join(test_spec_dir,"tools","unit_testing","run_tests.py"))
 
@@ -226,10 +227,9 @@ class N_TestUnitTest(unittest.TestCase):
                 teardown_root = False
             elif do_teardown:
                 shutil.rmtree(tfile)
-        if teardown_root:
+
+        if teardown_root and do_teardown:
             shutil.rmtree(cls._testroot)
-
-
 
 ###############################################################################
 class J_TestCreateNewcase(unittest.TestCase):
