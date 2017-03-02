@@ -4,27 +4,41 @@ from output_viewer.build import build_viewer
 from output_viewer.utils import rechmod
 from output_viewer.index import OutputIndex, OutputPage, OutputFile, OutputRow, OutputGroup
 
-path = '/Users/shaheen2/github/acme_diags/acme_diags/plotset5/'
+path = '/Users/shaheen2/github/acme_diags/acme_diags/plotset5'
 
-ind = OutputIndex("Test Package")
+ind = OutputIndex("Name of the model")
 
-page1 = OutputPage("Page 1")
-page2 = OutputPage("Page 2")
+page1 = OutputPage("Set 5", ['Description', 'ANN', 'DJF', 'JJA', 'MAM', 'SON'])
 
-'''
-f1 = OutputFile(os.path.join(path, 'set5_ANN_PRECT_TRMM/test.png'))
+cols = []
+cols.append('some description')
+f1 = OutputFile(os.path.join(path, 'set5_PRECT_GPCP/GPCP_ANN.png'))
+cols.append(f1)
+f1 = OutputFile(os.path.join(path, 'set5_PRECT_GPCP/GPCP_DJF.png'))
+cols.append(f1)
+f1 = OutputFile(os.path.join(path, 'set5_PRECT_GPCP/GPCP_JJA.png'))
+cols.append(f1)
+f1 = OutputFile(os.path.join(path, 'set5_PRECT_GPCP/GPCP_MAM.png'))
+cols.append(f1)
+f1 = OutputFile(os.path.join(path, 'set5_PRECT_GPCP/GPCP_SON.png'))
+cols.append(f1)
 
-r1 = OutputRow('Row', f1)
+r1 = OutputRow('PRECT', cols)
 
-g1 = OutputGroup('Group')
+g1 = OutputGroup('Variables for this obs')
+g2 = OutputGroup('Some Other Group')
 
 page1.addGroup(g1)
+page1.addGroup(g2)
 page1.addRow(r1, 0)
-'''
+
 
 ind.addPage(page1)
-ind.addPage(page2)
+#ind.addPage(page2)
 ind.toJSON(os.path.join(path, "index.json"))
+
+
+
 
 
 
