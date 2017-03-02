@@ -407,8 +407,7 @@
 	<command name="rm">craype</command>
 	<command name="load">craype/2.5.7</command>
 
-	<command name="load">craype-haswell</command>
-	<!--command name="load">craype-mic-knl</command-->
+	<command name="load">craype-mic-knl</command>
 
 	<command name="load">cray-mpich/7.4.4</command>
       </modules>
