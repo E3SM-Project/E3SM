@@ -59,7 +59,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, adjust_pio=True):
 ###############################################################################
     os.chdir(caseroot)
     msg = "case.setup starting"
@@ -178,16 +178,19 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                     env_batch.make_batch_script(input_batch_script, job, case, pestot, tasks_per_node, num_nodes, thread_count)
 
             # Make sure pio settings are consistant
-            for comp in models:
-                pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
-                pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
-                ntasks = case.get_value("NTASKS_%s"%comp)
-                if pio_stride < 0 or pio_stride > ntasks:
-                    pio_stride = min(ntasks, tasks_per_node)
-                    case.set_value("PIO_STRIDE_%s"%comp, pio_stride)
-                if pio_numtasks < 0 or pio_numtasks > ntasks:
-                    pio_numtasks = max(1, ntasks//pio_stride)
-                    case.set_value("PIO_NUMTASKS_%s"%comp, pio_numtasks)
+            if adjust_pio:
+                for comp in models:
+                    pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
+                    pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
+                    ntasks = case.get_value("NTASKS_%s"%comp)
+                    new_stride = min(ntasks, tasks_per_node)
+                    new_numtasks = max(1, ntasks//new_stride)
+                    if pio_stride != new_stride:
+                        logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
+                        case.set_value("PIO_STRIDE_%s"%comp, new_stride)
+                    if pio_numtasks != new_numtasks:
+                        logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
+                        case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
@@ -237,14 +240,14 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module.save_all_env_info("software_environment.txt")
 
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False, no_status=False):
+def case_setup(case, clean=False, test_mode=False, reset=False, no_status=False, adjust_pio=True):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
     if case.get_value("TEST") and not no_status:
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
-                _case_setup_impl(case, caseroot, clean=clean, test_mode=test_mode, reset=reset)
+                _case_setup_impl(case, caseroot, clean=clean, test_mode=test_mode, reset=reset, adjust_pio=adjust_pio)
             except:
                 ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
                 raise
