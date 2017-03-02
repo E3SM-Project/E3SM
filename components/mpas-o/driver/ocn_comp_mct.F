@@ -194,6 +194,11 @@ contains
     real (kind=RKIND) :: dt
     type (MPAS_timeInterval_type) :: timeStep
 
+    ! Added for coupling interval initialization
+    integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
+    real (kind=RKIND), dimension(:),   pointer :: filteredSSHGradientZonal, filteredSSHGradientMeridional
+    real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
+
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
           use iso_c_binding, only : c_char, c_ptr, c_int
@@ -630,6 +635,28 @@ contains
 
 !-----------------------------------------------------------------------
 !
+!   initialize coupling variables
+!   NOTE: could be moved to subroutine
+!
+!-----------------------------------------------------------------------
+
+    if ( runtype == "initial") then
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+          call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_avgZonalSSHGradient)
+          call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_avgMeridionalSSHGradient)
+          call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
+          call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
+          call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
+          filteredSSHGradientZonal      = avgSSHGradient(index_avgZonalSSHGradient,     :)
+          filteredSSHGradientMeridional = avgSSHGradient(index_avgMeridionalSSHGradient, :)
+          block_ptr => block_ptr % next
+       end do
+    endif
+
+!-----------------------------------------------------------------------
+!
 !   send intial state to driver
 !
 !-----------------------------------------------------------------------
@@ -768,6 +795,13 @@ contains
       logical, pointer :: config_write_output_on_startup
       character (len=StrKIND), pointer :: config_restart_timestamp_name
 
+      ! Added for coupling interval initialization
+      integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
+      real (kind=RKIND), dimension(:),   pointer :: filteredSSHGradientZonal, filteredSSHGradientMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
+      real (kind=RKIND), pointer :: config_ssh_grad_relax_timescale
+      real (kind=RKIND) :: timeFilterFactor
+
       iam = domain % dminfo % my_proc_id
       call mpas_io_units_set_stdout(ocnStdOutUnit)
       call mpas_io_units_set_stderr(ocnStdErrUnit)
@@ -901,6 +935,31 @@ contains
          call ocn_validate_state(domain, timeLevel=1)
          if (iam==0) write(stderrUnit,*) '   Completed validating ocean state'
          write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
+      end do
+
+      ! update coupled variables that get calculated on coupling intervals
+      ! NOTE: could be moved to subroutine
+      ! time filter ssh gradient
+      block_ptr => domain_ptr % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_avgZonalSSHGradient)
+         call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_avgMeridionalSSHGradient)
+         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
+         call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
+         call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
+         call mpas_pool_get_config(domain % configs, 'config_ssh_grad_relax_timescale', &
+                                                      config_ssh_grad_relax_timescale)
+         if (config_ssh_grad_relax_timescale < real(ocn_cpl_dt,RKIND)) then
+            timeFilterFactor = 1.0_RKIND
+         else
+            timeFilterFactor = real(ocn_cpl_dt,RKIND) / config_ssh_grad_relax_timescale
+         endif
+         filteredSSHGradientZonal = filteredSSHGradientZonal * (1.0_RKIND - timeFilterFactor) + &
+              avgSSHGradient(index_avgZonalSSHGradient, :) * timeFilterFactor
+         filteredSSHGradientMeridional = filteredSSHGradientMeridional * (1.0_RKIND - timeFilterFactor) + &
+              avgSSHGradient(index_avgMeridionalSSHGradient, :) * timeFilterFactor
+         block_ptr => block_ptr % next
       end do
 
       ! Check if coupler wants us to write a restart file.
@@ -1391,8 +1450,8 @@ contains
                                   seaIceSalinityFluxField, &
                                   riverRunoffFluxField, iceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
-                                  seaSurfacePressureField, iceFractionField, &
-                                  windSpeedSquared10mField, &
+                                  atmosphericPressureField, iceFractionField, &
+                                  seaIcePressureField, windSpeedSquared10mField, &
                                   iceFluxDICField, &
                                   iceFluxDONField, &
                                   iceFluxNO3Field, &
@@ -1417,8 +1476,8 @@ contains
                                                seaIceSalinityFlux, &
                                                riverRunoffFlux, iceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
-                                               seaSurfacePressure, iceFraction, &
-                                               windSpeedSquared10m, &
+                                               atmosphericPressure, iceFraction, &
+                                               seaIcePressure, windSpeedSquared10m, &
                                                iceFluxDIC,       &
                                                iceFluxDON, &
                                                iceFluxNO3, &
@@ -1485,7 +1544,8 @@ contains
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'rainFlux', rainFluxField)
-      call mpas_pool_get_field(forcingPool, 'seaSurfacePressure', seaSurfacePressureField)
+      call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
+      call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
       call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
 
@@ -1504,7 +1564,8 @@ contains
       iceRunoffFlux => iceRunoffFluxField % array
       shortWaveHeatFlux => shortWaveHeatFluxField % array
       rainFlux => rainFluxField % array
-      seaSurfacePressure => seaSurfacePressureField % array
+      atmosphericPressure => atmosphericPressureField % array
+      seaIcePressure => seaIcePressureField % array
       iceFraction => iceFractionField % array
       iceRunoffFlux => iceRunoffFluxField % array
 
@@ -1607,11 +1668,12 @@ contains
         if ( rainFluxField % isActive ) then
            rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
         end if
-        if ( seaSurfacePressureField % isActive ) then
-           ! Set seaSurfacePressure to be the sum of atmospheric bottom pressure 
-           ! and a limited version of sea ice pressure where it limits it to 5m of pressure
-           seaSurfacePressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n) &
-                                 + min( x2o_o % rAttr(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
+        if ( atmosphericPressureField % isActive ) then
+           atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n)
+        end if
+        if ( seaIcePressureField % isActive ) then
+           ! Set seaIcePressure to be limited to 5m of pressure
+           seaIcePressure(i) =  min( x2o_o % rAttr(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
         end if
         if ( iceFractionField % isActive ) then
            iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
@@ -1694,7 +1756,8 @@ contains
    call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
    call mpas_pool_get_field(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'rainFlux', rainFluxField)
-   call mpas_pool_get_field(forcingPool, 'seaSurfacePressure', seaSurfacePressureField)
+   call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
+   call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
    call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
    call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
 
@@ -1772,8 +1835,11 @@ contains
    if ( rainFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(rainFluxField)
    end if
-   if ( seaSurfacePressureField % isActive ) then
-      call mpas_dmpar_exch_halo_field(seaSurfacePressureField)
+   if ( atmosphericPressureField % isActive ) then
+      call mpas_dmpar_exch_halo_field(atmosphericPressureField)
+   end if
+   if ( seaIcePressureField % isActive ) then
+      call mpas_dmpar_exch_halo_field(seaIcePressureField)
    end if
    if ( iceFractionField % isActive ) then
       call mpas_dmpar_exch_halo_field(iceFractionField)
@@ -1868,8 +1934,7 @@ contains
 
    integer :: i, n
    integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &
-                       index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity,      &
-                       index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
+                       index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity
 
    type (block_type), pointer :: block_ptr
 
@@ -1884,6 +1949,7 @@ contains
    integer, dimension(:), pointer :: landIceMask
 
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
+                                               filteredSSHGradientZonal, filteredSSHGradientMeridional, &
                                                CO2Flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
                                                avgOceanSurfaceDON, &
@@ -1896,7 +1962,7 @@ contains
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved
  
-   real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient, &
+   real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
 
@@ -1939,15 +2005,14 @@ contains
      call mpas_pool_get_dimension(forcingPool, 'index_avgSalinitySurfaceValue', index_salinitySurfaceValue)
      call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityZonal', index_avgZonalSurfaceVelocity)
      call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityMeridional', index_avgMeridionalSurfaceVelocity)
-     call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_avgZonalSSHGradient)
-     call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_avgMeridionalSSHGradient)
 
      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
      call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
-     call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
+     call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
+     call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
         call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
@@ -1991,8 +2056,8 @@ contains
        o2x_o % rAttr(index_o2x_So_u, n) = avgSurfaceVelocity(index_avgZonalSurfaceVelocity, i)
        o2x_o % rAttr(index_o2x_So_v, n) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
 
-       o2x_o % rAttr(index_o2x_So_dhdx, n) = avgSSHGradient(index_avgZonalSSHGradient, i)
-       o2x_o % rAttr(index_o2x_So_dhdy, n) = avgSSHGradient(index_avgMeridionalSSHGradient, i)
+       o2x_o % rAttr(index_o2x_So_dhdx, n) = filteredSSHGradientZonal(i)
+       o2x_o % rAttr(index_o2x_So_dhdy, n) = filteredSSHGradientMeridional(i)
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted
           keepFrazil = .true.
