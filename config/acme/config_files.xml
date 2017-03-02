@@ -124,7 +124,7 @@
     <type>char</type>
     <values>
       <value>$CIMEROOT/config/acme/config_archive.xml</value>
-      <value component="cpl"      >$CIMEROOT/drivers/mct/cime_config/config_archive.xml</value>
+      <value component="cpl"      >$CIMEROOT/src/drivers/mct/cime_config/config_archive.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/config_archive.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps/datm/cime_config/config_archive.xml</value>
@@ -133,40 +133,16 @@
       <value component="docn">$CIMEROOT/src/components/data_comps/docn/cime_config/config_archive.xml</value>
       <value component="dwav">$CIMEROOT/src/components/data_comps/dwav/cime_config/config_archive.xml</value>
       <!-- external model components -->
-<!--      <value component="cam"      >$SRCROOT/components/cam/cime_config/config_archive.xml</value>
+      <value component="cam"      >$SRCROOT/components/cam/cime_config/config_archive.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/config_archive.xml</value>
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_archive.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_archive.xml</value>
-      <value component="pop"      >$SRCROOT/components/pop/cime_config/config_archive.xml</value> -->
+      <value component="pop"      >$SRCROOT/components/pop/cime_config/config_archive.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of archive files for each component (for documentation only - DO NOT EDIT)</desc>
     <schema>$CIMEROOT/config/xml_schemas/config_archive.xsd</schema>
-  </entry>
-  <entry id="ARCHIVE_SPEC_FILE">
-    <type>char</type>
-    <values>
-      <value>$CIMEROOT/cime_config/acme/config_archive.xml</value>
-      <value component="cpl"      >$CIMEROOT/driver_cpl/cime_config/config_archive.xml</value>
-      <!-- data model components -->
-      <value component="drof">$CIMEROOT/components/data_comps/drof/cime_config/config_archive.xml</value>
-      <value component="datm">$CIMEROOT/components/data_comps/datm/cime_config/config_archive.xml</value>
-      <value component="dice">$CIMEROOT/components/data_comps/dice/cime_config/config_archive.xml</value>
-      <value component="dlnd">$CIMEROOT/components/data_comps/dlnd/cime_config/config_archive.xml</value>
-      <value component="docn">$CIMEROOT/components/data_comps/docn/cime_config/config_archive.xml</value>
-      <value component="dwav">$CIMEROOT/components/data_comps/dwav/cime_config/config_archive.xml</value>
-      <!-- external model components -->
-<!--      <value component="cam"      >$SRCROOT/components/cam/cime_config/config_archive.xml</value>
-      <value component="cism"     >$SRCROOT/components/cism/cime_config/config_archive.xml</value>
-      <value component="clm"      >$SRCROOT/components/clm/cime_config/config_archive.xml</value>
-      <value component="cice"     >$SRCROOT/components/cice/cime_config/config_archive.xml</value>
-      <value component="pop"      >$SRCROOT/components/pop/cime_config/config_archive.xml</value> -->
-    </values>
-    <group>case_last</group>
-    <file>env_case.xml</file>
-    <desc>file containing specification of archive files for each component (for documentation only - DO NOT EDIT)</desc>
-    <schema>$CIMEROOT/cime_config/xml_schemas/config_archive.xsd</schema>
   </entry>
 
   <entry id="SYSTEM_TESTS_DIR">

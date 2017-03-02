@@ -4,7 +4,7 @@ functions for building CIME models
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, append_status, analyze_build_log, stringify_bool
 from CIME.provenance            import save_build_provenance
-from CIME.preview_namelists     import create_namelists
+from CIME.preview_namelists     import create_namelists, create_dirs
 from CIME.check_lockedfiles     import check_lockedfiles, lock_file, unlock_file
 import glob, shutil, time, threading, gzip, subprocess
 
@@ -406,6 +406,9 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
 """)
 
     case.set_value("BUILD_COMPLETE", False)
+
+    # User may have rm -rf their build directory
+    create_dirs(case)
 
     case.flush()
     if not model_only:
