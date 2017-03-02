@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
+
+<entry_id>
+
+  <entry id="COMP_GLC">
+    <type>char</type>
+    <valid_values>xglc</valid_values>
+    <default_value>xglc</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of land-ice component</desc>
+  </entry>
+
+  <description>
+    <desc compset="_XGLC">Dead land-ice component</desc>
+  </description>
+
+</entry_id>
