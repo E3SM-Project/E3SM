@@ -480,7 +480,11 @@ add_default($nl, 'config_nSnowLayers');
 # Namelist group: initialize #
 ##############################
 
-add_default($nl, 'config_initial_condition_type');
+if ($ic_mode eq 'spunup') {
+        add_default($nl, 'config_initial_condition_type', 'val'=>"restart");
+} else {
+        add_default($nl, 'config_initial_condition_type');
+}
 add_default($nl, 'config_initial_ice_area');
 add_default($nl, 'config_initial_ice_volume');
 add_default($nl, 'config_initial_snow_volume');
