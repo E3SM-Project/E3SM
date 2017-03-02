@@ -41,14 +41,20 @@ OR
 
     parser.add_argument("-t", "--test-mode", action="store_true",
                         help="Keeps the test script when the --clean argument is used")
+
     parser.add_argument("-r", "--reset", action="store_true",
                         help="Does a clean followed by setup")
+
+    parser.add_argument("--no-adjust-pio", action="store_true",
+                        help="Do NOT adjust pio settings for new pelayout."
+                                  "By default if the pelayout is changed the pio layout will be adjusted."
+                                  "This option overrides that feature and leaves the pio layout as currently set.")
 
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.clean, args.test_mode, args.reset
+    return args.caseroot, args.clean, args.test_mode, args.reset, not args.no_adjust_pio
 
 ###############################################################################
 def _main_func(description):
@@ -57,9 +63,15 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, clean, test_mode, reset = parse_command_line(sys.argv, description)
+    caseroot, clean, test_mode, reset, adjust_pio = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        case_setup(case, clean, test_mode, reset)
+        case_setup(case, clean=clean, test_mode=test_mode, reset=reset, adjust_pio=adjust_pio)
 
 if __name__ == "__main__":
     _main_func(__doc__)
+
+
+
+
+
+
