@@ -227,8 +227,6 @@
 
    <batch_system MACH="constance" type="slurm">
     <directives>
-       <directive>-A  climate</directive>
-       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
        <directive>--mail-type=END</directive>
        <directive>--mail-user=email@pnnl.gov</directive>
        <directive>--output=slurm.out</directive>
