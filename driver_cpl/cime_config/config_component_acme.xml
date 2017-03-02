@@ -1,0 +1,714 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
+
+<entry_id>
+
+  <entry id="DRV_THREADING">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turns on component varying thread control in the driver.
+    Used to set the driver namelist variable "drv_threading".</desc>
+  </entry>
+
+  <entry id="SAVE_TIMING">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>logical to save timing files in rundir</desc>
+  </entry>
+
+  <entry id="TIMER_DETAIL">
+    <type>integer</type>
+    <default_value>20</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>timer output depth</desc>
+  </entry>
+
+  <entry id="TPROF_TOTAL">
+    <type>integer</type>
+    <default_value>12</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>timer detail FIXME - add documentation</desc>
+  </entry>
+
+  <entry id="BFBFLAG">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>turns on coupler bit-for-bit reproducibility with varying pe counts</desc>
+  </entry>
+
+  <entry id="BARRIER_OPTION">
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+    <default_value>never</default_value>
+    <values>
+      <value compset="_DATM.+_CLM">ndays</value>
+    </values>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      sets frequency of full model barrier (same options as STOP_OPTION) for synchronization with BARRIER_N and BARRIER_DATE
+    </desc>
+  </entry>
+
+  <entry id="CO2_TYPE_COSTANT_VALUE">
+    <type>real</type>
+    <valid_values></valid_values>
+    <default_value>284.7</default_value>
+    <values>
+      <value compset="^2000">367.0</value>
+      <value compset="^4804">367.0</value>
+    </values>
+    <group>run_co2</group>
+    <file>env_run.xml</file>
+    <desc>
+      Mechanism for setting the CO2 value in ppmv for CLM if
+      CLM_CO2_TYPE is constant POP if OCN_CO2_TYPE is constant.
+    </desc>
+  </entry>
+
+  <entry id="FLDS_WISO">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset="%WISO">TRUE</value>
+      <value compset="%ISO">TRUE</value>
+    </values>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turn on the passing of water isotope fields through the coupler</desc>
+  </entry>
+
+  <entry id="TFREEZE_SALTWATER_OPTION">
+    <type>char</type>
+    <valid_values>minus1p8,linear_salt,mushy</valid_values>
+    <default_value>minus1p8</default_value>
+    <group>run_physics</group>
+    <file>env_run.xml</file>
+    <desc>Freezing point calculation for salt water.</desc>
+  </entry>
+
+  <description>
+    <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
+    <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
+    <desc compset="POP2%ECO">ECO in POP:</desc>
+    <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc>
+    <desc compset="1850_">pre-industrial:</desc>
+    <desc compset="2000_">present day:</desc>
+    <desc compset="HIST_">Historical 1850 to 2000 transient:</desc>
+    <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
+    <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
+    <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
+    <desc compset="4804_">1948 to 2004 transient:</desc>
+    <desc compset="FRC1_">CCMI REFC1 Free running, 1950 to 2010 transient:</desc>
+    <desc compset="SDC1_">CCMI REFC1 Specified dynamics, 1975 to 2010 transient:</desc>
+    <desc compset="C2R8_">RCP8.5 future scenario:</desc>
+    <desc compset="C2R6_">RCP6.0 future scenario:</desc>
+    <desc compset="C2R4_">RCP4.5 future scenario:</desc>
+    <desc compset="5505_">1955 to 2005 transient:</desc>
+    <desc compset="RCP8_">RCP8.5 future scenario:</desc>
+    <desc compset="RCP6_">RCP6.0 future scenario:</desc>
+    <desc compset="RCP4_">RCP4.5 future scenario:</desc>
+    <desc compset="RCP2_">RCP2.6 future scenario:</desc>
+    <desc compset="2013_">RCP4.5 based scenario from 2013 (control for WACCM/CARMA nuclear winter study):</desc>
+    <desc compset="9205_CAM">1992 to 2005 transient:</desc>
+    <desc compset="SDYN_CAM">prescribed meteorology: for stand-alone cam</desc>
+    <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc>
+    <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc>
+    <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
+    <desc compset="PIPD">
+      pre-industrial (1850) to present day:
+      -----------------------------WARNING ------------------------------------------------
+      "PIPD" compsets use complete forcing data from observed sources
+      up to the year 2005. Following this period they are a combination of observed sources
+      (land-use, SST, sea ice, CO2, CH4, N2O) to present day and IPCC RCP4.5 scenario data.
+      -------------------------------------------------------------------------------------
+    </desc>
+    <desc compset="CAM4.*_BGC%B">
+      -----------------------------WARNING ------------------------------------------------
+      This compset is not spun-up! In later versions of the model, spun-up initial
+      conditions will be provided and this warning will be removed.
+      -------------------------------------------------------------------------------------
+    </desc>
+  </description>
+
+  <!-- ===================================================================== -->
+  <!-- component coupling options and frequencies -->
+  <!-- ===================================================================== -->
+
+  <entry id="CPL_SEQ_OPTION">
+    <type>char</type>
+    <valid_values>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
+    <default_value>CESM1_MOD_TIGHT</default_value>
+    <values>
+      <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
+      <value compset="_POP2"                     >CESM1_MOD</value>
+      <value compset="_DATM.*_DLND.*_DICE.*_DOCN">CESM1_MOD</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN">CESM1_MOD</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
+      <value compset="_SOCN"                     >CESM1_MOD</value>
+      <value compset="_MPASO"                    >CESM1_MOD</value>
+      <value compset="_MPASCICE.*_MPASO"         >RASM_OPTION1</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>
+      Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
+      CESM1_ORIG is the cesm1.1 implementation.
+      CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
+      computation.
+      RASM_OPTION1 runs prep ocean before the ocean coupling reducing
+      most of the lags and field inconsistency but still allowing the ocean to run
+      concurrently with the ice and atmosphere.
+      RASM_OPTION2 is similar to RASM_OPTION1
+      but sequences the ice model, prep ocean and ocean model in that order.  The
+      ocean model loses some of the concurrency with the ice model.
+      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables
+      ocean_tight_coupling = true in the driver.  That namelist is gone and the
+      cpl_seq_option flags take it's place.
+      TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
+    </desc>
+  </entry>
+
+  <entry id="CCSM_BGC">
+    <type>char</type>
+    <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
+    <default_value>none</default_value>
+    <values>
+      <value compset="_CAM\d+"     >CO2A</value>
+      <value compset="_DATM"    >none</value>
+      <value compset="_BGC%BPRP">CO2C</value>
+      <value compset="_BGC%BDRD">CO2C</value>
+      <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
+      <value compset="20TR.*_DATM%(QIA|CRU)">CO2A</value>
+      <value compset="RCP.*_DATM%(QIA|CRU)" >CO2A</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Flag to turn on new fields in coupling.
+    If the value is not none, the coupler is compiled so that optional
+    BGC related fields are exchanged between component models.
+    </desc>
+  </entry>
+
+  <entry id="NCPL_BASE_PERIOD">
+    <type>char</type>
+    <valid_values>hour,day,year,decade</valid_values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <default_value>day</default_value>
+    <values>
+      <value compset="_DLND.*_CISM\d">year</value>
+      <value compset="_DLND.*_MPASLI">year</value>
+      <value compset="_SLND.*SOCN.*_MPASLI">day</value>
+      <value compset="_MPASO"       >hour</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">day</value>
+      <value compset="_CAM.*_CLM.*MPASO">day</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">day</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">day</value>
+    </values>
+    <desc>Base period associated with NCPL coupling frequency.
+    This xml variable is only used to set the driver namelist variables,
+    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt, wav_cpl_dt, and esp_dt.</desc>
+  </entry>
+
+  <entry id="ATM_NCPL">
+    <type>integer</type>
+    <default_value>48</default_value>
+    <values>
+      <value compset="_SATM">48</value>
+      <value compset="_XATM">48</value>
+      <value compset="_CAM.*">48</value>
+      <value compset="_DATM">48</value>
+      <value compset="_CAM\d+%WCBC">144</value>
+      <value compset="_CAM\d+%WCMX">288</value>
+      <value compset="_CAM\d+%WCXI">288</value>
+      <value compset="_CAM%ADIAB">48</value>
+      <value compset="_CAM%IDEAL">48</value>
+      <value compset="_DATM%COPYALL_NPS">72</value>
+      <value compset="_DATM.*_CLM">48</value>
+      <value compset="_DATM.*_DICE.*_POP2">4</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
+      <value compset="_DATM.*_CICE.*_DOCN">24</value>
+      <value compset="_DATM.*_DOCN%US20">24</value>
+      <value compset="_MPASO">1</value>
+      <value compset="_DLND.*_MPASLI">1</value>
+      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_CAM.*_CLM.*MPASO">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
+      <value compset=".+" grid="a%0.23x0.31">96</value>
+      <value compset=".+" grid="a%ne4np4">12</value>
+      <value compset=".+" grid="a%ne11np4">12</value>
+      <value compset=".+" grid="a%ne60np4">96</value>
+      <value compset=".+" grid="a%ne120np4">96</value>
+      <value compset=".+" grid="a%ne240np4">144</value>
+      <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
+      <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
+      <value compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</value>
+      <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
+      <value compset=".+" grid="a%T42">72</value>
+      <value compset=".+" grid="a%T85">144</value>
+      <value compset=".+" grid="a%T341">288</value>
+      <value compset=".+" grid="1x1">48</value>
+      <value compset=".+" grid="1x1_urbanc">48</value>
+      <value compset=".+" grid="1x1_mexico">24</value>
+      <value compset=".+" grid="1x1_vancou">24</value>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value>
+      <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of atm coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist atm_cpl_dt, equal to basedt/ATM_NCPL,
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="LND_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <values>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_DLND.*_MPASLI">1</value>
+      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_CAM.*_CLM.*MPASO">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of land coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist atm_cpl_dt, equal to basedt/LND_NCPL,
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="ICE_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <values>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_DLND.*_MPASLI">1</value>
+      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_CAM.*_CLM.*MPASO">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of ice coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist ice_cpl_dt, equal to basedt/ICE_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="OCN_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <values>
+      <value compset="_POP2">1</value>
+      <value compset="_POP2" grid="oi%tx0.1v2">4</value>
+      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
+      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_SWAV">1</value>
+      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
+      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
+      <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_DLND.*_MPASLI">1</value>
+      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_CAM.*_CLM.*MPASO">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oRRS18to6">48</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oRRS15to5">96</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of ocn coupling intervals per NCPL_BASE_PERIOD.
+    Thisn is used to set the driver namelist ocn_cpl_dt, equal to basedt/OCN_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="GLC_NCPL">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <values>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_DLND.*_MPASLI">1</value>
+      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">1</value>
+      <value compset="_CAM.*_CLM.*MPASO">1</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">1</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">1</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
+  </entry>
+
+  <entry id="ROF_NCPL">
+    <type>integer</type>
+    <default_value>8</default_value>
+    <values>
+      <value compset=".+" grid="a%ne4np4">6</value>
+      <value compset=".+" grid="a%ne11np4">6</value>
+      <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
+      <value compset="_DATM.*_MPASO"           >$ATM_NCPL</value>
+      <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
+      <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
+      <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_DLND.*_MPASLI">1</value>
+      <value compset="_SLND.*SOCN.*_MPASLI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</value>
+      <value compset="_CAM.*_CLM.*MPASO">8</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">8</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of rof coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist rof_cpl_dt, equal to basedt/ROF_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="WAV_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of wav coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist wav_cpl_dt, equal to basedt/WAV_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+
+  <!-- Logic for CPL_ALBAV should be reworked to depend on datm forcing rather
+       than compset: see https://github.com/ESMCI/cime/issues/120 -->
+  <entry id="CPL_ALBAV">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset="DATM.+POP\d">TRUE</value>
+      <value compset="DATM.*_MPASO">TRUE</value>
+      <value compset="DATM.+DOCN%IAF">TRUE</value>
+    </values>
+    <group>run_component_cpl</group>
+    <file>env_run.xml</file>
+    <desc>
+      Only used for compsets with DATM and POP (currently C, G and J):
+      If true, compute albedos to work with daily avg SW down
+      If false (default), albedos are computed with the assumption that downward
+      solar radiation from the atm component has a diurnal cycle and zenith-angle
+      dependence. This is normally the case when using an active atm component
+      If true, albedos are computed with the assumption that downward
+      solar radiation from the atm component is a daily average quantity and
+      does not have a zenith-angle dependence. This is often the case when
+      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J).
+      NOTE: This should really depend on the datm forcing and not the compset per se.
+      So, for example, whether it is set in a J compset should depend on
+      what datm forcing is used.
+    </desc>
+  </entry>
+
+  <entry id="CPL_EPBAL">
+    <type>char</type>
+    <valid_values>off,ocn</valid_values>
+    <default_value>off</default_value>
+    <values>
+      <value compset="DATM.+POP\d">ocn</value>
+    </values>
+    <group>run_component_cpl</group>
+    <file>env_run.xml</file>
+    <desc>
+      Only used for compsets with DATM and POP (currently C, G and J):
+      If ocn, ocn provides EP balance factor for precipitation.
+      Provides EP balance factor for precip for POP. A factor computed by
+      POP is applied to precipitation so that precipitation balances
+      evaporation and ocn global salinity does not drift. This is intended
+      for use when coupling POP to a DATM. Only used for C, G and J compsets.
+      Default is off
+    </desc>
+  </entry>
+
+  <entry id="AVGHIST_OPTION">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>never</default_value>
+    <values>
+      <value compset="_DOCN%IAF">nmonths</value>
+    </values>
+    <group>run_drv_history</group>
+    <file>env_run.xml</file>
+    <desc>Sets driver average history file frequency (like REST_OPTION)</desc>
+  </entry>
+
+  <entry id="AVGHIST_N">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <values>
+      <value compset="_DOCN%IAF">1</value>
+    </values>
+    <group>run_drv_history</group>
+    <file>env_run.xml</file>
+    <desc>Sets driver average history file frequency (like REST_N)</desc>
+  </entry>
+
+  <entry id="AVGHIST_DATE">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <group>run_drv_history</group>
+    <file>env_run.xml</file>
+    <desc>yyyymmdd format, sets driver average history date (like REST_DATE)</desc>
+  </entry>
+
+  <entry id="BUDGETS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset="DATM.*_POP\d"    >TRUE</value>
+      <value compset="CAM.*_POP\d"     >TRUE</value>
+      <value compset="CAM.*_DOCN%SOM">TRUE</value>
+    </values>
+    <group>run_budgets</group>
+    <file>env_run.xml</file>
+    <desc>logical that turns on diagnostic budgets for driver</desc>
+  </entry>
+
+  <entry id="CCSM_CO2_PPMV">
+    <type>real</type>
+    <valid_values></valid_values>
+    <default_value>379.000</default_value>
+    <values>
+      <value compset="^1850"					>284.7</value>
+      <value compset="^HIST.+BGC%BPRP"				>284.7</value>
+      <value compset="^20TR.+BGC%BPRP"				>284.7</value>
+      <value compset="^HIST_CAM4%FCHM"				>0.000001</value>
+      <value compset="^20TR_CAM4%FCHM"				>0.000001</value>
+      <value compset="^2000"					>367.0</value>
+      <value compset="^1850.+DATM%NYF"				>379.000</value>
+      <value compset="^1850.+DATM%NYF.*_POP2%ECO"		>284.7</value>
+      <value compset="^2000.+DATM%NYF"				>379.000</value>
+      <value compset="^2000.+DATM%IAF"				>379.000</value>
+      <value compset="^HIST.+DATM"				>367.0</value>
+      <value compset="^20TR.+DATM"				>367.0</value>
+      <value compset="^4804.+DATM"				>367.0</value>
+      <value compset="^RCP2.+DATM"				>367.0</value>
+      <value compset="^RCP4.+DATM"				>367.0</value>
+      <value compset="^RCP6.+DATM"				>367.0</value>
+      <value compset="^RCP8.+DATM"				>367.0</value>
+      <value compset="^2000.+XATM"				>379.000</value>
+      <value compset="^HIST.+CAM"				>0.000001</value>
+      <value compset="^20TR.+CAM"				>0.000001</value>
+      <value compset="^5505.+CAM"				>0.000001</value>
+      <value compset="^RCP2.+CAM"				>0.000001</value>
+      <value compset="^RCP4.+CAM"				>0.000001</value>
+      <value compset="^RCP6.+CAM"				>0.000001</value>
+      <value compset="^RCP8.+CAM"				>0.000001</value>
+      <value compset="^2013.+CAM"				>0.000001</value>
+      <value compset="^GEOS.+CAM"				>0.000001</value>
+      <value compset="^AMIP.+CAM"				>0.000001</value>
+      <value compset="^AR95"					>368.9</value>
+      <value compset="^AR97"					>368.9</value>
+      <value compset="^2003"					>367.0</value>
+      <value compset="^1850.+AV1C"				>284.725</value>
+      <value compset="^20TR.+AV1C"				>284.725</value>
+      <value compset="^2000.+AV1C-03"				>368.865</value>
+      <value compset="^2000.+AV1C-04"				>368.865</value>
+      <value compset="^2000.+AV1C-04P"				>368.865</value>
+      <value compset="^2000.+AV1C-04P2"				>368.865</value>
+      <value compset="^2000.+AV1C-L"				>368.865</value>
+      <!-- Override values based on CAM (WACCM) chemistry -->
+      <value compset="CAM[45]%W"				>0.000001</value>
+      <value compset="CAM[45]%SSOA"				>0.000001</value>
+      <!-- Mariana's fix to allow isotopes to get the proper CO2 value -->
+      <value compset="CAM[45]%WISOall"				>284.7</value>
+      <value compset="^2000.+CAM[45]%WCSC"			>368.9</value>
+      <value compset="^2000.+CAM[45]%MOZM"			>0.000001</value>
+      <value compset="^2000.+CAM[45]%MMOS"			>0.000001</value>
+      <value compset="^2000.+CAM[45]%TMOZ"			>0.000001</value>
+      <value compset="^2000.+CAM[45]%SMA3"			>0.000001</value>
+      <value compset="^2000.+CAM[45]%SMA7"			>0.000001</value>
+      <value compset="^2000.+CAM[45]%SSOA"			>0.000001</value>
+    </values>
+    <group>run_co2</group>
+    <file>env_run.xml</file>
+    <desc>This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
+      introduced to coordinate this value among multiple components.</desc>
+  </entry>
+
+  <entry id="SCIENCE_SUPPORT">
+    <type>char</type>
+    <valid_values>on, off</valid_values>
+    <default_value>off</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>If set to off, this component set/ grid specification is not scientifically supported.
+    If set to on, this component set/ grid specification is scientifically supported</desc>
+  </entry>
+
+  <entry id="CCSM_CCOST">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <values>
+      <!-- estimated cost (used only for development purposes) -->
+      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>-3</value> <!-- A -->
+      <value compset="_DATM.*_DICE.*_DOCN.*_WW3"				>-3</value> <!-- A_WAV -->
+      <value compset="_DATM.*_SLND.*_DICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- C -->
+      <value compset="_DATM.*_SLND.*_DICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- CECO -->
+      <value compset="_DATM.*_SLND.*_CICE.*_DOCN%SOM_DROF.*_SGLC_SWAV"		> 1</value> <!-- D -->
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- G,H -->
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- GECO -->
+      <value compset="_DATM.*_CLM.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-2</value> <!-- I -->
+      <value compset="_DATM.*_CLM.*_SICE_SOCN_MOSART.*_SGLC_SWAV"               >-2</value> <!-- IM -->
+      <value compset="_SATM_DLND.*_SICE_SOCN_SROF_CISM_SWAV"			>-5</value> <!-- TG -->
+      <value compset="_SATM_DLND.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-5</value> <!-- U -->
+      <value compset="_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV"			>-6</value> <!-- U -->
+      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>0</value>  <!-- E -->
+      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- F -->
+      <value compset="_CAM4.*_CLM.*_DICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- K -->
+      <value compset="_CAM4.*_DLND.*_DICE.*_DOCN.*_SROF_SGLC_SWAV"		>0</value>  <!-- L -->
+      <value compset="_CAM4%TMOZ.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"		>1</value>  <!-- FMOZ -->
+      <value compset="GEOS_CAM4%TBAM.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"	>3</value>  <!-- FSDBAM -->
+      <value compset="_CAM5"							>1</value>
+      <value compset="_CAM[45]%W"						>3</value>
+      <value compset="_CAM[45]%WCSC"						>1</value>
+      <value compset="_CAM5%MOZM"						>3</value>
+      <value compset="_CAM4%MOZS"						>3</value>
+      <value compset="_CAM4%SMA[37]"						>3</value>
+      <value compset="_CAM4%SSOA"						>3</value>
+      <value compset="_CAM4%TMOZ"						>1</value>
+      <value compset="_CAM4.*_BGC%BDRD"						>2</value>
+      <value compset="_CAM4.*_BGC%BPRP"						>2</value>
+      <value compset="CAM.*_CLM.*_CICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>2</value> <!-- BDAR -->
+      <value compset="DATM.*_DLND.*_DICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>1</value> <!-- CDAR -->
+      <value compset="DATM.*_DLND.*_CICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>1</value> <!-- GDAR -->
+    </values>
+    <group>case_cost</group>
+    <file>env_case.xml</file>
+    <desc>2**n relative cost of compset where B is 1 (DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="GLC_NEC">
+    <type>integer</type>
+    <valid_values>0,1,3,5,10,36</valid_values>
+    <default_value>10</default_value>
+    <values>
+      <value compset="_SGLC">0</value>
+    </values>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
+    Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
+  </entry>
+
+  <entry id="GLC_TWO_WAY_COUPLING">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset="_CLM45.+CISM\d">TRUE</value>
+      <value compset="_CLM45.*_MPASLI">TRUE</value>
+      <value compset="_CLM50.+CISM\d">TRUE</value>
+      <!-- Turn on two-way coupling for TG compsets - even though there are no
+	   feedbacks for a TG compset, this will give us additional diagnostics -->
+      <value compset="_DLND.+CISM\d">TRUE</value>
+    </values>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Whether the glacier component feeds back to the rest of the system
+      This affects:
+      (1) Whether CLM updates its areas based on glacier areas sent from GLC
+      (2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
+      Note that this is set to TRUE by default for TG compsets - even though there are
+      no feedbacks for TG compsets, this enables extra coupler diagnostics for these
+      compsets.</desc>
+  </entry>
+
+  <entry id="CCSM_GCOST">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>case_cost</group>
+    <file>env_case.xml</file>
+    <desc>2**n relative cost of grid where f19_g15 is 1 (DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="CCSM_MCOST">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>0</default_value>
+    <group>case_cost</group>
+    <file>env_case.xml</file>
+    <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
+  </entry>
+
+  <description>
+    <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
+    <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
+    <desc compset="POP2%ECO">ECO in POP:</desc>
+    <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc>
+    <desc compset="1850_">pre-industrial:</desc>
+    <desc compset="2000_">present day:</desc>
+    <desc compset="HIST_">Historical 1850 to 2000 transient:</desc>
+    <desc compset="20TR_">Historical 1850 to 2000 transient:</desc>
+    <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
+    <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
+    <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
+    <desc compset="4804_">1948 to 2004 transient:</desc>
+    <desc compset="FRC1_">CCMI REFC1 Free running, 1950 to 2010 transient:</desc>
+    <desc compset="SDC1_">CCMI REFC1 Specified dynamics, 1975 to 2010 transient:</desc>
+    <desc compset="C2R8_">RCP8.5 future scenario:</desc>
+    <desc compset="C2R6_">RCP6.0 future scenario:</desc>
+    <desc compset="C2R4_">RCP4.5 future scenario:</desc>
+    <desc compset="5505_">1955 to 2005 transient:</desc>
+    <desc compset="RCP8_">RCP8.5 future scenario:</desc>
+    <desc compset="RCP6_">RCP6.0 future scenario:</desc>
+    <desc compset="RCP4_">RCP4.5 future scenario:</desc>
+    <desc compset="RCP2_">RCP2.6 future scenario:</desc>
+    <desc compset="2013_">RCP4.5 based scenario from 2013 (control for WACCM/CARMA nuclear winter study):</desc>
+    <desc compset="9205_CAM">1992 to 2005 transient:</desc>
+    <desc compset="GEOS_CAM">GEOS5 meteorology: for stand-alone cam</desc>
+    <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc>
+    <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc>
+    <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
+    <desc compset="20TR_CLM4[05]%CN">CLM transient land use:</desc>
+    <desc compset="PIPD">
+      pre-industrial (1850) to present day:
+      -----------------------------WARNING ------------------------------------------------
+      "PIPD" compsets use complete forcing data from observed sources
+      up to the year 2005. Following this period they are a combination of observed sources
+      (land-use, SST, sea ice, CO2, CH4, N2O) to present day and IPCC RCP4.5 scenario data.
+      -------------------------------------------------------------------------------------
+    </desc>
+    <desc compset="CAM4.*_BGC%B">
+      -----------------------------WARNING ------------------------------------------------
+      This compset is not spun-up! In later versions of the model, spun-up initial
+      conditions will be provided and this warning will be removed.
+      -------------------------------------------------------------------------------------
+    </desc>
+  </description>
+
+</entry_id>

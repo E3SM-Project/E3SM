@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+
+"""
+Compare namelists. Should be called by an ACME test. Designed
+to not be sensitive to order or whitespace.
+"""
+
+from standard_script_setup import *
+import CIME.compare_namelists
+from CIME.utils import expect
+
+import argparse, sys, os
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s <Path to gold namelist file> <Path to new namelist file> [-c <CASEBASEID>] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Compare namelist files\033[0m
+    > %s baseline_dir/test/namelistfile mytestarea/namelistfile -c <CASE>
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("gold_file", help="Path to gold file")
+
+    parser.add_argument("new_file", help="Path to file to compare against gold")
+
+    parser.add_argument("-c", "--case", action="store", dest="case", default=None,
+                        help="The case base id (<TESTCASE>.<GRID>.<COMPSET>). Helps us normalize data.")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    # Normalize case
+    if (args.case is not None):
+        args.case = CIME.utils.normalize_case_id(args.case)
+
+    return args.gold_file, args.new_file, args.case
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        CIME.utils.run_cmd_no_fail("python -m doctest %s/compare_namelists.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        return
+
+    gold_file, compare_file, case = \
+        parse_command_line(sys.argv, description)
+
+    if (case is None):
+        logging.warning("No case id data available, will not be able to normalize values as effectively")
+    else:
+        logging.info("Using case: '%s'" % case)
+
+    success, comments = CIME.compare_namelists.compare_namelist_files(gold_file, compare_file, case)
+    expect(success,
+           "Namelist diff between files %s and %s\n%s" % (gold_file, compare_file, comments))
+
+    print "Files %s and %s MATCH" % (gold_file, compare_file)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
