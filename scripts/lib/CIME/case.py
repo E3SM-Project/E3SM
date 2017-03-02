@@ -942,21 +942,21 @@ class Case(object):
             os.makedirs(newdir)
 
         # Open a new README.case file in $self._caseroot
-        append_status(" ".join(sys.argv), caseroot=self._caseroot, sfile="README.case")
+        append_status(" ".join(sys.argv), "README.case", caseroot=self._caseroot)
         append_status("Compset longname is %s"%self.get_value("COMPSET"),
-                      caseroot=self._caseroot, sfile="README.case")
+                      "README.case", caseroot=self._caseroot)
         append_status("Compset specification file is %s" %
                       (self.get_value("COMPSETS_SPEC_FILE")),
-                      caseroot=self._caseroot, sfile="README.case")
+                      "README.case", caseroot=self._caseroot)
         append_status("Pes     specification file is %s" %
                       (self.get_value("PES_SPEC_FILE")),
-                      caseroot=self._caseroot, sfile="README.case")
+                      "README.case", caseroot=self._caseroot)
         for component_class in self._component_classes:
             if component_class == "CPL":
                 continue
             comp_grid = "%s_GRID"%component_class
             append_status("%s is %s"%(comp_grid,self.get_value(comp_grid)),
-                          caseroot=self._caseroot, sfile="README.case")
+                          "README.case", caseroot=self._caseroot)
         if not clone:
             self._create_caseroot_sourcemods()
         self._create_caseroot_tools()

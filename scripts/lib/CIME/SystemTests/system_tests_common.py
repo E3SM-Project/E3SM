@@ -3,7 +3,7 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_status
+from CIME.utils import append_testlog
 from CIME.case_setup import case_setup
 from CIME.case_run import case_run
 from CIME.case_st_archive import case_st_archive
@@ -89,7 +89,7 @@ class SystemTestsCommon(object):
                     success = False
                     excmsg = "Exception during build:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
                     logger.warning(excmsg)
-                    append_status(excmsg, sfile="TestStatus.log")
+                    append_testlog(excmsg)
 
                 time_taken = time.time() - start_time
                 with self._test_status:
@@ -150,7 +150,7 @@ class SystemTestsCommon(object):
             success = False
             excmsg = "Exception during run:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
             logger.warning(excmsg)
-            append_status(excmsg, sfile="TestStatus.log")
+            append_testlog(excmsg)
 
         # Writing the run status should be the very last thing due to wait_for_tests
         time_taken = time.time() - start_time
@@ -225,7 +225,7 @@ class SystemTestsCommon(object):
 
     def _component_compare_copy(self, suffix):
         comments = copy(self._case, suffix)
-        append_status(comments, sfile="TestStatus.log")
+        append_testlog(comments)
 
     def _component_compare_test(self, suffix1, suffix2):
         """
@@ -233,7 +233,7 @@ class SystemTestsCommon(object):
         run case needs indirection based on success.
         """
         success, comments = compare_test(self._case, suffix1, suffix2)
-        append_status(comments, sfile="TestStatus.log")
+        append_testlog(comments)
         status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
         with self._test_status:
             self._test_status.set_status("%s_%s_%s" % (COMPARE_PHASE, suffix1, suffix2), status)
@@ -300,7 +300,7 @@ class SystemTestsCommon(object):
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
                 else:
                     comment = "memleak detected, memory went from %f to %f in %d days" % (originalmem, finalmem, finaldate-originaldate)
-                    append_status(comment, sfile="TestStatus.log")
+                    append_testlog(comment)
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
@@ -339,7 +339,7 @@ class SystemTestsCommon(object):
         with self._test_status:
             # compare baseline
             success, comments = compare_baseline(self._case)
-            append_status(comments, sfile="TestStatus.log")
+            append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             ts_comments = comments if "\n" not in comments else None
             self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
@@ -361,7 +361,7 @@ class SystemTestsCommon(object):
                 else:
                     comment = "Error: Memory usage increase > 10% from baseline"
                     self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
-                    append_status(comment, sfile="TestStatus.log")
+                    append_testlog(comment)
 
             # compare throughput to baseline
             current = self._get_throughput(newestcpllogfile)
@@ -374,7 +374,7 @@ class SystemTestsCommon(object):
                 else:
                     comment = "Error: Computation time increase > 25% from baseline"
                     self._test_status.set_status(THROUGHPUT_PHASE, TEST_FAIL_STATUS, comments=comment)
-                    append_status(comment, sfile="TestStatus.log")
+                    append_testlog(comment)
 
     def _generate_baseline(self):
         """
@@ -383,7 +383,7 @@ class SystemTestsCommon(object):
         with self._test_status:
             # generate baseline
             success, comments = generate_baseline(self._case)
-            append_status(comments, sfile="TestStatus.log")
+            append_testlog(comments)
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             self._test_status.set_status("%s" % GENERATE_PHASE, status)
             basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))

@@ -7,7 +7,7 @@ import shutil, glob, re, os
 from CIME.XML.standard_module_setup import *
 from CIME.case_submit               import submit
 from CIME.XML.env_archive           import EnvArchive
-from CIME.utils                     import append_status
+from CIME.utils                     import run_and_log_case_status
 from os.path                        import isdir, join
 
 logger = logging.getLogger(__name__)
@@ -379,21 +379,15 @@ def case_st_archive(case):
 
     logger.info("st_archive starting")
 
-    # do short-term archiving
-    append_status("st_archiving starting", caseroot=caseroot, sfile="CaseStatus")
-
     archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
+    functor = lambda: _archive_process(case, archive)
+    run_and_log_case_status(functor, "st_archive", caseroot=caseroot)
 
-    _archive_process(case, archive)
-
-    append_status("st_archiving completed", caseroot=caseroot, sfile="CaseStatus")
     logger.info("st_archive completed")
 
     # resubmit case if appropriate
     resubmit = case.get_value("RESUBMIT")
     if resubmit > 0:
-        append_status("resubmitting from st_archive",
-                      caseroot=caseroot, sfile="CaseStatus")
         logger.info("resubmitting from st_archive, resubmit=%d"%resubmit)
         if case.get_value("MACH") == "mira":
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
