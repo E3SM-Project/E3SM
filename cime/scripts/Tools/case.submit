@@ -45,13 +45,16 @@ OR
     parser.add_argument("--resubmit", action="store_true",
                         help="Used with tests only, to continue rather than restart a test. ")
 
+    parser.add_argument("--batchargs",
+                        help="Used to pass additional arguments to batch system. ")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.expect(args.prereq is None, "--prereq not currently supported")
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.job, args.no_batch, args.resubmit
+    return args.caseroot, args.job, args.no_batch, args.resubmit, args.batchargs
 
 ###############################################################################
 def _main_func(description):
@@ -60,9 +63,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, job, no_batch, resubmit = parse_command_line(sys.argv, description)
+    caseroot, job, no_batch, resubmit, batchargs = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        submit(case, job=job, no_batch=no_batch, resubmit=resubmit)
+        submit(case, job=job, no_batch=no_batch, resubmit=resubmit, batchargs=batchargs)
 
 if __name__ == "__main__":
     _main_func(__doc__)
