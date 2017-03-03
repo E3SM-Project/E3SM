@@ -11,6 +11,7 @@ module cice_core
    use mpas_timekeeping
    use cice_analysis_driver
    use cice_column
+   use mpas_threading
 
    private
    public :: &
@@ -55,10 +56,19 @@ module cice_core
       real (kind=RKIND), pointer :: config_dt
       type (MPAS_Time_Type) :: startTime
       integer :: ierr
+      integer :: numThreads
 
       call mpas_pool_set_error_level(MPAS_POOL_WARN)
 
       iErr = 0
+
+      numThreads = mpas_threading_get_max_threads()
+
+      write(stderrUnit, *) ''
+      write(stderrUnit, *) ' *****************************************************************************'
+      write(stderrUnit, *) ' MPI Task ', domain % dminfo % my_proc_id, ' has access to ', numThreads, ' threads'
+      write(stderrUnit, *) ' *****************************************************************************'
+      write(stderrUnit, *) ''
 
       ! write out namelist options
       write(stderrUnit,*) ; write(stderrUnit,*) " ----- namelist options used -----" ;  write(stderrUnit,*)
