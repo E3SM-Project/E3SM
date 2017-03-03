@@ -88,9 +88,6 @@ def check_case(case, caseroot):
     create_namelists(case) # Must be called before check_all_input_data
     logger.info("Checking that inputdata is available as part of case submission")
     check_all_input_data(case)
-    # Now that we have baselines, do baseline operations
-    if case.get_value("TEST"):
-        case_cmpgen_namelists(case)
 
     expect(case.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")

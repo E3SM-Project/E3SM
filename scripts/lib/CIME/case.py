@@ -1062,7 +1062,7 @@ class Case(object):
         clonename = self.get_value("CASE")
         logger.info(" Successfully created new case %s from clone case %s " %(newcasename, clonename))
 
-        case_setup(newcase, clean=False, test_mode=False)
+        case_setup(newcase)
 
         return newcase
 

@@ -175,8 +175,8 @@ class TestScheduler(object):
                     if os.path.isdir(test_baseline):
                         existing_baselines.append(test_baseline)
                 expect(allow_baseline_overwrite or len(existing_baselines) == 0,
-                           "Baseline directories already exists %s\n"\
-                           "Use --allow_baseline_overwrite to avoid this error"%existing_baselines)
+                       "Baseline directories already exists %s\n" \
+                       "Use -o to avoid this error" % existing_baselines)
         else:
             self._baseline_root = None
 
@@ -536,12 +536,9 @@ class TestScheduler(object):
         test_dir  = self._get_test_dir(test)
         rv = self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 
-        # A little subtle. If namelists_only, the RUN phase, when the namelists would normally
-        # be handled, is not going to happen, so we have to do it here.
-        if self._namelists_only:
-            # It's OK for this command to fail with baseline diffs but not catastrophically
-            cmdstat, output, errput = run_cmd("./case.cmpgen_namelists", from_dir=test_dir)
-            expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % (output + "\n" + errput))
+        # It's OK for this command to fail with baseline diffs but not catastrophically
+        cmdstat, output, errput = run_cmd("./case.cmpgen_namelists", from_dir=test_dir)
+        expect(cmdstat in [0, TESTS_FAILED_ERR_CODE], "Fatal error in case.cmpgen_namelists: %s" % (output + "\n" + errput))
 
         return rv
 

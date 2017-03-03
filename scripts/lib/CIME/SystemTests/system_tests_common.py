@@ -65,7 +65,7 @@ class SystemTestsCommon(object):
             logging.warning("Resetting case due to detected re-run of phase %s" % phase)
             self._case.set_initial_test_values()
 
-            case_setup(self._case, reset=True, test_mode=True, no_status=True)
+            case_setup(self._case, reset=True, test_mode=True)
 
     def build(self, sharedlib_only=False, model_only=False):
         """
