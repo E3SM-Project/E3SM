@@ -761,9 +761,9 @@ class O_TestTestScheduler(TestCreateTestCommon):
                 self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
             else:
                 self.assertTrue(test_name in [pass_test, mem_pass_test])
-                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PASS_STATUS, msg=test_name)
                 if (test_name == mem_pass_test):
-                    self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_PASS_STATUS)
+                    self.assertEqual(ts.get_status(MEMLEAK_PHASE), TEST_PASS_STATUS, msg=test_name)
 
     ###########################################################################
     def test_c_use_existing(self):

@@ -775,17 +775,26 @@ def compute_total_time(job_cost_map, proc_pool):
 
     return current_time
 
-def append_status(msg, caseroot='.', sfile="CaseStatus"):
+def append_status(msg, sfile, caseroot='.'):
     """
     Append msg to sfile in caseroot
     """
-    ctime = ""
-    # Don't put the time stamp in TestStatus
-    if sfile != "TestStatus":
-        ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
-    with open(os.path.join(caseroot,sfile), "a") as fd:
+    ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
+    with open(os.path.join(caseroot, sfile), "a") as fd:
         fd.write(ctime + msg + "\n")
         fd.write("\n ---------------------------------------------------\n\n")
+
+def append_testlog(msg, caseroot='.'):
+    """
+    Add to TestStatus.log file
+    """
+    append_status(msg, "TestStatus.log", caseroot)
+
+def append_case_status(phase, status, msg=None, caseroot='.'):
+    """
+    Update CaseStatus file
+    """
+    append_status("%s %s%s" % (phase, status, " %s" % msg if msg else ""), "CaseStatus", caseroot)
 
 def does_file_have_string(filepath, text):
     """
@@ -1036,6 +1045,20 @@ def stringify_bool(val):
     val = False if val is None else val
     expect(type(val) is bool, "Wrong type for val '%s'" % repr(val))
     return "TRUE" if val else "FALSE"
+
+def run_and_log_case_status(func, phase, caseroot='.'):
+    append_case_status(phase, "starting", caseroot=caseroot)
+    rv = None
+    try:
+        rv = func()
+    except:
+        e = sys.exc_info()[0]
+        append_case_status(phase, "error", msg=("\n%s" % e), caseroot=caseroot)
+        raise
+    else:
+        append_case_status(phase, "success", caseroot=caseroot)
+
+    return rv
 
 class SharedArea(object):
     """

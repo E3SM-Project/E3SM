@@ -3,7 +3,7 @@ Run a testcase.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, find_system_test, append_status, find_proc_id
+from CIME.utils import expect, find_system_test, append_testlog, find_proc_id
 from CIME.SystemTests.system_tests_common import *
 
 import sys, signal
@@ -61,7 +61,7 @@ def case_test(case, testname=None):
         caseroot = case.get_value("CASEROOT")
         with TestStatus(test_dir=caseroot) as ts:
             ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="failed to initialize")
-        append_status(str(sys.exc_info()[1]), sfile="TestStatus.log")
+        append_testlog(str(sys.exc_info()[1]))
         raise
 
     success = test.run()

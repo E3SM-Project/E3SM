@@ -13,7 +13,7 @@ from CIME.XML.standard_module_setup import *
 import CIME.compare_namelists
 import CIME.utils
 from update_acme_tests import get_recommended_test_time
-from CIME.utils import append_status, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name
+from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
@@ -237,7 +237,7 @@ class TestScheduler(object):
             # Note: making this directory could cause create_newcase to fail
             # if this is run before.
             os.makedirs(test_dir)
-        append_status(output,caseroot=test_dir,sfile="TestStatus.log")
+        append_testlog(output, caseroot=test_dir)
 
     ###########################################################################
     def _get_case_id(self, test):
@@ -655,7 +655,7 @@ class TestScheduler(object):
             self._update_test_status_file(test, test_phase, status)
 
         if test_phase == XML_PHASE:
-            append_status("Case Created using: "+" ".join(sys.argv), caseroot=self._get_test_dir(test), sfile="README.case")
+            append_status("Case Created using: "+" ".join(sys.argv), "README.case", caseroot=self._get_test_dir(test))
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
