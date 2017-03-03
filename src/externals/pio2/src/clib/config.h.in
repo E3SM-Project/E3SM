@@ -19,4 +19,7 @@
  * will use the included bget() package for memory management. */
 #define PIO_USE_MALLOC @USE_MALLOC@
 
+/** Set to non-zero to turn on logging. Output may be large. */
+#define PIO_ENABLE_LOGGING @ENABLE_LOGGING@
+
 #endif /* _PIO_CONFIG_ */

@@ -40,6 +40,7 @@ execute_process (COMMAND ${HOSTNAME_CMD}
                  OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 ## -- Set hostname ID (e.g., alcf, nwsc, nersc, ...)
+message ("hostname is ${HOSTNAME}")
 
 # UCAR/NWSC Machines
 if (HOSTNAME MATCHES "^yslogin" OR
@@ -47,13 +48,16 @@ if (HOSTNAME MATCHES "^yslogin" OR
     HOSTNAME MATCHES "^caldera" OR
     HOSTNAME MATCHES "^pronghorn")
     set (HOSTNAME_ID "nwsc")
+# New UCAR/NWSC SGI Machines
+elseif (HOSTNAME MATCHES "^laramie")
+   set (HOSTNAME_ID "nwscla")
 # ALCF/Argonne Machines
 elseif (HOSTNAME MATCHES "^mira" OR
         HOSTNAME MATCHES "^cetus" OR
         HOSTNAME MATCHES "^vesta" OR
         HOSTNAME MATCHES "^cooley")
     set (HOSTNAME_ID "alcf")
-# ALCF/Argonne Machines
+# NERSC Machines
 elseif (HOSTNAME MATCHES "^edison" OR
         HOSTNAME MATCHES "^cori" OR
         HOSTNAME MATCHES "^nid")
@@ -64,6 +68,19 @@ elseif (HOSTNAME MATCHES "^h2ologin" )
 # CGD local linux cluster
 elseif (HOSTNAME MATCHES "^hobart")
     set (HOSTNAME_ID "cgd")
+# Argonne Linux workstations
+elseif (HOSTNAME MATCHES "^compute001" OR
+        HOSTNAME MATCHES "^thwomp" OR
+        HOSTNAME MATCHES "^stomp" OR
+        HOSTNAME MATCHES "^crush" OR
+        HOSTNAME MATCHES "^crank" OR
+        HOSTNAME MATCHES "^steamroller" OR
+        HOSTNAME MATCHES "^grind" OR
+        HOSTNAME MATCHES "^churn" OR
+        HOSTNAME MATCHES "^trounce" OR
+        HOSTNAME MATCHES "^thrash" OR
+        HOSTNAME MATCHES "^vanquish")
+    set (HOSTNAME_ID "anlworkstation")
 else ()
      if (CMAKE_SYSTEM_NAME MATCHES "Catamount")
         set (HOSTNAME_ID "ncsa")

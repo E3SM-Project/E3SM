@@ -1,3 +1,8 @@
+/**
+ * @file
+ * PIO list functions.
+ */
+#include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
 #include <string.h>
@@ -9,213 +14,286 @@ static iosystem_desc_t *pio_iosystem_list=NULL;
 static file_desc_t *pio_file_list = NULL;
 static file_desc_t *current_file=NULL;
 
+/** Add a new entry to the global list of open files.
+ *
+ * @param file pointer to the file_desc_t struct for the new file.
+ */
 void pio_add_to_file_list(file_desc_t *file)
 {
-  file_desc_t *cfile;
-  int cnt=-1;
-  // on iotasks the fh returned from netcdf should be unique, on non-iotasks we
-  // need to generate a unique fh, we do this with cnt, its a negative index 
+    file_desc_t *cfile;
 
-  file->next = NULL;
-  cfile = pio_file_list;
-  current_file = file;
-  if(cfile==NULL){
-    pio_file_list = file;
-  }else{
-    cnt =  min(cnt,cfile->fh-1);
-    while(cfile->next != NULL)
-      {
-	cfile=cfile->next;
-	cnt =  min(cnt,cfile->fh-1);
-      }
-    cfile->next = file;
-  }
-  if(! file->iosystem->ioproc || ((file->iotype != PIO_IOTYPE_PNETCDF &&
-				   file->iotype != PIO_IOTYPE_NETCDF4P)  && 
-				  file->iosystem->io_rank>0)) 
-    file->fh = cnt;
-  
-  cfile = pio_file_list;
+    assert(file);
 
-}
+    /* This file will be at the end of the list, and have no next. */
+    file->next = NULL;
 
+    /* Get a pointer to the global list of files. */
+    cfile = pio_file_list;
 
-     
-file_desc_t *pio_get_file_from_id(int ncid)
-{
-  file_desc_t *cfile;
+    /* Keep a global pointer to the current file. */
+    current_file = file;
 
-  cfile = NULL;
-
-  if(current_file != NULL && current_file->fh == ncid)
-    cfile=current_file;
-  for(cfile=pio_file_list; cfile != NULL; cfile=cfile->next){
-    if(cfile->fh == ncid){
-      current_file = cfile;
-      break;
+    /* If there is nothing in the list, then file will be the first
+     * entry. Otherwise, move to end of the list. */
+    if (!cfile)
+        pio_file_list = file;
+    else
+    {
+        while (cfile->next)
+            cfile = cfile->next;
+        cfile->next = file;
     }
-  }
-
-  if(cfile==NULL){
-    printf("ERROR: Operation on undefined file %s %d\n",__FILE__,__LINE__);
-  }
-  return cfile;
 }
-  
+
+/** Given ncid, find the file_desc_t data for an open file. The ncid
+ * used is the interally generated pio_ncid.
+ *
+ * @param ncid the PIO assigned ncid of the open file.
+ * @param cfile1 pointer to a pointer to a file_desc_t. The pointer
+ * will get a copy of the pointer to the file info.
+ *
+ * @returns 0 for success, error code otherwise.
+ */
+int pio_get_file(int ncid, file_desc_t **cfile1)
+{
+    file_desc_t *cfile = NULL;
+
+    LOG((2, "pio_get_file ncid = %d", ncid));
+
+    /* Caller must provide this. */
+    if (!cfile1)
+        return PIO_EINVAL;
+
+    /* Find the file pointer. */
+    if (current_file && current_file->pio_ncid == ncid)
+        cfile = current_file;
+    else
+        for (cfile = pio_file_list; cfile; cfile = cfile->next)
+            if (cfile->pio_ncid == ncid)
+            {
+                current_file = cfile;
+                break;
+            }
+
+    /* If not found, return error. */
+    if (!cfile)
+        return PIO_EBADID;
+
+    /* We depend on every file having a pointer to the iosystem. */
+    if (!cfile->iosystem)
+        return PIO_EINVAL;
+
+    /* Let's just ensure we have a valid IO type. */
+    pioassert(iotype_is_valid(cfile->iotype), "invalid IO type", __FILE__, __LINE__);
+
+    /* Copy pointer to file info. */
+    *cfile1 = cfile;
+
+    return PIO_NOERR;
+}
+
+/** Delete a file from the list of open files.
+ *
+ * @param ncid ID of file to delete from list
+ * @returns 0 for success, error code otherwise
+ */
 int pio_delete_file_from_list(int ncid)
 {
 
-  file_desc_t *cfile, *pfile;
+    file_desc_t *cfile, *pfile = NULL;
 
-  pfile = NULL;
+    /* Look through list of open files. */
+    for (cfile = pio_file_list; cfile; cfile = cfile->next)
+    {
+        if (cfile->pio_ncid == ncid)
+        {
+            if (!pfile)
+                pio_file_list = cfile->next;
+            else
+                pfile->next = cfile->next;
 
-  for(cfile=pio_file_list; cfile != NULL; cfile=cfile->next){
-    if(cfile->fh == ncid){
-      if(pfile == NULL){
-	pio_file_list = cfile->next;
-      }else{
-	pfile->next = cfile->next;
-      }
-      if(current_file==cfile)
-	current_file=pfile;
-      free(cfile);      
-      return PIO_NOERR;
+            if (current_file == cfile)
+                current_file = pfile;
+
+            /* Free the memory used for this file. */
+            free(cfile);
+            return PIO_NOERR;
+        }
+        pfile = cfile;
     }
-    pfile = cfile;
-  }
-  return PIO_EBADID;
+
+    /* No file was found. */
+    return PIO_EBADID;
 }
 
+/** Delete iosystem info from list.
+ *
+ * @param piosysid the iosysid to delete
+ * @returns 0 on success, error code otherwise
+ */
 int pio_delete_iosystem_from_list(int piosysid)
 {
+    iosystem_desc_t *ciosystem, *piosystem = NULL;
 
-  iosystem_desc_t *ciosystem, *piosystem;
+    LOG((1, "pio_delete_iosystem_from_list piosysid = %d", piosysid));
 
-  piosystem = NULL;
-
-  //  printf(" %d iosystem_top = %ld \n",__LINE__,pio_iosystem_list);
-
-  for(ciosystem=pio_iosystem_list; ciosystem != NULL; ciosystem=ciosystem->next){
-    if(ciosystem->iosysid == piosysid){
-      if(piosystem == NULL){
-	pio_iosystem_list = ciosystem->next;
-      }else{
-	piosystem->next = ciosystem->next;
-      }
-      free(ciosystem);
-      return PIO_NOERR;
+    for (ciosystem = pio_iosystem_list; ciosystem; ciosystem = ciosystem->next)
+    {
+        if (ciosystem->iosysid == piosysid)
+        {
+            if (piosystem == NULL)
+                pio_iosystem_list = ciosystem->next;
+            else
+                piosystem->next = ciosystem->next;
+            free(ciosystem);
+            return PIO_NOERR;
+        }
+        piosystem = ciosystem;
     }
-    piosystem = ciosystem;
-  }
-  return PIO_EBADID;
+    return PIO_EBADID;
 }
 
+/** Add iosystem info to list.
+ *
+ * @param ios pointer to the iosystem_desc_t info to add.
+ * @returns 0 on success, error code otherwise
+ */
 int pio_add_to_iosystem_list(iosystem_desc_t *ios)
 {
-  iosystem_desc_t *cios;
-  int i=1;
+    iosystem_desc_t *cios;
+    int i = 1;
 
-  //assert(ios != NULL);
-  ios->next = NULL;
-  cios = pio_iosystem_list;
-  if(cios==NULL)
-    pio_iosystem_list = ios;
-  else{
-    i++;
-    while(cios->next != NULL){
-      cios = cios->next;
-      i++;
+    assert(ios);
+
+    ios->next = NULL;
+    cios = pio_iosystem_list;
+    if (!cios)
+        pio_iosystem_list = ios;
+    else
+    {
+        i++;
+        while (cios->next)
+        {
+            cios = cios->next;
+            i++;
+        }
+        cios->next = ios;
     }
-    cios->next = ios;
-  }
-  ios->iosysid = i << 16;
-  //  ios->iosysid = i ;
-  //  printf(" ios = %ld %d %ld\n",ios, ios->iosysid,ios->next);
-  return ios->iosysid;
+
+    ios->iosysid = i << 16;
+
+    return ios->iosysid;
 }
 
+/** Get iosystem info from list.
+ *
+ * @param iosysid id of the iosystem
+ * @returns pointer to iosystem_desc_t, or NULL if not found.
+ */
 iosystem_desc_t *pio_get_iosystem_from_id(int iosysid)
 {
-  iosystem_desc_t *ciosystem;
+    iosystem_desc_t *ciosystem;
 
-  ciosystem = pio_iosystem_list;
+    LOG((2, "pio_get_iosystem_from_id iosysid = %d", iosysid));
 
-  while(ciosystem != NULL){
-    // fprintf(stderr, "%d ciosystem %ld %ld %d\n",__LINE__,pio_iosystem_list, ciosystem,iosysid);
-    if(ciosystem->iosysid == iosysid){
-      return ciosystem;
-    }
-    ciosystem = ciosystem->next;
-  }
-  return NULL;
-  
+    for (ciosystem = pio_iosystem_list; ciosystem; ciosystem = ciosystem->next)
+        if (ciosystem->iosysid == iosysid)
+            return ciosystem;
+
+    return NULL;
 }
 
+/** Count the number of open iosystems.
+ *
+ * @param niosysid pointer that will get the number of open iosystems.
+ * @returns 0 for success.
+ */
+int
+pio_num_iosystem(int *niosysid)
+{
+    int count = 0;
+
+    /* Count the elements in the list. */
+    for (iosystem_desc_t *c = pio_iosystem_list; c; c = c->next)
+        count++;
+
+    /* Return count to caller via pointer. */
+    if (niosysid)
+        *niosysid = count;
+
+    return PIO_NOERR;
+}
+
+/** Add an iodesc.
+ *
+ * @param io_desc_t pointer to data to add to list.
+ * @returns the ioid of the newly added iodesc.
+ */
 int pio_add_to_iodesc_list(io_desc_t *iodesc)
 {
-  io_desc_t *ciodesc;
-  int imax=512;
+    io_desc_t *ciodesc;
+    int imax = 512;
 
-  iodesc->next = NULL;
-  if(pio_iodesc_list == NULL)
-    pio_iodesc_list = iodesc;
-  else{
-    imax++;
-    for(ciodesc = pio_iodesc_list; ciodesc->next != NULL; ciodesc=ciodesc->next, imax=ciodesc->ioid+1);
-    ciodesc->next = iodesc;
-  }
-  iodesc->ioid = imax;
-  current_iodesc = iodesc;
-  //  printf("In add to list %d\n",iodesc->ioid);
-  return iodesc->ioid;
+    iodesc->next = NULL;
+    if (pio_iodesc_list == NULL)
+        pio_iodesc_list = iodesc;
+    else{
+        imax++;
+        for (ciodesc = pio_iodesc_list; ciodesc->next; ciodesc=ciodesc->next, imax=ciodesc->ioid + 1);
+        ciodesc->next = iodesc;
+    }
+    iodesc->ioid = imax;
+    current_iodesc = iodesc;
+
+    return iodesc->ioid;
 }
 
-     
+/** Get an iodesc.
+ *
+ * @param ioid ID of iodesc to get.
+ * @returns pointer to the iodesc struc.
+ */
 io_desc_t *pio_get_iodesc_from_id(int ioid)
 {
-  io_desc_t *ciodesc;
+    io_desc_t *ciodesc = NULL;
 
-  ciodesc = NULL;
+    if (current_iodesc != NULL && current_iodesc->ioid == abs(ioid))
+        ciodesc = current_iodesc;
+    else
+        for (ciodesc = pio_iodesc_list; ciodesc; ciodesc = ciodesc->next)
+            if (ciodesc->ioid == abs(ioid))
+            {
+                current_iodesc = ciodesc;
+                break;
+            }
 
-  if(current_iodesc != NULL && current_iodesc->ioid == abs(ioid))
-    ciodesc=current_iodesc;
-  for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
-    if(ciodesc->ioid == abs(ioid)){
-      current_iodesc = ciodesc;
-      break;
-    }
-  }
-  /*
-  if(ciodesc==NULL){
-    for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
-      printf("%s %d %d %d\n",__FILE__,__LINE__,ioid,ciodesc->ioid);
-    }
-  }
-  */
-
-  return ciodesc;
+    return ciodesc;
 }
-  
+
+/** Delete an iodesc.
+ *
+ * @param ioid ID of iodesc to delete.
+ * @returns 0 on success, error code otherwise.
+ */
 int pio_delete_iodesc_from_list(int ioid)
 {
+    io_desc_t *ciodesc, *piodesc = NULL;
 
-  io_desc_t *ciodesc, *piodesc;
+    for (ciodesc = pio_iodesc_list; ciodesc; ciodesc = ciodesc->next)
+    {
+        if (ciodesc->ioid == ioid)
+        {
+            if (piodesc == NULL)
+                pio_iodesc_list = ciodesc->next;
+            else
+                piodesc->next = ciodesc->next;
 
-  piodesc = NULL;
-  //  if(abs(ioid)==518) printf("In delete from list %d\n", ioid);
-  for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
-    if(ciodesc->ioid == ioid){
-      if(piodesc == NULL){
-	pio_iodesc_list = ciodesc->next;
-      }else{
-	piodesc->next = ciodesc->next;
-      }
-      if(current_iodesc==ciodesc)
-	current_iodesc=pio_iodesc_list;
-      brel(ciodesc);
-      return PIO_NOERR;
+            if (current_iodesc == ciodesc)
+                current_iodesc = pio_iodesc_list;
+            free(ciodesc);
+            return PIO_NOERR;
+        }
+        piodesc = ciodesc;
     }
-    piodesc = ciodesc;
-  }
-  return PIO_EBADID;
+    return PIO_EBADID;
 }

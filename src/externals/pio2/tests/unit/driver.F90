@@ -23,9 +23,10 @@ Program pio_unit_test_driver
        ltest_netcdf4c,     &
        ltest_pnetcdf,    &
        stride
-#if defined( _NETCDF4) && defined(LOGGING)
-  integer, external :: nc_set_log_level2
-#endif
+  integer ret_val
+  character(len=pio_max_name) :: errmsg
+  character(len=pio_max_name) :: expected
+  
   ! Set up MPI
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
@@ -62,7 +63,7 @@ Program pio_unit_test_driver
 
      ! Ignore namelist values if PIO not built with correct options
      ! (i.e. don't test pnetcdf if not built with pnetcdf)
-
+     ret_val = PIO_set_log_level(2)
 #ifndef _NETCDF
      if (ltest_netcdf) then
         write(*,"(A,1x,A)") "WARNING: can not test netcdf files because PIO", &
@@ -116,11 +117,22 @@ Program pio_unit_test_driver
        PIO_rearr_subset,  & ! rearr
        pio_iosystem, base=1)     ! iosystem
 
-  call PIO_seterrorhandling(pio_iosystem, PIO_BCAST_ERROR)
+  call PIO_seterrorhandling(pio_iosystem, PIO_RETURN_ERROR)
+  call PIO_seterrorhandling(PIO_DEFAULT, PIO_RETURN_ERROR)
 
   fail_cnt = 0
   test_cnt = 0
 
+  ! Test pio_strerror.
+  ret_val = PIO_strerror(-33, errmsg);
+  print *, 'errcode =', -33, ' strerror = ', errmsg
+  expected = 'NetCDF: Not a valid ID'
+  if (trim(errmsg) .ne. expected) then
+     err_msg = 'expected ' // trim(expected) // ' and got ' // trim(errmsg)
+     print *, err_msg
+     call parse(err_msg, fail_cnt)
+  end if
+     
   do test_id=1,ntest
      if (ltest(test_id)) then
         ! Make sure i is a valid test number
@@ -142,9 +154,7 @@ Program pio_unit_test_driver
                 write(*,"(A,I0)") "Error, not configured for test #", test_id
            call MPI_Abort(MPI_COMM_WORLD, 0, ierr)
         end select
-#if defined( _NETCDF4) && defined(LOGGING)
-        if(master_task) ierr = nc_set_log_level2(3)
-#endif
+        
         ! test_create()
         if (master_task) write(*,"(3x,A,1x)") "testing PIO_createfile..."
         call test_create(test_id, err_msg)
@@ -193,6 +203,9 @@ Program pio_unit_test_driver
   end if
 
   call PIO_finalize(pio_iosystem, ierr)
+#ifdef TIMING
+  call t_finalizef()
+#endif
   call MPI_Finalize(ierr)
   if(fail_cnt>0) then
      stop 1

@@ -1,5 +1,5 @@
 PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
-PIO_TF_AUTO_TEST_SUB_BEGIN test_put_1dval
+PIO_TF_AUTO_TEST_SUB_BEGIN test_put_1datt
   Implicit none
   type(file_desc_t) :: pio_file
   character(len=PIO_TF_MAX_STR_LEN) :: filename
@@ -50,10 +50,10 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_1dval
     deallocate(iotype_descs)
   end if
 
-PIO_TF_AUTO_TEST_SUB_END test_put_1dval
+PIO_TF_AUTO_TEST_SUB_END test_put_1datt
 
 PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
-PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dval
+PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1datt
   Implicit none
   type(file_desc_t) :: pio_file
   character(len=PIO_TF_MAX_STR_LEN) :: filename
@@ -116,5 +116,154 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dval
     deallocate(iotype_descs)
   end if
 
-PIO_TF_AUTO_TEST_SUB_END test_put_get_1dval
+PIO_TF_AUTO_TEST_SUB_END test_put_get_1datt
+
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dvar
+  Implicit none
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(var_desc_t)  :: pio_var, pio_cvar
+  integer :: pio_dim
+  integer, parameter :: DIM_LEN = 100
+  PIO_TF_FC_DATA_TYPE, dimension(DIM_LEN) :: pval, gval
+  CHARACTER(len=DIM_LEN) :: pcval, gcval
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+  integer :: i, ret
+  
+  pval = pio_tf_world_sz_
+  pcval = "DUMMY_STRING"
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  filename = "test_pio_ncdf_get_put.testfile"
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing type :", iotype_descs(i)
+    ret = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
+    PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(filename))
+
+    ! Since file is just created no need to enter redef
+    ret = PIO_def_dim(pio_file, 'dummy_dim_put_val', DIM_LEN, pio_dim)
+    PIO_TF_CHECK_ERR(ret, "Failed to define dim:" // trim(filename))
+
+    ret = PIO_def_var(pio_file, 'dummy_var_put_val', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+    PIO_TF_CHECK_ERR(ret, "Failed to define var:" // trim(filename))
+
+    ret = PIO_def_var(pio_file, 'dummy_var_put_cval', PIO_char, (/pio_dim/), pio_cvar)
+    PIO_TF_CHECK_ERR(ret, "Failed to define char var:" // trim(filename))
+
+    ret = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ret, "Failed to enddef:" // trim(filename))
+
+    ret = PIO_put_var(pio_file, pio_var, pval);
+    PIO_TF_CHECK_ERR(ret, "Failed to put var:" // trim(filename))
+
+    ret = PIO_put_var(pio_file, pio_cvar, pcval);
+    PIO_TF_CHECK_ERR(ret, "Failed to put char var:" // trim(filename))
+
+    call PIO_syncfile(pio_file)
+
+    ret = PIO_get_var(pio_file, pio_var, gval);
+    PIO_TF_CHECK_ERR(ret, "Failed to get var:" // trim(filename))
+
+    PIO_TF_CHECK_VAL((gval, pval), "Got wrong value")
+
+    ret = PIO_get_var(pio_file, pio_cvar, gcval);
+    PIO_TF_CHECK_ERR(ret, "Failed to get char var:" // trim(filename))
+
+    PIO_TF_CHECK_VAL((gcval, pcval), "Got wrong value")
+
+    call PIO_closefile(pio_file)
+    call PIO_deletefile(pio_tf_iosystem_, filename);
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+PIO_TF_AUTO_TEST_SUB_END test_put_get_1dvar
+
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dvar_4parts
+  Implicit none
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(var_desc_t)  :: pio_var, pio_cvar
+  integer :: pio_dim
+  integer, parameter :: DIM_LEN = 16
+  integer, parameter :: PART_LEN = DIM_LEN / 4
+  PIO_TF_FC_DATA_TYPE, dimension(DIM_LEN) :: pval, gval
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+  integer :: i, ret
+  integer, dimension(1) :: start, count = PART_LEN
+  
+  do i=1,DIM_LEN
+    pval(i) = i
+  end do
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  filename = "test_pio_ncdf_get_put.testfile"
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing type :", iotype_descs(i)
+    ret = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
+    PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(filename))
+
+    ! Since file is just created no need to enter redef
+    ret = PIO_def_dim(pio_file, 'dummy_dim_put_val', DIM_LEN, pio_dim)
+    PIO_TF_CHECK_ERR(ret, "Failed to define dim:" // trim(filename))
+
+    ret = PIO_def_var(pio_file, 'dummy_var_put_val', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+    PIO_TF_CHECK_ERR(ret, "Failed to define var:" // trim(filename))
+
+    ret = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ret, "Failed to enddef:" // trim(filename))
+
+    start = 1
+    ret = PIO_put_var(pio_file, pio_var, start, count, pval(1 : PART_LEN))
+    PIO_TF_CHECK_ERR(ret, "Failed to put var (1st part):" // trim(filename))
+
+    start = PART_LEN + 1
+    ret = PIO_put_var(pio_file, pio_var, start, count, pval(PART_LEN + 1 : PART_LEN * 2))
+    PIO_TF_CHECK_ERR(ret, "Failed to put var (2nd part):" // trim(filename))
+
+    start = PART_LEN * 2 + 1
+    ret = PIO_put_var(pio_file, pio_var, start, count, pval(PART_LEN * 2 + 1 : PART_LEN * 3))
+    PIO_TF_CHECK_ERR(ret, "Failed to put var (3rd part):" // trim(filename))
+
+    start = PART_LEN * 3 + 1
+    ret = PIO_put_var(pio_file, pio_var, start, count, pval(PART_LEN * 3 + 1 : DIM_LEN))
+    PIO_TF_CHECK_ERR(ret, "Failed to put var (4th part):" // trim(filename))
+
+    call PIO_syncfile(pio_file)
+
+    start = PART_LEN * 3 + 1
+    ret = PIO_get_var(pio_file, pio_var, start, count, gval(PART_LEN * 3 + 1 : DIM_LEN))
+    PIO_TF_CHECK_ERR(ret, "Failed to get var (4th part):" // trim(filename))
+
+    start = PART_LEN * 2 + 1
+    ret = PIO_get_var(pio_file, pio_var, start, count, gval(PART_LEN * 2 + 1 : PART_LEN * 3))
+    PIO_TF_CHECK_ERR(ret, "Failed to get var (3rd part):" // trim(filename))
+
+    start = PART_LEN + 1
+    ret = PIO_get_var(pio_file, pio_var, start, count, gval(PART_LEN + 1 : PART_LEN * 2))
+    PIO_TF_CHECK_ERR(ret, "Failed to get var (2nd part):" // trim(filename))
+
+    start = 1
+    ret = PIO_get_var(pio_file, pio_var, start, count, gval(1 : PART_LEN))
+    PIO_TF_CHECK_ERR(ret, "Failed to get var (1st part):" // trim(filename))
+
+    PIO_TF_CHECK_VAL((gval, pval), "Got wrong value")
+
+    call PIO_closefile(pio_file)
+    call PIO_deletefile(pio_tf_iosystem_, filename);
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+PIO_TF_AUTO_TEST_SUB_END test_put_get_1dvar_4parts
 
