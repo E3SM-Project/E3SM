@@ -1048,14 +1048,17 @@ def stringify_bool(val):
 
 def run_and_log_case_status(func, phase, caseroot='.'):
     append_case_status(phase, "starting", caseroot=caseroot)
+    rv = None
     try:
-        return func()
+        rv = func()
     except:
         e = sys.exc_info()[0]
         append_case_status(phase, "error", msg=("\n%s" % e), caseroot=caseroot)
         raise
     else:
         append_case_status(phase, "success", caseroot=caseroot)
+
+    return rv
 
 class SharedArea(object):
     """
