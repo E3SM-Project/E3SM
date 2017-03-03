@@ -79,6 +79,24 @@ def mask_by( var, maskvar, low_limit=None, high_limit=None ):
     var.mask = newmask
     return var
 
+#def qflx_to_lhflx( var ):
+#    """computes latent heat flux from q flux ."""
+#
+#    qflx = _convert_units( var, 'kg/(m^2 s)' )
+#    lv = 2.501e6              # latent heat of evaporation units J/kg 
+#    lhflx = qflx *lv
+#    lhflx.units = "W/m^2" 
+#    lhflx.long_name = "Surf latent heat flux"
+#    return lhflx
+
+def qflx_convert_units (var):
+    print "testtest"
+    var = _convert_units( var, 'kg/(m^2 s)' )
+    var = var *3600.0*24  #convert to mm/day
+    print 3600*24
+    var.units = 'mm/day'
+    return var
+
 
 derived_variables = {
     'PRECT': [
@@ -112,6 +130,12 @@ derived_variables = {
     ],
     'TREFHT': [
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
+    ],
+    'QFLX': [
+        (['QFLX'], lambda qflx: qflx_convert_units(qflx))
+    ],
+    'LHFLX': [
+        (['LHFLX'], lambda lhflx: _convert_units(lhflx, target_units="W/m^2")),
     ]
 }
 

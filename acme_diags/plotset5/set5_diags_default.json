@@ -1,7 +1,7 @@
 {
     "set5": [
           {
-      "case_id": "set5_PRECT_GPCP",
+      "case_id": "set5_GPCP",
       "variables": "PRECT",
       "ref_name": "GPCP",
       "reference_name": "GPCP (yrs1979-2009)",
@@ -10,7 +10,7 @@
       "levels": []
                 },
          {
-      "case_id": "set5_SST_HadISST",
+      "case_id": "set5_HadISST",
       "variables": "SST",
       "ref_name": "HadISST_CL",
       "reference_name": "HadISST/OI.v2 (Climatology) 1982-2001",
@@ -18,7 +18,7 @@
       "levels": []
                 },
           {
-      "case_id": "set5_SST_HadISST",
+      "case_id": "set5_HadISST",
       "variables": "SST",
       "ref_name": "HadISST_PI",
       "reference_name": "HadISST/OI.v2 (Pre-Indust) 1870-1900",
@@ -26,7 +26,7 @@
       "levels": []
                 },
           {
-      "case_id": "set5_SST_HadISST",
+      "case_id": "set5_HadISST",
       "variables": "SST",
       "ref_name": "HadISST_PD",
       "reference_name": "HadISST/OI.v2 (Present Day) 1999-2008",
@@ -47,6 +47,15 @@
       "variables": "TREFHT",
       "ref_name": "LEGATES",
       "reference_name": "Legates & Willmott 1920-1980",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_NVAP",
+      "variables": "PREH2O",
+      "ref_name": "NVAP",
+      "reference_name": "NVAP 1988-1999",
       "season": ["ANN"],
       "region": [],
       "levels": []

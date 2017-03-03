@@ -23,7 +23,8 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
     f_data = open('set5_diags_WILLMOTT.json').read()
-    #f_data = open('set5_diags_NVA.json').read()
+    f_data = open('set5_diags_NVAP.json').read()
+    f_data = open('set5_diags_WHOI.json').read()
     json_file = json.loads(f_data)
 
     parameters = []
@@ -88,8 +89,12 @@ for parameter in parameters:
         # domain can pass in process_derived_var after Charles fix cdutil.domain'unit problem
         #mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod, domain)
         #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
+        print '****************'
         mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
         mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
+        print mv1.units
+        print mv2.units
+
         #try:
         #    mv1 = f_mod(var)
         #except:
