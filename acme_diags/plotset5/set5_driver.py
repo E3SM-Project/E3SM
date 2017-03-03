@@ -16,13 +16,13 @@ from acme_diags.derivations.default_regions import regions_specs
 
 
 def make_parameters(orginal_parameter):
-    f_data = open('set5_diags_default.json').read()
+    #f_data = open('set5_diags_default.json').read()
     #f_data = open('set5_diags.json').read()
-    #f_data = open('set5_diags_MERRA.json').read()
+#    f_data = open('set5_diags_MERRA.json').read()
     #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
-    #f_data = open('set5_diags_WILLMOTT.json').read()
+    f_data = open('set5_diags_WILLMOTT.json').read()
     #f_data = open('set5_diags_NVA.json').read()
     json_file = json.loads(f_data)
 
@@ -101,8 +101,14 @@ for parameter in parameters:
         # special case, cdms didn't properly convert mask with fill value -999.0, filed issue with denise
         if ref_name == 'WILLMOTT':
             #mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
-            mv2=MV2.masked_where(mv2==-999.,mv2)
-            mv1 = mv1 * 30. #approximate way to convert to seasonal cumulative precipitation, need to have solution in derived variable, unit convert from mm/day to cm
+            mv2=MV2.masked_where(mv2==-999.,mv2) # this is cdms2 for bad mask, denise's fix should fix
+            #following should move to derived variable
+            days_season = {'ANN':365,'DJF':90,'MAM':92,'JJA':92,'SON':91}
+            mv1 = mv1 * days_season[season] * 0.1 #following AMWG approximate way to convert to seasonal cumulative precipitation, need to have solution in derived variable, unit convert from mm/day to cm
+            mv1.units = 'cm'
+            mv2.units = 'cm'
+            
+            
 
          
         #for variables without z axis:

@@ -99,10 +99,10 @@ derived_variables = {
         (['PRECIP_LAND'],rename)
     ],
     'Z3': [
-        (['Z3'], lambda z3: _convert_units(z3, target_units="hectometers"))
+        (['Z3'], lambda z3: _convert_units(z3, target_units="hectometer"))
     ],
     'PSL': [
-        (['PSL'], lambda psl: _convert_units(psl, target_units="mb"))
+        (['PSL'], lambda psl: _convert_units(psl, target_units="hectopascal"))
     ],
     'T': [
         (['T'], lambda t: _convert_units(t, target_units="K"))
