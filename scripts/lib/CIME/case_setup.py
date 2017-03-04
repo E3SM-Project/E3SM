@@ -239,13 +239,13 @@ def adjust_pio_layout(case, new_pio_stride):
 
 
 ###############################################################################
-def case_setup(case, clean=False, test_mode=False, reset=False, no_status=False, adjust_pio=True):
+def case_setup(case, clean=False, test_mode=False, reset=False, adjust_pio=True):
 ###############################################################################
     caseroot, casebaseid = case.get_value("CASEROOT"), case.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
     functor = lambda: _case_setup_impl(case, caseroot, clean, test_mode, reset, adjust_pio)
 
-    if case.get_value("TEST") and not no_status:
+    if case.get_value("TEST") and not test_mode:
         test_name = casebaseid if casebaseid is not None else case.get_value("CASE")
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
@@ -254,6 +254,9 @@ def case_setup(case, clean=False, test_mode=False, reset=False, no_status=False,
                 ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
                 raise
             else:
-                ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
+                if clean:
+                    ts.set_status(SETUP_PHASE, TEST_PEND_STATUS)
+                else:
+                    ts.set_status(SETUP_PHASE, TEST_PASS_STATUS)
     else:
         run_and_log_case_status(functor, phase, caseroot=caseroot)
