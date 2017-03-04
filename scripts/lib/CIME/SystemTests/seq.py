@@ -3,7 +3,7 @@ CIME smoke test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.case_setup import case_setup
+from CIME.case_setup import case_setup, adjust_pio_layout
 from CIME.check_lockedfiles import *
 import shutil
 
@@ -45,18 +45,19 @@ class SEQ(SystemTestsCommon):
             for comp in comp_classes:
                 self._case.set_value("ROOTPE_%s"%comp, 0)
         else:
-            rootpe = 2
+            totalpes = self._case.get_value("TOTALPES")
+            newntasks = max(1, totalpes/len(comp_classes))
+            rootpe = newntasks
+
             for comp in comp_classes:
                 # here we set the cpl to have the first 2 tasks
                 # and each component to have a different ROOTPE
                 if comp == "CPL":
-                    self._case.set_value("NTASKS_CPL", 2)
+                    self._case.set_value("NTASKS_CPL", newntasks)
                 else:
-                    ntasks = self._case.get_value("NTASKS_%s"%comp)
-                    if ntasks > 1:
-                        self._case.set_value("NTASKS_%s"%comp, max(1,ntasks-rootpe))
-                        self._case.set_value("ROOTPE_%s"%comp, rootpe)
-                        rootpe += 1
+                    self._case.set_value("NTASKS_%s"%comp, newntasks)
+                    self._case.set_value("ROOTPE_%s"%comp, rootpe)
+                    rootpe += newntasks
         self._case.flush()
         case_setup(self._case, test_mode=True, reset=True)
         self.clean_build()
@@ -86,6 +87,11 @@ class SEQ(SystemTestsCommon):
         shutil.copy("%s/%s.exe.SEQ1"%(exeroot,cime_model),
                     "%s/%s.exe"%(exeroot,cime_model))
         restore("env_mach_pes.SEQ1.xml", newname="env_mach_pes.xml")
+
+        # update the pelayout settings for this run
+        self._case.read_xml()
+        adjust_pio_layout(self._case, self._case.get_value("PES_PER_NODE"))
+
         self.run_indv()
 
         restore("env_mach_pes.SEQ2.xml", newname="env_mach_pes.xml")
@@ -95,5 +101,9 @@ class SEQ(SystemTestsCommon):
                     "%s/%s.exe"%(exeroot,cime_model))
 
         logger.info("doing a second %d %s test with rootpes set to zero" % (stop_n, stop_option))
+        # update the pelayout settings for this run
+        self._case.read_xml()
+        adjust_pio_layout(self._case, self._case.get_value("PES_PER_NODE"))
+
         self.run_indv(suffix="seq")
         self._component_compare_test("base", "seq")

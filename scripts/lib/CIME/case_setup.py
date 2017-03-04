@@ -174,18 +174,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
 
             # Make sure pio settings are consistant
             if adjust_pio:
-                for comp in models:
-                    pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
-                    pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
-                    ntasks = case.get_value("NTASKS_%s"%comp)
-                    new_stride = min(ntasks, tasks_per_node)
-                    new_numtasks = max(1, ntasks//new_stride)
-                    if pio_stride != new_stride:
-                        logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
-                        case.set_value("PIO_STRIDE_%s"%comp, new_stride)
-                    if pio_numtasks != new_numtasks:
-                        logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
-                        case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
+                adjust_pio_layout(case, tasks_per_node)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
@@ -230,6 +219,24 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "sh")
         env_module.make_env_mach_specific_file(compiler, debug, mpilib, "csh")
         env_module.save_all_env_info("software_environment.txt")
+
+
+def adjust_pio_layout(case, new_pio_stride):
+
+    models = case.get_values("COMP_CLASSES")
+    for comp in models:
+        pio_stride = case.get_value("PIO_STRIDE_%s"%comp)
+        pio_numtasks = case.get_value("PIO_NUMTASKS_%s"%comp)
+        ntasks = case.get_value("NTASKS_%s"%comp)
+        new_stride = min(ntasks, new_pio_stride)
+        new_numtasks = max(1, ntasks//new_stride)
+        if pio_stride != new_stride:
+            logger.info("Resetting  PIO_STRIDE_%s to %s"%(comp, new_stride))
+            case.set_value("PIO_STRIDE_%s"%comp, new_stride)
+            if pio_numtasks != new_numtasks:
+                logger.info("Resetting  PIO_NUMTASKS_%s to %s"%(comp, new_numtasks))
+                case.set_value("PIO_NUMTASKS_%s"%comp, new_numtasks)
+
 
 ###############################################################################
 def case_setup(case, clean=False, test_mode=False, reset=False, no_status=False, adjust_pio=True):
