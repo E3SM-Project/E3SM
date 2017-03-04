@@ -95,7 +95,8 @@ class EnvBase(EntryID):
         """
         vid, comp, iscompvar = self.check_if_comp_var(vid, None)
         val = None
-        node = self.get_optional_node("entry", {"id":vid})
+        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
+        node = self.get_optional_node("entry", {"id":vid}, root=root)
         if node is not None:
             if iscompvar and comp is None:
                 # pylint: disable=no-member
@@ -104,6 +105,7 @@ class EnvBase(EntryID):
             else:
                 val = self._set_value(node, value, vid, subgroup, ignore_type, component=comp)
         return val
+
     # pylint: disable=arguments-differ
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False, component=None):
         if vid is None:

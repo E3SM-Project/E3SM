@@ -218,7 +218,8 @@ class EntryID(GenericXML):
         subgroup is ignored in the general routine and applied in specific methods
         """
         val = None
-        node = self.get_optional_node("entry", {"id":vid})
+        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
+        node = self.get_optional_node("entry", {"id":vid}, root=root)
         if node is not None:
             val = self._set_value(node, value, vid, subgroup, ignore_type)
         return val
