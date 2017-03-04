@@ -1,5 +1,5 @@
 """
-Base class for env files .  This class inherits from EntryID.py
+Base class for env files.  This class inherits from EntryID.py
 """
 import string
 from CIME.XML.standard_module_setup import *

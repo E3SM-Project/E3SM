@@ -129,7 +129,6 @@ def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None
         value = convert_to_string(value, thistype, var)
     return value
 
-
 def xmlquery(case, variables, subgroup=None, fileonly=False,
              resolved=True, raw=False, description=False, group=False,
              full=False, dtype=False, valid_values=False):
@@ -151,6 +150,7 @@ def xmlquery(case, variables, subgroup=None, fileonly=False,
                 results[group] = {}
             if not var in results[group]:
                 results[group][var] = {}
+
             expect(group, "No group found for var %s"% var)
             value = get_value_as_string(case, var, resolved=resolved, subgroup=subgroup)
             if value is None:

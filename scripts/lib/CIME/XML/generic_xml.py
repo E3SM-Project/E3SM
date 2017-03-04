@@ -16,7 +16,6 @@ class GenericXML(object):
         """
         Initialize an object
         """
-
         logger.debug("Initializing %s" , infile)
         self.tree = None
 

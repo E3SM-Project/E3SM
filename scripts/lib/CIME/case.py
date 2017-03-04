@@ -4,7 +4,7 @@ Wrapper around all env XML for a case.
 All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
-from copy   import deepcopy
+from copy import deepcopy
 import glob, os, shutil, math, string
 from CIME.XML.standard_module_setup import *
 
@@ -15,14 +15,13 @@ from CIME.check_lockedfiles         import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
-from CIME.XML.testlist                 import Testlist
+from CIME.XML.testlist              import Testlist
 from CIME.XML.component             import Component
 from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
 from CIME.XML.pio                   import PIO
 from CIME.XML.archive               import Archive
-
 from CIME.XML.env_test              import EnvTest
 from CIME.XML.env_mach_specific     import EnvMachSpecific
 from CIME.XML.env_case              import EnvCase
@@ -171,10 +170,10 @@ class Case(object):
         self._env_entryid_files.append(EnvRun(self._caseroot, components=components))
         self._env_entryid_files.append(EnvBuild(self._caseroot, components=components))
         self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components))
+        self._env_entryid_files.append(EnvBatch(self._caseroot))
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
             self._env_entryid_files.append(EnvTest(self._caseroot, components=components))
         self._env_generic_files = []
-        self._env_generic_files.append(EnvBatch(self._caseroot))
         self._env_generic_files.append(EnvMachSpecific(self._caseroot))
         self._env_generic_files.append(EnvArchive(self._caseroot))
         self._files = self._env_entryid_files + self._env_generic_files
@@ -279,12 +278,7 @@ class Case(object):
         # Return empty result
         return result
 
-
     def get_record_fields(self, variable, field):
-
-        """
-
-        """
         # Empty result
         result = []
 
@@ -333,8 +327,8 @@ class Case(object):
             result = env_file.get_type_info(item)
             if result is not None:
                 return result
-        env_batch = self.get_env("batch")
-        return env_batch.get_type_info(item)
+
+        return result
 
     def get_resolved_value(self, item, recurse=0):
         num_unresolved = item.count("$") if item else 0
@@ -345,22 +339,7 @@ class Case(object):
             if ("$" not in item):
                 return item
             else:
-                item = self.get_resolved_value(item,recurse=recurse+1)
-
-        if recurse >= 2*recurse_limit:
-            logging.warning("Not able to fully resolve item '%s'" % item)
-        elif recurse >= recurse_limit:
-            #try env_batch first
-            env_batch = self.get_env("batch")
-            item = env_batch.get_resolved_value(item)
-            logger.debug("item is %s, checking env_batch"%item)
-            if item is not None:
-                if ("$" not in item):
-                    return item
-                else:
-                    item = self.get_resolved_value(item,recurse=recurse+1)
-            else:
-                logging.warning("Not able to fully resolve item '%s'" % item)
+                item = self.get_resolved_value(item, recurse=recurse+1)
 
         return item
 
@@ -373,9 +352,7 @@ class Case(object):
         if item == "CASEROOT":
             self._caseroot = value
         result = None
-        files = self._env_entryid_files
-        files.append(self.get_env('batch'))
-        for env_file in files:
+        for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
                 logger.debug("Will rewrite file %s %s",env_file.filename, item)
@@ -515,10 +492,6 @@ class Case(object):
         drv_comp_model_specific = Component(drv_config_file_model_specific)
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(drv_comp_model_specific, attributes=attlist)
-
-        # Add the group and elements for env_batch
-        env_batch = self.get_env("batch")
-        env_batch.add_elements_by_group(drv_comp, attributes=attlist)
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
@@ -679,7 +652,6 @@ class Case(object):
 
         mach_pes_obj = self.get_env("mach_pes")
 
-
         if other is not None:
             for key, value in other.items():
                 self.set_value(key, value)
@@ -729,7 +701,6 @@ class Case(object):
         batch = Batch(batch_system=batch_system_type, machine=machine_name)
         bjobs = batch.get_batch_jobs()
 
-
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
         env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime, force_queue=queue)
@@ -759,8 +730,6 @@ class Case(object):
                 logger.info("\nThis is a CESM scientifically supported compset at this resolution.\n")
             else:
                 self._check_testlists(compset_alias, grid_name, files)
-
-
 
         # Set project id
         if project is None:
