@@ -11,7 +11,6 @@ from CIME.utils                     import expect, append_testlog, run_and_log_c
 from CIME.preview_namelists         import create_namelists
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.check_input_data          import check_all_input_data
-from CIME.case_cmpgen_namelists     import case_cmpgen_namelists
 from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
