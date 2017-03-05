@@ -130,7 +130,6 @@ class EntryID(GenericXML):
         # handled in classes
         return vid, None, False
 
-
     def _get_default(self, node):
         return self._get_node_element_info(node, "default_value")
 
@@ -151,7 +150,6 @@ class EntryID(GenericXML):
                 result.append(group.get("id"))
 
         return result
-
 
     def get_valid_values(self, vid):
         node = self.get_optional_node("entry", {"id":vid})
@@ -174,7 +172,6 @@ class EntryID(GenericXML):
 
     def get_nodes_by_id(self, vid):
         return self.get_nodes("entry", {"id":vid})
-
 
     def _set_valid_values(self, node, new_valid_values):
         old_vv = self._get_valid_values(node)
@@ -221,7 +218,8 @@ class EntryID(GenericXML):
         subgroup is ignored in the general routine and applied in specific methods
         """
         val = None
-        node = self.get_optional_node("entry", {"id":vid})
+        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
+        node = self.get_optional_node("entry", {"id":vid}, root=root)
         if node is not None:
             val = self._set_value(node, value, vid, subgroup, ignore_type)
         return val
@@ -254,7 +252,8 @@ class EntryID(GenericXML):
         or from the values field if the attribute argument is provided
         and matches
         """
-        node = self.get_optional_node("entry", {"id":vid})
+        root = self.root if subgroup is None else self.get_optional_node("group", {"id":subgroup})
+        node = self.get_optional_node("entry", {"id":vid}, root=root)
         if node is None:
             return
         val = self._get_value(node, attribute=attribute, resolved=resolved, subgroup=subgroup)

@@ -6,7 +6,6 @@ import time
 import re
 import math
 from CIME.XML.standard_module_setup import *
-from CIME.utils import convert_to_type
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root
 from copy import deepcopy
@@ -48,18 +47,18 @@ class EnvBatch(EnvBase):
 
                 value = time.strftime(walltime_format, t)
 
-        # allow the user to set all instances of item if subgroup is not provided
+        # allow the user to set item for all jobs if subgroup is not provided
         if subgroup is None:
             nodes = self.get_nodes("entry", {"id":item})
             for node in nodes:
                 self._set_value(node, value, vid=item, ignore_type=ignore_type)
                 val = value
         else:
-            nodes = self.get_nodes("job", {"name":subgroup})
-            for node in nodes:
-                vnode = self.get_optional_node("entry", {"id":item}, root=node)
-                if vnode is not None:
-                    val = self._set_value(vnode, value, vid=item, ignore_type=ignore_type)
+            group = self.get_optional_node("group", {"id":subgroup})
+            if group:
+                node = self.get_optional_node("entry", {"id":item}, root=group)
+                if node:
+                    val = self._set_value(node, value, vid=item, ignore_type=ignore_type)
 
         return val
 
@@ -79,20 +78,8 @@ class EnvBatch(EnvBase):
             elif not nodes:
                 value = EnvBase.get_value(self,item,attribute,resolved)
         else:
-            job_node = self.get_optional_node("job", {"name":subgroup})
-            if job_node is not None:
-                node = self.get_optional_node("entry", {"id":item}, root=job_node)
-                if node is not None:
-                    value = node.get("value")
+            value = EnvBase.get_value(self, item, attribute=attribute, resolved=resolved, subgroup=subgroup)
 
-                    if resolved:
-                        value = self.get_resolved_value(value)
-
-                    # Return value as right type if we were able to fully resolve
-                    # otherwise, we have to leave as string.
-                    if value is not None and "$" not in value:
-                        type_str = self._get_type_info(node)
-                        value = convert_to_type(value, type_str, item)
         return value
 
     def get_type_info(self, vid):
@@ -108,36 +95,41 @@ class EnvBatch(EnvBase):
         return type_info
 
     def get_jobs(self):
-        jobs = []
-        for node in self.get_nodes("job"):
-            name = node.get("name")
-            jobs.append(name)
-        return jobs
+        groups = self.get_nodes("group")
+        results = []
+        for group in groups:
+            if group.get("id") not in ["job_submission", "config_batch"]:
+                results.append(group.get("id"))
 
-    def create_job_groups(self, bjobs):
-        # only the job_submission group is repeated
-        group = self.get_node("group", {"id":"job_submission"})
-        # look to see if any jobs are already defined
-        cjobs = self.get_jobs()
+        return results
+
+    def create_job_groups(self, batch_jobs):
+        # Subtle: in order to support dynamic batch jobs, we need to remove the
+        # job_submission group and replace with job-based groups
+
+        orig_group = self.get_optional_node("group", {"id":"job_submission"})
+        expect(orig_group, "Looks like job groups have already been created")
+
         childnodes = []
-
-        expect(len(cjobs)==0," Looks like job groups have already been created")
-
-        for child in reversed(group):
+        for child in reversed(orig_group):
             childnodes.append(deepcopy(child))
-            group.remove(child)
+            orig_group.remove(child)
 
-        for name,jdict in bjobs:
-            newjob = ET.Element("job")
-            newjob.set("name",name)
+        self.root.remove(orig_group)
+
+        for name, jdict in batch_jobs:
+            new_job_group = ET.Element("group")
+            new_job_group.set("id", name)
             for field in jdict.keys():
                 val = jdict[field]
-                node = ET.SubElement(newjob, "entry", {"id":field,"value":val})
+                node = ET.SubElement(new_job_group, "entry", {"id":field,"value":val})
                 tnode = ET.SubElement(node, "type")
                 tnode.text = "char"
+
             for child in childnodes:
-                newjob.append(deepcopy(child))
-            group.append(newjob)
+                new_job_group.append(deepcopy(child))
+
+            self.root.append(new_job_group)
 
     def cleanupnode(self, node):
         if node.get("id") == "batch_system":
@@ -190,14 +182,14 @@ class EnvBatch(EnvBase):
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    def set_job_defaults(self, bjobs, pesize=None, walltime=None, force_queue=None):
+    def set_job_defaults(self, batch_jobs, pesize=None, walltime=None, force_queue=None):
         if self.batchtype is None:
             self.batchtype = self.get_batch_system_type()
 
         if self.batchtype == 'none':
             return
 
-        for job, jsect in bjobs:
+        for job, jsect in batch_jobs:
             task_count = jsect["task_count"]
             if task_count is None or task_count == "default":
                 task_count = pesize
@@ -216,8 +208,8 @@ class EnvBatch(EnvBase):
                     self.get_default_queue()
                 walltime = self._default_walltime
 
-            self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
-            logger.debug("Job %s queue %s walltime %s"%(job, queue, walltime))
+            self.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
+            logger.debug("Job %s queue %s walltime %s" % (job, queue, walltime))
 
     def get_batch_directives(self, case, job, raw=False):
         """
@@ -264,7 +256,7 @@ class EnvBatch(EnvBase):
             else:
                 if name.startswith("$"):
                     name = name[1:]
-                val = case.get_value(name,subgroup=job)
+                val = case.get_value(name, subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
 
@@ -295,7 +287,7 @@ class EnvBatch(EnvBase):
             startindex = alljobs.index(job)
 
         for index, job in enumerate(alljobs):
-            logger.debug( "Index %d job %s startindex %d"%(index, job, startindex))
+            logger.debug( "Index %d job %s startindex %d" % (index, job, startindex))
             if index < startindex:
                 continue
             try:
@@ -456,9 +448,3 @@ class EnvBatch(EnvBase):
         else:
             nodes =  EnvBase.get_nodes(self, nodename, attributes, root, xpath)
         return nodes
-
-    def get_groups(self, root):
-        groups = EnvBase.get_groups(self, root)
-        if len(groups) == 1 and groups[0] == "job_submission":
-            groups = self.get_jobs()
-        return groups
