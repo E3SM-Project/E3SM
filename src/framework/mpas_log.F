@@ -948,20 +948,24 @@ end module mpas_log
 !>  called from C code.
 !>
 !>  This routine should be declared in C code with:
-!>      void mpas_log_write_c(const char *message_c);
+!>      void mpas_log_write_c(const char *message_c, const char *messageType_c);
 !>
 !>  To call this routine from C, e.g.,
 !>      char msgbuf[MSGSIZE];
 !>      sprintf(msgbuf, "%s\n", "Here is a test message from C...");
-!>      mpas_log_write_c(msgbuf);
+!>      mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
+!>
+!>  Possible values for the messageType_c argument include:
+!>  "MPAS_LOG_OUT", "MPAS_LOG_WARN", "MPAS_LOG_ERR", or "MPAS_LOG_CRIT"
 !
 !-----------------------------------------------------------------------
-subroutine mpas_log_write_c(message_c) bind(c)
+subroutine mpas_log_write_c(message_c, messageType_c) bind(c)
 
    use mpas_c_interfacing, only : mpas_c_to_f_string
    use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
    use mpas_log, only : mpas_log_write
    use mpas_kind_types, only : StrKIND
+   use mpas_derived_types, only : MPAS_LOG_OUT, MPAS_LOG_WARN, MPAS_LOG_ERR, MPAS_LOG_CRIT
 
    implicit none
 
@@ -969,15 +973,32 @@ subroutine mpas_log_write_c(message_c) bind(c)
    ! input variables
    !-----------------------------------------------------------------
    character(kind=c_char), intent(in) :: message_c(*)
+   character(kind=c_char), intent(in) :: messageType_c(*)
 
    !-----------------------------------------------------------------
    ! local variables
    !-----------------------------------------------------------------
    character(len=StrKIND) :: message
+   character(len=StrKIND) :: messageTypeChar
+   integer :: messageType
 
 
    call mpas_c_to_f_string(message_c, message)
+   call mpas_c_to_f_string(messageType_c, messageTypeChar)
 
-   call mpas_log_write(message)
+   select case (trim(messageTypeChar))
+      case ("MPAS_LOG_OUT")
+         messageType = MPAS_LOG_OUT
+      case ("MPAS_LOG_WARN")
+         messageType = MPAS_LOG_WARN
+      case ("MPAS_LOG_ERR")
+         messageType = MPAS_LOG_ERR
+      case ("MPAS_LOG_CRIT")
+         messageType = MPAS_LOG_CRIT
+      case default
+         messageType = MPAS_LOG_OUT
+   end select
+
+   call mpas_log_write(message, messageType=messageType)
 
 end subroutine mpas_log_write_c
