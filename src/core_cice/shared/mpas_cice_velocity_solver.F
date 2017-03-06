@@ -2231,6 +2231,7 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
 
+       !$omp parallel do default(shared) private(iVertex, leftMatrix, rightHandSide, solutionDenominator)
        do iVertex = 1, nVerticesSolve
 
           if (solveVelocity(iVertex) == 1) then

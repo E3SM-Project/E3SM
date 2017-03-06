@@ -323,6 +323,7 @@ contains
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
 
     ! loop over cells
+    !$omp parallel do default(shared) private(iCell, iGradientVertex, iBasisVertex, iVertex, jVertex)
     do iCell = 1, nCells
 
        if (solveStress(iCell) == 1) then
@@ -449,6 +450,7 @@ contains
 
     if (.not. revisedEVP) then
 
+       !$omp parallel do default(shared) private(iCell, iVertexOnCell)
        do iCell = 1, nCells
 
           replacementPressure(:,iCell) = 0.0_RKIND
@@ -591,6 +593,7 @@ contains
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
 
     ! loop over velocity positions
+    !$omp parallel do default(shared) private(iVertex, iSurroundingCell, iCell, iVelocityVertex, stressDivergenceUCell, stressDivergenceVCell, iStressVertex)
     do iVertex = 1, nVertices
 
        if (solveVelocity(iVertex) == 1) then
