@@ -441,12 +441,27 @@ module mpas_log
 !> \author  Matt Hoffman
 !> \date    14 February 2017
 !> \details
-!>  This routine writes a message to the log file.  Details...
+!>  This routine writes a message to the log file.  The message is the only
+!>  required argument.  A number of optional arguments control additional
+!>  behavior:
+!>    messageType: MPAS_LOG_OUT = output (default)
+!>                 MPAS_LOG_WARN = warning
+!>                 MPAS_LOG_ERR = error (written to both output and error log files)
+!>                 MPAS_LOG_CRIT = critical error (written to both output and error log
+!>                                 files and kills model)
+!>    masterOnly: flag indicating only the master task should write this message,
+!>                regardless of if all tasks have open log files.
+!>    flushNow: flag indicating the message should be flushed immediately.
+!>              Note: error and critical error messages are always flushed immediately.
+!>    intArgs, realArgs, logicArgs:  arrays of variable values to be inserted into the
+!>                                   message to replace the following characters: $i, $r, $l
+!>                                   See routine log_expand_string below for details.
+!>
 !
 !-----------------------------------------------------------------------
 
    subroutine mpas_log_write(message, messageType, masterOnly, flushNow, &
-                 intArgs, realArgs, expArgs, logicArgs, err)
+                 intArgs, realArgs, logicArgs, err)
 
       use mpas_threading
 
@@ -456,12 +471,11 @@ module mpas_log
       character (len=*), intent(in) :: message  !< Input: message to be printed
       integer, intent(in), optional :: messageType !< Input: message "type"
            !<  output (default), warning, error, critical error
-           !< (integer values defined by public module parameters above)
+           !< (integer values defined by public parameters MPAS_LOG_* in mpas_log_types.F)
       logical, intent(in), optional :: masterOnly  !< Input: flag to only print message on master task
       logical, intent(in), optional :: flushNow  !< Input: flag to force a flush of the message buffer
       integer, dimension(:), intent(in), optional :: intArgs  !< Input: integer variable values to insert into message
       real(kind=RKIND), dimension(:), intent(in), optional :: realArgs  !< Input: real variable values to insert into message
-      real(kind=RKIND), dimension(:), intent(in), optional :: expArgs
          !< Input: exponential notation variable values to insert into message
       logical, dimension(:), intent(in), optional :: logicArgs  !< Input: logical variable values to insert into message
 
@@ -507,7 +521,7 @@ module mpas_log
 
 
       ! Construct message by expanding variable values as needed and inserting message type prefix
-      call log_expand_string(message, messageExpanded, intArgs=intArgs, logicArgs=logicArgs, realArgs=realArgs, expArgs=expArgs)
+      call log_expand_string(message, messageExpanded, intArgs=intArgs, logicArgs=logicArgs, realArgs=realArgs)
 
       ! Determine message prefix
       select case (messageTypeHere)
@@ -771,7 +785,8 @@ module mpas_log
    !>   $i -> integer, formatted to be length of integer
    !>   $l -> logical, fomatted as 'TRUE' or 'FALSE'
    !>   $f -> float, formatted as 9 digits of precision for SP mode, 17 for DP mode
-   !>   $e -> float represented in scientific notation, same precision as float
+   !>                Floats are formatted using 'G' format which is smart about using
+   !>                displaying as a decimal or scientific notation based on the value.
    !>   The variable values to expand are supplied as optional arguments to this
    !>   routine.  The substitution indicators are expanded as they are encountered.
    !>   Thus, extra variable values will be ignored.  If the supplied variable values
@@ -784,7 +799,7 @@ module mpas_log
    !>   can be handled by the string concatenation command (//).
    !>   This routine is based off of mpas_expand_string.
    !-----------------------------------------------------------------------
-   subroutine log_expand_string(inString, outString, intArgs, logicArgs, realArgs, expArgs)
+   subroutine log_expand_string(inString, outString, intArgs, logicArgs, realArgs)
 
       implicit none
 
@@ -799,8 +814,6 @@ module mpas_log
          !< Input, Optional: array of logical variable values to be used in expansion
       real(kind=RKIND), dimension(:), intent(in), optional :: realArgs
          !< Input, Optional: array of real variable values to be used in expansion
-      real(kind=RKIND), dimension(:), intent(in), optional :: expArgs
-         !< Input, Optional: array of real variable values to be used in expansion to be formatted with exponential notation
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -816,7 +829,7 @@ module mpas_log
       !-----------------------------------------------------------------
       integer :: i, curLen
       integer :: nInts, nLogicals, nReals, nExps  !< the length of the variable arrays passed in
-      integer :: iInt, iLogical, iReal, iExp !< Counter for the current index into each variable array
+      integer :: iInt, iLogical, iReal !< Counter for the current index into each variable array
       character (len=ShortStrKIND) :: realFormat  !< Format string to create to use for writing real variables to log file
       integer :: realPrecision !< precision of a real variable
 
@@ -828,7 +841,6 @@ module mpas_log
       iInt = 1
       iLogical = 1
       iReal = 1
-!      iExp = 1
 
       ! For each variable array, get the size.  Size is 0 if not present.
       if (present(intArgs)) then
@@ -848,12 +860,6 @@ module mpas_log
       else
          nReals = 0
       endif
-
-!      if (present(expArgs)) then
-!         nExps = size(expArgs)
-!      else
-!         nExps = 0
-!      endif
 
       ! Initialize strings
       write(outString,*) ''
@@ -900,13 +906,6 @@ module mpas_log
                       else
                          varPart = errVarPart
                       endif
-!                   case ('e')
-!                      if (iExp <= nExps) then
-!                         write(varPart,'()') expArgs(iExp)
-!                         iExp = iExp + 1
-!                      else
-!                         varPart = errVarPart
-!                      endif
                    case default
                       varPart = errVarPart
                 end select
