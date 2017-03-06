@@ -206,8 +206,8 @@ module mpas_log
       else
          write(taskString, '(i9.9)') mpas_log_info % taskID
       end if
-      write(proposedLogFileName, fmt='(a, a, a)') "stick.", trim(taskString), ".out"
-      write(proposedErrFileName, fmt='(a, a, a)') "stick.", trim(taskString), ".err"
+      write(proposedLogFileName, fmt='(a, a, a, a, a)') "log.", trim(mpas_log_info % coreName), ".", trim(taskString), ".out"
+      write(proposedErrFileName, fmt='(a, a, a, a, a)') "log.", trim(mpas_log_info % coreName), ".", trim(taskString), ".err"
 
       ! Set the log and err file names and unit numbers
       if (present(unitNumbers)) then
