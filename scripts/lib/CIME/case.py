@@ -1016,8 +1016,10 @@ class Case(object):
             shutil.copy(item, newcaseroot)
 
         # copy SourceMod and Buildconf files
+        # if symlinks exist, copy rather than follow links
         for casesub in ("SourceMods", "Buildconf"):
-            shutil.copytree(os.path.join(cloneroot, casesub), os.path.join(newcaseroot, casesub))
+            shutil.copytree(os.path.join(cloneroot, casesub), os.path.join(newcaseroot, casesub)
+                            , symlinks=True)
 
         # lock env_case.xml in new case
         lock_file("env_case.xml", newcaseroot)
