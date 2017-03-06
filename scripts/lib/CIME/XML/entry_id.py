@@ -377,11 +377,11 @@ class EntryID(GenericXML):
                     f1val = ET.tostring(node, method="text")
                     f2val = ET.tostring(f2match, method="text")
                     if f2val != f1val:
-                       f1value_nodes = self.get_nodes("value", root=node)
-                       for valnode in f1value_nodes:
-                           f2valnode = other.get_node("value", root=f2match, attributes=valnode.attrib)
-                           if f2valnode.text != valnode.text:
-                               xmldiffs["%s:%s"%(vid,valnode.attrib)] = [valnode.text, f2valnode.text]
+                        f1value_nodes = self.get_nodes("value", root=node)
+                        for valnode in f1value_nodes:
+                            f2valnode = other.get_node("value", root=f2match, attributes=valnode.attrib)
+                            if f2valnode.text != valnode.text:
+                                xmldiffs["%s:%s"%(vid,valnode.attrib)] = [valnode.text, f2valnode.text]
 
         return xmldiffs
 
