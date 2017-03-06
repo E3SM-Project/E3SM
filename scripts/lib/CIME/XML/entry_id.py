@@ -366,11 +366,22 @@ class EntryID(GenericXML):
         f1nodes = self.get_nodes("entry")
         for node in f1nodes:
             vid = node.get("id")
-            f2val = other.get_value(vid, resolved=False)
-            if f2val is not None:
+            f2match = other.get_optional_node("entry", attributes={"id":vid})
+            if f2match is not None:
                 f1val = self.get_value(vid, resolved=False)
-                if f2val != f1val:
-                    xmldiffs[vid] = [f1val, f2val]
+                if f1val is not None:
+                    f2val = other.get_value(vid, resolved=False)
+                    if f1val != f2val:
+                        xmldiffs[vid] = [f1val, f2val]
+                else:
+                    f1val = ET.tostring(node, method="text")
+                    f2val = ET.tostring(f2match, method="text")
+                    if f2val != f1val:
+                       f1value_nodes = self.get_nodes("value", root=node)
+                       for valnode in f1value_nodes:
+                           f2valnode = other.get_node("value", root=f2match, attributes=valnode.attrib)
+                           if f2valnode.text != valnode.text:
+                               xmldiffs["%s:%s"%(vid,valnode.attrib)] = [valnode.text, f2valnode.text]
 
         return xmldiffs
 
