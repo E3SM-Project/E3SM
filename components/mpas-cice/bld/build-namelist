@@ -136,7 +136,7 @@ if ($print>=2) { print "Setting MPAS-CICE configuration script directory to $cfg
 
 my $CASEROOT    = $opts{'caseroot'};
 my $CASEBUILD   = $opts{'casebuild'};
-my $CIMEROOT = $opts{'cimeroot'};
+my $CIMEROOT    = $opts{'cimeroot'};
 my $inst_string = $opts{'inst_string'};
 my $ICE_GRID    = $opts{'ice_grid'};
 my $date_stamp  = $opts{'date_stamp'};
@@ -435,6 +435,7 @@ add_default($nl, 'config_num_halos');
 
 add_default($nl, 'config_pio_num_iotasks');
 add_default($nl, 'config_pio_stride');
+add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_test_case_diag');
 add_default($nl, 'config_test_case_diag_type');
 
@@ -974,12 +975,12 @@ add_default($nl, 'config_AM_timeSeriesStatsDaily_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_output_stream');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_restart_stream');
-add_default($nl, 'config_AM_timeSeriesStatsDaily_add_mesh');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_operation');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_reference_times');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsDaily_backward_output_offset');
 
 #############################################
 # Namelist group: AM_timeSeriesStatsMonthly #
@@ -991,12 +992,12 @@ add_default($nl, 'config_AM_timeSeriesStatsMonthly_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_output_stream');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_restart_stream');
-add_default($nl, 'config_AM_timeSeriesStatsMonthly_add_mesh');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_operation');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_reference_times');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsMonthly_backward_output_offset');
 
 #################################################
 # Namelist group: AM_timeSeriesStatsClimatology #
@@ -1008,12 +1009,29 @@ add_default($nl, 'config_AM_timeSeriesStatsClimatology_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_output_stream');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_restart_stream');
-add_default($nl, 'config_AM_timeSeriesStatsClimatology_add_mesh');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_operation');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_reference_times');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsClimatology_backward_output_offset');
+
+############################################
+# Namelist group: AM_timeSeriesStatsCustom #
+############################################
+
+add_default($nl, 'config_AM_timeSeriesStatsCustom_enable');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_output_stream');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_operation');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_reference_times');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStatsCustom_backward_output_offset');
 
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpas-cice_in) and input dataset list (mpas--cice.input_data_list) ***
@@ -1060,6 +1078,7 @@ my @groups = qw(cice_model
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
                 am_timeseriesstatsclimatology
+                am_timeseriesstatscustom
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

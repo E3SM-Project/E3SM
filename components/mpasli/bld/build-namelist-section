@@ -41,6 +41,8 @@ add_default($nl, 'config_surface_air_temperature_value');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
 add_default($nl, 'config_basal_mass_bal_float');
+add_default($nl, 'config_bmlt_float_flux');
+add_default($nl, 'config_bmlt_float_xlimit');
 
 #######################################
 # Namelist group: physical_parameters #
@@ -116,6 +118,27 @@ add_default($nl, 'config_print_calving_info');
 add_default($nl, 'config_print_thermal_info');
 add_default($nl, 'config_always_compute_fem_grid');
 add_default($nl, 'config_print_velocity_cleanup_details');
+
+####################################
+# Namelist group: subglacial_hydro #
+####################################
+
+add_default($nl, 'config_SGH');
+add_default($nl, 'config_SGH_adaptive_timestep');
+add_default($nl, 'config_SGH_adaptive_timestep_fraction');
+add_default($nl, 'config_SGH_max_adaptive_timestep');
+add_default($nl, 'config_SGH_tangent_slope_calculation');
+add_default($nl, 'config_SGH_pressure_calc');
+add_default($nl, 'config_SGH_alpha');
+add_default($nl, 'config_SGH_beta');
+add_default($nl, 'config_SGH_conduc_coeff');
+add_default($nl, 'config_SGH_till_drainage');
+add_default($nl, 'config_SGH_advection');
+add_default($nl, 'config_SGH_bed_roughness');
+add_default($nl, 'config_SGH_bed_roughness_max');
+add_default($nl, 'config_SGH_creep_coefficient');
+add_default($nl, 'config_SGH_englacial_porosity');
+add_default($nl, 'config_SGH_till_max');
 
 ##################################
 # Namelist group: AM_globalStats #

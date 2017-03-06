@@ -64,8 +64,8 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 } elsif ( $OCN_GRID eq 'oEC60to30v3_ICG' ) {
         $grid_date .= '161222';
         $grid_prefix .= 'oEC60to30v3';
-        $ic_date .= '170111';
-        $ic_prefix .= 'oEC60to30v3.ICG_a16q_yr60';
+        $ic_date .= '170301';
+        $ic_prefix .= 'oEC60to30v3.restartFrom_anvil0221';
         $decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oEC60to30wLI' ) {
         $grid_date .= '160830';
@@ -227,8 +227,8 @@ while ($inst_counter <= $NINST_OCN) {
 
 # Write streams file if there isn't one in SourceMods
 
-if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
-	$sysmod = "cp $CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME $RUNDIR/$STREAM_NAME";
+if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
+	$sysmod = "cp $CASEROOT/SourceMods/src.mpaso/$STREAM_NAME $RUNDIR/$STREAM_NAME";
 	system($sysmod) == 0 or die "ERROR mpas-o buildnml: $sysmod fails: $?\n";
 } else {
 	open(my $stream_file, "+>", "$RUNDIR/$STREAM_NAME");
@@ -312,7 +312,8 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '	<var name="indexSurfaceLayerDepth"/>' . "\n";
 	print $stream_file '	<var name="surfaceFrictionVelocity"/>' . "\n";
 	print $stream_file '	<var name="surfaceBuoyancyForcing"/>' . "\n";
-	print $stream_file '	<var name="seaSurfacePressure"/>' . "\n";
+	print $stream_file '	<var name="atmosphericPressure"/>' . "\n";
+	print $stream_file '	<var name="seaIcePressure"/>' . "\n";
 	print $stream_file '	<var name="frazilLayerThicknessTendency"/>' . "\n";
 	print $stream_file '	<var_struct name="tracersSurfaceFlux"/>' . "\n";
 	print $stream_file '	<var name="surfaceStressMagnitude"/>' . "\n";
@@ -666,6 +667,21 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '    <var name="vertTransportVelocityTop"/>' . "\n";
 	print $stream_file '    <var name="normalGMBolusVelocity"/>' . "\n";
 	print $stream_file '    <var name="vertGMBolusVelocityTop"/>' . "\n";
+	print $stream_file '    <var_struct name="tracersSurfaceFlux"/>' . "\n";
+	print $stream_file '    <var name="penetrativeTemperatureFlux"/>' . "\n";
+	print $stream_file '    <var name="latentHeatFlux"/>' . "\n";
+	print $stream_file '    <var name="sensibleHeatFlux"/>' . "\n";
+	print $stream_file '    <var name="longWaveHeatFluxUp"/>' . "\n";
+	print $stream_file '    <var name="longWaveHeatFluxDown"/>' . "\n";
+	print $stream_file '    <var name="seaIceHeatFlux"/>' . "\n";
+	print $stream_file '    <var name="shortWaveHeatFlux"/>' . "\n";
+	print $stream_file '    <var name="evaporationFlux"/>' . "\n";
+	print $stream_file '    <var name="seaIceSalinityFlux"/>' . "\n";
+	print $stream_file '    <var name="seaIceFreshWaterFlux"/>' . "\n";
+	print $stream_file '    <var name="riverRunoffFlux"/>' . "\n";
+	print $stream_file '    <var name="iceRunoffFlux"/>' . "\n";
+	print $stream_file '    <var name="rainFlux"/>' . "\n";
+	print $stream_file '    <var name="snowFlux"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
         print $stream_file '<stream name="timeSeriesStatsClimatologyOutput"' . "\n";

@@ -32,6 +32,8 @@
 <config_basal_heat_flux_source>'file'</config_basal_heat_flux_source>
 <config_basal_heat_flux_value>0.0</config_basal_heat_flux_value>
 <config_basal_mass_bal_float>'file'</config_basal_mass_bal_float>
+<config_bmlt_float_flux>0.0</config_bmlt_float_flux>
+<config_bmlt_float_xlimit>0.0</config_bmlt_float_xlimit>
 
 <!-- physical_parameters -->
 <config_ice_density>910.0</config_ice_density>
@@ -84,6 +86,24 @@
 <config_print_thermal_info>.false.</config_print_thermal_info>
 <config_always_compute_fem_grid>.false.</config_always_compute_fem_grid>
 <config_print_velocity_cleanup_details>.false.</config_print_velocity_cleanup_details>
+
+<!-- subglacial_hydro -->
+<config_SGH>.false.</config_SGH>
+<config_SGH_adaptive_timestep>.false.</config_SGH_adaptive_timestep>
+<config_SGH_adaptive_timestep_fraction>1.0</config_SGH_adaptive_timestep_fraction>
+<config_SGH_max_adaptive_timestep>3.15e9</config_SGH_max_adaptive_timestep>
+<config_SGH_tangent_slope_calculation>'from_normal_slope'</config_SGH_tangent_slope_calculation>
+<config_SGH_pressure_calc>'cavity'</config_SGH_pressure_calc>
+<config_SGH_alpha>1.25</config_SGH_alpha>
+<config_SGH_beta>1.5</config_SGH_beta>
+<config_SGH_conduc_coeff>0.001</config_SGH_conduc_coeff>
+<config_SGH_till_drainage>3.1709792e-11</config_SGH_till_drainage>
+<config_SGH_advection>'fo'</config_SGH_advection>
+<config_SGH_bed_roughness>0.5</config_SGH_bed_roughness>
+<config_SGH_bed_roughness_max>0.1</config_SGH_bed_roughness_max>
+<config_SGH_creep_coefficient>0.04</config_SGH_creep_coefficient>
+<config_SGH_englacial_porosity>0.01</config_SGH_englacial_porosity>
+<config_SGH_till_max>2.0</config_SGH_till_max>
 
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>

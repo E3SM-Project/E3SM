@@ -102,10 +102,10 @@ for mct, etc.
   -->
   <ADD_CPPDEFS> -DFORTRAN_SAME -DCPRIBM</ADD_CPPDEFS>
   <CPRE>-WF,-D</CPRE>
-  <CFLAGS> -g -qfullpath -qmaxmem=-1 </CFLAGS>
+  <CFLAGS> -g -qfullpath -qmaxmem=-1 -qphsinfo </CFLAGS>
   <FIXEDFLAGS>  -qsuffix=f=f -qfixed=132 </FIXEDFLAGS>
   <FREEFLAGS> -qsuffix=f=f90:cpp=F90  </FREEFLAGS>
-  <FFLAGS> -g -qfullpath -qmaxmem=-1 </FFLAGS>
+  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qphsinfo </FFLAGS>
   <FC_AUTO_R8> -qrealsize=8 </FC_AUTO_R8>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -Q </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
@@ -586,8 +586,6 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="cori-knl">
-  <ADD_FFLAGS> -xMIC-AVX512 -diag-disable 10121</ADD_FFLAGS>
-  <ADD_CFLAGS> -axMIC-AVX512 -xCORE-AVX2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qno-opt-dynamic-align</ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
@@ -596,8 +594,7 @@ for mct, etc.
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
-  <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
-  <!--ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS-->
+  <ADD_SLIBS> -mkl -lpthread -lm </ADD_SLIBS>
 
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
   <ADD_CPPDEFS>  -DHAVE_SLASHPROC </ADD_CPPDEFS>
@@ -893,7 +890,7 @@ for mct, etc.
 
 
 <compiler COMPILER="ibm" OS="BGQ">
-  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush </FFLAGS>
+  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush -qphsinfo </FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -Q </ADD_FFLAGS>
   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
   <CONFIG_ARGS> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </CONFIG_ARGS>
@@ -1155,6 +1152,17 @@ for mct, etc.
         <SFC>gfortran</SFC>
         <SCC>gcc</SCC>
         <SCXX>g++</SCXX>
+        <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+        <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+</compiler>
+
+<compiler MACH="grizzly" COMPILER="intel">
+        <MPICC>mpicc</MPICC>
+        <MPIFC>mpif90</MPIFC>
+        <MPICXX>mpic++</MPICXX>
+        <SFC>ifort</SFC>
+        <SCC>icc</SCC>
+        <SCXX>icpc</SCXX>
         <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
         <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
 </compiler>

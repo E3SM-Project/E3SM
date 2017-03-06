@@ -197,6 +197,7 @@
 <config_cvmix_convective_basedOnBVF>.true.</config_cvmix_convective_basedOnBVF>
 <config_cvmix_convective_triggerBVF>0.0</config_cvmix_convective_triggerBVF>
 <config_use_cvmix_shear>.true.</config_use_cvmix_shear>
+<config_cvmix_num_ri_smooth_loops>2</config_cvmix_num_ri_smooth_loops>
 <config_cvmix_shear_mixing_scheme>'KPP'</config_cvmix_shear_mixing_scheme>
 <config_cvmix_shear_PP_nu_zero>0.005</config_cvmix_shear_PP_nu_zero>
 <config_cvmix_shear_PP_alpha>5.0</config_cvmix_shear_PP_alpha>
@@ -225,6 +226,9 @@
 <config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
+
+<!-- coupling -->
+<config_ssh_grad_relax_timescale>86400.0</config_ssh_grad_relax_timescale>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
@@ -639,6 +643,10 @@
 <config_soma_density_difference_linear>0.05</config_soma_density_difference_linear>
 <config_soma_surface_temperature>20.0</config_soma_surface_temperature>
 <config_soma_surface_salinity>33.0</config_soma_surface_salinity>
+<config_soma_use_surface_temp_restoring>false</config_soma_use_surface_temp_restoring>
+<config_soma_surface_temp_restoring_at_center_latitude>7.5</config_soma_surface_temp_restoring_at_center_latitude>
+<config_soma_surface_temp_restoring_latitude_gradient>0.5</config_soma_surface_temp_restoring_latitude_gradient>
+<config_soma_restoring_temp_piston_vel>1.0e-5</config_soma_restoring_temp_piston_vel>
 
 <!-- ziso -->
 <config_ziso_vert_levels>100</config_ziso_vert_levels>
@@ -883,6 +891,7 @@
 <config_AM_meridionalHeatTransport_num_bins>180</config_AM_meridionalHeatTransport_num_bins>
 <config_AM_meridionalHeatTransport_min_bin>-1.0e34</config_AM_meridionalHeatTransport_min_bin>
 <config_AM_meridionalHeatTransport_max_bin>-1.0e34</config_AM_meridionalHeatTransport_max_bin>
+<config_AM_meridionalHeatTransport_region_group>''</config_AM_meridionalHeatTransport_region_group>
 
 <!-- AM_testComputeInterval -->
 <config_AM_testComputeInterval_enable>.false.</config_AM_testComputeInterval_enable>

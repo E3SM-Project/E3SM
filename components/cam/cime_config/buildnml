@@ -60,6 +60,15 @@ chdir "$CASEBUILD/camconf";
 
 if ($BUILD_COMPLETE eq 'FALSE') {
 
+    # The following translation is hard-wired for backwards compatibility
+    # to support the differences between how the scripts specify the land grid
+    # and how it is specified internally
+    
+    if ($ATM_GRID eq 'T31'){$ATM_GRID = "48x96";}
+    if ($ATM_GRID eq 'T42'){$ATM_GRID = "64x128";}
+    if ($ATM_GRID eq 'T85'){$ATM_GRID = "128x256";}
+    if ($ATM_GRID eq 'T341'){$ATM_GRID = "512x1024";}
+
     # Some settings for single column mode.
     my $scm = "";
     if ($PTS_MODE eq 'TRUE') {$scm = "-scam -nosmp";}

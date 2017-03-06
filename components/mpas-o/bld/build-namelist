@@ -410,6 +410,7 @@ if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 # Determine namelist 
 #-----------------------------------------------------------------------------------------------
 
+
 #############################
 # Namelist group: run_modes #
 #############################
@@ -637,6 +638,7 @@ add_default($nl, 'config_cvmix_convective_viscosity');
 add_default($nl, 'config_cvmix_convective_basedOnBVF');
 add_default($nl, 'config_cvmix_convective_triggerBVF');
 add_default($nl, 'config_use_cvmix_shear');
+add_default($nl, 'config_cvmix_num_ri_smooth_loops');
 add_default($nl, 'config_cvmix_shear_mixing_scheme');
 add_default($nl, 'config_cvmix_shear_PP_nu_zero');
 add_default($nl, 'config_cvmix_shear_PP_alpha');
@@ -668,6 +670,12 @@ add_default($nl, 'config_use_bulk_wind_stress');
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
 add_default($nl, 'config_flux_attenuation_coefficient_runoff');
+
+############################
+# Namelist group: coupling #
+############################
+
+add_default($nl, 'config_ssh_grad_relax_timescale');
 
 ######################################
 # Namelist group: shortwaveRadiation #
@@ -1130,6 +1138,10 @@ add_default($nl, 'config_soma_thermocline_depth');
 add_default($nl, 'config_soma_density_difference_linear');
 add_default($nl, 'config_soma_surface_temperature');
 add_default($nl, 'config_soma_surface_salinity');
+add_default($nl, 'config_soma_use_surface_temp_restoring');
+add_default($nl, 'config_soma_surface_temp_restoring_at_center_latitude');
+add_default($nl, 'config_soma_surface_temp_restoring_latitude_gradient');
+add_default($nl, 'config_soma_restoring_temp_piston_vel');
 
 ########################
 # Namelist group: ziso #
@@ -1431,6 +1443,7 @@ add_default($nl, 'config_AM_meridionalHeatTransport_output_stream');
 add_default($nl, 'config_AM_meridionalHeatTransport_num_bins');
 add_default($nl, 'config_AM_meridionalHeatTransport_min_bin');
 add_default($nl, 'config_AM_meridionalHeatTransport_max_bin');
+add_default($nl, 'config_AM_meridionalHeatTransport_region_group');
 
 ##########################################
 # Namelist group: AM_testComputeInterval #
@@ -1787,6 +1800,7 @@ my @groups = qw(run_modes
                 vmix_tanh
                 cvmix
                 forcing
+                coupling
                 shortwaveradiation
                 frazil_ice
                 land_ice_fluxes
