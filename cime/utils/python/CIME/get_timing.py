@@ -70,7 +70,7 @@ class _TimingParser:
         nprocs = 0
         ncount = 0
 
-        heading = heading_padded.strip()
+        heading = '"' + heading_padded.strip() + '"'
         for line in self.finlines:
             m = re.match(r'\s*%s\s*(\d+)\s*\d+\s*(\S+)'%heading, line)
             if m:
@@ -87,7 +87,7 @@ class _TimingParser:
 
     def gettime(self, heading_padded):
         found = False
-        heading = heading_padded.strip()
+        heading = '"' + heading_padded.strip() + '"'
         minval = 0
         maxval = 0
 
@@ -102,8 +102,7 @@ class _TimingParser:
         return (0, 0, False)
 
     def getTiming(self):
-        components=self.case.get_value("COMP_CLASSES").split(',')
-        components[components.index("DRV")]="CPL"
+        components=self.case.get_values("COMP_CLASSES")
         for s in components:
             self.models[s] = _GetTimingInfo(s)
         atm = self.models['ATM']
@@ -123,7 +122,7 @@ class _TimingParser:
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
         atm_ncpl = self.case.get_value("ATM_NCPL")
         ocn_ncpl = self.case.get_value("OCN_NCPL")
-        ccsm_compset = self.case.get_value("CCSM_COMPSET")
+        ccsm_compset = self.case.get_value("COMPSET")
         if ccsm_compset is None:
             ccsm_compset = ""
         grid = self.case.get_value("GRID")

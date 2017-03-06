@@ -6,12 +6,22 @@ build data model library
 
 import sys, os
 
-_CIMEROOT = os.environ.get("CIMEROOT")
-if _CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
-sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
-from CIME.buildnml import build_xcpl_nml
+from CIME.buildnml import build_xcpl_nml, parse_input
+from CIME.case import Case
 
-build_xcpl_nml(sys.argv, 'glc')
+def buildnml(case, caseroot, compname):
+    if compname != "xglc":
+        raise AttributeError
+    build_xcpl_nml(case, caseroot, compname)
+
+def _main_func():
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "xglc")
+
+if __name__ == "__main__":
+    _main_func()

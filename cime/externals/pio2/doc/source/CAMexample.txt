@@ -13,7 +13,7 @@
  * Documents produced by Doxygen are derivative works derived from the
  * input used in their production; they are not affected by this license.
  *
- */
+ */ 
 /*! \page CAMexample Community Atmosphere Model (CAM)
 
 \section cam Implementation of PIO in CAM
@@ -37,7 +37,7 @@ initializes PIO in CAM. Init_pio_subsystem calls read_namelist_pio, which calls
 set_pio_parameters. The main parameters set includes the IO mode (netcdf vs pnetcdf),
 number of IO tasks, and IO stride.
 
-Cam_pio_createfile and cam_pio_openfile create and open a PIO file, respectively.
+Cam_pio_createfile and cam_pio_openfile create and open a PIO file, respectively. 
 Cam_pio_createfile is called from cam_write_restart, h_define (called from wshist,
 which is called from write_restart_history), and atm_write_srfrest_mct.
 
@@ -72,7 +72,7 @@ decomposition already exists. The routine performing that search is find_iodesc
 (called from get_phys_decomp and get_dyn_decomp). This capability is supported only
 when the range of history output is the whole domain.
 
-Get_phys_decomp calls get_phys_ldof (or get_column_ldof), and get_dyn_decomp calls
+Get_phys_decomp calls get_phys_ldof (or get_column_ldof), and get_dyn_decomp calls 
 get_dyn_ldof (or get_column_ldof). These routines do the bulk of the work in
 constructing the IO decompositions. Get_column_ldof is called when the history output
 is restricted to a subset of the domain.

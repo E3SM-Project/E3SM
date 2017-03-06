@@ -2,14 +2,14 @@
 Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
-import logging, gzip, sys, os, time, re, shutil, glob
+import logging, gzip, sys, os, time, re, shutil, glob, string, random
 import stat as statlib
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
 
-def expect(condition, error_msg, exc_type=SystemExit):
+def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
@@ -21,17 +21,19 @@ def expect(condition, error_msg, exc_type=SystemExit):
     SystemExit: ERROR: error2
     """
     if (not condition):
-        # Uncomment these to bring up a debugger when an expect fails
-        #import pdb
-        #pdb.set_trace()
-        raise exc_type("ERROR: %s" % error_msg)
+        if logger.isEnabledFor(logging.DEBUG):
+            import pdb
+            pdb.set_trace()
+        raise exc_type("%s %s" % (error_prefix,error_msg))
+
+def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():
     """
     READ the config file in ~/.cime, this file may contain
     [main]
-    CIMEROOT=/path/to/cime
     CIME_MODEL=acme,cesm
     PROJECT=someprojectnumber
     """
@@ -69,24 +71,21 @@ def get_python_libs_location_within_cime():
     """
     return os.path.join("utils", "python")
 
-def get_cime_root():
+def get_cime_root(case=None):
     """
     Return the absolute path to the root of CIME that contains this script
 
     >>> os.path.isdir(os.path.join(get_cime_root(), get_scripts_location_within_cime()))
     True
     """
-    cime_config = get_cime_config()
-    if(cime_config.has_option('main','CIMEROOT')):
-        cimeroot = cime_config.get('main','CIMEROOT')
-    else:
-        if "CIMEROOT" in os.environ:
-            cimeroot = os.environ["CIMEROOT"]
-        else:
-            script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
-            assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
-            cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
-        cime_config.set('main','CIMEROOT',cimeroot)
+    script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
+    assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
+    cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
+
+    if case is not None:
+        case_cimeroot = os.path.abspath(case.get_value("CIMEROOT"))
+        cimeroot = os.path.abspath(cimeroot)
+        expect(cimeroot == case_cimeroot, "Inconsistent CIMEROOT variable: case -> '%s', file location -> '%s'" % (case_cimeroot, cimeroot))
 
     logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
@@ -127,7 +126,8 @@ def get_model():
             model = 'cesm'
         else:
             model = 'acme'
-        logger.info("Guessing CIME_MODEL=%s, set environment variable if this is incorrect"%model)
+        # This message interfers with the correct operation of xmlquery
+        # logger.debug("Guessing CIME_MODEL=%s, set environment variable if this is incorrect"%model)
 
     if model is not None:
         set_model(model)
@@ -158,7 +158,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-    if (verbose or logger.isEnabledFor(logging.DEBUG)):
+    if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         logger.info("RUN: %s" % cmd)
 
     if (input_str is not None):
@@ -179,7 +179,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    if (verbose or logger.isEnabledFor(logging.DEBUG)):
+    if (verbose != False and (verbose or logger.isEnabledFor(logging.DEBUG))):
         if stat != 0:
             logger.info("  stat: %d\n" % stat)
         if output:
@@ -290,13 +290,15 @@ def parse_test_name(test_name):
 
     return rv
 
-def get_full_test_name(partial_test, grid=None, compset=None, machine=None, compiler=None, testmod=None):
+def get_full_test_name(partial_test, caseopts=None, grid=None, compset=None, machine=None, compiler=None, testmod=None):
     """
     Given a partial CIME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
     Use the additional args to fill out the name if needed
 
     >>> get_full_test_name("ERS", grid="ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu'
+    >>> get_full_test_name("ERS", caseopts=["D", "P16"], grid="ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
+    'ERS_D_P16.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16.JGF", machine="melvin", compiler="gnu")
@@ -306,7 +308,7 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
     >>> get_full_test_name("ERS.ne16_fe16.JGF", machine="melvin", compiler="gnu", testmod="mods/test")
     'ERS.ne16_fe16.JGF.melvin_gnu.mods-test'
     """
-    _, _, partial_grid, partial_compset, partial_machine, partial_compiler, partial_testmod = parse_test_name(partial_test)
+    partial_testcase, partial_caseopts, partial_grid, partial_compset, partial_machine, partial_compiler, partial_testmod = parse_test_name(partial_test)
 
     required_fields = [
         (partial_grid, grid, "grid"),
@@ -334,8 +336,18 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
         else:
             result += ".%s" % testmod.replace("/", "-")
     elif (testmod is not None):
-        expect(arg_val == partial_val, # pylint: disable=undefined-loop-variable
+        expect(testmod == partial_testmod,
                "Mismatch in field testmod, partial string '%s' indicated it should be '%s' but you provided '%s'" % (partial_test, partial_testmod, testmod))
+
+    if (partial_caseopts is None):
+        if caseopts is None:
+            # No casemods for this test and that's OK
+            pass
+        else:
+            result = result.replace(partial_testcase, "%s_%s" % (partial_testcase, "_".join(caseopts)), 1)
+    elif caseopts is not None:
+        expect(caseopts == partial_caseopts,
+               "Mismatch in field caseopts, partial string '%s' indicated it should be '%s' but you provided '%s'" % (partial_test, partial_caseopts, caseopts))
 
     return result
 
@@ -368,8 +380,11 @@ def get_current_commit(short=False, repo=None):
     >>> get_current_commit() is not None
     True
     """
-    output = run_cmd_no_fail("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
-    return output
+    rc, output, _ = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
+    if rc == 0:
+        return output
+    else:
+        return 'unknown'
 
 def get_scripts_location_within_cime():
     """
@@ -506,6 +521,7 @@ def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
 def get_project(machobj=None):
     """
     Hierarchy for choosing PROJECT:
+    0. Command line flag to create_newcase or create_test
     1. Environment variable PROJECT
     2  Environment variable ACCOUNT  (this is for backward compatibility)
     3. File $HOME/.cime/config       (this is new)
@@ -769,6 +785,7 @@ def append_status(msg, caseroot='.', sfile="CaseStatus"):
         ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
     with open(os.path.join(caseroot,sfile), "a") as fd:
         fd.write(ctime + msg + "\n")
+        fd.write("\n ---------------------------------------------------\n\n")
 
 def does_file_have_string(filepath, text):
     """
@@ -791,6 +808,8 @@ def transform_vars(text, case=None, subgroup=None, check_members=None, default=N
     directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
     # loop through directive text, replacing each string enclosed with
     # template characters with the necessary values.
+    if check_members is None and case is not None:
+        check_members = case
     while directive_re.search(text):
         m = directive_re.search(text)
         variable = m.groups()[0]
@@ -846,10 +865,8 @@ def get_build_threaded(case):
     force_threaded = case.get_value("BUILD_THREADED")
     if force_threaded:
         return True
-    comp_classes = case.get_value("COMP_CLASSES").split(',')
+    comp_classes = case.get_values("COMP_CLASSES")
     for comp_class in comp_classes:
-        if comp_class == "DRV":
-            comp_class = "CPL"
         if case.get_value("NTHRDS_%s"%comp_class) > 1:
             return True
     return False
@@ -955,8 +972,49 @@ def _get_most_recent_lid_impl(files):
 
 def get_lids(case):
     model = case.get_value("MODEL")
-    rundir = case.get_value("RUNDIR")
-    return _get_most_recent_lid_impl(glob.glob("%s/%s.log*" % (rundir, model)))
+    logdir = case.get_value("LOGDIR")
+    return _get_most_recent_lid_impl(glob.glob("%s/%s.log*" % (logdir, model)))
+
+def new_lid():
+    lid = time.strftime("%y%m%d-%H%M%S")
+    os.environ["LID"] = lid
+    return lid
+
+def analyze_build_log(comp, log, compiler):
+    """
+    Capture and report warning count,
+    capture and report errors and undefined references.
+    """
+    warncnt = 0
+    if "intel" in compiler:
+        warn_re = re.compile(r" warning #")
+        error_re = re.compile(r" error #")
+        undefined_re = re.compile(r" undefined reference to ")
+    elif "gnu" in compiler or "nag" in compiler:
+        warn_re = re.compile(r"^Warning: ")
+        error_re = re.compile(r"^Error: ")
+        undefined_re = re.compile(r" undefined reference to ")
+    else:
+        # don't know enough about this compiler
+        return
+
+    with open(log,"r") as fd:
+        for line in fd:
+            if re.search(warn_re, line):
+                warncnt += 1
+            if re.search(error_re, line):
+                logger.warn(line)
+            if re.search(undefined_re, line):
+                logger.warn(line)
+
+    if warncnt > 0:
+        logger.info("Component %s build complete with %s warnings"%(comp,warncnt))
+
+def is_python_executable(filepath):
+    with open(filepath, "r") as f:
+        first_line = f.readline()
+
+    return first_line.startswith("#!") and "python" in first_line
 
 def get_umask():
     current_umask = os.umask(0)

@@ -1,5 +1,5 @@
 """
-Interface to the env_archive.xml file.  This class inherits from EnvBase
+Interface to the env_archive.xml file.  This class inherits from GenericXML
 """
 from CIME.XML.standard_module_setup import *
 

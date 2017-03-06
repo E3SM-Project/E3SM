@@ -11,7 +11,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_clobber
   type(file_desc_t) :: pio_file
   character(len=PIO_TF_MAX_STR_LEN), parameter :: clob_fname = "pio_test_clobber.nc"
   integer :: ret
-
+  
   ! Default is NOCLOBBER
   ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, clob_fname)
   PIO_TF_CHECK_ERR(ret, "Failed to create:" // trim(clob_fname))
@@ -32,7 +32,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_redef_enddef
   Implicit none
   type(file_desc_t) :: pio_file
   integer :: ret
-
+  
   ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_write)
   PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
 
@@ -53,7 +53,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_def_dim
   type(file_desc_t) :: pio_file
   integer :: pio_dim
   integer :: ret
-
+  
   ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_write)
   PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
 
@@ -78,7 +78,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_def_var
   type(var_desc_t)  :: pio_var
   integer :: pio_dim
   integer :: ret
-
+  
   ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_write)
   PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
 
@@ -110,7 +110,7 @@ PIO_TF_TEST_DRIVER_BEGIN
   integer :: num_iotypes
 
   num_iotypes = 0
-  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes) 
   do i=1,num_iotypes
     tgv_iotype = iotypes(i)
     ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname)

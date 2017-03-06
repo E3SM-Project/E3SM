@@ -8,6 +8,7 @@ from CIME.case_setup import case_setup
 from CIME.case_run import case_run
 from CIME.case_st_archive import case_st_archive
 from CIME.test_status import *
+from CIME.check_lockedfiles import *
 from CIME.hist_utils import *
 
 import CIME.build as build
@@ -20,7 +21,7 @@ class SystemTestsCommon(object):
 
     def __init__(self, case, expected=None):
         """
-        initialize a CIME system test object, if the file LockedFiles/env_run.orig.xml
+        initialize a CIME system test object, if the locked env_run.orig.xml
         does not exist copy the current env_run.xml file.  If it does exist restore values
         changed in a previous run of the test.
         """
@@ -31,10 +32,8 @@ class SystemTestsCommon(object):
         self._runstatus = None
         self._casebaseid = self._case.get_value("CASEBASEID")
         self._test_status = TestStatus(test_dir=caseroot, test_name=self._casebaseid)
-
         self._init_environment(caseroot)
         self._init_locked_files(caseroot, expected)
-        self._init_case_setup()
 
     def _init_environment(self, caseroot):
         """
@@ -45,31 +44,28 @@ class SystemTestsCommon(object):
 
     def _init_locked_files(self, caseroot, expected):
         """
-        If the file LockedFiles/env_run.orig.xml does not exist, copy the current
+        If the locked env_run.orig.xml does not exist, copy the current
         env_run.xml file. If it does exist, restore values changed in a previous
         run of the test.
         """
-        if os.path.isfile(os.path.join(caseroot, "LockedFiles", "env_run.orig.xml")):
+        if is_locked("env_run.orig.xml"):
             self.compare_env_run(expected=expected)
         elif os.path.isfile(os.path.join(caseroot, "env_run.xml")):
-            lockedfiles = os.path.join(caseroot, "LockedFiles")
-            try:
-                os.stat(lockedfiles)
-            except:
-                os.mkdir(lockedfiles)
-            shutil.copy(os.path.join(caseroot,"env_run.xml"),
-                        os.path.join(lockedfiles, "env_run.orig.xml"))
+            lock_file("env_run.xml", caseroot=caseroot, newname="env_run.orig.xml")
 
-    def _init_case_setup(self):
+    def _resetup_case(self, phase):
         """
-        Do initial case setup needed in __init__
+        Re-setup this case. This is necessary if user is re-running an already-run
+        phase.
         """
-        if self._case.get_value("IS_FIRST_RUN"):
+        # We never want to re-setup if we're doing the resubmitted run
+        phase_status = self._test_status.get_status(phase)
+        if self._case.get_value("IS_FIRST_RUN") and phase_status != TEST_PEND_STATUS:
+
+            logging.warning("Resetting case due to detected re-run of phase %s" % phase)
             self._case.set_initial_test_values()
 
-        case_setup(self._case, reset=True, test_mode=True)
-        self._case.set_value("TEST",True)
-        self._case.flush()
+            case_setup(self._case, reset=True, test_mode=True, no_status=True)
 
     def build(self, sharedlib_only=False, model_only=False):
         """
@@ -81,8 +77,9 @@ class SystemTestsCommon(object):
         for phase_name, phase_bool in [(SHAREDLIB_BUILD_PHASE, not model_only),
                                        (MODEL_BUILD_PHASE, not sharedlib_only)]:
             if phase_bool:
+                self._resetup_case(phase_name)
                 with self._test_status:
-                    self._test_status.set_status(phase_name, TEST_PENDING_STATUS)
+                    self._test_status.set_status(phase_name, TEST_PEND_STATUS)
 
                 start_time = time.time()
                 try:
@@ -133,8 +130,9 @@ class SystemTestsCommon(object):
         try:
             expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
                    "Model was not built!")
+            self._resetup_case(RUN_PHASE)
             with self._test_status:
-                self._test_status.set_status(RUN_PHASE, TEST_PENDING_STATUS)
+                self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
             self.run_phase()
 
@@ -158,8 +156,9 @@ class SystemTestsCommon(object):
         with self._test_status:
             self._test_status.set_status(RUN_PHASE, status, comments=("time=%d" % int(time_taken)))
 
-        # We only return success if every phase, build and later, passed
-        return self._test_status.get_overall_test_status(ignore_namelists=True) == TEST_PASS_STATUS
+        # We return success if the run phase worked; memleaks, diffs will not be taken into account
+        # with this return value.
+        return success
 
     def run_phase(self):
         """
@@ -194,7 +193,7 @@ class SystemTestsCommon(object):
         rest_n      = self._case.get_value("REST_N")
         infostr     = "doing an %d %s %s test" % (stop_n, stop_option,run_type)
 
-        if rest_option == "none":
+        if rest_option == "none" or rest_option == "never":
             infostr += ", no restarts written"
         else:
             infostr += ", with restarts every %d %s"%(rest_n, rest_option)
@@ -206,7 +205,7 @@ class SystemTestsCommon(object):
             expect(False, "Coupler did not indicate run passed")
 
         if suffix is not None:
-            self._component_compare_move(suffix)
+            self._component_compare_copy(suffix)
 
         if st_archive:
             case_st_archive(self._case)
@@ -222,8 +221,8 @@ class SystemTestsCommon(object):
             logger.info("%s is not compressed, assuming run failed"%newestcpllogfile)
         return False
 
-    def _component_compare_move(self, suffix):
-        comments = move(self._case, suffix)
+    def _component_compare_copy(self, suffix):
+        comments = copy(self._case, suffix)
         append_status(comments, sfile="TestStatus.log")
 
     def _component_compare_test(self, suffix1, suffix2):
@@ -251,6 +250,9 @@ class SystemTestsCommon(object):
                     m = meminfo.match(line)
                     if m:
                         memlist.append((float(m.group(1)), float(m.group(2))))
+        # Remove the last mem record, it's sometimes artificially high
+        if len(memlist) > 0:
+            memlist.pop()
         return memlist
 
     def _get_throughput(self, cpllog):
@@ -286,10 +288,13 @@ class SystemTestsCommon(object):
                 memdiff = -1
                 if originalmem > 0:
                     memdiff = (finalmem - originalmem)/originalmem
-
+                tolerance = self._case.get_value("TEST_MEMLEAK_TOLERANCE")
+                if tolerance is None:
+                    tolerance = 0.1
+                expect(tolerance > 0.0, "Bad value for memleak tolerance in test")
                 if memdiff < 0:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS, comments="insuffiencient data for memleak test")
-                elif memdiff < 0.1:
+                elif memdiff < tolerance:
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_PASS_STATUS)
                 else:
                     comment = "memleak detected, memory went from %f to %f in %d days" % (originalmem, finalmem, finaldate-originaldate)
@@ -297,12 +302,13 @@ class SystemTestsCommon(object):
                     self._test_status.set_status(MEMLEAK_PHASE, TEST_FAIL_STATUS, comments=comment)
 
     def compare_env_run(self, expected=None):
+        # JGF implement in check_lockedfiles?
         f1obj = EnvRun(self._caseroot, "env_run.xml")
-        f2obj = EnvRun(self._caseroot, os.path.join("LockedFiles", "env_run.orig.xml"))
+        f2obj = EnvRun(self._caseroot, os.path.join(LOCKED_DIR, "env_run.orig.xml"))
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
             if expected is not None and key in expected:
-                logging.warn("  Resetting %s for test"%key)
+                logging.warn("  Resetting %s for test" % key)
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
                 print "Found difference in %s: case: %s original value %s" %\
@@ -334,7 +340,7 @@ class SystemTestsCommon(object):
             append_status(comments, sfile="TestStatus.log")
             status = TEST_PASS_STATUS if success else TEST_FAIL_STATUS
             ts_comments = comments if "\n" not in comments else None
-            self._test_status.set_status("%s_baseline" % COMPARE_PHASE, status, comments=ts_comments)
+            self._test_status.set_status(BASELINE_PHASE, status, comments=ts_comments)
             basecmp_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASECMP_CASE"))
 
             # compare memory usage to baseline
@@ -411,6 +417,16 @@ class FakeTest(SystemTestsCommon):
 
             build.post_build(self._case, [])
 
+    def run_indv(self, suffix='base', st_archive=False):
+        mpilib = self._case.get_value("MPILIB")
+        # This flag is needed by mpt to run a script under mpiexec
+        if mpilib == "mpt":
+            os.environ["MPI_SHEPHERD"] = "true"
+        super(FakeTest, self).run_indv(suffix, st_archive)
+
+
+
+
 class TESTRUNPASS(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
@@ -453,6 +469,30 @@ fi
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
+class TESTTESTDIFF(FakeTest):
+
+    def build_phase(self, sharedlib_only=False, model_only=False):
+        rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        case = self._case.get_value("CASE")
+        script = \
+"""
+echo Insta pass
+echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
+cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
+cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.rest
+""" % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
+        self._set_script(script)
+        super(TESTTESTDIFF, self).build_phase(sharedlib_only=sharedlib_only,
+                                              model_only=model_only)
+
+    def run_indv(self, suffix=None, st_archive=False ):
+        super(TESTTESTDIFF,self).run_indv(suffix, st_archive)
+
+    def run_phase(self):
+        super(TESTTESTDIFF, self).run_phase()
+        self._component_compare_test("base", "rest")
+
 class TESTRUNFAIL(FakeTest):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
@@ -472,11 +512,14 @@ class TESTRUNFAILEXC(TESTRUNPASS):
     def run_phase(self):
         raise RuntimeError("Exception from run_phase")
 
-class TESTBUILDFAIL(FakeTest):
+class TESTBUILDFAIL(TESTRUNPASS):
 
     def build_phase(self, sharedlib_only=False, model_only=False):
-        if (not sharedlib_only):
-            expect(False, "Intentional fail for testing infrastructure")
+        if "TESTBUILDFAIL_PASS" in os.environ:
+            TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
+        else:
+            if (not sharedlib_only):
+                expect(False, "Intentional fail for testing infrastructure")
 
 class TESTBUILDFAILEXC(FakeTest):
 

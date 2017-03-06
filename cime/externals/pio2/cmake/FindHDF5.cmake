@@ -1,6 +1,6 @@
 # - Try to find HDF5
 #
-# This can be controlled by setting the HDF5_DIR (or, equivalently, the
+# This can be controlled by setting the HDF5_DIR (or, equivalently, the 
 # HDF5 environment variable), or HDF5_<lang>_DIR CMake variables, where
 # <lang> is the COMPONENT language one needs.
 #
@@ -78,14 +78,14 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
 
             # Dependencies
             if (HDF5_comp STREQUAL C AND NOT HDF5_C_IS_SHARED)
-
+            
                 # DEPENDENCY: LIBZ
                 find_package (LIBZ)
                 if (LIBZ_FOUND)
                     list (APPEND HDF5_C_INCLUDE_DIRS ${LIBZ_INCLUDE_DIRS})
                     list (APPEND HDF5_C_LIBRARIES ${LIBZ_LIBRARIES})
                 endif ()
-
+                
                 # DEPENDENCY: SZIP (Optional)
                 check_macro (HDF5_C_HAS_SZIP
                                 NAME TryHDF5_HAS_SZIP.c
@@ -99,20 +99,20 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
                         list (APPEND HDF5_C_LIBRARIES ${SZIP_LIBRARIES})
                     endif ()
                 endif ()
-
+                
             elseif (NOT HDF5_${HDF5_comp}_IS_SHARED)
-
+    
                 # DEPENDENCY: HDF5
                 find_package (HDF5 COMPONENTS C)
                 if (HDF5_C_FOUND)
                     list (APPEND HDF5_${HDF5_comp}_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
                     list (APPEND HDF5_${HDF5_comp}_LIBRARIES ${HDF5_C_LIBRARIES})
                 endif ()
-
+    
             endif ()
 
         endif ()
-
+             
     endif ()
-
+    
 endforeach ()

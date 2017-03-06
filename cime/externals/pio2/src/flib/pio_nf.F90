@@ -36,9 +36,7 @@ module pio_nf
        pio_get_chunk_cache                                  , &
        pio_set_var_chunk_cache                              , &
        pio_get_var_chunk_cache                              , &
-       pio_redef                                            , &
-       pio_set_log_level                                    , &
-       pio_strerror
+       pio_redef
 !       pio_copy_att    to be done
 
   interface pio_def_var
@@ -182,23 +180,12 @@ module pio_nf
      module procedure &
           enddef_desc                                       , &
           enddef_id
-  end interface pio_enddef
-
+  end interface
   interface pio_redef
      module procedure &
           redef_desc                                        , &
           redef_id
   end interface
-
-  interface pio_set_log_level
-     module procedure &
-          set_log_level                                      
-  end interface pio_set_log_level
-
-  interface pio_strerror
-     module procedure &
-          strerror
-  end interface pio_strerror
 
   interface pio_inquire
      module procedure &
@@ -661,69 +648,18 @@ contains
     type (File_desc_t)                                      , intent(inout) :: File
     ierr = redef_id(file%fh)
   end function redef_desc
-
-!>
-!! @defgroup PIO_set_log_level
-!<
-!> 
-!! @ingroup PIO_set_log_level
-!! Sets the logging level. Only takes effect if PIO was built with
-!! PIO_ENABLE_LOGGING=On
-!! 
-!! @param log_level the logging level.
-!! @retval ierr @copydoc error_return
-!<
-  integer function set_log_level(log_level) result(ierr)
-    integer, intent(in) :: log_level
-    interface
-       integer(C_INT) function PIOc_set_log_level(log_level) &
-            bind(C, name="PIOc_set_log_level")
-         use iso_c_binding
-         integer(C_INT), value :: log_level
-       end function PIOc_set_log_level
-    end interface
-    ierr = PIOc_set_log_level(log_level)
-  end function set_log_level
-
-  !>
-  !! @defgroup PIO_strerror
-  !<
-  !> 
-  !! @ingroup PIO_strerror
-  !! Returns a descriptive string for an error code.
-  !! 
-  !! @param errcode the error code
-  !! @retval a description of the error
-  !<
-  integer function strerror(errcode, errmsg) result(ierr)
-    integer, intent(in) :: errcode
-    character(len=*), intent(out) :: errmsg
-    interface
-       integer(C_INT) function PIOc_strerror(errcode, errmsg) &
-            bind(C, name="PIOc_strerror")
-         use iso_c_binding
-         integer(C_INT), value :: errcode
-         character(C_CHAR) :: errmsg(*)
-       end function PIOc_strerror
-    end interface
-    errmsg = C_NULL_CHAR
-    ierr = PIOc_strerror(errcode, errmsg)
-    call replace_c_null(errmsg)
-
-  end function strerror
-
 !> 
 !! @public
 !! @ingroup PIO_redef
 !! @brief Wrapper for the C function \ref PIOc_redef .
 !<
   integer function redef_id(ncid) result(ierr)
-    integer, intent(in) :: ncid
+    integer                                                 ,intent(in) :: ncid
     interface
        integer(C_INT) function PIOc_redef(ncid) &
-            bind(C, name="PIOc_redef")
+            bind(C                                          ,name="PIOc_redef")
          use iso_c_binding
-         integer(C_INT), value :: ncid
+         integer(C_INT)                                     , value :: ncid
        end function PIOc_redef
     end interface
     ierr = PIOc_redef(ncid)
@@ -1697,7 +1633,7 @@ contains
 
 !> 
 !! @public
-!! @ingroup PIO_get_chunk_cache  
+!! @ingroup PIO_set_chunk_cache  
 !! @brief Gets current settings for chunk cache (only relevant for netCDF4/HDF5 files.)
 !<
   integer function get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
@@ -1727,7 +1663,7 @@ contains
 
 !> 
 !! @public 
-!! @ingroup PIO_set_var_chunk_cache
+!! @ingroup PIO_set_chunk_cache
 !! @brief Changes chunk cache settings for a variable in a netCDF-4/HDF5 file.
 !<
   integer function set_var_chunk_cache_id(file, varid, chunk_cache_size, &

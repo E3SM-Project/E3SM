@@ -24,12 +24,11 @@ def parse_input(argv):
     parser.add_argument("caseroot", default=os.getcwd(),
                         help="Case directory")
 
-    # JGF: This doesn't appear to be used anywhere
-    parser.add_argument("bldroot",
-                        help="root for building library")
-
     parser.add_argument("libroot",
                         help="root for creating the library")
+
+    parser.add_argument("bldroot",
+                        help="root for building library")
 
     args = parser.parse_args()
 

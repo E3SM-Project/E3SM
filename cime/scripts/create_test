@@ -84,7 +84,7 @@ OR
                         help="Do not setup generated tests, implies --no-build and --no-run")
 
     parser.add_argument("-u", "--use-existing", action="store_true",
-                        help="Use pre-existing case directories. Requires test-id")
+                        help="Use pre-existing case directories they will pick up at the latest PEND state or re-run the first failed state. Requires test-id")
 
     parser.add_argument("--save-timing", action="store_true",
                         help="Enable archiving of performance data.")
@@ -99,7 +99,10 @@ OR
 
     parser.add_argument("-r", "--test-root",
                         help="Where test cases will be created."
-                        " Will default to scratch root XML machine file")
+                        " Will default to output root as defined in the config_machines file")
+
+    parser.add_argument("--output-root",
+                        help="Where the case output is written.")
 
     parser.add_argument("--baseline-root",
                         help="Specifies an root directory for baseline"
@@ -143,13 +146,13 @@ OR
 
         parser.add_argument("testargs", nargs="*",
                             help="Tests or test suites to run."
-                            " Testnames expect in form CASE.GRID.COMPSET[.MACHINE_COMPILER]")
+                            " Testname form is TEST.GRID.COMPSET[.MACHINE_COMPILER]")
 
     else:
 
         parser.add_argument("testargs", nargs="+",
                             help="Tests or test suites to run."
-                            " Testnames expect in form CASE.GRID.COMPSET[.MACHINE_COMPILER]")
+                            " Testname form is TEST.GRID.COMPSET[.MACHINE_COMPILER]")
 
         parser.add_argument("-b", "--baseline-name",
                             help="If comparing or generating baselines,"
@@ -178,8 +181,8 @@ OR
     parser.add_argument("-t", "--test-id",
                         help="Specify an 'id' for the test. This is simply a"
                         "string that is appended to the end of a test name."
-                        "If no testid is specified, then a time stamp will be"
-                        "used.")
+                        "If no testid is specified, then a time stamp plus random number"
+                        "will be used.")
 
     parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
                         help="Number of tasks create_test should perform simultaneously. Default "
@@ -204,6 +207,15 @@ OR
                         "an attempt to overwrite an existing baseline directory "
                         "will raise an error. Specifying this option allows "
                         "existing baseline directories to be silently overwritten.")
+
+    parser.add_argument("--wait", action="store_true",
+                        help="On batch systems, wait for submitted jobs to complete")
+
+    parser.add_argument("--force-procs", type=int, default=None,
+                        help="For all tests to run with this number of processors")
+
+    parser.add_argument("--force-threads", type=int, default=None,
+                        help="For all tests to run with this number of threads")
 
     args = parser.parse_args(args[1:])
 
@@ -257,7 +269,7 @@ OR
         args.no_batch = True
 
     if args.test_id is None:
-        args.test_id = CIME.utils.get_timestamp()
+        args.test_id = "%s_%s"%(CIME.utils.get_timestamp(), CIME.utils.id_generator())
 
     if args.testfile is not None:
         with open(args.testfile, "r") as fd:
@@ -280,12 +292,16 @@ OR
                                "ambiguity in machine, please use the --machine option")
 
         mach_obj = Machines(machine=machine_name)
-        args.compiler = args.xml_compiler if args.compiler is None else args.compiler
-        args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
         if args.testargs:
+            args.compiler = mach_obj.get_default_compiler() if args.compiler is None else args.compiler
             test_names = update_acme_tests.get_full_test_names(args.testargs,
                                                                mach_obj.get_machine_name(), args.compiler)
         else:
+            expect(not (args.xml_machine is None and args.xml_compiler
+                        is  None and args.xml_category is None and args.xml_testlist is None),
+                   "At least one of --xml-machine, --xml-testlist, "
+                   "--xml-compiler, --xml-category or a valid test name must be provided.")
+
             test_data = CIME.test_utils.get_tests_from_xml(args.xml_machine, args.xml_category,
                                                            args.xml_compiler, args.xml_testlist,
                                                            machine_name, args.compiler)
@@ -325,7 +341,8 @@ OR
     return test_names, test_extra_data, args.compiler, mach_obj.get_machine_name(), args.no_run, args.no_build, args.no_setup, args.no_batch,\
         args.test_root, args.baseline_root, args.clean, baseline_cmp_name, baseline_gen_name, \
         args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.walltime, \
-        args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, args.allow_baseline_overwrite
+        args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, \
+        args.allow_baseline_overwrite, args.output_root, args.wait, args.force_procs, args.force_threads
 
 ###############################################################################
 def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time, test_root):
@@ -427,9 +444,11 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     run_cmd_no_fail(submit_cmd, input_str=script, arg_stdout=None, arg_stderr=None, verbose=True)
 
 ###############################################################################
+# pragma pylint: disable=protected-access
 def create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                 baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, project, test_id, parallel_jobs,
-                walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite):
+                walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite, output_root, wait,
+                force_procs, force_threads):
 ###############################################################################
     impl = TestScheduler(test_names, test_data=test_data,
                          no_run=no_run, no_build=no_build, no_setup=no_setup, no_batch=no_batch,
@@ -440,9 +459,10 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
                          namelists_only=namelists_only,
                          project=project, parallel_jobs=parallel_jobs, walltime=walltime,
                          proc_pool=proc_pool, use_existing=use_existing, save_timing=save_timing,
-                         queue=queue, allow_baseline_overwrite=allow_baseline_overwrite)
+                         queue=queue, allow_baseline_overwrite=allow_baseline_overwrite,
+                         output_root=output_root, force_procs=force_procs, force_threads=force_threads)
 
-    success = impl.run_tests()
+    success = impl.run_tests(wait=wait)
 
     if success and single_submit:
         # Get real test root
@@ -453,7 +473,7 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
         for test in impl._tests:
             test_dir = impl._get_test_dir(test)
             procs_needed = impl._get_procs_needed(test, RUN_PHASE)
-            time_needed = convert_to_seconds(run_cmd_no_fail("./xmlquery JOB_WALLCLOCK_TIME -value", from_dir=test_dir))
+            time_needed = convert_to_seconds(run_cmd_no_fail("./xmlquery JOB_WALLCLOCK_TIME -value -subgroup case.test", from_dir=test_dir))
             job_cost_map[test] = (procs_needed, time_needed)
             if procs_needed > largest_case:
                 largest_case = procs_needed
@@ -478,15 +498,16 @@ def _main_func(description):
                                    (libroot, libroot), arg_stdout=None, arg_stderr=None)
         return
 
-    test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root, baseline_root, clean, \
-        baseline_cmp_name, baseline_gen_name, namelists_only, project, test_id, parallel_jobs, \
-        walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite \
+    test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, \
+    test_root, baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, \
+    project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, \
+    save_timing, queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads \
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
                          baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only,
                          project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, save_timing,
-                         queue, allow_baseline_overwrite))
+                         queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads))
 
 ###############################################################################
 

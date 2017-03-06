@@ -11,7 +11,7 @@ contains
 
 !>
 !! @private
-!! @brief Writes netcdf header information for testpio.
+!! @brief Writes netcdf header information for testpio. 
 !! @param File @copydoc file_desc_t
 !! @param nx
 !! @param ny

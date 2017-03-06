@@ -4,9 +4,9 @@
  * @date  2014
  * @brief Compute start and count arrays for the box rearranger
  *
- *
- *
- *
+ * 
+ * 
+ * 
  * @see http://code.google.com/p/parallelio/
  */
 #ifdef TESTCALCDECOMP
@@ -120,7 +120,7 @@ int calcdisplace(const int bsize, const int numblocks,const PIO_Offset map[], in
 }
 
 
-void computestartandcount(const int gdim, const int ioprocs, const int rank,
+void computestartandcount(const int gdim, const int ioprocs, const int rank, 
 			 PIO_Offset *start, PIO_Offset *kount)
 {
   int irank;
@@ -140,18 +140,18 @@ void computestartandcount(const int gdim, const int ioprocs, const int rank,
   }
   *start = lstart;
   *kount = lkount;
-
+  
 }
 
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
   //  PIO_Offset del_arr[arrlen-1];
-  // PIO_Offset loc_arr[arrlen-1];
+  // PIO_Offset loc_arr[arrlen-1]; 
   PIO_Offset *gaps=NULL;
   PIO_Offset *blk_len=NULL;
   int i, j, k, n, numblks, numtimes, ii, numgaps;
   PIO_Offset bsize, bsizeg, blklensum;
   //  PIO_Offset *del_arr = (PIO_Offset *) calloc((arrlen-1),sizeof(PIO_Offset));
-  // PIO_Offset *loc_arr = (PIO_Offset *) calloc((arrlen-1),sizeof(PIO_Offset));
+  // PIO_Offset *loc_arr = (PIO_Offset *) calloc((arrlen-1),sizeof(PIO_Offset));  
   PIO_Offset del_arr[arrlen-1];
   PIO_Offset loc_arr[arrlen-1];
 
@@ -169,11 +169,11 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
 	return(1);
       }
       //      printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,del_arr[i],arr_in[i]);
-
+      
     }
   }
 
-
+  
 
   numblks = numtimes+1;
   if(numtimes==0)
@@ -200,7 +200,7 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
       numgaps=ii;
     }
     // printf("%s %d\n",__FILE__,__LINE__);
-
+    
     j=0;
     for(i=0;i<n;i++)
       loc_arr[i]=1;
@@ -217,14 +217,14 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
       blklensum+= blk_len[i];
     }
     blk_len[numblks-1] = arrlen - blklensum;
-
+    
     bsize = lgcd_array(numblks, blk_len);
     if(numgaps > 0) {
       bsizeg = lgcd_array(numgaps, gaps);
       bsize = lgcd(bsize,bsizeg);
       //   free(gaps);
     }
-    if(arr_in[0]>0)
+    if(arr_in[0]>0) 
       bsize = lgcd(bsize,arr_in[0]);
     //   printf("%s %d\n",__FILE__,__LINE__);
 
@@ -324,7 +324,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
 #endif
       for(i=0;i<=ldims;i++){
 	if(gdims[i]>= ioprocs){
-	  computestartandcount(gdims[i],ioprocs,tiorank,start+i,kount+i);
+	  computestartandcount(gdims[i],ioprocs,tiorank,start+i,kount+i);      
 #ifdef TESTCALCDECOMP
 	  if(myiorank==0)      printf("%d tiorank %d i %d start %d count %d\n",__LINE__,tiorank,i,start[i],kount[i]);
 #endif
@@ -349,10 +349,10 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
 	}
       }
       pknt = 1;
-
+      
       for(i=0;i<ndims;i++)
 	pknt*=kount[i];
-
+	
       tpsize+=pknt;
 
       //      printf("%d myiorank %d tpsize %ld pknt %ld kount %ld %ld\n",__LINE__,myiorank,tpsize,pknt, kount[0],kount[1]);
@@ -367,7 +367,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
     if(! converged) {
 #ifdef TESTCALCDECOMP
       printf("%d start %d %d count %d %d tpsize %ld\n",__LINE__,mystart[0],mystart[1],mykount[0],mykount[1],tpsize);
-#endif
+#endif      
       tpsize = 0;
       use_io_procs--;
     }
@@ -386,7 +386,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
       kount[i]=0;
     }
   }
-
+      
   return use_io_procs;
 }
 
@@ -436,9 +436,9 @@ int main()
     }
   }
 
-
+  
 
 
 }
-#endif
+#endif      
 

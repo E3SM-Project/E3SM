@@ -7,8 +7,8 @@ Script to build a case.
 from standard_script_setup import *
 
 import CIME.build as build
-from CIME.case import Case
-from CIME.utils           import expect, append_status, find_system_test
+from CIME.case           import Case
+from CIME.utils           import  append_status, find_system_test
 from CIME.XML.files       import Files
 from CIME.XML.component   import Component
 from CIME.test_status     import *
@@ -43,10 +43,9 @@ OR
                         help="Assume shared libs already built")
 
     files = Files()
-    config_file = files.get_value("CONFIG_DRV_FILE")
+    config_file = files.get_value("CONFIG_CPL_FILE")
     component = Component(config_file)
     comps = [x.lower() for x in component.get_valid_model_components()]
-    comps = [x.replace('drv', 'cpl') for x in comps]
     libs  = ["csmshare", "mct", "pio", "gptl"]
     allobjs = comps + libs
 

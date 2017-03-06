@@ -24,9 +24,9 @@
     - \ref PIO_get_local_array_size
     - \ref PIO_getnumiotasks
     - \ref PIO_set_blocksize
-  \section netcdf NetCDF format specific routines
+  \section netcdf NetCDF format specific routines 
      Also see: http://www.unidata.ucar.edu/software/netcdf/docs/
-     \subsection putget Reading/Writing netcdf metadata
+     \subsection putget Reading/Writing netcdf metadata  
          - \ref PIO_get_att
          - \ref PIO_put_att
          - \ref PIO_get_var
@@ -34,7 +34,7 @@
      \subsection utilnc Netcdf utility routines
     - \ref PIO_enddef
     - \ref PIO_redef
-    - \ref PIO_def_dim
+    - \ref PIO_def_dim 
     - \ref PIO_def_var
      \subsection inqnc NetCDF file inquiry routines
     - \ref PIO_inquire

@@ -1,21 +1,27 @@
 #!/usr/bin/env python
 
 from Tools.standard_script_setup import *
-from shutil import copyfile
 from CIME.utils         import expect, get_model
 from CIME.case          import Case
-
-import stat
+from CIME.check_lockedfiles import lock_file
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def parse_command_line(args, cimeroot):
+def parse_command_line(args, cimeroot, description):
 ###############################################################################
+    help_str = \
+"""
+%s --case [CASE] --compset [COMPSET] --res [GRID] [--machine ...] [--compiler ...]
+OR
+%s --help
+""" % ((os.path.basename(args[0]), ) * 2)
+    model = get_model()
 
-    cime_model = CIME.utils.get_model()
+    parser = argparse.ArgumentParser(usage=help_str,
+                                     description=description,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser = argparse.ArgumentParser()
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -32,7 +38,7 @@ def parse_command_line(args, cimeroot):
                         help="(required) Specify a model grid resolution. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("--mach", "-mach",
+    parser.add_argument("--machine", "-mach",
                         help="Specify a machine. default: match NODENAME_REGEX in config_machines.xml "
                         "To see list of current  machines, use the utility manage_case in this directory"
                         )
@@ -56,10 +62,6 @@ def parse_command_line(args, cimeroot):
     parser.add_argument("--pecount", "-pecount",  default="M",
                         help="Specify a target size description for the number of cores"
                          "Allowed options are   ('S','M','L','X1','X2','[0-9]x[0-9]','[0-9]')")
-
-    parser.add_argument("--mach-dir", "-mach_dir",
-                        help="Specify the locations of the Machines directory, other than the default"
-                        "The default is CIMEROOT/machines")
 
     parser.add_argument("--user-mods-dir", "-user_mods_dir",
                         help="Path to directory with user_nl_* files and xmlchange "
@@ -91,6 +93,14 @@ def parse_command_line(args, cimeroot):
     parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
                         help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
+
+    parser.add_argument("--output-root",
+                        help="Alternative path for the directory where case output is written")
+
+    if model == "cesm":
+        parser.add_argument("--run-unsupported", action="store_true",
+                            help="Force the creation of a case not tested or supported by CESM developers")
+
 
     # hidden argument indicating called from create_test
     parser.add_argument("--test", "-test", action="store_true",
@@ -129,22 +139,27 @@ def parse_command_line(args, cimeroot):
         expect(args.gridfile is not None,
                "User grid specification file must be set if the user grid is requested")
 
-    return args.case, args.compset, args.res, args.mach, args.compiler,\
+    run_unsupported = False
+    if model == "cesm":
+        run_unsupported = args.run_unsupported
+
+
+    return args.case, args.compset, args.res, args.machine, args.compiler,\
         args.mpilib, args.project, args.pecount, \
-        args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
+        args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.walltime, args.queue
+        args.walltime, args.queue, args.output_root, run_unsupported
 
 ###############################################################################
-def _main_func():
+def _main_func(description):
 ###############################################################################
     cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
 
     caseroot, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
-        machine_dir, user_mods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, test, ninst, walltime, queue \
-        = parse_command_line(sys.argv, cimeroot)
+        user_mods_dir, user_compset, pesfile, \
+        user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
+        output_root, run_unsupported = parse_command_line(sys.argv, cimeroot, description)
 
     caseroot = os.path.abspath(caseroot)
 
@@ -161,10 +176,11 @@ def _main_func():
 
         # Configure the Case
         case.configure(compset, grid, machine_name=machine, project=project,
-                          pecount=pecount, compiler=compiler, mpilib=mpilib,
-                          user_compset=user_compset, pesfile=pesfile,
-                          user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
-                          walltime=walltime, queue=queue)
+                       pecount=pecount, compiler=compiler, mpilib=mpilib,
+                       user_compset=user_compset, pesfile=pesfile,
+                       user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
+                       walltime=walltime, queue=queue, output_root=output_root,
+                       run_unsupported=run_unsupported)
 
         case.create_caseroot()
 
@@ -175,11 +191,10 @@ def _main_func():
                 user_mods_dir = os.path.abspath(user_mods_dir)
             case.apply_user_mods(user_mods_dir)
 
-    # Copy env_case.xml into LockedFiles
-    copyfile(os.path.join(caseroot,"env_case.xml"),
-             os.path.join(caseroot,"LockedFiles","env_case.xml"))
+    # Lock env_case.xml
+    lock_file("env_case.xml", caseroot)
 
 ###############################################################################
 
 if __name__ == "__main__":
-    _main_func()
+    _main_func(__doc__)

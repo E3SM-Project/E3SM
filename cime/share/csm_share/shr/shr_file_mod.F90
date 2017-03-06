@@ -766,7 +766,7 @@ SUBROUTINE shr_file_stdioReadNL( model, filename, dirOut, stdinOut, stdoutOut, &
    !--- formats ---
    character(*),parameter :: subName = '(shr_file_stdioReadNL) '
    character(*),parameter :: F00   = "('(shr_file_stdioReadNL) ',4a)"
-   character(*),parameter :: F01   = "('(shr_file_stdioReadNL) ',2a,i6)"
+   character(*),parameter :: F01   = "('(shr_file_stdioReadNL) ',3a,i6)"
 
 !-------------------------------------------------------------------------------
 ! Notes:
@@ -847,7 +847,7 @@ SUBROUTINE shr_file_setIO( nmlfile, funit)
    !--- formats ---
    character(*),parameter :: subName = '(shr_file_setIO) '
    character(*),parameter :: F00   = "('(shr_file_setIO) ',4a)"
-   character(*),parameter :: F01   = "('(shr_file_setIO) ',2a,i6)"
+   character(*),parameter :: F01   = "('(shr_file_setIO) ',3a,i6)"
 
 !-------------------------------------------------------------------------------
 ! Notes:
