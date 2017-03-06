@@ -14,8 +14,6 @@ logger = logging.getLogger(__name__)
 
 class PET(SystemTestsCompareTwo):
 
-    _COMPONENT_LIST = ('ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND')
-
     def __init__(self, case):
         """
         initialize a test object
@@ -28,7 +26,7 @@ class PET(SystemTestsCompareTwo):
 
     def _case_one_setup(self):
         # first make sure that all components have threaded settings
-        for comp in self._COMPONENT_LIST:
+        for comp in self._case.get_values("COMP_CLASSES"):
             if self._case.get_value("NTHRDS_%s"%comp) <= 1:
                 self._case.set_value("NTHRDS_%s"%comp, 2)
 
@@ -37,7 +35,7 @@ class PET(SystemTestsCompareTwo):
 
     def _case_two_setup(self):
         #Do a run with all threads set to 1
-        for comp in self._COMPONENT_LIST:
+        for comp in self._case.get_values("COMP_CLASSES"):
             self._case.set_value("NTHRDS_%s"%comp, 1)
 
         # The need for this is subtle. On batch systems, the entire PET test runs
