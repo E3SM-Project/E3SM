@@ -1,4 +1,25 @@
 ======================================================================
+Originator: Chris Fischer 
+Date: 3-7-2017
+Tag: cime5.3.0-alpha.02
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:  Revert PR# 1210, remove hardcoded compclasses 
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+   4cc7e22 Merge pull request #1213 from ESMCI/revert-1210-compclasses_cleanup
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/SystemTests/ncr.py
+M       scripts/lib/CIME/SystemTests/pem.py
+M       scripts/lib/CIME/SystemTests/pet.py
+M       scripts/lib/CIME/get_timing.py
+
+======================================================================
 
 Originator: Chris Fischer
 Date: 3-6-2017 
