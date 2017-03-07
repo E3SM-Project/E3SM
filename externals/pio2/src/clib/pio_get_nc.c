@@ -1,7 +1,7 @@
 #include <pio.h>
 #include <pio_internal.h>
 
-int PIOc_get_var1_schar (int ncid, int varid, const PIO_Offset index[], signed char *buf)
+int PIOc_get_var1_schar (int ncid, int varid, const PIO_Offset index[], signed char *buf) 
 {
   int ierr;
   int msg;
@@ -23,7 +23,7 @@ int PIOc_get_var1_schar (int ncid, int varid, const PIO_Offset index[], signed c
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -66,7 +66,7 @@ int PIOc_get_var1_schar (int ncid, int varid, const PIO_Offset index[], signed c
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -74,7 +74,7 @@ int PIOc_get_var1_schar (int ncid, int varid, const PIO_Offset index[], signed c
   return ierr;
 }
 
-int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], unsigned long long *buf)
+int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], unsigned long long *buf) 
 {
   int ierr;
   int msg;
@@ -100,7 +100,7 @@ int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -143,7 +143,7 @@ int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -151,7 +151,7 @@ int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   return ierr;
 }
 
-int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned char *buf)
+int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned char *buf) 
 {
   int ierr;
   int msg;
@@ -177,7 +177,7 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -220,7 +220,7 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -228,7 +228,7 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], signed char *buf)
+int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], signed char *buf) 
 {
   int ierr;
   int msg;
@@ -254,7 +254,7 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -297,7 +297,7 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -305,7 +305,7 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], short *buf)
+int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], short *buf) 
 {
   int ierr;
   int msg;
@@ -331,7 +331,7 @@ int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -374,7 +374,7 @@ int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -382,7 +382,7 @@ int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_var_double (int ncid, int varid, double *buf)
+int PIOc_get_var_double (int ncid, int varid, double *buf) 
 {
   int ierr;
   int msg;
@@ -412,7 +412,7 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -455,7 +455,7 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -463,7 +463,7 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
   return ierr;
 }
 
-int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], double *buf)
+int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], double *buf) 
 {
   int ierr;
   int msg;
@@ -489,7 +489,7 @@ int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -532,7 +532,7 @@ int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const P
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -540,7 +540,7 @@ int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const P
   return ierr;
 }
 
-int PIOc_get_var_int (int ncid, int varid, int *buf)
+int PIOc_get_var_int (int ncid, int varid, int *buf) 
 {
   int ierr;
   int msg;
@@ -570,7 +570,7 @@ int PIOc_get_var_int (int ncid, int varid, int *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -613,7 +613,7 @@ int PIOc_get_var_int (int ncid, int varid, int *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -621,7 +621,7 @@ int PIOc_get_var_int (int ncid, int varid, int *buf)
   return ierr;
 }
 
-int PIOc_get_var_ushort (int ncid, int varid, unsigned short *buf)
+int PIOc_get_var_ushort (int ncid, int varid, unsigned short *buf) 
 {
   int ierr;
   int msg;
@@ -651,7 +651,7 @@ int PIOc_get_var_ushort (int ncid, int varid, unsigned short *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -694,7 +694,7 @@ int PIOc_get_var_ushort (int ncid, int varid, unsigned short *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -702,7 +702,7 @@ int PIOc_get_var_ushort (int ncid, int varid, unsigned short *buf)
   return ierr;
 }
 
-int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], char *buf)
+int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], char *buf) 
 {
   int ierr;
   int msg;
@@ -728,7 +728,7 @@ int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -771,7 +771,7 @@ int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -779,7 +779,7 @@ int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], int *buf)
+int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], int *buf) 
 {
   int ierr;
   int msg;
@@ -805,7 +805,7 @@ int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -848,7 +848,7 @@ int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -856,7 +856,7 @@ int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   return ierr;
 }
 
-int PIOc_get_var1_float (int ncid, int varid, const PIO_Offset index[], float *buf)
+int PIOc_get_var1_float (int ncid, int varid, const PIO_Offset index[], float *buf) 
 {
   int ierr;
   int msg;
@@ -878,7 +878,7 @@ int PIOc_get_var1_float (int ncid, int varid, const PIO_Offset index[], float *b
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -921,7 +921,7 @@ int PIOc_get_var1_float (int ncid, int varid, const PIO_Offset index[], float *b
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -929,7 +929,7 @@ int PIOc_get_var1_float (int ncid, int varid, const PIO_Offset index[], float *b
   return ierr;
 }
 
-int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *buf)
+int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *buf) 
 {
   int ierr;
   int msg;
@@ -951,7 +951,7 @@ int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *b
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -994,7 +994,7 @@ int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *b
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1002,7 +1002,7 @@ int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *b
   return ierr;
 }
 
-int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], int *buf)
+int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], int *buf) 
 {
   int ierr;
   int msg;
@@ -1028,7 +1028,7 @@ int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1071,7 +1071,7 @@ int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1079,7 +1079,7 @@ int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   return ierr;
 }
 
-int PIOc_get_var_text (int ncid, int varid, char *buf)
+int PIOc_get_var_text (int ncid, int varid, char *buf) 
 {
   int ierr;
   int msg;
@@ -1109,7 +1109,7 @@ int PIOc_get_var_text (int ncid, int varid, char *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1152,7 +1152,7 @@ int PIOc_get_var_text (int ncid, int varid, char *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1160,7 +1160,7 @@ int PIOc_get_var_text (int ncid, int varid, char *buf)
   return ierr;
 }
 
-int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], double *buf)
+int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], double *buf) 
 {
   int ierr;
   int msg;
@@ -1186,7 +1186,7 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1229,7 +1229,7 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1237,7 +1237,7 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   return ierr;
 }
 
-int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], signed char *buf)
+int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], signed char *buf) 
 {
   int ierr;
   int msg;
@@ -1263,7 +1263,7 @@ int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1306,7 +1306,7 @@ int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1314,7 +1314,7 @@ int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], unsigned short *buf)
+int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], unsigned short *buf) 
 {
   int ierr;
   int msg;
@@ -1340,7 +1340,7 @@ int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1383,7 +1383,7 @@ int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1391,7 +1391,7 @@ int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
   return ierr;
 }
 
-int PIOc_get_var1_ushort (int ncid, int varid, const PIO_Offset index[], unsigned short *buf)
+int PIOc_get_var1_ushort (int ncid, int varid, const PIO_Offset index[], unsigned short *buf) 
 {
   int ierr;
   int msg;
@@ -1413,7 +1413,7 @@ int PIOc_get_var1_ushort (int ncid, int varid, const PIO_Offset index[], unsigne
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1456,7 +1456,7 @@ int PIOc_get_var1_ushort (int ncid, int varid, const PIO_Offset index[], unsigne
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1464,7 +1464,7 @@ int PIOc_get_var1_ushort (int ncid, int varid, const PIO_Offset index[], unsigne
   return ierr;
 }
 
-int PIOc_get_var_float (int ncid, int varid, float *buf)
+int PIOc_get_var_float (int ncid, int varid, float *buf) 
 {
   int ierr;
   int msg;
@@ -1494,7 +1494,7 @@ int PIOc_get_var_float (int ncid, int varid, float *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1537,7 +1537,7 @@ int PIOc_get_var_float (int ncid, int varid, float *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1545,7 +1545,7 @@ int PIOc_get_var_float (int ncid, int varid, float *buf)
   return ierr;
 }
 
-int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], unsigned char *buf)
+int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], unsigned char *buf) 
 {
   int ierr;
   int msg;
@@ -1571,7 +1571,7 @@ int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1614,7 +1614,7 @@ int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1622,7 +1622,7 @@ int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_var (int ncid, int varid, void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_get_var (int ncid, int varid, void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -1644,7 +1644,7 @@ int PIOc_get_var (int ncid, int varid, void *buf, PIO_Offset bufcount, MPI_Datat
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1687,7 +1687,7 @@ int PIOc_get_var (int ncid, int varid, void *buf, PIO_Offset bufcount, MPI_Datat
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1695,7 +1695,7 @@ int PIOc_get_var (int ncid, int varid, void *buf, PIO_Offset bufcount, MPI_Datat
   return ierr;
 }
 
-int PIOc_get_var1_longlong (int ncid, int varid, const PIO_Offset index[], long long *buf)
+int PIOc_get_var1_longlong (int ncid, int varid, const PIO_Offset index[], long long *buf) 
 {
   int ierr;
   int msg;
@@ -1717,7 +1717,7 @@ int PIOc_get_var1_longlong (int ncid, int varid, const PIO_Offset index[], long 
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1760,7 +1760,7 @@ int PIOc_get_var1_longlong (int ncid, int varid, const PIO_Offset index[], long 
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1768,7 +1768,7 @@ int PIOc_get_var1_longlong (int ncid, int varid, const PIO_Offset index[], long 
   return ierr;
 }
 
-int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], unsigned short *buf)
+int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], unsigned short *buf) 
 {
   int ierr;
   int msg;
@@ -1794,7 +1794,7 @@ int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1837,7 +1837,7 @@ int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1845,7 +1845,7 @@ int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
   return ierr;
 }
 
-int PIOc_get_var_long (int ncid, int varid, long *buf)
+int PIOc_get_var_long (int ncid, int varid, long *buf) 
 {
   int ierr;
   int msg;
@@ -1875,7 +1875,7 @@ int PIOc_get_var_long (int ncid, int varid, long *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1918,7 +1918,7 @@ int PIOc_get_var_long (int ncid, int varid, long *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1926,7 +1926,7 @@ int PIOc_get_var_long (int ncid, int varid, long *buf)
   return ierr;
 }
 
-int PIOc_get_var1_double (int ncid, int varid, const PIO_Offset index[], double *buf)
+int PIOc_get_var1_double (int ncid, int varid, const PIO_Offset index[], double *buf) 
 {
   int ierr;
   int msg;
@@ -1948,7 +1948,7 @@ int PIOc_get_var1_double (int ncid, int varid, const PIO_Offset index[], double 
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -1991,7 +1991,7 @@ int PIOc_get_var1_double (int ncid, int varid, const PIO_Offset index[], double 
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -1999,7 +1999,7 @@ int PIOc_get_var1_double (int ncid, int varid, const PIO_Offset index[], double 
   return ierr;
 }
 
-int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], unsigned int *buf)
+int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], unsigned int *buf) 
 {
   int ierr;
   int msg;
@@ -2025,7 +2025,7 @@ int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2068,7 +2068,7 @@ int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2076,7 +2076,7 @@ int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], long long *buf)
+int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], long long *buf) 
 {
   int ierr;
   int msg;
@@ -2102,7 +2102,7 @@ int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2145,7 +2145,7 @@ int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2153,7 +2153,7 @@ int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
   return ierr;
 }
 
-int PIOc_get_var_longlong (int ncid, int varid, long long *buf)
+int PIOc_get_var_longlong (int ncid, int varid, long long *buf) 
 {
   int ierr;
   int msg;
@@ -2183,7 +2183,7 @@ int PIOc_get_var_longlong (int ncid, int varid, long long *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2226,7 +2226,7 @@ int PIOc_get_var_longlong (int ncid, int varid, long long *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2234,7 +2234,7 @@ int PIOc_get_var_longlong (int ncid, int varid, long long *buf)
   return ierr;
 }
 
-int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], short *buf)
+int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], short *buf) 
 {
   int ierr;
   int msg;
@@ -2260,7 +2260,7 @@ int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2303,7 +2303,7 @@ int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2311,7 +2311,7 @@ int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], long *buf)
+int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], long *buf) 
 {
   int ierr;
   int msg;
@@ -2337,7 +2337,7 @@ int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2380,7 +2380,7 @@ int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2388,7 +2388,7 @@ int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_var1_int (int ncid, int varid, const PIO_Offset index[], int *buf)
+int PIOc_get_var1_int (int ncid, int varid, const PIO_Offset index[], int *buf) 
 {
   int ierr;
   int msg;
@@ -2410,7 +2410,7 @@ int PIOc_get_var1_int (int ncid, int varid, const PIO_Offset index[], int *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2453,7 +2453,7 @@ int PIOc_get_var1_int (int ncid, int varid, const PIO_Offset index[], int *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2461,7 +2461,7 @@ int PIOc_get_var1_int (int ncid, int varid, const PIO_Offset index[], int *buf)
   return ierr;
 }
 
-int PIOc_get_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], unsigned long long *buf)
+int PIOc_get_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], unsigned long long *buf) 
 {
   int ierr;
   int msg;
@@ -2483,7 +2483,7 @@ int PIOc_get_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], unsi
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2526,7 +2526,7 @@ int PIOc_get_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], unsi
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2534,7 +2534,7 @@ int PIOc_get_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], unsi
   return ierr;
 }
 
-int PIOc_get_var_uchar (int ncid, int varid, unsigned char *buf)
+int PIOc_get_var_uchar (int ncid, int varid, unsigned char *buf) 
 {
   int ierr;
   int msg;
@@ -2564,7 +2564,7 @@ int PIOc_get_var_uchar (int ncid, int varid, unsigned char *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2607,7 +2607,7 @@ int PIOc_get_var_uchar (int ncid, int varid, unsigned char *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2615,7 +2615,7 @@ int PIOc_get_var_uchar (int ncid, int varid, unsigned char *buf)
   return ierr;
 }
 
-int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], unsigned char *buf)
+int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], unsigned char *buf) 
 {
   int ierr;
   int msg;
@@ -2641,7 +2641,7 @@ int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2684,7 +2684,7 @@ int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2692,7 +2692,7 @@ int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], float *buf)
+int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], float *buf) 
 {
   int ierr;
   int msg;
@@ -2718,7 +2718,7 @@ int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2761,7 +2761,7 @@ int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2769,7 +2769,7 @@ int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], long *buf)
+int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], long *buf) 
 {
   int ierr;
   int msg;
@@ -2795,7 +2795,7 @@ int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2838,7 +2838,7 @@ int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2846,7 +2846,7 @@ int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_var1 (int ncid, int varid, const PIO_Offset index[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_get_var1 (int ncid, int varid, const PIO_Offset index[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -2868,7 +2868,7 @@ int PIOc_get_var1 (int ncid, int varid, const PIO_Offset index[], void *buf, PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2911,7 +2911,7 @@ int PIOc_get_var1 (int ncid, int varid, const PIO_Offset index[], void *buf, PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -2919,7 +2919,7 @@ int PIOc_get_var1 (int ncid, int varid, const PIO_Offset index[], void *buf, PIO
   return ierr;
 }
 
-int PIOc_get_var_uint (int ncid, int varid, unsigned int *buf)
+int PIOc_get_var_uint (int ncid, int varid, unsigned int *buf) 
 {
   int ierr;
   int msg;
@@ -2949,7 +2949,7 @@ int PIOc_get_var_uint (int ncid, int varid, unsigned int *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -2992,7 +2992,7 @@ int PIOc_get_var_uint (int ncid, int varid, unsigned int *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3000,7 +3000,7 @@ int PIOc_get_var_uint (int ncid, int varid, unsigned int *buf)
   return ierr;
 }
 
-int PIOc_get_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_get_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -3022,7 +3022,7 @@ int PIOc_get_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3065,7 +3065,7 @@ int PIOc_get_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3073,7 +3073,7 @@ int PIOc_get_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   return ierr;
 }
 
-int PIOc_get_vara_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], signed char *buf)
+int PIOc_get_vara_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], signed char *buf) 
 {
   int ierr;
   int msg;
@@ -3099,7 +3099,7 @@ int PIOc_get_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3142,7 +3142,7 @@ int PIOc_get_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3150,7 +3150,7 @@ int PIOc_get_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_var1_uint (int ncid, int varid, const PIO_Offset index[], unsigned int *buf)
+int PIOc_get_var1_uint (int ncid, int varid, const PIO_Offset index[], unsigned int *buf) 
 {
   int ierr;
   int msg;
@@ -3172,7 +3172,7 @@ int PIOc_get_var1_uint (int ncid, int varid, const PIO_Offset index[], unsigned 
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3215,7 +3215,7 @@ int PIOc_get_var1_uint (int ncid, int varid, const PIO_Offset index[], unsigned 
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3223,7 +3223,7 @@ int PIOc_get_var1_uint (int ncid, int varid, const PIO_Offset index[], unsigned 
   return ierr;
 }
 
-int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], unsigned int *buf)
+int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], unsigned int *buf) 
 {
   int ierr;
   int msg;
@@ -3249,7 +3249,7 @@ int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3292,7 +3292,7 @@ int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3300,7 +3300,7 @@ int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], float *buf)
+int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], float *buf) 
 {
   int ierr;
   int msg;
@@ -3326,7 +3326,7 @@ int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3369,7 +3369,7 @@ int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3377,7 +3377,7 @@ int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], char *buf)
+int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], char *buf) 
 {
   int ierr;
   int msg;
@@ -3403,7 +3403,7 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3446,7 +3446,7 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3454,7 +3454,7 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_var1_text (int ncid, int varid, const PIO_Offset index[], char *buf)
+int PIOc_get_var1_text (int ncid, int varid, const PIO_Offset index[], char *buf) 
 {
   int ierr;
   int msg;
@@ -3476,7 +3476,7 @@ int PIOc_get_var1_text (int ncid, int varid, const PIO_Offset index[], char *buf
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3519,7 +3519,7 @@ int PIOc_get_var1_text (int ncid, int varid, const PIO_Offset index[], char *buf
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3527,7 +3527,7 @@ int PIOc_get_var1_text (int ncid, int varid, const PIO_Offset index[], char *buf
   return ierr;
 }
 
-int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], int *buf)
+int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], int *buf) 
 {
   int ierr;
   int msg;
@@ -3553,7 +3553,7 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3596,7 +3596,7 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3604,7 +3604,7 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   return ierr;
 }
 
-int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned int *buf)
+int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned int *buf) 
 {
   int ierr;
   int msg;
@@ -3630,7 +3630,7 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3673,7 +3673,7 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3681,7 +3681,7 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -3703,7 +3703,7 @@ int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3746,7 +3746,7 @@ int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3754,7 +3754,7 @@ int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   return ierr;
 }
 
-int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], double *buf)
+int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], double *buf) 
 {
   int ierr;
   int msg;
@@ -3780,7 +3780,7 @@ int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3823,7 +3823,7 @@ int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const P
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3831,7 +3831,7 @@ int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const P
   return ierr;
 }
 
-int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], long long *buf)
+int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], long long *buf) 
 {
   int ierr;
   int msg;
@@ -3857,7 +3857,7 @@ int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3900,7 +3900,7 @@ int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3908,7 +3908,7 @@ int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
   return ierr;
 }
 
-int PIOc_get_var_ulonglong (int ncid, int varid, unsigned long long *buf)
+int PIOc_get_var_ulonglong (int ncid, int varid, unsigned long long *buf) 
 {
   int ierr;
   int msg;
@@ -3938,7 +3938,7 @@ int PIOc_get_var_ulonglong (int ncid, int varid, unsigned long long *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -3981,7 +3981,7 @@ int PIOc_get_var_ulonglong (int ncid, int varid, unsigned long long *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -3989,7 +3989,7 @@ int PIOc_get_var_ulonglong (int ncid, int varid, unsigned long long *buf)
   return ierr;
 }
 
-int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], unsigned long long *buf)
+int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], unsigned long long *buf) 
 {
   int ierr;
   int msg;
@@ -4015,7 +4015,7 @@ int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4058,7 +4058,7 @@ int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4066,7 +4066,7 @@ int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   return ierr;
 }
 
-int PIOc_get_var_short (int ncid, int varid, short *buf)
+int PIOc_get_var_short (int ncid, int varid, short *buf) 
 {
   int ierr;
   int msg;
@@ -4096,7 +4096,7 @@ int PIOc_get_var_short (int ncid, int varid, short *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4139,7 +4139,7 @@ int PIOc_get_var_short (int ncid, int varid, short *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4147,7 +4147,7 @@ int PIOc_get_var_short (int ncid, int varid, short *buf)
   return ierr;
 }
 
-int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], float *buf)
+int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], float *buf) 
 {
   int ierr;
   int msg;
@@ -4173,7 +4173,7 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4216,7 +4216,7 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4224,7 +4224,7 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_var1_long (int ncid, int varid, const PIO_Offset index[], long *buf)
+int PIOc_get_var1_long (int ncid, int varid, const PIO_Offset index[], long *buf) 
 {
   int ierr;
   int msg;
@@ -4246,7 +4246,7 @@ int PIOc_get_var1_long (int ncid, int varid, const PIO_Offset index[], long *buf
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4289,7 +4289,7 @@ int PIOc_get_var1_long (int ncid, int varid, const PIO_Offset index[], long *buf
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4297,7 +4297,7 @@ int PIOc_get_var1_long (int ncid, int varid, const PIO_Offset index[], long *buf
   return ierr;
 }
 
-int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], long *buf)
+int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], long *buf) 
 {
   int ierr;
   int msg;
@@ -4323,7 +4323,7 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4366,7 +4366,7 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4374,7 +4374,7 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned short *buf)
+int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned short *buf) 
 {
   int ierr;
   int msg;
@@ -4400,7 +4400,7 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4443,7 +4443,7 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4451,7 +4451,7 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
   return ierr;
 }
 
-int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], long long *buf)
+int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], long long *buf) 
 {
   int ierr;
   int msg;
@@ -4477,7 +4477,7 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4520,7 +4520,7 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4528,7 +4528,7 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   return ierr;
 }
 
-int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], char *buf)
+int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], char *buf) 
 {
   int ierr;
   int msg;
@@ -4554,7 +4554,7 @@ int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4597,7 +4597,7 @@ int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4605,7 +4605,7 @@ int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned char *buf)
+int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned char *buf) 
 {
   int ierr;
   int msg;
@@ -4627,7 +4627,7 @@ int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4670,7 +4670,7 @@ int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4678,7 +4678,7 @@ int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned
   return ierr;
 }
 
-int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype)
+int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -4700,7 +4700,7 @@ int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4743,7 +4743,7 @@ int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4751,7 +4751,7 @@ int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   return ierr;
 }
 
-int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], short *buf)
+int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], short *buf) 
 {
   int ierr;
   int msg;
@@ -4777,7 +4777,7 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4820,7 +4820,7 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4828,7 +4828,7 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned long long *buf)
+int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned long long *buf) 
 {
   int ierr;
   int msg;
@@ -4854,7 +4854,7 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4897,7 +4897,7 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
@@ -4905,7 +4905,7 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   return ierr;
 }
 
-int PIOc_get_var_schar (int ncid, int varid, signed char *buf)
+int PIOc_get_var_schar (int ncid, int varid, signed char *buf) 
 {
   int ierr;
   int msg;
@@ -4935,7 +4935,7 @@ int PIOc_get_var_schar (int ncid, int varid, signed char *buf)
   ierr = PIO_NOERR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
@@ -4978,7 +4978,7 @@ int PIOc_get_var_schar (int ncid, int varid, signed char *buf)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-  if(ios->async_interface || bcast ||
+  if(ios->async_interface || bcast ||  
      (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }

@@ -4,7 +4,7 @@
  * @date 2014
  * @brief MPI_Gather, MPI_Gatherv, and MPI_Alltoallw with flow control options
  */
-
+ 
 #ifdef TESTSWAPM
 #include <mpi.h>
 #include <stdlib.h>
@@ -22,19 +22,19 @@
 #include <pio_internal.h>
 #endif
 
-/**
+/** 
  ** @brief Wrapper for MPI calls to print the Error string on error
  */
 void CheckMPIReturn(const int ierr,const char file[],const int line)
 {
-
+  
   if(ierr != MPI_SUCCESS){
     char errstring[MPI_MAX_ERROR_STRING];
     int errstrlen;
     int mpierr = MPI_Error_string( ierr, errstring, &errstrlen);
 
     fprintf(stderr, "MPI ERROR: %s in file %s at line %d\n",errstring, file, line);
-
+    
   }
 }
 
@@ -44,7 +44,7 @@ void CheckMPIReturn(const int ierr,const char file[],const int line)
  */
 
 int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
-		   void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root,
+		   void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root, 
 		   const MPI_Comm comm, const int flow_cntl)
 {
   bool fc_gather;
@@ -56,7 +56,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
   int hs;
   int displs;
   int dsize;
-
+  
 
 
   if(flow_cntl > 0){
@@ -102,7 +102,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
       }
 
       // copy local data
-      CheckMPIReturn(MPI_Type_size(sendtype, &dsize), __FILE__,__LINE__);
+      CheckMPIReturn(MPI_Type_size(sendtype, &dsize), __FILE__,__LINE__);      
       memcpy(recvbuf, sendbuf, sendcnt*dsize );
 
       count = min(count, preposts);
@@ -123,7 +123,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
 
   return PIO_NOERR;
 }
-
+  
 
 
 /**
@@ -132,7 +132,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
 
 int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
 		    void *recvbuf, const int recvcnts[], const int displs[],
-		    const MPI_Datatype recvtype, const int root,
+		    const MPI_Datatype recvtype, const int root, 
 		    const MPI_Comm comm, const int flow_cntl)
 {
   bool fc_gather;
@@ -143,7 +143,7 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
   int ierr;
   int hs;
   int dsize;
-
+  
 
   if(flow_cntl > 0){
     fc_gather = true;
@@ -188,7 +188,7 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
       }
 
       // copy local data
-      CheckMPIReturn(MPI_Type_size(sendtype, &dsize), __FILE__,__LINE__);
+      CheckMPIReturn(MPI_Type_size(sendtype, &dsize), __FILE__,__LINE__);      
       CheckMPIReturn(MPI_Sendrecv(sendbuf, sendcnt, sendtype,
 				  mytask, 102, recvbuf, recvcnts[mytask], recvtype,
 				  mytask, 102, comm, &status),__FILE__,__LINE__);
@@ -211,7 +211,7 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
 
 ///
 ///  @brief Returns the smallest power of 2 greater than i
-///
+///  
 int ceil2(const int i)
 {
   int p=1;
@@ -222,7 +222,7 @@ int ceil2(const int i)
 }
 
 ///
-///  @brief Given integers p and k between 0 and np-1,
+///  @brief Given integers p and k between 0 and np-1,  
 ///  if (p+1)^k <= np-1 then return (p+1)^k else -1
 int pair(const int np, const int p, const int k)
 {
@@ -234,8 +234,8 @@ int pair(const int np, const int p, const int k)
 /**
  **  @brief Provides the functionality of MPI_Alltoallw with flow control options
  */
-int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes[],
-	      void *rcvbuf,  int rcvlths[],  int rdispls[],  MPI_Datatype rtypes[],
+int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes[], 
+	      void *rcvbuf,  int rcvlths[],  int rdispls[],  MPI_Datatype rtypes[], 
 	       MPI_Comm comm,const  bool handshake, bool isend,const  int max_requests)
 {
 
@@ -272,7 +272,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     }
 #endif
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
-
+    
 #ifdef OPEN_MPI
     for(int i=0;i<nprocs;i++){
       if(stypes[i]==MPI_CHAR){
@@ -355,7 +355,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   if(handshake)
     for(int i=0;i<nprocs;i++)
       hs_rcvids[i]=MPI_REQUEST_NULL;
-
+  
   steps = 0;
   for(istep=0;istep<ceil2(nprocs)-1;istep++){
     p = pair(nprocs, istep, mytask) ;
@@ -378,7 +378,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
       maxreq = 2;
       maxreqh = 1;
     }
-  }
+  } 
   if(handshake){
     hs = 1;
     for(istep=0; istep<maxreq; istep++){
@@ -435,7 +435,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 	}
 	if(rcvlths[p] > 0){
 	  tag = p + offset_t;
-
+	  
 	  ptr = (void *)((char *) rcvbuf + rdispls[p]);
 	  CheckMPIReturn(MPI_Irecv( ptr, rcvlths[p], rtypes[p], p, tag, comm, rcvids+rstep), __FILE__,__LINE__);
 	  if(handshake)
@@ -452,7 +452,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
       CheckMPIReturn(MPI_Waitall(steps, sndids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
   }
   //      printf("%s %d %d \n",__FILE__,__LINE__,nprocs);
-
+  
   return PIO_NOERR;
 }
 
@@ -488,7 +488,7 @@ int main( int argc, char **argv )
         MPI_Abort( comm, 1 );
     }
     /* Test pio_fc_gather */
-
+    
     msg_cnt=0;
     while(msg_cnt<= MAX_GATHER_BLOCK_SIZE){
       /* Load up the buffers */
@@ -500,7 +500,7 @@ int main( int argc, char **argv )
       MPI_Barrier(comm);
       if(rank==0) printf("Start gather test %d\n",msg_cnt);
       if(rank == 0) gettimeofday(&t1, NULL);
-
+      
       err = pio_fc_gather( sbuf, size, MPI_INT, rbuf, size, MPI_INT, 0, comm, msg_cnt);
 
 
@@ -511,7 +511,7 @@ int main( int argc, char **argv )
       if(rank==0){
 	for(j=0;j<size;j++){
 	  for(i=0;i<size;i++){
-	    if(rbuf[i + j*size] != i + 100*j){
+	    if(rbuf[i + j*size] != i + 100*j){ 
 	      printf("got %d expected %d\n",rbuf[i+j*size] , i+100*j);
 	    }
 	  }
@@ -531,7 +531,7 @@ int main( int argc, char **argv )
 
     }
 
-
+    
 
     /* Test pio_swapm Create and load the arguments to alltoallv */
     sendcounts = (int *)malloc( size * sizeof(int) );
@@ -553,12 +553,12 @@ int main( int argc, char **argv )
         sdispls[i] = (((i+1) * (i))/2) * sizeof(int) ;
         sendtypes[i] = recvtypes[i] = MPI_INT;
     }
-
+    
     //    for(int msg_cnt=4; msg_cnt<size; msg_cnt*=2){
     //   if(rank==0) printf("message count %d\n",msg_cnt);
     msg_cnt = 0;
     for(int itest=0;itest<5; itest++){
-      bool hs=false;
+      bool hs=false; 
       bool isend=false;
       /* Load up the buffers */
       for (i=0; i<size*size; i++) {
@@ -571,29 +571,29 @@ int main( int argc, char **argv )
       if(rank == 0) gettimeofday(&t1, NULL);
 
       if(itest==0){
-	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes,
+	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes, 
 			 rbuf,  recvcounts, rdispls, recvtypes, comm, hs, isend, 0);
       }else if(itest==1){
 	hs = true;
 	isend = true;
-	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes,
+	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes, 
 			 rbuf,  recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
       }else if(itest==2){
 	hs = false;
 	isend = true;
-	err = pio_swapm( size, rank, sbuf, sendcounts, sdispls, sendtypes,
+	err = pio_swapm( size, rank, sbuf, sendcounts, sdispls, sendtypes, 
 			 rbuf, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
 
       }else if(itest==3){
 	hs = false;
 	isend = false;
-	err = pio_swapm( size, rank, sbuf, sendcounts, sdispls, sendtypes,
+	err = pio_swapm( size, rank, sbuf, sendcounts, sdispls, sendtypes, 
 			 rbuf, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
 
       }else if(itest==4){
 	hs = true;
 	isend = false;
-	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes,
+	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes, 
 			 rbuf,  recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
 
       }

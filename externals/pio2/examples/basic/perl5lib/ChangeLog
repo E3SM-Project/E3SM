@@ -6,7 +6,7 @@ Originator(s):  erik
 Date: Sat Jun 13, 2009
 One-line Summary: Add %ymd indicator for streams so can do year-month-days
 
-M      Streams/Template.pm ---- Add ability to write out %ymd year-month-day
+M      Streams/Template.pm ---- Add ability to write out %ymd year-month-day 
                                 for filenames in streams. It assumes a noleap
                                 calendar -- could easily be extended to make
                                 Gregorian optional.
@@ -14,7 +14,7 @@ M      t/01.t ---- Change formatting of successful test
 M      t/02.t ---- Add more tests for %ymd, and offset
 M      t/03.t ---- Change formatting of successful test
 M      t/04.t ---- Change formatting of successful test
-M      t/datm.streams.txt ---------- Add another year and the last-month
+M      t/datm.streams.txt ---------- Add another year and the last-month 
                                      to start for testing
 A      t/datm.ymd.streams.txt ------ Add streams test file with %ymd
 M      t/datm.template.streams.xml - Add CPLHIST test section with %ymd
@@ -27,7 +27,7 @@ Date: Tue Jun 9, 2009
 One-line Summary: add offset support for streams template
 
 M      Streams/Template.pm
-
+	
 ==============================================================
 Tag name:  perl5lib_090424
 Originator(s):  erik
@@ -79,7 +79,7 @@ Build/Namelist.pm
 . Change validate_variable_value() from an object method to a class method,
   and remove the unused argument.
 . add fix to _split_namelist_value method to replace embedded newlines by
-  spaces.
+  spaces. 
 
 Build/NamelistDefaults.pm
 . make the method interfaces case insensitive by converting all variable
@@ -146,7 +146,7 @@ Originator(s):  erik (KLUZEK ERIK 1326 CGD)
 Date: Mon Aug 11 10:44:52 MDT 2008
 One-line Summary: Turn off printing of file existance if NOT -verbose
 
-M      Streams/Template.pm ----------- Turn off printing of file
+M      Streams/Template.pm ----------- Turn off printing of file 
                 checking if NOT $printing;
 
 ==============================================================
@@ -190,8 +190,8 @@ about needing to do validation as is done now. Change the validate methods a bit
 and make them more robust.
 
 M  Build/Config.pm --------------- Add get_valid_values method and use it internally.
-M  Build/NamelistDefinition.pm --- Add namelist validate_variable_value to validate
-                                   method. Add option to return without quotes to
+M  Build/NamelistDefinition.pm --- Add namelist validate_variable_value to validate 
+                                   method. Add option to return without quotes to 
                                    get_valid_values method.
 M  Build/Namelist.pm ------------- Make validate_variable_value more robust.
 

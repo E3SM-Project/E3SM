@@ -4,83 +4,103 @@ API for preview namelist
 
 from CIME.XML.standard_module_setup import *
 
-import glob, shutil
+import glob, shutil, imp
 logger = logging.getLogger(__name__)
 
-def preview_namelists(case, dryrun=False):
-    # refresh case xml files from object
-    case.flush()
-
+def create_dirs(case):
+    """
+    Make necessary directories for case
+    """
     # Get data from XML
     exeroot = case.get_value("EXEROOT")
     libroot = case.get_value("LIBROOT")
     incroot = case.get_value("INCROOT")
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
+
+
+    docdir = os.path.join(caseroot, "CaseDocs")
+    dirs_to_make = []
+    models = case.get_values("COMP_CLASSES")
+    for model in models:
+        dirname = model.lower()
+        dirs_to_make.append(os.path.join(exeroot, dirname, "obj"))
+
+    dirs_to_make.extend([exeroot, libroot, incroot, rundir, docdir])
+
+    for dir_to_make in dirs_to_make:
+        if (not os.path.isdir(dir_to_make)):
+            try:
+                logger.debug("Making dir '%s'" % dir_to_make)
+                os.makedirs(dir_to_make)
+            except OSError as e:
+                expect(False, "Could not make directory '%s', error: %s" % (dir_to_make, e))
+
+    # As a convenience write the location of the case directory in the bld and run directories
+    for dir_ in (exeroot, rundir):
+        with open(os.path.join(dir_,"CASEROOT"),"w+") as fd:
+            fd.write(caseroot+"\n")
+
+def create_namelists(case):
+    """
+    Create component namelists
+    """
+    case.flush()
+
     casebuild = case.get_value("CASEBUILD")
-    testcase = case.get_value("TESTCASE")
+    caseroot = case.get_value("CASEROOT")
+    rundir = case.get_value("RUNDIR")
 
-    logger.debug("LID is: '%s'" % os.getenv("LID", ""))
-    logger.debug("caseroot is: '%s'" % caseroot)
-
-    dryrun = True if (testcase == "SBN") else dryrun
-
-    models = ["atm", "lnd", "ice", "ocn", "glc", "wav", "rof", "cpl"]
     docdir = os.path.join(caseroot, "CaseDocs")
 
-    if (dryrun):
-        # Only create rundir
-        try:
-            os.makedirs(rundir)
-        except OSError:
-            logger.warning("Not able to create $RUNDIR, trying a subdirectory of $CASEROOT")
-            rundir = os.path.join(caseroot, rundir)
-            try:
-                os.makedirs(rundir)
-                logger.info("Success! Setting RUNDIR=%s" % rundir)
-                case.set_value("RUNDIR", rundir)
-            except OSError:
-                expect(False, "Could not create rundir")
+    # Load modules
+    case.load_env()
 
-    else:
+    logger.info("Creating component namelists")
 
-        # Load modules
-        env_module = case.get_env("mach_specific")
-        env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
-                                     debug=case.get_value("DEBUG"),
-                                     mpilib=case.get_value("MPILIB"))
-
-        # Make necessary directories
-        dirs_to_make = [os.path.join(exeroot, model, "obj") for model in models]
-        dirs_to_make.extend([exeroot, libroot, incroot, rundir, docdir])
-
-        for dir_to_make in dirs_to_make:
-            if (not os.path.isdir(dir_to_make)):
-                try:
-                    logger.debug("Making dir '%s'" % dir_to_make)
-                    os.makedirs(dir_to_make)
-                except OSError as e:
-                    expect(False, "Could not make directory '%s', error: %s" % (dir_to_make, e))
-
-    # Create namelists
+    # Create namelists - must have cpl last in the list below
+    # Note - cpl must be last in the loop below so that in generating its namelist,
+    # it can use xml vars potentially set by other component's buildnml scripts
+    models = case.get_values("COMP_CLASSES")
+    models += [models.pop(0)]
     for model in models:
-        model_str = "drv" if model == "cpl" else model
+        model_str = model.lower()
         config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
         config_dir = os.path.dirname(config_file)
-        cmd = os.path.join(config_dir, "buildnml")
-        logger.info("Running %s:"%cmd)
-        if (logger.level == logging.DEBUG):
-            rc, out, err = run_cmd("PREVIEW_NML=1 %s %s" % (cmd, caseroot))
-            expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
+        if model_str == "cpl":
+            compname = "drv"
         else:
-            rc, out, err = run_cmd("%s %s" % (cmd, caseroot))
-            expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
-        if out is not None:
-            logger.info("     %s"%out)
-        if err is not None:
-            logger.info("     %s"%err)
-    # refresh case xml object from file
-    case.read_xml()
+            compname = case.get_value("COMP_%s" % model_str.upper())
+        cmd = os.path.join(config_dir, "buildnml")
+        do_run_cmd = False
+        try:
+            with open(cmd, 'r') as f:
+                first_line = f.readline()
+            if "python" in first_line:    
+                logger.info("   Calling %s buildnml"%compname)
+                mod = imp.load_source("buildnml", cmd)
+                mod.buildnml(case, caseroot, compname)
+            else:
+                raise SyntaxError
+        except SyntaxError as detail:
+            if 'python' in first_line:
+                expect(False, detail)
+            else:
+                do_run_cmd = True
+        except AttributeError:
+            do_run_cmd = True
+        except:
+            raise
+
+        if do_run_cmd:
+            logger.debug("   Running %s buildnml"%compname)
+            case.flush()
+            run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+            # refresh case xml object from file
+            case.read_xml()            
+    logger.info("Finished creating component namelists")
+
+
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
         os.makedirs(docdir)

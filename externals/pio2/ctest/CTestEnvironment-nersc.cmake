@@ -1,7 +1,7 @@
 #==============================================================================
 #
 #  This file sets the environment variables needed to configure and build
-#  on the NERSC systems
+#  on the NERSC systems 
 #  (edison/ corip1).
 #
 #==============================================================================

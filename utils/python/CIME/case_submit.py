@@ -7,14 +7,18 @@ jobs.
 """
 import socket
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect
-from CIME.preview_namelists        import preview_namelists
-from CIME.check_lockedfiles        import check_lockedfiles
+from CIME.utils                     import expect, append_status
+from CIME.preview_namelists         import create_namelists
+from CIME.check_lockedfiles         import check_lockedfiles
+from CIME.check_input_data          import check_all_input_data
+from CIME.case_cmpgen_namelists     import case_cmpgen_namelists
+from CIME.test_status               import *
 
 logger = logging.getLogger(__name__)
 
-def submit(case, job=None, resubmit=False, no_batch=False):
+def _submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
     caseroot = case.get_value("CASEROOT")
+
     if job is None:
         if case.get_value("TEST"):
             job = "case.test"
@@ -35,9 +39,6 @@ def submit(case, job=None, resubmit=False, no_batch=False):
                 with open(".original_host","w") as fd:
                     fd.write( socket.gethostname())
 
-    cimeroot = case.get_value("CIMEROOT")
-    os.environ["CIMEROOT"] = cimeroot
-
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")
@@ -56,22 +57,41 @@ def submit(case, job=None, resubmit=False, no_batch=False):
         case.set_value("IS_FIRST_RUN", False)
 
     #Load Modules
-    env_module = case.get_env("mach_specific")
-
-
-    env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
-                                 debug=case.get_value("DEBUG"),
-                                 mpilib=case.get_value("MPILIB"))
+    case.load_env()
 
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
 
-    logger.warn("submit_jobs %s"%job)
-    case.submit_jobs(no_batch=no_batch, job=job)
+    logger.warn("submit_jobs %s" % job)
+    job_ids = case.submit_jobs(no_batch=no_batch, job=job, batch_args=batch_args)
+    msg = "Submitted jobs %s" % job_ids
+    append_status(msg, caseroot=caseroot, sfile="CaseStatus")
+
+def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
+    try:
+        _submit(case, job=job, resubmit=resubmit, no_batch=no_batch, batch_args=batch_args)
+    except:
+        # If something failed in the batch system, make sure to mark
+        # the test as failed if we are running a test.
+        if case.get_value("TEST"):
+            caseroot = case.get_value("CASEROOT")
+            casebaseid = case.get_value("CASEBASEID")
+            with TestStatus(test_dir=caseroot, test_name=casebaseid, lock=True) as ts:
+                ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="batch system failure")
+
+            append_status("Batch submission failed, TestStatus file changed to read-only", caseroot=caseroot, sfile="TestStatus.log")
+
+        raise
 
 def check_case(case, caseroot):
     check_lockedfiles(caseroot)
-    preview_namelists(case, dryrun=False)
+    create_namelists(case) # Must be called before check_all_input_data
+    logger.info("Checking that inputdata is available as part of case submission")
+    check_all_input_data(case)
+    # Now that we have baselines, do baseline operations
+    if case.get_value("TEST"):
+        case_cmpgen_namelists(case)
+
     expect(case.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")
     logger.info("Check case OK")

@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
 
-<files>
+<entry_id version="2.0">
 
   <entry id="MODEL">
     <type>char</type>
@@ -24,6 +24,15 @@
     <desc>contains both header and group information for all the case env_*.xml files </desc>
   </entry>
 
+  <entry id="BATCH_SPEC_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_batch.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing batch system details for target system  (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_batch.xsd</schema>
+  </entry>
+
   <entry id="GRIDS_SPEC_FILE">
     <type>char</type>
     <default_value>$CIMEROOT/cime_config/$MODEL/config_grids.xml</default_value>
@@ -38,6 +47,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing compiler specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_compilers_v2.xsd</schema>
   </entry>
 
   <entry id="MACHINES_SPEC_FILE">
@@ -46,14 +56,6 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing machine specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="BUILD_SPEC_FILE">
-    <type>char</type>
-    <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_build.xml</default_value>
-    <group>case_last</group>
-    <file>env_case.xml</file>
-    <desc>file containing build specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
   <entry id="PIO_SPEC_FILE">
@@ -95,6 +97,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_compsets.xsd</schema>
   </entry>
 
   <entry id="PES_SPEC_FILE">
@@ -102,7 +105,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
-      <value component="drv"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/config_pes.xml</value>
       <value component="cam"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
       <value component="cism"     >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
       <value component="clm"      >$CIMEROOT/cime_config/$MODEL/allactive/config_pesall.xml</value>
@@ -115,6 +118,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of all pe-layouts for primary component (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/config_pes.xsd</schema>
   </entry>
 
   <entry id="SYSTEM_TESTS_DIR">
@@ -155,15 +159,15 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/cime_config/$MODEL//allactive/testmods_dirs</value>
-      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/testdefs/testmods_dirs</value>
-      <value component="cam"      >$SRCROOT/components/cam/cime_config/testdefs/testmods_dirs</value>
-      <value component="cism"     >$SRCROOT/components/cism/cime_config/testdefs/testmods_dirs</value>
-      <value component="clm"      >$SRCROOT/components/clm/cime_config/testdefs/testmods_dirs</value>
-      <value component="cice"     >$SRCROOT/components/cice/cime_config/testdefs/testmods_dirs</value>
-      <value component="rtm"      >$SRCROOT/components/rtm/cime_config/testdefs/testmods_dirs</value>
-      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testmods_dirs</value>
-      <value component="pop"      >$SRCROOT/components/pop/cime_config/testdefs/testmods_dirs</value>
+      <value component="allactive">$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="drv"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="cam"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="cism"     >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="clm"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="cice"     >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="rtm"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="mosart"   >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
+      <value component="pop"      >$CIMEROOT/cime_config/$MODEL/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -189,16 +193,63 @@
     <desc>directory containing user modifications for primary components (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
+  <entry id="NAMELIST_DEFINITION_FILE">
+    <type>char</type>
+    <default_value>unset</default_value>
+    <values>
+      <value component="modelio"      >$CIMEROOT/driver_cpl/cime_config/namelist_definition_modelio.xml</value>
+      <value component="drv_flds"      >$CIMEROOT/driver_cpl/bld/namelist_files/namelist_definition_drv_flds.xml</value>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/namelist_definition_drv.xml</value>
+      <!-- data model components -->
+      <value component="drof">$CIMEROOT/components/data_comps/drof/cime_config/namelist_definition_drof.xml</value>
+      <value component="datm">$CIMEROOT/components/data_comps/datm/cime_config/namelist_definition_datm.xml</value>
+      <value component="dice">$CIMEROOT/components/data_comps/dice/cime_config/namelist_definition_dice.xml</value>
+      <value component="dlnd">$CIMEROOT/components/data_comps/dlnd/cime_config/namelist_definition_dlnd.xml</value>
+      <value component="docn">$CIMEROOT/components/data_comps/docn/cime_config/namelist_definition_docn.xml</value>
+      <value component="dwav">$CIMEROOT/components/data_comps/dwav/cime_config/namelist_definition_dwav.xml</value>
+      <!-- external model components -->
+      <!--  TODO
+      <value component="cam"      >$SRCROOT/components/cam/bld/namelist_files/namelist_definition.xml</value>
+      <value component="cism"     >$SRCROOT/components/cism/bld/namelist_files/namelist_definition_cism.xml</value>
+      <value component="cice"     >$SRCROOT/components/cice/cime_config/namelist_definition_cice.xml</value>
+      <value component="clm"      >$SRCROOT/components/clm/bld/namelist_files/namelist_definition_clm4_5.xml</value>
+      <value component="clm"      >$SRCROOT/components/clm/bld/namelist_files/namelist_definition_clm4_0.xml</value>
+      <value component="pop"      >$SRCROOT/components/pop/bld/namelist_files/namelist_definition_pop.xml</value>
+      -->
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing namelist_definitions for all components </desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id_namelist.xsd</schema>
+  </entry>
+
+  <entry id="LTARCHIVE_SPEC_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_lt_archive.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing all lt archive configuration variables (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
   <!-- =============================================================== -->
   <!-- File names for all component specific configuration variables -->
   <!-- =============================================================== -->
 
-  <entry id="CONFIG_DRV_FILE">
+  <entry id="CONFIG_CPL_FILE">
     <type>char</type>
     <default_value>$CIMEROOT/driver_cpl/cime_config/config_component.xml</default_value>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
+    <type>char</type>
+    <default_value>$CIMEROOT/driver_cpl/cime_config/config_component_$MODEL.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing all component specific driver configuration variables (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/cime_config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ATM_FILE">
@@ -312,11 +363,12 @@
     <default_value>$CIMEROOT/components/stub_comps/sesp/cime_config/config_component.xml</default_value>
     <values>
       <value component="sesp">$CIMEROOT/components/stub_comps/sesp/cime_config/config_component.xml</value>
+      <value component="desp">$CIMEROOT/components/data_comps/desp/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
   </entry>
 
-</files>
+</entry_id>
 

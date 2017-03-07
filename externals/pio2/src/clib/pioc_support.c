@@ -1,132 +1,11 @@
 /** @file 
  * Support functions.
  */
-#include <config.h>
-#if PIO_ENABLE_LOGGING
-#include <stdarg.h>
-#include <unistd.h>
-#endif /* PIO_ENABLE_LOGGING */
 #include <pio.h>
 #include <pio_internal.h>
 
 #include <execinfo.h>
 #define versno 2001
-
-#if PIO_ENABLE_LOGGING
-int pio_log_level = 0;
-int my_rank;
-#endif /* PIO_ENABLE_LOGGING */
-
-/** Return a string description of an error code. If zero is passed, a
- * null is returned.
- *
- * @param pioerr the error code returned by a PIO function call. 
- * @param errmsg Pointer that will get the error message. It will be
- * PIO_MAX_NAME chars or less.
- *
- * @return 0 on success
- */
-int
-PIOc_strerror(int pioerr, char *errmsg)
-{
-
-    /* System error? */
-    if(pioerr > 0)
-    {
-	const char *cp = (const char *)strerror(pioerr);
-	if (cp)
-	    strncpy(errmsg, cp, PIO_MAX_NAME);
-	else
-	    strcpy(errmsg, "Unknown Error");
-    }
-    else if (pioerr == PIO_NOERR)
-    {
-	strcpy(errmsg, "No error");
-    }
-    else if (pioerr <= NC2_ERR && pioerr >= NC4_LAST_ERROR)     /* NetCDF error? */
-    {
-#if defined( _PNETCDF) || defined(_NETCDF)
-	strncpy(errmsg, nc_strerror(pioerr), NC_MAX_NAME);
-#else /* defined( _PNETCDF) || defined(_NETCDF) */
-	strcpy(errmsg, "NetCDF error code, PIO not built with netCDF.");
-#endif /* defined( _PNETCDF) || defined(_NETCDF) */
-    }
-    else
-    {
-	/* Handle PIO errors. */
-	switch(pioerr) {
-	case PIO_EBADIOTYPE:
-	    strcpy(errmsg, "Bad IO type");
-	    break;
-	default:
-	    strcpy(errmsg, "unknown PIO error");
-	}
-    }
-
-    return PIO_NOERR;
-}
-
-/** Set the logging level. Set to -1 for nothing, 0 for errors only, 1
- * for important logging, and so on. Log levels below 1 are only
- * printed on the io/component root. If the library is not built with
- * logging, this function does nothing. */
-int PIOc_set_log_level(int level)
-{
-#if PIO_ENABLE_LOGGING
-    printf("setting log level to %d\n", level);
-    pio_log_level = level;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-#endif /* PIO_ENABLE_LOGGING */
-    return PIO_NOERR;
-}
-
-#if PIO_ENABLE_LOGGING
-/** This function prints out a message, if the severity of the message
-   is lower than the global pio_log_level. To use it, do something
-   like this:
-   
-   pio_log(0, "this computer will explode in %d seconds", i);
-
-   After the first arg (the severity), use the rest like a normal
-   printf statement. Output will appear on stdout.
-   This function is heavily based on the function in section 15.5 of
-   the C FAQ. 
-*/
-void 
-pio_log(int severity, const char *fmt, ...)
-{
-   va_list argp;
-   int t;
-
-   /* If the severity is greater than the log level, we don't print
-      this message. */
-   if (severity > pio_log_level)
-      return;
-
-   /* If the severity is 0, only print on rank 0. */
-   if (severity < 1 && my_rank != 0)
-       return;
-
-   /* If the severity is zero, this is an error. Otherwise insert that
-      many tabs before the message. */
-   if (!severity)
-       fprintf(stdout, "ERROR: ");
-   for (t = 0; t < severity; t++)
-       fprintf(stdout, "\t");
-
-   /* Show the rank. */
-   fprintf(stdout, "%d ", my_rank);
-   
-   /* Print out the variable list of args with vprintf. */
-   va_start(argp, fmt);
-   vfprintf(stdout, fmt, argp);
-   va_end(argp);
-   
-   /* Put on a final linefeed. */
-   fprintf(stdout, "\n");
-   fflush(stdout);
-}
-#endif /* PIO_ENABLE_LOGGING */
 
 static pio_swapm_defaults swapm_defaults;
 bool PIO_Save_Decomps=false;
@@ -233,35 +112,6 @@ void pioassert(_Bool expression, const char *msg, const char *fname, const int l
   }
 #endif  
 
-}
-
-/** Handle MPI errors. An error message is sent to stderr, then the
-  check_netcdf() function is called with PIO_EIO.
-
-  @param file pointer to the file_desc_t info
-  @param mpierr the MPI return code to handle
-  @param filename the name of the code file where error occured.
-  @param line the line of code where error occured.
-  @return PIO_NOERR for no error, otherwise PIO_EIO.
- */
-int check_mpi(file_desc_t *file, const int mpierr, const char *filename,
-	       const int line)
-{
-    if (mpierr)
-    {
-	char errstring[MPI_MAX_ERROR_STRING];
-	int errstrlen;
-
-	/* If we can get an error string from MPI, print it to stderr. */
-	if (!MPI_Error_string(mpierr, errstring, &errstrlen))
-	    fprintf(stderr, "MPI ERROR: %s in file %s at line %d\n",
-		    errstring, filename, line);
-
-	/* Handle all MPI errors as PIO_EIO. */
-	check_netcdf(file, PIO_EIO, filename, line);
-	return PIO_EIO;
-    }
-    return PIO_NOERR;
 }
 
 /** Check the result of a netCDF API call. 

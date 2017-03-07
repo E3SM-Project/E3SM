@@ -1,7 +1,7 @@
 
 TESTPIO README
 
-Testpio tests both the accuracy and performance of reading and writing data
+Testpio tests both the accuracy and performance of reading and writing data 
 using the pio library.  The tests are controlled via namelist.  There are a
 set of general namelist and then namelist to setup a computational
 decomposition and an IO decomposition.  The computational decomposition
@@ -21,34 +21,34 @@ block, io_nml, contains some general settings:
     nx_global      - integer, global size of "x" dimension
     ny_global      - integer, global size of "y" dimension
     nz_global      - integer, glboal size of "z" dimension
-    ioFMT          - string, type and i/o method of data file
+    ioFMT          - string, type and i/o method of data file 
                      ("bin","pnc","snc"), binary, pnetcdf, or serial netcdf
-    rearr          - string, type of rearranging to be done
+    rearr          - string, type of rearranging to be done 
                      ("none","mct","box","boxauto")
     nprocsIO       - integer, number of IO processors used only when rearr is
                      not "none", if rearr is "none", then the IO decomposition
                      will be the computational decomposition
     base           - integer, base pe associated with nprocIO striding
     stride         - integer, the stride of io pes across the global pe set
-    num_aggregator - integer, mpi-io number of aggregators, only used if no
+    num_aggregator - integer, mpi-io number of aggregators, only used if no 
                      pio rearranging is done
-    dir            - string, directory to write output data, this must exist
+    dir            - string, directory to write output data, this must exist 
                      before the model starts up
     num_iodofs     - tests either 1dof or 2dof init decomp interfaces (1,2)
     maxiter        - integer, the number of trials for the test
     DebugLevel     - integer, sets the debug level (0,1,2,3)
     compdof_input  - string, setting of the compDOF ('namelist' or a filename)
-    compdof_output - string, whether the compDOF is saved to disk
+    compdof_output - string, whether the compDOF is saved to disk 
                      ('none' or a filename)
 
 Notes:
   - the "mct" rearr option is not currently available
-  - if rearr is set to "none", then the computational decomposition is also
+  - if rearr is set to "none", then the computational decomposition is also 
     going to be used as the IO decomposition.  The computation decomposition
     must therefore be suited to the underlying I/O methods.
   - if rearr is set to "box", then pio is going to generate an internal
     IO decomposition automatically and pio will rearrange to that decomp.
-  - num_aggregator is used with mpi-io and no pio rearranging.  mpi-io is only
+  - num_aggregator is used with mpi-io and no pio rearranging.  mpi-io is only 
     used with binary data.
   - nprocsIO, base, and stride implementation has some special options
     if nprocsIO >  0 and stride >  0, then use input values
@@ -66,7 +66,7 @@ blocks are identical in use.
                  increasing this increases the flexibility of decompositions.
     grdorder   - string, sets the gridcell ordering within the block
                  ("xyz","xzy","yxz","yzx","zxy","zyx")
-    grddecomp  - string, sets up the block size with gdx, gdy, and gdz, see
+    grddecomp  - string, sets up the block size with gdx, gdy, and gdz, see 
                  below, ("x","y","z","xy","xye","xz","xze","yz","yze",
                  "xyz","xyze","setblk")
     gdx        - integer, "x" size of block
@@ -89,7 +89,7 @@ are provided below.
 
 Testpio writes out several files including summary information to
 stdout, data files to the namelist dir directory, and a netcdf
-file summarizing the decompositions.  The key output information
+file summarizing the decompositions.  The key output information 
 is stdout, which contains the timing information.  In addition,
 a netcdf file called gdecomp.nc is written that provides both the
 block and task ids for each gridcell as computed by the decompositions.
@@ -110,7 +110,7 @@ option to testpio_run.pl
 
 There are several testpio_in files for the pio test suite.  The ones that
 come with pio test specific things.  In general, there are tests for
- sn = serial netcdf and no rearrangement
+ sn = serial netcdf and no rearrangement 
  sb = serial netcdf and box rearrangement
  pn = parallel netcdf and no rearrangement
  pb = parallel netcdf and box rearrangement
@@ -121,7 +121,7 @@ and the test number (01, etc) is consistent across I/O methods with
  02 = simple 2d xy decomp across all pes with all pes active in I/O
  03 = all data on root pe, all pes active in I/O
  04 = simple 2d xy decomp with yxz ordering and stride=4 pes active in I/O
- 05 = 2d xy decomp with 4 blocks/pe, yxz ordering, xy block decomp, and
+ 05 = 2d xy decomp with 4 blocks/pe, yxz ordering, xy block decomp, and 
       stride=4 pes active in I/O
  06 = 3d xy decomp with 4 blocks/pe, yxz ordering, xy block decomp, and
       stride=4 pes active in I/O
@@ -146,24 +146,24 @@ DECOMPOSITION:
 
 The decomposition implementation supports the decomposition of
 a general 3 dimensional "nx * ny * nz" grid into multiple blocks
-of gridcells which are then ordered and assigned to processors.
-In general, blocks in the decomposition are rectangular,
-"gdx * gdy * gdz" and the same size, although some blocks around
-the edges of the domain may be smaller if the decomposition is uneven.
-Both gridcells within the block and blocks within the domain can be
+of gridcells which are then ordered and assigned to processors.  
+In general, blocks in the decomposition are rectangular, 
+"gdx * gdy * gdz" and the same size, although some blocks around 
+the edges of the domain may be smaller if the decomposition is uneven.  
+Both gridcells within the block and blocks within the domain can be 
 ordered in any of the possible dimension hierarchies, such as "xyz"
-where the first dimension is the fastest.
+where the first dimension is the fastest.  
 
-The gdx, gdy, and gdz inputs allow the user to specify the size in
-any dimension and the grddecomp input specifies which dimensions are
-to be further optimized.  In general, automatic decomposition generation
-of 3 dimensional grids can be done in any of possible combination of
+The gdx, gdy, and gdz inputs allow the user to specify the size in 
+any dimension and the grddecomp input specifies which dimensions are 
+to be further optimized.  In general, automatic decomposition generation 
+of 3 dimensional grids can be done in any of possible combination of 
 dimensions, (x, y, z, xy, xz, yz, or xyz), with the other dimensions having a
 fixed block size.  The automatic generation of the decomposition is
 based upon an internal algorithm that tries to determine the most
 "square" blocks with an additional constraint on minimizing the maximum
 number of gridcells across processors.  If evenly divided grids are
-desired, use of the "e" addition to grddecomp specifies that the grid
+desired, use of the "e" addition to grddecomp specifies that the grid 
 decomposition must be evenly divided.  the setblk option uses the
 prescibed gdx, gdy, and gdz inputs withtout further automation.
 
@@ -172,7 +172,7 @@ in mapping blocks to processors, but has a few additional options.
 "cont1d" (contiguous 1d) basically unwraps the blocks in the order specified
 by the blkorder input and then decomposes that "1d" list of blocks
 onto processors by contiguously grouping blocks together and allocating
-them to a processor.  The number of contiguous blocks that are
+them to a processor.  The number of contiguous blocks that are 
 allocated to a processor is the maximum of the values of bdx, bdy, and
 bdz inputs.  Contiguous blocks are allocated to each processor in turn
 in a round robin fashion until all blocks are allocated.  The
@@ -181,13 +181,13 @@ contiguous blocks are set automatically such that each processor
 recieves only 1 set of contiguous blocks.  The ysym2 and ysym4
 blkdecomp2 options modify the original block layout such that
 the tasks assigned to the blocks are 2-way or 4-way symetric
-in the y axis.
+in the y axis. 
 
 The decomposition tool is extremely flexible, but arbitrary
 inputs will not always yield valid decompositions.  If a valid
 decomposition cannot be computed based on the global grid size,
-number of pes, number of blocks desired, and decomposition options,
-the model will stop.
+number of pes, number of blocks desired, and decomposition options, 
+the model will stop.  
 
 As indicated above, the IO decomposition must be suited to the
 IO methods, so decompositions are even further limited by those
@@ -212,7 +212,7 @@ Some decomposition examples:
 
 Standard xyz ordering, 2d decomp:
                note: blkdecomp plays no role since there is 1 block per pe
- nx_global  6
+ nx_global  6       
  ny_global  4
  nz_global  1           ______________________________
  npes       4          |B3  P3        |B4  P4         |
@@ -231,7 +231,7 @@ Standard xyz ordering, 2d decomp:
 
 Same as above but yxz ordering, 2d decomp
                note: blkdecomp plays no role since there is 1 block per pe
- nx_global  6
+ nx_global  6       
  ny_global  4
  nz_global  1           _____________________________
  npes       4          |B2  P2        |B4  P4        |
@@ -248,10 +248,10 @@ Same as above but yxz ordering, 2d decomp
  bdy        0          |______________|______________|
  bdz        0
 
-xyz grid ordering, 1d x decomp
+xyz grid ordering, 1d x decomp 
                note: blkdecomp plays no role since there is 1 block per pe
                note: blkorder plays no role since it's a 1d decomp
- nx_global  8
+ nx_global  8       
  ny_global  4
  nz_global  1           _____________________________________
  npes       4          |B1  P1  |B2  P2   |B3  P3  |B4  P4   |
@@ -269,7 +269,7 @@ xyz grid ordering, 1d x decomp
  bdz        0
 
 yxz block ordering, 2d grid decomp, 2d block decomp, 4 block per pe
- nx_global  8
+ nx_global  8       
  ny_global  4
  nz_global  1           _____________________________________
  npes       4          |B4  P2  |B8  P2   |B12  P4 |B16  P4  |

@@ -4,7 +4,6 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.utils import expect, transform_vars, get_build_threaded
 
 import socket
 
@@ -23,28 +22,32 @@ class Machines(GenericXML):
         self.machine_node = None
         self.machine = None
         self.machines_dir = None
-
+        schema = None
+        if files is None:
+            files = Files()
         if infile is None:
-            if files is None:
-                files = Files()
-            infile = files.get_value("MACHINES_SPEC_FILE", resolved=False)
-            infile = files.get_resolved_value(infile)
+            infile = files.get_value("MACHINES_SPEC_FILE")
+        schema = files.get_schema("MACHINES_SPEC_FILE")
+        logger.debug("Verifying using schema %s"%schema)
 
         self.machines_dir = os.path.dirname(infile)
 
-        GenericXML.__init__(self, infile)
+        GenericXML.__init__(self, infile, schema)
 
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
         # This could cause problems if node matchs are repeated when only one is expected
-        infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
-        logger.debug("Infile: %s" , infile)
-        if os.path.exists(infile):
-            GenericXML.read(self, infile)
+        local_infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
+        logger.debug("Infile: %s" , local_infile)
+        if os.path.exists(local_infile):
+            GenericXML.read(self, local_infile, schema)
 
         if machine is None:
-            machine = self.probe_machine_name()
+            if "CIME_MACHINE" in os.environ:
+                machine = os.environ["CIME_MACHINE"]
+            else:
+                machine = self.probe_machine_name()
 
-        expect(machine is not None, "Could not initialize machine object")
+        expect(machine is not None, "Could not initialize machine object from %s or %s" % (infile, local_infile))
         self.set_machine(machine)
 
     def get_machines_dir(self):
@@ -257,95 +260,6 @@ class Machines(GenericXML):
                 return suffix_node.text
 
         return None
-
-    def get_mpirun(self, attribs, check_members, case, job):
-        """
-        Find best match, return (executable, {arg_name : text})
-        """
-        mpirun_nodes = self.get_nodes("mpirun", root=self.machine_node)
-        best_match = None
-        best_num_matched = -1
-        default_match = None
-        best_num_matched_default = -1
-        args = {}
-        for mpirun_node in mpirun_nodes:
-            xml_attribs = mpirun_node.attrib
-            all_match = True
-            matches = 0
-            is_default = False
-            for key, value in attribs.iteritems():
-                if key in xml_attribs:
-                    if xml_attribs[key].lower() == "false":
-                        xml_attrib = False
-                    elif xml_attribs[key].lower() == "true":
-                        xml_attrib = True
-                    else:
-                        xml_attrib = xml_attribs[key]
-
-                    if xml_attrib == value:
-                        matches += 1
-                    elif key == "mpilib" and xml_attrib == "default":
-                        is_default = True
-                    else:
-                        all_match = False
-                        break
-
-            for key in xml_attribs:
-                expect(key in attribs, "Unhandled MPI property '%s'" % key)
-
-            if all_match:
-                if is_default:
-                    if matches > best_num_matched_default:
-                        default_match = mpirun_node
-                        best_num_matched_default = matches
-                else:
-                    if matches > best_num_matched:
-                        best_match = mpirun_node
-                        best_num_matched = matches
-
-        expect(best_match is not None or default_match is not None,
-               "Could not find a matching MPI for attributes: %s" % attribs)
-
-        the_match = best_match if best_match is not None else default_match
-
-        # Now that we know the best match, compute the arguments
-        arg_node = self.get_optional_node("arguments", root=the_match)
-        if arg_node is not None:
-            arg_nodes = self.get_nodes("arg", root=arg_node)
-            for arg_node in arg_nodes:
-                arg_value = transform_vars(arg_node.text,
-                                           case=case,
-                                           subgroup=job,
-                                           check_members=check_members,
-                                           default=arg_node.get("default"))
-                args[arg_node.get("name")] = arg_value
-
-        executable = self.get_node("executable", root=the_match)
-
-        return executable.text, args
-
-    def get_full_mpirun(self, check_members, case, job):
-        default_run_exe = self.get_suffix("default_run_exe")
-        expect(default_run_exe is not None, "no default run exe defined!")
-        default_run_misc_suffix = self.get_suffix("default_run_misc_suffix")
-        default_run_misc_suffix = "" if default_run_misc_suffix is None else default_run_misc_suffix
-        default_run_suffix = default_run_exe + default_run_misc_suffix
-
-        # Things that will have to be matched against mpirun element attributes
-        mpi_attribs = {
-            "compiler" : case.get_value("COMPILER"),
-            "mpilib"   : case.get_value("MPILIB"),
-            "threaded" : get_build_threaded(case)
-            }
-
-        executable, args = self.get_mpirun(mpi_attribs, check_members, case, job)
-
-        mpi_arg_string = " ".join(args.values())
-        batch_system = self.get_value("BATCH_SYSTEM")
-        if batch_system == "cobalt":
-            mpi_arg_string += " : "
-
-        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def print_values(self):
         # write out machines

@@ -46,7 +46,7 @@ program testpio
   integer(i4) :: indx
   integer(i4) :: mode
 
-  integer(i4) :: ip,numPhases
+  integer(i4) :: ip,numPhases 
   character(len=*), parameter :: TestR8CaseName = 'r8_test'
   character(len=*), parameter :: TestR4CaseName = 'r4_test'
   character(len=*), parameter :: TestI4CaseName  = 'i4_test'
@@ -101,11 +101,11 @@ program testpio
   real(r8) :: dt_write_r8, dt_write_r4, dt_write_i4 ! individual write times
   real(r8) :: dt_read_r8, dt_read_r4, dt_read_i4 ! individual read times
   ! Arrays to hold globally reduced read/write times--one element per time trial
-  real(r8), dimension(:), pointer :: gdt_write_r8, gdt_write_r4, gdt_write_i4
+  real(r8), dimension(:), pointer :: gdt_write_r8, gdt_write_r4, gdt_write_i4 
   real(r8), dimension(:), pointer :: gdt_read_r8, gdt_read_r4, gdt_read_i4
 
   integer(i4) :: nprocs
-  integer(i4) :: lLength    ! local number of words in the computational decomposition
+  integer(i4) :: lLength    ! local number of words in the computational decomposition 
 
   integer(i4), parameter ::  nml_in = 10
   character(len=*), parameter :: nml_filename = 'testpio_in'
@@ -149,7 +149,7 @@ program testpio
 
   call MPI_INIT(ierr)
   call CheckMPIReturn('Call to MPI_INIT()',ierr,__FILE__,__LINE__)
-
+  
 
   !    call enable_abort_on_exit
 
@@ -200,7 +200,7 @@ program testpio
   endif
 #endif
 
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -212,7 +212,7 @@ program testpio
   !----------------------------------------------------------------
 
   if(Debug)    print *,'testpio: before call to readTestPIO_Namelist'
-  if(my_task == master_task) then
+  if(my_task == master_task) then 
      call ReadTestPIO_Namelist(nml_in, nprocs, nml_filename, myname, nml_error)
   endif
   if(Debug) print *,'testpio: before call to broadcast_namelist'
@@ -224,7 +224,7 @@ program testpio
   ! Checks (num_iotasks can be negative on BGx)
   !-------------------------------------
 
-#if !defined(BGx)
+#if !defined(BGx) 
   if (num_iotasks <= 0) then
      write(*,*) trim(myname),' ERROR: ioprocs invalid num_iotasks=',num_iotasks
      call piodie(__FILE__,__LINE__)
@@ -234,7 +234,7 @@ program testpio
   ! ----------------------------------------------------------------
   ! if stride is and num_iotasks is incompatible than reset stride (ignore stride on BGx)
   ! ----------------------------------------------------------------
-#if !defined(BGx)
+#if !defined(BGx) 
   if (base + num_iotasks * (stride-1) > nprocs-1) then
      write(*,*) trim(myname),' ERROR: num_iotasks, base and stride too large', &
           ' base=',base,' num_iotasks=',num_iotasks,' stride=',stride,' nprocs=',nprocs
@@ -243,7 +243,7 @@ program testpio
 #endif
 
   !--------------------------------------
-  ! Initalizes the parallel IO subsystem
+  ! Initalizes the parallel IO subsystem 
   !--------------------------------------
   call PIO_setDebugLevel(DebugLevel)
 
@@ -266,7 +266,7 @@ program testpio
      call MPI_COMM_SIZE(MPI_COMM_COMPUTE,nprocs,ierr)
 
   else
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -279,7 +279,7 @@ program testpio
      call PIO_init(my_task, MPI_COMM_COMPUTE, num_iotasks, num_aggregator, stride, &
           rearr_type, PIOSYS, base)
 
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -289,7 +289,7 @@ program testpio
 
   end if
 
-
+  
 
 
   if(Debug)    print *,'testpio: after call to PIO_init', nprocs,mpi_comm_io
@@ -339,7 +339,7 @@ program testpio
                           trim(ibm_io_sparse_access))
      end if
   end if
-!  if(set_lustre_values /= 0) then
+!  if(set_lustre_values /= 0) then 
 !        call PIO_setnum_OST(PIOSYS,lfs_ost_count)
 !  endif
 
@@ -355,11 +355,11 @@ program testpio
 
   if(index(casename,'CAM')==1) then
      call camlike_decomp_generator(gdims3d(1),gdims3d(2),gdims3d(3),my_task,nprocs,npr_yz,compDOF)
-  elseif(index(casename,'MPAS')==1) then
+  elseif(index(casename,'MPAS')==1) then 
 !     print *,'testpio: before call to mpas_decomp_generator: (',TRIM(part_input),') gdims3d: ',gdims3d
      call mpas_decomp_generator(gdims3d(1),gdims3d(2),gdims3d(3),my_task,part_input,compDOF)
   else  if (trim(compdof_input) == 'namelist') then
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -369,7 +369,7 @@ program testpio
      if(Debug)       print *,'iam: ',My_task,'testpio: point #1'
      call gdecomp_read_nml(gdecomp,nml_filename,'comp',my_task,nprocs,gDims3D(1:3))
 
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -380,7 +380,7 @@ program testpio
      if(Debug)       print *,'iam: ',My_task,'testpio: point #2'
      call gdecomp_DOF(gdecomp,My_task,compDOF,start,count)
      if(Debug)       print *,'iam: ',My_task,'testpio: point #3', minval(compdof),maxval(compdof)
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -413,7 +413,7 @@ program testpio
      endif
   endif
 
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -427,7 +427,7 @@ program testpio
      call pio_writedof(trim(compdof_output),gdims3d, compDOF,MPI_COMM_COMPUTE,75)
   endif
 
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -482,7 +482,7 @@ program testpio
   else
      call piodie(__FILE__,__LINE__,' rearr '//trim(rearr)//' not supported')
   endif
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -505,19 +505,19 @@ program testpio
   lLength = size(compDOF)
 
   !----------------------
-  ! allocate and set test arrays
+  ! allocate and set test arrays 
   !----------------------
 
-  if(TestR8 .or. TestCombo) then
+  if(TestR8 .or. TestCombo) then 
      call alloc_check(test_r8wr,lLength,'testpio:test_r8wr')
   endif
-  if(TestR4 .or. TestCombo) then
+  if(TestR4 .or. TestCombo) then 
      call alloc_check(test_r4wr,lLength,'testpio:test_r4wr' )
   endif
-  if(TestInt .or. TestCombo) then
+  if(TestInt .or. TestCombo) then 
      call alloc_check(test_i4wr,lLength,'testpio:test_i4wr')
   endif
-  if(TestInt) then
+  if(TestInt) then 
     call alloc_check(test_i4i ,lLength,'testpio:test_i4i ')
     call alloc_check(test_i4j ,lLength,'testpio:test_i4j ')
     call alloc_check(test_i4k ,lLength,'testpio:test_i4k ')
@@ -527,27 +527,27 @@ program testpio
 
   do n = 1,lLength
      call c1dto3d(compdof(n),gDims3D(1),gDims3D(2),gDims3D(3),i1,j1,k1)
-     if(TestInt) then
+     if(TestInt) then 
 	test_i4dof(n) = compdof(n)
         test_i4i(n) = i1
         test_i4j(n) = j1
         test_i4k(n) = k1
         test_i4m(n) = my_task
      endif
-     if(TestR8 .or. TestCombo) then
+     if(TestR8 .or. TestCombo) then 
 !         test_r8wr(n) = 10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
 !          cos(10.*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
 !          (1.0+1.0*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
 !          cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))
         test_r8wr = compdof
      endif
-     if(TestR4 .or. TestCombo) then
+     if(TestR4 .or. TestCombo) then 
          test_r4wr(n) = 10.0_r4*cos(20.*real(i1,kind=r4)/real(gDims3D(1),kind=r4))* &
           cos(10.*real(j1,kind=r4)/real(gDims3D(2),kind=r4))* &
           (1.0+1.0*real(j1,kind=r4)/real(gDims3D(2),kind=r4))* &
           cos(25.*real(k1,kind=r4)/real(gDims3D(3),kind=r4))
      endif
-     if(TestInt .or. TestCombo) then
+     if(TestInt .or. TestCombo) then 
         test_i4wr(n) = compdof(n)
 !         test_i4wr(n) = nint(10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
 !          cos(10.*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
@@ -558,7 +558,7 @@ program testpio
 
   if(Debug)       print *,'iam: ',My_task,'testpio: point #10'
 
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -581,7 +581,7 @@ program testpio
   !--------------------------------
   ! allocate arrays for holding globally-reduced timing information
   !--------------------------------
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -595,25 +595,25 @@ program testpio
   call alloc_check(gdt_write_i4, maxiter, ' testpio:gdt_write_i4 ')
   call alloc_check(gdt_read_i4, maxiter, ' testpio:gdt_read_i4 ')
   if(Debug)       print *,'iam: ',My_task,'testpio: point #11'
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__FILE__,__LINE__,'mem=',rss,' it=',it
     end if
 #endif
-  if(splitPhase) then
+  if(splitPhase) then 
     numPhases = 2
   else
     numPhases = 1
   endif
 
   do ip=1,numPhases
-     if(numPhases == 1) then
+     if(numPhases == 1) then 
         readPhase = .true.
         writePhase = .true.
      else
-        if(ip == 1) then
+        if(ip == 1) then 
 	   writePhase = .true.
 	   readPhase = .false.
 	else
@@ -623,9 +623,9 @@ program testpio
      endif
      if(log_master_task) print *,'{write,read}Phase:  ',writePhase,readPhase
 
-
+     
      do it=1,maxiter
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -644,7 +644,7 @@ program testpio
                    IOdesc_r8,iostart=startpio,iocount=countpio)
               glenr8 = product(gdims3d)
               if(Debug)       print *,'iam: ',My_task,'testpio: point #7.1'
-
+              
               if(TestR4 .or. TestCombo) then
                  call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,&
                       IOdesc_r4,iostart=startpio,iocount=countpio)
@@ -675,7 +675,7 @@ program testpio
               if(TestInt .or. TestCombo) then
 !                 print *,__FILE__,__LINE__,gdims3d
 !                 print *,__FILE__,__LINE__,compdof
-
+              
                  call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,&
                       IOdesc_i4)
                  if(Debug)       print *,'iam: ',My_task,'testpio: point #8.4'
@@ -750,7 +750,7 @@ program testpio
            endif
         endif
         if(Debug)       print *,'iam: ',My_task,'testpio: point #9'
-
+        
         if(Debug) then
            write(*,'(a,2(a,i8))') myname,':: After call to initDecomp.  comp_rank=',my_task, &
                 ' io_rank=',iorank
@@ -758,10 +758,10 @@ program testpio
 
         call PIO_getnumiotasks(PIOSYS,num_iotasks)
         !------------
-        ! Open file{s}
+        ! Open file{s} 
         !------------
         write(citer,'(i3.3)') it
-
+        
         fname    = TRIM(dir)//'foo.'//citer//'.'//TRIM(Iofmtd)
         fname_r8 = TRIM(dir)//'foo.r8.'//citer//'.'//TRIM(Iofmtd)
         fname_r4 = TRIM(dir)//'foo.r4.'//citer//'.'//TRIM(Iofmtd)
@@ -776,7 +776,7 @@ program testpio
         mode = 0
 #endif
 
-        if(writePhase) then
+        if(writePhase) then 
            if(TestCombo) then
               if(Debug) write(*,'(2a,i8)') myname,':: Combination Test:  Creating File...it=',it
               ierr = PIO_CreateFile(PIOSYS,File,iotype,trim(fname), mode)
@@ -801,21 +801,21 @@ program testpio
               call check_pioerr(ierr,__FILE__,__LINE__,' i4 createfile')
            endif
 
-
+           
            allocate(vard_r8(nvars), vard_r4(nvars))
-
+           
 
            !---------------------------
-           ! Code specifically for netCDF files
+           ! Code specifically for netCDF files 
            !---------------------------
-           if(iotype == iotype_pnetcdf .or. &
+           if(iotype == iotype_pnetcdf .or. & 
                 iotype == iotype_netcdf .or. &
                 iotype == PIO_iotype_netcdf4p .or. &
                 iotype == PIO_iotype_netcdf4c) then
 
-              if(TestR8) then
+              if(TestR8) then 
                  !-----------------------------------
-                 ! for the single record real*8 file
+                 ! for the single record real*8 file 
                  !-----------------------------------
                  call WriteHeader(File_r8,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
 
@@ -833,9 +833,9 @@ program testpio
                  call check_pioerr(iostat,__FILE__,__LINE__,' r8 enddef')
               endif
 
-              if(TestR4) then
+              if(TestR4) then 
                  !-----------------------------------
-                 ! for the single record real*4 file
+                 ! for the single record real*4 file 
                  !-----------------------------------
                  call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
                  iostat = PIO_def_dim(File_r4,'charlen',strlen,charlen)
@@ -850,14 +850,14 @@ program testpio
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
               endif
 
-              if(TestInt) then
+              if(TestInt) then 
                  !-----------------------------------
-                 ! for the single record integer file
+                 ! for the single record integer file 
                  !-----------------------------------
                  call WriteHeader(File_i4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
-                 iostat = PIO_def_var(File_i4,'fdof',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4dof)
+                 iostat = PIO_def_var(File_i4,'fdof',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4dof)                
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4dof defvar')
-
+                 
                  iostat = PIO_def_var(File_i4,'field',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4)
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4 defvar')
                  iostat = PIO_def_var(File_i4,'fi',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4i)
@@ -873,10 +873,10 @@ program testpio
                  iostat = PIO_enddef(File_i4)
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
               endif
-
-              if(TestCombo) then
+        
+              if(TestCombo) then 
                  !-----------------------------------
-                 ! for the multi record file
+                 ! for the multi record file 
                  !-----------------------------------
                  call WriteHeader(File,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
                  iostat = PIO_def_var(File,'field_r8',PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8c)
@@ -906,12 +906,12 @@ program testpio
            endif
 
            !-------------------------
-           ! Time the parallel write
+           ! Time the parallel write 
            !-------------------------
 
-
+	   
            dt_write_r8 = 0.
-
+	   
            if(TestR8) then
               if(iofmtd .ne. 'bin') then
                  iostat = pio_put_var(file_r8,varfn_r8,fname_r8)
@@ -966,7 +966,7 @@ program testpio
            endif
               if(Debug)       print *,'iam: ',My_task,'testpio: point #13'
 
-           if(TestInt) then
+           if(TestInt) then 
               dt_write_i4 = 0.
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
               call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
@@ -1005,10 +1005,10 @@ program testpio
 
               call PIO_write_darray(File_i4,vard_i4m,iodesc_i4,test_i4m,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' i4m write_darray')
-              call PIO_CloseFile(File_i4)
+              call PIO_CloseFile(File_i4) 
            endif
 
-           if(TestCombo) then
+           if(TestCombo) then 
               if(iofmtd .ne. 'bin') then
                  iostat = pio_put_var(file,varfn,fname)
                  iostat = pio_put_var(file,varfruit,fruits)
@@ -1026,9 +1026,9 @@ program testpio
            endif
 
            if(Debug) then
-              write(*,'(a,2(a,i8),i8)') myname,':: After calls to PIO_write_darray.  comp_rank=',my_task, &
+              write(*,'(a,2(a,i8),i8)') myname,':: After calls to PIO_write_darray.  comp_rank=',my_task, & 
                    ' io_rank=',iorank,mpi_comm_io
-
+              
            endif
 
         endif
@@ -1037,17 +1037,17 @@ program testpio
               if(Debug)       print *,'iam: ',My_task,'testpio: point #14'
 
 
-        if (readPhase) then
+        if (readPhase) then 
            !-------------------------------------
            ! Open the file back up and check data
            !-------------------------------------
-
-           if(TestR8) then
+           
+           if(TestR8) then 
               ierr = PIO_OpenFile(PIOSYS, File_r8, iotype, fname_r8)
               call check_pioerr(ierr,__FILE__,__LINE__,' r8 openfile')
            endif
               if(Debug)       print *,'iam: ',My_task,'testpio: point #15'
-
+           
            if(TestR4) then
               ierr = PIO_OpenFile(PIOSYS,File_r4,iotype, fname_r4)
               call check_pioerr(ierr,__FILE__,__LINE__,' r4 openfile')
@@ -1063,13 +1063,13 @@ program testpio
            if(Debug) then
               write(*,'(2a,i8)') myname,':: After calls to PIO_OpenFile.  my_task=',my_task
            endif
-
+           
            if(Debug) print *,__FILE__,__LINE__
 
            if(iotype == iotype_pnetcdf .or. &
                 iotype == iotype_netcdf) then
               do ivar=1,nvars
-                 if(TestR8) then
+                 if(TestR8) then 
                     iostat = PIO_inq_varid(file_r8,'filename',varfn_r8)
 
 
@@ -1077,15 +1077,15 @@ program testpio
                     call check_pioerr(iostat,__FILE__,__LINE__,' r8 inq_varid')
                  endif
 
-                 if(TestR4) then
+                 if(TestR4) then 
                     if(iofmtd(2:3) .eq. 'nc') then
                        iostat = PIO_inq_varid(file_r4,'filename',varfn_r4)
                     end if
-	            iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))
+	            iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))  
                    call check_pioerr(iostat,__FILE__,__LINE__,' r4 inq_varid')
                  endif
               end do
-              if(TestInt) then
+              if(TestInt) then 
                  iostat = PIO_inq_varid(File_i4,'field',vard_i4)
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4 inq_varid')
               endif
@@ -1097,7 +1097,7 @@ program testpio
            ! Time the parallel  read
            !-------------------------
            dt_read_r8 = 0.
-           if(TestR8) then
+           if(TestR8) then 
               if(iofmtd(2:3) .eq. 'nc') then
                  iostat = pio_get_var(file_r8,varfn_r8, fnamechk)
                  if(fnamechk /= fname_r8) then
@@ -1120,7 +1120,7 @@ program testpio
               call t_stopf('testpio_read')
 #endif
               et = MPI_Wtime()
-              dt_read_r8 = dt_read_r8 + (et - st)/nvars
+              dt_read_r8 = dt_read_r8 + (et - st)/nvars        
               call check_pioerr(iostat,__FILE__,__LINE__,' r8 read_darray')
            endif
 
@@ -1170,12 +1170,12 @@ program testpio
            endif
 
            !-------------------------------
-           ! Print the maximum memory usage
+           ! Print the maximum memory usage 
            !-------------------------------
 !           call alloc_print_usage(0,'testpio: after calls to PIO_read_darray')
 
 #ifdef TESTMEM
-!           stop
+!           stop 
 #endif
 
            if(Debug) then
@@ -1184,7 +1184,7 @@ program testpio
            endif
 
      !-------------------
-     ! close the file up
+     ! close the file up 
      !-------------------
            if(TestR8) call PIO_CloseFile(File_r8)
            if(TestR4) call PIO_CloseFile(File_r4)
@@ -1200,13 +1200,13 @@ program testpio
 !           endif
 
      !-----------------------------
-     ! Perform correctness testing
+     ! Perform correctness testing 
      !-----------------------------
-           if(TestR8 .and. CheckArrays) then
+           if(TestR8 .and. CheckArrays) then 
              call checkpattern(mpi_comm_compute, fname_r8,test_r8wr,test_r8rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r8 test')
            endif
-
+     
            if( TestR4 .and. CheckArrays) then
               call checkpattern(mpi_comm_compute, fname_r4,test_r4wr,test_r4rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r4 test')
@@ -1218,15 +1218,15 @@ program testpio
            endif
               if(Debug)       print *,'iam: ',My_task,'testpio: point #21'
 
-           if(TestCombo .and. CheckArrays) then
+           if(TestCombo .and. CheckArrays) then 
 
               !-------------------------------------
-              !  Open up and read the combined file
+              !  Open up and read the combined file 
               !-------------------------------------
-
+              
               ierr = PIO_OpenFile(PIOSYS,File,iotype,fname)
               call check_pioerr(ierr,__FILE__,__LINE__,' combo test read openfile')
-
+              
               if(iofmtd(1:2).eq.'nc') then
                  iostat = PIO_inq_varid(File,'field_r8',vard_r8c)
                  call check_pioerr(iostat,__FILE__,__LINE__,' combo test r8 inq_varid')
@@ -1260,22 +1260,22 @@ program testpio
               call PIO_CloseFile(File)
               if(Debug)       print *,'iam: ',My_task,'testpio: point #22a'
               et = MPI_Wtime()
-              dt_read_r8 = dt_read_r8 + (et - st)/nvars
+              dt_read_r8 = dt_read_r8 + (et - st)/nvars           
               !-----------------------------
-              ! Check the combined file
+              ! Check the combined file 
               !-----------------------------
               call checkpattern(mpi_comm_compute, fname,test_r8wr,test_r8rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_r8 ')
-
+              
               call checkpattern(mpi_comm_compute, fname,test_r4wr,test_r4rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_r4 ')
-
+        
               call checkpattern(mpi_comm_compute, fname,test_i4wr,test_i4rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_i4 ')
-
+              
            endif
      !---------------------------------------
-     ! Print out the performance measurements
+     ! Print out the performance measurements 
      !---------------------------------------
            call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         endif
@@ -1293,7 +1293,7 @@ program testpio
            if(writePhase) call GetMaxTime(dt_write_r4, gdt_write_r4(it), MPI_COMM_COMPUTE, ierr)
         endif
               if(Debug)       print *,'iam: ',My_task,'testpio: point #24'
-
+        
         if(TestInt) then
            ! Maximum read/write times
            if(readPhase)  call GetMaxTime(dt_read_i4, gdt_read_i4(it), MPI_COMM_COMPUTE, ierr)
@@ -1311,30 +1311,30 @@ program testpio
 
 
   !--------------------------------
-  ! Clean up initialization memory
+  ! Clean up initialization memory 
   !   note: make sure DOFs are not used later
   !--------------------------------
   if (My_task >= 0) call dealloc_check(compDOF)
 
   !----------------------------------
-  ! Print summary bandwidth statistics
+  ! Print summary bandwidth statistics 
   !----------------------------------
 
   if(Debug)       print *,'iam: ',My_task,'testpio: point #26'
   if(TestR8 .or. TestCombo .and. (iorank == 0) ) then
-     call WriteTimeTrialsStats(casename,TestR8CaseName, fname_r8, glenr8, gdt_read_r8, gdt_write_r8, maxiter)
+     call WriteTimeTrialsStats(casename,TestR8CaseName, fname_r8, glenr8, gdt_read_r8, gdt_write_r8, maxiter) 
   endif
 
   if(TestR4 .and. (iorank == 0) ) then
-     call WriteTimeTrialsStats(casename,TestR4CaseName, fname_r4, glenr4, gdt_read_r4, gdt_write_r4, maxiter)
+     call WriteTimeTrialsStats(casename,TestR4CaseName, fname_r4, glenr4, gdt_read_r4, gdt_write_r4, maxiter) 
   endif
 
   if(TestInt .and. (iorank == 0) ) then
-     call WriteTimeTrialsStats(casename,TestI4CaseName, fname_i4, gleni4, gdt_read_i4, gdt_write_i4, maxiter)
+     call WriteTimeTrialsStats(casename,TestI4CaseName, fname_i4, gleni4, gdt_read_i4, gdt_write_i4, maxiter) 
   endif
 
   !-------------------------------
-  ! Print timers and memory usage
+  ! Print timers and memory usage 
   !-------------------------------
 
 #ifdef TIMING
@@ -1455,7 +1455,7 @@ contains
 
   !=============================================================================
 
-  subroutine WriteTimeTrialsStats(casename,TestName, FileName, glen, ReadTimes, WriteTimes, nTrials)
+  subroutine WriteTimeTrialsStats(casename,TestName, FileName, glen, ReadTimes, WriteTimes, nTrials) 
 
     implicit none
 
