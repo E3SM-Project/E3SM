@@ -1,7 +1,10 @@
-# TODO: Figure out how to generate pio.F90 automatically from pio.F90.in
+set(genf90_files pio.F90.in)
 
-list(APPEND pio_sources
-  pio.F90
-  )
+process_genf90_source_list("${genf90_files}" ${CMAKE_CURRENT_BINARY_DIR}
+  pio_genf90_sources)
+
+sourcelist_to_parent(pio_genf90_sources)
+
+list(APPEND pio_sources "${pio_genf90_sources}")
 
 sourcelist_to_parent(pio_sources)
