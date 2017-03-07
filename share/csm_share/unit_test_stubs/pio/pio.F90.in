@@ -43,6 +43,9 @@ module pio
   type, public :: var_desc_t
   end type var_desc_t
 
+  type, public :: PIO_rearr_opt_t
+  end type PIO_rearr_opt_t
+
   integer, parameter, private ::          &
        i4        = selected_int_kind(6)   ,&
        i8        = selected_int_kind(13)  ,&
