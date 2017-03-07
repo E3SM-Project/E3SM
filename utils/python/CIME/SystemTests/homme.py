@@ -16,6 +16,7 @@ class HOMME(SystemTestsCommon):
         initialize an object interface to the SMS system test
         """
         SystemTestsCommon.__init__(self, case)
+        case.load_env()
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         if not sharedlib_only:

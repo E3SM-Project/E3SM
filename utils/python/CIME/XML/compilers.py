@@ -149,7 +149,7 @@ class Compilers(GenericXML):
             for compiler_node in reversed(self.compiler_nodes):
                 _add_to_macros(compiler_node, macros)
             write_macros_file_v1(macros, self.compiler, self.os,
-                                        self.machine, macros_file="Macros.make",
+                                        self.machine, macros_file=macros_file,
                                         output_format=output_format)
         else:
             if output_format == "make":
