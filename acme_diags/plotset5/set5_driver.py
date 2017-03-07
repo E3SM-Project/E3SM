@@ -7,7 +7,7 @@ import genutil
 import cdms2
 import MV2
 import acme_diags.acme_parser
-import plot_set_5
+import acme_diags.plotting.set5.set5vcs
 import glob
 import os
 import fnmatch
@@ -53,6 +53,10 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
 parser = acme_diags.acme_parser.ACMEParser()
 orginal_parameter = parser.get_parameter()
 parameters = make_parameters(orginal_parameter)
+from acme_diags.viewer import OutputViewer
+viewer = OutputViewer(path=parameters[0].case_id, index_name=parameters[0].reference_name)
+#viewer.add_page("Set 5", ['Description', 'ANN', 'DJF', 'JJA', 'MAM', 'SON'])
+viewer.add_page("Set 5", ['Description', 'TROPICS', 'global'])
 
 for parameter in parameters:
 
@@ -64,7 +68,7 @@ for parameter in parameters:
     ref_name = parameter.ref_name
     test_name = parameter.test_name
     regions = parameter.region
-#    domain = regions_specs[region]
+    #domain = regions_specs[region]
 
     for season in seasons:
         test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
@@ -93,13 +97,13 @@ for parameter in parameters:
         except:
             mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
         print regions,"regions"
-         
+
         #for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
             if len(regions) == 0:
                 regions = ['global']
-    
-            for region in regions: 
+
+            for region in regions:
                 print region
                 domain = None
                 if region != 'global':
@@ -111,16 +115,16 @@ for parameter in parameters:
                 mv2_domain.units = mv2.units
                 parameter.output_file = '_'.join([ref_name, season,region])
                 parameter.main_title = str(' '.join([var, season]))
-        
+
                 #else:
-                #    
+                #
                 #    parameter.output_file = '_'.join([ref_name, season])
                 #    parameter.main_title = str(' '.join([var, season]))
 
                 #parameter.output_file = '_'.join([ref_name, season,region])
                 #parameter.main_title = str(' '.join([var, season]))
-        
-    
+
+
                 #regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
@@ -129,10 +133,10 @@ for parameter in parameters:
                     land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
                     mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                     mv2_reg = MV2.masked_where(land_mask, mv2_reg)
-           
-                plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
- 
-    
+
+                acme_diags.plotting.set5.set5vcs.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+
+
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
             plev = parameter.levels
@@ -178,8 +182,8 @@ for parameter in parameters:
 
                 if len(regions) == 0:
                     regions = ['global']
-    
-                for region in regions: 
+
+                for region in regions:
                     print region
                     domain = None
                     if region != 'global':
@@ -197,7 +201,11 @@ for parameter in parameters:
                     mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                     # Plotting
-                    plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
-        
+                    acme_diags.plotting.set5.set5vcs.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
+
+    viewer.add_row(var, 'Description for %s' % var, )
+
+viewer.generate_viewer()
