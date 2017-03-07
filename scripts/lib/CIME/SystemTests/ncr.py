@@ -37,9 +37,7 @@ class NCR(SystemTestsCommon):
             logging.warn("Starting bld %s"%bld)
             machpes = "env_mach_pes.NCR%s.xml" % bld
             ntasks_sum = 0
-            for comp in self._case.get_values("COMP_CLASSES"):
-                if comp == "CPL":
-                    continue
+            for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 self._case.set_value("NINST_%s"%comp,str(bld))
                 ntasks      = self._case.get_value("NTASKS_%s"%comp)
                 if(bld == 1):
