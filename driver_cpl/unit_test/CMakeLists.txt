@@ -31,6 +31,7 @@ add_subdirectory(stubs drv_unit_test_stubs)
 add_library(csm_share ${share_sources} ${share_mct_sources} ${share_pio_sources}
   ${pio_sources})
 declare_generated_dependencies(csm_share "${share_genf90_sources}")
+declare_generated_dependencies(csm_share "${pio_genf90_sources}")
 add_dependencies(csm_share mct_project)
 
 add_library(esmf_wrf_timemgr ${esmf_wrf_timemgr_sources})
@@ -54,4 +55,4 @@ add_subdirectory(glc_elevclass_test)
 add_subdirectory(vertical_gradient_calculator_test)
 add_subdirectory(map_lnd2glc_test)
 add_subdirectory(map_glc2lnd_test)
-
+add_subdirectory(map_lnd2rof_irrig_test)

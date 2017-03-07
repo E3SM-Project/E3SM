@@ -251,6 +251,12 @@ contains
     character(len=80) :: min_str(2), max_str(2),  dmax_str, rdmax_str, space
     logical :: compare2
 
+    min_str = ''
+    max_str = ''
+    dmax_str = ''
+    rdmax_str = ''
+    space = ''
+
     if(present(tindex)) then
        t = tindex
     else

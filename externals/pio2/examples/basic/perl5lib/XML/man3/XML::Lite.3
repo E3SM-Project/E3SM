@@ -148,12 +148,12 @@ use \s-1XML:\s0:Lite;
 my \f(CW$xml\fR = new \s-1XML:\s0:Lite( xml => 'a_file.xml' );
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\s-1XML:\s0:Lite is a lightweight \s-1XML\s0 parser, with basic element traversing
-methods. It is entirely self-contained, pure Perl (i.e. \fInot\fR based on
-expat). It provides useful methods for reading most \s-1XML\s0 files, including
-traversing and finding elements, reading attributes and such. It is
-designed to take advantage of Perl-isms (Attribute lists are returned as
-hashes, rather than, say, lists of objects). It provides only methods
+\&\s-1XML:\s0:Lite is a lightweight \s-1XML\s0 parser, with basic element traversing 
+methods. It is entirely self-contained, pure Perl (i.e. \fInot\fR based on 
+expat). It provides useful methods for reading most \s-1XML\s0 files, including 
+traversing and finding elements, reading attributes and such. It is 
+designed to take advantage of Perl-isms (Attribute lists are returned as 
+hashes, rather than, say, lists of objects). It provides only methods 
 for reading a file, currently.
 .SH "METHODS"
 .IX Header "METHODS"
@@ -161,16 +161,16 @@ The following methods are available:
 .Ip "my \f(CW$xml\fR = new \s-1XML:\s0:Lite( xml => \f(CW$source\fR[, ...] );" 4
 .IX Item "my $xml = new XML::Lite( xml => $source[, ...] );"
 Creates a new \s-1XML:\s0:Lite object. The \s-1XML:\s0:Lite object acts as the document
-object for the \f(CW$source\fR that is sent to it to parse. This means that you
-create a new object for each document (or document sub-section). As the
+object for the \f(CW$source\fR that is sent to it to parse. This means that you 
+create a new object for each document (or document sub-section). As the 
 objects are lightweight this should not be a performance consideration.
 .Sp
 The object constructor can take several named parameters. Parameter names
-may begin with a '\-' (as in the example above) but are not required to. The
+may begin with a '\-' (as in the example above) but are not required to. The 
 following parameters are recognized.
 .Sp
 .Vb 2
-\&  xml      The source XML to parse. This can be a filename, a scalar that
+\&  xml      The source XML to parse. This can be a filename, a scalar that 
 \&           contains the document (or document fragment), or an IO handle.
 .Ve
 As a convenince, if only on parameter is given, it is assumed to be the source.
@@ -190,8 +190,8 @@ Returns \f(CW\*(C`undef\*(C'\fR on errors.
 Returns a list of all elements that match \f(CW\*(C`$name\*(C'\fR.
 \&\f(CW\*(C`@list\*(C'\fR is a list of the XML::Lite::Element manpage objects
 If called in a scalar context, this will return the
-first element found that matches (it's more efficient
-to call in a scalar context than assign the results
+first element found that matches (it's more efficient 
+to call in a scalar context than assign the results 
 to a list of one scalar).
 .Sp
 If no matching elements are found then returns \f(CW\*(C`undef\*(C'\fR
@@ -199,7 +199,7 @@ in scalar context or an empty list in array context.
 .SH "BUGS"
 .IX Header "BUGS"
 Lots. This 'parser' (Matt Sergeant takes umbrance to my us of that word) will handle some \s-1XML\s0
-documents, but not all.
+documents, but not all. 
 .SH "VERSION"
 .IX Header "VERSION"
 0.14

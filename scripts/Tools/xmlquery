@@ -19,54 +19,91 @@ If this tool is missing any feature that you need, please go to github and creat
 
 from standard_script_setup import *
 
-from CIME.utils import expect
 from CIME.case import Case
+from CIME.utils import expect, convert_to_string
 
-import argparse, doctest, shutil, glob
-import textwrap
-import sys
+import textwrap, sys, re
 
 logger = logging.getLogger("xmlquery")
 
 ###############################################################################
-def parse_command_line(args, description):
+def parse_command_line(args):
 ###############################################################################
-    parser = argparse.ArgumentParser(   description="Querry the xml files for attributes and return their values." ,
-                                        formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(__doc__) )
+    parser = argparse.ArgumentParser(
+usage="""%s <VAR> [<VAR> <VAR> ...]
+
+Examples:
+
+# Show NTASKS for all components
+> %s NTASKS
+
+# Show RUNDIR
+> %s RUNDIR
+
+# Show all vars containing the substring ROOT
+> %s -p ROOT
+
+# Show all vars in the case
+> %s --listall
+
+# Show everything in the run_pio subgroup
+> %s --listall --subgroup=run_pio
+
+# Show all vars containing the substring ROOT in subgroup build_def
+> %s -p ROOT --subgroup build_def""" % ((os.path.basename(sys.argv[0]), ) * 7),
+
+description="Query the xml files for attributes and return their values." ,
+formatter_class=argparse.RawDescriptionHelpFormatter,
+epilog=textwrap.dedent(__doc__))
+
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
-    parser.add_argument("attributes", nargs="*"  ,
-                        help="attribute value in env_*.xml file ( <element_name attribute='attribute_value'>value</element_name> )")
+    parser.add_argument("variables", nargs="*"  ,
+                        help="variable name in env_*.xml file ( <entry_id id='variable_name'>value</entry_id> )")
 
     parser.add_argument("-file" , "--file",
-                        help="env*.xml file")
-
-    parser.add_argument("-attribute", "--attribute",
-                        nargs="*" , help="list of attribute/option names" , default=[])
+                        help="deprecated option, do not use")
 
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
 
     parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
-                        help="Case directory to build")
+                        help="Case directory to reference")
 
     parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
-                        help="List all attributes and their values")
+                        help="List all variables and their values")
 
-    parser.add_argument("--listofsettings", nargs="*", default=[] ,
-                        help="Comma seperated list of option names (attribute values)")
-
-    parser.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
-                        help="Only print the filename that the field is defined in.")
-
-    parser.add_argument("-valonly", "--valonly", default=False, action="store_true",
-                        help="Only print the field name and value.")
-
-    parser.add_argument("-value", "--value", default=False, action="store_true",
-                        help="Only print one value without newline character. If more than one has been found print first value in list.")
     parser.add_argument("-no-resolve", "--no-resolve", action="store_true",
                         help="Do not resolve variable values")
+
+    parser.add_argument("-p", "--partial-match", action="store_true",
+                        help="Allow partial matches of variable names, treats args as regex.")
+
+    group = parser.add_mutually_exclusive_group()
+
+    group.add_argument("--full", default=False, action="store_true",
+                        help="Print a full listing for the variable")
+
+    group.add_argument("-fileonly", "--fileonly", default=False, action="store_true",
+                        help="Only print the filename that the field is defined in.")
+
+    group.add_argument("-value", "--value", default=False, action="store_true",
+                        help="Only print one value without newline character. If more than one has been found print first value in list.")
+
+    group.add_argument("--raw", default=False, action="store_true",
+                        help="Print the complete raw record associated with this variable")
+    group.add_argument("--description", default=False, action="store_true",
+                        help="Print the description associated with this variable")
+
+    group.add_argument("--group", default=False, action="store_true",
+                        help="Print the group associated with this variable")
+
+    group.add_argument("--type", default=False, action="store_true",
+                        help="Print the data type associated with this variable")
+
+    group.add_argument("--valid-values", default=False, action="store_true",
+                        help="Print the valid values associated with this variable if defined")
 
     args = parser.parse_args(args[1:])
 
@@ -76,113 +113,156 @@ def parse_command_line(args, description):
         parser.print_help()
         exit()
 
-    # merge list from to command line options and remove duplicate names
-    if( len(args.listofsettings) == 1 ):
-        args.attribute = args.attribute + args.listofsettings[0].split(',')
+    if len(args.variables) == 1:
+        variables = args.variables[0].split(',')
+    else:
+        variables = args.variables
 
-    if( len(args.attributes) > 1) :
-        args.attribute =  args.attribute + args.attributes
+    return variables, args.subgroup, args.caseroot, args.listall, args.fileonly, \
+        args.value, args.no_resolve, args.raw, args.description, args.group, args.full, \
+        args.type, args.valid_values, args.partial_match
 
-    # in case it is a comma separated list
-    if( len(args.attributes) == 1) :
-        args.attribute =  args.attribute + args.attributes[0].split(',')
+def get_value_as_string(case, var, attribute=None, resolved=False, subgroup=None):
+    thistype = case.get_type_info(var)
+    value = case.get_value(var, attribute=attribute, resolved=resolved, subgroup=subgroup)
+    if value is not None and thistype:
+        value = convert_to_string(value, thistype, var)
+    return value
 
-    # remove duplicate names
-    args.attribute = list( set (args.attribute ))
 
-    return args
-
-def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False, warn=None ):
+def xmlquery(case, variables, subgroup=None, fileonly=False,
+             resolved=True, raw=False, description=False, group=False,
+             full=False, dtype=False, valid_values=False):
     """
-    Return list of attributes and their values , print formatted
+    Return list of attributes and their values, print formatted
 
-    Test:
-
-    >>> list_of_attributes = xmlquery(os.getcwd(),{ "valonly" :True})
-    >>> type(list_of_attributes) is list
-    True
-    >>> len(list_of_attributes) > 0
-    True
     """
-    # Initialize case ; read in all xml files from caseroot
-    with Case(caseroot) as case:
-        values  = []
-        results = [] # List of formatted strings containing the search results
-        resolved = not args.no_resolve
-        if(listofattributes and len(listofattributes) >= 1):
-
-            for xmlattr in listofattributes:
-                # type_str = case.get_type_info(xmlattr)
-                logger.debug("Searching for %s", xmlattr)
-                attribute_hits = case.get_values(xmlattr, resolved=resolved,
-                                                 subgroup=subgroup)
-                results       += attribute_hits
-
-        elif (args.listall):
-            logger.warning("Retrieving all values.")
-            results = case.get_values(None, resolved=resolved,
-                                      subgroup=subgroup)
+    results = {}
+    comp_classes = case.get_values("COMP_CLASSES")
+    for var in variables:
+        if subgroup is not None:
+            groups = [subgroup]
         else:
-            logger.warning("No attributes (%s) or listall option",
-                           listofattributes)
+            groups = case.get_record_fields(var, "group")
 
-    # Formatting of return strings
-    if ( len(results) > 0) :
+        expect(groups, " No results found for variable %s"%var)
+        for group in groups:
+            if not group in results:
+                results[group] = {}
+            if not var in results[group]:
+                results[group][var] = {}
+            expect(group, "No group found for var %s"% var)
+            value = get_value_as_string(case, var, resolved=resolved, subgroup=subgroup)
+            if value is None:
+                var, comp, iscompvar = case.check_if_comp_var(var)
+                if iscompvar:
+                    value = []
+                    for comp in comp_classes:
+                        nextval = get_value_as_string(case,var, attribute={"component" : comp}, resolved=resolved, subgroup=group)
+                        if nextval is not None:
+                            value.append(comp + ":" + "%s"%nextval)
+                else:
+                    value = get_value_as_string(case, var, resolved=resolved, subgroup=group)
 
-        for node in results :
+            expect(value is not None, " No results found for variable %s"%var)
 
-            val = ""
+            results[group][var]['value'] = value
 
-            # attribute formatting - add group if present
+            if raw:
+                results[group][var]['raw'] = case.get_record_fields(var, "raw")
+            if description or full:
+                results[group][var]['desc'] = case.get_record_fields(var, "desc")
+            if fileonly or full:
+                results[group][var]['file'] = case.get_record_fields(var, "file")
+            if dtype or full:
+                results[group][var]['type'] = case.get_type_info(var)
+            if valid_values or full:
+                results[group][var]['valid_values'] = case.get_record_fields(var, "valid_values")
 
-            attr = node['attribute']
-            if node['group'] :
-                attr = "%s:%s" % (node['group'] , node['attribute'])
+    return results
 
-            # Formatting for different options
-            if args.fileonly :
-                val = "%s\t%s" % (attr , node["file"] )
-            elif args.valonly :
-                val = "%s\t%s" % (attr , node["value"])
-            elif args.value :
-                val = "%s" % (node["value"])
-            else :
-                if (node['description']) :
-                    wrapper=textwrap.TextWrapper()
-                    wrapper.initial_indent = "\t\t"
-                    wrapper.subsequent_indent = "\t\t"
-                    val = "%s\t%s\ttype:%s\n%s\n" %  (attr , node["value"] , node['type'] , wrapper.fill(node['description']) )
-                else :
-                    val = "%s\t%s\ttype:%s\t%s" %  (attr , node["value"] , node['type'] , node['description'] )
-
-            values.append(val)
-
-    return values
-
-def _main_func(description):
+def _main_func():
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
     # Initialize command line parser and get command line options
-    args = parse_command_line(sys.argv, description)
+    variables, subgroup, caseroot, listall,  fileonly, \
+        value, no_resolve, raw, description, group, full, dtype, \
+        valid_values, partial_match = parse_command_line(sys.argv)
 
-    # Debug statement - obvious
-    logger.debug("CLI arguments: %s" , args)
-    logger.debug("Searching for attributes '%s'" , args.attribute)
+    # Initialize case ; read in all xml files from caseroot
+    with Case(caseroot) as case:
+        if listall or partial_match:
+            all_variables = sorted(case.get_record_fields(None, "varid"))
+            if partial_match:
+                all_matching_vars = []
+                for variable in variables:
+                    regex = re.compile(variable)
+                    for all_variable in all_variables:
+                        if regex.search(all_variable):
+                            if subgroup is not None:
+                                vargroups = case.get_record_fields(all_variable, "group")
+                                if subgroup not in vargroups:
+                                    continue
 
-    # querry for attributes and print results
-    results = xmlquery(args.caseroot , args, args.attribute , args.subgroup)
+                            all_matching_vars.append(all_variable)
 
-    # if called with value option omit newline and return only one value
-    if args.value == True :
-        # l = list( set (results) )
-        if len(results) > 0 :
-            sys.stdout.write(results[0])
-    else :
-        for res in xmlquery(args.caseroot , args, args.attribute ) :
-            print res
+                variables = all_matching_vars
+            else:
+                if subgroup is not None:
+                    all_matching_vars = []
+                    for all_variable in all_variables:
+                        vargroups = case.get_record_fields(all_variable, "group")
+                        if subgroup not in vargroups:
+                            continue
+                        else:
+                            all_matching_vars.append(all_variable)
+
+                    variables = all_matching_vars
+                else:
+                    variables = all_variables
+
+        expect(variables, "No variables found")
+        results = xmlquery(case, variables, subgroup, fileonly, resolved=not no_resolve,
+                           raw=raw, description=description, group=group, full=full,
+                           dtype=dtype, valid_values=valid_values)
+
+    if full or description:
+        wrapper=textwrap.TextWrapper()
+        wrapper.subsequent_indent = "\t\t\t"
+        wrapper.fix_sentence_endings = True
+
+    for group in sorted(iter(results)):
+        if len(variables) > 1 or len(results.keys()) > 1 or full:
+            print "\nResults in group %s"%group
+        for var in variables:
+            if var in results[group]:
+                if raw:
+                    print results[group][var]['raw']
+                elif value:
+                    sys.stdout.write("%s"%results[group][var]['value'])
+                elif description:
+                    desc_text = ' '.join(results[group][var]['desc'][0].split())
+                    print "\t%s: %s"%(var, wrapper.fill(desc_text))
+                elif fileonly:
+                    print "\t%s: %s"%(var, results[group][var]['file'])
+                elif dtype:
+                    print  "\t%s: %s"%(var, results[group][var]['type'])
+                elif valid_values:
+                    if 'valid_values' in results[group][var]:
+                        print  "\t%s: %s"%(var, results[group][var]["valid_values"])
+                elif full:
+                    desc_text = ' '.join(results[group][var]['desc'][0].split())
+                    print "\t%s: value=%s"%(var, results[group][var]['value'])
+                    print  "\t\ttype: %s"%(results[group][var]['type'][0])
+                    if 'valid_values' in results[group][var]:
+                        print  "\t\tvalid_values: %s"%(results[group][var]["valid_values"])
+                    print "\t\tdescription: %s"%(wrapper.fill(desc_text))
+                    print "\t\tfile: %s"%(results[group][var]['file'][0])
+                else:
+                    print "\t%s: %s"%(var, results[group][var]['value'])
 
 
 if (__name__ == "__main__"):
-    _main_func(__doc__)
+    _main_func()

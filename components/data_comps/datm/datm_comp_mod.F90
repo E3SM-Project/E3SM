@@ -102,6 +102,23 @@ module datm_comp_mod
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
+
+  !
+  ! water isotopes / tracer input 
+  integer(IN) :: &
+       kshum_16O, kshum_18O, kshum_HDO, &
+       krc_18O, krc_HDO, &
+       krl_18O, krl_HDO, &
+       ksc_18O, ksc_HDO, &
+       ksl_18O, ksl_HDO, &
+       sshum_16O, sshum_18O, sshum_HDO, &
+       srh_16O, srh_18O, srh_HDO, &
+       sprecc_18O, sprecc_HDO, &
+       sprecl_18O, sprecl_HDO, &
+       sprecn_16O, sprecn_18O, sprecn_HDO
+
+  logical, public :: wiso_datm = .false. ! expect isotopic forcing from file?
+
   !
   ! anomaly forcing
   !
@@ -120,7 +137,11 @@ module datm_comp_mod
   !
   ! for anomaly forcing
   !
-  integer(IN),parameter :: ktrans  = 66
+  !X! integer(IN),parameter :: ktrans  = 66
+
+  ! isotopic forcing
+  integer(IN),parameter :: ktrans  = 77
+
 
   character(16),parameter  :: avofld(1:ktrans) = &
        (/"Sa_z            ","Sa_topo         ", &
@@ -144,7 +165,11 @@ module datm_comp_mod
          !
          "Sa_precsf       ", &
          "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
-         "Sa_pbot_af      ","Sa_shum_af      ","Sa_swdn_af      ","Sa_lwdn_af      " &
+         "Sa_pbot_af      ","Sa_shum_af      ","Sa_swdn_af      ","Sa_lwdn_af      ",&
+         ! isotopic forcing
+         "Faxa_rainc_18O  ","Faxa_rainc_HDO  ","Faxa_rainl_18O  ","Faxa_rainl_HDO  ",&
+         "Faxa_snowc_18O  ","Faxa_snowc_HDO  ","Faxa_snowl_18O  ","Faxa_snowl_HDO  ",&
+         "Sa_shum_16O     ","Sa_shum_18O     ","Sa_shum_HDO     " &
        /)
 
   character(16),parameter  :: avifld(1:ktrans) = &
@@ -167,11 +192,18 @@ module datm_comp_mod
          "dms             ","precsf          ", &
          ! add Sa_precsf for precip scale factor
          "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
-         "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  &
+         "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
+         ! isotopic forcing
+         "rainc_18O       ","rainc_HDO       ","rainl_18O       ","rainl_HDO       ", &
+         "snowc_18O       ","snowc_HDO       ","snowl_18O       ","snowl_HDO       ", &
+         "shum_16O        ","shum_18O        ","shum_HDO        " &
        /)
 
   ! add stream for anomaly forcing
-  integer(IN),parameter :: ktranss = 28
+  ! integer(IN),parameter :: ktranss = 28
+  ! isotopic forcing
+  integer(IN),parameter :: ktranss = 33
+
 
   ! The stofld and stifld lists are used for fields that are read but not passed to the
   ! coupler (e.g., they are used to compute fields that are passed to the coupler), and
@@ -186,8 +218,10 @@ module datm_comp_mod
          ! add bias correction / anomaly forcing streams
          "strm_precsf     ", &
          "strm_prec_af    ","strm_u_af       ","strm_v_af       ","strm_tbot_af    ", &
-         "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    "  &
-       /)
+         "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    ", &
+         "strm_rh_18O     ","strm_rh_HDO     ", &
+         "strm_precn_16O  ","strm_precn_18O  ","strm_precn_HDO  "  &
+         /)
 
   character(16),parameter  :: stifld(1:ktranss) = &
        (/"tbot            ","wind            ","z               ","pbot            ", &
@@ -198,7 +232,10 @@ module datm_comp_mod
          "swup            ","prec            ","tarcf           ","precsf          ", &
          ! add anomaly forcing streams
          "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
-         "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  &
+         "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
+         ! isotopic forcing
+         "rh_18O          ","rh_HDO          ", &
+         "precn_16O       ","precn_18O       ","precn_HDO       "  &
        /)
 
   character(CL), pointer :: ilist_av(:)     ! input list for translation
@@ -293,8 +330,8 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
 
     !----- define namelist -----
     namelist / datm_nml / &
-        atm_in, decomp, iradsw, factorFn, restfilm, restfils, presaero, bias_correct, &
-        anomaly_forcing, force_prognostic_true
+        decomp, iradsw, factorFn, restfilm, restfils, presaero, bias_correct, &
+        anomaly_forcing, force_prognostic_true, wiso_datm
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
@@ -365,7 +402,6 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     call t_startf('datm_readnml')
 
     filename = "datm_in"//trim(inst_suffix)
-    atm_in = "unset"
     decomp = "1d"
     iradsw = 0
     factorFn = 'null'
@@ -384,7 +420,6 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
-       write(logunit,F00)' atm_in   = ',trim(atm_in)
        write(logunit,F00)' decomp   = ',trim(decomp)
        write(logunit,F01)' iradsw   = ',iradsw
        write(logunit,F00)' factorFn = ',trim(factorFn)
@@ -392,12 +427,12 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
        write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F0L)' presaero = ',presaero
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
+       write(logunit,F0L)' wiso_datm = ', wiso_datm
        write(logunit,F01) 'inst_index  =  ',inst_index
        write(logunit,F00) 'inst_name   =  ',trim(inst_name)
        write(logunit,F00) 'inst_suffix =  ',trim(inst_suffix)
        call shr_sys_flush(logunit)
     endif
-    call shr_mpi_bcast(atm_in,mpicom,'atm_in')
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(iradsw,mpicom,'iradsw')
     call shr_mpi_bcast(factorFn,mpicom,'factorFn')
@@ -405,6 +440,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(presaero,mpicom,'presaero')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
+    call shr_mpi_bcast(wiso_datm, mpicom, 'wiso_datm')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
@@ -417,7 +453,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     ! Read dshr namelist
     !----------------------------------------------------------------------------
 
-    call shr_strdata_readnml(SDATM,trim(atm_in),mpicom=mpicom)
+    call shr_strdata_readnml(SDATM,trim(filename),mpicom=mpicom)
     call shr_sys_flush(shrlogunit)
 
     !----------------------------------------------------------------------------
@@ -568,6 +604,21 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     kco2p = mct_aVect_indexRA(a2x,'Sa_co2prog',perrWith='quiet')
     kco2d = mct_aVect_indexRA(a2x,'Sa_co2diag',perrWith='quiet')
 
+    !isotopic forcing
+    if(wiso_datm) then
+      kshum_16O = mct_aVect_indexRA(a2x,'Sa_shum_16O')
+      kshum_18O = mct_aVect_indexRA(a2x,'Sa_shum_18O')
+      kshum_HDO = mct_aVect_indexRA(a2x,'Sa_shum_HDO')
+      krc_18O   = mct_aVect_indexRA(a2x,'Faxa_rainc_18O')
+      krc_HDO   = mct_aVect_indexRA(a2x,'Faxa_rainc_HDO')
+      krl_18O   = mct_aVect_indexRA(a2x,'Faxa_rainl_18O')
+      krl_HDO   = mct_aVect_indexRA(a2x,'Faxa_rainl_HDO')
+      ksc_18O   = mct_aVect_indexRA(a2x,'Faxa_snowc_18O')
+      ksc_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowc_HDO')
+      ksl_18O   = mct_aVect_indexRA(a2x,'Faxa_snowl_18O')
+      ksl_HDO   = mct_aVect_indexRA(a2x,'Faxa_snowl_HDO')
+    end if
+
     kbid  = mct_aVect_indexRA(a2x,'Faxa_bcphidry')
     kbod  = mct_aVect_indexRA(a2x,'Faxa_bcphodry')
     kbiw  = mct_aVect_indexRA(a2x,'Faxa_bcphiwet')
@@ -643,6 +694,18 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     sshum_af = mct_aVect_indexRA(avstrm,'strm_shum_af',perrWith='quiet')
     sswdn_af = mct_aVect_indexRA(avstrm,'strm_swdn_af',perrWith='quiet')
     slwdn_af = mct_aVect_indexRA(avstrm,'strm_lwdn_af',perrWith='quiet')
+
+    if(wiso_datm) then
+       ! isotopic forcing
+      sprecn_16O = mct_aVect_indexRA(avstrm,'strm_precn_16O',perrWith='quiet')
+      sprecn_18O = mct_aVect_indexRA(avstrm,'strm_precn_18O',perrWith='quiet')
+      sprecn_HDO = mct_aVect_indexRA(avstrm,'strm_precn_HDO',perrWith='quiet')
+      ! Okay here to just use srh_18O and srh_HDO, because the forcing is (should)
+      ! just be deltas, applied in lnd_comp_mct to the base tracer
+      srh_16O    = mct_aVect_indexRA(avstrm,'strm_rh_16O',perrWith='quiet')
+      srh_18O    = mct_aVect_indexRA(avstrm,'strm_rh_18O',perrWith='quiet')
+      srh_HDO    = mct_aVect_indexRA(avstrm,'strm_rh_HDO',perrWith='quiet')
+    end if
 
     allocate(imask(lsize))
     allocate(yc(lsize))
@@ -1101,6 +1164,14 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
             e = avstrm%rAttr(srh,n) * 0.01_R8 * datm_shr_esat(tbot,tbot)
             qsat = (0.622_R8 * e)/(pbot - 0.378_R8 * e)
             a2x%rAttr(kshum,n) = qsat
+            if(wiso_datm) then
+               ! isotopic forcing
+               ! For tracer specific humidity, lnd_import_mct expects a delta, so
+               ! just keep the delta from the input file - TW
+               a2x%rAttr(kshum_16O,n) = avstrm%rAttr(srh_16O,n)
+               a2x%rAttr(kshum_18O,n) = avstrm%rAttr(srh_18O,n)
+               a2x%rAttr(kshum_HDO,n) = avstrm%rAttr(srh_HDO,n)
+            end if
          else if (stdew > 0) then
             if (tdewmax < 50.0_R8) avstrm%rAttr(stdew,n) = avstrm%rAttr(stdew,n) + tkFrz
             e = datm_shr_esat(avstrm%rAttr(stdew,n),tbot)

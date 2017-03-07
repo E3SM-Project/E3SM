@@ -28,7 +28,7 @@ module pio_support
   character(len=*), parameter :: modName='pio_support'
 
 contains
-!>
+!> 
 !! @public
 !! @brief Remove null termination (C-style) from strings for Fortran.
 !<
@@ -81,7 +81,7 @@ contains
 
     character(len=*), parameter :: subName=modName//'::pio_die'
     integer :: ierr, myrank=-1
-
+    
     if(present(mpirank)) myrank=mpirank
 
     if (present(ival3)) then
@@ -108,9 +108,9 @@ contains
   call xl__trbk()
 #endif
 
-    ! passing an argument of 1 to mpi_abort will lead to a STOPALL output
+    ! passing an argument of 1 to mpi_abort will lead to a STOPALL output 
     ! error code of 257
-    call mpi_abort (MPI_COMM_WORLD, 1, ierr)
+    call mpi_abort (MPI_COMM_WORLD, 1, ierr)  
 
 #ifdef CPRNAG
     stop
@@ -129,7 +129,7 @@ contains
 !=============================================
 !>
 !! @public
-!! @brief Check and prints an error message if an error occured in an MPI
+!! @brief Check and prints an error message if an error occured in an MPI 
 !! subroutine.
 !! @param locmesg : Message to output
 !! @param errcode : MPI error code
@@ -161,7 +161,7 @@ contains
 !! @brief Fortran interface to write a mapping file
 !! @param file : The file where the decomp map will be written.
 !! @param gdims : The dimensions of the data array in memory.
-!! @param DOF : The multidimensional array of indexes that describes how
+!! @param DOF : The multidimensional array of indexes that describes how 
 !! data in memory are written to a file.
 !! @param comm : The MPI comm index.
 !! @param punit : Optional argument that is no longer used.
@@ -188,7 +188,7 @@ contains
     integer,optional,intent(in) :: punit
     integer :: err
     integer :: ndims
-
+    
 
     interface
        integer(c_int) function PIOc_writemap_from_f90(file, ndims, gdims, maplen, map, f90_comm) &
@@ -197,7 +197,7 @@ contains
          character(C_CHAR), intent(in) :: file
          integer(C_INT), value, intent(in) :: ndims
          integer(C_INT), intent(in) :: gdims(*)
-         integer(C_SIZE_T), value, intent(in) :: maplen
+         integer(C_SIZE_T), value, intent(in) :: maplen 
          integer(C_SIZE_T), intent(in) :: map(*)
          integer(C_INT), value, intent(in) :: f90_comm
        end function PIOc_writemap_from_f90
@@ -226,7 +226,7 @@ contains
     ! Author: T Craig
     !
     ! Change History
-    !
+    ! 
     !-----------------------------------------------------------------------
     ! $Id$
     !-----------------------------------------------------------------------
@@ -247,7 +247,7 @@ contains
     type(C_PTR) :: tgdims, tmap
     interface
        integer(C_INT) function PIOc_readmap_from_f90(file, ndims, gdims, maplen, map, f90_comm) &
-            bind(C,name="PIOc_readmap_from_f90")
+            bind(C,name="PIOc_readmap_from_f90") 
          use iso_c_binding
          character(C_CHAR), intent(in) :: file
          integer(C_INT), intent(out) :: ndims

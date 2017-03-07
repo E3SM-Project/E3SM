@@ -1,6 +1,6 @@
 #==============================================================================
 #
-#  This is the CTest script for generating test results for submission to the
+#  This is the CTest script for generating test results for submission to the 
 #  CTest Dashboard site: my.cdash.org.
 #
 #  Example originally stolen from:
@@ -16,9 +16,9 @@ set (CTEST_BUILD_NAME        $ENV{PIO_DASHBOARD_BUILD_NAME})
 set (CTEST_SOURCE_DIRECTORY  $ENV{PIO_DASHBOARD_SOURCE_DIR})
 set (CTEST_BINARY_DIRECTORY  $ENV{PIO_DASHBOARD_BINARY_DIR})
 
-# -----------------------------------------------------------
+# -----------------------------------------------------------  
 # -- Run CTest- TESTING ONLY (Appended to existing TAG)
-# -----------------------------------------------------------
+# -----------------------------------------------------------  
 
 ## -- Start
 ctest_start("${CTEST_SCRIPT_ARG}" APPEND)

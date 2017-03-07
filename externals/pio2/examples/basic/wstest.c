@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
  PIOc_Init_Intracomm(MPI_COMM_WORLD, npe, 1, 0, PIO_REARR_SUBSET,&iosysid);
 
- // Create a weak scaling test -
+ // Create a weak scaling test - 
  nx=6;
  ny=6;
  nz=2;
@@ -52,15 +52,15 @@ int main(int argc, char *argv[])
 
  PIOc_createfile(iosysid, &ncid, &iotype, "wstest.nc", PIO_CLOBBER);
  // Order of dims in c is slowest first
- PIOc_def_dim(ncid, "nx", (PIO_Offset) gdim[2], dimids+2);
- PIOc_def_dim(ncid, "ny", (PIO_Offset) gdim[1], dimids+1);
+ PIOc_def_dim(ncid, "nx", (PIO_Offset) gdim[2], dimids+2); 
+ PIOc_def_dim(ncid, "ny", (PIO_Offset) gdim[1], dimids+1); 
  PIOc_def_dim(ncid, "nz", (PIO_Offset) gdim[0], dimids);
 
  PIOc_def_var(ncid, "idof", PIO_INT, 3, dimids, &vid);
-
+ 
  PIOc_enddef(ncid);
 
-
+ 
 
  PIOc_write_darray(ncid, vid, iodesc,(PIO_Offset) (nx*ny*nz), iarray, NULL);
 

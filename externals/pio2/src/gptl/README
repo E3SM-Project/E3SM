@@ -18,7 +18,7 @@ Of course these events can only be enabled if the PAPI counters they require
 are available on the target architecture.
 
 
-Using GPTL
+Using GPTL 
 ----------
 
 C codes making GPTL library calls should #include <gptl.h>. Fortran codes
@@ -63,7 +63,7 @@ GPTLfinalize() can be called to clean up the GPTL environment.  All space
 malloc'ed by the GPTL library will be freed by this call.
 
 
-Example
+Example 
 -------
 
 From "man GPTLstart", a simple example calling sequence to time a couple of
@@ -86,7 +86,7 @@ do_work();                              /* do some work */
 (void) GPTLpr (mympitaskid);            /* print the results to timing.<mympitaskid> */
 
 
-Auto-instrumentation
+Auto-instrumentation 
 --------------------
 
 If the regions to be timed are defined by function entry and exit points, and
@@ -128,7 +128,7 @@ Running hex2name.pl converts the function addresses back to human-readable
 function names. It uses the UNIX "nm" utility to do this.
 
 
-Multi-processor instrumented codes
+Multi-processor instrumented codes 
 ----------------------------------
 
 For instrumented codes which make use of threading and/or MPI, a

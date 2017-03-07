@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config_batch version="1.0.0">
+<config_batch version="2.0">
   <!--
      File:    config_batch.xml
      Purpose: abstract out the parts of run scripts that are different, and use this configuration to
@@ -10,8 +10,7 @@
      batch_redirect:   Whether a redirect character is needed to submit jobs.
      batch_directive:  The string that prepends a batch directive for the batch system.
      jobid_pattern:    A perl regular expression used to filter out the returned job id from a
-                       queue submission.
-     depend_pattern:
+		       queue submission.
 
  ===============================================================
  batch_system
@@ -28,14 +27,8 @@
  walltimemax: The maximum amount of walltime for a queue.
  jobmin:      The minimum node count required to use this queue.
  jobmax:      The maximum node count required to use this queue.
-
- walltimes:
- Denotes the walltimes that can be used for a particular machine.
- walltime: as before, if default="true" is defined, this walltime will be used
- by default.
- Alternatively, ccsm_estcost must be used to choose the queue based on the estimated cost of the run.
     -->
-  <batch_system type="template" version="x.y">
+  <batch_system type="template" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
     <batch_redirect></batch_redirect>
@@ -45,7 +38,7 @@
     </directives>
   </batch_system>
 
-  <batch_system type="none" version="x.y">
+  <batch_system type="none" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
     <batch_redirect></batch_redirect>
@@ -55,7 +48,7 @@
     </directives>
   </batch_system>
 
-   <batch_system type="cobalt" version="x.y">
+   <batch_system type="cobalt" >
      <batch_query>qstat</batch_query>
      <batch_submit>qsub</batch_submit>
      <batch_directive></batch_directive>
@@ -67,12 +60,26 @@
        <arg flag="-A" name="PROJECT"/>
        <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
        <!-- space required at beginning of name -->
-       <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+       <arg flag="-n" name=" $TOTALPES / $PES_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
-       <arg flag="--env" name='"CIMEROOT=$CIMEROOT"'/>
       </submit_args>
    </batch_system>
+
+  <batch_system type="cobalt_theta" >
+    <batch_query>qstat</batch_query>
+    <batch_submit>qsub</batch_submit>
+    <batch_directive>#COBALT</batch_directive>
+    <jobid_pattern>(\d+)</jobid_pattern>
+    <depend_string> --dependencies</depend_string>
+    <submit_args>
+      <arg flag="-A" name="PROJECT"/>
+      <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="--mode script"/>
+    </submit_args>
+  </batch_system>
 
   <batch_system type="lsf" version="9.1">
     <batch_query args=" -w" >bjobs</batch_query>
@@ -80,7 +87,6 @@
     <batch_redirect>&lt;</batch_redirect>
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
-    <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w 'done(jobid)'</depend_string>
     <walltime_format>%H:%M</walltime_format>
     <submit_args>
@@ -89,8 +95,8 @@
       <arg flag="-P" name="$PROJECT"/>
     </submit_args>
     <directives>
-      <directive                       > -n {{ totaltasks }} </directive>
-      <directive                       > -R "span[ptile={{ ptile }}]"</directive>
+      <directive                       > -n {{ total_tasks }} </directive>
+      <directive                       > -R "span[ptile={{ tasks_per_node }}]"</directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
       <directive default="cesm.stdout" > -o {{ output_error_path }}.%J  </directive>
@@ -99,11 +105,11 @@
     </directives>
   </batch_system>
 
-  <batch_system type="pbs" version="x.y">
+  <batch_system type="pbs" >
     <batch_query args="-f" >qstat</batch_query>
     <batch_submit>qsub </batch_submit>
     <batch_directive>#PBS</batch_directive>
-    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <jobid_pattern>^(\S+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <walltime_format>%H:%M:%S</walltime_format>
     <submit_args>
@@ -121,9 +127,8 @@
     </directives>
   </batch_system>
 
-   <batch_system type="slurm" version="x.y">
+   <batch_system type="slurm" >
      <batch_query>squeue</batch_query>
-     <batch_submit>sbatch</batch_submit>
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
@@ -164,26 +169,18 @@
       <queues>
 	<queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">batch</queue>
       </queues>
-      <walltimes>
-	<walltime default="true">00:59:00</walltime>
-      </walltimes>
   </batch_system>
 
   <!-- bluewaters is PBS -->
-  <batch_system MACH="bluewaters" type="pbs" version="x.y">
+  <batch_system MACH="bluewaters" type="pbs" >
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}:xe</directive>
       <directive default="/bin/bash" > -S {{ shell }} </directive>
     </directives>
       <queues>
-        <queue walltimemax="24:00:00" default="true">regular</queue>
+	<queue walltimemax="24:00:00" default="true">regular</queue>
 	<queue walltimemax="00:30:00" jobmin="1" jobmax="512">debug</queue>
       </queues>
-      <walltimes>
-	<walltime default="true">00:30:00</walltime>
-	<walltime ccsm_estcost="1">01:00:00</walltime>
-	<walltime ccsm_estcost="3">05:00:00</walltime>
-      </walltimes>
    </batch_system>
 
   <!-- brutus is PBS -->
@@ -212,7 +209,7 @@
   </batch_system>
 
    <!-- gaea is PBS -->
-   <batch_system MACH="gaea" type="pbs" version="x.y">
+   <batch_system MACH="gaea" type="pbs" >
      <directives>
        <directive>-A cpo</directive>
        <directive>-l {{ partition }}</directive>
@@ -226,15 +223,10 @@
        <queue walltimemax="01:00:00" jobmin="1" jobmax="860">debug</queue>
        <queue walltimemax="24:00:00" jobmin="861" jobmax="99999" default="true">batch</queue>
      </queues>
-     <walltimes>
-       <walltime default="true">00:45:00</walltime>
-       <walltime ccsm_estcost="1">01:50:00</walltime>
-       <walltime ccsm_estcost="3">05:00:00</walltime>
-     </walltimes>
    </batch_system>
 
   <!-- hobart is PBS -->
-  <batch_system type="pbs" MACH="hobart" version="x.y">
+  <batch_system type="pbs" MACH="hobart" >
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
@@ -247,38 +239,59 @@
 
    <!-- hera is SLURM -->
    <batch_system MACH="hera" type="slurm">
-   <batch_directive>#MSUB</batch_directive>
-   <directives>
-     <directive>-A ees</directive>
-     <directive>-l gres=lscratchd</directive>
-   </directives>
+     <batch_submit>sbatch</batch_submit>
+     <batch_directive>#MSUB</batch_directive>
+     <directives>
+       <directive>-A ees</directive>
+       <directive>-l gres=lscratchd</directive>
+     </directives>
    </batch_system>
+
+
+  <batch_system MACH="laramie" type="pbs">
+    <directives>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
+    </directives>
+    <queues>
+      <queue default="true" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="cheyenne" type="pbs">
+    <directives>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
+      <directive> -l select={{ num_nodes }}:ncpus={{ max_tasks_per_node }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}</directive>
+    </directives>
+    <queues>
+      <queue default="true" walltimemax="12:00" jobmin="1" jobmax="2592">regular</queue>
+    </queues>
+  </batch_system>
+
 
   <batch_system MACH="mira" type="cobalt">
     <queues>
       <queue walltimemax="06:00:00" jobmin="1" jobmax="786432" default="true">default</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">01:00:00</walltime>
-      <walltime ccsm_estcost="-3">01:00:00</walltime>
-      <walltime ccsm_estcost="0">01:00:00</walltime>
-    </walltimes>
+  </batch_system>
+
+  <batch_system MACH="theta" type="cobalt_theta">
+    <queues>
+      <queue walltimemax="00:60:00" jobmin="1" jobmax="3200" default="true">default</queue>
+    </queues>
   </batch_system>
 
   <batch_system MACH="olympus" type="slurm">
+    <batch_submit>sbatch</batch_submit>
     <queues>
       <queue walltimemin="0" walltimemax="00:59:00" jobmin="0" jobmax="9999" default="true">queue</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">00:59:00</walltime>
-      <walltime ccsm_estcost="2" >08:59:00</walltime>
-    </walltimes>
     </batch_system>
 
 
 
   <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-has" version="x.y">
+  <batch_system type="pbs" MACH="pleiades-has" >
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -289,13 +302,10 @@
     <queues>
       <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">08:00:00</walltime>
-    </walltimes>
   </batch_system>
 
   <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-ivy" version="x.y">
+  <batch_system type="pbs" MACH="pleiades-ivy" >
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -306,24 +316,17 @@
     <queues>
       <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">08:00:00</walltime>
-    </walltimes>
   </batch_system>
 
-  <batch_system MACH="skybridge" type="slurm" version="x.y">
+  <batch_system MACH="skybridge" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
     <queues>
       <queue jobmin="1" jobmax="480" default="true">ec</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">0:50:00</walltime>
-      <walltime ccsm_estcost="0">1:50:00</walltime>
-      <walltime ccsm_estcost="1">5:00:00</walltime>
-    </walltimes>
   </batch_system>
 
   <!-- all pleiades machines are PBS -->
-  <batch_system type="pbs" MACH="pleiades-san" version="x.y">
+  <batch_system type="pbs" MACH="pleiades-san" >
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -334,13 +337,10 @@
     <queues>
       <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">08:00:00</walltime>
-    </walltimes>
   </batch_system>
 
   <!-- all pleiades machines are PBS -->
-  <batch_system MACH="pleiades-wes" version="x.y" type="pbs">
+  <batch_system MACH="pleiades-wes"  type="pbs">
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list=$PROJECT </directive>
@@ -351,62 +351,67 @@
   </batch_system>
 
   <!-- sierra is SLURM -->
-   <batch_system MACH="sierra" type="slurm">
-   <batch_directive>#MSUB</batch_directive>
-   <directives>
-     <directive> </directive>
-     <directive>-A ees </directive>
-     <directive>-l nodes={{ num_nodes }}</directive>
-     <directive>-l gres=lscratchd</directive>
-   </directives>
-   </batch_system>
+  <batch_system MACH="sierra" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+    <batch_directive>#MSUB</batch_directive>
+    <directives>
+      <directive> </directive>
+      <directive>-A ees </directive>
+      <directive>-l nodes={{ num_nodes }}</directive>
+      <directive>-l gres=lscratchd</directive>
+    </directives>
+  </batch_system>
 
-   <batch_system MACH="eastwind" type="slurm" version="x.y">
+   <batch_system MACH="eastwind" type="slurm" >
+     <batch_submit>sbatch</batch_submit>
      <queues>
        <queue jobmin="1" jobmax="9999" default="true">batch</queue>
      </queues>
-     <walltimes>
-       <walltime default="true">0:59:00</walltime>
-     </walltimes>
    </batch_system>
 
-   <batch_system MACH="corip1" type="slurm" version="x.y">
+   <batch_system MACH="cori-haswell" type="slurm" >
+     <batch_submit>sbatch</batch_submit>
+     <directives>
+       <directive>-C haswell </directive>
+     </directives>
      <queues>
        <queue walltimemax="06:00:00" jobmin="1" jobmax="45440">regular</queue>
-       <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue>
+     <!--  <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue> -->
      </queues>
-     <walltimes>
-       <walltime default="true">00:30:00</walltime>
-     </walltimes>
    </batch_system>
 
-   <batch_system MACH="edison" type="slurm" version="x.y">
+   <batch_system MACH="cori-knl" type="slurm" >
+     <batch_submit>sbatch</batch_submit>
+     <directives>
+       <directive>-C knl </directive>
+     </directives>
+     <queues>
+       <queue walltimemax="02:00:00" jobmin="1" jobmax="45440">regular</queue>
+     <!--  <queue walltimemax="00:30:00" jobmin="1" jobmax="3072" default="true">debug</queue> -->
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="edison" type="slurm" >
+     <batch_submit>sbatch</batch_submit>
      <queues>
        <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" >regular</queue>
        <queue walltimemax="00:30:00" jobmin="1" jobmax="12288" default="true">debug</queue>
      </queues>
-     <walltimes>
-       <walltime default="true">00:30:00</walltime>
-     </walltimes>
    </batch_system>
 
-   <batch_system MACH="stampede" type="slurm" version="x.y">
+   <batch_system MACH="stampede" type="slurm" >
+     <batch_submit>ssh stampede.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
      <queues>
        <queue walltimemax="48:00:00" jobmin="1" jobmax="4096" >normal</queue>
        <queue walltimemax="02:00:00" jobmin="1" jobmax="256" default="true">development</queue>
      </queues>
-     <walltimes>
-       <walltime default="true">00:30:00</walltime>
-     </walltimes>
    </batch_system>
 
-   <batch_system MACH="rosa" type="slurm" version="x.y">
+   <batch_system MACH="rosa" type="slurm" >
+     <batch_submit>sbatch</batch_submit>
      <queues>
        <queue default="true">default</queue>
      </queues>
-     <walltimes>
-       <walltime default="true">01:30:00</walltime>
-     </walltimes>
    </batch_system>
 
   <!-- titan is PBS -->
@@ -416,26 +421,19 @@
     </directives>
   </batch_system>
 
-  <batch_system type="slurm" MACH="constance" version="x.y">
-    <walltimes>
-      <walltime default="true">00:59:00</walltime>
-      <walltime ccsm_estcost="2" >04:59:00</walltime>
-    </walltimes>
+  <batch_system type="slurm" MACH="constance">
+     <batch_submit>sbatch</batch_submit>
   </batch_system>
 
   <batch_system MACH="yellowstone" type="lsf" version="9.1">
     <queues>
-      <queue walltimemax="24:00" jobmin="1" jobmax="1" jobname="case.lt_archive">hpss</queue>
+      <!-- the hpss queue that should be used for lt_archive jobs on yellowstone does not have modules installed and so rejects our python job -->
+      <queue walltimemax="24:00" jobmin="1" jobmax="1" jobname="case.lt_archive">caldera</queue>
       <queue walltimemax="24:00" jobmin="1" jobmax="8" >caldera</queue>
       <queue walltimemax="12:00" jobmin="9" jobmax="16384" default="true">regular</queue>
       <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
+      <queue walltimemax="12:00" jobmin="1" jobmax="16384">premium</queue>
     </queues>
-    <walltimes>
-      <walltime default="true">2:00</walltime>
-      <walltime ccsm_estcost="-1">2:00</walltime>
-      <walltime ccsm_estcost="0">4:00</walltime>
-      <walltime ccsm_estcost="1">12:00</walltime>
-    </walltimes>
   </batch_system>
 
   <batch_jobs>
@@ -467,4 +465,3 @@
 
 
 </config_batch>
-
