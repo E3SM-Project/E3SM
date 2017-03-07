@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
 
-<definitions_variables>
+<entry_id>
 
   <entry id="COMP_ROF">
     <type>char</type>
@@ -21,6 +21,7 @@
       <value compset="_DROF%NULL">NULL</value>
       <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
       <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>
+      <value compset="_DROF%CPLHIST">CPLHIST</value>
       <value compset=".+" grid="r%null">NULL</value> <!-- overwrites above if runoff grid is null -->
     </values>
     <group>run_component_drof</group>
@@ -29,9 +30,9 @@
     observational climatological or interannual
     1-degree runoff data is used. In CPLHIST mode, runoff
     data from a previous model run is read in. In NULL mode, the runoff
-    data is set to zero. In CPLHIST mode, land forcing data from a previous
-    model run is output by the coupler and read in by the data land
-    model. In NULL mode, land forcing is set to zero and not used. The
+    data is set to zero. In CPLHIST mode, runoff forcing data from a previous
+    model run is output by the coupler and read in by the data rof
+    model. In NULL mode, runoff forcing is set to zero and not used. The
     default is DIATREN_ANN_RX1.</desc>
   </entry>
 
@@ -84,6 +85,7 @@
     <desc compset="_DROF%NULL">NULL drof mode:</desc>
     <desc compset="_DROF%NYF" >COREv2 drof normal year forcing:</desc>
     <desc compset="_DROF%IAF" >COREv2 drof interannual year forcing:</desc>
+    <desc compset="_DROF%CPLHIST">CPLHIST mode:</desc>
   </description>
 
   <help>
@@ -92,4 +94,4 @@
     =========================================
   </help>
 
-</definitions_variables>
+</entry_id>
