@@ -697,9 +697,10 @@ contains
 #endif
 #endif
 #ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
-       case(pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+       case(pio_iotype_netcdf4p)
+          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (Ios%io_rank == 0) then
              ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))

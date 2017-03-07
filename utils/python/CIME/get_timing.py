@@ -70,7 +70,7 @@ class _TimingParser:
         nprocs = 0
         ncount = 0
 
-        heading = heading_padded.strip()
+        heading = '"' + heading_padded.strip() + '"'
         for line in self.finlines:
             m = re.match(r'\s*%s\s*(\d+)\s*\d+\s*(\S+)'%heading, line)
             if m:
@@ -87,7 +87,7 @@ class _TimingParser:
 
     def gettime(self, heading_padded):
         found = False
-        heading = heading_padded.strip()
+        heading = '"' + heading_padded.strip() + '"'
         minval = 0
         maxval = 0
 
@@ -102,8 +102,7 @@ class _TimingParser:
         return (0, 0, False)
 
     def getTiming(self):
-        components=self.case.get_value("COMP_CLASSES").split(',')
-        components[components.index("DRV")]="CPL"
+        components=self.case.get_values("COMP_CLASSES")
         for s in components:
             self.models[s] = _GetTimingInfo(s)
         atm = self.models['ATM']
@@ -133,6 +132,7 @@ class _TimingParser:
         cost_pes = self.case.get_value("COST_PES")
         totalpes = self.case.get_value("TOTALPES")
         pes_per_node = self.case.get_value("PES_PER_NODE")
+        smt_factor = max(1,int(self.case.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
 
         if cost_pes > 0:
             pecost = cost_pes
@@ -246,14 +246,15 @@ class _TimingParser:
                    " instances (stride) \n")
         self.write("  ---------        ------     -------   ------   "
                    "------  ---------  ------  \n")
-
+        maxthrds = 0
         for k in ['CPL', 'GLC', 'WAV', 'LND', 'ROF', 'ICE', 'ATM', 'OCN']:
             m = self.models[k]
             self.write("  %s = %-8s   %-6u      %-6u   %-6u x %-6u  "
                        "%-6u (%-6u) \n"
-                       % (m.name.lower(), m.comp, m.ntasks, m.rootpe,
+                       % (m.name.lower(), m.comp, (m.ntasks*m.nthrds *smt_factor), m.rootpe,
                           m.ntasks, m.nthrds, m.ninst, m.pstrid))
-
+            if m.nthrds > maxthrds:
+                maxthrds = m.nthrds
         nmax  = self.gettime(' CPL:INIT ')[1]
         tmax  = self.gettime(' CPL:RUN_LOOP ')[1]
         wtmax = self.gettime(' CPL:TPROF_WRITE ')[1]
@@ -296,7 +297,7 @@ class _TimingParser:
             tmaxr = adays*86400.0/(tmax*365.0)
 
         self.write("\n")
-        self.write("  total pes active           : %s \n" % totalpes)
+        self.write("  total pes active           : %s \n" % (totalpes*maxthrds*smt_factor ))
         self.write("  pes per node               : %s \n" % pes_per_node)
         self.write("  pe count for cost estimate : %s \n" % pecost)
         self.write("\n")

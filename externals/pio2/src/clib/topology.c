@@ -34,23 +34,23 @@ void identity(const MPI_Comm comm, int *iotask)
 
 
    MPIX_Hardware(&hw);
-
+   
    Kernel_GetPersonality(&pers, sizeof(pers));
-
+   
    int numIONodes,numPsets,numNodesInPset,rankInPset;
    int numpsets, psetID, psetsize, psetrank;
 
    bgq_pset_info (comm, &numpsets, &psetID, &psetsize, &psetrank);
-
-   numIONodes = numpsets;
-   numNodesInPset = psetsize;
-   rankInPset = rank;
-   numPsets = numpsets;
-
+ 
+   numIONodes = numpsets; 
+   numNodesInPset = psetsize; 
+   rankInPset = rank; 
+   numPsets = numpsets; 
+   
    if(rank == 0) { printf("number of IO nodes in block: %i \n",numIONodes);}
    if(rank == 0) { printf("number of Psets in block : %i \n",numPsets);}
    if(rank == 0) { printf("number of compute nodes in Pset: %i \n",numNodesInPset);}
-
+   
    int psetNum;
    psetNum = psetID;
 
@@ -77,26 +77,26 @@ void identity(const MPI_Comm comm, int *iotask)
    free(TasksPerPset);
 }
 
-void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr,
+void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 
 		      bool *iamIOtask)
 {
 
-/*
+/*  
 
      Returns the correct numiotasks and the flag iamIOtask
 
      Some concepts:
 
-     processor set:     A group of processors on the Blue Gene system which have
+     processor set:     A group of processors on the Blue Gene system which have 
                         one or more IO processor (Pset)
 
-     IO-node:           A special Blue Gene node dedicated to performing IO.  There
+     IO-node:           A special Blue Gene node dedicated to performing IO.  There 
                         are one or more per processor set
 
-     IO-client:         This is software concept.  This refers to the MPI task
-                        which performs IO for the PIO library
+     IO-client:         This is software concept.  This refers to the MPI task 
+                        which performs IO for the PIO library 
 */
-   int psetNum;
+   int psetNum;                                 
    int coreId;
    int iam;
    int task_count;
@@ -121,21 +121,21 @@ void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *strid
 
 
     Kernel_GetPersonality(&pers, sizeof(pers));
-
+     
      int numIONodes,numPsets,numNodesInPset,rankInPset;
      int numiotasks_per_node,remainder,numIONodes_per_pset;
      int lstride;
-
+     
      /* Number of computational nodes in processor set */
 
      int numpsets, psetID, psetsize, psetrank;
     bgq_pset_info (comm,&numpsets, &psetID, &psetsize, &psetrank);
-     numIONodes = numpsets;
+     numIONodes = numpsets; 
      numNodesInPset = psetsize;
 
      /*     printf("Determine io tasks: me %i : nodes in pset= %i ionodes = %i\n", rank, numNodesInPset, numIONodes); */
-
-     if((*numiotasks) < 0 ) {
+     
+     if((*numiotasks) < 0 ) { 
        /* negative numiotasks value indicates that this is the number per IO-node */
        (*numiotasks) = - (*numiotasks);
        if((*numiotasks) > numNodesInPset) {
@@ -164,7 +164,7 @@ void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *strid
 	 numiotasks_per_node = 8;  /* default number of IO-client per IO-node is not otherwise specificied */
        }
        remainder = 0;
-     }
+     } 
 
      /* number of IO nodes with a larger number of io-client per io-node */
      if(remainder > 0) {
@@ -177,62 +177,62 @@ void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *strid
        }
        lstride = min(np,floor((float)numNodesInPset/(float)numiotasks_per_node));
      }
-
+     
      /* Number of processor sets */
-     numPsets = numpsets;
-
+     numPsets = numpsets; 
+     
      /* number of IO nodes in processor set (I need to add
-	code to deal with the case where numIONodes_per_pset != 1 works
+	code to deal with the case where numIONodes_per_pset != 1 works 
 	correctly) */
      numIONodes_per_pset = numIONodes/numPsets;
-
+     
      /* Determine which core on node....  I don't want to put more than one io-task per node */
      coreId = Kernel_PhysicalProcessorID ();
-
+     
      /* What is the rank of this node in the processor set */
 
      psetNum = psetID;
      rankInPset = psetrank;
-
+     
      /* printf("Pset #: %i has %i nodes in Pset; base = %i\n",psetNum,numNodesInPset, *base); */
-
+     
      (*iamIOtask) = false;   /* initialize to zero */
-
+     
      if (numiotasks_per_node == numNodesInPset)(*base) = 0;  /* Reset the base to 0 if we are using all tasks */
 
 
-     /* start stridding MPI tasks from base task */
+     /* start stridding MPI tasks from base task */ 
      iam = max(0,rankInPset-(*base));
      if (iam >= 0)  {
        /* mark tasks that will be IO-tasks  or IO-clients */
        /*    printf("iam = %d lstride = %d coreID = %d\n",iam,lstride,coreId); */
        if((iam % lstride == 0) && (coreId == 0) ) {  /* only io tasks indicated by stride and coreId = 0 */
-	 if((iam/lstride) < numiotasks_per_node) {
+	 if((iam/lstride) < numiotasks_per_node) { 
 	   /* only set the first (numiotasks_per_node - 1) tasks */
 	   (*iamIOtask) = true;
 	 } else if ((iam/lstride) == numiotasks_per_node) {
-	   /*  If there is an uneven number of io-clients to io-nodes
-	       allocate the first remainder - 1 processor sets to
+	   /*  If there is an uneven number of io-clients to io-nodes 
+	       allocate the first remainder - 1 processor sets to 
 	       have a total of numiotasks_per_node */
 	   if(psetNum < remainder) {(*iamIOtask) = true;
-	   };
+	   };   
 	 }
        }
        /*       printf("comm = %d iam = %d lstride = %d coreID = %d iamIOtask = %i \n",comm, iam,lstride,coreId,(*iamIOtask)); */
      }
-   }else{
+   }else{ 
        /* We are not doing rearrangement.... so all tasks are io-tasks */
        (*iamIOtask) = true;
      }
-
-   /*printf("comm = %d myrank = %i iotask = %i \n", comm, rank, (*iamIOtask));*/
-
+   
+   /*printf("comm = %d myrank = %i iotask = %i \n", comm, rank, (*iamIOtask));*/ 
+   
    /* now we need to correctly determine the numiotasks */
    MPI_Allreduce(iamIOtask, &task_count, 1, MPI_INT, MPI_SUM, comm);
 
    (*numiotasks) = task_count;
-
-
+ 
+  
 }
 
 int bgq_ion_id (void)
@@ -296,7 +296,7 @@ int bgq_pset_info (MPI_Comm comm, int* tot_pset, int* psetID, int* pset_size, in
 
   // Compute the ION BridgeNode ID
   key = bgq_ion_id ();
-
+  
   // Create the pset_comm per bridge node
   status = MPI_Comm_split ( comp_comm, key, comp_rank, &pset_comm);
   if ( MPI_SUCCESS != status)
@@ -308,7 +308,7 @@ int bgq_pset_info (MPI_Comm comm, int* tot_pset, int* psetID, int* pset_size, in
   // Calculate the rank in pset and pset size
   MPI_Comm_rank (pset_comm, rank_in_pset);
   MPI_Comm_size (pset_comm, pset_size);
-
+  
   // Create the Bridge root nodes communicator
   bridge_root = 0;
   if (0 == *rank_in_pset)
@@ -317,7 +317,7 @@ int bgq_pset_info (MPI_Comm comm, int* tot_pset, int* psetID, int* pset_size, in
   // Calculate the total number of bridge nodes / psets
   tot_bridges = 0;
   MPI_Allreduce (&bridge_root, &tot_bridges, 1, MPI_INT, MPI_SUM, comm);
-
+  
   *tot_pset = tot_bridges;
 
   // Calculate the Pset ID
@@ -329,7 +329,7 @@ int bgq_pset_info (MPI_Comm comm, int* tot_pset, int* psetID, int* pset_size, in
       rem_psets = tot_bridges-1;
       cur_pset++;
     }
-
+  
   t_buf = 0; // Dummy value
   if (0 == comp_rank)
     {
@@ -345,18 +345,18 @@ int bgq_pset_info (MPI_Comm comm, int* tot_pset, int* psetID, int* pset_size, in
     {
       MPI_Send (&t_buf, 1, MPI_INT, 0, 0, comm);
       MPI_Recv (&temp_id,1, MPI_INT, 0, 0, comm, &mpi_status);
-
+      
       *psetID = temp_id;
       /*printf (" Pset ID is %d \n", *psetID);*/
     }
   // Broadcast the PSET ID to all ranks in the psetcomm
   MPI_Bcast ( psetID, 1, MPI_INT, 0, pset_comm);
-
+  
   // Free the split comm
   MPI_Comm_free (&pset_comm);
-
+  
   MPI_Barrier (comm);
-
+  
   return 0;
 }
 

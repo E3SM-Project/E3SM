@@ -2198,10 +2198,10 @@ subroutine shr_stream_getFile(filePath,fileName,localFile,rc)
    rCode = 0
 
    if ( shr_file_queryPrefix(filePath) /= shr_file_noPrefix ) then
-      localFn = fileName
-      call shr_file_get(rCode,localFn, trim(filePath)//fileName)
+      localFn = adjustl(fileName)
+      call shr_file_get(rCode,localFn, trim(filePath)//adjustl(fileName))
    else                              ! don't copy file, read original file
-      localFn = trim(filePath)//fileName
+      localFn = trim(filePath)//adjustl(fileName)
    end if
 
    if (debug>0 .and. s_loglev > 0) then

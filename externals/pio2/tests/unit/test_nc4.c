@@ -81,7 +81,7 @@ char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 
 /** Length of chunksizes to use in netCDF-4 files. */
-PIO_Offset chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
+size_t chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
 
 /** Run Tests for NetCDF-4 Functions.
  *
@@ -147,7 +147,7 @@ main(int argc, char **argv)
     int storage;
 
     /** Chunksizes set in the file. */
-    PIO_Offset my_chunksize[NDIM];
+    size_t my_chunksize[NDIM];
     
     /** The shuffle filter setting in the netCDF-4 test file. */
     int shuffle;
@@ -189,13 +189,13 @@ main(int argc, char **argv)
     int fmt, d, d1, i;
 
     /** For setting the chunk cache. */
-    PIO_Offset chunk_cache_size = 1024*1024;
-    PIO_Offset chunk_cache_nelems = 1024;
+    size_t chunk_cache_size = 1024*1024;
+    size_t chunk_cache_nelems = 1024;
     float chunk_cache_preemption = 0.5;
 
     /* For reading the chunk cache. */
-    PIO_Offset chunk_cache_size_in;
-    PIO_Offset chunk_cache_nelems_in;
+    size_t chunk_cache_size_in;
+    size_t chunk_cache_nelems_in;
     float chunk_cache_preemption_in;
     
     char varname[15];

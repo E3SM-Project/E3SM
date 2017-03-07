@@ -211,6 +211,8 @@ module seq_flds_mod
    character(CXX) :: seq_flds_r2x_fluxes
    character(CXX) :: seq_flds_x2r_states
    character(CXX) :: seq_flds_x2r_fluxes
+   character(CXX) :: seq_flds_r2o_liq_fluxes
+   character(CXX) :: seq_flds_r2o_ice_fluxes
 
    !----------------------------------------------------------------------------
    ! combined state/flux fields
@@ -321,6 +323,8 @@ module seq_flds_mod
      character(CXX) :: w2x_fluxes = ''
      character(CXX) :: x2w_states = ''
      character(CXX) :: x2w_fluxes = ''
+     character(CXX) :: r2o_liq_fluxes = ''
+     character(CXX) :: r2o_ice_fluxes = ''
 
      character(CXX) :: stringtmp  = ''
 
@@ -633,7 +637,7 @@ module seq_flds_mod
      call seq_flds_add(a2x_states,"Sa_pbot")
      call seq_flds_add(x2l_states,"Sa_pbot")
      call seq_flds_add(x2i_states,"Sa_pbot")
-     if (cime_model == 'acme') then
+     if (trim(cime_model) == 'acme') then
         call seq_flds_add(x2o_states,"Sa_pbot")
      end if
      longname = 'Pressure at the lowest model level'
@@ -1099,7 +1103,6 @@ module seq_flds_mod
      units    = 'm'
      attname  = 'Sl_snowh'
      call metadata_set(attname, longname, stdname, units)
-
 
      ! Surface snow depth (ice/atm only)
      call seq_flds_add(i2x_states,"Si_snowh")
@@ -1957,12 +1960,33 @@ module seq_flds_mod
      attname  = 'Flrl_rofi'
      call metadata_set(attname, longname, stdname, units)
 
+     ! Currently only the CESM land and runoff models treat irrigation as a separate
+     ! field: in ACME, this field is folded in to the other runoff fields. Eventually,
+     ! ACME may want to update its land and runoff models to map irrigation specially, as
+     ! CESM does.
+     !
+     ! (Once ACME is using this irrigation field, all that needs to be done is to remove
+     ! this conditional: Code in other places in the coupler is written to trigger off of
+     ! whether Flrl_irrig has been added to the field list, so it should Just Work if this
+     ! conditional is removed.)
+     if (trim(cime_model) == 'cesm') then
+        ! Irrigation flux (land/rof only)
+        call seq_flds_add(l2x_fluxes,"Flrl_irrig")
+        call seq_flds_add(x2r_fluxes,"Flrl_irrig")
+        longname = 'Irrigation flux (withdrawal from rivers)'
+        stdname  = 'irrigation'
+        units    = 'kg m-2 s-1'
+        attname  = 'Flrl_irrig'
+        call metadata_set(attname, longname, stdname, units)
+     end if
+
      !-----------------------------
      ! rof->ocn (runoff) and rof->lnd (flooding)
      !-----------------------------
 
      call seq_flds_add(r2x_fluxes,'Forr_rofl')
      call seq_flds_add(x2o_fluxes,'Foxx_rofl')
+     call seq_flds_add(r2o_liq_fluxes,'Forr_rofl')
      longname = 'Water flux due to runoff (liquid)'
      stdname  = 'water_flux_into_sea_water'
      units    = 'kg m-2 s-1'
@@ -1973,6 +1997,7 @@ module seq_flds_mod
 
      call seq_flds_add(r2x_fluxes,'Forr_rofi')
      call seq_flds_add(x2o_fluxes,'Foxx_rofi')
+     call seq_flds_add(r2o_ice_fluxes,'Forr_rofi')
      longname = 'Water flux due to runoff (frozen)'
      stdname  = 'frozen_water_flux_into_sea_water'
      units    = 'kg m-2 s-1'
@@ -2344,6 +2369,7 @@ module seq_flds_mod
 
         call seq_flds_add(a2x_states, "Sa_co2prog")
         call seq_flds_add(x2l_states, "Sa_co2prog")
+        call seq_flds_add(x2o_states, "Sa_co2prog")
         longname = 'Prognostic CO2 at the lowest model level'
         stdname  = ''
         units    = '1e-6 mol/mol'
@@ -2352,6 +2378,7 @@ module seq_flds_mod
 
         call seq_flds_add(a2x_states, "Sa_co2diag")
         call seq_flds_add(x2l_states, "Sa_co2diag")
+        call seq_flds_add(x2o_states, "Sa_co2diag")
         longname = 'Diagnostic CO2 at the lowest model level'
         stdname  = ''
         units    = '1e-6 mol/mol'
@@ -2838,7 +2865,8 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
 
        !Iso-Runoff
-       ! l2x, x2r
+       ! r2o, l2x, x2r
+
        units    = 'kg m-2 s-1'
        call seq_flds_add(l2x_fluxes,'Flrl_rofi_16O')
        call seq_flds_add(x2r_fluxes,'Flrl_rofi_16O')
@@ -2881,6 +2909,7 @@ module seq_flds_mod
        ! r2x, x2o
        call seq_flds_add(r2x_fluxes,'Forr_rofl_16O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_16O')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_16O')
        longname = 'H2_16O Water flux due to liq runoff '
        stdname  = 'H2_16O_water_flux_into_sea_water'
        attname  = 'Forr_rofl_16O'
@@ -2889,6 +2918,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofl_18O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_18O')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_18O')
        longname = 'H2_18O Water flux due to liq runoff '
        stdname  = 'H2_18O_water_flux_into_sea_water'
        attname  = 'Forr_rofl_18O'
@@ -2897,6 +2927,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofl_HDO')
        call seq_flds_add(x2o_fluxes,'Foxx_rofl_HDO')
+       call seq_flds_add(r2o_liq_fluxes,'Forr_rofl_HDO')
        longname = 'HDO Water flux due to liq runoff '
        stdname  = 'HDO_water_flux_into_sea_water'
        attname  = 'Forr_rofl_HDO'
@@ -2906,6 +2937,7 @@ module seq_flds_mod
 
        call seq_flds_add(r2x_fluxes,'Forr_rofi_16O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_16O')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_16O')
        longname = 'H2_16O Water flux due to ice runoff '
        stdname  = 'H2_16O_water_flux_into_sea_water'
        attname  = 'Forr_rofi_16O'
@@ -2914,6 +2946,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofi_18O')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_18O')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_18O')
        longname = 'H2_18O Water flux due to ice runoff '
        stdname  = 'H2_18O_water_flux_into_sea_water'
        attname  = 'Forr_rofi_18O'
@@ -2922,6 +2955,7 @@ module seq_flds_mod
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(r2x_fluxes,'Forr_rofi_HDO')
        call seq_flds_add(x2o_fluxes,'Foxx_rofi_HDO')
+       call seq_flds_add(r2o_ice_fluxes,'Forr_rofi_HDO')
        longname = 'HDO Water flux due to ice runoff '
        stdname  = 'HDO_water_flux_into_sea_water'
        attname  = 'Forr_rofi_HDO'
@@ -3162,6 +3196,8 @@ module seq_flds_mod
      seq_flds_x2r_fluxes = trim(x2r_fluxes)
      seq_flds_w2x_fluxes = trim(w2x_fluxes)
      seq_flds_x2w_fluxes = trim(x2w_fluxes)
+     seq_flds_r2o_liq_fluxes = trim(r2o_liq_fluxes)
+     seq_flds_r2o_ice_fluxes = trim(r2o_ice_fluxes)
 
      if (seq_comm_iamroot(ID)) then
         write(logunit,"(A)") subname//': seq_flds_a2x_states= ',trim(seq_flds_a2x_states)

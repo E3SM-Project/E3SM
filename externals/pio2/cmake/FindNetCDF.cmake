@@ -1,6 +1,6 @@
 # - Try to find NetCDF
 #
-# This can be controlled by setting the NetCDF_PATH (or, equivalently, the
+# This can be controlled by setting the NetCDF_PATH (or, equivalently, the 
 # NETCDF environment variable), or NetCDF_<lang>_PATH CMake variables, where
 # <lang> is the COMPONENT language one needs.
 #
@@ -29,7 +29,7 @@ define_package_component (NetCDF
                           COMPONENT Fortran
                           INCLUDE_NAMES netcdf.mod netcdf.inc
                           LIBRARY_NAMES netcdff)
-
+                       
 # Search for list of valid components requested
 find_valid_components (NetCDF)
 
@@ -54,27 +54,27 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
         # Continue only if component found
         if (NetCDF_${NCDFcomp}_FOUND)
-
+        
             # Checks
-            if (NCDFcomp STREQUAL C)
-
+            if (NCDFcomp STREQUAL C)            
+            
                 # Check version
                 check_version (NetCDF
                                NAME "netcdf_meta.h"
                                HINTS ${NetCDF_C_INCLUDE_DIRS}
                                MACRO_REGEX "NC_VERSION_")
-
+        
                 # Check for parallel support
                 check_macro (NetCDF_C_HAS_PARALLEL
                              NAME TryNetCDF_PARALLEL.c
                              HINTS ${CMAKE_MODULE_PATH}
                              DEFINITIONS -I${NetCDF_C_INCLUDE_DIR}
                              COMMENT "whether NetCDF has parallel support")
-
+                               
             endif ()
 
-            # Dependencies
-            if (NCDFcomp STREQUAL C AND NOT NetCDF_C_IS_SHARED)
+            # Dependencies                
+            if (NCDFcomp STREQUAL C AND NOT NetCDF_C_IS_SHARED)            
 
                 # DEPENDENCY: PnetCDF (if PnetCDF enabled)
                 check_macro (NetCDF_C_HAS_PNETCDF
@@ -103,7 +103,7 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                         list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
                     endif ()
                 endif ()
-
+                                    
                 # DEPENDENCY: HDF5
                 find_package (HDF5 COMPONENTS HL C)
                 if (HDF5_C_FOUND)
@@ -112,12 +112,12 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                     list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
                                                     ${HDF5_HL_LIBRARIES})
                 endif ()
-
+    
                 # DEPENDENCY: LIBDL Math
                 list (APPEND NetCDF_C_LIBRARIES -ldl -lm)
-
+    
             elseif (NCDFcomp STREQUAL Fortran AND NOT NetCDF_Fortran_IS_SHARED)
-
+            
                 # DEPENDENCY: NetCDF
                 set (orig_comp ${NCDFcomp})
                 set (orig_comps ${NetCDF_FIND_VALID_COMPONENTS})
@@ -128,11 +128,11 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                     list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
                     list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
                 endif ()
-
+                
             endif ()
 
         endif ()
 
     endif ()
-
+    
 endforeach ()
