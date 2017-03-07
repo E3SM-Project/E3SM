@@ -57,13 +57,9 @@ from acme_diags.viewer import OutputViewer
 viewer = OutputViewer(path=parameters[0].case_id, index_name=parameters[0].reference_name)
 #viewer.add_page("Set 5", ['Description', 'ANN', 'DJF', 'JJA', 'MAM', 'SON'])
 col_labels = ['Description']
-for r in parameters[0].region:
-    if r == 'global':
-        print 'R IS GLOBAL'
-        for l in parameters[0].levels:
-            col_labels.append('%s - %s' % (r, l))
-        continue
-    col_labels.append(r)
+for r in sorted(parameters[0].region, key=lambda r: r.lower()):  # case insensitive sort
+    for l in parameters[0].levels:
+        col_labels.append('%s - %s' % (r, l))
 
 viewer.add_page("Set 5", col_labels)
 
