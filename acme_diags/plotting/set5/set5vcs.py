@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy
 import cdutil
 import vcs
@@ -95,8 +96,10 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
-    vcs_canvas.scriptrun('plot_set_5.json')
-    vcs_canvas.scriptrun('plot_set_5_new.json')
+    file_path = os.path.abspath(os.path.dirname(__file__))
+    vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
+    vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5_new.json'))
+    
     template_test = vcs_canvas.gettemplate('plotset5_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset5_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset5_0_x_2')
