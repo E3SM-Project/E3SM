@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="setup_comp.xsl" ?>
 
-<definitions_variables>
+<entry_id>
 
   <entry id="COMP_OCN">
     <type>char</type>
@@ -112,6 +112,7 @@
       <value compset="1850_" grid="a%0.47x0.63.*_oi%0.47x0.63"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c101028.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
+      <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset=".*WW3" grid="a%ww3a"							>$DIN_LOC_ROOT/wav/ww3/core2_G4_ice_30min_20000601_to_05.nc</value>
     </values>
     <group>run_component_docn</group>
@@ -143,6 +144,7 @@
       <value compset="1850" grid="a%0.47x0.63.*_oi%0.47x0.63"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.47x0.63_gx1v6_090408.nc</value>
       <value compset="1850" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.23x0.31_gx1v6_101108.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
+      <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
       <value compset=".*WW3" 							                >$DIN_LOC_ROOT/wav/ww3/core2_G4_ice_30min_20000601_to_05.nc</value>
     </values>
     <group>run_component_cam_sstice</group>
@@ -188,7 +190,6 @@
   </entry>
 
   <entry id="SSTICE_YEAR_END">
-    <name>value</name>
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
@@ -219,5 +220,5 @@
     =========================================
   </help>
 
-</definitions_variables>
+</entry_id>
 

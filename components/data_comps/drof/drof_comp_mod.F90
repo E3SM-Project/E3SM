@@ -131,12 +131,11 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     integer(IN)   :: yearLast    ! last  year to use in data stream
     integer(IN)   :: yearAlign   ! data year that aligns with yearFirst
 
-    character(CL) :: rof_in      ! dshr rof namelist
     character(CL) :: decomp      ! decomp strategy
     character(CL) :: rest_file   ! restart filename
     character(CL) :: rest_file_strm_r   ! restart filename for stream
     character(CL) :: restfilm    ! model restart file namelist
-    character(CL) :: restfilsr   ! stream restart file namelist
+    character(CL) :: restfils    ! stream restart file namelist
     logical       :: force_prognostic_true ! if true set prognostic true
     logical       :: exists      ! file existance logical
     logical       :: exists_r    ! file existance logical
@@ -147,7 +146,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
 
     !----- define namelist -----
     namelist / drof_nml / &
-        rof_in, decomp, restfilm, restfilsr, &
+        decomp, restfilm, restfils, &
         force_prognostic_true
 
     !--- formats ---
@@ -211,10 +210,9 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     call t_startf('drof_readnml')
 
     filename = "drof_in"//trim(inst_suffix)
-    rof_in = "unset"
     decomp = "1d"
-    restfilm  = trim(nullstr)
-    restfilsr = trim(nullstr)
+    restfilm = trim(nullstr)
+    restfils = trim(nullstr)
     force_prognostic_true = .false.
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
@@ -226,20 +224,18 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
-       write(logunit,F00)' rof_in = ',trim(rof_in)
        write(logunit,F00)' decomp = ',trim(decomp)
        write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F00)' restfilsr = ',trim(restfilsr)
+       write(logunit,F00)' restfils = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
-    call shr_mpi_bcast(rof_in,mpicom,'rof_in')
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
-    call shr_mpi_bcast(restfilsr,mpicom,'restfilsr')
+    call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
 
     rest_file = trim(restfilm)
-    rest_file_strm_r = trim(restfilsr)
+    rest_file_strm_r = trim(restfils)
     if (force_prognostic_true) then
        rof_present    = .true.
        rof_prognostic = .true.
@@ -249,7 +245,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     ! Read dshr namelist
     !----------------------------------------------------------------------------
 
-    call shr_strdata_readnml(SDROF,trim(rof_in),mpicom=mpicom)
+    call shr_strdata_readnml(SDROF,trim(filename),mpicom=mpicom)
 
     !----------------------------------------------------------------------------
     ! Validate mode
