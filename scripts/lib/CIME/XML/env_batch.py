@@ -55,9 +55,9 @@ class EnvBatch(EnvBase):
                 val = value
         else:
             group = self.get_optional_node("group", {"id":subgroup})
-            if group:
+            if group is not None:
                 node = self.get_optional_node("entry", {"id":item}, root=group)
-                if node:
+                if node is not None:
                     val = self._set_value(node, value, vid=item, ignore_type=ignore_type)
 
         return val
