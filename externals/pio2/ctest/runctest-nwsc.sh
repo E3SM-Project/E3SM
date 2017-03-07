@@ -1,7 +1,7 @@
 #!/bin/sh
 #==============================================================================
 #
-#  This script defines how to run CTest on the NCAR Wyoming Supercomputing
+#  This script defines how to run CTest on the NCAR Wyoming Supercomputing 
 #  Center systems (yellowstone/caldera/geyser).
 #
 #  This assumes the CTest model name (e.g., "Nightly") is passed to it when

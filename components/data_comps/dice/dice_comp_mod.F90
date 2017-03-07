@@ -201,7 +201,6 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     integer(IN)   :: yearAlign   ! data year that aligns with yearFirst
     character(CL) :: calendar    ! calendar type
 
-    character(CL) :: ice_in      ! dshr ice namelist
     character(CL) :: decomp      ! decomp strategy
     character(CL) :: rest_file   ! restart filename
     character(CL) :: rest_file_strm   ! restart filename for stream
@@ -215,7 +214,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
 
     !----- define namelist -----
     namelist / dice_nml / &
-        ice_in, decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils, &
+        decomp, flux_swpf, flux_Qmin, flux_Qacc, flux_Qacc0, restfilm, restfils, &
         force_prognostic_true
 
     !--- formats ---
@@ -284,7 +283,6 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     call t_startf('dice_readnml')
 
     filename = "dice_in"//trim(inst_suffix)
-    ice_in = "unset"
     decomp = "1d"
     flux_swpf  =     0.0_R8  ! no penetration
     flux_Qmin  =  -300.0_R8  ! kg/s/m^2
@@ -303,7 +301,6 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
           write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
           call shr_sys_abort(subName//': namelist read error '//trim(filename))
        end if
-       write(logunit,F00)' ice_in     = ',trim(ice_in)
        write(logunit,F00)' decomp     = ',trim(decomp)
        write(logunit,F02)' flux_swpf  = ',flux_swpf
        write(logunit,F02)' flux_Qmin  = ',flux_Qmin
@@ -313,7 +310,6 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
     endif
-    call shr_mpi_bcast(ice_in    ,mpicom,'ice_in')
     call shr_mpi_bcast(decomp    ,mpicom,'decomp')
     call shr_mpi_bcast(flux_swpf ,mpicom,'flux_swpf')
     call shr_mpi_bcast(flux_Qmin ,mpicom,'flux_Qmin')
@@ -334,7 +330,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     ! Read dshr namelist
     !----------------------------------------------------------------------------
 
-    call shr_strdata_readnml(SDICE,trim(ice_in),mpicom=mpicom)
+    call shr_strdata_readnml(SDICE,trim(filename),mpicom=mpicom)
 
     !----------------------------------------------------------------------------
     ! Initialize IO

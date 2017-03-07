@@ -97,7 +97,7 @@
       integer gptlstart_handle
       integer gptlstop
       integer gptlstop_handle
-      integer gptlstamp
+      integer gptlstamp 
       integer gptlpr_set_append
       integer gptlpr_query_append
       integer gptlpr_set_write
@@ -107,7 +107,7 @@
       integer gptlpr_summary
       integer gptlpr_summary_file
       integer gptlbarrier
-      integer gptlreset
+      integer gptlreset 
       integer gptlfinalize
       integer gptlget_memusage
       integer gptlprint_memusage
@@ -130,7 +130,7 @@
       external gptlstart_handle
       external gptlstop
       external gptlstop_handle
-      external gptlstamp
+      external gptlstamp 
       external gptlpr_set_append
       external gptlpr_query_append
       external gptlpr_set_write
@@ -140,7 +140,7 @@
       external gptlpr_summary
       external gptlpr_summary_file
       external gptlbarrier
-      external gptlreset
+      external gptlreset 
       external gptlfinalize
       external gptlget_memusage
       external gptlprint_memusage

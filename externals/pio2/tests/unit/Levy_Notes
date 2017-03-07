@@ -27,7 +27,7 @@ Frankfurt
 ---------
 "write_mpiio_int after call to file_set_view:MPI_ERR_ARG: invalid argument of so
  me other kind
- pio_support::pio_die:: myrank=          -1 : ERROR: iompi_mod.F90:         223
+ pio_support::pio_die:: myrank=          -1 : ERROR: iompi_mod.F90:         223 
  : (no message)"
 
 Yellowstone
@@ -35,7 +35,7 @@ Yellowstone
 "write_mpiio_int after call to file_set_view:Invalid argument, error stack:
 MPI_
  FILE_SET_VIEW(57): Invalid displacement argument
- pio_support::pio_die:: myrank=          -1 : ERROR: iompi_mod.F90:         223
+ pio_support::pio_die:: myrank=          -1 : ERROR: iompi_mod.F90:         223 
  : (no message)"
 
 5) For tests where we expect failure (e.g. writing a file that was opened nowrite)

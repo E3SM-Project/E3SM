@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "alloc_mod.F90.in"
 !>
-!! @file
+!! @file 
 !! $Revision$
 !! $LastChangedDate$
 !! @brief Internal allocation routines for PIO
@@ -15,18 +15,18 @@ module alloc_mod
 
 !>
 !! @private
-!! PIO internal memory allocation check routines.
+!! PIO internal memory allocation check routines.  
 !<
   public:: alloc_check
 !>
 !! @private
-!! PIO internal memory allocation check routines.
+!! PIO internal memory allocation check routines.  
 !<
-  public:: dealloc_check
+  public:: dealloc_check 
 
   interface alloc_check
      ! TYPE long,int,real,double ! DIMS 1,2
-     module procedure alloc_check_{DIMS}d_{TYPE}
+     module procedure alloc_check_{DIMS}d_{TYPE} 
      ! TYPE double,long,int,real
      module procedure alloc_check_0d_{TYPE}
  end interface
@@ -42,19 +42,19 @@ module alloc_mod
 
 !>
 !! @private
-!! PIO internal memory allocation check routines.
+!! PIO internal memory allocation check routines.  
 !<
   public :: alloc_print_usage
 
 !>
 !! @private
-!! PIO internal memory allocation check routines.
+!! PIO internal memory allocation check routines.  
 !<
   public :: alloc_trace_on
 
 !>
 !! @private
-!! PIO internal memory allocation check routines.
+!! PIO internal memory allocation check routines.  
 !<
   public :: alloc_trace_off
 
@@ -66,7 +66,7 @@ contains
   ! Instantiate all the variations of alloc_check_ and dealloc_check_
   !
 
-  ! TYPE long,int,real,double
+  ! TYPE long,int,real,double 
   subroutine alloc_check_1d_{TYPE} (data,varlen,msg)
 
     {VTYPE}, pointer :: data(:)
@@ -102,7 +102,7 @@ contains
 
   end subroutine alloc_check_1d_{TYPE}
 
-  ! TYPE long,int,real,double
+  ! TYPE long,int,real,double 
   subroutine alloc_check_2d_{TYPE} (data,size1, size2,msg)
 
     {VTYPE}, pointer :: data(:,:)
@@ -214,7 +214,7 @@ end subroutine dealloc_check_0d_{TYPE}
 !>
 !! @private
 !! @fn alloc_print_usage
-!! PIO internal memory allocation check routines.
+!! PIO internal memory allocation check routines.  
 !<
   subroutine alloc_print_usage(rank,msg)
 #ifndef NO_MPIMOD

@@ -30,31 +30,6 @@
 #==========================================================================
 
 #=================================================
-# Define OS and compiler macros.
-#=================================================
-
-# Define OS.
-string(TOUPPER ${CMAKE_SYSTEM_NAME} os)
-add_definitions(-D${os})
-
-# Define CESM-compatible compiler names.
-if(${CMAKE_Fortran_COMPILER_ID} STREQUAL NAG)
-  set(compiler_name nag)
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
-  set(compiler_name gnu)
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL XL)
-  set(compiler_name ibm)
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
-  set(compiler_name intel)
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
-  set(compiler_name pgi)
-endif()
-
-# Define CPP macro for the compiler.
-string(TOUPPER -DCPR${compiler_name} compiler_cppdef)
-add_definitions(${compiler_cppdef})
-
-#=================================================
 # Utility functions.
 #=================================================
 
@@ -76,48 +51,6 @@ function(add_config_definitions configuration)
     "${cppdefs}")
 endfunction()
 
-
-#=================================================
-# Build flags required to use pFUnit.
-#=================================================
-
-if(${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
-  add_flags(CMAKE_Fortran_FLAGS -assume realloc_lhs)
-endif()
-
-#=================================================
-# Add flags for debugging output.
-#=================================================
-
-# Define Fortran compiler flags.
-
-# Add pretty output and extra warnings regardless of build type. However,
-# don't set any options in the generic flags that would affect the
-# generated binary, because we want to be able to get binaries that
-# resemble what you get from the CESM flags.
-
-if(${CMAKE_Fortran_COMPILER_ID} STREQUAL NAG)
-  add_flags(CMAKE_Fortran_FLAGS -strict95)
-  if(USE_COLOR)
-    add_flags(CMAKE_Fortran_FLAGS -colour)
-  endif()
-
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
-  # Turn on warnings, but leave out uninitialized check as it was producing
-  # a lot of false positives.
-  add_flags(CMAKE_Fortran_FLAGS -Wall -Wextra -Wno-uninitialized)
-
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL XL)
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
-endif()
-
-# Define C flags, analogous to the above Fortran block.
-if(CMAKE_C_COMPILER_LOADED)
-  if(${CMAKE_C_COMPILER_ID} STREQUAL GNU)
-    add_flags(CMAKE_C_FLAGS -Wall -Wextra -pedantic)
-  endif()
-endif()
 
 #=================================================
 # Help CTest tests recognize when "stop X" is called with non-zero X.

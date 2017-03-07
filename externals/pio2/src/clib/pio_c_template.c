@@ -17,7 +17,7 @@ int PIO_function()
   msg = 0;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster)
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }

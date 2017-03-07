@@ -14,8 +14,6 @@ from CIME.utils import expect
 from CIME.XML.machines import Machines
 from jenkins_generic_job import jenkins_generic_job
 
-import argparse, sys, os, shutil, glob, doctest, signal, time
-
 # Don't know if this belongs here longterm
 MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
 
@@ -48,7 +46,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     machine = _MACHINE.get_machine_name()
     default_test_suite = _MACHINE.get_value("TESTS")
     default_maintain_baselines = machine in MACHINES_THAT_MAINTAIN_BASELINES
-    default_scratch_root = _MACHINE.get_value("CESMSCRATCHROOT")
+    default_scratch_root = _MACHINE.get_value("CIME_OUTPUT_ROOT")
 
     CIME.utils.setup_standard_logging_options(parser)
 

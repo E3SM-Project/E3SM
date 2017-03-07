@@ -1,5 +1,5 @@
 module check_mod
-
+  
   use kinds_mod
   use pio_types, only : PIO_NOERR  ! _EXTERNAL
   use alloc_mod  ! _EXTERNAL
@@ -8,11 +8,11 @@ module check_mod
   use mpi !_EXTERNAL
 #endif
   implicit none
-  private
+  private 
 #ifdef NO_MPIMOD
   include 'mpif.h'    ! _EXTERNAL
 #endif
-  public :: checkpattern
+  public :: checkpattern 
 
   interface checkpattern
       module procedure check_1D_r8, &
@@ -23,7 +23,7 @@ module check_mod
 		       check_3D_i4
   end interface
 
-contains
+contains 
 
 subroutine check_1D_r8(my_comm, fname,wr_array,rd_array,len,iostat)
     integer, intent(in) :: my_comm
@@ -38,7 +38,7 @@ subroutine check_1D_r8(my_comm, fname,wr_array,rd_array,len,iostat)
     integer(i4) :: ierr,cbad,rank, maxbadloc(1)
 
     if(present(iostat)) iostat = PIO_noerr
-
+   
     call alloc_check(diff,len,' check_1D_r8:diff ')
 
     if(len>0) then
@@ -62,7 +62,7 @@ subroutine check_1D_r8(my_comm, fname,wr_array,rd_array,len,iostat)
             wr_array(maxbadloc), rd_array(maxbadloc)
        if(present(iostat)) iostat = -20
     endif
-    call dealloc_check(diff)
+    call dealloc_check(diff)	
 end subroutine check_1D_r8
 
 subroutine check_3D_r8(my_comm, fname,wr_array,rd_array)
@@ -76,17 +76,17 @@ subroutine check_3D_r8(my_comm, fname,wr_array,rd_array)
     real(r8) :: lsum,gsum
     integer(i4) :: ierr,cbad,rank
     integer(i4) :: len1,len2,len3
-
+   
     len1 = SIZE(wr_array,dim=1)
     len2 = SIZE(wr_array,dim=2)
     len3 = SIZE(wr_array,dim=3)
-
+   
     allocate(diff(len1,len2,len3))
-
+  
     diff = wr_array - rd_array
     cbad = COUNT(diff .ne. 0.0)
     lsum = SUM(diff)
-
+   
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL8,MPI_SUM,MY_COMM,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
 
@@ -96,7 +96,7 @@ subroutine check_3D_r8(my_comm, fname,wr_array,rd_array)
        if(lsum .ne. 0.0) print *,'IAM: ', rank, 'File: ',TRIM(fname),&
             ' Error detected for correctness test(3D,R8): ',lsum,' # bad: ',cbad
     endif
-    deallocate(diff)
+    deallocate(diff)	
 
 end subroutine check_3D_r8
 
@@ -111,17 +111,17 @@ subroutine check_3D_r4(my_comm, fname,wr_array,rd_array)
     real(r4) :: lsum,gsum
     integer(i4) :: ierr,cbad,rank
     integer(i4) :: len1,len2,len3
-
+   
     len1 = SIZE(wr_array,dim=1)
     len2 = SIZE(wr_array,dim=2)
     len3 = SIZE(wr_array,dim=3)
-
+   
     allocate(diff(len1,len2,len3))
-
+  
     diff = wr_array - rd_array
     cbad = COUNT(diff .ne. 0.0)
     lsum = SUM(diff)
-
+   
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL,MPI_SUM,MY_COMM,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
 
@@ -131,7 +131,7 @@ subroutine check_3D_r4(my_comm, fname,wr_array,rd_array)
        if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),&
             ' Error detected for correctness test(3D,R4): ',lsum,' # bad: ',cbad
     endif
-    deallocate(diff)
+    deallocate(diff)	
 
 end subroutine check_3D_r4
 
@@ -146,17 +146,17 @@ subroutine check_3D_i4(my_comm, fname,wr_array,rd_array)
     integer(i4) :: lsum,gsum
     integer(i4) :: ierr,cbad,rank
     integer(i4) :: len1,len2,len3
-
+   
     len1 = SIZE(wr_array,dim=1)
     len2 = SIZE(wr_array,dim=2)
     len3 = SIZE(wr_array,dim=3)
-
+   
     allocate(diff(len1,len2,len3))
-
+  
     diff = wr_array - rd_array
     cbad = COUNT(diff .ne. 0.0)
     lsum = SUM(diff)
-
+   
     call MPI_Allreduce(lsum,gsum,1,MPI_INTEGER,MPI_SUM,MY_COMM,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
     if(gsum .ne. 0.0) then
@@ -165,13 +165,13 @@ subroutine check_3D_i4(my_comm, fname,wr_array,rd_array)
        if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),&
             ' Error detected for correctness test(3D,I4): ',lsum,' # bad: ',cbad
     endif
-    deallocate(diff)
+    deallocate(diff)	
 
 end subroutine check_3D_i4
 
 subroutine check_1D_r4(my_comm,fname,wr_array,rd_array,len,iostat)
     integer, intent(in) :: my_comm
-
+ 
     character(len=*) :: fname
     real(r4) :: wr_array(:)
     real(r4) :: rd_array(:)
@@ -181,11 +181,11 @@ subroutine check_1D_r4(my_comm,fname,wr_array,rd_array,len,iostat)
     real(r4) :: lsum,gsum
     integer(i4) :: ierr,len,cbad,rank
 
-
+    
 
 ! Set default (no error) value for iostat if present)
     if(present(iostat)) iostat = PIO_noerr
-
+   
     call alloc_check(diff,len,' check_1D_r4:diff ')
 
     if(len>0) then
@@ -195,7 +195,7 @@ subroutine check_1D_r4(my_comm,fname,wr_array,rd_array,len,iostat)
     else
        lsum = 0
     end if
-
+    
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL,MPI_SUM,MY_COMM,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
     if(abs(gsum) > tiny(gsum)) then
@@ -205,7 +205,7 @@ subroutine check_1D_r4(my_comm,fname,wr_array,rd_array,len,iostat)
             ' Error detected for correctness test(1D,R4): ',lsum,' # bad: ',cbad
        if(present(iostat)) iostat = -20
     endif
-    deallocate(diff)
+    deallocate(diff)	
 
 end subroutine check_1D_r4
 
@@ -221,11 +221,11 @@ subroutine check_1D_i4(my_comm, fname,wr_array,rd_array,len,iostat)
     integer(i4) :: lsum,gsum
     integer(i4) :: ierr,cbad,rank, lloc(1)
 
-
+    
 
 ! Set default (no error) value for iostat if present)
     if(present(iostat)) iostat = PIO_noerr
-
+   
     call alloc_check(diff,len,' check_1D_r4:diff ')
     if(len>0) then
        diff = wr_array - rd_array
@@ -245,7 +245,7 @@ subroutine check_1D_i4(my_comm, fname,wr_array,rd_array,len,iostat)
             lloc, wr_array(lloc(1)), rd_array(lloc(1))
        if(present(iostat)) iostat = -20
     endif
-    deallocate(diff)
+    deallocate(diff)	
 
 end subroutine check_1D_i4
 
