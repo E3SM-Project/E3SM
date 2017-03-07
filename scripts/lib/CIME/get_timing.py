@@ -245,7 +245,7 @@ class _TimingParser:
         self.write("  ---------        ------     -------   ------   "
                    "------  ---------  ------  \n")
         maxthrds = 0
-        for k in self.case.get_values("COMP_CLASSES"):
+        for k in ['CPL', 'GLC', 'WAV', 'LND', 'ROF', 'ICE', 'ATM', 'OCN']:
             m = self.models[k]
             self.write("  %s = %-8s   %-6u      %-6u   %-6u x %-6u  "
                        "%-6u (%-6u) \n"
@@ -333,7 +333,7 @@ class _TimingParser:
 
         self.write("    TOT Run Time:  %10.3f seconds   %10.3f seconds/mday   "
                    "%10.2f myears/wday \n" % (tmax, tmax/adays, tmaxr))
-        for k in self.case.get_values("COMP_CLASSES"):
+        for k in ['LND', 'ROF', 'ICE', 'ATM', 'OCN', 'GLC', 'WAV', 'CPL']:
             m = self.models[k]
             self.write("    %s Run Time:  %10.3f seconds   "
                        "%10.3f seconds/mday   %10.2f myears/wday \n"
