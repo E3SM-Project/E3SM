@@ -10,7 +10,7 @@ into the XML file.
 
 from standard_script_setup import *
 from CIME.utils import expect
-import update_acme_tests
+from update_acme_tests import get_test_suites, update_acme_tests
 
 import sys, argparse, os
 
@@ -43,7 +43,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("test_list_path", help="The path to test lists XML file")
 
     parser.add_argument("categories", nargs="*",
-                        help="The test categories to update. Default will update all. Test categories: %s" % (", ".join(update_acme_tests.get_test_suites())))
+                        help="The test categories to update. Default will update all. Test categories: %s" % (", ".join(get_test_suites())))
 
     parser.add_argument("-p", "--platform",
                         help="Only add tests for a specific platform, format=machine,compiler. Useful for adding new platforms.")
@@ -59,7 +59,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
            "-p value must be in format: 'machine,compiler'")
 
     if (not args.categories):
-        args.categories = update_acme_tests.get_test_suites()
+        args.categories = get_test_suites()
 
     return args.categories, args.test_list_path, args.platform
 
@@ -72,7 +72,7 @@ def _main_func(description):
 
     categories, test_list_path, platform = parse_command_line(sys.argv, description)
 
-    update_acme_tests.update_acme_tests(test_list_path, categories, platform)
+    update_acme_tests(test_list_path, categories, platform)
 
 if __name__ == "__main__":
     _main_func(__doc__)

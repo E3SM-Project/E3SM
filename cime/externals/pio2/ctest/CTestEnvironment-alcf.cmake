@@ -1,7 +1,7 @@
 #==============================================================================
 #
 #  This file sets the environment variables needed to configure and build
-#  on the Argonne Leadership Computing Facility systems
+#  on the Argonne Leadership Computing Facility systems 
 #  (mira/cetus/vesta/cooley).
 #
 #==============================================================================

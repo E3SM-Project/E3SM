@@ -32,7 +32,7 @@
 /* longest timer name allowed (probably safe to just change) */
 #define MAX_CHARS 63
 
-/*
+/* 
 ** max allowable number of PAPI counters, or derived events. For convenience,
 ** set to max (# derived events, # papi counters required) so "avail" lists
 ** all available options.
@@ -61,7 +61,7 @@ typedef struct {
   long long last[MAX_AUX];  /* array of saved counters from "start" */
   long long accum[MAX_AUX]; /* accumulator for counters */
 } Papistats;
-
+  
 typedef struct {
   int counter;      /* PAPI or Derived counter */
   char *namestr;    /* PAPI or Derived counter as string */
@@ -84,7 +84,7 @@ typedef struct TIMER {
 #endif
 #ifdef HAVE_PAPI
   Papistats aux;            /* PAPI stats  */
-#endif
+#endif 
   Wallstats wall;           /* wallclock stats */
   Cpustats cpu;             /* cpu stats */
   unsigned long count;      /* number of start/stop calls */
@@ -127,7 +127,7 @@ extern void __cyg_profile_func_exit (void *, void *);
 };
 #endif
 
-/*
+/* 
 ** These are needed for communication between gptl.c and gptl_papi.c
 */
 

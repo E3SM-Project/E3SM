@@ -7,7 +7,7 @@ ADD_CUSTOM_COMMAND(
 )
 ENDFOREACH()
 
-SET(SRC check_mod.F90  gdecomp_mod.F90  kinds_mod.F90  namelist_mod.F90
+SET(SRC check_mod.F90  gdecomp_mod.F90  kinds_mod.F90  namelist_mod.F90  
             testpio.F90  utils_mod.F90 ${TEMPSRCF90})
 SET(WSSRC wstest.c)
 
@@ -15,7 +15,7 @@ INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 LINK_DIRECTORIES(${PIO_LIB_DIR})
 ADD_EXECUTABLE(testpio ${SRC})
 ADD_EXECUTABLE(wstest ${WSSRC})
-if(${PIO_BUILD_TIMING} MATCHES "ON")
+if(${PIO_BUILD_TIMING} MATCHES "ON") 
   SET(TIMING_LINK_LIB timing)
 endif()
 

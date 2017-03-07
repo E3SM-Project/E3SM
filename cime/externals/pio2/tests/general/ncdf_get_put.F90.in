@@ -12,7 +12,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_1dval
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
   integer :: num_iotypes
   integer :: i, ret
-
+  
   val = pio_tf_world_sz_
   cval = "DUMMY_STRING"
   num_iotypes = 0
@@ -67,7 +67,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dval
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
   integer :: num_iotypes
   integer :: i, ret
-
+  
   init_val = pio_tf_world_sz_
 
   pval = init_val

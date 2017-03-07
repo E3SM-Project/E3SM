@@ -397,6 +397,7 @@
     BGET CONFIGURATION
     ==================
 */
+//#define PIO_USE_MALLOC 1
 #ifdef PIO_USE_MALLOC
 #include <stdlib.h>
 #endif

@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "pionfput_mod.F90"
 !>
-!! @file
+!! @file 
 !! @brief Write routines for non-decomposed NetCDF data.
 !<
 module pionfput_mod
@@ -18,17 +18,17 @@ module pionfput_mod
 !! @defgroup PIO_put_var PIO_put_var
 !! @brief Writes data to a netCDF file.
 !! @details The put_var interface is provided as a simplified interface to
-!!  write variables to a netcdf format file.
-!! @warning Although this is a collective call the variable is written from the
+!!  write variables to a netcdf format file.   
+!! @warning Although this is a collective call the variable is written from the 
 !!  root IO task, no consistancy check is made with data passed on other tasks.
-!!
+!! 
 !<
   public :: put_var
   interface put_var
      !  DIMS 0,1,2,3,4,5
      module procedure put_var_{DIMS}d_{TYPE}, put_var_vdesc_{DIMS}d_{TYPE}
      !  DIMS 1,2,3,4,5
-     module procedure put_vara_{DIMS}d_{TYPE}
+     module procedure put_vara_{DIMS}d_{TYPE} 
      !  DIMS 1,2,3,4,5
      module procedure put_vara_vdesc_{DIMS}d_{TYPE}
      module procedure put_var1_{TYPE}, put_var1_vdesc_{TYPE}
@@ -99,7 +99,7 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
-!! @param index :
+!! @param index : 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
@@ -111,7 +111,7 @@ contains
     integer :: i
     integer, allocatable :: count(:)
     integer :: ndims
-
+    
     ndims = size(index)
     allocate(count(ndims))
     count = 1
@@ -134,7 +134,7 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
-!! @param index :
+!! @param index : 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
@@ -157,18 +157,18 @@ contains
 
 #ifdef TIMING
     call t_startf("PIO:put_var1_{TYPE}")
-#endif
+#endif 
     clen = size(index)
     allocate(cindex(clen))
     do i=1,clen
        cindex(i) = index(clen-i+1)-1
     enddo
-
+    
     ierr = PIOc_put_var1_{NCTYPE} (file%fh, varid-1, cindex, ival)
     deallocate(cindex)
 #ifdef TIMING
     call t_stopf("PIO:put_var1_{TYPE}")
-#endif
+#endif 
   end function put_var1_{TYPE}
 
 !>
@@ -178,7 +178,7 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
-!! @param start :
+!! @param start : 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
@@ -220,7 +220,7 @@ contains
     do i=1,len_trim(ival)
        cval(i) = ival(i:i)
     end do
-
+    
     ierr = PIOc_put_var_text(file%fh, varid-1,  cval)
 
     deallocate(cval)
@@ -276,7 +276,7 @@ contains
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival(*)
-
+    
     interface
        integer(C_INT) function PIOc_put_var_{NCTYPE}(ncid, varid, op) &
             bind(C,name="PIOc_put_var_{NCTYPE}")
@@ -338,13 +338,13 @@ contains
     ierr=PIO_NOERR
 #ifdef TIMING
     call t_startf("PIO:put_var_0d_{TYPE}")
-#endif
+#endif 
 
     ierr = put_var_internal_{TYPE} (File%fh, varid, (/ival/))
 
 #ifdef TIMING
     call t_stopf("PIO:put_var_0d_{TYPE}")
-#endif
+#endif 
   end function put_var_0d_{TYPE}
 
 
@@ -419,7 +419,7 @@ contains
     integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i
     integer :: ndims
-
+   
     do i=1,size(count)
        if(count(i)<=0) then
           ndims=i-1
@@ -528,7 +528,7 @@ contains
     enddo
 #endif
 
-
+    
   end subroutine Fstring2Cstring_{DIMS}d
 
 
@@ -554,13 +554,13 @@ contains
     {VTYPE}, intent(in) :: ival{DIMSTR}
 #ifdef TIMING
     call t_startf("PIO:put_vara_{DIMS}d_{TYPE}")
-#endif
+#endif 
 
     ierr = put_vara_internal_{TYPE} (File%fh, varid, start, count, ival)
 
 #ifdef TIMING
     call t_stopf("PIO:put_vara_{DIMS}d_{TYPE}")
-#endif
+#endif 
   end function put_vara_{DIMS}d_{TYPE}
 
 ! DIMS 1,2,3,4,5
@@ -571,8 +571,8 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
-!! @param start :
-!! @param count :
+!! @param start : 
+!! @param count : 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<

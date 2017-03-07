@@ -6,23 +6,22 @@
            prefered location). -->
       <DESC>__USEFUL_DESCRIPTION__</DESC>
       <OS>Darwin</OS>
+      <NODENAME_REGEX> something.matching.your.machine.hostname </NODENAME_REGEX>
       <COMPILERS>gnu</COMPILERS>
-      <MPILIBS>mpich,mpi-serial</MPILIBS>
-      <RUNDIR>$ENV{HOME}/projects/scratch/$CASE/run</RUNDIR>
-      <EXEROOT>$ENV{HOME}/projects/scratch/$CASE/bld</EXEROOT>
+      <MPILIBS>mpich</MPILIBS>
       <DIN_LOC_ROOT>$ENV{HOME}/projects/cesm-inputdata</DIN_LOC_ROOT>
       <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
       <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
       <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-      <CESMSCRATCHROOT>$ENV{HOME}/projects/scratch</CESMSCRATCHROOT>
-      <CCSM_BASELINE>$ENV{HOME}/projects/baselines</CCSM_BASELINE>
+      <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/scratch</CIME_OUTPUT_ROOT>
+      <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
       <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
-      <BATCHQUERY></BATCHQUERY>
-      <BATCHSUBMIT></BATCHSUBMIT>
+      <BATCH_SYSTEM>none</BATCH_SYSTEM>
       <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>
       <GMAKE_J>4</GMAKE_J>
       <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
       <PES_PER_NODE>2</PES_PER_NODE>
+      <module_system type="none"/>
    </machine>
 
 </config_machines>

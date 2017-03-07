@@ -1,10 +1,9 @@
 """
-Interface to the env_archive.xml file.  This class inherits from EnvBase
+Interface to the env_archive.xml file.  This class inherits from GenericXML
 """
 from CIME.XML.standard_module_setup import *
 
 from CIME.XML.generic_xml import GenericXML
-from CIME.XML.archive import Archive
 from CIME.XML.headers import Headers
 
 logger = logging.getLogger(__name__)
@@ -36,8 +35,6 @@ class EnvArchive(GenericXML):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
             self.root.append(headernode)
-            archive = Archive()
-            self.root.append(archive.root)
 
     def get_entries(self):
         return self.get_nodes('comp_archive_spec')

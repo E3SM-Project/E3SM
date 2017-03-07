@@ -16,9 +16,9 @@ def _get_batch_job_id_for_syslog(case):
     mach_syslog only works on certain machines
     """
     mach = case.get_value("MACH")
-    if mach in ['anvil', 'titan']:
+    if mach == 'titan':
         return os.environ["PBS_JOBID"]
-    elif mach in ['cori-haswell', 'cori-knl', 'edison']:
+    elif mach in ['edison', 'cori-haswell', 'cori-knl']:
         return os.environ["SLURM_JOB_ID"]
     elif mach == 'mira':
         return os.environ["COBALT_JOBID"]
@@ -29,8 +29,8 @@ def save_build_provenance_acme(case, lid=None):
     cimeroot = case.get_value("CIMEROOT")
     exeroot = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
-    lid = os.environ["LID"] if lid is None else lid
 
+    lid = os.environ["LID"] if lid is None else lid
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.%s" % lid)
     if os.path.exists(describe_prov):
@@ -73,8 +73,13 @@ def save_build_provenance_acme(case, lid=None):
                 os.remove(generic_name)
             os.symlink(the_match, generic_name)
 
+
 def save_build_provenance_cesm(case, lid=None): # pylint: disable=unused-argument
-    pass
+    version = case.get_value("MODEL_VERSION")
+    # version has already been recorded
+    caseroot = case.get_value("CASEROOT")
+    with open(os.path.join(caseroot, "README.case"), "a") as fd:
+        fd.write("CESM version is %s\n"%version)
 
 def save_build_provenance(case, lid=None):
     with SharedArea():
@@ -116,7 +121,7 @@ def save_prerun_provenance_acme(case, lid=None):
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
             gzip_existing_file(os.path.join(full_timing_dir, filename))
-    elif mach in ["cori-haswell", "cori-knl", "edison"]:
+    elif mach in ["edison", "cori-haswell", "cori-knl"]:
         for cmd, filename in [("sqs -f", "sqsf"), ("sqs -w -a", "sqsw"), ("sqs -f %s" % job_id, "sqsf_jobid"), ("squeue", "squeuef")]:
             filename = "%s.%s" % (filename, lid)
             run_cmd_no_fail("%s > %s" % (cmd, filename), from_dir=full_timing_dir)
@@ -134,12 +139,6 @@ def save_prerun_provenance_acme(case, lid=None):
         mdiag_reduce = os.path.join(full_timing_dir, "mdiag_reduce." + lid)
         run_cmd_no_fail("./mdiag_reduce.csh > %s" % mdiag_reduce, from_dir=os.path.join(caseroot, "Tools"))
         gzip_existing_file(mdiag_reduce)
-    elif mach == "anvil":
-        for cmd, filename in [("qstat -f acme >", "qstatf"),
-                              ("qstat -f %s >" % job_id, "qstatf_jobid")]:
-            full_cmd = cmd + " " + filename
-            run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
-            gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
     # copy/tar SourceModes
     source_mods_dir = os.path.join(caseroot, "SourceMods")
@@ -190,13 +189,24 @@ def save_prerun_provenance_acme(case, lid=None):
                 fd.write("%s\n" % syslog_jobid)
 
     # Save state of repo
-    run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=os.path.dirname(cimeroot))
+    if os.path.exists(os.path.join(cimeroot, ".git")):
+        run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=cimeroot)
+    else:
+        run_cmd_no_fail("git describe > %s" % os.path.join(full_timing_dir, "GIT_DESCRIBE.%s" % lid), from_dir=os.path.dirname(cimeroot))
 
 def save_prerun_provenance_cesm(case, lid=None): # pylint: disable=unused-argument
     pass
 
 def save_prerun_provenance(case, lid=None):
     with SharedArea():
+        # Always save env
+        lid = os.environ["LID"] if lid is None else lid
+        env_module = case.get_env("mach_specific")
+        logdir = os.path.join(case.get_value("CASEROOT"), "logs")
+        if not os.path.isdir(logdir):
+            os.makedirs(logdir)
+        env_module.save_all_env_info(os.path.join(logdir, "run_environment.txt.%s" % lid))
+
         model = case.get_value("MODEL")
         if model == "acme":
             save_prerun_provenance_acme(case, lid=lid)
@@ -262,14 +272,13 @@ def save_postrun_provenance_acme(case, lid):
     globs_to_copy = []
     if mach == "titan":
         globs_to_copy.append("%s*OU" % job_id)
-    elif mach == "anvil":
-        globs_to_copy.append("/home/%s/%s*OU" % (getpass.getuser(), job_id) )
     elif mach == "mira":
         globs_to_copy.append("%s*output" % job_id)
         globs_to_copy.append("%s*cobaltlog" % job_id)
-    elif mach in ["cori-haswell", "cori-knl", "edison"]:
+    elif mach in ["edison", "cori-haswell", "cori-knl"]:
         globs_to_copy.append("%s" % case.get_value("CASE"))
 
+    globs_to_copy.append("logs/run_environment.txt.%s" % lid)
     globs_to_copy.append("logs/acme.log.%s.gz" % lid)
     globs_to_copy.append("logs/cpl.log.%s.gz" % lid)
     globs_to_copy.append("timing/*.%s*" % lid)

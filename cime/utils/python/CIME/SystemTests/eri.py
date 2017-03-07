@@ -3,7 +3,7 @@ CIME ERI test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
-
+from CIME.check_input_data import check_all_input_data
 import shutil, glob, os
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,10 @@ def _helper(dout_sr, refdate, refsec, rundir):
     rest_path = os.path.join(dout_sr, "rest", "%s-%s" % (refdate, refsec))
 
     for item in glob.glob("%s/*%s*" % (rest_path, refdate)):
-        os.symlink(item, os.path.join(rundir, os.path.basename(item)))
+        dst = os.path.join(rundir, os.path.basename(item))
+        if os.path.exists(dst):
+            os.remove(dst)
+        os.symlink(item, dst)
 
     for item in glob.glob("%s/*rpointer*" % rest_path):
         shutil.copy(item, rundir)
@@ -42,7 +45,6 @@ class ERI(SystemTestsCommon):
         clone1, clone2 = [self._case.create_clone(clone_path, keepexe=True) for clone_path in [clone1_path, clone2_path]]
         orig_case = self._case
         orig_casevar = orig_case.get_value("CASE")
-
         #
         # determine run lengths needed below
         #
@@ -90,6 +92,9 @@ class ERI(SystemTestsCommon):
         clone1.set_value("REST_N", rest_n1)
         clone1.set_value("HIST_OPTION", "never")
         clone1.flush()
+
+        # if the initial case is hybrid this will put the reference data in the correct location
+        check_all_input_data(clone1)
 
         dout_sr1 = clone1.get_value("DOUT_S_ROOT")
 
@@ -187,9 +192,12 @@ class ERI(SystemTestsCommon):
         for item in glob.glob("%s/*/hist/*nc" % dout_sr2):
             newfile = "%s" % item.replace(".ref2", "")
             newfile = os.path.basename(newfile)
-            os.symlink(item, os.path.join(rundir, newfile))
+            dst = os.path.join(rundir, newfile)
+            if os.path.exists(dst):
+                os.remove(dst)
+            os.symlink(item, dst)
 
-        self._component_compare_move("hybrid")
+        self._component_compare_copy("hybrid")
 
         # run branch case (short term archiving is off)
         self.run_indv()
