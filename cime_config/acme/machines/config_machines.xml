@@ -552,8 +552,8 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-      <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
 </machine>
 
@@ -937,7 +937,6 @@
            <executable>mpiexec</executable>
            <arguments>
              <arg name="num_tasks"> -n $TOTALPES </arg>
-             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE={{ thread_count }} --bind-to core</arg>
              <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$OMP_NUM_THREADS --bind-to core</arg>
            </arguments>
          </mpirun>
@@ -1683,6 +1682,7 @@
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</BASELINE_ROOT>
 	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
+	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
 		<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
@@ -1726,17 +1726,13 @@
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n $TOTALPES</arg>
-			<arg name="bind_option"> --bind-to core</arg>
-			<arg name="map_option"> --map-by node</arg>
+			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n $TOTALPES</arg>
-			<arg name="map_option"> --map-by node</arg>
-			<arg name="bind_option"> --bind-to core</arg>
+			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mpi-serial">
@@ -1765,6 +1761,7 @@
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</BASELINE_ROOT>
 	<CIME_OUTPUT_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/scratch</CIME_OUTPUT_ROOT>
+	<SAVE_TIMING_DIR>$CASEROOT/timings</SAVE_TIMING_DIR>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<module_system type="module">
 	   <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
