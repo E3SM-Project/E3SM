@@ -40,9 +40,12 @@ Please review the ChangeLog that is included with the distribution for up-to-dat
 
  - \ref intro
  - \ref install
+ - \ref mach_walkthrough
  - \ref decomp
  - \ref error
+ - \ref test
  - \ref examp
  - \ref faq
  - \ref api
+ - \ref contributing_code
 */

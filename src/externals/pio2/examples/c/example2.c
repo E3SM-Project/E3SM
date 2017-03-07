@@ -48,8 +48,8 @@
  * responsibilty for writing and reading them will be spread between
  * all the processors used to run this example. */
 /**@{*/
-#define X_DIM_LEN 400
-#define Y_DIM_LEN 400
+#define X_DIM_LEN 20
+#define Y_DIM_LEN 30
 /**@}*/
 
 /** The number of timesteps of data to write. */
@@ -98,8 +98,7 @@ char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 
 /** Length of chunksizes to use in netCDF-4 files. */
-size_t chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
-
+PIO_Offset chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
 
 /** Number of MPE events. The start and stop of each event will be
  * tracked, and graphed. This value is used outside of HAVE_MPE ifdefs.*/
