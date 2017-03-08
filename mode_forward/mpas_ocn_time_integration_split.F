@@ -1614,11 +1614,21 @@ module ocn_time_integration_split
                            do k = 1, maxLevelCell(iCell)
                               tracersGroupNew(:,k,iCell) = (tracersGroupCur(:,k,iCell) * layerThicknessCur(k,iCell) + dt &
                                                          * tracersGroupTend(:,k,iCell) ) / layerThicknessNew(k,iCell)
-!mrp limit Salinity
-                              tracersGroupNew(indexSalinity,k,iCell) = max(0.001_RKIND, tracersGroupNew(indexSalinity,k,iCell))
                            end do
                         end do
                         !$omp end do
+
+!mrp limit Salinity in separate loop
+                        if ( trim(groupItr % memberName) == 'activeTracers' ) then
+                           !$omp do schedule(runtime) private(k)
+                           do iCell = 1, nCells
+                              do k = 1, maxLevelCell(iCell)
+                                 tracersGroupNew(indexSalinity,k,iCell) = max(0.001_RKIND, tracersGroupNew(indexSalinity,k,iCell))
+                              end do
+                           end do
+                           !$omp end do
+                        end if
+
                      end if
                   end if
                end do
