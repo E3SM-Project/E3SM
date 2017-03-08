@@ -1,7 +1,7 @@
 #==============================================================================
 #
 #  This file sets the environment variables needed to configure and build
-#  on the NCAR Wyoming Supercomputing Center systems
+#  on the NCAR Wyoming Supercomputing Center systems 
 #  (yellowstone/caldera/geyser).
 #
 #==============================================================================
@@ -10,7 +10,7 @@
 # set with existing environment variables: NETCDF, PNETCDF, HDF5, etc.
 
 # Define the extra CMake configure options
-set (CTEST_CONFIGURE_OPTIONS "-DCMAKE_VERBOSE_MAKEFILE=TRUE -DPIO_ENABLE_ASYNC=TRUE")
+set (CTEST_CONFIGURE_OPTIONS "-DCMAKE_VERBOSE_MAKEFILE=TRUE")
 
 # If MPISERIAL environment variable is set, then enable MPISERIAL
 if (DEFINED ENV{MPISERIAL})

@@ -5,27 +5,45 @@ Interface to the config_compilers.xml file.  This class inherits from GenericXML
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
+from CIME.XML.compilerblock import CompilerBlock
+from CIME.BuildTools.macrowriterbase import write_macros_file_v1
+from CIME.BuildTools.makemacroswriter import MakeMacroWriter
+from CIME.BuildTools.cmakemacroswriter import CMakeMacroWriter
+from CIME.BuildTools.macroconditiontree import merge_optional_trees
 
 logger = logging.getLogger(__name__)
 
 class Compilers(GenericXML):
 
-    def __init__(self, compiler=None, machine=None, os_= None, mpilib=None, infile=None, files=None):
+    def __init__(self, machobj, infile=None, compiler=None, mpilib=None, files=None, version=None):
         """
         initialize an object
         """
+
         if infile is None:
             if files is None:
                 files = Files()
             infile = files.get_value("COMPILERS_SPEC_FILE")
+            schema = files.get_schema("COMPILERS_SPEC_FILE")
 
-        GenericXML.__init__(self, infile)
+        GenericXML.__init__(self, infile, schema)
+        self._machobj = machobj
+        if version is not None:
+            # this is used in scripts_regression_tests to force version 2, it should not be used otherwise
+            self._version = version
+        else:
+            self._version = self.get_version()
 
-        self.machine        = machine
-        self.os             = os_
-        self.mpilib         = mpilib
-        self.compiler_nodes = None # Listed from last to first
+        self.machine  = machobj.get_machine_name()
+        self.os = machobj.get_value("OS")
+        if mpilib is None:
+            mpilib = machobj.get_default_MPIlib()
+        self.mpilib = mpilib
+        if compiler is None:
+            compiler = machobj.get_default_compiler()
         self.compiler       = compiler
+
+        self.compiler_nodes = None # Listed from last to first
         #Append the contents of $HOME/.cime/config_compilers.xml if it exists
         #This could cause problems if node matchs are repeated when only one is expected
         infile = os.path.join(os.environ.get("HOME"),".cime","config_compilers.xml")
@@ -34,6 +52,14 @@ class Compilers(GenericXML):
 
         if self.compiler is not None:
             self.set_compiler(compiler)
+
+        if self._version > 1.0:
+            # Run an XPath query to extract the list of flag variable names.
+            ns = {"xs": "http://www.w3.org/2001/XMLSchema"}
+            flag_xpath = ".//xs:group[@name='compilerVars']/xs:choice/xs:element[@type='flagsVar']"
+            flag_elems = ET.parse(schema).getroot().findall(flag_xpath, ns)
+            self.flag_vars = set(elem.get('name') for elem in flag_elems)
+
 
 
     def get_compiler(self):
@@ -64,10 +90,10 @@ class Compilers(GenericXML):
     def set_compiler(self, compiler, machine=None, os_=None, mpilib=None):
         """
         Sets the compiler block in the Compilers object
-
-        >>> machobj = Compilers(machine="melvin")
-        >>> machobj.set_compiler("gnu")
-        >>> machobj.get_compiler()
+        >>> from CIME.XML.machines import Machines
+        >>> compobj = Compilers(Machines(machine="melvin"))
+        >>> compobj.set_compiler("gnu")
+        >>> compobj.get_compiler()
         'gnu'
         """
         machine = machine if machine else self.machine
@@ -112,123 +138,100 @@ class Compilers(GenericXML):
 
         return value
 
-    def write_macros_file(self, macros_file="Macros", output_format="make"):
-        """
-        Parse the config_compiler.xml file into a Macros file for the
-        given machine and compiler.
-        """
+    def write_macros_file(self, macros_file="Macros.make", output_format="make", xml=None):
+        if self._version <= 1.0:
+            # Parse the xml settings into the $macros hash structure
+            # put conditional settings in the _COND_ portion of the hash
+            # and handle them seperately
+            macros = {"_COND_" : {}}
 
-        # Parse the xml settings into the $macros hash structure
-        # put conditional settings in the _COND_ portion of the hash
-        # and handle them seperately
-        macros = {"_COND_" : {}}
-
-        # Do worst matches first
-        for compiler_node in reversed(self.compiler_nodes):
-            _add_to_macros(compiler_node, macros)
-
-        # A few things can be used from environ if not in XML
-        for item in ["MPI_PATH", "NETCDF_PATH"]:
-            if not item in macros and item in os.environ:
-                logger.warn("Setting %s from Environment" % item)
-                macros[item] = os.environ[item]
-
-        with open(macros_file, "w") as fd:
-            fd.write(
-"""#
-# COMPILER=%s
-# OS=%s
-# MACH=%s
-""" % (self.compiler, self.os, self.machine)
-)
-            if output_format == "make":
-                fd.write("#\n# Makefile Macros generated from %s \n#\n" % self.filename)
-
-                # print the settings out to the Macros file
-                for key, value in sorted(macros.iteritems()):
-                    if key == "_COND_":
-                        pass
-                    elif key.startswith("ADD_"):
-                        fd.write("%s+=%s\n\n" % (key[4:], value))
-                    else:
-                        fd.write("%s:=%s\n\n" % (key, value))
-
-            elif output_format == "cmake":
-                fd.write(
-'''#
-# cmake Macros generated from $compiler_file
-#
-include(Compilers)
-set(CMAKE_C_FLAGS_RELEASE "" CACHE STRING "Flags used by c compiler." FORCE)
-set(CMAKE_C_FLAGS_DEBUG "" CACHE STRING "Flags used by c compiler." FORCE)
-set(CMAKE_Fortran_FLAGS_RELEASE "" CACHE STRING "Flags used by Fortran compiler." FORCE)
-set(CMAKE_Fortran_FLAGS_DEBUG "" CACHE STRING "Flags used by Fortran compiler." FORCE)
-set(all_build_types "None Debug Release RelWithDebInfo MinSizeRel")
-set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: ${all_build_types}." FORCE)
-''')
-
-            # print the settings out to the Macros file, do it in
-            # two passes so that path values appear first in the
-            # file.
-                for key, value in sorted(macros.iteritems()):
-                    if key == "_COND_":
-                        pass
-                    else:
-                        value = value.replace("(", "{").replace(")", "}")
-                        if key.endswith("_PATH"):
-                            fd.write("set(%s %s)\n" % (key, value))
-                            fd.write("list(APPEND CMAKE_PREFIX_PATH %s)\n\n" % value)
-
-                for key, value in sorted(macros.iteritems()):
-                    if key == "_COND_":
-                        pass
-                    else:
-                        value = value.replace("(", "{").replace(")", "}")
-                        if "CFLAGS" in key:
-                            fd.write("add_flags(CMAKE_C_FLAGS %s)\n\n" % value)
-                        elif "FFLAGS" in key:
-                            fd.write("add_flags(CMAKE_Fortran_FLAGS %s)\n\n" % value)
-                        elif "CPPDEFS" in key:
-                            fd.write("list(APPEND COMPILE_DEFINITIONS %s)\n\n" % value)
-                        elif "SLIBS" in key or "LDFLAGS" in key:
-                            fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS %s)\n\n" % value)
-
-            # Recursively print the conditionals, combining tests to avoid repetition
-            _parse_hash(macros["_COND_"], fd, 0, output_format)
-
-
-def _parse_hash(macros, fd, depth, output_format, cmakedebug=""):
-    width = 2 * depth
-    for key, value in macros.iteritems():
-        if type(value) is dict:
-            if output_format == "make" or "DEBUG" in key:
-                for key2, value2 in value.iteritems():
-                    if output_format == "make":
-                        fd.write("%sifeq ($(%s), %s) \n" % (" " * width, key, key2))
-
-                    _parse_hash(value2, fd, depth + 1, output_format, key2)
+            # Do worst matches first
+            for compiler_node in reversed(self.compiler_nodes):
+                _add_to_macros(compiler_node, macros)
+            write_macros_file_v1(macros, self.compiler, self.os,
+                                        self.machine, macros_file=macros_file,
+                                        output_format=output_format)
         else:
             if output_format == "make":
-                if key.startswith("ADD_"):
-                    fd.write("%s %s += %s\n" % (" " * width, key[4:], value))
-                else:
-                    fd.write("%s %s += %s\n" % (" " * width, key, value))
-
+                format_ = "Makefile"
+            elif output_format == "cmake":
+                format_ = "CMake"
             else:
-                value = value.replace("(", "{").replace(")", "}")
-                release = "DEBUG" if "TRUE" in cmakedebug else "RELEASE"
-                if "CFLAGS" in key:
-                    fd.write("add_flags(CMAKE_C_FLAGS_%s %s)\n\n" % (release, value))
-                elif "FFLAGS" in key:
-                    fd.write("add_flags(CMAKE_Fortran_FLAGS_%s %s)\n\n" % (release, value))
-                elif "CPPDEF" in key:
-                    fd.write("add_config_definitions(%s %s)\n\n" % (release, value))
-                elif "SLIBS" in key or "LDFLAGS" in key:
-                    fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS_%s %s)\n\n" % (release, value))
+                format_ = output_format
 
-    width -= 2
-    if output_format == "make" and depth > 0:
-        fd.write("%sendif\n\n" % (" " * width))
+            if isinstance(macros_file, basestring):
+                with open(macros_file, "w") as macros:
+                    self._write_macros_file_v2(format_, macros)
+            else:
+                self._write_macros_file_v2(format_, macros_file, xml)
+
+    def _write_macros_file_v2(self, build_system, output, xml=None):
+        """Write a Macros file for this machine.
+
+        Arguments:
+        build_system - Format of the file to be written. Currently the only
+                       valid values are "Makefile" and "CMake".
+        output - Text I/O object (inheriting from io.TextIOBase) that
+                 output should be written to. Typically, this will be the
+                 Macros file, opened for writing.
+        """
+        # Set up writer for this build system.
+        if build_system == "Makefile":
+            writer = MakeMacroWriter(output)
+        elif build_system == "CMake":
+            writer = CMakeMacroWriter(output)
+        else:
+            expect(False,
+                   "Unrecognized build system provided to write_macros: " +
+                   build_system)
+
+        # Start processing the file.
+        value_lists = dict()
+        node_list = []
+        if xml is None:
+            node_list = self.get_nodes("compiler")
+        else:
+            node_list = ET.parse(xml).findall("compiler")
+
+        for compiler_elem in node_list:
+            block = CompilerBlock(writer, compiler_elem, self._machobj)
+            # If this block matches machine settings, use it.
+            if block.matches_machine():
+                block.add_settings_to_lists(self.flag_vars, value_lists)
+        # Now that we've scanned through the input, output the variable
+        # settings.
+        vars_written = set()
+        while value_lists:
+            # Variables that are ready to be written.
+            ready_variables = [
+                var_name for var_name in value_lists.keys()
+                if value_lists[var_name].depends <= vars_written
+            ]
+            expect(len(ready_variables) > 0,
+                   "The file %s has bad <var> references. "
+                   "Check for circular references or variables that "
+                   "are in a <var> tag but not actually defined."%self.filename)
+            big_normal_tree = None
+            big_append_tree = None
+            for var_name in ready_variables:
+                # Note that we're writing this variable.
+                vars_written.add(var_name)
+                # Make the conditional trees and write them out.
+                normal_tree, append_tree = \
+                    value_lists[var_name].to_cond_trees()
+                big_normal_tree = merge_optional_trees(normal_tree,
+                                                        big_normal_tree)
+                big_append_tree = merge_optional_trees(append_tree,
+                                                        big_append_tree)
+                # Remove this variable from the list of variables to handle
+                # next iteration.
+                del value_lists[var_name]
+            if big_normal_tree is not None:
+                big_normal_tree.write_out(writer)
+            if big_append_tree is not None:
+                big_append_tree.write_out(writer)
+
+
 
 def _add_to_macros(node, macros):
     for child in node:

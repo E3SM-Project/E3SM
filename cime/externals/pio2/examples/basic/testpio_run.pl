@@ -79,8 +79,8 @@ foreach(keys %attributes){
 #    }elsif(/ENV_(.*)/){
 #        print "set $1 $attributes{$_}\n";
 #	print F "\$ENV{$1}=\"$attributes{$_}\n\"";
-#    }
-
+#    }	
+    
 }
 
 if(defined $suites){
@@ -233,7 +233,7 @@ foreach \$suite (qw(@testsuites)){
          # \$ENV{MP_PROCS} = 1;
           #system("hostname > $tstdir/hostfile");
           #\$ENV{MP_HOSTFILE}="$tstdir/hostfile";
-
+	  
        # }
 	if("$host" eq "yellowstone_pgi") {
 	    \$ENV{LD_PRELOAD}="/opt/ibmhpc/pe1304/ppe.pami/gnu/lib64/pami64/libpami.so";
@@ -242,7 +242,7 @@ foreach \$suite (qw(@testsuites)){
         if("$host" eq "erebus" or "$host" =~ /^yellowstone/){
         #  \$ENV{MP_PROCS}=\$saveprocs;
          # delete \$ENV{MP_HOSTFILE};
-        }
+        } 
     }
     my \$test;
 
@@ -276,9 +276,9 @@ foreach \$suite (qw(@testsuites)){
 
 	    unlink("testpio") if(-e "testpio");
             if($twopass){
-		copy("$tstdir/testpio.\$suite","testpio");
+		copy("$tstdir/testpio.\$suite","testpio");  
             }else{
-		copy("$tstdir/testpio","testpio");
+		copy("$tstdir/testpio","testpio");  
 	    }
 	    chmod 0755,"testpio";
 
@@ -316,7 +316,7 @@ foreach \$suite (qw(@testsuites)){
 	    open(LOG,\$log);
 	    my \@logout = <LOG>;
 	    close(LOG);
-
+	    
 	    my \$cnt = grep /testpio completed successfully/ , \@logout;
             open(T,">TestStatus");
 	    if(\$cnt>0){
@@ -331,7 +331,7 @@ foreach \$suite (qw(@testsuites)){
 	    close(T);
 	}
     }else{
-	print "suite \$suite FAILED to configure or build\\n";
+	print "suite \$suite FAILED to configure or build\\n";	
     }
 }
 if($twopass && \$thispass==1){
@@ -341,7 +341,7 @@ if($twopass && \$thispass==1){
 	print "Run ($script) second pass with \$subsys\n";
     }else{
 	exec(\$subsys);
-    }
+    }   
 }
 
 print "test complete on $host \$passcnt tests PASS, \$failcnt tests FAIL\\n";

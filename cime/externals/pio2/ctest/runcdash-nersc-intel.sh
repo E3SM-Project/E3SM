@@ -13,7 +13,7 @@ module load craype-ivybridge
 module load cray-shmem
 module load cray-mpich
 module load torque
-module load git/2.4.6
+module load git/2.4.6 
 module load cmake/3.0.0
 module load cray-hdf5-parallel/1.8.14
 module load cray-netcdf-hdf5parallel/4.3.3.1

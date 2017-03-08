@@ -1,0 +1,47 @@
+#! /bin/csh -fx
+
+#==============================================================================
+# Purpose: Build the mct library
+#==============================================================================
+
+cd $CASEROOT
+
+set CIMEROOT	= `./xmlquery  CIMEROOT	 -value `
+set CASETOOLS	= `./xmlquery  CASETOOLS -value `
+set GMAKE	= `./xmlquery  GMAKE	 -value `
+set GMAKE_J	= `./xmlquery  GMAKE_J	 -value `
+set MACH	= `./xmlquery  MACH	 -value `
+set OS		= `./xmlquery  OS	 -value `
+
+setenv MCT_DIR    $CIMEROOT/externals/mct   # mct directory
+setenv MCT_LIBDIR $1
+setenv LIBDIR $2
+
+cd $MCT_LIBDIR
+echo "Copying source to EXEROOT..."
+if ( (-M $MCT_DIR/mpi-serial/Makefile ) >= (-M mpi-serial/Makefile ) ) then
+  cp $MCT_DIR/mpi-serial/Makefile .
+endif
+cp -p $MCT_DIR/mpi-serial/*.h .
+
+set runconf = 0
+set runclean = 0
+
+echo "Running configure..."
+echo "for OS=$OS MACH=$MACH LIBDIR=$LIBDIR"
+$GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mpi-serial
+
+if ($runclean == 1) then
+  $GMAKE clean
+endif
+
+cp -p Makefile.conf Makefile.conf.old
+
+$GMAKE  SRCDIR=$MCT_DIR   || exit 1
+
+cp -p lib*.a $LIBDIR/lib
+cp -p *.h $LIBDIR/include
+cp -p *.mod $LIBDIR/include
+
+exit 0
+

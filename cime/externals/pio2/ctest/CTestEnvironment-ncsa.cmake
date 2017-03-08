@@ -1,7 +1,7 @@
 #==============================================================================
 #
 #  This file sets the environment variables needed to configure and build
-#  on the NCSA systems
+#  on the NCSA systems 
 #  (Blue Waters).
 #
 #==============================================================================

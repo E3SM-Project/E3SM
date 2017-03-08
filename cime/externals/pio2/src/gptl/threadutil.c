@@ -2,7 +2,7 @@
 ** $Id: threadutil.c,v 1.28 2009/12/31 01:51:59 rosinski Exp $
 **
 ** Author: Jim Rosinski
-**
+** 
 ** Utility functions handle thread-based GPTL needs.
 */
 
@@ -21,7 +21,7 @@
 static bool first = true;
 
 /**********************************************************************************/
-/*
+/* 
 ** 3 sets of routines: OMP threading, PTHREADS, unthreaded
 */
 
@@ -62,7 +62,7 @@ int threadinit (int *nthreads, int *maxthreads)
 #ifdef VERBOSE
   printf ("OMP threadinit: Set *maxthreads=%d *nthreads=%d\n", *maxthreads, *nthreads);
 #endif
-
+  
   return 0;
 }
 
@@ -138,7 +138,7 @@ void print_threadmapping (int nthreads, FILE *fp)
 }
 
 /**********************************************************************************/
-/*
+/* 
 ** PTHREADS
 */
 
@@ -179,7 +179,7 @@ int threadinit (int *nthreads, int *maxthreads)
   first = false;
 
   /*
-  ** Initialize nthreads to 0 and define the threadid array now that initialization
+  ** Initialize nthreads to 0 and define the threadid array now that initialization 
   ** is done. The actual value will be determined as get_thread_num is called.
   */
 
@@ -228,8 +228,8 @@ int get_thread_num (int *nthreads, int *maxthreads)
     return GPTLerror ("get_thread_num: mutex lock failure\n");
 
   /*
-  ** Loop over known physical thread IDs.  When my id is found, map it
-  ** to logical thread id for indexing.  If not found return a negative
+  ** Loop over known physical thread IDs.  When my id is found, map it 
+  ** to logical thread id for indexing.  If not found return a negative 
   ** number.
   ** A critical region is necessary because acess to
   ** the array threadid must be by only one thread at a time.
@@ -251,7 +251,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
 
       return GPTLerror ("get_thread_num: nthreads=%d is too big Recompile "
 			"with larger value of MAX_THREADS\n", *nthreads);
-    }
+    }    
 
     threadid[n] = mythreadid;
 
@@ -268,7 +268,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
 
     if (GPTLget_npapievents () > 0) {
 #ifdef VERBOSE
-      printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n",
+      printf ("PTHREADS get_thread_num: Starting EventSet threadid=%lu location=%d\n", 
 	      (unsigned long) mythreadid, n);
 #endif
       if (GPTLcreate_and_start_events (n) < 0) {
@@ -286,7 +286,7 @@ int get_thread_num (int *nthreads, int *maxthreads)
     printf ("PTHREADS get_thread_num: *nthreads=%d\n", *nthreads);
 #endif
   }
-
+    
   if (unlock_mutex () < 0)
     return GPTLerror ("get_thread_num: mutex unlock failure\n");
 

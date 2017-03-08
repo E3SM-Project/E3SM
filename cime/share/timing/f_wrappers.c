@@ -237,12 +237,17 @@ int gptlpr (int *procid)
 int gptlpr_file (char *file, int nc1)
 {
   char *locfile;
+  int c;
   int ret;
 
   if ( ! (locfile = (char *) malloc (nc1+1)))
     return GPTLerror ("gptlpr_file: malloc error\n");
 
-  snprintf (locfile, nc1+1, "%s", file);
+  //pw  snprintf (locfile, nc1+1, "%s", file);
+  for (c = 0; c < nc1; c++) {
+    locfile[c] = file[c];
+  }
+  locfile[c] = '\0';
 
   ret = GPTLpr_file (locfile);
   free (locfile);
@@ -269,6 +274,7 @@ int gptlpr_summary (int *fcomm)
 int gptlpr_summary_file (int *fcomm, char *file, int nc1)
 {
   char *locfile;
+  int c;
   int ret;
 
 #ifdef HAVE_MPI
@@ -286,7 +292,11 @@ int gptlpr_summary_file (int *fcomm, char *file, int nc1)
   if ( ! (locfile = (char *) malloc (nc1+1)))
     return GPTLerror ("gptlpr_summary_file: malloc error\n");
 
-  snprintf (locfile, nc1+1, "%s", file);
+  //pw  snprintf (locfile, nc1+1, "%s", file);
+  for (c = 0; c < nc1; c++) {
+    locfile[c] = file[c];
+  }
+  locfile[c] = '\0';
 
   ret = GPTLpr_summary_file (ccomm, locfile);
   free (locfile);

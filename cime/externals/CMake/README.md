@@ -28,6 +28,6 @@ Sourcelist_utils - Use source file lists defined over multiple directories.
 
 Modules that are CESM-specific and/or incomplete:
 
-CESM_utils - Handles a few options, and includes several other modules.
+CIME_utils - Handles a few options, and includes several other modules.
 
 Compilers - Specify compiler-specific behavior, add build types for CESM.

@@ -7,9 +7,10 @@
  * @see http://code.google.com/p/parallelio/
  */
 
-#include <config.h>
+
 #include <pio.h>
 #include <pio_internal.h>
+
 
 static int counter=0;
 
@@ -175,6 +176,8 @@ int PIOc_get_local_array_size(int ioid)
  ** @param iostart An optional array of start values for block cyclic decompositions  (optional input)
  ** @param iocount An optional array of count values for block cyclic decompositions  (optional input)
  */
+
+
 int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int dims[], 
 		    const int maplen, const PIO_Offset *compmap, int *ioidp,const int *rearranger,  
 		    const PIO_Offset *iostart,const PIO_Offset *iocount)
@@ -185,6 +188,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   int ierr;
   int iosize;
   int ndisp;
+
+
 
   for(int i=0;i<ndims;i++){
     if(dims[i]<=0){
@@ -205,7 +210,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     }else{
       sprintf(filename, "piodecomp%6.6dtasks%2.2ddims%2.2d.dat",ios->num_comptasks,ndims,counter);
     }
-    PIOc_writemap(filename,ndims,dims,maplen, (PIO_Offset *)compmap,ios->comp_comm);
+    PIOc_writemap(filename,ndims,dims,maplen,compmap,ios->comp_comm);
     counter++;
   }
 
@@ -276,6 +281,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
  ** expressed in terms of start and count on the file.
  ** in this case we compute the compdof and use the subset rearranger
  */
+
+
 int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, const int dims[], 
 		       const long int start[], const long int count[], int *ioidp)
 		    
@@ -333,35 +340,21 @@ int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, co
   return PIO_NOERR;
 }
 
-/* @ingroup PIO_init
- *
- * Library initialization used when IO tasks are a subset of compute
- * tasks.
- * 
- * This function creates an MPI intracommunicator between a set of IO
- * tasks and one or more sets of computational tasks.
- *
- * The caller must create all comp_comm and the io_comm MPI
- * communicators before calling this function.
- *
- * @param comp_comm the MPI_Comm of the compute tasks
- *
- * @param num_iotasks the number of io tasks to use
- *
- * @param stride the offset between io tasks in the comp_comm
- *
- * @param base the comp_comm index of the first io task
- *
- * @param rearr the rearranger to use by default, this may be
- * overriden in the @ref PIO_initdecomp
- *
- * @param iosysidp index of the defined system descriptor
- *
- * @return 0 on success, otherwise a PIO error code.
+
+/** 
+ ** @ingroup PIO_init
+ ** @brief library initialization used when IO tasks are a subset of compute tasks
+ ** @param comp_comm the MPI_Comm of the compute tasks
+ ** @param num_iotasks the number of io tasks to use
+ ** @param stride the offset between io tasks in the comp_comm
+ ** @param base the comp_comm index of the first io task
+ ** @param rearr the rearranger to use by default, this may be overriden in the @ref PIO_initdecomp
+ ** @param iosysidp index of the defined system descriptor
  */
-int PIOc_Init_Intracomm(const MPI_Comm comp_comm, const int num_iotasks,
-			const int stride, const int base, const int rearr,
-			int *iosysidp)
+
+int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
+			const int num_iotasks, const int stride, 
+			const int base,const int rearr, int *iosysidp)
 {
   iosystem_desc_t *iosys;
   int ierr = PIO_NOERR;
@@ -393,8 +386,8 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm, const int num_iotasks,
       iosys->intercomm = MPI_COMM_NULL;
       iosys->error_handler = PIO_INTERNAL_ERROR;
       iosys->async_interface= false;
-      iosys->compmaster = 0;
-      iosys->iomaster = 0;
+      iosys->compmaster = false;
+      iosys->iomaster = false;
       iosys->ioproc = false;
       iosys->default_rearranger = rearr;
       iosys->num_iotasks = num_iotasks;
@@ -405,7 +398,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm, const int num_iotasks,
       CheckMPIReturn(MPI_Comm_rank(iosys->comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
       CheckMPIReturn(MPI_Comm_size(iosys->comp_comm, &(iosys->num_comptasks)),__FILE__,__LINE__);
       if(iosys->comp_rank==0)
-	  iosys->compmaster = MPI_ROOT;  
+	  iosys->compmaster = true;  
 
       /* Ensure that settings for number of computation tasks, number
        * of IO tasks, and the stride are reasonable. */
@@ -415,7 +408,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm, const int num_iotasks,
 	  iosys->num_iotasks = 1;
 	  ustride = 1;
       }
-      if((iosys->num_iotasks < 1) || ((iosys->num_iotasks*ustride) > iosys->num_comptasks)){
+      if((iosys->num_iotasks < 1) || (((iosys->num_iotasks-1)*ustride+1) > iosys->num_comptasks)){
 	  fprintf(stderr, "PIO_TP PIOc_Init_Intracomm error\n");
 	  fprintf(stderr, "num_iotasks=%d, ustride=%d, num_comptasks=%d\n", num_iotasks, ustride, iosys->num_comptasks);
 	  return PIO_EBADID;
@@ -435,7 +428,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm, const int num_iotasks,
       iosys->info = MPI_INFO_NULL;
 
       if(iosys->comp_rank == iosys->ioranks[0])
-	  iosys->iomaster = MPI_ROOT;
+	  iosys->iomaster = true;
 
       /* Create a group for the computation tasks. */
       CheckMPIReturn(MPI_Comm_group(iosys->comp_comm, &(iosys->compgroup)),__FILE__,__LINE__);
@@ -445,11 +438,10 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm, const int num_iotasks,
 				    &(iosys->iogroup)),__FILE__,__LINE__);
 
       /* Create an MPI communicator for the IO tasks. */
-      CheckMPIReturn(MPI_Comm_create(iosys->comp_comm, iosys->iogroup, &(iosys->io_comm))
-		     ,__FILE__,__LINE__);
+      CheckMPIReturn(MPI_Comm_create(iosys->comp_comm, iosys->iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
 
       /* For the tasks that are doing IO, get their rank. */
-      if (iosys->ioproc)
+      if(iosys->ioproc)
 	  CheckMPIReturn(MPI_Comm_rank(iosys->io_comm, &(iosys->io_rank)),__FILE__,__LINE__);
       else
 	  iosys->io_rank = -1;
@@ -497,9 +489,8 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 
 }
 
-/** @ingroup PIO_finalize 
- * Clean up internal data structures, free MPI resources, and exit the
- * pio library.
+/** @ingroup PIO_finalize
+ * @brief Clean up data structures and exit the pio library.
  *
  * @param iosysid: the io system ID provided by PIOc_Init_Intracomm().
  *
@@ -509,38 +500,27 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 int PIOc_finalize(const int iosysid)
 {
   iosystem_desc_t *ios, *nios;
-  int msg;
-  int mpierr;
 
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios == NULL)
-    return PIO_EBADID;
-  
-  /* If asynch IO is in use, send the PIO_MSG_EXIT message from the
-   * comp master to the IO processes. */
-  if (ios->async_interface && !ios->comp_rank)
-  {
-    msg = PIO_MSG_EXIT;
-    mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
-    CheckMPIReturn(mpierr, __FILE__, __LINE__);		      
+    return PIO_EBADID; 
+  /* FIXME: The memory for ioranks is allocated in C only for intracomms
+   * Remove this check once mem allocs for ioranks completely moves to the
+   * C code
+   */ 
+  if(ios->intercomm == MPI_COMM_NULL){
+    if(ios->ioranks != NULL){
+      free(ios->ioranks);
+    }
   }
 
-  /* Free this memory that was allocated in init_intracomm. */
-  if (ios->ioranks)
-      free(ios->ioranks);
-
-  /* Free the buffer pool. */
   free_cn_buffer_pool(*ios);
 
   /* Free the MPI groups. */
-  if (ios->compgroup != MPI_GROUP_NULL)
-    MPI_Group_free(&ios->compgroup);
+  MPI_Group_free(&(ios->compgroup));
+  MPI_Group_free(&(ios->iogroup));
 
-  if (ios->iogroup != MPI_GROUP_NULL)
-    MPI_Group_free(&(ios->iogroup));
-
-  /* Free the MPI communicators. my_comm is just a copy (but not an
-   * MPI copy), so does not have to have an MPI_Comm_free() call. */
+  /* Free the MPI communicators. */
   if(ios->intercomm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->intercomm));
   }
@@ -554,8 +534,9 @@ int PIOc_finalize(const int iosysid)
     MPI_Comm_free(&(ios->union_comm));
   }
 
-  /* Delete the iosystem_desc_t data associated with this id. */
   return pio_delete_iosystem_from_list(iosysid);
+
+  
 }
 
 /**

@@ -14,21 +14,15 @@ set (PIO_C_SRCS topology.c
                 pioc_sc.c
                 pio_spmd.c
                 pio_rearrange.c
-		pio_nc4.c
+                pio_darray.c
                 bget.c)
 
-set (PIO_GENNC_SRCS ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c
-  ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c
-  ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c)
+set (PIO_GENNC_SRCS ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
+  ${CMAKE_CURRENT_BINARY_DIR}/pio_nc4.c
+  ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c 
+  ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c)
 
-if (PIO_ENABLE_ASYNC)
-  set (PIO_ADDL_SRCS pio_nc_async.c pio_put_nc_async.c pio_get_nc_async.c
-    pio_msg.c pio_varm.c pio_darray_async.c)
-else ()
-  set (PIO_ADDL_SRCS pio_darray.c ${PIO_GENNC_SRCS})
-endif ()
-
-add_library (pioc ${PIO_C_SRCS} ${PIO_ADDL_SRCS})
+add_library (pioc ${PIO_C_SRCS} ${PIO_GENNC_SRCS})
 
 # set up include-directories
 include_directories(
@@ -202,9 +196,12 @@ else ()
                                              pio_get_nc.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c
                                              pio_nc.c
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc4.c
+                                             pio_nc4.c
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pio_put_nc.c
                     ${CMAKE_CURRENT_SOURCE_DIR}/pio_get_nc.c
-                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc4.c)
 endif ()
 
 

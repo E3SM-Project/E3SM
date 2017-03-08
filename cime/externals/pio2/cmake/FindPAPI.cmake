@@ -1,6 +1,6 @@
 # - Try to find PAPI
 #
-# This can be controlled by setting the PAPI_DIR (or, equivalently, the
+# This can be controlled by setting the PAPI_DIR (or, equivalently, the 
 # PAPI environment variable).
 #
 # Once done, this will define:

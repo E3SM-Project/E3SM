@@ -65,8 +65,9 @@ def _main_func(description):
     else:
         logging.info("Using case: '%s'" % case)
 
-    expect(CIME.compare_namelists.compare_namelist_files(gold_file, compare_file, case),
-           "Namelist diff between files %s and %s" % (gold_file, compare_file))
+    success, comments = CIME.compare_namelists.compare_namelist_files(gold_file, compare_file, case)
+    expect(success,
+           "Namelist diff between files %s and %s\n%s" % (gold_file, compare_file, comments))
 
     print "Files %s and %s MATCH" % (gold_file, compare_file)
 
