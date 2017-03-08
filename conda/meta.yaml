@@ -24,6 +24,7 @@ requirements:
     - cdutil
     - genutil
     - numpy
+    - output_viewer
 
 about:
     home: https://github.com/zshaheen/acme-diags

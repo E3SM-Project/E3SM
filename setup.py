@@ -7,5 +7,5 @@ setup(
     author_email="aims@llnl.gov",
     description="ACME Diagnostics.",
     packages=find_packages(exclude=["*.test", "*.test.*", "test.*", "test"]),
-    include_package_data=True
+    package_data={"": ["*.json"]},
 )
