@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import json
 import copy
+import glob
+import os
+import fnmatch
 import numpy
 import cdutil
 import genutil
@@ -8,14 +11,14 @@ import cdms2
 import MV2
 import acme_diags.acme_parser
 import acme_diags.plotting.set5.set5vcs
-import glob
-import os
-import fnmatch
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
+from acme_diags.viewer import OutputViewer
 
 
 def make_parameters(orginal_parameter):
+    """ Create multiple parameters given a list of 
+    parameters in a json and an original parameter """
     #f_data = open('set5_diags.json').read()
     f_data = open('set5_diags_MERRA.json').read()
     #f_data = open('set5_diags_HADISST.json').read()
@@ -48,22 +51,29 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
 
+def add_page_and_top_row(viewer, parameters):
+    """ Setup for OutputViewer """
+    col_labels = ['Description']
+    seasons = []
+    for p in parameters:
+        for s in p.season:
+            if s not in seasons:
+                seasons.append(s)
+    for s in seasons:
+        col_labels.append(s)
+
+    viewer.add_page("Set 5", col_labels)
 
 
 parser = acme_diags.acme_parser.ACMEParser()
 orginal_parameter = parser.get_parameter()
 parameters = make_parameters(orginal_parameter)
-from acme_diags.viewer import OutputViewer
-viewer = OutputViewer(path=parameters[0].case_id, index_name=parameters[0].reference_name)
-#viewer.add_page("Set 5", ['Description', 'ANN', 'DJF', 'JJA', 'MAM', 'SON'])
-col_labels = ['Description']
-for r in sorted(parameters[0].region, key=lambda r: r.lower()):  # case insensitive sort
-    for l in parameters[0].levels:
-        col_labels.append('%s - %s' % (r, l))
 
-viewer.add_page("Set 5", col_labels)
+viewer = OutputViewer(path=parameters[0].case_id, index_name='index name')
+add_page_and_top_row(viewer, parameters)
 
 for parameter in parameters:
+    viewer.add_group(parameter.reference_name)
 
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
@@ -86,7 +96,6 @@ for parameter in parameters:
             print filename
             filename2 = filename
 
-        #print filename1, filename2
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
 
@@ -207,10 +216,9 @@ for parameter in parameters:
 
                     # Plotting
                     acme_diags.plotting.set5.set5vcs.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                    viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.output_file)
 
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
-
-    viewer.add_row(var, 'Description for %s' % var, )
 
 viewer.generate_viewer()

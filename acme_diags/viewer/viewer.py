@@ -14,33 +14,33 @@ class OutputViewer(object):
         self.group = None
         self.page = None
 
+    def add_group(self, name):
+        self.group = OutputGroup(name)
+        self.page.addGroup(self.group)
+
     def add_page(self, name, cols):
         self.page = OutputPage(name, cols)
         self.index.addPage(self.page)
 
-    def add_row(self, var_name, description):
+    def add_row(self, var_name, description, file_name):
         ''' Adds a description and all of the files in self.path to an 
         OutputRow, which is then added to the current page'''
         cols = []
-        cols.append('Some description for %s' % description)
-
-        files_in_path = [fnm for fnm in os.listdir(self.path) if '.png' in fnm]
-        for f in files_in_path:
-            cols.append(OutputFile(f))
-
+        cols.append(description)
+        #file_path = [fnm for fnm in os.listdir(self.path) if '.png' in fnm]
+        file_path = os.path.abspath(os.path.join(self.path, file_name + '.png'))
+        cols.append(OutputFile(file_path))
+        
         if self.group is None:
             self.group = OutputGroup('Variables for this data set')
+            self.page.addGroup(self.group)
         if self.page is not None:
             row = OutputRow(var_name, cols)
-            self.page.addGroup(self.group)
             self.page.addRow(row, 0)
         else:
             raise RuntimeError('You need to add a page with add_page() before calling add_row()')
 
     def generate_viewer(self):
-        print 'os.path.join(self.path, "index.json"):'
-        print os.path.join(self.path, "index.json")
-
         self.index.toJSON(os.path.join(self.path, "index.json"))
 
         default_mask = stat.S_IMODE(os.stat(self.path).st_mode)
