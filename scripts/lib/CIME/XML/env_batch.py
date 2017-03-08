@@ -55,9 +55,9 @@ class EnvBatch(EnvBase):
                 val = value
         else:
             group = self.get_optional_node("group", {"id":subgroup})
-            if group:
+            if group is not None:
                 node = self.get_optional_node("entry", {"id":item}, root=group)
-                if node:
+                if node is not None:
                     val = self._set_value(node, value, vid=item, ignore_type=ignore_type)
 
         return val
@@ -282,6 +282,7 @@ class EnvBatch(EnvBase):
         alljobs = self.get_jobs()
         startindex = 0
         jobs = []
+        firstjob = job
         if job is not None:
             expect(job in alljobs, "Do not know about batch job %s"%job)
             startindex = alljobs.index(job)
@@ -292,7 +293,7 @@ class EnvBatch(EnvBase):
                 continue
             try:
                 prereq = self.get_value('prereq', subgroup=job, resolved=False)
-                if prereq is None:
+                if prereq is None or job == firstjob:
                     prereq = True
                 else:
                     prereq = case.get_resolved_value(prereq)
