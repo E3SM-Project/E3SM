@@ -28,7 +28,7 @@ class OutputViewer(object):
         cols = []
         cols.append(description)
         #file_path = [fnm for fnm in os.listdir(self.path) if '.png' in fnm]
-        file_path = os.path.abspath(os.path.join(self.path, file_name + '.png'))
+        file_path = os.path.abspath(os.path.join(file_name + '.png'))
         cols.append(OutputFile(file_path))
         
         if self.group is None:
@@ -36,7 +36,7 @@ class OutputViewer(object):
             self.page.addGroup(self.group)
         if self.page is not None:
             row = OutputRow(var_name, cols)
-            self.page.addRow(row, 0)
+            self.page.addRow(row, len(self.page.groups)-1)
         else:
             raise RuntimeError('You need to add a page with add_page() before calling add_row()')
 
