@@ -27,7 +27,7 @@ class NCR(SystemTestsCommon):
         cime_model = CIME.utils.get_model()
 
         machpes1 = "env_mach_pes.NCR1.xml"
-        if not model_only and is_locked(machpes1):
+        if is_locked(machpes1):
             restore(machpes1, newname="env_mach_pes.xml")
 
         # Build two exectuables for this test, the first is a default build, the
@@ -37,9 +37,7 @@ class NCR(SystemTestsCommon):
             logging.warn("Starting bld %s"%bld)
             machpes = "env_mach_pes.NCR%s.xml" % bld
             ntasks_sum = 0
-            for comp in self._case.get_values("COMP_CLASSES"):
-                if comp == "CPL":
-                    continue
+            for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 self._case.set_value("NINST_%s"%comp,str(bld))
                 ntasks      = self._case.get_value("NTASKS_%s"%comp)
                 if(bld == 1):
@@ -52,19 +50,17 @@ class NCR(SystemTestsCommon):
                     self._case.set_value("NTASKS_%s"%comp, ntasks*2)
             self._case.flush()
 
-            if not model_only:
-                case_setup(self._case, test_mode=True, reset=True)
-                self.clean_build()
+            case_setup(self._case, test_mode=True, reset=True)
+            self.clean_build()
             self.build_indv(sharedlib_only, model_only)
-            if not sharedlib_only:
-                shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                            "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
-                lock_file("env_build.xml", newname="env_build.NCR%s.xml" % bld)
-                lock_file("env_mach_pes.xml", newname=machpes)
+            shutil.move("%s/%s.exe"%(exeroot,cime_model),
+                        "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
+            lock_file("env_build.xml", newname="env_build.NCR%s.xml" % bld)
+            lock_file("env_mach_pes.xml", newname=machpes)
 
-                # Because mira/cetus interprets its run script differently than
-                # other systems we need to copy the original env_mach_pes.xml back
-                restore(machpes1, newname="env_mach_pes.xml")
+        # Because mira/cetus interprets its run script differently than
+        # other systems we need to copy the original env_mach_pes.xml back
+        restore(machpes1, newname="env_mach_pes.xml")
 
     def run_phase(self):
         os.chdir(self._caseroot)
