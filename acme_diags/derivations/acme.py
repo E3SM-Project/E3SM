@@ -5,8 +5,8 @@ import cdms2
 def process_derived_var(var_key, derived_vars_dict, nc_file):
     ''' Given a key (var_key) to the derived_vars_dict dict, compute and return
      whatever is described in derived_vars_dict[var_key] for the nc_file'''
-    #if var_key in derived_vars_dict.keys():
-    if var_key:
+    if var_key in derived_vars_dict.keys():
+    #if var_key:
         inputs, func = _get_correct_derivation(var_key, derived_vars_dict, nc_file)
         # get all of the variables from nc_file
         args = [nc_file(var)(squeeze=1) for var in inputs]
@@ -93,7 +93,7 @@ def qflx_convert_units (var):
     print "testtest"
     var = _convert_units( var, 'kg/(m^2 s)' )
     var = var *3600.0*24  #convert to mm/day
-    print 3600*24
+    print '%%%%%%%%%%%%%%%%%%%%%%%%%'
     var.units = 'mm/day'
     return var
 
