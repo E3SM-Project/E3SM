@@ -38,7 +38,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                 else:
                     continue
         else:
-            logger.info("         - Building clm Library ")
+            logger.info("         - Building %s Library " % model)
 
         smp = nthrds > 1 or build_threaded
 
