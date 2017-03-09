@@ -141,3 +141,9 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             dest='diff_colormap',
             help='Colormap for the bottom graph',
             required=False)
+
+        self.add_argument(
+            '--backend',
+            dest='backend',
+            help='Graphic backend',
+            required=False)

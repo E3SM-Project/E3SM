@@ -25,6 +25,8 @@ requirements:
     - genutil
     - numpy
     - output_viewer
+    - matplotlib
+    - cartopy
 
 about:
     home: https://github.com/zshaheen/acme-diags
