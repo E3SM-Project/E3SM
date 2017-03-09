@@ -1,24 +1,34 @@
 #!/usr/bin/env python
 import json
 import copy
+import glob
+import os
+import fnmatch
 import numpy
 import cdutil
 import genutil
 import cdms2
 import MV2
-import acme_diags.acme_parser
-import plot_set_5
-import glob
-import os
-import fnmatch
+from acme_diags.acme_parser import ACMEParser
+from acme_diags.acme_parameter import ACMEParameter
+import acme_diags.plotting.set5.plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
+from acme_diags.viewer import OutputViewer
 
 
 def make_parameters(orginal_parameter):
+<<<<<<< HEAD
     #f_data = open('set5_diags_default.json').read()
     f_data = open('set5_diags.json').read()
     #f_data = open('set5_diags_MERRA_domains.json').read()
+=======
+    """ Create multiple parameters given a list of 
+    parameters in a json and an original parameter """
+    #f_data = open('set5_diags.json').read()
+    f_data = open('set5_diags_GPCP.json').read()
+    #f_data = open('set5_diags_MERRA.json').read()
+>>>>>>> master
     #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
@@ -30,9 +40,13 @@ def make_parameters(orginal_parameter):
     parameters = []
     for key in json_file:
         for single_run in json_file[key]:
-            p = copy.deepcopy(orginal_parameter)
+            #p = copy.deepcopy(orginal_parameter)
+            p = ACMEParameter()
             for attr_name in single_run:
                 setattr(p, attr_name, single_run[attr_name])
+            # Add attributes of original_parameter to p
+            print orginal_parameter.__dict__
+            p.__dict__.update(orginal_parameter.__dict__)
             parameters.append(p)
     return parameters
 
@@ -53,6 +67,7 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
 
+<<<<<<< HEAD
 def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
     """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
     None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
@@ -75,13 +90,30 @@ def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
     var.mask = newmask
     return var
 
+=======
+def add_page_and_top_row(viewer, parameters):
+    """ Setup for OutputViewer """
+    col_labels = ['Description']
+    seasons = []
+    for p in parameters:
+        for s in p.season:
+            if s not in seasons:
+                seasons.append(s)
+    for s in seasons:
+        col_labels.append(s)
+
+    viewer.add_page("Set 5", col_labels)
+>>>>>>> master
 
 
-parser = acme_diags.acme_parser.ACMEParser()
-orginal_parameter = parser.get_parameter()
-parameters = make_parameters(orginal_parameter)
+parser = ACMEParser()
+original_parameter = parser.get_parameter(default_vars=False)
+parameters = make_parameters(original_parameter)
+viewer = OutputViewer(path=parameters[0].case_id, index_name='index name')
+add_page_and_top_row(viewer, parameters)
 
 for parameter in parameters:
+    viewer.add_group(parameter.reference_name)
 
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
@@ -91,8 +123,7 @@ for parameter in parameters:
     ref_name = parameter.ref_name
     test_name = parameter.test_name
     regions = parameter.region
-#    domain = regions_specs[region]
-
+    #domain = regions_specs[region]
     for season in seasons:
         test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
         for filename in fnmatch.filter(test_files, '*'+season+'*'):
@@ -104,13 +135,13 @@ for parameter in parameters:
             print filename
             filename2 = filename
 
-        #print filename1, filename2
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
 
         # domain can pass in process_derived_var after Charles fix cdutil.domain'unit problem
         #mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod, domain)
         #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
+<<<<<<< HEAD
         mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
         mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
         print mv1.units
@@ -128,13 +159,28 @@ for parameter in parameters:
             
             
 
+=======
+        try:
+            mv1 = f_mod(var)
+        except:
+            mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
+        try:
+            mv2 = f_obs(var)
+        except:
+            mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
+        print regions,"regions"
+
+        # Temporary fix to bypass bug (Zeshawn or Jill will fix)
+        mv1.units = parameter.test_units
+        mv2.units = parameter.test_units
+>>>>>>> master
          
         #for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
             if len(regions) == 0:
                 regions = ['global']
-    
-            for region in regions: 
+
+            for region in regions:
                 print region
                 domain = None
 ##                if region != 'global':
@@ -163,12 +209,28 @@ for parameter in parameters:
                 mv1_domain = mv1_domain(domain)
                 mv2_domain = mv2_domain(domain)
                 mv1_domain.units = mv1.units
+<<<<<<< HEAD
                 mv2_domain.units = mv1.units
 
                 parameter.output_file = '_'.join([ref_name,var, season,region])
                 parameter.main_title = str(' '.join([var, season]))
         
     
+=======
+                mv2_domain.units = mv2.units
+                parameter.output_file = '_'.join([ref_name, season,region])
+                parameter.main_title = str(' '.join([var, season]))
+
+                #else:
+                #
+                #    parameter.output_file = '_'.join([ref_name, season])
+                #    parameter.main_title = str(' '.join([var, season]))
+
+                #parameter.output_file = '_'.join([ref_name, season,region])
+                #parameter.main_title = str(' '.join([var, season]))
+
+
+>>>>>>> master
                 #regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
@@ -185,11 +247,20 @@ for parameter in parameters:
                     land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
                     mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                     mv2_reg = MV2.masked_where(land_mask, mv2_reg)
+<<<<<<< HEAD
            
                 plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
                 #plot_set_5.plot(mv2_reg, mv1_reg, mv2_reg, mv1_reg, parameter)
  
     
+=======
+
+                print 'hi1'
+                acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
+
+
+>>>>>>> master
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
             plev = parameter.levels
@@ -234,8 +305,13 @@ for parameter in parameters:
                 mv2 = mv2_p[:,ilev,]
                 if len(regions) == 0:
                     regions = ['global']
+<<<<<<< HEAD
         
                 for region in regions: 
+=======
+
+                for region in regions:
+>>>>>>> master
                     print region
                     domain = None
     ##                if region != 'global':
@@ -266,14 +342,22 @@ for parameter in parameters:
                     mv1_domain.units = mv1.units
                     mv2_domain.units = mv1.units
 
+<<<<<<< HEAD
                     parameter.output_file = '_'.join([ref_name,var,str(int(plev[ilev])),season,region,var, str(int(plev[ilev])), 'mb'])
+=======
+                    parameter.output_file = '_'.join([ref_name, season, region, var, str(int(plev[ilev])), 'mb'])
+>>>>>>> master
                     parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))
 
                     # Regrid towards lower resolution of two variables for calculating difference
                     mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                     # Plotting
-                    plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
-        
+                    print 'hi2'
+                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                    viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
+
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
+
+viewer.generate_viewer()

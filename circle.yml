@@ -2,20 +2,19 @@ machine:
   environment:
     PATH: ${HOME}/miniconda/bin:${PATH}
   pre:
-    - sudo apt-get update
-    - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+    - curl https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -o miniconda.sh
     - bash miniconda.sh -b -p $HOME/miniconda
     - ${HOME}/miniconda/bin/conda config --set always_yes yes --set changeps1 no
     - ${HOME}/miniconda/bin/conda update -q conda
     - ${HOME}/miniconda/bin/conda config --set anaconda_upload no
+    - sudo -H pip install --upgrade virtualenv
 
 dependencies:
   override:
     - ${HOME}/miniconda/bin/conda install python=2.7.13 cdp cdms2 unidata -c conda-forge -c uvcdat -y
-    - export UVCDAT_ANONYMOUS_LOG=False
     - python setup.py install
 
 test:
   override:
     - PATH=${HOME}/miniconda/bin:${PATH} UVCDAT_ANONYMOUS_LOG=False bash ./tests/test.sh
-    - if [ $? == 0 -a $CIRCLE_BRANCH == "master" ]; then PATH=${HOME}/miniconda/bin:${PATH} conda install conda-build && conda install anaconda-client && bash conda/conda_upload.sh; fi
+    - if [ $? == 0 -a $CIRCLE_BRANCH == "master" ]; then TRAVIS_OS_NAME=osx PATH=${HOME}/miniconda/bin:${PATH} conda install conda-build && conda install anaconda-client && bash conda/conda_upload.sh; fi

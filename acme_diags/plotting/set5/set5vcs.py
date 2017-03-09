@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy
 import cdutil
 import vcs
@@ -95,8 +96,10 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
-    vcs_canvas.scriptrun('plot_set_5.json')
-    vcs_canvas.scriptrun('plot_set_5_new.json')
+    file_path = os.path.abspath(os.path.dirname(__file__))
+    vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
+    vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5_new.json'))
+    
     template_test = vcs_canvas.gettemplate('plotset5_0_x_0')
     template_ref = vcs_canvas.gettemplate('plotset5_0_x_1')
     template_diff = vcs_canvas.gettemplate('plotset5_0_x_2')
@@ -141,15 +144,3 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     vcs_canvas.plot(test, template_test, test_isofill)
     vcs_canvas.plot(reference, template_ref, reference_isofill)
     vcs_canvas.plot(diff, template_diff, diff_isofill)
-
-    plot_rmse_and_corr(vcs_canvas, test_regrid, reference_regrid)
-
-    # Plotting the main title
-    main_title = vcs_canvas.createtextcombined(Tt_source = 'main_title',
-                                               To_source = 'main_title')
-    main_title.string = parameter.main_title
-    vcs_canvas.plot(main_title)
-
-    #vcs_canvas.pdf(case_id + '/' + parameter.output_file, textAsPaths=False)
-    vcs_canvas.png(case_id + '/' + parameter.output_file)
-    print 'Plot saved in: ' + case_id + '/' + parameter.output_file
