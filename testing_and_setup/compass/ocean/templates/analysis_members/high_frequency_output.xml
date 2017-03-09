@@ -21,6 +21,7 @@
 			<add_contents>
 				<member name="xtime" type="var"/>
 				<member name="kineticEnergyAt100m" type="var"/>
+				<member name="kineticEnergyAtSurface" type="var"/>
 				<member name="relativeVorticityAt100m" type="var"/>
 				<member name="activeTracersAtSurface" type="var_array"/>
 			</add_contents>
