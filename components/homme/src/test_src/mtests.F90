@@ -7,19 +7,19 @@ MODULE mtests
   !  21 and 22 - Non-Hydrostatic Mountain Waves Over A Schaer-Type Mountain without and with vertical wind shear
   !
   !  Given a point specified by: 
-  !  	lon	longitude (radians) 
-  ! 	lat	latitude (radians) 
-  ! 	p/z	pressure/height
+  !     lon     longitude (radians) 
+  !     lat     latitude (radians) 
+  !     p/z     pressure/height
   !  the functions will return:
-  !	u	zonal wind (m s^-1)
-  !	v	meridional wind (m s^-1)
-  !	w	vertical velocity (m s^-1)
-  !	t	temperature (K)
-  !	phis	surface geopotential (m^2 s^-2)
-  !	ps	surface pressure (Pa)
-  !	rho	density (kj m^-3)
-  !	q	specific humidity (kg/kg)
-  !	qi	tracers (kg/kg)
+  !     u       zonal wind (m s^-1)
+  !     v       meridional wind (m s^-1)
+  !     w       vertical velocity (m s^-1)
+  !     t       temperature (K)
+  !     phis    surface geopotential (m^2 s^-2)
+  !     ps      surface pressure (Pa)
+  !     rho     density (kj m^-3)
+  !     q       specific humidity (kg/kg)
+  !     qi      tracers (kg/kg)
   !     p       pressure if height based (Pa)
 
   ! Use physical constants consistent with HOMME
@@ -31,11 +31,11 @@ MODULE mtests
 !     Physical Parameters
 !-----------------------------------------------------------------------
 
-	real(8), parameter ::	a	= 6371220.0d0,	&	! Earth's Radius (m)
-				Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
-				g	= 9.80616d0,	&	! Gravity (m s^2)
-				cp	= 1004.5d0,	&	! Specific heat capacity (J kg^-1 K^1)
-				pi	= 4.d0*atan(1.d0)       ! pi
+        real(8), parameter ::   a       = 6371220.0d0,  &       ! Earth's Radius (m)
+                                Rd      = 287.0d0,      &       ! Ideal gas const dry air (J kg^-1 K^1)
+                                g       = 9.80616d0,    &       ! Gravity (m s^2)
+                                cp      = 1004.5d0,     &       ! Specific heat capacity (J kg^-1 K^1)
+                                pi      = 4.d0*atan(1.d0)       ! pi
 
 ! parameters of mountain and u_eq that dcmip2012_2 sets in the namelist, 
 !but let's not plan on changing these for m tests.
@@ -48,7 +48,7 @@ MODULE mtests
 !     Additional constants
 !-----------------------------------------------------------------------
 
-	real(8), parameter :: p0 = 100000.d0 ! reference pressure (Pa)
+        real(8), parameter :: p0 = 100000.d0 ! reference pressure (Pa)
 
 
 CONTAINS
@@ -87,10 +87,6 @@ IMPLICIT NONE
   as      = a/X,        &   ! New Radius of small Earth
   Teq     = 300.d0,     &   ! Temperature at Equator
   Peq     = 100000.d0,  &   ! Reference PS at Equator
-
-
-!Z TOP is defined in 3 different places!
-  ztop    = 30000.d0,   &   ! Model Top
   lambdac = pi/4.d0,    &   ! Lon of Schar Mountain Center
   phic    = 0.d0,       &   ! Lat of Schar Mountain Center
   cs      = 0.00025d0       ! Wind Shear (shear=1)
@@ -105,11 +101,22 @@ IMPLICIT NONE
   real(8) :: h0               ! Height of Mountain
   real(8) :: d                ! Mountain Half-Width
   real(8) :: xi               ! Mountain Wavelength
+  real(8) :: r0               ! quantity in KSP2015
+
+  real(8) :: ztop
+
+  if (testid .eq. 1) then
+     ztop = 20000.d0
+  else
+     ztop = 30000.d0
+  endif
+
 
   ueq = mtest_ueq
   h0  = mtest_h0
   d   = mtest_d
   xi  = mtest_xi
+  r0  = 0.0d0
 
   !-----------------------------------------------------------------------
   !    PHIS (surface geopotential)
@@ -118,13 +125,24 @@ IMPLICIT NONE
   sin_tmp = sin(lat) * sin(phic)
   cos_tmp = cos(lat) * cos(phic)
  
-  ! great circle distance with 'a/X'  
-  r    = as * ACOS (sin_tmp + cos_tmp*cos(lon-lambdac))
-!if mountain
-!if ridge, insert ridge
+  ! great circle distance with 'a/X'
+  if (testid .eq. 1) then
+     !ridge
+     r0 = as * (lon-lambdac)
+     r = r0 * cos(lat)
+  else   
+     !mountain
+     r = as * ACOS (sin_tmp + cos_tmp*cos(lon-lambdac))
+  endif
 
-  zs   = h0 * exp(-(r**2)/(d**2))*(cos(pi*r/xi)**2)
-  !zs   = h0 * exp(-(r**2)/(d**2))
+  !We could use the same formula for z if we redefine r for mtest1,
+  !but to be consistent with KSP2015 notations, we introduced r0 and branch 
+  !definition of z.
+  if (testid .eq. 1) then
+      zs   = h0 * exp(-(r0**2)/(d**2))*(cos(pi*r0/xi)**2)*cos(lat)
+  else 
+      zs   = h0 * exp(-(r**2)/(d**2))*(cos(pi*r/xi)**2)
+  endif
 
   phis = g*zs
 

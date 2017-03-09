@@ -1,3 +1,7 @@
+
+
+
+
 #ifndef CAM
 #include "config.h"
 
@@ -39,7 +43,7 @@ real(rl), dimension(:,:,:,:), allocatable :: u0, v0                     ! storag
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
-
+real(rl):: ztop
 contains
 
 !_____________________________________________________________________
@@ -372,14 +376,17 @@ subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)
 
   real(rl), parameter ::   &
       Teq     = 300.d0,    &                                            ! temperature at equator
-      ztop    = 30000.d0,  &                                            ! model top (m)
       H       = Rd*Teq/g                                                ! characteristic height scale
-!ztop here and in forcing is the same!
-
-
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm                                          ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
+  real(rl):: ztop
+
+  if (testid .eq. 1) then
+     ztop = 20000.d0
+  else
+     ztop = 30000.d0
+  endif
 
   if (hybrid%masterthread) write(iulog,*) 'initializing m test'
 
@@ -396,7 +403,6 @@ subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)
   do ie = nets,nete; 
      do k=1,nlev; do j=1,np; do i=1,np
         call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
-!for tests m2 and m3 we use schaer
         call mtest_state(lon,lat,p,z,hyam,hybm,u,v,w,T,phis,ps,rho,testid)
         dp = pressure_thickness(ps,k,hvcoord)
         call set_state(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
@@ -429,11 +435,17 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
 
   integer :: ie, k
 
-  real(rl), parameter ::  &
-    ztop    = 30000.d0,		&   ! model top
-    zh      = 20000.d0        ! sponge-layer cutoff height
+  real(rl) :: ztop, zh
 
-  real(rl) :: f_d(nlev)                                                 ! damping function
+  real(rl) :: f_d(nlev) 
+
+  if (test_case == "mtest1") then
+    ztop    = 20000.d0        ! model top
+    zh      = 10000.d0        ! sponge-layer cutoff height
+  else 
+    ztop    = 30000.d0        ! model top
+    zh      = 20000.d0        ! sponge-layer cutoff height
+  endif
 
   ! Compute damping as a function of layer-midpoint height
   where(zm .ge. zh)
