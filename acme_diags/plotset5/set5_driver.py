@@ -15,6 +15,7 @@ import acme_diags.plotting.set5.plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.viewer import OutputViewer
+from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 
 def make_parameters(orginal_parameter):
@@ -56,6 +57,32 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv2_reg = mv2
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
+
+def create_metrics(ref, test, ref_regrid, test_regrid, diff):
+    """ Creates the mean, max, min, rmse, corr in a dictionary """
+    metrics_dict = {}
+    metrics_dict['ref'] = {
+        'min': min_cdms(ref),
+        'max': max_cdms(ref),
+        'mean': mean(ref)
+    }
+    metrics_dict['test'] = {
+        'min': min_cdms(test),
+        'max': max_cdms(test),
+        'mean': mean(test)
+    }
+
+    metrics_dict['diff'] = {
+        'min': min_cdms(diff),
+        'max': max_cdms(diff),
+        'mean': mean(diff)
+    }
+    metrics_dict['misc'] = {
+        'rmse': rmse(test_regrid, ref_regrid),
+        'corr': corr(test_regrid, ref_regrid)
+    }
+
+    return metrics_dict
 
 def add_page_and_top_row(viewer, parameters):
     """ Setup for OutputViewer """
@@ -156,8 +183,9 @@ for parameter in parameters:
                     mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                     mv2_reg = MV2.masked_where(land_mask, mv2_reg)
 
-                print 'hi1'
-                acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                diff = mv1_reg - mv2_reg
+                metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+                acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                 viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
 
 
@@ -225,8 +253,9 @@ for parameter in parameters:
                     mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                     # Plotting
-                    print 'hi2'
-                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                    diff = mv1_reg - mv2_reg
+                    metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                     viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
 
         else:
