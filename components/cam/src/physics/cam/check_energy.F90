@@ -54,12 +54,10 @@ module check_energy
   public :: check_tracers_init      ! initialize tracer integrals and cumulative boundary fluxes
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
 
-!!== KZ_WATCON
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
   public :: check_prect             ! output prect at certain locations for water conservation check  
   public :: check_water             ! output water path at certain locations for water conservation check  
-!!== KZ_WATCON
 
 
 ! Private module data
@@ -252,22 +250,18 @@ end subroutine check_energy_get_integrals
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
-!!== KZ_WATCON
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
     integer :: ixrain
     integer :: ixsnow
-!!== KZ_WATCON
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-!!== KZ_WATCON
     call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
-!!== KZ_WATCON
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -289,10 +283,8 @@ end subroutine check_energy_get_integrals
     wv = 0._r8
     wl = 0._r8
     wi = 0._r8
-!!== KZ_WATCON
     wr = 0._r8
     ws = 0._r8
-!!== KZ_WATCON
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
@@ -315,7 +307,6 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-!!== KZ_WATCON
     if (ixrain   > 1  .and.  ixsnow   > 1 ) then
        do k = 1, pver
           do i = 1, ncol
@@ -324,16 +315,13 @@ end subroutine check_energy_get_integrals
           end do
        end do
     end if
-!!== KZ_WATCON
 
 
 ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
-!!== KZ_WATCON
-       state%te_ini(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
-!!TO_BE_FIXED     state%te_ini(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) ) 
+!!     state%te_ini(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
+       state%te_ini(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) ) 
        state%tw_ini(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i) 
-!!== KZ_WATCON
 
        state%te_cur(i) = state%te_ini(i)
        state%tw_cur(i) = state%tw_ini(i)
@@ -364,9 +352,7 @@ end subroutine check_energy_get_integrals
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
 
-!!== KZ_WATCON
     use cam_history,       only: outfld
-!!== KZ_WATCON
 
     type(physics_state)    , intent(inout) :: state
     type(physics_tend )    , intent(inout) :: tend
@@ -390,17 +376,13 @@ end subroutine check_energy_get_integrals
     real(r8) :: te_dif(state%ncol)                 ! energy of input state - original energy
     real(r8) :: te_tnd(state%ncol)                 ! tendency from last process
     real(r8) :: te_rer(state%ncol)                 ! relative error in energy column
-!!== KZ_WATCON
     real(r8) :: te_err(state%ncol)                 ! absolute error in energy column
-!!== KZ_WATCON
 
     real(r8) :: tw_xpd(state%ncol)                 ! expected value (w0 + dt*boundary_flux)
     real(r8) :: tw_dif(state%ncol)                 ! tw_inp - original water
     real(r8) :: tw_tnd(state%ncol)                 ! tendency from last process
     real(r8) :: tw_rer(state%ncol)                 ! relative error in water column
-!!== KZ_WATCON
     real(r8) :: tw_err(state%ncol)                 ! absolute error in water column
-!!== KZ_WATCON
 
     real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
     real(r8) :: se(state%ncol)                     ! vertical integral of static energy
@@ -417,22 +399,18 @@ end subroutine check_energy_get_integrals
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
-!!== KZ_WATCON
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
     integer :: ixrain
     integer :: ixsnow
-!!== KZ_WATCON
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-!!== KZ_WATCON
     call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
-!!== KZ_WATCON
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -454,10 +432,8 @@ end subroutine check_energy_get_integrals
     wv = 0._r8
     wl = 0._r8
     wi = 0._r8
-!!== KZ_WATCON
     wr = 0._r8
     ws = 0._r8
-!!== KZ_WATCON
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
@@ -480,7 +456,6 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-!!== KZ_WATCON
     if (ixrain   > 1  .and.  ixsnow   > 1 ) then
        do k = 1, pver
           do i = 1, ncol
@@ -489,15 +464,12 @@ end subroutine check_energy_get_integrals
           end do
        end do
     end if
-!!== KZ_WATCON
 
     ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
-       te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
-!!== KZ_WATCON
-!! TO_BE_FIXED   te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
-     tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
-!!== KZ_WATCON
+!!     te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
+       te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
+       tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
     end do
 
     ! compute expected values and tendencies
@@ -518,20 +490,16 @@ end subroutine check_energy_get_integrals
        te_xpd(i) = state%te_cur(i) + te_tnd(i)*ztodt
        tw_xpd(i) = state%tw_cur(i) + tw_tnd(i)*ztodt
 
-!!== KZ_WATCON
        ! absolute error, expected value - input state / previous state 
        te_err(i) = te_xpd(i) - te(i)
-!!== KZ_WATCON
 
        ! relative error, expected value - input state / previous state 
        te_rer(i) = (te_xpd(i) - te(i)) / state%te_cur(i)
     end do
 
-!!== KZ_WATCON
     ! absolute error for total water (allow for dry atmosphere)
     tw_err = 0._r8
     tw_err(:ncol) = tw_xpd(:ncol) - tw(:ncol)
-!!== KZ_WATCON
 
     ! relative error for total water (allow for dry atmosphere)
     tw_rer = 0._r8
@@ -691,7 +659,6 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     end if
 
   end subroutine qflx_gmean
-!!== KZ_WATCON
 
 
 !===============================================================================
@@ -762,17 +729,13 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-!!== KZ_WATCON
     call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
-!!== KZ_WATCON
 
     do m = 1,pcnst
 
-!!== KZ_WATCON
        if ( any(m == (/ 1, ixcldliq, ixcldice, &
                            ixrain,   ixsnow    /)) ) exit   ! dont process water substances
-!!== KZ_WATCON
                                                             ! they are checked in check_energy
        if (cnst_get_type_byind(m).eq.'dry') then
           trpdel(:ncol,:) = state%pdeldry(:ncol,:)
@@ -839,9 +802,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
-!!== KZ_WATCON
     integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
-!!== KZ_WATCON
     integer :: m                            ! tracer index
     character(len=8) :: tracname   ! tracername
 !-----------------------------------------------------------------------
@@ -851,17 +812,13 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     ncol  = state%ncol
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-!!== KZ_WATCON
     call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
-!!== KZ_WATCON
 
     do m = 1,pcnst
 
-!!== KZ_WATCON
        if ( any(m == (/ 1, ixcldliq, ixcldice, &
                            ixrain,   ixsnow    /)) ) exit   ! dont process water substances
-!!== KZ_WATCON
                                                             ! they are checked in check_energy
 
        tracname = cnst_name(m)
@@ -946,7 +903,6 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
   end subroutine check_tracers_chng
 
 
-!!== KZ_WATCON
   subroutine check_water(state, tend, name, nstep, ztodt)
 
 !!...................................................................
@@ -1127,7 +1083,6 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     end if
 
   end subroutine check_prect
-!!== KZ_WATCON
 
 
 end module check_energy
