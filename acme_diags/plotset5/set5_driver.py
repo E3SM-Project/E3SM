@@ -18,13 +18,23 @@ from acme_diags.viewer import OutputViewer
 
 
 def make_parameters(orginal_parameter):
+<<<<<<< HEAD
+    #f_data = open('set5_diags_default.json').read()
+    f_data = open('set5_diags.json').read()
+    #f_data = open('set5_diags_MERRA_domains.json').read()
+=======
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
     #f_data = open('set5_diags.json').read()
     f_data = open('set5_diags_GPCP.json').read()
     #f_data = open('set5_diags_MERRA.json').read()
+>>>>>>> master
     #f_data = open('set5_diags_HADISST.json').read()
-    #f_data = open('set5_diags_NVA.json').read()
+    #f_data = open('set5_diags_CRU.json').read()
+    #f_data = open('set5_diags_LEGATES.json').read()
+    #f_data = open('set5_diags_WILLMOTT.json').read()
+    #f_data = open('set5_diags_NVAP.json').read()
+    #f_data = open('set5_diags_WHOI.json').read()
     json_file = json.loads(f_data)
 
     parameters = []
@@ -57,6 +67,30 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
 
+<<<<<<< HEAD
+def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
+    """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
+    None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
+    var and maskvar: dimensioned the same variables.
+    low_limit and high_limit: scalars.
+    """
+    var = copy.deepcopy(input_var)
+    if low_limit is None and high_limit is None:
+        return var
+    if low_limit is None and high_limit is not None:
+        maskvarmask = maskvar > high_limit
+    elif low_limit is not None and high_limit is None:
+        maskvarmask = maskvar < low_limit
+    else:
+        maskvarmask = (maskvar < low_limit) | (maskvar > high_limit)
+    if var.mask is False:
+        newmask = maskvarmask
+    else:
+        newmask = var.mask | maskvarmask
+    var.mask = newmask
+    return var
+
+=======
 def add_page_and_top_row(viewer, parameters):
     """ Setup for OutputViewer """
     col_labels = ['Description']
@@ -69,6 +103,7 @@ def add_page_and_top_row(viewer, parameters):
         col_labels.append(s)
 
     viewer.add_page("Set 5", col_labels)
+>>>>>>> master
 
 
 parser = ACMEParser()
@@ -106,6 +141,25 @@ for parameter in parameters:
         # domain can pass in process_derived_var after Charles fix cdutil.domain'unit problem
         #mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod, domain)
         #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
+<<<<<<< HEAD
+        mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
+        mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
+        print mv1.units
+        print mv2.units
+
+        # special case, cdms didn't properly convert mask with fill value -999.0, filed issue with denise
+        if ref_name == 'WILLMOTT':
+            #mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
+            mv2=MV2.masked_where(mv2==-999.,mv2) # this is cdms2 for bad mask, denise's fix should fix
+            #following should move to derived variable
+            days_season = {'ANN':365,'DJF':90,'MAM':92,'JJA':92,'SON':91}
+            mv1 = mv1 * days_season[season] * 0.1 #following AMWG approximate way to convert to seasonal cumulative precipitation, need to have solution in derived variable, unit convert from mm/day to cm
+            mv1.units = 'cm'
+            mv2.units = 'cm'
+            
+            
+
+=======
         try:
             mv1 = f_mod(var)
         except:
@@ -119,6 +173,7 @@ for parameter in parameters:
         # Temporary fix to bypass bug (Zeshawn or Jill will fix)
         mv1.units = parameter.test_units
         mv2.units = parameter.test_units
+>>>>>>> master
          
         #for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
@@ -128,12 +183,40 @@ for parameter in parameters:
             for region in regions:
                 print region
                 domain = None
-                if region != 'global':
+##                if region != 'global':
+                if region.find('land') !=-1 or region.find('ocean') !=-1:
+                    if region.find('land') !=-1 :
+                        land_ocean_frac = f_mod('LANDFRAC')
+                    elif region.find('ocean') !=-1:
+                        land_ocean_frac = f_mod('OCNFRAC')
+                    region_value = regions_specs[region]['value']
+                    print 'region_value',region_value,mv1
+
+                    mv1_domain = mask_by(mv1, land_ocean_frac, low_limit = region_value)
+                    mv2_domain = mv2.regrid(mv1.getGrid(),parameter.regrid_tool, parameter.regrid_method)
+                    mv2_domain = mask_by(mv2_domain, land_ocean_frac, low_limit = region_value)
+                else:
+                    mv1_domain =  mv1  
+                    mv2_domain =  mv2  
+                   
+                print region
+                try: 
+                #if region.find('global') == -1:        
                     domain = regions_specs[region]['domain']
-                    # below 7 lines are temporary solution for the cdutil error
-                mv1_domain = mv1(domain)
-                mv2_domain = mv2(domain)
+                    print domain
+                except:
+                    print ("no domain selector")
+                mv1_domain = mv1_domain(domain)
+                mv2_domain = mv2_domain(domain)
                 mv1_domain.units = mv1.units
+<<<<<<< HEAD
+                mv2_domain.units = mv1.units
+
+                parameter.output_file = '_'.join([ref_name,var, season,region])
+                parameter.main_title = str(' '.join([var, season]))
+        
+    
+=======
                 mv2_domain.units = mv2.units
                 parameter.output_file = '_'.join([ref_name, season,region])
                 parameter.main_title = str(' '.join([var, season]))
@@ -147,20 +230,37 @@ for parameter in parameters:
                 #parameter.main_title = str(' '.join([var, season]))
 
 
+>>>>>>> master
                 #regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
-                if var is 'SST': #special case
-
+                #if var is 'SST' or var is 'TREFHT_LAND': #special case
+                
+                if var == 'TREFHT_LAND'or var == 'SST': #use "==" instead of "is"
+                    if ref_name == 'WILLMOTT':
+                       mv2_reg=MV2.masked_where(mv2_reg==mv2_reg.fill_value,mv2_reg)
+                       print ref_name
+                        
+                        #if mv.mask is False: 
+                        #    mv = MV2.masked_less_equal(mv, mv._FillValue)
+                        #    print "*************",mv.count()
                     land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
                     mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                     mv2_reg = MV2.masked_where(land_mask, mv2_reg)
+<<<<<<< HEAD
+           
+                plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                #plot_set_5.plot(mv2_reg, mv1_reg, mv2_reg, mv1_reg, parameter)
+ 
+    
+=======
 
                 print 'hi1'
                 acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
                 viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
 
 
+>>>>>>> master
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
             plev = parameter.levels
@@ -203,22 +303,50 @@ for parameter in parameters:
             for ilev in range(len(plev)):
                 mv1 = mv1_p[:,ilev,]
                 mv2 = mv2_p[:,ilev,]
-
                 if len(regions) == 0:
                     regions = ['global']
+<<<<<<< HEAD
+        
+                for region in regions: 
+=======
 
                 for region in regions:
+>>>>>>> master
                     print region
                     domain = None
-                    if region != 'global':
+    ##                if region != 'global':
+                    if region.find('land') !=-1 or region.find('ocean') !=-1:
+                        if region.find('land') !=-1 :
+                            land_ocean_frac = f_mod('LANDFRAC')
+                        elif region.find('ocean') !=-1:
+                            land_ocean_frac = f_mod('OCNFRAC')
+                        region_value = regions_specs[region]['value']
+                        print 'region_value',region_value,mv1
+    
+                        mv1_domain = mask_by(mv1, land_ocean_frac, low_limit = region_value)
+                        mv2_domain = mv2.regrid(mv1.getGrid(),parameter.regrid_tool, parameter.regrid_method)
+                        mv2_domain = mask_by(mv2_domain, land_ocean_frac, low_limit = region_value)
+                    else:
+                        mv1_domain =  mv1  
+                        mv2_domain =  mv2  
+                       
+                    print region
+                    try: 
+                    #if region.find('global') == -1:        
                         domain = regions_specs[region]['domain']
-                        # below 7 lines are temporary solution for the cdutil error
-                    mv1_domain = mv1(domain)
-                    mv2_domain = mv2(domain)
+                        print domain
+                    except:
+                        print ("no domain selector")
+                    mv1_domain = mv1_domain(domain)
+                    mv2_domain = mv2_domain(domain)
                     mv1_domain.units = mv1.units
-                    mv2_domain.units = mv2.units
+                    mv2_domain.units = mv1.units
 
+<<<<<<< HEAD
+                    parameter.output_file = '_'.join([ref_name,var,str(int(plev[ilev])),season,region,var, str(int(plev[ilev])), 'mb'])
+=======
                     parameter.output_file = '_'.join([ref_name, season, region, var, str(int(plev[ilev])), 'mb'])
+>>>>>>> master
                     parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))
 
                     # Regrid towards lower resolution of two variables for calculating difference
