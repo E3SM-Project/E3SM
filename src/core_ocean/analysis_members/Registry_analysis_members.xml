@@ -5,7 +5,6 @@
 #include "Registry_zonal_mean.xml"
 #include "Registry_okubo_weiss.xml"
 #include "Registry_meridional_heat_transport.xml"
-#include "Registry_test_compute_interval.xml"
 #include "Registry_high_frequency_output.xml"
 #include "Registry_time_filters.xml"
 #include "Registry_lagrangian_particle_tracking.xml"
