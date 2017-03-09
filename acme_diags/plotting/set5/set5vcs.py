@@ -144,3 +144,15 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     vcs_canvas.plot(test, template_test, test_isofill)
     vcs_canvas.plot(reference, template_ref, reference_isofill)
     vcs_canvas.plot(diff, template_diff, diff_isofill)
+
+    plot_rmse_and_corr(vcs_canvas, test_regrid, reference_regrid)
+
+    # Plotting the main title
+    main_title = vcs_canvas.createtextcombined(Tt_source = 'main_title',
+                                               To_source = 'main_title')
+    main_title.string = parameter.main_title
+    vcs_canvas.plot(main_title)
+
+    #vcs_canvas.pdf(case_id + '/' + parameter.output_file, textAsPaths=False)
+    vcs_canvas.png(case_id + '/' + parameter.output_file)
+    print 'Plot saved in: ' + case_id + '/' + parameter.output_file
