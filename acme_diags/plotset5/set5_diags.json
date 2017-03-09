@@ -7,7 +7,7 @@
       "ref_name": "GPCP",
       "reference_name": "GPCP (yrs1979-2009)",
       "season": ["ANN"],
-      "region": ["TROPICS","TRMM_region","global"],
+      "region": ["ocean_TROPICS","land","global","ocean"],
       "levels": []
                 }
           ]

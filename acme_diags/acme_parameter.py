@@ -23,13 +23,13 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.main_title = 'Main Title'
 
         self.test_name = ''
-        self.test_title = 'Reference'
+        self.test_title = ''
         self.test_colormap = ''
         self.test_levels = []
         self.test_units = ''
 
         self.reference_name = ''
-        self.reference_title = 'Observation'
+        self.reference_title = ''
         self.reference_colormap = ''
         self.reference_levels = []
         self.reference_units = ''
