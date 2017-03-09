@@ -148,8 +148,13 @@ ADD_SUBDIRECTORY(utils/cime/share/timing)
 
 # Use CIME's FindNETCDF path
 # CMAKE_CURRENT_SOURCE_DIR == homme
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/externals/CMake" ${CMAKE_MODULE_PATH})
 FIND_PACKAGE(NETCDF)
+
+# These are needed for pio's FindNetCDF
+SET(NetCDF_PATH ${NETCDF_DIR})
+SET(PnetCDF_PATH ${PNETCDF_DIR})
 
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/externals/genf90)
@@ -164,7 +169,6 @@ ADD_SUBDIRECTORY(utils/cime/externals/pio1)
 SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc)
 SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
 ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
-
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})
