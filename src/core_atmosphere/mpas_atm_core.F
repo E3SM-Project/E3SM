@@ -1062,6 +1062,8 @@ module atm_core
       real (kind=RKIND), pointer :: config_xnutr, config_zd
       real (kind=RKIND) :: z, zt, m1, pii
       real (kind=RKIND), dimension(:,:), pointer :: dss, zgrid
+      real (kind=RKIND), dimension(:), pointer :: meshDensity
+      real (kind=RKIND) :: dx_scale_power
 
       m1 = -1.0
       pii = acos(m1)
@@ -1069,12 +1071,14 @@ module atm_core
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
+      call mpas_pool_get_array(mesh, 'meshDensity', meshDensity)
       call mpas_pool_get_array(mesh, 'dss', dss)
       call mpas_pool_get_array(mesh, 'zgrid', zgrid)
 
       call mpas_pool_get_config(configs, 'config_zd', config_zd)
       call mpas_pool_get_config(configs, 'config_xnutr', config_xnutr)
 
+      dx_scale_power = 1.0
       dss(:,:) = 0.0
       do iCell=1,nCells
          zt = zgrid(nVertLevels+1,iCell)
@@ -1082,6 +1086,7 @@ module atm_core
             z = 0.5*(zgrid(k,iCell) + zgrid(k+1,iCell))
             if (z > config_zd) then
                dss(k,iCell) = config_xnutr*sin(0.5*pii*(z-config_zd)/(zt-config_zd))**2.0
+               dss(k,iCell) = dss(k,iCell) / meshDensity(iCell)**(0.25*dx_scale_power)
             end if
          end do
       end do
