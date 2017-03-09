@@ -18,7 +18,7 @@ from acme_diags.derivations.default_regions import regions_specs
 def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_default.json').read()
     f_data = open('set5_diags.json').read()
-    #f_data = open('set5_diags_MERRA.json').read()
+    #f_data = open('set5_diags_MERRA_domains.json').read()
     #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
@@ -53,12 +53,13 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
 
-def mask_by( var, maskvar, low_limit=None, high_limit=None ):
+def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
     """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
     None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
     var and maskvar: dimensioned the same variables.
     low_limit and high_limit: scalars.
     """
+    var = copy.deepcopy(input_var)
     if low_limit is None and high_limit is None:
         return var
     if low_limit is None and high_limit is not None:
@@ -146,7 +147,6 @@ for parameter in parameters:
                     print 'region_value',region_value,mv1
 
                     mv1_domain = mask_by(mv1, land_ocean_frac, low_limit = region_value)
-                    print '%%%%%',mv1
                     mv2_domain = mv2.regrid(mv1.getGrid(),parameter.regrid_tool, parameter.regrid_method)
                     mv2_domain = mask_by(mv2_domain, land_ocean_frac, low_limit = region_value)
                 else:
@@ -171,16 +171,6 @@ for parameter in parameters:
     
                 #regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
-                print 'domainp',mv1_domain.shape,mv2_domain.shape,mv1_reg.shape,mv2_reg.shape
-                #import vcs
-                #x=vcs.init()
-                #x.plot(mv1_domain)
-                #y=vcs.init()
-                #y.plot(mv2_domain)
-                #x1=vcs.init()
-                #x1.plot(mv1_reg)
-                #x2=vcs.init()
-                #x2.plot(mv2_reg)
 
                 #if var is 'SST' or var is 'TREFHT_LAND': #special case
                 
@@ -242,20 +232,39 @@ for parameter in parameters:
             for ilev in range(len(plev)):
                 mv1 = mv1_p[:,ilev,]
                 mv2 = mv2_p[:,ilev,]
-
                 if len(regions) == 0:
                     regions = ['global']
-    
+        
                 for region in regions: 
                     print region
                     domain = None
-                    if region != 'global':
+    ##                if region != 'global':
+                    if region.find('land') !=-1 or region.find('ocean') !=-1:
+                        if region.find('land') !=-1 :
+                            land_ocean_frac = f_mod('LANDFRAC')
+                        elif region.find('ocean') !=-1:
+                            land_ocean_frac = f_mod('OCNFRAC')
+                        region_value = regions_specs[region]['value']
+                        print 'region_value',region_value,mv1
+    
+                        mv1_domain = mask_by(mv1, land_ocean_frac, low_limit = region_value)
+                        mv2_domain = mv2.regrid(mv1.getGrid(),parameter.regrid_tool, parameter.regrid_method)
+                        mv2_domain = mask_by(mv2_domain, land_ocean_frac, low_limit = region_value)
+                    else:
+                        mv1_domain =  mv1  
+                        mv2_domain =  mv2  
+                       
+                    print region
+                    try: 
+                    #if region.find('global') == -1:        
                         domain = regions_specs[region]['domain']
-                        # below 7 lines are temporary solution for the cdutil error
-                    mv1_domain = mv1(domain)
-                    mv2_domain = mv2(domain)
+                        print domain
+                    except:
+                        print ("no domain selector")
+                    mv1_domain = mv1_domain(domain)
+                    mv2_domain = mv2_domain(domain)
                     mv1_domain.units = mv1.units
-                    mv2_domain.units = mv2.units
+                    mv2_domain.units = mv1.units
 
                     parameter.output_file = '_'.join([ref_name,var,str(int(plev[ilev])),season,region,var, str(int(plev[ilev])), 'mb'])
                     parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))

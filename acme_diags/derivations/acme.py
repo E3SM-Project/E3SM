@@ -1,6 +1,8 @@
 from numbers import Number
 from unidata import udunits
 import cdms2
+import copy
+
 
 def process_derived_var(var_key, derived_vars_dict, nc_file):
     ''' Given a key (var_key) to the derived_vars_dict dict, compute and return
@@ -58,12 +60,13 @@ def _convert_units(var, target_units):
 
     return var
 
-def mask_by( var, maskvar, low_limit=None, high_limit=None ):
+def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
     """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
     None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
     var and maskvar: dimensioned the same variables.
     low_limit and high_limit: scalars.
     """
+    var = copy.deepcopy(input_var)
     if low_limit is None and high_limit is None:
         return var
     if low_limit is None and high_limit is not None:
