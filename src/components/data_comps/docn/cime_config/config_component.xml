@@ -113,6 +113,8 @@
       <value compset="1850_" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c101028.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
+      <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF"      grid="a%4x5.*_m%gx3v7"	        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_4x5_clim_c110526.nc</value>
+      <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF"      grid="a%4x5.*_m%gx3v7"	        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_4x5_clim_c110526.nc</value>
       <value compset=".*WW3" grid="a%ww3a"							>$DIN_LOC_ROOT/wav/ww3/core2_G4_ice_30min_20000601_to_05.nc</value>
     </values>
     <group>run_component_docn</group>
@@ -148,6 +150,8 @@
       <value compset="1850" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.23x0.31_gx1v6_101108.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF"                                         >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
       <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF"                                         >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</value>
+      <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" grid="a%4x5.*_m%gx3v7"                  >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.4x5_gx3v7_100120.nc</value>
+      <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" grid="a%4x5.*_m%gx3v7"                  >$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.4x5_gx3v7_100120.nc</value>
       <value compset=".*WW3" 							                >$DIN_LOC_ROOT/wav/ww3/core2_G4_ice_30min_20000601_to_05.nc</value>
     </values>
     <group>run_component_cam_sstice</group>
