@@ -167,7 +167,7 @@ contains
       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge
 
       real (kind=RKIND) :: invAreaCell1, layerThicknessEdge1, coeff
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, kineticEnergyAtSurface, relativeVorticityAt100m
       real (kind=RKIND), dimension(:), pointer :: divergenceAt100m, relativeVorticityVertexAt100m
       real (kind=RKIND), dimension(:), pointer :: barotropicSpeed, columnIntegratedSpeed, dvEdge, dcEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, activeTracersAtSurface
@@ -210,6 +210,7 @@ contains
 
          ! get arrays that can be written to output at high freqency
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAt100m', kineticEnergyAt100m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAtSurface', kineticEnergyAtSurface)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAt100m', relativeVorticityAt100m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAtSurface', activeTracersAtSurface)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAt100m', divergenceAt100m)
@@ -235,6 +236,7 @@ contains
          relativeVorticityAt100m(:) = relativeVorticityCell(iLevelTarget,:)
          divergenceAt100m(:) = divergence(iLevelTarget,:)
          relativeVorticityVertexAt100m = relativeVorticity(iLevelTarget,:)
+         kineticEnergyAtSurface(:) = kineticEnergyCell(1,:)
          activeTracersAtSurface(1,:) = activeTracers(1,1,:)
          activeTracersAtSurface(2,:) = activeTracers(2,1,:)
 
