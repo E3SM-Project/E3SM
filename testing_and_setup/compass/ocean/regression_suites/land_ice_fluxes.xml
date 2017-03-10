@@ -32,10 +32,10 @@
 	<test name="sub-ice-shelf 2D - restart test" core="ocean" configuration="sub_ice_shelf_2D" resolution="5km" test="restart_test">
 		<script name="run_test.py"/>
 	</test>
-	<test name="QU 240km - Smoke Test" core="ocean" configuration="global_ocean" resolution="QU_240km" test="with_land_ice">
+	<test name="QU 240km - Smoke Test" core="ocean" configuration="global_ocean" resolution="QU240" test="with_land_ice">
 		<script name="run_test.py"/>
 	</test>
-	<test name="QU 120km - Smoke Test" core="ocean" configuration="global_ocean" resolution="QU_120km" test="with_land_ice">
+	<test name="QU 120km - Smoke Test" core="ocean" configuration="global_ocean" resolution="QU120" test="with_land_ice">
 		<script name="run_test.py"/>
 	</test>
 </regression_suite>
