@@ -85,7 +85,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/config/$MODEL/allactive/config_compsets.xml</value>
+      <value component="allactive">$SRCROOT/config/allactive/config_compsets.xml</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/config_compsets.xml</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/config_compsets.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/config_compsets.xml</value>
@@ -104,7 +104,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/config/$MODEL/allactive/config_pes.xml</value>
+      <value component="allactive">$SRCROOT/config/allactive/config_pes.xml</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/config_pes.xml</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/config_pes.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/config_pes.xml</value>
@@ -165,7 +165,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/config/$MODEL/allactive/testlist_allactive.xml</value>
+      <value component="allactive">$SRCROOT/config/allactive/testlist_allactive.xml</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/testdefs/testlist_drv.xml</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/testdefs/testlist_cam.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/testdefs/testlist_cism.xml</value>
@@ -185,7 +185,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/config/$MODEL/allactive/testmods_dirs</value>
+      <value component="allactive">$SRCROOT/config/allactive/testmods_dirs</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/testdefs/testmods_dirs</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/testdefs/testmods_dirs</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/testdefs/testmods_dirs</value>
@@ -204,7 +204,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/config/$MODEL/allactive/usermods_dirs</value>
+      <value component="allactive">$SRCROOT/config/allactive/usermods_dirs</value>
       <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/usermods_dirs</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/usermods_dirs</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/usermods_dirs</value>
