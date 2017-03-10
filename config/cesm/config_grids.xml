@@ -51,6 +51,13 @@
       <support>Non-standard grid for testing of the interpolation in DATM rather than coupler</support>
     </model_grid>
 
+    <model_grid alias="g17_g17" compset="DATM.+DROF">
+      <grid name="atm">gx1v7</grid>
+      <grid name="lnd">gx1v7</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <support>Non-standard grid for testing of the interpolation in DATM rather than coupler</support>
+    </model_grid>
+
     <model_grid alias="1D_1D" compset="DATM.+DROF">
       <grid name="atm">01col</grid>
       <grid name="lnd">01col</grid>
@@ -208,6 +215,12 @@
       <grid name="ocnice">gx1v6</grid>
     </model_grid>
 
+    <model_grid alias="T62_g17" not_compset="_CAM">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">gx1v7</grid>
+    </model_grid>
+
     <model_grid alias="T62_oQU120" not_compset="_CAM">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
@@ -222,6 +235,12 @@
       <grid name="ocnice">gx1v6</grid>
     </model_grid>
 
+    <model_grid alias="f02_g17">
+      <grid name="atm">0.23x0.31</grid>
+      <grid name="lnd">0.23x0.31</grid>
+      <grid name="ocnice">gx1v7</grid>
+    </model_grid>
+
     <model_grid alias="f02_t12">
       <grid name="atm">0.23x0.31</grid>
       <grid name="lnd">0.23x0.31</grid>
@@ -232,6 +251,12 @@
       <grid name="atm">0.47x0.63</grid>
       <grid name="lnd">0.47x0.63</grid>
       <grid name="ocnice">gx1v6</grid>
+    </model_grid>
+
+    <model_grid alias="f05_g17">
+      <grid name="atm">0.47x0.63</grid>
+      <grid name="lnd">0.47x0.63</grid>
+      <grid name="ocnice">gx1v7</grid>
     </model_grid>
 
     <model_grid alias="f05_t12">
@@ -246,10 +271,23 @@
       <grid name="ocnice">gx1v6</grid>
     </model_grid>
 
+    <model_grid alias="f09_g17">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">gx1v7</grid>
+    </model_grid>
+
     <model_grid alias="f09_g16_gl4" compset="_CISM">
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">gx1v6</grid>
+      <grid name="glc">gland4</grid>
+    </model_grid>
+
+    <model_grid alias="f09_g17_gl4" compset="_CISM">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">gx1v7</grid>
       <grid name="glc">gland4</grid>
     </model_grid>
 
@@ -260,10 +298,24 @@
       <grid name="glc">gland10</grid>
     </model_grid>
 
+    <model_grid alias="f09_g17_gl10" compset="_CISM">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <grid name="glc">gland10</grid>
+    </model_grid>
+
     <model_grid alias="f09_g16_gl20" compset="_CISM">
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">gx1v6</grid>
+      <grid name="glc">gland20</grid>
+    </model_grid>
+
+    <model_grid alias="f09_g17_gl20" compset="_CISM">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">gx1v7</grid>
       <grid name="glc">gland20</grid>
     </model_grid>
 
@@ -274,11 +326,32 @@
       <grid name="glc">gland5UM</grid>
     </model_grid>
 
+    <model_grid alias="f09_g17_gl5" compset="_CISM">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <grid name="glc">gland5UM</grid>
+    </model_grid>
+
     <model_grid alias="f09_f09" not_compset="_POP" >
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">0.9x1.25</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f09_f09_mg16" not_compset="_POP" >
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">0.9x1.25</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f09_f09_mg17" not_compset="_POP" >
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">0.9x1.25</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="f09_f09_gl5" compset="_CISM" not_compset="_POP">
@@ -289,10 +362,32 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="f09_f09_gl5_mg16" compset="_CISM" not_compset="_POP">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">0.9x1.25</grid>
+      <grid name="glc">gland5UM</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f09_f09_gl5_mg17" compset="_CISM" not_compset="_POP">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">0.9x1.25</grid>
+      <grid name="glc">gland5UM</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="f19_g16">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">gx1v6</grid>
+    </model_grid>
+
+    <model_grid alias="f19_g17">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">gx1v7</grid>
     </model_grid>
 
     <model_grid alias="f19_g16_r01">
@@ -303,7 +398,13 @@
       <mask>gx1v6</mask>
     </model_grid>
 
-
+    <model_grid alias="f19_g17_r01">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <grid name="rof">r01</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
 
     <model_grid alias="f19_g16_gl4" compset="_CISM">
       <grid name="atm">1.9x2.5</grid>
@@ -312,10 +413,24 @@
       <grid name="glc">gland4</grid>
     </model_grid>
 
+    <model_grid alias="f19_g17_gl4" compset="_CISM">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <grid name="glc">gland4</grid>
+    </model_grid>
+
     <model_grid alias="f19_g16_gl5" compset="_CISM">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">gx1v6</grid>
+      <grid name="glc">gland5UM</grid>
+    </model_grid>
+
+    <model_grid alias="f19_g17_gl5" compset="_CISM">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">gx1v7</grid>
       <grid name="glc">gland5UM</grid>
     </model_grid>
 
@@ -327,11 +442,41 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="f19_f19_gl5_mg16" compset="_CISM" not_compset="_POP">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">1.9x2.5</grid>
+      <grid name="glc">gland5UM</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f19_f19_gl5_mg17" compset="_CISM" not_compset="_POP">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">1.9x2.5</grid>
+      <grid name="glc">gland5UM</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="f19_f19" not_compset="_POP">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">1.9x2.5</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f19_f19_mg16" not_compset="_POP">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">1.9x2.5</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f19_f19_mg17" not_compset="_POP">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">1.9x2.5</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="f19_f19_gl10" compset="_CISM" not_compset="_POP">
@@ -340,6 +485,22 @@
       <grid name="ocnice">1.9x2.5</grid>
       <grid name="glc">gland10</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f19_f19_gl10_mg16" compset="_CISM" not_compset="_POP">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">1.9x2.5</grid>
+      <grid name="glc">gland10</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f19_f19_gl10_mg17" compset="_CISM" not_compset="_POP">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">1.9x2.5</grid>
+      <grid name="glc">gland10</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="f45_g37">
@@ -355,11 +516,39 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="f02_f02_mg16" not_compset="_POP">
+      <grid name="atm">0.23x0.31</grid>
+      <grid name="lnd">0.23x0.31</grid>
+      <grid name="ocnice">0.23x0.31</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f02_f02_mg17" not_compset="_POP">
+      <grid name="atm">0.23x0.31</grid>
+      <grid name="lnd">0.23x0.31</grid>
+      <grid name="ocnice">0.23x0.31</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="f25_f25" not_compset="_POP">
       <grid name="atm">2.5x3.33</grid>
       <grid name="lnd">2.5x3.33</grid>
       <grid name="ocnice">2.5x3.33</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f25_f25_mg16" not_compset="_POP">
+      <grid name="atm">2.5x3.33</grid>
+      <grid name="lnd">2.5x3.33</grid>
+      <grid name="ocnice">2.5x3.33</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f25_f25_mg17" not_compset="_POP">
+      <grid name="atm">2.5x3.33</grid>
+      <grid name="lnd">2.5x3.33</grid>
+      <grid name="ocnice">2.5x3.33</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="f45_f45" not_compset="_POP">
@@ -390,10 +579,23 @@
       <grid name="ocnice">gx1v6</grid>
     </model_grid>
 
+    <model_grid alias="ne30_g17">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">gx1v7</grid>
+    </model_grid>
+
     <model_grid alias="ne30_f19_g16">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">gx1v6</grid>
+      <support>For testing tri-grid</support>
+    </model_grid>
+
+    <model_grid alias="ne30_f19_g17">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">gx1v7</grid>
       <support>For testing tri-grid</support>
     </model_grid>
 
@@ -404,16 +606,35 @@
       <support>For testing tri-grid</support>
     </model_grid>
 
+    <model_grid alias="ne30_f09_g17">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <support>For testing tri-grid</support>
+    </model_grid>
+
     <model_grid alias="ne60_g16">
       <grid name="atm">ne60np4</grid>
       <grid name="lnd">ne60np4</grid>
       <grid name="ocnice">gx1v6</grid>
     </model_grid>
 
+    <model_grid alias="ne60_g17">
+      <grid name="atm">ne60np4</grid>
+      <grid name="lnd">ne60np4</grid>
+      <grid name="ocnice">gx1v7</grid>
+    </model_grid>
+
     <model_grid alias="ne120_g16">
       <grid name="atm">ne120np4</grid>
       <grid name="lnd">ne120np4</grid>
       <grid name="ocnice">gx1v6</grid>
+    </model_grid>
+
+    <model_grid alias="ne120_g17">
+      <grid name="atm">ne120np4</grid>
+      <grid name="lnd">ne120np4</grid>
+      <grid name="ocnice">gx1v7</grid>
     </model_grid>
 
     <model_grid alias="ne120_t12">
@@ -426,6 +647,13 @@
       <grid name="atm">ne240np4</grid>
       <grid name="lnd">0.23x0.31</grid>
       <grid name="ocnice">gx1v6</grid>
+      <support>For testing high resolution tri-grid</support>
+    </model_grid>
+
+    <model_grid alias="ne240_f02_g17">
+      <grid name="atm">ne240np4</grid>
+      <grid name="lnd">0.23x0.31</grid>
+      <grid name="ocnice">gx1v7</grid>
       <support>For testing high resolution tri-grid</support>
     </model_grid>
 
@@ -449,11 +677,39 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="ne30_ne30_mg16" not_compset="_POP">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">ne30np4</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne30_ne30_mg17" not_compset="_POP">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">ne30np4</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="ne60_ne60" not_compset="_POP">
       <grid name="atm">ne60np4</grid>
       <grid name="lnd">ne60np4</grid>
       <grid name="ocnice">ne60np4</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne60_ne60_mg16" not_compset="_POP">
+      <grid name="atm">ne60np4</grid>
+      <grid name="lnd">ne60np4</grid>
+      <grid name="ocnice">ne60np4</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne60_ne60_mg17" not_compset="_POP">
+      <grid name="atm">ne60np4</grid>
+      <grid name="lnd">ne60np4</grid>
+      <grid name="ocnice">ne60np4</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="ne120_ne120" not_compset="_POP">
@@ -463,11 +719,39 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="ne120_ne120_mg16" not_compset="_POP">
+      <grid name="atm">ne120np4</grid>
+      <grid name="lnd">ne120np4</grid>
+      <grid name="ocnice">ne120np4</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne120_ne120_mg17" not_compset="_POP">
+      <grid name="atm">ne120np4</grid>
+      <grid name="lnd">ne120np4</grid>
+      <grid name="ocnice">ne120np4</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
     <model_grid alias="ne240_ne240" not_compset="_POP">
       <grid name="atm">ne240np4</grid>
       <grid name="lnd">ne240np4</grid>
       <grid name="ocnice">ne240np4</grid>
       <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne240_ne240_mg16" not_compset="_POP">
+      <grid name="atm">ne240np4</grid>
+      <grid name="lnd">ne240np4</grid>
+      <grid name="ocnice">ne240np4</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="ne240_ne240_mg17" not_compset="_POP">
+      <grid name="atm">ne240np4</grid>
+      <grid name="lnd">ne240np4</grid>
+      <grid name="ocnice">ne240np4</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <!-- new runoff grids for data runoff model DROF -->
@@ -490,10 +774,22 @@
       <grid name="ocnice">gx1v6</grid>
     </model_grid>
 
+    <model_grid alias="f19_g17_rx1" compset="_DROF">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">gx1v7</grid>
+    </model_grid>
+
     <model_grid alias="ne30_g16_rx1" compset="_DROF">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
       <grid name="ocnice">gx1v6</grid>
+    </model_grid>
+
+    <model_grid alias="ne30_g17_rx1" compset="_DROF">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">gx1v7</grid>
     </model_grid>
 
     <model_grid alias="ww3a_ww3a" compset="_WW3">
@@ -592,29 +888,31 @@
 
     <domain name="0.23x0.31">
       <nx>1152</nx> <ny>768</ny>
-      <file grid="atm|lnd">domain.lnd.fv0.23x0.31_gx1v6.100517.nc</file>
-      <file grid="ocnice">domain.ocn.0.23x0.31_gx1v6_101108.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv0.23x0.31_gx1v6.100517.nc</file>
+      <file grid="ocnice"  mask="gx1v6">domain.ocn.0.23x0.31_gx1v6_101108.nc</file>
       <desc>0.23x0.31 is FV 1/4-deg grid:</desc>
     </domain>
 
     <domain name="0.47x0.63">
       <nx>576</nx>  <ny>384</ny>
-      <file grid="atm|lnd">domain.lnd.fv0.47x0.63_gx1v6.090407.nc</file>
-      <file grid="ocnice">domain.ocn.0.47x0.63_gx1v6_090408.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv0.47x0.63_gx1v6.090407.nc</file>
+      <file grid="ocnice"  mask="gx1v6">domain.ocn.0.47x0.63_gx1v6_090408.nc</file>
       <desc>0.47x0.63 is FV 1/2-deg grid:</desc>
     </domain>
 
     <domain name="0.9x1.25">
       <nx>288</nx>  <ny>192</ny>
-      <file grid="atm|lnd">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</file>
-      <file grid="ocnice">domain.ocn.0.9x1.25_gx1v6_090403.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</file>
+      <file grid="ocnice" mask="gx1v6">domain.ocn.0.9x1.25_gx1v6_090403.nc</file>
+      <file grid="atm|lnd" mask="gx1v7">domain.lnd.fv0.9x1.25_gx1v7.151020.nc</file>
+      <file grid="ocnice" mask="gx1v7">domain.ocn.fv0.9x1.25_gx1v7.151020.nc</file>
       <desc>0.9x1.25 is FV 1-deg grid:</desc>
     </domain>
 
     <domain name="1.9x2.5">
       <nx>144</nx>  <ny>96</ny>
-      <file grid="atm|lnd">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</file>
-      <file grid="ocnice">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</file>
+      <file grid="ocnice"  mask="gx1v6">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
       <desc>1.9x2.5 is FV 2-deg grid:</desc>
     </domain>
 
@@ -644,7 +942,7 @@
       <nx>1024</nx> <ny>512</ny>
       <!-- global spectral (eulerian dycore) grids-->
       <!--- mask for atm is irrelevant -->
-      <file grid="atm|lnd">domain.lnd.T341_gx1v6.111226.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">domain.lnd.T341_gx1v6.111226.nc</file>
       <desc>T341 is Gaussian grid:</desc>
       <support>Backward compatible for very high resolution Spectral-dycore experiments</support>
     </domain>
@@ -660,11 +958,15 @@
 
     <domain name="T62">
       <nx>192</nx>  <ny>96</ny>
+      <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_gx1v7.151008.nc</file>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_gx1v6.090320.nc</file>
       <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_gx3v7.090911.nc</file>
       <file grid="atm|lnd" mask="tx1v1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_tx1v1.090122.nc</file>
       <file grid="atm|lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_tx0.1v2_090623.nc</file>
       <file grid="atm|lnd" mask="oQU120">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_oQU120.160325.nc</file>
+      <file grid="ocnice" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_gx1v6.130409.nc</file>
+      <file grid="ocnice" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_gx1v7.151008.nc</file>
+      <file grid="ocnice" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_gx3v7.130409.nc</file>
       <desc>T62 is Gaussian grid:</desc>
     </domain>
 
@@ -692,29 +994,29 @@
 
     <domain name="ne30np4">
       <nx>48602</nx> <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</file>
+      <file grid="ocnice"  mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</file>
       <desc>ne30np4 is Spectral Elem 1-deg grid:</desc>
     </domain>
 
     <domain name="ne60np4">
       <nx>194402</nx> <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.ne60np4_gx1v6.120406.nc</file>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.ne60np4_gx1v6.121113.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne60np4_gx1v6.120406.nc</file>
+      <file grid="ocnice"  mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne60np4_gx1v6.121113.nc</file>
       <desc>ne60np4 is Spectral Elem 1/2-deg grid:</desc>
     </domain>
 
     <domain name="ne120np4">
       <nx>777602</nx> <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120np4_gx1v6.110502.nc</file>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120np4_gx1v6.121113.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120np4_gx1v6.110502.nc</file>
+      <file grid="ocnice"  mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120np4_gx1v6.121113.nc</file>
       <desc>ne120np4 is Spectral Elem 1/4-deg grid:</desc>
     </domain>
 
     <domain name="ne240np4">
       <nx>3110402</nx> <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.ne240np4_gx1v6.111226.nc</file>
-      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.ne240np4_gx1v6.111226.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne240np4_gx1v6.111226.nc</file>
+      <file grid="ocnice"  mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne240np4_gx1v6.111226.nc</file>
       <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc>
       <support>Experimental for very high resolution experiments</support>
     </domain>
@@ -724,6 +1026,13 @@
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v6.090206.nc</file>
       <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v6.090206.nc</file>
       <desc>gx1v6 is displaced Greenland pole v6 1-deg grid:</desc>
+    </domain>
+
+    <domain name="gx1v7">
+      <nx>320</nx>  <ny>384</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v7.151020.nc</file>
+      <file grid="ocnice">$DIN_LOC_ROOT/share/domains/domain.ocn.gx1v7.151020.nc</file>
+      <desc>gx1v7 is displaced Greenland pole 1-deg grid with Caspian as a land feature:</desc>
     </domain>
 
     <domain name="gx3v7">
@@ -883,6 +1192,14 @@
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="0.9x1.25" ocn_grid="gx1v7">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_aave.151008.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_blin.151008.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_patc.151008.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_fv0.9x1.25_aave.151008.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_fv0.9x1.25_aave.151008.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="0.9x1.25" ocn_grid="mp120v1">
       <map name="ATM2OCN_FMAPNAME">cpl/cpl6/map_fv0.9x1.25_to_mp120v1_aave_da_111004.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/cpl6/map_fv0.9x1.25_to_mp120v1_aave_da_111004.nc</map>
@@ -1011,6 +1328,13 @@
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_T62_aave.130322.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_T62_aave.130322.nc</map>
     </gridmap>
+    <gridmap atm_grid="T62" ocn_grid="gx1v7">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_TO_gx1v7_aave.151008.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_gx1v7_blin.151008.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/T62/map_T62_TO_gx1v7_patc.151008.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_T62_aave.151008.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_T62_aave.151008.nc</map>
+    </gridmap>
     <gridmap atm_grid="T62" ocn_grid="tx1v1">
       <map name="ATM2OCN_FMAPNAME">cpl/cpl6/map_T62_to_tx1v1_aave_da_090122.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/cpl6/map_T62_to_tx1v1_bilin_da_090122.nc</map>
@@ -1095,6 +1419,12 @@
       <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/ww3a/map_ww3a_TO_gx1v6_splice_150428.nc</map>
       <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc</map>
       <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc</map>
+    </gridmap>
+
+    <gridmap ocn_grid="gx1v7" wav_grid="ww3a">
+      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/ww3a/map_ww3a_TO_gx1v7_splice_170214.nc</map>
+      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc</map>
+      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_ww3a_splice_170214.nc</map>
     </gridmap>
 
     <gridmap atm_grid="48x96" wav_grid="ww3a">
@@ -1221,16 +1551,24 @@
       <map name="ROF2OCN_FMAPNAME">cpl/cpl6/map_r05_TO_g16_aave.120920.nc</map>
     </gridmap>
 
+    <gridmap rof_grid="r05" ocn_grid="gx1v7" >
+      <map name="ROF2OCN_FMAPNAME">cpl/gridmaps/r05/map_r05_TO_gx1v7_aave.161012.nc</map>
+    </gridmap>
+
     <gridmap rof_grid="rx1" ocn_grid="gx3v7" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx3v7_nn_ac_161214.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx3v7_e1000r500_161214.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx3v7_e1000r500_161214.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="gx1v6" >
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v6_nn_ac_161213.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v6_e1000r300_161212.nc</map>
     </gridmap>
+    <gridmap rof_grid="rx1" ocn_grid="gx1v7" >
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v7_nn_ac_161213.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_gx1v7_e1000r300_161213.nc</map>
+    </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="tx1v1" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx1v1_nn_ac_161214.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx1v1_e1000r300_161214.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/rx1/map_rx1_to_tx1v1_e1000r300_161214.nc</map>
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="tx0.1v2" >
@@ -1243,7 +1581,7 @@
     </gridmap>
 
     <gridmap rof_grid="r05" ocn_grid="gx3v7" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx3v7_nn_ac_161214.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx3v7_e1000r500_161214.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx3v7_e1000r500_161214.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="gx1v6" >
@@ -1255,7 +1593,7 @@
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_gx1v7_e1000r300_161213.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="tx1v1" >
-      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_tx1v1_nn_ac_161214.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/gridmaps/r05/map_r05_to_tx1v1_e1000r500_161214.nc</map>
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/gridmaps/r05/map_r05_to_tx1v1_e1000r500_161214.nc</map>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="tx0.1v2" >
@@ -1273,6 +1611,11 @@
     <gridmap lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v6" >
       <map name="XROF_FLOOD_MODE">ACTIVE</map>
     </gridmap>
+
+    <gridmap lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v7" >
+      <map name="XROF_FLOOD_MODE">ACTIVE</map>
+    </gridmap>
+
 
     <!-- ======================================================== -->
     <!-- gridS: lnd to glc and glc to lnd mapping                 -->
@@ -1591,12 +1934,18 @@
     <gridmap ocn_grid="gx1v6" glc_grid="gland4" >
       <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx1v6_nnsm_e1000r300_161227.nc</map>
     </gridmap>
+    <gridmap ocn_grid="gx1v7" glc_grid="gland4" >
+      <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx1v7_nnsm_e1000r300_170111.nc</map>
+    </gridmap>
     <gridmap ocn_grid="gx3v7" glc_grid="gland4" >
       <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r300_161227.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="gx1v6" glc_grid="gland5" >
       <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx1v6_nnsm_e1000r300_150512.nc</map>
+    </gridmap>
+    <gridmap ocn_grid="gx1v7" glc_grid="gland5" >
+      <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx1v7_nnsm_e1000r300_161012.nc</map>
     </gridmap>
     <gridmap ocn_grid="gx3v7" glc_grid="gland5" >
       <map name="GLC2OCN_RMAPNAME">cpl/gridmaps/gland5km/map_gland5km_to_gx3v7_nnsm_e1000r300_150514.nc</map>
