@@ -9,7 +9,7 @@ from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
-from CIME.utils             import append_status, get_cime_root
+from CIME.utils             import append_status, get_cime_root, get_model
 from CIME.test_status       import *
 
 import shutil
@@ -223,7 +223,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 logger.info("Finished testcase.setup")
 
         # Some tests need namelists created here (ERP) - so do this if are in test mode
-        if test_mode:
+        if test_mode or get_model() == "acme":
             logger.info("Generating component namelists as part of setup")
             create_namelists(case)
 
