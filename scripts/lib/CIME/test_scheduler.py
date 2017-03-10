@@ -218,13 +218,15 @@ class TestScheduler(object):
                         else:
                             self._update_test_status(test, phase, TEST_PEND_STATUS)
                             self._update_test_status(test, phase, status)
+                logger.info("Using existing test directory %s"%(self._get_test_dir(test)))
         else:
             # None of the test directories should already exist.
             for test in self._tests:
                 expect(not os.path.exists(self._get_test_dir(test)),
                        "Cannot create new case in directory '%s', it already exists."
                        " Pick a different test-id" % self._get_test_dir(test))
-        logger.info("Created test in directory %s"%self._get_test_dir(test))
+                logger.info("Creating test directory %s"%(self._get_test_dir(test)))
+
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
