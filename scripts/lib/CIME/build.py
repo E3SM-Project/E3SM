@@ -29,7 +29,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
             continue
 
         # special case for clm
-        # clm 4_0 is not a shared library and must be built here
+        # clm 4_0 is not a shared (as in sharedlibs, shared by all tests) library and must be built here
         # clm 4_5 and newer is a shared library (but not in ACME) and should be built in build_libraries
         if get_model() != "acme":
             if comp == "clm":
@@ -38,7 +38,7 @@ def _build_model(build_threaded, exeroot, clm_config_opts, incroot, complist,
                 else:
                     continue
         else:
-            logger.info("         - Building clm Library ")
+            logger.info("         - Building %s Library " % model)
 
         smp = nthrds > 1 or build_threaded
 
