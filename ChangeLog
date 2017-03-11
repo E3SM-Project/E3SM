@@ -1,4 +1,186 @@
 ======================================================================
+Originator: Chris Fischer	 
+Date: 3-11-2017 
+Tag: cime5.3.0-alpha.03
+Answer Changes: None
+Tests: scripts_regression_tests, various CESM tests.
+Dependencies:
+
+Brief Summary:
+   Added new aliases for resolutions supporting a gx1v7 mask.
+   Move location of config/cesm/allactive.
+   Get rid of hard coded comp_class settings and use get_values instead.
+   Fix build model message.
+   Ignore prereq if forced.
+   Additional include path needed for cmake check_function_exists.
+   PIO 2 import.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+   3627e16 Merge pull request #1228 from jtruesdal/add_gx1v7
+   7b10920 Merge pull request #1227 from ESMCI/fischer/config_cesm_allactive_mv
+   ab579b3 Merge pull request #1226 from jedwards4b/compclasses_cleanup
+   dc0a87c Merge pull request #1225 from ESMCI/jgfouca/fix_build_msg
+   5f4f989 Merge pull request #1218 from jedwards4b/ignore_prereq_if_forced
+   ff3d97f Merge pull request #1219 from jedwards4b/cmake_module_fix
+   37fe05b Merge pull request #1202 from jedwards4b/pio2_import
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/machines/Makefile
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/Makefile
+M	scripts/lib/CIME/SystemTests/pem.py
+M	scripts/lib/CIME/SystemTests/pet.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/test_scheduler.py
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/externals/pio2/CMakeLists.txt
+M	src/externals/pio2/CTestConfig.cmake
+M	src/externals/pio2/CTestScript.cmake
+M	src/externals/pio2/cmake/FindNetCDF.cmake
+M	src/externals/pio2/cmake/LibCheck.cmake
+M	src/externals/pio2/cmake/LibMPI.cmake
+A	src/externals/pio2/cmake/mpiexec.nwscla
+A	src/externals/pio2/cmake/mpiexec.olcf
+A	src/externals/pio2/ctest/CTestEnvironment-anlworkstation.cmake
+M	src/externals/pio2/ctest/CTestEnvironment-nwsc.cmake
+A	src/externals/pio2/ctest/CTestEnvironment-nwscla.cmake
+M	src/externals/pio2/ctest/runcdash-alcf-ibm.sh
+A	src/externals/pio2/ctest/runcdash-anlworkstation.sh
+M	src/externals/pio2/ctest/runcdash-cgd-nag.sh
+M	src/externals/pio2/ctest/runcdash-nersc-cray.sh
+M	src/externals/pio2/ctest/runcdash-nersc-intel.sh
+M	src/externals/pio2/ctest/runcdash-nwsc-gnu.sh
+M	src/externals/pio2/ctest/runcdash-nwsc-intel-mpiserial.sh
+M	src/externals/pio2/ctest/runcdash-nwsc-intel.sh
+M	src/externals/pio2/ctest/runcdash-nwsc-pgi.sh
+A	src/externals/pio2/ctest/runcdash-nwscla-intel.sh
+A	src/externals/pio2/ctest/runctest-anlworkstation.sh
+M	src/externals/pio2/ctest/runctest-cgd.sh
+M	src/externals/pio2/ctest/runctest-nersc.sh
+A	src/externals/pio2/ctest/runctest-nwscla.sh
+M	src/externals/pio2/doc/CMakeLists.txt
+M	src/externals/pio2/doc/Doxyfile.in
+M	src/externals/pio2/doc/source/Error.txt
+M	src/externals/pio2/doc/source/Examples.txt
+M	src/externals/pio2/doc/source/Installing.txt
+A	src/externals/pio2/doc/source/Testing.txt
+M	src/externals/pio2/doc/source/base.txt
+A	src/externals/pio2/doc/source/contributing_code.txt
+M	src/externals/pio2/doc/source/mach_walkthrough.txt
+M	src/externals/pio2/examples/CMakeLists.txt
+M	src/externals/pio2/examples/c/CMakeLists.txt
+M	src/externals/pio2/examples/c/example1.c
+M	src/externals/pio2/examples/c/example2.c
+M	src/externals/pio2/examples/c/examplePio.c
+A	src/externals/pio2/examples/c/valsupp_example1.supp
+M	src/externals/pio2/examples/f03/CMakeLists.txt
+M	src/externals/pio2/examples/f03/examplePio.f90
+M	src/externals/pio2/src/CMakeLists.txt
+M	src/externals/pio2/src/clib/CMakeLists.txt
+M	src/externals/pio2/src/clib/bget.c
+M	src/externals/pio2/src/clib/bget.h
+M	src/externals/pio2/src/clib/config.h.in
+D	src/externals/pio2/src/clib/ncparser.pl
+D	src/externals/pio2/src/clib/ncputgetparser.pl
+M	src/externals/pio2/src/clib/pio.h
+D	src/externals/pio2/src/clib/pio_c_get_template.c
+D	src/externals/pio2/src/clib/pio_c_put_template.c
+D	src/externals/pio2/src/clib/pio_c_template.c
+M	src/externals/pio2/src/clib/pio_darray.c
+A	src/externals/pio2/src/clib/pio_darray_int.c
+M	src/externals/pio2/src/clib/pio_file.c
+M	src/externals/pio2/src/clib/pio_get_nc.c
+A	src/externals/pio2/src/clib/pio_getput_int.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_lists.c
+A	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_nc4.c
+M	src/externals/pio2/src/clib/pio_put_nc.c
+M	src/externals/pio2/src/clib/pio_rearrange.c
+M	src/externals/pio2/src/clib/pio_spmd.c
+A	src/externals/pio2/src/clib/pio_varm.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_sc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/src/clib/topology.c
+M	src/externals/pio2/src/flib/CMakeLists.txt
+M	src/externals/pio2/src/flib/pio.F90
+M	src/externals/pio2/src/flib/pio_nf.F90
+M	src/externals/pio2/src/flib/pio_types.F90
+M	src/externals/pio2/src/flib/piodarray.F90.in
+M	src/externals/pio2/src/flib/piolib_mod.F90
+M	src/externals/pio2/src/flib/pionfatt_mod.F90.in
+M	src/externals/pio2/src/flib/pionfget_mod.F90.in
+M	src/externals/pio2/src/flib/pionfput_mod.F90.in
+M	src/externals/pio2/src/gptl/CMakeLists.txt
+M	src/externals/pio2/src/gptl/gptl.c
+M	src/externals/pio2/src/gptl/perf_mod.F90
+M	src/externals/pio2/tests/CMakeLists.txt
+A	src/externals/pio2/tests/cunit/CMakeLists.txt
+A	src/externals/pio2/tests/cunit/pio_tests.h
+A	src/externals/pio2/tests/cunit/test_async_2comp.c
+A	src/externals/pio2/tests/cunit/test_async_3proc.c
+A	src/externals/pio2/tests/cunit/test_async_4proc.c
+A	src/externals/pio2/tests/cunit/test_async_simple.c
+A	src/externals/pio2/tests/cunit/test_common.c
+A	src/externals/pio2/tests/cunit/test_darray.c
+A	src/externals/pio2/tests/cunit/test_darray_1d.c
+A	src/externals/pio2/tests/cunit/test_darray_3d.c
+A	src/externals/pio2/tests/cunit/test_darray_multivar.c
+A	src/externals/pio2/tests/cunit/test_decomps.c
+A	src/externals/pio2/tests/cunit/test_intercomm2.c
+A	src/externals/pio2/tests/cunit/test_iosystem2.c
+A	src/externals/pio2/tests/cunit/test_iosystem2_simple.c
+A	src/externals/pio2/tests/cunit/test_iosystem2_simple2.c
+A	src/externals/pio2/tests/cunit/test_iosystem3.c
+A	src/externals/pio2/tests/cunit/test_iosystem3_simple.c
+A	src/externals/pio2/tests/cunit/test_iosystem3_simple2.c
+A	src/externals/pio2/tests/cunit/test_pioc.c
+A	src/externals/pio2/tests/cunit/test_pioc_fill.c
+A	src/externals/pio2/tests/cunit/test_pioc_putget.c
+A	src/externals/pio2/tests/cunit/test_pioc_unlim.c
+A	src/externals/pio2/tests/cunit/test_shared.c
+A	src/externals/pio2/tests/cunit/test_spmd.c
+M	src/externals/pio2/tests/general/CMakeLists.txt
+A	src/externals/pio2/tests/general/README.md
+M	src/externals/pio2/tests/general/ncdf_fail.F90.in
+M	src/externals/pio2/tests/general/ncdf_get_put.F90.in
+A	src/externals/pio2/tests/general/ncdf_inq.F90.in
+D	src/externals/pio2/tests/general/pio_decomp_fillval2.F90
+A	src/externals/pio2/tests/general/pio_decomp_frame_tests.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_tests.F90.in
+A	src/externals/pio2/tests/general/pio_decomp_tests_1d.F90.in
+A	src/externals/pio2/tests/general/pio_decomp_tests_2d.F90.in
+A	src/externals/pio2/tests/general/pio_decomp_tests_3d.F90.in
+M	src/externals/pio2/tests/general/pio_file_simple_tests.F90.in
+A	src/externals/pio2/tests/general/pio_iosystem_tests.F90.in
+A	src/externals/pio2/tests/general/pio_iosystem_tests2.F90.in
+A	src/externals/pio2/tests/general/pio_iosystem_tests3.F90.in
+A	src/externals/pio2/tests/general/pio_rearr.F90.in
+A	src/externals/pio2/tests/general/pio_rearr_opts.F90.in
+A	src/externals/pio2/tests/general/pio_rearr_opts2.F90.in
+M	src/externals/pio2/tests/general/test_memleak.c
+M	src/externals/pio2/tests/general/util/pio_tf_f90gen.pl
+M	src/externals/pio2/tests/general/util/pio_tutil.F90
+M	src/externals/pio2/tests/performance/CMakeLists.txt
+M	src/externals/pio2/tests/unit/CMakeLists.txt
+D	src/externals/pio2/tests/unit/README
+M	src/externals/pio2/tests/unit/basic_tests.F90
+M	src/externals/pio2/tests/unit/driver.F90
+M	src/externals/pio2/tests/unit/global_vars.F90
+M	src/externals/pio2/tests/unit/nc_set_log_level2.c
+M	src/externals/pio2/tests/unit/ncdf_tests.F90
+D	src/externals/pio2/tests/unit/test_names.c
+D	src/externals/pio2/tests/unit/test_nc4.c
+
+======================================================================
 Originator: Chris Fischer 
 Date: 3-7-2017
 Tag: cime5.3.0-alpha.02
