@@ -388,7 +388,7 @@ class M_TestWaitForTests(unittest.TestCase):
 
         make_fake_teststatus(os.path.join(self._testdir_with_fail,   "5"), "Test_5", TEST_FAIL_STATUS, RUN_PHASE)
         make_fake_teststatus(os.path.join(self._testdir_unfinished,  "5"), "Test_5", TEST_PEND_STATUS, RUN_PHASE)
-        make_fake_teststatus(os.path.join(self._testdir_unfinished2, "5"), "Test_5", TEST_PASS_STATUS, MODEL_BUILD_PHASE)
+        make_fake_teststatus(os.path.join(self._testdir_unfinished2, "5"), "Test_5", TEST_PASS_STATUS, SUBMIT_PHASE)
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -794,7 +794,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
             else:
                 self.assertTrue(test_name == pass_test)
                 self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_PASS_STATUS)
-                self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE), TEST_PEND_STATUS)
+                self.assertEqual(ts.get_status(CIME.test_scheduler.SUBMIT_PHASE), TEST_PEND_STATUS)
 
         os.environ["TESTBUILDFAIL_PASS"] = "True"
         ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True,
@@ -813,6 +813,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         for test_status in test_statuses:
             ts = TestStatus(test_dir=os.path.dirname(test_status))
             self.assertEqual(ts.get_status(CIME.test_scheduler.MODEL_BUILD_PHASE), TEST_PASS_STATUS)
+            self.assertEqual(ts.get_status(CIME.test_scheduler.SUBMIT_PHASE),         TEST_PASS_STATUS)
             self.assertEqual(ts.get_status(CIME.test_scheduler.RUN_PHASE),         TEST_PASS_STATUS)
 
 ###############################################################################
