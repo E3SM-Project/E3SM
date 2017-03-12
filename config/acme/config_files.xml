@@ -221,9 +221,9 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="modelio"      >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_modelio.xml</value>
-      <value component="drv_flds"      >$CIMEROOT/src/drivers/mct/bld/namelist_files/namelist_definition_drv_flds.xml</value>
-      <value component="drv"      >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv.xml</value>
+      <value component="modelio" >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_modelio.xml</value>
+      <value component="drv_flds">$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv_flds.xml</value>
+      <value component="drv"     >$CIMEROOT/src/drivers/mct/cime_config/namelist_definition_drv.xml</value>
       <!-- data model components -->
       <value component="drof">$CIMEROOT/src/components/data_comps/drof/cime_config/namelist_definition_drof.xml</value>
       <value component="datm">$CIMEROOT/src/components/data_comps/datm/cime_config/namelist_definition_datm.xml</value>
