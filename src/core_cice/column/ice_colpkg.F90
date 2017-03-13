@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg.F90 1142 2016-08-27 16:07:51Z njeffery $
+!  SVN:$Id: ice_colpkg.F90 1178 2017-03-08 19:24:07Z eclare $
 !=========================================================================
 !
 ! flags and interface routines for the column package
@@ -9,6 +9,7 @@
 
       use ice_kinds_mod
       use ice_colpkg_shared ! namelist and other parameters
+      use ice_warnings, only: add_warning
 
       implicit none
 
@@ -57,6 +58,14 @@
            colpkg_sea_freezing_temperature, &
            colpkg_enthalpy_snow
 
+      ! warning messages
+      public :: &
+           colpkg_clear_warnings, &
+           colpkg_get_warnings, &
+           colpkg_print_warnings
+
+
+
 !=======================================================================
 
       contains
@@ -70,18 +79,23 @@
 ! authors: William H. Lipscomb and Elizabeth C. Hunke, LANL
 !          C. M. Bitz, UW
 
-      subroutine colpkg_init_itd(ncat, hin_max, nu_diag)
+      subroutine colpkg_init_itd(ncat, hin_max, l_stop, stop_label)
 
       use ice_colpkg_shared, only: kcatbound, kitd
       use ice_therm_shared, only: hi_min
       use ice_constants_colpkg, only: p01, p1, c0, c1, c2, c3, c15, c25, c100
 
       integer (kind=int_kind), intent(in) :: &
-           ncat, & ! number of thickness categories
-           nu_diag ! diagnostic output file unit number
+           ncat ! number of thickness categories
 
       real (kind=dbl_kind), intent(out) :: &
            hin_max(0:ncat)  ! category limits (m)
+
+      logical (kind=log_kind), intent(inout) :: &
+         l_stop          ! if true, print diagnostics and abort model
+
+      character (len=*), intent(out) :: &
+         stop_label   ! abort error message
 
       ! local variables
 
@@ -102,6 +116,8 @@
       real (kind=dbl_kind), dimension(5) :: wmo5 ! data for wmo itd
       real (kind=dbl_kind), dimension(6) :: wmo6 ! data for wmo itd
       real (kind=dbl_kind), dimension(7) :: wmo7 ! data for wmo itd
+
+      l_stop = .false.
 
       rncat = real(ncat, kind=dbl_kind)
       d1 = 3.0_dbl_kind / rncat
@@ -228,8 +244,9 @@
             hin_max(n) = wmo7(n)
          enddo
        else
-         write (nu_diag,*) 'kcatbound=2 (WMO) must have ncat=5, 6 or 7'
-         stop
+         stop_label = 'kcatbound=2 (WMO) must have ncat=5, 6 or 7'
+         l_stop = .true. 
+         return
        endif
 
       elseif (kcatbound == 3) then  ! asymptotic scheme
@@ -251,14 +268,13 @@
 ! authors: William H. Lipscomb and Elizabeth C. Hunke, LANL
 !          C. M. Bitz, UW
 
-      subroutine colpkg_init_itd_hist (ncat, hin_max, nu_diag, c_hi_range)
+      subroutine colpkg_init_itd_hist (ncat, hin_max, c_hi_range)
 
       use ice_colpkg_shared, only: kcatbound, kitd
       use ice_constants_colpkg, only: p01, p1, c2, c3, c15, c25, c100
 
       integer (kind=int_kind), intent(in) :: &
-           ncat, & ! number of thickness categories
-           nu_diag ! diagnostic output file unit number
+           ncat ! number of thickness categories
 
       real (kind=dbl_kind), intent(in) :: &
            hin_max(0:ncat)  ! category limits (m)
@@ -274,10 +290,16 @@
       character(len=8) :: c_hinmax1,c_hinmax2
       character(len=2) :: c_nc
 
-         write (nu_diag,*) ' '
-         write (nu_diag,*) 'hin_max(n-1) < Cat n < hin_max(n)'
+      character(len=char_len_long) :: &
+           warning ! warning message
+
+         write(warning,*) ' '
+         call add_warning(warning)
+         write(warning,*) 'hin_max(n-1) < Cat n < hin_max(n)'
+         call add_warning(warning)
          do n = 1, ncat
-            write (nu_diag,*) hin_max(n-1),' < Cat ',n, ' < ',hin_max(n)
+            write(warning,*) hin_max(n-1),' < Cat ',n, ' < ',hin_max(n)
+            call add_warning(warning)
             ! Write integer n to character string
             write (c_nc, '(i2)') n    
 
@@ -288,7 +310,9 @@
             ! Save character string to write to history file
             c_hi_range(n)=c_hinmax1//'m < hi Cat '//c_nc//' < '//c_hinmax2//'m'
          enddo
-         write (nu_diag,*) ' '
+
+         write(warning,*) ' '
+         call add_warning(warning)
 
       end subroutine colpkg_init_itd_hist
 
@@ -360,7 +384,7 @@
 !
 ! author:  Bruce P. Briegleb, NCAR 
 
-      subroutine colpkg_init_orbit(nu_diag, l_stop, stop_label)
+      subroutine colpkg_init_orbit(l_stop, stop_label)
 
       use ice_constants_colpkg, only: iyear_AD, eccen, obliqr, lambm0, &
          mvelpp, obliq, mvelp, decln, eccf, log_print
@@ -369,12 +393,10 @@
       use ice_orbital, only: shr_orb_params
 #endif
 
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! diagnostic file unit number
-
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort the model
 
+     ! character (char_len), intent(out) :: stop_label
       character (len=*), intent(out) :: stop_label
 
       l_stop = .false.      ! initialized for CCSMCOUPLED
@@ -385,7 +407,7 @@
 #ifndef CCSMCOUPLED
       call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
                            obliqr  , lambm0, mvelpp, log_print, &
-                           nu_diag , l_stop, stop_label)
+                           l_stop, stop_label)
 #endif
 
       end subroutine colpkg_init_orbit
@@ -555,6 +577,7 @@
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, print diagnostics and abort on return
         
+!      character (char_len), intent(inout) :: stop_label
       character (len=*), intent(inout) :: stop_label
 
       ! local variables
@@ -1759,8 +1782,7 @@
                                     lmask_n     , lmask_s     , &
                                     mlt_onset   , frz_onset   , &
                                     yday        , l_stop      , &
-                                    stop_label  , nu_diag     , &
-                                    prescribed_ice)
+                                    stop_label  , prescribed_ice)
 
       use ice_aerosol, only: update_aerosol
       use ice_atmo, only: neutral_drag_coeffs
@@ -1917,11 +1939,9 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort model
 
+!     character (char_len), intent(out) :: &
       character (len=*), intent(out) :: &
          stop_label      ! abort error message
-
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
 
       ! local variables
 
@@ -2083,7 +2103,7 @@
                                 fsurfn_f   (n),                 &
                                 flatn      (n), fsensn     (n), &
                                 fsurfn     (n),                 &
-                                fcondtopn  (n), nu_diag)
+                                fcondtopn  (n))
             endif
 
             call thermo_vertical(nilyr,        nslyr,        &
@@ -2111,8 +2131,8 @@
                                  congeln  (n), snoicen  (n), &
                                  mlt_onset,    frz_onset,    &
                                  yday,         dsnown   (n), &
-                                 l_stop,       nu_diag,      &
-                                 stop_label,   prescribed_ice)
+                                 l_stop,       stop_label,   &
+                                 prescribed_ice)
                
             if (l_stop) then
                stop_label = 'ice: Vertical thermo error: '//trim(stop_label)
@@ -2140,8 +2160,7 @@
                                     vsnon_init (n),                 &
                                     vicen      (n), vsnon      (n), &
                                     aicen      (n),                 &
-                                    faero_atm     ,  faero_ocn   ,  &
-                                    nu_diag)
+                                    faero_atm     ,  faero_ocn)
             endif
 
          endif   ! aicen_init
@@ -2294,7 +2313,7 @@
                                      first_ice,    fzsal,         &
                                      flux_bio,     ocean_bio,     &
                                      l_stop,       stop_label,    &
-                                     nu_diag,      frazil_diag,   &
+                                     frazil_diag,                 &
                                      frz_onset,    yday)
 
       use ice_constants_colpkg, only: puny
@@ -2308,8 +2327,7 @@
          nblyr    , & ! number of bio layers
          nilyr    , & ! number of ice layers
          nslyr    , & ! number of snow layers
-         n_aero   , & ! number of aerosol tracers
-         nu_diag      ! diagnostic file unit number
+         n_aero       ! number of aerosol tracers
 
       logical (kind=log_kind), intent(in) :: &
          update_ocn_f     ! if true, update fresh water and salt fluxes
@@ -2379,6 +2397,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop         ! if true, abort model
 
+!     character (char_len), intent(out) :: stop_label
       character (len=*), intent(out) :: stop_label
 
       real (kind=dbl_kind), intent(inout), optional :: &
@@ -2388,7 +2407,7 @@
          yday         ! day of year
 
       l_stop = .false.
-      
+
       !-----------------------------------------------------------------
       ! Let rain drain through to the ocean.
       !-----------------------------------------------------------------
@@ -2431,7 +2450,7 @@
                              aice      ,         &
                              aice0     ,         &
                              fpond,       l_stop,      &
-                             stop_label,  nu_diag)
+                             stop_label)
 
             if (l_stop) return
 
@@ -2465,7 +2484,7 @@
                            cgrid,         igrid,        &
                            nbtrcr,        flux_bio,     &
                            ocean_bio,     fzsal,        &
-                           nu_diag,       frazil_diag,  &
+                           frazil_diag,                 &
                            l_stop,        stop_label)
 
          if (l_stop) return
@@ -2511,7 +2530,7 @@
                         n_aero,                                 &
                         nbtrcr,               nblyr,            &
                         l_stop,               stop_label,       &
-                        nu_diag,              tr_aero,          &
+                        tr_aero,                                &
                         tr_pond_topo,         heat_capacity,    &
                         first_ice,                              &
                         trcr_depend,          trcr_base,        &
@@ -2673,7 +2692,7 @@
                                         albpndn,  apeffn,    &
                                         snowfracn,           &
                                         dhsn,     ffracn,    &
-                                        nu_diag,  l_print_point, &
+                                        l_print_point, &
                                         initonly)
 
       use ice_constants_colpkg, only: c0, puny
@@ -2689,7 +2708,6 @@
          n_aero    , & ! number of aerosols
          n_zaero   , & ! number of zaerosols 
          nlt_chl_sw, & ! index for chla
-         nu_diag   , & ! diagnostic file unit number
          nblyr     , &
          ntrcr     , &
          nbtrcr    , &
@@ -2842,8 +2860,7 @@
                                      igrid,                   &
                                      nbtrcr_sw,    n_zaero,   &
                                      skl_bgc,      z_tracers, &
-                                     l_stop,       stop_label,&
-                                     nu_diag)
+                                     l_stop,       stop_label)
               endif
          enddo
          endif
@@ -2894,7 +2911,7 @@
                           albpndn,      apeffn,         &
                           snowfracn,                    &
                           dhsn,         ffracn,         &
-                          nu_diag,      l_print_point,  &
+                          l_print_point,                &
                           linitonly)
  
          else  ! .not. dEdd
@@ -2989,7 +3006,7 @@
                                     araftn,       vraftn,        &
                                     aice,         fsalt,         &
                                     first_ice,    fzsal,         &
-                                    flux_bio,     nu_diag,       &
+                                    flux_bio,                    &
                                     l_stop,       stop_label)
 
       use ice_mechred, only: ridge_ice
@@ -3005,8 +3022,7 @@
          nblyr , & ! number of bio layers
          nilyr , & ! number of ice layers
          nslyr , & ! number of snow layers
-         n_aero, & ! number of aerosol tracers
-         nu_diag   ! diagnostic file unit number
+         n_aero    ! number of aerosol tracers
 
       real (kind=dbl_kind), dimension(0:ncat), intent(inout) :: &
          hin_max   ! category limits (m)
@@ -3101,7 +3117,7 @@
                          n_trcr_strata,                &
                          nt_strata,                    &
                          l_stop,                       &
-                         stop_label,   nu_diag,        &
+                         stop_label,                   &
                          krdg_partic, krdg_redist, &
                          mu_rdg,                   &
                          dardg1dt,     dardg2dt,       &
@@ -3132,7 +3148,7 @@
                         n_aero,                                 &
                         nbtrcr,               nblyr,            &
                         l_stop,               stop_label,       &
-                        nu_diag,              tr_aero,          &
+                        tr_aero,                                &
                         tr_pond_topo,         heat_capacity,    &  
                         first_ice,                              &                
                         trcr_depend,          trcr_base,        &
@@ -4883,7 +4899,7 @@
                            n_doc, n_dic,  n_don, n_fed, n_fep,  &
                            meltbn, melttn, congeln, snoicen, &
                            sst, sss, fsnow, meltsn, hmix, salinz, &
-                           hin_old, flux_bio, flux_bio_atm, nu_diag, &
+                           hin_old, flux_bio, flux_bio_atm, &
                            aicen_init, vicen_init, aicen, vicen, vsnon, &
                            trcrn, vsnon_init, skl_bgc, &
                            max_algae, max_nbtrcr, &
@@ -4984,9 +5000,6 @@
          hmix    , & ! mixed layer depth (m)
          fsnow       ! snowfall rate (kg/m^2 s)
 
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag ! file unit (diagnostics)
-
       logical (kind=log_kind), intent(in) :: &
          skl_bgc       ! if true, solve skeletal biochemistry
 
@@ -5086,8 +5099,7 @@
                                  dhbr_top(n), dhbr_bot(n),  &
                                  hbr_old,     hin,          &
                                  hsn,         first_ice(n), &
-                                 l_stop,      stop_label,   &
-                                 nu_diag)
+                                 l_stop,      stop_label)
 
                if (l_stop) return
 
@@ -5161,7 +5173,7 @@
                                   Rayleigh_criteria,                  &
                                   first_ice(n),  sss,                 &
                                   sst,           dhbr_top(n),         &
-                                  dhbr_bot(n),   nu_diag,             &
+                                  dhbr_bot(n),                        &
                                   l_stop,        stop_label,          &
                                   fzsal,         fzsal_g,             &
                                   bphi_o,        nblyr,               & 
@@ -5211,12 +5223,11 @@
                           dhice,                 iTin,                   &
                           Zoo(:,n),                                      &
                           flux_bio(1:nbtrcr),                            &
-                          upNO,                   upNH,                  &
-                          fbio_snoice,            fbio_atmice,           &
-                          PP_net,                 ice_bio_net (1:nbtrcr),&
-                          snow_bio_net(1:nbtrcr), grow_net,              &
-                          l_stop,                 stop_label,            &
-                          nu_diag)
+                          upNO,                  upNH,                   &
+                          fbio_snoice,           fbio_atmice,            &
+                          PP_net,                ice_bio_net (1:nbtrcr), &
+                          snow_bio_net(1:nbtrcr),grow_net,               &
+                          l_stop,                stop_label)
             
                if (l_stop) return
      
@@ -5235,8 +5246,7 @@
                             trcrn    (1:ntrcr,n),    hin,                 &
                             PP_net,                  upNO,                &
                             upNH,                    grow_net,            &
-                            l_stop,                  stop_label,          &
-                            nu_diag)
+                            l_stop,                  stop_label)
 
                if (l_stop) return
 
@@ -5592,6 +5602,60 @@
       ocean_bio_all(ks)  = hum                       ! humics
 
       end subroutine colpkg_init_OceanConcArray
+
+!=======================================================================
+! Warning messages
+!=======================================================================
+
+      subroutine colpkg_clear_warnings()
+
+        use ice_warnings, only: reset_warnings
+
+        call reset_warnings()
+
+      end subroutine colpkg_clear_warnings
+
+!=======================================================================
+      
+      subroutine colpkg_get_warnings(warningsOut)
+
+        use ice_warnings, only: &
+             get_number_warnings, &
+             get_warning
+
+        character(len=*), dimension(:), allocatable, intent(out) :: &
+             warningsOut
+
+        integer :: &
+             iWarning
+
+        if (allocated(warningsOut)) deallocate(warningsOut)
+        allocate(warningsOut(get_number_warnings()))
+
+        do iWarning = 1, get_number_warnings()
+           warningsOut(iWarning) = trim(get_warning(iWarning))
+        enddo
+
+      end subroutine colpkg_get_warnings
+
+!=======================================================================
+
+      subroutine colpkg_print_warnings(nu_diag)
+
+        use ice_warnings, only: &
+             get_number_warnings, &
+             get_warning
+
+        integer, intent(in) :: nu_diag
+
+        integer :: &
+             iWarning
+
+        do iWarning = 1, get_number_warnings()
+           write(nu_diag,*) trim(get_warning(iWarning))
+        enddo
+
+      end subroutine colpkg_print_warnings
 
 !=======================================================================
 

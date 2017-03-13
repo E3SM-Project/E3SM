@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_vertical.F90 1136 2016-07-29 21:10:31Z eclare $
+!  SVN:$Id: ice_therm_vertical.F90 1178 2017-03-08 19:24:07Z eclare $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures and compute
@@ -29,6 +29,7 @@
                                   calculate_tin_from_qin, Tmin
       use ice_therm_bl99, only: temperature_changes
       use ice_therm_0layer, only: zerolayer_temperature
+      use ice_warnings, only: add_warning
 
       implicit none
       save
@@ -72,8 +73,8 @@
                                   congel,      snoice,    &
                                   mlt_onset,   frz_onset, &
                                   yday,        dsnow,     &
-                                  l_stop,      nu_diag,   &
-                                  stop_label,  prescribed_ice)
+                                  l_stop,      stop_label,&
+                                  prescribed_ice)
 
       use ice_therm_mushy, only: temperature_changes_salinity
 
@@ -174,9 +175,6 @@
       character (len=*), intent(out) :: &
          stop_label   ! abort error message
 
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag      ! file unit number (diagnostic only)
-
       ! local variables
 
       integer (kind=int_kind) :: &
@@ -254,8 +252,7 @@
                                   zqsn,     zTsn,    &
                                   zSin,              &
                                   einit,    Tbot,    &
-                                  nu_diag,  l_stop,  &
-                                  stop_label)
+                                  l_stop,   stop_label)
 
       if (l_stop) return
 
@@ -290,8 +287,8 @@
                                               flwoutn,   fsurfn,    &
                                               fcondtopn, fcondbot,  &
                                               fadvocn,   snoice,    &
-                                              einit,     l_stop,    &
-                                              nu_diag,   stop_label)
+                                              einit,                &
+                                              l_stop,    stop_label)
                
             if (l_stop) return
 
@@ -313,7 +310,7 @@
                                      flwoutn,   fsurfn,    &
                                      fcondtopn, fcondbot,  &
                                      einit,     l_stop,    &
-                                     nu_diag,   stop_label)
+                                     stop_label)
 
             if (l_stop) return
 
@@ -334,8 +331,7 @@
                                        fsensn,    flatn,    &
                                        flwoutn,   fsurfn,   &
                                        fcondtopn, fcondbot, &
-                                       l_stop,    nu_diag,  &
-                                       stop_label)
+                                       l_stop,    stop_label)
 
             if (l_stop) return
 
@@ -400,8 +396,7 @@
                                       einter,    efinal,   &
                                       fcondtopn, fcondbot, &
                                       fadvocn,   fbot,     &
-                                      nu_diag,   l_stop,   &
-                                      stop_label)
+                                      l_stop,    stop_label)
       
       if (l_stop) return
 
@@ -642,8 +637,7 @@
                                        zqsn,     zTsn,     &
                                        zSin,               &
                                        einit,    Tbot,     &
-                                       nu_diag,  l_stop,   &
-                                       stop_label)
+                                       l_stop,   stop_label)
 
       use ice_mushy_physics, only: temperature_mush, &
                                    liquidus_temperature_mush, &
@@ -653,8 +647,7 @@
 
       integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
-         nslyr , & ! number of snow layers
-         nu_diag   ! file unit number (diagnostic only)
+         nslyr     ! number of snow layers
 
       real (kind=dbl_kind), intent(in) :: &
          aicen , & ! concentration of ice
@@ -707,6 +700,9 @@
          tice_high   , & ! flag for zTin > Tmlt
          tsno_low    , & ! flag for zTsn < Tmin
          tice_low        ! flag for zTin < Tmin
+
+      character(len=char_len_long) :: &
+         warning ! warning message
 
       !-----------------------------------------------------------------
       ! Initialize
@@ -787,11 +783,16 @@
             endif
 
             if (zTsn(k) > Tmax) then
-               write(nu_diag,*) ' '
-               write(nu_diag,*) 'Starting thermo, zTsn > Tmax'
-               write(nu_diag,*) 'zTsn=',zTsn(k)
-               write(nu_diag,*) 'Tmax=',Tmax
-               write(nu_diag,*) 'zqsn',zqsn(k),-Lfresh*rhos,zqsn(k)+Lfresh*rhos
+               write(warning,*) ' '
+               call add_warning(warning)
+               write(warning,*) 'Starting thermo, zTsn > Tmax'
+               call add_warning(warning)
+               write(warning,*) 'zTsn=',zTsn(k)
+               call add_warning(warning)
+               write(warning,*) 'Tmax=',Tmax
+               call add_warning(warning)
+               write(warning,*) 'zqsn',zqsn(k),-Lfresh*rhos,zqsn(k)+Lfresh*rhos
+               call add_warning(warning)
                l_stop = .true.
                stop_label = "init_vertical_profile: Starting thermo, zTsn > Tmax"
                return
@@ -804,13 +805,20 @@
          do k = 1, nslyr
 
             if (zTsn(k) < Tmin) then ! allowing for roundoff error
-               write(nu_diag,*) ' '
-               write(nu_diag,*) 'Starting thermo, zTsn < Tmin'
-               write(nu_diag,*) 'zTsn=', zTsn(k)
-               write(nu_diag,*) 'Tmin=', Tmin
-               write(nu_diag,*) 'zqsn', zqsn(k)
-               write(nu_diag,*) hin
-               write(nu_diag,*) hsn
+               write(warning,*) ' '
+               call add_warning(warning)
+               write(warning,*) 'Starting thermo, zTsn < Tmin'
+               call add_warning(warning)
+               write(warning,*) 'zTsn=', zTsn(k)
+               call add_warning(warning)
+               write(warning,*) 'Tmin=', Tmin
+               call add_warning(warning)
+               write(warning,*) 'zqsn', zqsn(k)
+               call add_warning(warning)
+               write(warning,*) hin
+               call add_warning(warning)
+               write(warning,*) hsn
+               call add_warning(warning)
                l_stop = .true.
                stop_label = "init_vertical_profile: Starting thermo, zTsn < Tmin"
                return
@@ -840,10 +848,14 @@
       !---------------------------------------------------------------------
 
          if (ktherm == 1 .and. zSin(k) < min_salin-puny) then
-            write(nu_diag,*) ' '
-            write(nu_diag,*) 'Starting zSin < min_salin, layer', k
-            write(nu_diag,*) 'zSin =', zSin(k)
-            write(nu_diag,*) 'min_salin =', min_salin
+            write(warning,*) ' '
+            call add_warning(warning)
+            write(warning,*) 'Starting zSin < min_salin, layer', k
+            call add_warning(warning)
+            write(warning,*) 'zSin =', zSin(k)
+            call add_warning(warning)
+            write(warning,*) 'min_salin =', min_salin
+            call add_warning(warning)
             l_stop = .true.
             stop_label = "init_vertical_profile: Starting zSin < min_salin, layer"
             return
@@ -899,22 +911,34 @@
             endif
 
             if (zTin(k) > Tmax) then
-               write(nu_diag,*) ' '
-               write(nu_diag,*) 'Starting thermo, T > Tmax, layer', k
-               write(nu_diag,*) 'k:', k
-               write(nu_diag,*) 'zTin =',zTin(k),', Tmax=',Tmax
-               write(nu_diag,*) 'zSin =',zSin(k)
-               write(nu_diag,*) 'hin =',hin
-               write(nu_diag,*) 'zqin =',zqin(k)
-               write(nu_diag,*) 'qmlt=',enthalpy_of_melting(zSin(k))
-               write(nu_diag,*) 'Tmlt=',Tmlts(k)
+               write(warning,*) ' '
+               call add_warning(warning)
+               write(warning,*) 'Starting thermo, T > Tmax, layer', k
+               call add_warning(warning)
+               write(warning,*) 'k:', k
+               call add_warning(warning)
+               write(warning,*) 'zTin =',zTin(k),', Tmax=',Tmax
+               call add_warning(warning)
+               write(warning,*) 'zSin =',zSin(k)
+               call add_warning(warning)
+               write(warning,*) 'hin =',hin
+               call add_warning(warning)
+               write(warning,*) 'zqin =',zqin(k)
+               call add_warning(warning)
+               write(warning,*) 'qmlt=',enthalpy_of_melting(zSin(k))
+               call add_warning(warning)
+               write(warning,*) 'Tmlt=',Tmlts(k)
+               call add_warning(warning)
                
                if (ktherm == 2) then
                   zqin(k) = enthalpy_of_melting(zSin(k)) - c1
                   zTin(k) = temperature_mush(zqin(k),zSin(k))
-                  write(nu_diag,*) 'Corrected quantities'
-                  write(nu_diag,*) 'zqin=',zqin(k)
-                  write(nu_diag,*) 'zTin=',zTin(k)
+                  write(warning,*) 'Corrected quantities'
+                  call add_warning(warning)
+                  write(warning,*) 'zqin=',zqin(k)
+                  call add_warning(warning)
+                  write(warning,*) 'zTin=',zTin(k)
+                  call add_warning(warning)
                else
                   l_stop = .true.
                   stop_label = "init_vertical_profile: Starting thermo, T > Tmax, layer"
@@ -926,10 +950,14 @@
          if (tice_low .and. heat_capacity) then
 
             if (zTin(k) < Tmin) then
-               write(nu_diag,*) ' '
-               write(nu_diag,*) 'Starting thermo T < Tmin, layer', k
-               write(nu_diag,*) 'zTin =', zTin(k)
-               write(nu_diag,*) 'Tmin =', Tmin
+               write(warning,*) ' '
+               call add_warning(warning)
+               write(warning,*) 'Starting thermo T < Tmin, layer', k
+               call add_warning(warning)
+               write(warning,*) 'zTin =', zTin(k)
+               call add_warning(warning)
+               write(warning,*) 'Tmin =', Tmin
+               call add_warning(warning)
                l_stop = .true.
                stop_label = "init_vertical_profile: Starting thermo, T < Tmin, layer"
                return
@@ -1778,11 +1806,7 @@
                                             efinal,             &
                                             fcondtopn,fcondbot, &
                                             fadvocn,  fbot,     &
-                                            nu_diag,  l_stop,   &
-                                            stop_label)
-
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
+                                            l_stop,   stop_label)
 
       real (kind=dbl_kind), intent(in) :: &
          dt              ! time step
@@ -1815,6 +1839,9 @@
          einp        , & ! energy input during timestep (J m-2)
          ferr            ! energy conservation error (W m-2)
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+
       !----------------------------------------------------------------
       ! If energy is not conserved, print diagnostics and exit.
       !----------------------------------------------------------------
@@ -1834,37 +1861,57 @@
          l_stop = .true.
          stop_label = "conservation_check_vthermo: Thermo energy conservation error"
 
-         write(nu_diag,*) 'Thermo energy conservation error'
-         write(nu_diag,*) 'Flux error (W/m^2) =', ferr
-         write(nu_diag,*) 'Energy error (J) =', ferr*dt
-         write(nu_diag,*) 'Initial energy =', einit
-         write(nu_diag,*) 'Final energy   =', efinal
-         write(nu_diag,*) 'efinal - einit  =', efinal-einit
-         write(nu_diag,*) 'fsurfn,flatn,fswint,fhocn, fsnow*Lfresh:'
-         write(nu_diag,*) fsurfn,flatn,fswint,fhocnn, fsnow*Lfresh
-         write(nu_diag,*) 'Input energy =', einp
-         write(nu_diag,*) 'fbot,fcondbot:'
-         write(nu_diag,*) fbot,fcondbot
+         write(warning,*) 'Thermo energy conservation error'
+         call add_warning(warning)
+         write(warning,*) 'Flux error (W/m^2) =', ferr
+         call add_warning(warning)
+         write(warning,*) 'Energy error (J) =', ferr*dt
+         call add_warning(warning)
+         write(warning,*) 'Initial energy =', einit
+         call add_warning(warning)
+         write(warning,*) 'Final energy   =', efinal
+         call add_warning(warning)
+         write(warning,*) 'efinal - einit  =', efinal-einit
+         call add_warning(warning)
+         write(warning,*) 'fsurfn,flatn,fswint,fhocn, fsnow*Lfresh:'
+         call add_warning(warning)
+         write(warning,*) fsurfn,flatn,fswint,fhocnn, fsnow*Lfresh
+         call add_warning(warning)
+         write(warning,*) 'Input energy =', einp
+         call add_warning(warning)
+         write(warning,*) 'fbot,fcondbot:'
+         call add_warning(warning)
+         write(warning,*) fbot,fcondbot
+         call add_warning(warning)
 
          !         if (ktherm == 2) then
-         write(nu_diag,*) 'Intermediate energy =', einter
-         write(nu_diag,*) 'efinal - einter =', &
+         write(warning,*) 'Intermediate energy =', einter
+         call add_warning(warning)
+         write(warning,*) 'efinal - einter =', &
               efinal-einter
-         write(nu_diag,*) 'einter - einit  =', &
+         call add_warning(warning)
+         write(warning,*) 'einter - einit  =', &
               einter-einit
-         write(nu_diag,*) 'Conduction Error =', (einter-einit) &
+         call add_warning(warning)
+         write(warning,*) 'Conduction Error =', (einter-einit) &
               - (fcondtopn*dt - fcondbot*dt + fswint*dt)
-         write(nu_diag,*) 'Melt/Growth Error =', (einter-einit) &
+         call add_warning(warning)
+         write(warning,*) 'Melt/Growth Error =', (einter-einit) &
               + ferr*dt - (fcondtopn*dt - fcondbot*dt + fswint*dt)
-         write(nu_diag,*) 'Advection Error =', fadvocn*dt
+         call add_warning(warning)
+         write(warning,*) 'Advection Error =', fadvocn*dt
+         call add_warning(warning)
          !         endif
 
-         !         write(nu_diag,*) fsurfn,flatn,fswint,fhocnn
-
-         write(nu_diag,*) 'dt*(fsurfn, flatn, fswint, fhocn, fsnow*Lfresh, fadvocn):'
-         write(nu_diag,*) fsurfn*dt, flatn*dt, &
+         !         write(warning,*) fsurfn,flatn,fswint,fhocnn
+         !         call add_warning(warning)
+         
+         write(warning,*) 'dt*(fsurfn, flatn, fswint, fhocn, fsnow*Lfresh, fadvocn):'
+         call add_warning(warning)
+         write(warning,*) fsurfn*dt, flatn*dt, &
               fswint*dt, fhocnn*dt, &
               fsnow*Lfresh*dt, fadvocn*dt
+         call add_warning(warning)
          return
       endif
 

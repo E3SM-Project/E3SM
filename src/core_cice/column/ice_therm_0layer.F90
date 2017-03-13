@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_0layer.F90 1136 2016-07-29 21:10:31Z eclare $
+!  SVN:$Id: ice_therm_0layer.F90 1178 2017-03-08 19:24:07Z eclare $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures
@@ -15,6 +15,7 @@
       use ice_constants_colpkg, only: c0, c1, p5, puny, &
           kseaice, ksno
       use ice_therm_bl99, only: surface_fluxes
+      use ice_warnings, only: add_warning
 
       implicit none
 
@@ -48,13 +49,11 @@
                                        fsensn,   flatn,    &
                                        flwoutn,  fsurfn,   &
                                        fcondtopn,fcondbot, &
-                                       l_stop,   nu_diag,  &
-                                       stop_label)
+                                       l_stop,   stop_label)
 
       integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
-         nslyr , & ! number of snow layers
-         nu_diag   ! diagnostic file unit number
+         nslyr     ! number of snow layers
 
       real (kind=dbl_kind), intent(in) :: &
          dt              ! time step
@@ -133,6 +132,9 @@
       logical (kind=log_kind) :: &
          converged      ! = true when local solution has converged
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+      
       !-----------------------------------------------------------------
       ! Initialize
       !-----------------------------------------------------------------
@@ -293,15 +295,22 @@
       ! Check for convergence failures.
       !-----------------------------------------------------------------
       if (.not.converged) then
-         write(nu_diag,*) 'Thermo iteration does not converge,'
-         write(nu_diag,*) 'Ice thickness:',  hilyr*nilyr
-         write(nu_diag,*) 'Snow thickness:', hslyr*nslyr
-         write(nu_diag,*) 'dTsf, Tsf_errmax:',dTsf_prev, &
+         write(warning,*) 'Thermo iteration does not converge,'
+         call add_warning(warning)
+         write(warning,*) 'Ice thickness:',  hilyr*nilyr
+         call add_warning(warning)
+         write(warning,*) 'Snow thickness:', hslyr*nslyr
+         call add_warning(warning)
+         write(warning,*) 'dTsf, Tsf_errmax:',dTsf_prev, &
                           Tsf_errmax
-         write(nu_diag,*) 'Tsf:', Tsf
-         write(nu_diag,*) 'fsurfn:', fsurfn
-         write(nu_diag,*) 'fcondtopn, fcondbot', &
+         call add_warning(warning)
+         write(warning,*) 'Tsf:', Tsf
+         call add_warning(warning)
+         write(warning,*) 'fsurfn:', fsurfn
+         call add_warning(warning)
+         write(warning,*) 'fcondtopn, fcondbot', &
                           fcondtopn, fcondbot
+         call add_warning(warning)
          l_stop = .true.
          stop_label = "zerolayer_temperature: Thermo iteration does not converge"
          return
@@ -315,10 +324,14 @@
          if (Tsf < c0 .and. & 
               abs(fcondtopn-fsurfn) > puny) then
 
-            write(nu_diag,*) 'fcondtopn does not equal fsurfn,'
-            write(nu_diag,*) 'Tsf=',Tsf
-            write(nu_diag,*) 'fcondtopn=',fcondtopn
-            write(nu_diag,*) 'fsurfn=',fsurfn
+            write(warning,*) 'fcondtopn does not equal fsurfn,'
+            call add_warning(warning)
+            write(warning,*) 'Tsf=',Tsf
+            call add_warning(warning)
+            write(warning,*) 'fcondtopn=',fcondtopn
+            call add_warning(warning)
+            write(warning,*) 'fsurfn=',fsurfn
+            call add_warning(warning)
             l_stop = .true.
             stop_label = "zerolayer_temperature: fcondtopn /= fsurfn"
             return

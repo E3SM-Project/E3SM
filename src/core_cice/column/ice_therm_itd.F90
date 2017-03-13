@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_itd.F90 1136 2016-07-29 21:10:31Z eclare $
+!  SVN:$Id: ice_therm_itd.F90 1178 2017-03-08 19:24:07Z eclare $
 !=======================================================================
 !
 ! Thermo calculations after call to coupler, related to ITD:
@@ -24,7 +24,9 @@
       use ice_constants_colpkg, only: c0, c1, c2, c3, c4, c6, c10, &
           p001, p1, p333, p5, p666, puny, bignum, &
           rhos, rhoi, Lfresh, ice_ref_salinity
-
+      use ice_warnings, only: add_warning
+      
+      
       implicit none
       save
       
@@ -74,7 +76,7 @@
                              vicen,       vsnon,       & 
                              aice,        aice0,       & 
                              fpond,       l_stop,      &
-                             stop_label,  nu_diag)
+                             stop_label)
 
       use ice_itd, only: aggregate_area, shift_ice, & 
                          column_sum, column_conservation_check
@@ -86,8 +88,7 @@
          ncat    , & ! number of thickness categories
          nilyr   , & ! number of ice layers
          nslyr   , & ! number of snow layers
-         ntrcr  , &  ! number of tracers in use
-         nu_diag     ! diagnostic file unit number
+         ntrcr       ! number of tracers in use
 
       real (kind=dbl_kind), dimension(0:ncat), intent(inout) :: &
          hin_max      ! category boundaries (m)
@@ -123,6 +124,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop    ! if true, abort on return
 
+     ! character (char_len), intent(out) :: stop_label
       character (len=*), intent(out) :: stop_label
 
       ! local variables
@@ -186,6 +188,9 @@
       logical (kind=log_kind), parameter :: &
          print_diags = .false.    ! if true, prints when remap_flag=F
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+      
       !-----------------------------------------------------------------
       ! Initialize
       !-----------------------------------------------------------------
@@ -311,20 +316,28 @@
             remap_flag = .false.
 
             if (print_diags) then
-               write(nu_diag,*) 'ITD: hicen(n) > hbnew(n)'
-               write(nu_diag,*) 'cat ',n
-               write(nu_diag,*) 'hicen(n) =', hicen(n)
-               write(nu_diag,*) 'hbnew(n) =', hbnew(n)
+               write(warning,*) 'ITD: hicen(n) > hbnew(n)'
+               call add_warning(warning)
+               write(warning,*) 'cat ',n
+               call add_warning(warning)
+               write(warning,*) 'hicen(n) =', hicen(n)
+               call add_warning(warning)
+               write(warning,*) 'hbnew(n) =', hbnew(n)
+               call add_warning(warning)
             endif
 
          elseif (aicen(n+1) > puny .and. hicen(n+1) <= hbnew(n)) then
             remap_flag = .false.
 
             if (print_diags) then
-               write(nu_diag,*) 'ITD: hicen(n+1) < hbnew(n)'
-               write(nu_diag,*) 'cat ',n
-               write(nu_diag,*) 'hicen(n+1) =', hicen(n+1)
-               write(nu_diag,*) 'hbnew(n) =', hbnew(n)
+               write(warning,*) 'ITD: hicen(n+1) < hbnew(n)'
+               call add_warning(warning)
+               write(warning,*) 'cat ',n
+               call add_warning(warning)
+               write(warning,*) 'hicen(n+1) =', hicen(n+1)
+               call add_warning(warning)
+               write(warning,*) 'hbnew(n) =', hbnew(n)
+               call add_warning(warning)
             endif
          endif
 
@@ -340,10 +353,14 @@
             remap_flag = .false.
 
             if (print_diags) then
-               write(nu_diag,*) 'ITD hbnew(n) > hin_max(n+1)'
-               write(nu_diag,*) 'cat ',n
-               write(nu_diag,*) 'hbnew(n) =', hbnew(n)
-               write(nu_diag,*) 'hin_max(n+1) =', hin_max(n+1)
+               write(warning,*) 'ITD hbnew(n) > hin_max(n+1)'
+               call add_warning(warning)
+               write(warning,*) 'cat ',n
+               call add_warning(warning)
+               write(warning,*) 'hbnew(n) =', hbnew(n)
+               call add_warning(warning)
+               write(warning,*) 'hin_max(n+1) =', hin_max(n+1)
+               call add_warning(warning)
             endif
          endif
 
@@ -351,10 +368,14 @@
             remap_flag = .false.
 
             if (print_diags) then
-               write(nu_diag,*) 'ITD: hbnew(n) < hin_max(n-1)'
-               write(nu_diag,*) 'cat ',n
-               write(nu_diag,*) 'hbnew(n) =', hbnew(n)
-               write(nu_diag,*) 'hin_max(n-1) =', hin_max(n-1)
+               write(warning,*) 'ITD: hbnew(n) < hin_max(n-1)'
+               call add_warning(warning)
+               write(warning,*) 'cat ',n
+               call add_warning(warning)
+               write(warning,*) 'hbnew(n) =', hbnew(n)
+               call add_warning(warning)
+               write(warning,*) 'hin_max(n-1) =', hin_max(n-1)
+               call add_warning(warning)
             endif
          endif
 
@@ -531,8 +552,7 @@
                          vicen,    vsnon,       &
                          hicen,    donor,       &
                          daice,    dvice,       &
-                         l_stop,   stop_label,  &
-                         nu_diag)
+                         l_stop,   stop_label)
          if (l_stop) return
 
          ! maintain qsno negative definiteness
@@ -610,32 +630,32 @@
       call column_conservation_check (fieldid,               &
                                       vice_init, vice_final, &
                                       puny,                  &
-                                      l_stop,    nu_diag)
+                                      l_stop)
       fieldid = 'vsno, ITD remap'
       call column_conservation_check (fieldid,               &
                                       vsno_init, vsno_final, &
                                       puny,                  &
-                                      l_stop,    nu_diag)
+                                      l_stop)
       fieldid = 'eice, ITD remap'
       call column_conservation_check (fieldid,               &
                                       eice_init, eice_final, &
                                       puny*Lfresh*rhoi,      &
-                                      l_stop,    nu_diag)
+                                      l_stop)
       fieldid = 'esno, ITD remap'
       call column_conservation_check (fieldid,               &
                                       esno_init, esno_final, &
                                       puny*Lfresh*rhos,      &
-                                      l_stop,    nu_diag)
+                                      l_stop)
       fieldid = 'sicen, ITD remap'
       call column_conservation_check (fieldid,               &
                                       sice_init, sice_final, &
                                       puny,                  &
-                                      l_stop,    nu_diag)
+                                      l_stop)
       fieldid = 'vbrin, ITD remap'
       call column_conservation_check (fieldid,               &
                                       vbri_init, vbri_final, &
                                       puny*c10,              &
-                                      l_stop,    nu_diag)
+                                      l_stop)
          if (l_stop) then
             stop_label = 'linear_itd: Column conservation error'
             return
@@ -1001,7 +1021,7 @@
                               bgrid,      cgrid,      igrid,    &
                               nbtrcr,    flux_bio,   &
                               ocean_bio, fzsal,      &
-                              nu_diag,   frazil_diag,&
+                              frazil_diag,           &
                               l_stop,    stop_label)
 
       use ice_itd, only: column_sum, &
@@ -1023,8 +1043,7 @@
          ntrcr , & ! number of tracers
          nltrcr, & ! number of zbgc tracers
          n_aero, & ! number of aerosol tracers
-         ktherm, & ! type of thermodynamics (0 0-layer, 1 BL99, 2 mushy)
-         nu_diag   ! diagnostic file unit number
+         ktherm    ! type of thermodynamics (0 0-layer, 1 BL99, 2 mushy)
 
       real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
          hin_max      ! category boundaries (m)
@@ -1071,6 +1090,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop    ! if true, abort on return
 
+     ! character (char_len), intent(out) :: stop_label
       character (len=*), intent(out) :: stop_label
 
       ! BGC
@@ -1452,12 +1472,12 @@
          call column_conservation_check (fieldid,               &
                                          vice_init, vice_final, &
                                          puny,                  &
-                                         l_stop,    nu_diag)
+                                         l_stop)
          fieldid = 'eice, add_new_ice'
          call column_conservation_check (fieldid,               &
                                          eice_init, eice_final, &
                                          puny*Lfresh*rhoi,      &
-                                         l_stop,    nu_diag)
+                                         l_stop)
          if (l_stop) then
             stop_label = 'add_new_ice: Column conservation error'
             return
@@ -1476,7 +1496,7 @@
                              aicen,      vicen,      vsnon1,   &
                              vi0new,     ntrcr,      trcrn,    &
                              nbtrcr,     sss,        ocean_bio,&
-                             flux_bio,   hsurp,      nu_diag,  &
+                             flux_bio,   hsurp,                &
                              l_stop,     stop_label,           &
                              l_conservation_check)
 

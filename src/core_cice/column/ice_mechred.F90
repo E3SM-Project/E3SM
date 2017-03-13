@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_mechred.F90 1136 2016-07-29 21:10:31Z eclare $
+!  SVN:$Id: ice_mechred.F90 1178 2017-03-08 19:24:07Z eclare $
 !=======================================================================
 
 ! Driver for ice mechanical redistribution (ridging)
@@ -40,6 +40,7 @@
           puny, Lfresh, rhoi, rhos, rhow, gravit
       use ice_itd, only: column_sum, &
                          column_conservation_check
+      use ice_warnings, only: add_warning
 
       implicit none
       save
@@ -87,7 +88,7 @@
                             trcr_depend, trcr_base,  &
                             n_trcr_strata,           &
                             nt_strata,   l_stop,     &
-                            stop_label,  nu_diag,    &
+                            stop_label,              &
                             krdg_partic, krdg_redist,&
                             mu_rdg,                  &
                             dardg1dt,    dardg2dt,   &
@@ -109,8 +110,7 @@
          nilyr , & ! number of ice layers
          nslyr , & ! number of snow layers
          n_aero, & ! number of aerosol tracers
-         ntrcr , & ! number of tracers in use
-         nu_diag   ! diagnostic file unit number
+         ntrcr     ! number of tracers in use
 
       real (kind=dbl_kind), intent(in) :: &
          mu_rdg , & ! gives e-folding scale of ridged ice (m^.5) 
@@ -252,6 +252,9 @@
       character (len=char_len) :: &
          fieldid        ! field identifier
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+
       !-----------------------------------------------------------------
       ! Initialize
       !-----------------------------------------------------------------
@@ -368,7 +371,6 @@
                            msnow_mlt,   esnow_mlt,   &
                            maero,       mpond,       &
                            l_stop,      stop_label,  &
-                           nu_diag,                  &
                            aredistn,    vredistn)    
 
          if (l_stop) return
@@ -397,15 +399,19 @@
       !-----------------------------------------------------------------
 
          if (iterate_ridging) then
-            write(nu_diag,*) 'Repeat ridging, niter =', niter
+            write(warning,*) 'Repeat ridging, niter =', niter
+            call add_warning(warning)
          else
             exit rdg_iteration
          endif
 
          if (niter == nitermax) then
-            write(nu_diag,*) ' '
-            write(nu_diag,*) 'Exceeded max number of ridging iterations'
-            write(nu_diag,*) 'max =',nitermax
+            write(warning,*) ' '
+            call add_warning(warning)
+            write(warning,*) 'Exceeded max number of ridging iterations'
+            call add_warning(warning)
+            write(warning,*) 'max =',nitermax
+            call add_warning(warning)
             l_stop = .true.
             stop_label = "ridge_ice: Exceeded max number of ridging iterations"
             return
@@ -460,32 +466,32 @@
          call column_conservation_check (fieldid,               &
                                          vice_init, vice_final, &
                                          puny,                  &
-                                         l_stop,    nu_diag)
+                                         l_stop)
          fieldid = 'vsno, ridging'
          call column_conservation_check (fieldid,               &
                                          vsno_init, vsno_final, &
                                          puny,                  &
-                                         l_stop,    nu_diag)
+                                         l_stop)
          fieldid = 'eice, ridging'
          call column_conservation_check (fieldid,               &
                                          eice_init, eice_final, &
                                          puny*Lfresh*rhoi,      &
-                                         l_stop,    nu_diag)
+                                         l_stop)
          fieldid = 'esno, ridging'
          call column_conservation_check (fieldid,               &
                                          esno_init, esno_final, &
                                          puny*Lfresh*rhos,      &
-                                         l_stop,    nu_diag)
+                                         l_stop)
          fieldid = 'sice, ridging'
          call column_conservation_check (fieldid,               &
                                          sice_init, sice_final, &
                                          puny,                  &
-                                         l_stop,    nu_diag)
+                                         l_stop)
          fieldid = 'vbrin, ridging'
          call column_conservation_check (fieldid,               &
                                          vbri_init, vbri_final, &
                                          puny*c10,              &
-                                         l_stop,    nu_diag)
+                                         l_stop)
          if (l_stop) then
             stop_label = 'ridge_ice: Column conservation error'
             return
@@ -568,13 +574,19 @@
          l_stop = .true.
          stop_label = "ridge_ice: total area > 1"
 
-         write(nu_diag,*) ' '
-         write(nu_diag,*) 'Ridging error: total area > 1'
-         write(nu_diag,*) 'area:', asum
-         write(nu_diag,*) 'n, aicen:'
-         write(nu_diag,*)  0, aice0
+         write(warning,*) ' '
+         call add_warning(warning)
+         write(warning,*) 'Ridging error: total area > 1'
+         call add_warning(warning)
+         write(warning,*) 'area:', asum
+         call add_warning(warning)
+         write(warning,*) 'n, aicen:'
+         call add_warning(warning)
+         write(warning,*)  0, aice0
+         call add_warning(warning)
          do n = 1, ncat
-            write(nu_diag,*) n, aicen(n)
+            write(warning,*) n, aicen(n)
+            call add_warning(warning)
          enddo
          return
       endif
@@ -1031,7 +1043,6 @@
                               msnow_mlt,   esnow_mlt,       &
                               maero,       mpond,           &
                               l_stop,      stop_label,      &
-                              nu_diag,                      &
                               aredistn,    vredistn)
 
       use ice_colpkg_tracers, only: nt_qsno, nt_fbri, &
@@ -1044,7 +1055,6 @@
          nslyr , & ! number of snow layers
          ntrcr , & ! number of tracers in use
          n_aero, & ! number of aerosol tracers
-         nu_diag, & ! diagnostic file unit number
          krdg_redist      ! selects redistribution function
 
       real (kind=dbl_kind), intent(in) :: &
@@ -1167,6 +1177,9 @@
          tmpfac     , & ! factor by which opening/closing rates are cut
          wk1            ! work variable
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+
       do n = 1, ncat
 
       !-----------------------------------------------------------------
@@ -1241,8 +1254,10 @@
       if (aice0 < -puny) then
          l_stop = .true.
          stop_label = 'Ridging error: aice0 < 0'
-         write (nu_diag,*) stop_label
-         write (nu_diag,*) 'aice0:', aice0
+         write(warning,*) stop_label
+         call add_warning(warning)
+         write(warning,*) 'aice0:', aice0
+         call add_warning(warning)
          return
 
       elseif (aice0 < c0) then    ! roundoff error
@@ -1276,9 +1291,11 @@
             if (ardg1n > aicen_init(n) + puny) then
                l_stop = .true.
                stop_label = 'Ridging error: ardg > aicen'
-               write (nu_diag,*) stop_label
-               write (nu_diag,*) 'n, ardg, aicen:', &
+               write(warning,*) stop_label
+               call add_warning(warning)
+               write(warning,*) 'n, ardg, aicen:', &
                     n, ardg1n, aicen_init(n)
+               call add_warning(warning)
                return
             else
                ardg1n = min(aicen_init(n), ardg1n)

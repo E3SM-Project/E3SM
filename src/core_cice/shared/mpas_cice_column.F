@@ -24,6 +24,9 @@ module cice_column
 
   use cice_debug
 
+  use ice_kinds_mod, only: &
+       char_len_long
+
   implicit none
 
   private
@@ -177,6 +180,9 @@ module cice_column
 
   type(ciceTracerObjectType), private :: ciceTracerObject
 
+  ! warnings string kind
+  integer, parameter :: strKINDWarnings = char_len_long
+
 contains
 
 !-----------------------------------------------------------------------
@@ -308,6 +314,12 @@ contains
     integer, pointer :: &
          nCategories
 
+    logical :: &
+         abortFlag
+
+    character(len=strKIND) :: &
+         abortMessage
+
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
 
     block => domain % blocklist
@@ -320,7 +332,15 @@ contains
        call colpkg_init_itd(&
             nCategories, &
             categoryThicknessLimits, &
-            stdoutUnit)
+            abortFlag, &
+            abortMessage)
+
+       ! code abort
+       if (abortFlag) then
+          COLUMN_ERROR_WRITE("init_column_itd")
+          COLUMN_ERROR_WRITE(trim(abortMessage))
+          call MPAS_dmpar_global_abort("MPAS-seaice: init_column_itd: "//trim(abortMessage))
+       endif
 
        block => block % next
     end do
@@ -418,7 +438,9 @@ contains
   subroutine cice_init_column_shortwave(domain, clock)
 
     use ice_colpkg, only: &
-         colpkg_init_orbit
+         colpkg_init_orbit, &
+         colpkg_get_warnings, &
+         colpkg_clear_warnings
 
     use cice_constants, only: &
          cicePuny
@@ -489,6 +511,9 @@ contains
     logical, pointer :: &
          config_do_restart
 
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
+         warnings
+
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
@@ -497,10 +522,12 @@ contains
        abortFlag = .false.
        abortMessage = ""
 
+       call colpkg_clear_warnings()
        call colpkg_init_orbit(&
-            stdoutUnit, &
             abortFlag, &
             abortMessage)
+       call colpkg_get_warnings(warnings)
+       call column_write_warnings(warnings)
 
        if (abortFlag) then
           COLUMN_ERROR_WRITE("colpkg_init_orbit")
@@ -1034,7 +1061,9 @@ contains
   subroutine column_vertical_thermodynamics(domain, clock)
 
     use ice_colpkg, only: &
-         colpkg_step_therm1
+         colpkg_step_therm1, &
+         colpkg_clear_warnings, &
+         colpkg_get_warnings
 
     use cice_constants, only: &
          cicePuny
@@ -1226,6 +1255,9 @@ contains
 
     real(kind=RKIND) :: &
          dayOfYear
+
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
+         warnings
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -1455,6 +1487,7 @@ contains
           abortFlag = .false.
           abortMessage = ""
 
+          call colpkg_clear_warnings()
           call colpkg_step_therm1(&
                config_dt, &
                nCategories, &
@@ -1578,8 +1611,9 @@ contains
                freezeOnset(iCell), &
                dayOfYear, &
                abortFlag, &
-               abortMessage, &
-               stdoutUnit)
+               abortMessage)
+          call colpkg_get_warnings(warnings)
+          call column_write_warnings(warnings)
 
           ! code abort
           if (abortFlag) then
@@ -1639,7 +1673,10 @@ contains
 
   subroutine column_itd_thermodynamics(domain, clock)
 
-    use ice_colpkg, only: colpkg_step_therm2
+    use ice_colpkg, only: &
+         colpkg_step_therm2, &
+         colpkg_get_warnings, &
+         colpkg_clear_warnings
 
     type(domain_type), intent(inout) :: domain
 
@@ -1746,6 +1783,9 @@ contains
     real(kind=RKIND) :: &
          dayOfYear
 
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
+         warnings
+
     ! day of year
     call get_day_of_year(clock, dayOfYear)
 
@@ -1847,6 +1887,7 @@ contains
           abortFlag = .false.
           abortMessage = ""
 
+          call colpkg_clear_warnings()
           call colpkg_step_therm2(&
                config_dt, &
                nCategories, &
@@ -1891,10 +1932,11 @@ contains
                oceanBioConcentrationsUsed(:), &
                abortFlag, &
                abortMessage, &
-               stdoutUnit, &
                frazilGrowthDiagnostic(iCell), &
                freezeOnset(iCell), &
                dayOfYear)
+          call colpkg_get_warnings(warnings)
+          call column_write_warnings(warnings)
 
           ! update
           do iCategory = 1, nCategories
@@ -2066,7 +2108,10 @@ contains
 
   subroutine column_radiation(domain, clock, lInitialization)
 
-    use ice_colpkg, only: colpkg_step_radiation
+    use ice_colpkg, only: &
+         colpkg_step_radiation, &
+         colpkg_get_warnings, &
+         colpkg_clear_warnings
 
     use cice_constants, only: pii
 
@@ -2200,6 +2245,9 @@ contains
     logical :: &
          setGetPhysicsTracers, &
          setGetBGCTracers
+
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
+         warnings
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -2337,6 +2385,7 @@ contains
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
+          call colpkg_clear_warnings()
           call colpkg_step_radiation(&
                config_dt, &
                nCategories, &
@@ -2405,9 +2454,10 @@ contains
                snowFractionCategory(:,iCell), &
                pondSnowDepthDifference(:,iCell), &
                pondLidMeltFluxFraction(:,iCell), &
-               stdoutUnit, &
                .false., &
                lInitialization)
+          call colpkg_get_warnings(warnings)
+          call column_write_warnings(warnings)
 
           ! set the category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -2437,7 +2487,10 @@ contains
 
   subroutine column_ridging(domain)
 
-    use ice_colpkg, only: colpkg_step_ridge
+    use ice_colpkg, only: &
+         colpkg_step_ridge, &
+         colpkg_get_warnings, &
+         colpkg_clear_warnings
 
     type(domain_type), intent(inout) :: domain
 
@@ -2536,6 +2589,9 @@ contains
          abortMessage, &
          abortLocation
 
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
+         warnings
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -2622,6 +2678,7 @@ contains
           abortFlag = .false.
           abortMessage = ""
 
+          call colpkg_clear_warnings()
           call colpkg_step_ridge(&
                dynamicsTimeStep, &
                config_dynamics_subcycle_number, &
@@ -2664,9 +2721,10 @@ contains
                newlyFormedIceLogical(:), &
                zSalinityFlux(iCell), &
                oceanBioFluxes(:,iCell), &
-               stdoutUnit, &
                abortFlag, &
                abortMessage)
+          call colpkg_get_warnings(warnings)
+          call column_write_warnings(warnings)
 
           ! update
           do iCategory = 1, nCategories
@@ -2711,7 +2769,9 @@ contains
 
     use ice_colpkg, only: &
          colpkg_biogeochemistry, &
-         colpkg_init_OceanConcArray
+         colpkg_init_OceanConcArray, &
+         colpkg_get_warnings, &
+         colpkg_clear_warnings
 
     use cice_constants, only: &
          cicePuny
@@ -2873,6 +2933,9 @@ contains
     character(len=strKIND) :: &
          abortMessage, &
          abortLocation
+
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
+         warnings
 
     block => domain % blocklist
     do while (associated(block))
@@ -3059,6 +3122,7 @@ contains
 
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
+          call colpkg_clear_warnings()
           call colpkg_biogeochemistry(&
                config_dt, &
                ciceTracerObject % nTracers, &
@@ -3118,7 +3182,6 @@ contains
                iceThicknessCategoryInitial(:,iCell), &
                oceanBioFluxes(:,iCell), &
                atmosBioFluxes(:,iCell), &
-               stdoutUnit, &
                iceAreaCategoryInitial(:,iCell), &
                iceVolumeCategoryInitial(:,iCell), &
                iceAreaCategory(1,:,iCell), &
@@ -3131,6 +3194,8 @@ contains
                nZBGCTracers, &
                abortFlag, &
                abortMessage)
+          call colpkg_get_warnings(warnings)
+          call column_write_warnings(warnings)
 
           ! code abort
           if (abortFlag) then
@@ -12242,6 +12307,26 @@ contains
     end do
 
   end subroutine column_combine_snow_ice_aerosols
+
+!-----------------------------------------------------------------------
+! Warning messages
+!-----------------------------------------------------------------------
+
+  subroutine column_write_warnings(warnings)
+
+    character(len=strKINDWarnings), dimension(:), intent(in) :: &
+         warnings
+
+    integer :: &
+         iWarning
+
+    do iWarning = 1, size(warnings)
+
+       write(stderrUnit,*) trim(warnings(iWarning))
+
+    enddo ! iWarning
+
+  end subroutine column_write_warnings
 
 !-----------------------------------------------------------------------
 

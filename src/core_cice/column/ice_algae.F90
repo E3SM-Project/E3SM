@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_algae.F90 1142 2016-08-27 16:07:51Z njeffery $
+!  SVN:$Id: ice_algae.F90 1178 2017-03-08 19:24:07Z eclare $
 !=======================================================================
 !
 ! Compute sea ice biogeochemistry (vertical or skeletal layer)
@@ -10,7 +10,8 @@
       module ice_algae
 
       use ice_kinds_mod
-      use ice_zbgc_shared 
+      use ice_zbgc_shared
+      use ice_warnings, only: add_warning
 
       implicit none
 
@@ -60,8 +61,7 @@
                          fbio_snoice,  fbio_atmice, &
                          PP_net,       ice_bio_net, &
                          snow_bio_net, grow_net,    &
-                         l_stop,       stop_label,  &
-                         nu_diag)
+                         l_stop,       stop_label)
 
       use ice_aerosol, only: update_snow_bgc
       use ice_constants_colpkg, only: c0, c1, puny
@@ -165,9 +165,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, print diagnostics and abort on return
 
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
-
       character (len=*), intent(out) :: stop_label
 
       ! local variables
@@ -188,6 +185,9 @@
          zbgc_snown, & ! aerosol contribution from snow to ice
          zbgc_atmn     ! and atm to ice concentration * volume (mmol/m^3*m)
 
+      character(len=char_len_long) :: &
+         warning  
+
       zbgc_snown(:) = c0
       zbgc_atmn (:) = c0
       flux_bion (:) = c0
@@ -203,8 +203,7 @@
                                 vice_old,  vsno_old,     &
                                 vicen,     vsnon,        &
                                 aicen,     flux_bio_atm, &
-                                zbgc_atmn, flux_bion,    &
-                                nu_diag)
+                                zbgc_atmn, flux_bion)
 
       call z_biogeochemistry   (n_cat,        dt,        &
                                 nilyr,        nslyr,     &
@@ -230,8 +229,34 @@
                                 dhice,        zbgc_atmn, &
                                 iTin,                    &
                                 Zoo,          meltb,     &
-                                l_stop,       stop_label,&
-                                nu_diag)
+                                l_stop,       stop_label)
+
+!      if (write_flux_diag) then
+!         if (aicen > c0) then
+!            hsnow_f = vsnon/aicen
+!            do mm = 1,nbtrcr
+!               call bgc_column_sum (nblyr, nslyr, hsnow_f, hbri, &
+!                              trcrn(bio_index(mm):bio_index(mm)+nblyr+2), &
+!                              Tot_BGC_f(mm))
+!               write(warning,*) 'mm, Tot_BGC_i(mm), Tot_BGC_f(mm)'
+!               call add_warning(warning)
+!               write(warning,*)  mm, Tot_BGC_i(mm), Tot_BGC_f(mm)
+!               call add_warning(warning)
+!               write(warning,*) 'flux_bion(mm), flux_bio_atm(mm)'
+!               call add_warning(warning)
+!               write(warning,*)  flux_bion(mm), flux_bio_atm(mm)
+!               call add_warning(warning)
+!               write(warning,*) 'zbgc_snown(mm),zbgc_atmn(mm)'
+!               call add_warning(warning)
+!               write(warning,*)  zbgc_snown(mm),zbgc_atmn(mm)
+!               call add_warning(warning)
+!               write(warning,*) 'Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt'
+!               call add_warning(warning)
+!               write(warning,*)  Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt
+!               call add_warning(warning)
+!            enddo
+!         endif
+!      endif
 
       if (l_stop) return
 
@@ -250,6 +275,27 @@
                                snow_bio_net, grow_alg,   &
                                grow_net)
  
+!      if (write_flux_diag) then
+!         if (aicen > c0) then
+!            if (n_cat .eq. 1) a_ice = c0
+!            a_ice = a_ice + aicen
+!            write(warning,*) 'after merge_bgc_fluxes, n_cat:', n_cat
+!            call add_warning(warning)
+!            do mm = 1,nbtrcr
+!               write(warning,*)  'mm, flux_bio(mm):',mm,flux_bio(mm)
+!               call add_warning(warning)
+!               write(warning,*) 'fbio_snoice(mm)',fbio_snoice(mm)
+!               call add_warning(warning)
+!               write(warning,*) 'fbio_atmice(mm)',fbio_atmice(mm)
+!               call add_warning(warning)
+!               write(warning,*)  'flux_bio_atm(mm)', flux_bio_atm(mm)
+!               call add_warning(warning)
+!               write(warning,*)  'flux_bio_atm(mm)*a_ice', flux_bio_atm(mm)*a_ice
+!               call add_warning(warning)
+!            enddo
+!         endif
+!      endif
+
       end subroutine zbio    
 
 !=======================================================================
@@ -267,8 +313,7 @@
                                trcrn,    hin,        &
                                PP_net,   upNO,       &
                                upNH,     grow_net,   &
-                               l_stop,   stop_label, &
-                               nu_diag)
+                               l_stop,   stop_label)
 
       use ice_zbgc, only: merge_bgc_fluxes_skl
       use ice_colpkg_tracers, only: nt_bgc_N
@@ -314,9 +359,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, print diagnostics and abort on return
 
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
-
       character (len=*), intent(out) :: stop_label
 
       ! local variables
@@ -327,7 +369,10 @@
          grow_alg       ! algal growth rate          (mmol/m^3/s)
 
       real (kind=dbl_kind), dimension (nbtrcr) :: &
-         flux_bion       !tracer flux to ocean
+         flux_bion      ! tracer flux to ocean
+
+      character(len=char_len_long) :: &
+         warning ! warning message
 
       call skl_biogeochemistry       (dt,        nilyr,     &
                                       n_zaero,   n_doc,     &
@@ -341,7 +386,7 @@
                                       trcrn,     upNOn,     &
                                       upNHn,     grow_alg,  &
                                       hin,       l_stop,    &
-                                      stop_label, nu_diag)
+                                      stop_label)
 
      if (l_stop) return
 
@@ -372,7 +417,7 @@
                                       trcrn,      upNOn,        &
                                       upNHn,      grow_alg_skl, &
                                       hin,        l_stop,       &
-                                      stop_label, nu_diag)
+                                      stop_label)
 
       use ice_constants_colpkg, only: p5, p05, p1, c1, c0, puny, c10
       use ice_colpkg_tracers, only: nt_bgc_N,  ntrcr, bio_index 
@@ -414,9 +459,6 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, print diagnostics and abort on return
 
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
-
       character (len=*), intent(out) :: stop_label
 
       ! local variables
@@ -457,6 +499,9 @@
 
       logical (kind=log_kind) :: conserve_N
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+
       !-----------------------------------------------------------------
       ! Initialize 
       !-----------------------------------------------------------------
@@ -495,8 +540,9 @@
          cinit  (nn) = trcrn(bio_index(nn)) * sk_l * rphi_sk
          cinit_v(nn) = cinit(nn)/sk_l
          if (cinit(nn) < c0) then
-            write(nu_diag,*)'initial sk_bgc < 0, nn,nbtrcr,cinit(nn)', &
-                    nn,nbtrcr,cinit(nn)
+            write(warning,*)'initial sk_bgc < 0, nn,nbtrcr,cinit(nn)', &
+                 nn,nbtrcr,cinit(nn)
+            call add_warning(warning)
             l_stop = .true.
             stop_label = 'cinit < c0'
          endif  
@@ -603,22 +649,31 @@
 !         ocean_bio(nn) = ocean_bio(nn) + flux_bio(nn)/hmix*aicen
 
          if (.not. conserve_N) then
-              write(nu_diag,*) 'N not conserved in skl_bgc, Nerror:',Nerror
-              write(nu_diag,*) 'sk_bgc < 0 after algal fluxes, nn,cinit,flux_bio',&
+              write(warning,*) 'N not conserved in skl_bgc, Nerror:',Nerror
+              call add_warning(warning)
+              write(warning,*) 'sk_bgc < 0 after algal fluxes, nn,cinit,flux_bio',&
                                nn,cinit(nn),flux_bio(nn)
-              write(nu_diag,*) 'cinit_tmp,flux_bio_temp,f_meltn,congel_alg,PVt,PVflag: '
-              write(nu_diag,*) cinit_tmp,flux_bio_temp(nn),f_meltn(nn), &
+              call add_warning(warning)
+              write(warning,*) 'cinit_tmp,flux_bio_temp,f_meltn,congel_alg,PVt,PVflag: '
+              call add_warning(warning)
+              write(warning,*) cinit_tmp,flux_bio_temp(nn),f_meltn(nn), &
                                congel_alg(nn),PVt,PVflag(nn)
-              write(nu_diag,*) 'congel, meltb: ',congel,meltb
+              call add_warning(warning)
+              write(warning,*) 'congel, meltb: ',congel,meltb
+              call add_warning(warning)
               l_stop = .true.
               stop_label = 'N not conserved in skl_bgc'
          elseif (cinit(nn) < c0) then
-              write(nu_diag,*) 'sk_bgc < 0 after algal fluxes, nn,cinit,flux_bio',&
+              write(warning,*) 'sk_bgc < 0 after algal fluxes, nn,cinit,flux_bio',&
                                nn,cinit(nn),flux_bio(nn)
-              write(nu_diag,*) 'cinit_tmp,flux_bio_temp,f_meltn,congel_alg,PVt,PVflag: '
-              write(nu_diag,*) cinit_tmp,flux_bio_temp(nn),f_meltn(nn), &
+              call add_warning(warning)
+              write(warning,*) 'cinit_tmp,flux_bio_temp,f_meltn,congel_alg,PVt,PVflag: '
+              call add_warning(warning)
+              write(warning,*) cinit_tmp,flux_bio_temp(nn),f_meltn(nn), &
                                congel_alg(nn),PVt,PVflag(nn)
-              write(nu_diag,*) 'congel, meltb: ',congel,meltb
+              call add_warning(warning)
+              write(warning,*) 'congel, meltb: ',congel,meltb
+              call add_warning(warning)
               l_stop = .true.
               stop_label = 'sk_bgc < 0 after algal fluxes'
          endif
@@ -670,8 +725,7 @@
                                     dhice,        zbgc_atm,  &
                                     iTin,                    &
                                     Zoo,          meltb,     &
-                                    l_stop,       stop_label,&
-                                    nu_diag)
+                                    l_stop,       stop_label)
 
       use ice_colpkg_tracers, only: nt_fbri, nt_zbgc_frac, &
                                     ntrcr, nlt_bgc_Nit, tr_bgc_Fe, tr_zaero, &
@@ -742,9 +796,6 @@
          l_stop          ! if true, print diagnostics and abort on return
 
       character (len=*), intent(out) :: stop_label
-
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
 
       !-----------------------------------------------------------------------------
       ! algae absorption coefficient for 0.5 m thick layer
@@ -844,6 +895,9 @@
       integer, parameter :: &
          nt_zfswin = 1    ! for interpolation of short wave to bgrid
 
+      character(len=char_len_long) :: &
+         warning ! warning message  
+
   !-------------------------------------
   ! Initialize 
   !----------------------------------- 
@@ -876,12 +930,18 @@
             endif         ! first_ice
 
             if (trcrn(bio_index(m) + k-1) < c0  ) then
-               write(nu_diag,*)'zbgc initialization error, first ice = ', first_ice
-               write(nu_diag,*)'Category,m:',n_cat,m
-               write(nu_diag,*)'hbri,hbri_old' 
-               write(nu_diag,*) hbri,hbri_old
-               write(nu_diag,*)'trcrn(bio_index(m) + k-1)'
-               write(nu_diag,*) trcrn(bio_index(m) + k-1)
+               write(warning,*)'zbgc initialization error, first ice = ', first_ice
+               call add_warning(warning)
+               write(warning,*)'Category,m:',n_cat,m
+               call add_warning(warning)
+               write(warning,*)'hbri,hbri_old' 
+               call add_warning(warning)
+               write(warning,*) hbri,hbri_old
+               call add_warning(warning)
+               write(warning,*)'trcrn(bio_index(m) + k-1)'
+               call add_warning(warning)
+               write(warning,*) trcrn(bio_index(m) + k-1)
+               call add_warning(warning)
                l_stop = .true.
                stop_label = 'zbgc initialization error'
             endif 
@@ -1046,7 +1106,7 @@
                                 Sink_bot(mm),          &
                                 Sink_top(mm),          &
                                 dt, flux_bio(mm),     &
-                                l_stop, nblyr, nu_diag)
+                                l_stop, nblyr)
             if (l_stop) return
                 
             call compute_FCT_corr & 
@@ -1094,20 +1154,35 @@
             if (abs(sum_new-sum_old) > accuracy*sum_old .or. &
                 minval(biocons(:)) < c0  .or. minval(initcons_stationary(:)) < c0 &
                 .or. l_stop) then
-                write(nu_diag,*)'zbgc FCT tracer solution failed,nn', nn
-                write(nu_diag,*)'sum_new,sum_old:',sum_new,sum_old
-                write(nu_diag,*)'mm,biocons(:):',mm,biocons(:)
-                write(nu_diag,*)'biomat_low:',biomat_low
-                write(nu_diag,*)'Diff(:):',Diff(:)
-                write(nu_diag,*)'dmobile(:):',dmobile(:)
-                write(nu_diag,*)'mobile(mm):',mobile(mm)
-                write(nu_diag,*)'initcons_stationary(:):',initcons_stationary(:)
-                write (nu_diag, *) 'trcrn(nt_zbgc_frac+mm-1):',trcrn(nt_zbgc_frac+mm-1)
-                write (nu_diag, *) 'in_init_cons(:,mm):',in_init_cons(:,mm)
-                write (nu_diag, *) 'rtau_ret( mm),rtau_rel( mm)',rtau_ret( mm),rtau_rel( mm)
-                write(nu_diag,*)'darcyV,dhtop,dhbot'
-                write(nu_diag,*)darcyV,dhtop,dhbot
-                write(nu_diag,*)'Category,mm:',n_cat,mm
+
+                write(warning,*)'zbgc FCT tracer solution failed,nn', nn
+                call add_warning(warning)
+                write(warning,*)'sum_new,sum_old:',sum_new,sum_old
+                call add_warning(warning)
+                write(warning,*)'mm,biocons(:):',mm,biocons(:)
+                call add_warning(warning)
+                write(warning,*)'biomat_low:',biomat_low
+                call add_warning(warning)
+                write(warning,*)'Diff(:):',Diff(:)
+                call add_warning(warning)
+                write(warning,*)'dmobile(:):',dmobile(:)
+                call add_warning(warning)
+                write(warning,*)'mobile(mm):',mobile(mm)
+                call add_warning(warning)
+                write(warning,*)'initcons_stationary(:):',initcons_stationary(:)
+                call add_warning(warning)
+                write(warning,*) 'trcrn(nt_zbgc_frac+mm-1):',trcrn(nt_zbgc_frac+mm-1)
+                call add_warning(warning)
+                write(warning,*) 'in_init_cons(:,mm):',in_init_cons(:,mm)
+                call add_warning(warning)
+                write(warning,*) 'rtau_ret( mm),rtau_rel( mm)',rtau_ret( mm),rtau_rel( mm)
+                call add_warning(warning)
+                write(warning,*)'darcyV,dhtop,dhbot'
+                call add_warning(warning)
+                write(warning,*)darcyV,dhtop,dhbot
+                call add_warning(warning)
+                write(warning,*)'Category,mm:',n_cat,mm
+                call add_warning(warning)
                 l_stop = .true.
                 stop_label = 'zbgc FCT tracer solution failed'
             endif
@@ -1152,45 +1227,85 @@
             bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)*hbri
                        
             if (.not. conserve_N(k)) then  
-                write (nu_diag, *) 'N in algal_dyn not conserved'
-                write (nu_diag, *) 'Nerror(k):', Nerror(k)
-                write (nu_diag, *) 'k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)'
-                write (nu_diag, *)  k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)
-                write (nu_diag, *) 'react(k,m),iphin_N(k),biomat_brine(k,m)'
-                write (nu_diag, *)  react(k,m),iphin_N(k),biomat_brine(k,m)
+                write(warning, *) 'N in algal_dyn not conserved'
+                call add_warning(warning)
+                write(warning, *) 'Nerror(k):', Nerror(k)
+                call add_warning(warning)
+                write(warning, *) 'k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)'
+                call add_warning(warning)
+                write(warning, *)  k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)
+                call add_warning(warning)
+                write(warning, *) 'react(k,m),iphin_N(k),biomat_brine(k,m)'
+                call add_warning(warning)
+                write(warning, *)  react(k,m),iphin_N(k),biomat_brine(k,m)
+                call add_warning(warning)
                 l_stop = .true.
                 stop_label = 'N in algal_dyn not conserved'
             elseif (abs(bio_tmp) < puny) then  
                bio_tmp = c0
             elseif (bio_tmp > 1.0e6_dbl_kind) then
-                write (nu_diag, *) 'very large bgc value'
-                write (nu_diag, *) 'k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)'
-                write (nu_diag, *)  k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)
-                write (nu_diag, *) 'react(k,m),iphin_N(k),biomat_brine(k,m)'
-                write (nu_diag, *)  react(k,m),iphin_N(k),biomat_brine(k,m)
+                write(warning, *) 'very large bgc value'
+                call add_warning(warning)
+                write(warning, *) 'k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)'
+                call add_warning(warning)
+                write(warning, *)  k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)
+                call add_warning(warning)
+                write(warning, *) 'react(k,m),iphin_N(k),biomat_brine(k,m)'
+                call add_warning(warning)
+                write(warning, *)  react(k,m),iphin_N(k),biomat_brine(k,m)
+                call add_warning(warning)
                 l_stop = .true.
                 stop_label = 'very large bgc value'
             elseif (bio_tmp < c0) then
-                write (nu_diag, *) 'negative bgc'
-                write (nu_diag, *) 'k,m,nlt_bgc_Nit,hbri,hbri_old'
-                write (nu_diag, *)  k,m,nlt_bgc_Nit,hbri,hbri_old
-                write (nu_diag, *) 'bio_tmp,biomat_cons(k,m),ocean_bio(m)'
-                write (nu_diag, *)  bio_tmp,biomat_cons(k,m),ocean_bio(m)
-                write (nu_diag, *) 'react(k,m),iphin_N(k),biomat_brine(k,m)'
-                write (nu_diag, *)  react(k,m),iphin_N(k),biomat_brine(k,m)
-                write (nu_diag, *) 'rtau_ret( m),rtau_ret( m)',rtau_ret( m),rtau_ret( m)
+                write(warning, *) 'negative bgc'
+                call add_warning(warning)
+                write(warning, *) 'k,m,nlt_bgc_Nit,hbri,hbri_old'
+                call add_warning(warning)
+                write(warning, *)  k,m,nlt_bgc_Nit,hbri,hbri_old
+                call add_warning(warning)
+                write(warning, *) 'bio_tmp,biomat_cons(k,m),ocean_bio(m)'
+                call add_warning(warning)
+                write(warning, *)  bio_tmp,biomat_cons(k,m),ocean_bio(m)
+                call add_warning(warning)
+                write(warning, *) 'react(k,m),iphin_N(k),biomat_brine(k,m)'
+                call add_warning(warning)
+                write(warning, *)  react(k,m),iphin_N(k),biomat_brine(k,m)
+                call add_warning(warning)
+                write(warning, *) 'rtau_ret( m),rtau_ret( m)',rtau_ret( m),rtau_ret( m)
+                call add_warning(warning)
                 l_stop = .true.
                 stop_label = 'negative bgc'
             endif
             if (l_stop) then
-                write (nu_diag, *) 'trcrn(nt_zbgc_frac+m-1):',trcrn(nt_zbgc_frac+m-1)
-                write (nu_diag, *) 'in_init_cons(k,m):',in_init_cons(k,m)
-                write (nu_diag, *) 'trcrn(bio_index(m) + k-1)'
-                write (nu_diag, *)  trcrn(bio_index(m) + k-1)
-                write (nu_diag, *) 'Category,m:',n_cat,m
+                write(warning, *) 'trcrn(nt_zbgc_frac+m-1):',trcrn(nt_zbgc_frac+m-1)
+                call add_warning(warning)
+                write(warning, *) 'in_init_cons(k,m):',in_init_cons(k,m)
+                call add_warning(warning)
+                write(warning, *) 'trcrn(bio_index(m) + k-1)'
+                call add_warning(warning)
+                write(warning, *)  trcrn(bio_index(m) + k-1)
+                call add_warning(warning)
+                write(warning, *) 'Category,m:',n_cat,m
+                call add_warning(warning)
                 return
             endif
+
             trcrn(bio_index(m)+k-1) = max(c0, bio_tmp/hbri)
+            if (ocean_bio(m) .le. c0 .and. flux_bio(m) < c0) then
+                if (flux_bio(m) < -1.0e-12_dbl_kind) then
+                  write(warning, *) 'no ocean_bio but flux_bio < c0'
+                  call add_warning(warning)
+                  write(warning, *) 'm,ocean_bio(m),flux_bio(m)'
+                  call add_warning(warning)
+                  write(warning, *) m,ocean_bio(m),flux_bio(m)
+                  call add_warning(warning)
+                  write(warning, *) 'setting flux_bio(m) = c0'
+                  call add_warning(warning)
+                !  l_stop = .true.
+                !  stop_label = 'flux_bio < 0 when ocean_bio = 0'
+                endif
+                flux_bio(m) = max(c0,flux_bio(m))
+            endif
          enddo        ! k
       enddo        ! m   
    
@@ -1446,7 +1561,10 @@
          Zoo_s_s   , &  ! N Losses due to grazing spillage (mmol/m^3)
          Zoo_s_m   , &  ! N Losses due to algal mortality (mmol/m^3)
          Zoo_s_b        ! N losses due to bacterial recycling of DON (mmol/m^3)
-    
+
+      character(len=char_len_long) :: &
+           warning ! warning message
+      
       !-----------------------------------------------------------------------
       ! Initialize
       !-----------------------------------------------------------------------
@@ -1911,14 +2029,21 @@
        Nerror = dN + Zoo
       ! if (abs(Nerror) > max(reactb(:))*1.0e-5) then
       !      conserve_N = .false.
-      !      write (nu_diag, *) 'Conservation error!'
-      !      write (nu_diag, *) 'Nerror,dN, DONin(1),kn_bac(1),secday,dt,n_doc'
-      !      write (nu_diag, *) Nerror,dN, DONin(1),kn_bac(1),secday,dt,n_doc
-      !      write (nu_diag, *) 'reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2)'
-      !      write (nu_diag, *) reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2))
-      !      write (nu_diag, *) 'reactb(nlt_bgc_Am),reactb(nlt_bgc_DON(1)), DON_r(1),DON_s(1)'
-      !      write (nu_diag, *) reactb(nlt_bgc_Am),reactb(nlt_bgc_DON(1)),DON_r(1),DON_s(1)
-      !      write (nu_diag, *) 'Zoo:',Zoo
+      !      write(warning, *) 'Conservation error!'
+      !      call add_warning(warning)
+      !      write(warning, *) 'Nerror,dN, DONin(1),kn_bac(1),secday,dt,n_doc'
+      !      call add_warning(warning)
+      !      write(warning, *) Nerror,dN, DONin(1),kn_bac(1),secday,dt,n_doc
+      !      call add_warning(warning)
+      !      write(warning, *) 'reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2)'
+      !      call add_warning(warning)
+      !      write(warning, *) reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2))
+      !      call add_warning(warning)
+      !      write(warning, *) 'reactb(nlt_bgc_Am),reactb(nlt_bgc_DON(1)), DON_r(1),DON_s(1)'
+      !      call add_warning(warning)
+      !      write(warning, *) reactb(nlt_bgc_Am),reactb(nlt_bgc_DON(1)),DON_r(1),DON_s(1)
+      !      call add_warning(warning)
+      !      write(warning, *) 'Zoo:',Zoo
       ! endif
           
       end subroutine algal_dyn
@@ -2392,13 +2517,12 @@
       subroutine check_conservation_FCT &
                                      (C_init, C_new, C_low, S_top, &
                                       S_bot, L_bot, L_top, dt,     &
-                                      fluxbio, l_stop, nblyr, nu_diag) 
+                                      fluxbio, l_stop, nblyr)
 
       use ice_constants_colpkg, only: p5, c1, c4, c0
 
       integer (kind=int_kind), intent(in) :: &
-         nblyr         , & ! number of bio layers
-         nu_diag           ! file unit number (diagnostic only)
+         nblyr             ! number of bio layers
 
       real (kind=dbl_kind), dimension(nblyr+1), intent(in) :: &
          C_init        , & ! initial bulk concentration * h_old (mmol/m^2)
@@ -2420,18 +2544,21 @@
       logical (kind=log_kind), intent(inout) :: &   
          l_stop    ! false if conservation satisfied within error
 
-     ! local variables
+      ! local variables
 
-    integer (kind=int_kind) :: &
+      integer (kind=int_kind) :: &
          k
 
-     real (kind=dbl_kind) :: &
+      real (kind=dbl_kind) :: &
          diff_dt     , &
          C_init_tot  , &
          C_new_tot   , &
          zspace      , &  !1/nblyr
          accuracy          ! centered difference is Order(zspace^2)
-        
+
+      character(len=char_len_long) :: &
+         warning ! warning message
+     
          zspace = c1/real(nblyr,kind=dbl_kind)
          l_stop = .false.
 
@@ -2455,24 +2582,28 @@
          diff_dt =C_new_tot - C_init_tot - (S_top+S_bot+ L_bot*C_new(nblyr+1)+L_top*C_new(1))*dt
 
          if (minval(C_low) < c0) then 
-           write(nu_diag,*) 'Positivity of zbgc low order solution failed: C_low:',C_low
+           write(warning,*) 'Positivity of zbgc low order solution failed: C_low:',C_low
            l_stop = .true.
          endif
            
          if (abs(diff_dt) > accuracy ) then
            l_stop = .true.
-           write(nu_diag,*) 'Conservation of zbgc low order solution failed: diff_dt:',&
+           write(warning,*) 'Conservation of zbgc low order solution failed: diff_dt:',&
                         diff_dt
-           write(nu_diag,*) 'Total initial tracer', C_init_tot
-           write(nu_diag,*) 'Total final1  tracer', C_new_tot
-           write(nu_diag,*) 'bottom final tracer', C_new(nblyr+1)
-           write(nu_diag,*) 'top final tracer', C_new(1)
-           write(nu_diag,*) 'Near bottom final tracer', C_new(nblyr)
-           write(nu_diag,*) 'Near top final tracer', C_new(2)
-           write(nu_diag,*) 'Top flux*dt into ice:', S_top*dt
-           write(nu_diag,*) 'Bottom flux*dt into ice:', S_bot*dt
-           write(nu_diag,*) 'Remaining bot flux*dt into ice:', L_bot*C_new(nblyr+1)*dt
-           write(nu_diag,*) 'Remaining top flux*dt into ice:', L_top*C_new(1)*dt
+           write(warning,*) 'Total initial tracer', C_init_tot
+           write(warning,*) 'Total final1  tracer', C_new_tot
+           write(warning,*) 'bottom final tracer', C_new(nblyr+1)
+           write(warning,*) 'top final tracer', C_new(1)
+           write(warning,*) 'Near bottom final tracer', C_new(nblyr)
+           write(warning,*) 'Near top final tracer', C_new(2)
+           write(warning,*) 'Top flux*dt into ice:', S_top*dt
+           write(warning,*) 'Bottom flux*dt into ice:', S_bot*dt
+           write(warning,*) 'Remaining bot flux*dt into ice:', L_bot*C_new(nblyr+1)*dt
+           write(warning,*) 'S_bot*dt + L_bot*C_new(nblyr+1)*dt'
+           write(warning,*)  S_bot*dt + L_bot*C_new(nblyr+1)*dt
+           write(warning,*) 'fluxbio*dt:', fluxbio*dt
+           write(warning,*) 'fluxbio:', fluxbio
+           write(warning,*) 'Remaining top flux*dt into ice:', L_top*C_new(1)*dt
          endif
          
      end subroutine check_conservation_FCT

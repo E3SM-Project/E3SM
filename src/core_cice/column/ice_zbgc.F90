@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc.F90 1142 2016-08-27 16:07:51Z njeffery $
+!  SVN:$Id: ice_zbgc.F90 1178 2017-03-08 19:24:07Z eclare $
 !=======================================================================
 !
 ! Biogeochemistry driver
@@ -34,7 +34,7 @@
                                   vi0new,                           &
                                   ntrcr,      trcrn,      nbtrcr,   &
                                   sss,        ocean_bio,  flux_bio, &
-                                  hsurp,      nu_diag,    l_stop,   &
+                                  hsurp,      l_stop,   &
                                   stop_label, l_conservation_check)
 
       use ice_constants_colpkg, only: c0, c1, puny, depressT
@@ -50,8 +50,7 @@
          nilyr    , & ! number of ice layers
          nltrcr, & ! number of zbgc tracers
          nbtrcr  , & ! number of biology tracers
-         ntrcr   , & ! number of tracers in use
-         nu_diag     ! diagnostic file unit number
+         ntrcr       ! number of tracers in use
 
       real (kind=dbl_kind), dimension (nblyr+2), intent(in) :: &
          bgrid              ! biology nondimensional vertical grid points
@@ -243,8 +242,7 @@
          fieldid = 'vbrin, add_new_ice_bgc'
          call column_conservation_check (fieldid,                  &
                                          vbri_init, vbri_final,    &
-                                         puny,      l_stop,        &
-                                         nu_diag)
+                                         puny,      l_stop)
 
          if (l_stop) then
             stop_label = 'add_new_ice_bgc: Column conservation error'
