@@ -382,12 +382,14 @@
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">gx1v6</grid>
+      <mask>gx1v6</mask>
     </model_grid>
 
     <model_grid alias="f19_g17">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">gx1v7</grid>
+      <mask>gx1v7</mask>
     </model_grid>
 
     <model_grid alias="f19_g16_r01">
