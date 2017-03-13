@@ -11938,12 +11938,14 @@ contains
 
     logical, pointer :: &
          config_use_ice_age, &
-         config_use_column_package
+         config_use_column_package, &
+         config_use_velocity_solver
 
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_velocity_solver", config_use_velocity_solver)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
     if (config_use_column_package) then
@@ -11971,7 +11973,7 @@ contains
           surfaceTiltForceU   = 0.0_RKIND
           surfaceTiltForceV   = 0.0_RKIND
 
-          if (trim(config_stress_divergence_scheme) == "weak") then
+          if (config_use_velocity_solver .and. trim(config_stress_divergence_scheme) == "weak") then
 
              call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
 
@@ -11983,7 +11985,7 @@ contains
              principalStress2Weak    = 0.0_RKIND
              replacementPressureWeak = 0.0_RKIND
 
-          else if (trim(config_stress_divergence_scheme) == "variational") then
+          else if (config_use_velocity_solver .and. trim(config_stress_divergence_scheme) == "variational") then
 
              call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
 
