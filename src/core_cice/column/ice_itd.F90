@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_itd.F90 1136 2016-07-29 21:10:31Z eclare $
+!  SVN:$Id: ice_itd.F90 1178 2017-03-08 19:24:07Z eclare $
 !=======================================================================
 
 ! Routines to initialize the ice thickness distribution and
@@ -29,6 +29,8 @@
       use ice_kinds_mod
       use ice_constants_colpkg, only: c0, c1, c2, p001, puny, p5, &
           Lfresh, rhos, ice_ref_salinity, hs_min, cp_ice, Tocnfrz, rhoi
+      use ice_warnings, only: &
+          add_warning
 
       implicit none
       save
@@ -91,13 +93,11 @@
                         aicen,    trcrn,           &
                         vicen,    vsnon,           &
                         ncat,     hin_max,         &
-                        l_stop,   stop_label, &
-                        nu_diag)
+                        l_stop,   stop_label)
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr , & ! number of tracers in use
-         ncat  , & ! number of thickness categories
-         nu_diag   ! diagnostic file unit number
+         ncat      ! number of thickness categories
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
@@ -212,8 +212,7 @@
                             vicen,    vsnon,      &
                             hicen,    donor,      &
                             daice,    dvice,      &
-                            l_stop,   stop_label, &
-                            nu_diag)
+                            l_stop,   stop_label)
 
       !-----------------------------------------------------------------
       ! reset shift parameters
@@ -261,8 +260,7 @@
                             vicen,    vsnon,      &
                             hicen,    donor,      &
                             daice,    dvice,      &
-                            l_stop,   stop_label, &
-                            nu_diag)
+                            l_stop,   stop_label)
 
       !-----------------------------------------------------------------
       ! reset shift parameters
@@ -352,15 +350,13 @@
                             vicen,    vsnon,       &
                             hicen,    donor,       &
                             daice,    dvice,       &
-                            l_stop,   stop_label,  &
-                            nu_diag)
+                            l_stop,   stop_label)
 
       use ice_colpkg_tracers, only: colpkg_compute_tracers
 
       integer (kind=int_kind), intent(in) :: &
          ncat  , & ! number of thickness categories
-         ntrcr , & ! number of tracers in use
-         nu_diag   ! diagnostic file unit number
+         ntrcr     ! number of tracers in use
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
@@ -420,7 +416,10 @@
         dvice_greater_vicen    ! true if dvice > vicen
 
       real (kind=dbl_kind) :: &
-         worka, workb
+        worka, workb
+
+      character(len=char_len_long) :: &
+        warning ! warning message
 
       !-----------------------------------------------------------------
       ! Initialize
@@ -505,11 +504,16 @@
          if (daice_negative) then
                if (donor(n) > 0 .and.  &
                    daice(n) <= -puny*aicen(nd)) then
-                  write(nu_diag,*) ' '
-                  write(nu_diag,*) 'shift_ice: negative daice'
-                  write(nu_diag,*) 'boundary, donor cat:', n, nd
-                  write(nu_diag,*) 'daice =', daice(n)
-                  write(nu_diag,*) 'dvice =', dvice(n)
+                  write(warning,*) ' '
+                  call add_warning(warning)
+                  write(warning,*) 'shift_ice: negative daice'
+                  call add_warning(warning)
+                  write(warning,*) 'boundary, donor cat:', n, nd
+                  call add_warning(warning)
+                  write(warning,*) 'daice =', daice(n)
+                  call add_warning(warning)
+                  write(warning,*) 'dvice =', dvice(n)
+                  call add_warning(warning)
                   l_stop = .true.
                   stop_label = 'shift_ice: negative daice'
                endif
@@ -519,11 +523,16 @@
          if (dvice_negative) then
                if (donor(n) > 0 .and.  &
                    dvice(n) <= -puny*vicen(nd)) then
-                  write(nu_diag,*) ' '
-                  write(nu_diag,*) 'shift_ice: negative dvice'
-                  write(nu_diag,*) 'boundary, donor cat:', n, nd
-                  write(nu_diag,*) 'daice =', daice(n)
-                  write(nu_diag,*) 'dvice =', dvice(n)
+                  write(warning,*) ' '
+                  call add_warning(warning)
+                  write(warning,*) 'shift_ice: negative dvice'
+                  call add_warning(warning)
+                  write(warning,*) 'boundary, donor cat:', n, nd
+                  call add_warning(warning)
+                  write(warning,*) 'daice =', daice(n)
+                  call add_warning(warning)
+                  write(warning,*) 'dvice =', dvice(n)
+                  call add_warning(warning)
                   l_stop = .true.
                   stop_label = 'shift_ice: negative dvice'
                endif
@@ -534,11 +543,16 @@
                if (donor(n) > 0) then
                   nd = donor(n)
                   if (daice(n) >= aicen(nd)*(c1+puny)) then
-                     write(nu_diag,*) ' '
-                     write(nu_diag,*) 'shift_ice: daice > aicen'
-                     write(nu_diag,*) 'boundary, donor cat:', n, nd
-                     write(nu_diag,*) 'daice =', daice(n)
-                     write(nu_diag,*) 'aicen =', aicen(nd)
+                     write(warning,*) ' '
+                     call add_warning(warning)
+                     write(warning,*) 'shift_ice: daice > aicen'
+                     call add_warning(warning)
+                     write(warning,*) 'boundary, donor cat:', n, nd
+                     call add_warning(warning)
+                     write(warning,*) 'daice =', daice(n)
+                     call add_warning(warning)
+                     write(warning,*) 'aicen =', aicen(nd)
+                     call add_warning(warning)
                      l_stop = .true.
                      stop_label = 'shift_ice: daice > aicen'
                   endif
@@ -550,11 +564,16 @@
                if (donor(n) > 0) then
                   nd = donor(n)
                   if (dvice(n) >= vicen(nd)*(c1+puny)) then
-                     write(nu_diag,*) ' '
-                     write(nu_diag,*) 'shift_ice: dvice > vicen'
-                     write(nu_diag,*) 'boundary, donor cat:', n, nd
-                     write(nu_diag,*) 'dvice =', dvice(n)
-                     write(nu_diag,*) 'vicen =', vicen(nd)
+                     write(warning,*) ' '
+                     call add_warning(warning)
+                     write(warning,*) 'shift_ice: dvice > vicen'
+                     call add_warning(warning)
+                     write(warning,*) 'boundary, donor cat:', n, nd
+                     call add_warning(warning)
+                     write(warning,*) 'dvice =', dvice(n)
+                     call add_warning(warning)
+                     write(warning,*) 'vicen =', vicen(nd)
+                     call add_warning(warning)
                      l_stop = .true.
                      stop_label = 'shift_ice: dvice > vicen'
                   endif
@@ -678,10 +697,7 @@
       subroutine column_conservation_check (fieldid,          &
                                             x1,       x2,     &
                                             max_err,          &
-                                            l_stop,   nu_diag)
-
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag           ! diagnostic file unit number
+                                            l_stop)
 
       real (kind=dbl_kind), intent(in) :: &
          x1            , & ! initial field
@@ -696,15 +712,23 @@
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, abort on return
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+      
       ! local variables
 
       if (abs (x2-x1) > max_err) then
          l_stop = .true.
-         write (nu_diag,*) ' '
-         write (nu_diag,*) 'Conservation error: ', trim(fieldid)
-         write (nu_diag,*) 'Initial value =', x1
-         write (nu_diag,*) 'Final value =',   x2
-         write (nu_diag,*) 'Difference =', x2 - x1
+         write(warning,*) ' '
+         call add_warning(warning)
+         write(warning,*) 'Conservation error: ', trim(fieldid)
+         call add_warning(warning)
+         write(warning,*) 'Initial value =', x1
+         call add_warning(warning)
+         write(warning,*) 'Final value =',   x2
+         call add_warning(warning)
+         write(warning,*) 'Difference =', x2 - x1
+         call add_warning(warning)
       endif
 
       end subroutine column_conservation_check
@@ -729,7 +753,7 @@
                               n_aero,                  &
                               nbtrcr,      nblyr,      &
                               l_stop,      stop_label, &
-                              nu_diag,     tr_aero,    &
+                              tr_aero,                 &
                               tr_pond_topo,            &
                               heat_capacity,           & 
                               first_ice,               &
@@ -747,8 +771,7 @@
          nslyr , & ! number of snow layers
          ntrcr , & ! number of tracers in use
          nbtrcr, & ! number of bio tracers in use
-         n_aero, & ! number of aerosol tracers
-         nu_diag   ! diagnostic file unit number
+         n_aero    ! number of aerosol tracers
  
       real (kind=dbl_kind), intent(in) :: & 
          dt        ! time step 
@@ -834,6 +857,9 @@
       logical (kind=log_kind) ::   &
          limit_aice         ! if true, check for aice out of bounds
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+      
       !-----------------------------------------------------------------
       ! Initialize
       !-----------------------------------------------------------------
@@ -864,9 +890,11 @@
          if (aice > c1+puny .or. aice < -puny) then
             l_stop = .true.
             stop_label = 'aggregate ice area out of bounds'
-            write(nu_diag,*) 'aice:', aice
+            write(warning,*) 'aice:', aice
+            call add_warning(warning)
             do n = 1, ncat
-               write(nu_diag,*) 'n, aicen:', n, aicen(n)
+               write(warning,*) 'n, aicen:', n, aicen(n)
+               call add_warning(warning)
             enddo
             return
          endif
@@ -892,8 +920,7 @@
                      aicen,      trcrn,       &
                      vicen,      vsnon,       &
                      ncat,       hin_max,     &
-                     l_stop,     stop_label,  &
-                     nu_diag)
+                     l_stop,     stop_label)
 
       endif ! aice > puny
 
@@ -918,9 +945,11 @@
                                l_stop,       stop_label)
 
          if (l_stop) then
-            write(nu_diag,*) 'aice:', aice
+            write(warning,*) 'aice:', aice
+            call add_warning(warning)
             do n = 1, ncat
-               write(nu_diag,*) 'n, aicen:', n, aicen(n)
+               write(warning,*) 'n, aicen:', n, aicen(n)
+               call add_warning(warning)
             enddo
             return
          endif
@@ -938,8 +967,7 @@
                                 dfresh,        dfhocn,   &
                                 dfaero_ocn,    tr_aero,  &
                                 dflux_bio,     nbtrcr,   &
-                                n_aero,        nu_diag,  &
-                                ntrcr)
+                                n_aero,        ntrcr)
 
     !-------------------------------------------------------------------
     ! Update ice-ocean fluxes for strict conservation
@@ -976,7 +1004,7 @@
                                nslyr,      aicen,    &
                                vicen,      vsnon,    &
                                trcrn,      l_stop,   &
-                               stop_label, nu_diag)
+                               stop_label)
       endif
 
       end subroutine cleanup_itd
@@ -1390,8 +1418,7 @@
                                       dfresh,     dfhocn,   &
                                       dfaero_ocn, tr_aero,  &
                                       dflux_bio,  nbtrcr,   &
-                                      n_aero,     nu_diag,  &
-                                      ntrcr)
+                                      n_aero,     ntrcr)
 
       use ice_colpkg_tracers, only: nt_qsno 
       use ice_therm_shared, only: Tmin
@@ -1402,8 +1429,7 @@
          n_aero, & ! number of aerosol tracers
          nbtrcr, & ! number of z-tracers in use
          nblyr , & ! number of bio  layers in ice
-         ntrcr,  & ! number of tracers in use
-         nu_diag   ! diagnostic file unit number
+         ntrcr     ! number of tracers in use
 
       real (kind=dbl_kind), intent(in) :: &
          dt           ! time step
@@ -1448,6 +1474,9 @@
       logical :: &
          l_zap        ! logical whether zap snow
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+      
       rnslyr = real(nslyr,kind=dbl_kind)
       
       do n = 1, ncat
@@ -1482,12 +1511,18 @@
             ! check for zapping
             if (zTsn < Tmin .or. zTsn > Tmax) then
                l_zap = .true.
-               write(nu_diag,*) "zap_snow_temperature: temperature out of bounds!"
-               write(nu_diag,*) "k:"   , k
-               write(nu_diag,*) "zTsn:", zTsn
-               write(nu_diag,*) "Tmin:", Tmin
-               write(nu_diag,*) "Tmax:", Tmax
-               write(nu_diag,*) "zqsn:", zqsn
+               write(warning,*) "zap_snow_temperature: temperature out of bounds!"
+               call add_warning(warning)
+               write(warning,*) "k:"   , k
+               call add_warning(warning)
+               write(warning,*) "zTsn:", zTsn
+               call add_warning(warning)
+               write(warning,*) "Tmin:", Tmin
+               call add_warning(warning)
+               write(warning,*) "Tmax:", Tmax
+               call add_warning(warning)
+               write(warning,*) "zqsn:", zqsn
+               call add_warning(warning)
             endif
 
          enddo ! k
@@ -1525,15 +1560,14 @@
                                   nslyr,       aicen,      &
                                   vicen,       vsnon,      &
                                   trcrn,       l_stop,     &
-                                  stop_label,  nu_diag)
+                                  stop_label)
 
       use ice_colpkg_tracers, only: nt_qice, nt_qsno
 
       integer (kind=int_kind), intent(in) :: & 
          ncat  , & ! number of thickness categories
          nilyr , & ! number of ice layers
-         nslyr , & ! number of snow layers
-         nu_diag   ! diagnostic file unit number
+         nslyr     ! number of snow layers
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: & 
          aicen , & ! concentration of ice 
@@ -1571,6 +1605,9 @@
       real (kind=dbl_kind) :: &
          worka, workb
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+      
       !-----------------------------------------------------------------
       ! Initialize
       !-----------------------------------------------------------------
@@ -1615,12 +1652,18 @@
             if (abs(worka) > max_error) then
                l_stop = .true.
                stop_label = 'zerolayer check - wrong ice energy'
-               write(nu_diag,*) stop_label
-               write(nu_diag,*) 'n:', n
-               write(nu_diag,*) 'eicen =', eicen(n)
-               write(nu_diag,*) 'error=',  worka
-               write(nu_diag,*) 'vicen =', vicen(n)
-               write(nu_diag,*) 'aicen =', aicen(n)
+               write(warning,*) stop_label
+               call add_warning(warning)
+               write(warning,*) 'n:', n
+               call add_warning(warning)
+               write(warning,*) 'eicen =', eicen(n)
+               call add_warning(warning)
+               write(warning,*) 'error=',  worka
+               call add_warning(warning)
+               write(warning,*) 'vicen =', vicen(n)
+               call add_warning(warning)
+               write(warning,*) 'aicen =', aicen(n)
+               call add_warning(warning)
             endif
 
          endif
@@ -1631,12 +1674,18 @@
             if (abs(workb) > max_error) then
                l_stop = .true.
                stop_label = 'zerolayer check - wrong snow energy'
-               write(nu_diag,*) stop_label
-               write(nu_diag,*) 'n:', n
-               write(nu_diag,*) 'esnon =', esnon(n)
-               write(nu_diag,*) 'error=',  workb
-               write(nu_diag,*) 'vsnon =', vsnon(n)
-               write(nu_diag,*) 'aicen =', aicen(n)
+               write(warning,*) stop_label
+               call add_warning(warning)
+               write(warning,*) 'n:', n
+               call add_warning(warning)
+               write(warning,*) 'esnon =', esnon(n)
+               call add_warning(warning)
+               write(warning,*) 'error=',  workb
+               call add_warning(warning)
+               write(warning,*) 'vsnon =', vsnon(n)
+               call add_warning(warning)
+               write(warning,*) 'aicen =', aicen(n)
+               call add_warning(warning)
                return
             endif
 

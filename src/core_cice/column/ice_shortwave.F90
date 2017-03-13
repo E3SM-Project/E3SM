@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_shortwave.F90 1136 2016-07-29 21:10:31Z eclare $
+!  SVN:$Id: ice_shortwave.F90 1178 2017-03-08 19:24:07Z eclare $
 !=======================================================================
 !
 ! The albedo and absorbed/transmitted flux parameterizations for
@@ -47,6 +47,7 @@
           albocn, Timelt, snowpatch, awtvdr, awtidr, awtvdf, awtidf, &
           kappav, hs_min, rhofresh, rhos, nspint
       use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero
+      use ice_warnings, only: add_warning
 
       implicit none
 
@@ -714,7 +715,7 @@
                           albpndn,  apeffn,    &
                           snowfracn,           &
                           dhsn,     ffracn,    &
-                          nu_diag,  l_print_point, &
+                          l_print_point,       &
                           initonly)
 
       use ice_orbital, only: compute_coszen
@@ -827,9 +828,6 @@
            Sswabsn , & ! SW radiation absorbed in snow layers (W m-2)
            Iswabsn , & ! SW radiation absorbed in ice layers (W m-2) 
            fswpenln    ! visible SW entering ice layers (W m-2)
-
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag       ! diagnostic file unit number
 
       logical (kind=log_kind), intent(in) :: &
            l_print_point
@@ -1050,7 +1048,6 @@
                              albicen(n),                    &
                              albsnon(n),    albpndn(n),     &
                              fswpenln(:,n), zbion(:,n),     &
-                             nu_diag,        &
                              l_print_point)
 
          endif ! aicen > puny
@@ -1116,15 +1113,14 @@
                                   Iswabs,   albice,      &
                                   albsno,   albpnd,      &
                                   fswpenl,  zbio,        &
-                                  nu_diag,  l_print_point)
+                                  l_print_point)
 
       integer (kind=int_kind), intent(in) :: &
          nilyr   , & ! number of ice layers
          nslyr   , & ! number of snow layers
          n_aero  , & ! number of aerosol tracers in use
          n_zaero , & ! number of zaerosol tracers in use
-         nlt_chl_sw, &! index for chla
-         nu_diag     ! diagnostic file unit number
+         nlt_chl_sw  ! index for chla
 
       integer (kind=int_kind), dimension(:), intent(in) :: &
         nlt_zaero_sw   ! index for zaerosols
@@ -1237,6 +1233,9 @@
          aidrl   , & ! near-ir, direct, albedo (fraction) 
          aidfl       ! near-ir, diffuse, albedo (fraction) 
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+      
 !-----------------------------------------------------------------------
 
          klev    = nslyr + nilyr + 1   ! number of radiation layers - 1
@@ -1318,7 +1317,7 @@
                       aidrl,     aidfl,                                 &
                       fswsfc,    fswint,                                &
                       fswthru,   Sswabs,                                &
-                      Iswabs,    fswpenl,    nu_diag)
+                      Iswabs,    fswpenl)
                
                alvdr   = alvdr   + avdrl *fi
                alvdf   = alvdf   + avdfl *fi
@@ -1355,7 +1354,7 @@
                       aidrl,     aidfl,                                 &
                       fswsfc,    fswint,                                &
                       fswthru,   Sswabs,                                &
-                      Iswabs,    fswpenl,    nu_diag)
+                      Iswabs,    fswpenl)
                
                alvdr   = alvdr   + avdrl *fs
                alvdf   = alvdf   + avdfl *fs
@@ -1397,7 +1396,7 @@
                       aidrl,     aidfl,                                 &
                       fswsfc,    fswint,                                &
                       fswthru,   Sswabs,                                &
-                      Iswabs,    fswpenl,    nu_diag)
+                      Iswabs,    fswpenl)
                
                alvdr   = alvdr   + avdrl *fp
                alvdf   = alvdf   + avdfl *fp
@@ -1421,51 +1420,68 @@
 
       if (l_print_point .and. netsw > puny) then
 
-         write(nu_diag,*) ' printing point = ',n
-         write(nu_diag,*) ' coszen = ', &
+         write(warning,*) ' printing point = ',n
+         call add_warning(warning)
+         write(warning,*) ' coszen = ', &
                             coszen
-         write(nu_diag,*) ' swvdr  swvdf = ', &
+         call add_warning(warning)
+         write(warning,*) ' swvdr  swvdf = ', &
                             swvdr,swvdf
-         write(nu_diag,*) ' swidr  swidf = ', &
+         call add_warning(warning)
+         write(warning,*) ' swidr  swidf = ', &
                             swidr,swidf
-         write(nu_diag,*) ' aice = ', &
+         call add_warning(warning)
+         write(warning,*) ' aice = ', &
                             aice
-         write(nu_diag,*) ' hs = ', &
+         call add_warning(warning)
+         write(warning,*) ' hs = ', &
                             hs
-         write(nu_diag,*) ' hp = ', &
+         call add_warning(warning)
+         write(warning,*) ' hp = ', &
                             hp
-         write(nu_diag,*) ' fs = ', &
+         call add_warning(warning)
+         write(warning,*) ' fs = ', &
                             fs
-         write(nu_diag,*) ' fi = ', &
+         call add_warning(warning)
+         write(warning,*) ' fi = ', &
                             fi
-         write(nu_diag,*) ' fp = ', &
+         call add_warning(warning)
+         write(warning,*) ' fp = ', &
                             fp
-         write(nu_diag,*) ' hi = ', &
+         call add_warning(warning)
+         write(warning,*) ' hi = ', &
                             hi
-         write(nu_diag,*) ' alvdr  alvdf = ', &
+         call add_warning(warning)
+         write(warning,*) ' alvdr  alvdf = ', &
                             alvdr,alvdf
-         write(nu_diag,*) ' alidr  alidf = ', &
+         call add_warning(warning)
+         write(warning,*) ' alidr  alidf = ', &
                             alidr,alidf
-         write(nu_diag,*) ' fswsfc fswint fswthru = ', &
+         call add_warning(warning)
+         write(warning,*) ' fswsfc fswint fswthru = ', &
                             fswsfc,fswint,fswthru
+         call add_warning(warning)
          swdn  = swvdr+swvdf+swidr+swidf
          swab  = fswsfc+fswint+fswthru
          swalb = (1.-swab/(swdn+.0001))
-         write(nu_diag,*) ' swdn swab swalb = ',swdn,swab,swalb
+         write(warning,*) ' swdn swab swalb = ',swdn,swab,swalb
          do k = 1, nslyr               
-            write(nu_diag,*) ' snow layer k    = ', k, &
+            write(warning,*) ' snow layer k    = ', k, &
                              ' rhosnw = ', &
                                rhosnw(k), &
                              ' rsnw = ', &
                                rsnw(k)
+            call add_warning(warning)
          enddo
          do k = 1, nslyr               
-            write(nu_diag,*) ' snow layer k    = ', k, &
+            write(warning,*) ' snow layer k    = ', k, &
                              ' Sswabs(k)       = ', Sswabs(k)
+            call add_warning(warning)
          enddo
          do k = 1, nilyr               
-            write(nu_diag,*) ' sea ice layer k = ', k, &
+            write(warning,*) ' sea ice layer k = ', k, &
                              ' Iswabs(k)       = ', Iswabs(k)
+            call add_warning(warning)
          enddo
 
       endif  ! l_print_point .and. coszen > .01
@@ -1495,7 +1511,7 @@
                                alidr,    alidf,         &
                                fswsfc,   fswint,        &
                                fswthru,  Sswabs,        &
-                               Iswabs,   fswpenl,  nu_diag)
+                               Iswabs,   fswpenl)
 
       integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
@@ -1509,9 +1525,6 @@
  
       integer (kind=int_kind), dimension(:), intent(in) :: &
         nlt_zaero_sw   ! index for zaerosols
-
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag       ! diagnostic file unit number
 
       logical (kind=log_kind), intent(in) :: &
          heat_capacity,& ! if true, ice has nonzero heat capacity
@@ -2025,6 +2038,9 @@
                          ! Grenfell 1991 uses 0.004 (m^2/mg) which is (0.0078 * spectral weighting)
                          !chlorophyll mass extinction cross section (m^2/mg chla)
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+
 !-----------------------------------------------------------------------
 ! Initialize and tune bare ice/ponded ice iops
 
@@ -2233,7 +2249,8 @@
               if (k_bcexs(k) > 10) k_bcexs(k) = 10
 
               ! print ice radius index:
-              ! write(nu_diag,*) "MGFICE2:k, ice index= ",k,  k_bcini(k)
+              ! write(warning,*) "MGFICE2:k, ice index= ",k,  k_bcini(k)
+              ! call add_warning(warning)
             enddo   ! k
 
         if (tr_zaero .and. dEdd_algae) then ! compute kzaero for chlorophyll  
@@ -3559,8 +3576,7 @@
                                     i_grid,                  &
                                     nbtrcr_sw,    n_zaero,   &
                                     skl_bgc,      z_tracers, &
-                                    l_stop,       stop_label, &
-                                    nu_diag)
+                                    l_stop,       stop_label)
       
       use ice_constants_colpkg, only: c0, c1, c2, p5
       use ice_colpkg_tracers, only: nt_bgc_N, nt_zaero, tr_bgc_N, &
@@ -3578,9 +3594,6 @@
       integer (kind=int_kind), intent(in) :: &
          nblyr      , & ! number of bio layers
          nilyr          ! number of ice layers 
-
-      integer (kind=int_kind), intent(in) :: &
-           nu_diag ! diagnostic output file unit number
 
       real (kind=dbl_kind), dimension (ntrcr), intent(in) ::       &
          trcrn          ! aerosol or chlorophyll

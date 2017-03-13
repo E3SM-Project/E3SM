@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg_shared.F90 1142 2016-08-27 16:07:51Z njeffery $
+!  SVN:$Id: ice_colpkg_shared.F90 1177 2017-03-08 18:17:21Z eclare $
 !=========================================================================
 !
 ! flags for the column package

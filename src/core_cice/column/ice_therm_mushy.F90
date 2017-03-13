@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_mushy.F90 1136 2016-07-29 21:10:31Z eclare $
+!  SVN:$Id: ice_therm_mushy.F90 1178 2017-03-08 19:24:07Z eclare $
 !=======================================================================
 
 module ice_therm_mushy
@@ -12,6 +12,7 @@ module ice_therm_mushy
       aspect_rapid_mode, dSdt_slow_mode, phi_c_slow_mode, phi_i_mushy
 
   use ice_therm_shared, only: ferrmax
+  use ice_warnings, only: add_warning
 
   implicit none
 
@@ -48,8 +49,8 @@ contains
                                           flwoutn,  fsurfn,   &
                                           fcondtop, fcondbot, &
                                           fadvheat, snoice,   &
-                                          einit_old,lstop,    &
-                                          nu_diag,  stop_label)
+                                          einit_old,          &
+                                          lstop,    stop_label)
 
     ! solve the enthalpy and bulk salinity of the ice for a single column
 
@@ -122,9 +123,6 @@ contains
     logical (kind=log_kind), intent(inout) :: &
          lstop           ! solver failure flag 
 
-    integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
-
     character (len=*), intent(out) :: &
          stop_label   ! abort error message
 
@@ -165,6 +163,9 @@ contains
     logical(kind=log_kind) :: &
          lsnow           ! snow presence: T: has snow, F: no snow
 
+    character(len=char_len_long) :: &
+         warning         ! warning message
+    
     lstop = .false.
     fadvheat   = c0
     snoice     = c0
@@ -247,12 +248,13 @@ contains
                                   fadvheat,                &
                                   flwoutn,     fsensn,     &
                                   flatn,       fsurfn,     &
-                                  lstop,       nu_diag)
+                                  lstop,       stop_label)
 
        if (lstop) then
-          stop_label = "temperature_changes_salinity: Picard solver non-convergence (snow)"
+          write(warning,*) "temperature_changes_salinity: Picard solver non-convergence (snow)"
+          call add_warning(warning)
           return
-       end if
+       endif
 
        ! given the updated enthalpy and bulk salinity calculate other quantities
        do k = 1, nslyr
@@ -292,13 +294,14 @@ contains
                                     fadvheat,                &
                                     flwoutn,     fsensn,     &
                                     flatn,       fsurfn,     &
-                                    lstop,       nu_diag)
+                                    lstop,       stop_label)
 
        if (lstop) then
-          stop_label = "temperature_changes_salinity: Picard solver non-convergence (no snow)"
+          write(warning,*) "temperature_changes_salinity: Picard solver non-convergence (no snow)"
+          call add_warning(warning)
           return
-       end if
-
+       endif
+          
        ! given the updated enthalpy and bulk salinity calculate other quantities
        do k = 1, nilyr
           zTin(k) = temperature_mush_liquid_fraction(zqin(k), phi(k))
@@ -352,7 +355,7 @@ contains
                                    fadvheat,                &
                                    flwoutn,     fsensn,     &
                                    flatn,       fsurfn,     &
-                                   lstop,       nu_diag)
+                                   lstop,       stop_label)
 
     ! solve the vertical temperature and salt change for case with snow
     ! 1) determine what type of surface condition existed previously - cold or melting
@@ -429,8 +432,8 @@ contains
     logical(kind=log_kind), intent(inout) :: &
          lstop           ! solver failure flag
 
-    integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
+    character(len=*), intent(out) :: &
+         stop_label      ! fatal error message
 
     real(kind=dbl_kind) :: &
          fcondtop1   , & ! first stage downward cond flux at top surface (W m-2)
@@ -465,8 +468,8 @@ contains
                           qpond,    qocn,     &
                           Spond,    sss,      &
                           q,        dSdt,     &
-                          w,        lstop,    &
-                          nu_diag)
+                          w,                  &
+                          lstop,    stop_label)
 
        ! halt if solver failed
        if (lstop) return
@@ -511,8 +514,8 @@ contains
                              qpond,    qocn,     &
                              Spond,    sss,      &
                              q,        dSdt,     &
-                             w,        lstop,    &
-                             nu_diag)
+                             w,                  &
+                             lstop,    stop_label)
 
           ! halt if solver failed
           if (lstop) return
@@ -528,8 +531,9 @@ contains
           else
 
              ! solution is inconsistent
-             call two_stage_inconsistency(1, Tsf1, c0, fcondtop, fsurfn, &
-                                          nu_diag)
+             call two_stage_inconsistency(1, Tsf1, c0, fcondtop, fsurfn)
+             lstop = .true.
+             stop_label = "two_stage_solver_snow: two_stage_inconsistency: cold"
              return
 
           endif ! surface flux consistency
@@ -563,8 +567,8 @@ contains
                           qpond,    qocn,     &
                           Spond,    sss,      &
                           q,        dSdt,     &
-                          w,        lstop,    &
-                          nu_diag)
+                          w,                  &
+                          lstop,    stop_label)
 
        ! halt if solver failed
        if (lstop) return
@@ -612,8 +616,8 @@ contains
                              qpond,    qocn,     &
                              Spond,    sss,      &
                              q,        dSdt,     &
-                             w,        lstop,    &
-                             nu_diag)
+                             w,                  &
+                             lstop,    stop_label)
 
           ! halt if solver failed
           if (lstop) return
@@ -628,8 +632,9 @@ contains
 
              ! solution is inconsistent
              ! failed to find a solution so need to refine solutions until consistency found
-             call two_stage_inconsistency(2, Tsf, c0, fcondtop1, fsurfn1, &
-                                          nu_diag)
+             call two_stage_inconsistency(2, Tsf, c0, fcondtop1, fsurfn1)
+             lstop = .true.
+             stop_label = "two_stage_solver_snow: two_stage_inconsistency: melting"
              return
  
           endif ! surface temperature consistency
@@ -665,7 +670,7 @@ contains
                                      fadvheat,                &
                                      flwoutn,     fsensn,     &
                                      flatn,       fsurfn,     &
-                                     lstop,       nu_diag)
+                                     lstop,       stop_label)
     
     ! solve the vertical temperature and salt change for case with no snow
     ! 1) determine what type of surface condition existed previously - cold or melting
@@ -745,8 +750,8 @@ contains
     logical, intent(inout) :: &
          lstop           ! solver failure flag
 
-    integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! file unit number (diagnostic only)
+    character(len=*), intent(out) :: &
+         stop_label      ! fatal error message
 
     real(kind=dbl_kind) :: &
          Tmlt        , & ! upper ice layer melting temperature (C)
@@ -784,8 +789,8 @@ contains
                           qpond,    qocn,     &
                           Spond,    sss,      &
                           q,        dSdt,     &
-                          w,        lstop,    &
-                          nu_diag)
+                          w,                  &
+                          lstop,    stop_label)
 
        ! halt if solver failed
        if (lstop) return
@@ -828,8 +833,8 @@ contains
                              qpond,    qocn,     &
                              Spond,    sss,      &
                              q,        dSdt,     &
-                             w,        lstop,    &
-                             nu_diag)
+                             w,                  &
+                             lstop,    stop_label)
 
           ! halt if solver failed
           if (lstop) return
@@ -845,8 +850,9 @@ contains
           else
 
              ! solution is inconsistent
-             call two_stage_inconsistency(3, Tsf1, Tmlt, fcondtop, fsurfn, &
-                                          nu_diag)
+             call two_stage_inconsistency(3, Tsf1, Tmlt, fcondtop, fsurfn)
+             lstop = .true.
+             stop_label = "two_stage_solver_nosnow: two_stage_inconsistency: cold"
              return
 
           endif
@@ -880,8 +886,8 @@ contains
                           qpond,    qocn,     &
                           Spond,    sss,      &
                           q,        dSdt,     &
-                          w,        lstop,    &
-                          nu_diag)
+                          w,                  &
+                          lstop,    stop_label)
 
        ! halt if solver failed
        if (lstop) return
@@ -928,8 +934,8 @@ contains
                              qpond,    qocn,     &
                              Spond,    sss,      &
                              q,        dSdt,     &
-                             w,        lstop,    &
-                             nu_diag)
+                             w,                  &
+                             lstop,    stop_label)
 
           ! halt if solver failed
           if (lstop) return
@@ -943,8 +949,9 @@ contains
           else
 
              ! solution is inconsistent
-             call two_stage_inconsistency(4, Tsf, Tmlt, fcondtop1, fsurfn1, &
-                                          nu_diag)
+             call two_stage_inconsistency(4, Tsf, Tmlt, fcondtop1, fsurfn1)
+             lstop = .true.
+             stop_label = "two_stage_solver_nosnow: two_stage_inconsistency: melting"
              return
 
           endif
@@ -957,12 +964,10 @@ contains
 
 !=======================================================================
 
-  subroutine two_stage_inconsistency(type, Tsf, Tmlt, fcondtop, fsurfn, &
-                                     nu_diag)
+  subroutine two_stage_inconsistency(type, Tsf, Tmlt, fcondtop, fsurfn)
 
     integer (kind=int_kind), intent(in) :: &
-         type        , &
-         nu_diag         ! file unit number (diagnostic only)
+         type
 
     real(kind=dbl_kind), intent(in) :: &
          Tsf, &
@@ -970,40 +975,59 @@ contains
          fcondtop, &
          fsurfn
 
-    write(nu_diag,*) "ice_therm_mushy: two stage inconsistency"
-    write(nu_diag,*) "type:", type
+    character(len=char_len_long) :: &
+         warning ! warning message
+    
+    write(warning,*) "ice_therm_mushy: two stage inconsistency"
+    call add_warning(warning)
+    write(warning,*) "type:", type
+    call add_warning(warning)
 
     if (type == 1) then
 
-       write(nu_diag,*) "First stage  : Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax"
-       write(nu_diag,*) "             :", Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax
-       write(nu_diag,*) "Second stage : fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax"
-       write(nu_diag,*) "             :", fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax
+       write(warning,*) "First stage  : Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax"
+       call add_warning(warning)
+       write(warning,*) "             :", Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax
+       call add_warning(warning)
+       write(warning,*) "Second stage : fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax"
+       call add_warning(warning)
+       write(warning,*) "             :", fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax
+       call add_warning(warning)
 
     else if (type == 2) then
 
-       write(nu_diag,*) "First stage  : Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax"
-       write(nu_diag,*) "             :", Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax
-       write(nu_diag,*) "Second stage : fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax"
-       write(nu_diag,*) "             :", fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax
+       write(warning,*) "First stage  : Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax"
+       call add_warning(warning)
+       write(warning,*) "             :", Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax
+       call add_warning(warning)
+       write(warning,*) "Second stage : fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax"
+       call add_warning(warning)
+       write(warning,*) "             :", fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax
+       call add_warning(warning)
 
     else if (type == 3) then
 
-       write(nu_diag,*) "First stage  : Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax"
-       write(nu_diag,*) "             :", Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax
-       write(nu_diag,*) "Second stage : fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax"
-       write(nu_diag,*) "             :", fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax
+       write(warning,*) "First stage  : Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax"
+       call add_warning(warning)
+       write(warning,*) "             :", Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax
+       call add_warning(warning)
+       write(warning,*) "Second stage : fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax"
+       call add_warning(warning)
+       write(warning,*) "             :", fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax
+       call add_warning(warning)
 
     else if (type == 4) then
        
-       write(nu_diag,*) "First stage  : fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax"
-       write(nu_diag,*) "             :", fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax
-       write(nu_diag,*) "Second stage : Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax"
-       write(nu_diag,*) "             :", Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax
+       write(warning,*) "First stage  : fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax"
+       call add_warning(warning)
+       write(warning,*) "             :", fcondtop, fsurfn, ferrmax, fcondtop - fsurfn - ferrmax
+       call add_warning(warning)
+       write(warning,*) "Second stage : Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax"
+       call add_warning(warning)
+       write(warning,*) "             :", Tsf, Tmlt, dTemp_errmax, Tsf - Tmlt - dTemp_errmax
+       call add_warning(warning)
 
     endif
-
-    stop
 
   end subroutine two_stage_inconsistency
 
@@ -1112,15 +1136,14 @@ contains
                            qpond,    qocn,     &
                            Spond,    sss,      &
                            q,        dSdt,     &
-                           w,        lstop,    &
-                           nu_diag)
+                           w,                  &
+                           lstop,    stop_label)
 
     use ice_therm_shared, only: surface_heat_flux, dsurface_heat_flux_dTsf
 
     integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
-         nslyr , & ! number of snow layers
-         nu_diag   ! diagnostic file unit number
+         nslyr     ! number of snow layers
 
     logical, intent(in) :: &
          lsnow         , & ! snow presence: T: has snow, F: no snow
@@ -1181,6 +1204,9 @@ contains
       
     logical(kind=log_kind), intent(inout) :: &
          lstop             ! solver failure flag 
+
+    character(len=*), intent(out) :: &
+         stop_label        ! fatal error message
 
     real(kind=dbl_kind), dimension(nilyr) :: &
          Sbr           , & ! ice layer brine salinity (ppt)
@@ -1344,9 +1370,9 @@ contains
                                   zTin0, zTin, &
                                   zSin0, zSin, &
                                   zqsn0, zqsn, &
-                                  zqin0, phi,  &
-                                  nu_diag)
+                                  zqin0, phi)
        lstop = .true.
+       stop_label = "picard_solver: Picard solver non-convergence"
 
     endif
 
@@ -1360,13 +1386,11 @@ contains
                                    zTin0, zTin, &
                                    zSin0, zSin, &
                                    zqsn0, zqsn, &
-                                   zqin0, phi,  &
-                                   nu_diag)
+                                   zqin0, phi)
 
     integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
-         nslyr , & ! number of snow layers
-         nu_diag   ! diagnostic file unit number
+         nslyr     ! number of snow layers
 
     real(kind=dbl_kind), intent(in) :: &
          Tsf0  , & ! snow surface temperature (C) at beginning of timestep
@@ -1387,20 +1411,29 @@ contains
     integer :: &
          k        ! vertical layer index
 
-    write(nu_diag,*) "-------------------------------------"
+    character(len=char_len_long) :: &
+         warning  ! warning message
+    
+    write(warning,*) "-------------------------------------"
+    call add_warning(warning)
 
-    write(nu_diag,*) "picard convergence failed!"
-    write(nu_diag,*) 0, Tsf0, Tsf
+    write(warning,*) "picard convergence failed!"
+    call add_warning(warning)
+    write(warning,*) 0, Tsf0, Tsf
+    call add_warning(warning)
     
     do k = 1, nslyr
-       write(nu_diag,*) k, zTsn0(k), zTsn(k), zqsn0(k)
+       write(warning,*) k, zTsn0(k), zTsn(k), zqsn0(k)
+       call add_warning(warning)
     enddo ! k          
     
     do k = 1, nilyr
-       write(nu_diag,*) k, zTin0(k), zTin(k), zSin0(k), zSin(k), phi(k), zqin0(k)
+       write(warning,*) k, zTin0(k), zTin(k), zSin0(k), zSin(k), phi(k), zqin0(k)
+       call add_warning(warning)
     enddo ! k
 
-    write(nu_diag,*) "-------------------------------------"
+    write(warning,*) "-------------------------------------"
+    call add_warning(warning)
 
   end subroutine picard_nonconvergence
 

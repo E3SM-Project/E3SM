@@ -749,6 +749,12 @@ contains
     real(kind=RKIND), parameter :: &
          thicknessWithLargestArea = 3.0_RKIND ! initial ice thickness with greatest area
 
+    logical :: &
+         abortFlag
+
+    character(len=strKIND) :: &
+         abortMessage
+
     call MPAS_pool_get_subpool(block % structs, "initial", initial)
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
@@ -766,7 +772,13 @@ contains
        call colpkg_init_itd(&
             nCategories, &
             categoryThicknessLimits, &
-            stdoutUnit)
+            abortFlag, &
+            abortMessage)
+
+       ! code abort
+       if (abortFlag) then
+          call MPAS_dmpar_global_abort("MPAS-seaice: initial_category_areas_and_volumes: "//trim(abortMessage))
+       endif
 
     endif
 

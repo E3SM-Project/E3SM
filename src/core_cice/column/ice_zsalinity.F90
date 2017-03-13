@@ -16,6 +16,7 @@
       use ice_kinds_mod
       use ice_constants_colpkg
       use ice_zbgc_shared
+      use ice_warnings, only: add_warning
 
       implicit none
 
@@ -51,7 +52,7 @@
                             Rayleigh_criteria,                &
                             first_ice,          sss,          &
                             sst,                dh_top,       &
-                            dh_bot,             nu_diag,      &
+                            dh_bot,                           &
                             l_stop,             stop_label,   &
                             fzsal,                            &
                             fzsal_g,            bphi_min,     &
@@ -64,8 +65,7 @@
          nilyr         , & ! number of ice layers
          nblyr         , & ! number of bio layers
          ntrcr         , & ! number of tracers
-         n_cat,          & ! category number 
-         nu_diag           ! file unit (diagnostic only)
+         n_cat             ! category number 
                     
       real (kind=dbl_kind), dimension (nblyr+2), intent(in) :: &
          bgrid              ! biology nondimensional vertical grid points
@@ -162,7 +162,7 @@
                                    Rayleigh_criteria,                &
                                    first_ice,          sss,          &
                                    sst,                dh_top,       &
-                                   dh_bot,             nu_diag,      &
+                                   dh_bot,                           &
                                    l_stop,             stop_label,   &
                                    fzsaln,                           &
                                    fzsaln_g,           bphi_min)
@@ -200,7 +200,7 @@
                                    Rayleigh_criteria,                &
                                    first_ice,          sss,          &
                                    sst,                dh_top,       &
-                                   dh_bot,             nu_diag,      &  
+                                   dh_bot,                           &  
                                    l_stop,             stop_label,   &
                                    fzsaln,                           &
                                    fzsaln_g,           bphi_min)
@@ -213,8 +213,7 @@
          nilyr,          & ! number of ice layers
          nblyr,          & ! number of bio layers
          ntrcr,          & ! number of tracers
-         n_cat,          & ! category number 
-         nu_diag           ! file unit (diagnostic only)
+         n_cat             ! category number 
                     
       real (kind=dbl_kind), intent(in) :: &
          dt                ! time step
@@ -385,7 +384,7 @@
                        ibrine_sal   , ibrine_rho   , &
                        fzsaln       , fzsaln_g     , &
                        S_bot        , l_stop       , &
-                       stop_label   , nu_diag) 
+                       stop_label) 
 
       if (l_stop) return
   
@@ -443,15 +442,14 @@
                                       ibrine_sal,    ibrine_rho,    &
                                       fzsaln,        fzsaln_g,      &
                                       S_bot,         l_stop,        &
-                                      stop_label,    nu_diag)    
+                                      stop_label)    
 
       use ice_brine, only: calculate_drho
       use ice_colpkg_shared, only: l_skS, grid_oS, l_sk, min_salin, rhosi, salt_loss
 
       integer (kind=int_kind), intent(in) :: &
          nblyr            , & ! number of bio layers
-         nint             , & ! number of interations 
-         nu_diag              ! file unit (diagnostic only)
+         nint                 ! number of interations
 
       logical (kind=log_kind), intent(out) :: &
          cflag                ! thin or not
@@ -812,7 +810,7 @@
                call check_conserve_salt(nint, m, dt, dts,&
                                 Ssum_tmp, Ssum_new, Ssum_corr,&
                                 fluxcorr, fluxb, fluxg, fluxm, &
-                                hbrin, hbri_old, l_stop, nu_diag)
+                                hbrin, hbri_old, l_stop)
                stop_label = 'check_conserve_salt fails'
                if (l_stop) return
             endif  ! test_conservation
@@ -1028,14 +1026,13 @@
       subroutine check_conserve_salt (mmax, mint,     dt,       dts,        &
                                       Ssum_old, Ssum_new, Ssum_corr,        & 
                                       fluxcorr, fluxb,    fluxg,     fluxm, &
-                                      hbrin,    hbri_old, l_stop, nu_diag)
+                                      hbrin,    hbri_old, l_stop)
 
       use ice_colpkg_shared, only: rhosi
 
       integer(kind=int_kind), intent(in) :: &
          mint      , & ! current iteration
-         mmax      , & ! maximum number of iterations
-         nu_diag       ! file unit (diagnostic only)
+         mmax          ! maximum number of iterations
 
       real (kind=dbl_kind), intent(in) :: &
          dt, dts        , &  ! thermodynamic and halodynamic timesteps (s)
@@ -1064,6 +1061,9 @@
      real (kind=dbl_kind), parameter :: &
          accuracy = 1.0e-7_dbl_kind ! g/kg/m^2/s difference between boundary fluxes 
 
+     character(len=char_len_long) :: &
+         warning ! warning message
+     
          dh = (hbrin-hbri_old)/real(mmax,kind=dbl_kind)
 
          flux_tot = (fluxb + fluxg + fluxm + fluxcorr + Ssum_corr)*&
@@ -1076,16 +1076,26 @@
            diff2 = abs(dsum_flux - flux_tot)
            if (diff2 >  puny .AND. diff2 > order ) then 
               l_stop = .true.
-              write(nu_diag,*) 'Poor salt conservation: check_conserve_salt'
-              write(nu_diag,*) 'mint:', mint
-              write(nu_diag,*) 'Ssum_corr',Ssum_corr
-              write(nu_diag,*) 'fluxb,fluxg,fluxm,flux_tot,fluxcorr:'
-              write(nu_diag,*)  fluxb,fluxg,fluxm,flux_tot,fluxcorr
-              write(nu_diag,*) 'fluxg,',fluxg
-              write(nu_diag,*) 'dsum_flux,',dsum_flux
-              write(nu_diag,*) 'Ssum_new,Ssum_old,hbri_old,dh:'
-              write(nu_diag,*)  Ssum_new,Ssum_old,hbri_old,dh
-              write(nu_diag,*) 'diff2,order,puny',diff2,order,puny
+              write(warning,*) 'Poor salt conservation: check_conserve_salt'
+              call add_warning(warning)
+              write(warning,*) 'mint:', mint
+              call add_warning(warning)
+              write(warning,*) 'Ssum_corr',Ssum_corr
+              call add_warning(warning)
+              write(warning,*) 'fluxb,fluxg,fluxm,flux_tot,fluxcorr:'
+              call add_warning(warning)
+              write(warning,*)  fluxb,fluxg,fluxm,flux_tot,fluxcorr
+              call add_warning(warning)
+              write(warning,*) 'fluxg,',fluxg
+              call add_warning(warning)
+              write(warning,*) 'dsum_flux,',dsum_flux
+              call add_warning(warning)
+              write(warning,*) 'Ssum_new,Ssum_old,hbri_old,dh:'
+              call add_warning(warning)
+              write(warning,*)  Ssum_new,Ssum_old,hbri_old,dh
+              call add_warning(warning)
+              write(warning,*) 'diff2,order,puny',diff2,order,puny
+              call add_warning(warning)
            endif
          endif
 

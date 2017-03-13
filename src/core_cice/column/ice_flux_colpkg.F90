@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_flux_colpkg.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_flux_colpkg.F90 1178 2017-03-08 19:24:07Z eclare $
 !=======================================================================
 
 ! Flux manipulation routines for column package
@@ -11,6 +11,7 @@
 
       use ice_kinds_mod
       use ice_constants_colpkg, only: c1, emissivity
+      use ice_warnings, only: add_warning
 
       implicit none
       private
@@ -173,8 +174,7 @@
                               flatn,               &
                               fsensn,              &
                               fsurfn,              &
-                              fcondtopn,           &
-                              nu_diag)
+                              fcondtopn)
 
       ! ice state variables
       real (kind=dbl_kind), &
@@ -191,9 +191,6 @@
          fsurfn      , & ! net flux to top surface, not including fcondtopn
          fcondtopn       ! downward cond flux at top surface (W m-2)
 
-      integer (kind=int_kind), intent(in) :: &
-         nu_diag         ! diagnostic file unit number
-
       ! local variables
 
       real (kind=dbl_kind)  :: &
@@ -204,6 +201,9 @@
 
       logical (kind=log_kind), parameter :: & 
          extreme_test=.false. ! test and write out extreme forcing data
+
+      character(len=char_len_long) :: &
+         warning ! warning message
 
       raicen        = c1
 
@@ -246,29 +246,35 @@
 
             if (fcondtopn < -100.0_dbl_kind & 
                  .or. fcondtopn > 20.0_dbl_kind) then
-               write(nu_diag,*) & 
+               write(warning,*) & 
                     'Extreme forcing: -100 > fcondtopn > 20'
-               write(nu_diag,*) & 
+               call add_warning(warning)
+               write(warning,*) & 
                     'aicen,fcondtopn = ', & 
                     aicen,fcondtopn
+               call add_warning(warning)
             endif
             
             if (fsurfn < -100.0_dbl_kind & 
                  .or. fsurfn > 80.0_dbl_kind) then
-               write(nu_diag,*) & 
+               write(warning,*) & 
                     'Extreme forcing: -100 > fsurfn > 40'
-               write(nu_diag,*) & 
+               call add_warning(warning)
+               write(warning,*) & 
                     'aicen,fsurfn = ', & 
                     aicen,fsurfn
+               call add_warning(warning)
             endif
             
             if (flatn < -20.0_dbl_kind & 
                  .or. flatn > 20.0_dbl_kind) then
-               write(nu_diag,*) & 
+               write(warning,*) & 
                     'Extreme forcing: -20 > flatn > 20'
-               write(nu_diag,*) & 
+               call add_warning(warning)
+               write(warning,*) & 
                     'aicen,flatn = ', & 
                     aicen,flatn
+               call add_warning(warning)
             endif
             
          endif  ! extreme_flag

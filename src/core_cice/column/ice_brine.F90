@@ -11,6 +11,7 @@
       use ice_constants_colpkg
       use ice_colpkg_tracers, only: ntrcr, nt_qice, nt_sice, nt_bgc_S 
       use ice_zbgc_shared
+      use ice_warnings, only: add_warning
 
       implicit none
 
@@ -48,11 +49,10 @@
                                       snoice,   hice_old, dhice,      &
                                       fbri,     dhbr_top, dhbr_bot,   &
                                       hbr_old,  hin,hsn,  firstice,   &
-                                      l_stop,   stop_label, nu_diag)
+                                      l_stop,   stop_label)
  
       integer (kind=int_kind), intent(in) :: &
-         n_cat       , & ! category
-         nu_diag         ! file unit (diagnostic only)
+         n_cat           ! category
                               
       real (kind=dbl_kind), intent(in) :: &
          aicen       , & ! concentration of ice
@@ -90,14 +90,19 @@
       real (kind=dbl_kind) :: &
          hin_old          ! ice thickness before current melt/growth (m)
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+
       !-----------------------------------------------------------------
       ! initialize
       !-----------------------------------------------------------------
 
       l_stop = .false.
       if (fbri <= c0) then
-         write(nu_diag, *) 'fbri, hice_old', fbri, hice_old
-         write(nu_diag, *) 'vicen, aicen', vicen, aicen
+         write(warning, *) 'fbri, hice_old', fbri, hice_old
+         call add_warning(warning)
+         write(warning, *) 'vicen, aicen', vicen, aicen
+         call add_warning(warning)         
          l_stop = .true.
          stop_label = 'ice_brine preflushing: fbri <= c0'
       endif
