@@ -130,8 +130,6 @@ class SystemTestsCommon(object):
         success = True
         start_time = time.time()
         try:
-            expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
-                   "Model was not built!")
             self._resetup_case(RUN_PHASE)
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
