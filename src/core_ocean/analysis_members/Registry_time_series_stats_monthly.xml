@@ -106,7 +106,7 @@
 				mode="forward;analysis"
 				filename_template="analysis_members/timeSeriesStatsMonthly.$Y.nc"
 				filename_interval="01-00-00_00:00:00"
-				output_interval="00-03-00_00:00:00"
+				output_interval="00-01-00_00:00:00"
 				reference_time="0001-01-01_00:00:00"
 				packages="timeSeriesStatsMonthlyAMPKG"
 				clobber_mode="truncate"
