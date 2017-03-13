@@ -313,10 +313,8 @@ class SystemTestsCommon(object):
                 logging.warn("  Resetting %s for test" % key)
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
-                print "Found difference in %s: case: %s original value %s" %\
+                print "WARNING: Found difference in test %s: case: %s original value %s" %\
                     (key, diffs[key][0], diffs[key][1])
-                print " Use option --force to run the test with this"\
-                    " value or --reset to reset to original"
                 return False
         return True
 
