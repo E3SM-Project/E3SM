@@ -144,8 +144,9 @@ contains
 
             write (fileID,'(/,a)') 'A chain of simple unix commands may be used to access a specific part of the data. ' &
                                 // 'For example,'
-            write (fileID,'(a)') 'to view the last three values of column seven in the global average, use:'
-            write (fileID,'(a)') "cat stats_avg.txt | awk '{print $7}' | tail -n3"
+            write (fileID,'(a)') 'to view the last three values of column eight (KE) in the global average, use:'
+            write (fileID,'(a)') "cat stats_avg.txt | awk '{print $8}' | tail -n3"
+            write (fileID,'(a)') "cat stats_max.txt | awk '{print $8}' | tail -n3"
 
          close (fileID)
       endif
