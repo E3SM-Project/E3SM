@@ -4,7 +4,7 @@ Warning: you cannot use CIME Classes in this module as it causes circular depend
 """
 import logging, gzip, sys, os, time, re, shutil, glob, string, random
 import stat as statlib
-
+import warnings
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
@@ -20,7 +20,9 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         ...
     SystemExit: ERROR: error2
     """
-    if (not condition):
+    # Without this line we get a futurewarning on the use of condition below
+    warnings.filterwarnings("ignore")
+    if not condition:
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
