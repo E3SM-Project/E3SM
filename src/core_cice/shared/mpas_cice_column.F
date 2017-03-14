@@ -852,7 +852,7 @@ contains
          config_use_column_biogeochemistry, &
          config_use_column_itd_thermodynamics, &
          config_calc_surface_temperature, &
-         config_use_zaerosols
+         config_use_vertical_tracers
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -867,7 +867,7 @@ contains
        call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
        call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
        call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
-       call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
+       call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
 
        call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
@@ -916,12 +916,12 @@ contains
        call mpas_timer_stop("Column predyn update state")
 
        !-----------------------------------------------------------------
-       ! Separate aerosol snow and ice tracers for advection
+       ! Separate vertical snow and ice tracers for advection
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column separate snow/ice tracers")
-       if (config_use_zaerosols) &
-            call column_separate_snow_ice_aerosols(domain)
+       if (config_use_vertical_tracers) &
+            call column_separate_snow_ice_tracers(domain)
        call mpas_timer_stop("Column separate snow/ice tracers")
 
     endif
@@ -949,7 +949,7 @@ contains
     logical, pointer :: &
          config_use_column_package, &
          config_use_column_ridging, &
-         config_use_zaerosols
+         config_use_vertical_tracers
 
     type(MPAS_pool_type), pointer :: &
          velocitySolver
@@ -962,18 +962,18 @@ contains
     if (config_use_column_package) then
 
        call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
-       call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
+       call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
 
        call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolver)
        call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
 
        !-----------------------------------------------------------------
-       ! Combine aerosol snow and ice tracers
+       ! Combine vertical snow and ice tracers
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column combine snow/ice tracers")
-       if (config_use_zaerosols) &
-            call column_combine_snow_ice_aerosols(domain)
+       if (config_use_vertical_tracers) &
+            call column_combine_snow_ice_tracers(domain)
        call mpas_timer_stop("Column combine snow/ice tracers")
 
        !-----------------------------------------------------------------
@@ -10127,37 +10127,65 @@ contains
        endif
        if (.not. pkgTracerVerticalAlgaeActive) then
           call set_stand_in_tracer_array(block, "verticalAlgaeConc")
+          call set_stand_in_tracer_array(block, "verticalAlgaeSnow")
+          call set_stand_in_tracer_array(block, "verticalAlgaeIce")
        endif
        if (.not. pkgTracerVerticalNitrateActive) then
           call set_stand_in_tracer_array(block, "verticalNitrateConc")
+          call set_stand_in_tracer_array(block, "verticalNitrateSnow")
+          call set_stand_in_tracer_array(block, "verticalNitrateIce")
        endif
        if (.not. pkgTracerVerticalSilicateActive) then
           call set_stand_in_tracer_array(block, "verticalSilicateConc")
+          call set_stand_in_tracer_array(block, "verticalSilicateSnow")
+          call set_stand_in_tracer_array(block, "verticalSilicateIce")
        endif
        if (.not. pkgTracerVerticalAmmoniumActive) then
           call set_stand_in_tracer_array(block, "verticalAmmoniumConc")
+          call set_stand_in_tracer_array(block, "verticalAmmoniumSnow")
+          call set_stand_in_tracer_array(block, "verticalAmmoniumIce")
        endif
        if (.not. pkgTracerVerticalDMSActive) then
           call set_stand_in_tracer_array(block, "verticalDMSPpConc")
           call set_stand_in_tracer_array(block, "verticalDMSPdConc")
           call set_stand_in_tracer_array(block, "verticalDMSConc")
+          call set_stand_in_tracer_array(block, "verticalDMSPpSnow")
+          call set_stand_in_tracer_array(block, "verticalDMSPdSnow")
+          call set_stand_in_tracer_array(block, "verticalDMSSnow")
+          call set_stand_in_tracer_array(block, "verticalDMSPpIce")
+          call set_stand_in_tracer_array(block, "verticalDMSPdIce")
+          call set_stand_in_tracer_array(block, "verticalDMSIce")
        endif
        if (.not. pkgTracerVerticalCarbonActive) then
           call set_stand_in_tracer_array(block, "verticalDOCConc")
           call set_stand_in_tracer_array(block, "verticalDICConc")
+          call set_stand_in_tracer_array(block, "verticalDOCSnow")
+          call set_stand_in_tracer_array(block, "verticalDICSnow")
+          call set_stand_in_tracer_array(block, "verticalDOCIce")
+          call set_stand_in_tracer_array(block, "verticalDICIce")
        endif
        if (.not. pkgTracerVerticalDONActive) then
           call set_stand_in_tracer_array(block, "verticalDONConc")
+          call set_stand_in_tracer_array(block, "verticalDONSnow")
+          call set_stand_in_tracer_array(block, "verticalDONIce")
        endif
        if (.not. pkgTracerVerticalNonreactiveActive) then
           call set_stand_in_tracer_array(block, "verticalNonreactiveConc")
+          call set_stand_in_tracer_array(block, "verticalNonreactiveSnow")
+          call set_stand_in_tracer_array(block, "verticalNonreactiveIce")
        endif
        if (.not. pkgTracerVerticalHumicsActive) then
           call set_stand_in_tracer_array(block, "verticalHumicsConc")
+          call set_stand_in_tracer_array(block, "verticalHumicsSnow")
+          call set_stand_in_tracer_array(block, "verticalHumicsIce")
        endif
        if (.not. pkgTracerVerticalIronActive) then
           call set_stand_in_tracer_array(block, "verticalParticulateIronConc")
           call set_stand_in_tracer_array(block, "verticalDissolvedIronConc")
+          call set_stand_in_tracer_array(block, "verticalParticulateIronSnow")
+          call set_stand_in_tracer_array(block, "verticalDissolvedIronSnow")
+          call set_stand_in_tracer_array(block, "verticalParticulateIronIce")
+          call set_stand_in_tracer_array(block, "verticalDissolvedIronIce")
        endif
        if (.not. pkgTracerZAerosolsActive) then
           call set_stand_in_tracer_array(block, "verticalAerosolsConc")
@@ -10414,37 +10442,65 @@ contains
        endif
        if (.not. pkgTracerVerticalAlgaeActive) then
           call finalize_stand_in_tracer_array(block, "verticalAlgaeConc")
+          call finalize_stand_in_tracer_array(block, "verticalAlgaeSnow")
+          call finalize_stand_in_tracer_array(block, "verticalAlgaeIce")
        endif
        if (.not. pkgTracerVerticalNitrateActive) then
           call finalize_stand_in_tracer_array(block, "verticalNitrateConc")
+          call finalize_stand_in_tracer_array(block, "verticalNitrateSnow")
+          call finalize_stand_in_tracer_array(block, "verticalNitrateIce")
        endif
        if (.not. pkgTracerVerticalSilicateActive) then
           call finalize_stand_in_tracer_array(block, "verticalSilicateConc")
+          call finalize_stand_in_tracer_array(block, "verticalSilicateSnow")
+          call finalize_stand_in_tracer_array(block, "verticalSilicateIce")
        endif
        if (.not. pkgTracerVerticalAmmoniumActive) then
           call finalize_stand_in_tracer_array(block, "verticalAmmoniumConc")
+          call finalize_stand_in_tracer_array(block, "verticalAmmoniumSnow")
+          call finalize_stand_in_tracer_array(block, "verticalAmmoniumIce")
        endif
        if (.not. pkgTracerVerticalDMSActive) then
           call finalize_stand_in_tracer_array(block, "verticalDMSPpConc")
           call finalize_stand_in_tracer_array(block, "verticalDMSPdConc")
           call finalize_stand_in_tracer_array(block, "verticalDMSConc")
+          call finalize_stand_in_tracer_array(block, "verticalDMSPpSnow")
+          call finalize_stand_in_tracer_array(block, "verticalDMSPdSnow")
+          call finalize_stand_in_tracer_array(block, "verticalDMSSnow")
+          call finalize_stand_in_tracer_array(block, "verticalDMSPpIce")
+          call finalize_stand_in_tracer_array(block, "verticalDMSPdIce")
+          call finalize_stand_in_tracer_array(block, "verticalDMSIce")
        endif
        if (.not. pkgTracerVerticalCarbonActive) then
           call finalize_stand_in_tracer_array(block, "verticalDOCConc")
           call finalize_stand_in_tracer_array(block, "verticalDICConc")
+          call finalize_stand_in_tracer_array(block, "verticalDOCSnow")
+          call finalize_stand_in_tracer_array(block, "verticalDICSnow")
+          call finalize_stand_in_tracer_array(block, "verticalDOCIce")
+          call finalize_stand_in_tracer_array(block, "verticalDICIce")
        endif
        if (.not. pkgTracerVerticalDONActive) then
           call finalize_stand_in_tracer_array(block, "verticalDONConc")
+          call finalize_stand_in_tracer_array(block, "verticalDONSnow")
+          call finalize_stand_in_tracer_array(block, "verticalDONIce")
        endif
        if (.not. pkgTracerVerticalNonreactiveActive) then
           call finalize_stand_in_tracer_array(block, "verticalNonreactiveConc")
+          call finalize_stand_in_tracer_array(block, "verticalNonreactiveSnow")
+          call finalize_stand_in_tracer_array(block, "verticalNonreactiveIce")
        endif
        if (.not. pkgTracerVerticalHumicsActive) then
           call finalize_stand_in_tracer_array(block, "verticalHumicsConc")
+          call finalize_stand_in_tracer_array(block, "verticalHumicsSnow")
+          call finalize_stand_in_tracer_array(block, "verticalHumicsIce")
        endif
        if (.not. pkgTracerVerticalIronActive) then
           call finalize_stand_in_tracer_array(block, "verticalParticulateIronConc")
           call finalize_stand_in_tracer_array(block, "verticalDissolvedIronConc")
+          call finalize_stand_in_tracer_array(block, "verticalParticulateIronSnow")
+          call finalize_stand_in_tracer_array(block, "verticalDissolvedIronSnow")
+          call finalize_stand_in_tracer_array(block, "verticalParticulateIronIce")
+          call finalize_stand_in_tracer_array(block, "verticalDissolvedIronIce")
        endif
        if (.not. pkgTracerZAerosolsActive) then
           call finalize_stand_in_tracer_array(block, "verticalAerosolsConc")
@@ -12142,17 +12198,17 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  column_separate_snow_ice_aerosols
+!  column_separate_snow_ice_tracers
 !
 !> \brief
 !> \author Nicole Jeffery, LANL
-!> \date 26 Jan 2016
+!> \date 13 March 2017
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine  column_separate_snow_ice_aerosols(domain)
+  subroutine  column_separate_snow_ice_tracers(domain)
 
     type(domain_type), intent(inout) :: domain
 
@@ -12163,17 +12219,79 @@ contains
          mesh, &
          tracers
 
+    logical, pointer :: &
+         config_use_vertical_biochemistry, &
+         config_use_nitrate, &
+         config_use_carbon, &
+         config_use_ammonium, &
+         config_use_silicate, &
+         config_use_DMS, &
+         config_use_nonreactive, &
+         config_use_humics, &
+         config_use_DON, &
+         config_use_iron, &
+         config_use_zaerosols
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          verticalAerosolsConc, &
          verticalAerosolsSnow, &
-         verticalAerosolsIce
+         verticalAerosolsIce, &
+         verticalDissolvedIronConc, &
+         verticalParticulateIronConc, &
+         verticalHumicsConc, &
+         verticalNonreactiveConc, &
+         verticalDMSPdConc, &
+         verticalDMSPpConc, &
+         verticalDMSConc, &
+         verticalAmmoniumConc, &
+         verticalSilicateConc, &
+         verticalNitrateConc, &
+         verticalDONConc, &
+         verticalDICConc, &
+         verticalDOCConc, &
+         verticalAlgaeConc, &
+         verticalDissolvedIronSnow, &
+         verticalParticulateIronSnow, &
+         verticalHumicsSnow, &
+         verticalNonreactiveSnow, &
+         verticalDMSPdSnow, &
+         verticalDMSPpSnow, &
+         verticalDMSSnow, &
+         verticalAmmoniumSnow, &
+         verticalSilicateSnow, &
+         verticalNitrateSnow, &
+         verticalDONSnow, &
+         verticalDICSnow, &
+         verticalDOCSnow, &
+         verticalAlgaeSnow, &
+         verticalDissolvedIronIce, &
+         verticalParticulateIronIce, &
+         verticalHumicsIce, &
+         verticalNonreactiveIce, &
+         verticalDMSPdIce, &
+         verticalDMSPpIce, &
+         verticalDMSIce, &
+         verticalAmmoniumIce, &
+         verticalSilicateIce, &
+         verticalNitrateIce, &
+         verticalDONIce, &
+         verticalDICIce, &
+         verticalDOCIce, &
+         verticalAlgaeIce
 
     integer, pointer :: &
          nCellsSolve, &
          nBioLayersP1, &
          nBioLayersP3, &
          nCategories, &
-         nzAerosols
+         nzAerosols, &
+         TWO, &
+         nAlgae, &
+         nDOC, &
+         nDIC, &
+         nDON, &
+         nParticulateIron, &
+         nDissolvedIron
 
     integer :: &
          iCell, &
@@ -12189,6 +12307,18 @@ contains
     block => domain % blocklist
     do while (associated(block))
 
+       call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
+       call MPAS_pool_get_config(block % configs, "config_use_carbon", config_use_carbon)
+       call MPAS_pool_get_config(block % configs, "config_use_ammonium",config_use_ammonium)
+       call MPAS_pool_get_config(block % configs, "config_use_silicate",config_use_silicate)
+       call MPAS_pool_get_config(block % configs, "config_use_DMS",config_use_DMS)
+       call MPAS_pool_get_config(block % configs, "config_use_nonreactive",config_use_nonreactive)
+       call MPAS_pool_get_config(block % configs, "config_use_humics",config_use_humics)
+       call MPAS_pool_get_config(block % configs, "config_use_DON",config_use_DON)
+       call MPAS_pool_get_config(block % configs, "config_use_iron",config_use_iron)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols",config_use_zaerosols)
+
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
@@ -12197,47 +12327,283 @@ contains
        call MPAS_pool_get_dimension(mesh, "nzAerosols", nzAerosols)
        call MPAS_pool_get_dimension(mesh, "nBioLayersP1", nBioLayersP1)
        call MPAS_pool_get_dimension(mesh, "nBioLayersP3", nBioLayersP3)
+       call MPAS_pool_get_dimension(mesh, "TWO", TWO)
+       call MPAS_pool_get_dimension(mesh, "nAlgae", nAlgae)
+       call MPAS_pool_get_dimension(mesh, "nDOC", nDOC)
+       call MPAS_pool_get_dimension(mesh, "nDIC", nDIC)
+       call MPAS_pool_get_dimension(mesh, "nDON", nDON)
+       call MPAS_pool_get_dimension(mesh, "nParticulateIron", nParticulateIron)
+       call MPAS_pool_get_dimension(mesh, "nDissolvedIron", nDissolvedIron)
 
        call MPAS_pool_get_array(tracers, "verticalAerosolsConc",verticalAerosolsConc,1)
        call MPAS_pool_get_array(tracers, "verticalAerosolsSnow",verticalAerosolsSnow,1)
        call MPAS_pool_get_array(tracers, "verticalAerosolsIce",verticalAerosolsIce,1)
+       call MPAS_pool_get_array(tracers, "verticalAlgaeConc",verticalAlgaeConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDOCConc",verticalDOCConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDICConc",verticalDICConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDONConc",verticalDONConc,1)
+       call MPAS_pool_get_array(tracers, "verticalNitrateConc",verticalNitrateConc,1)
+       call MPAS_pool_get_array(tracers, "verticalSilicateConc",verticalSilicateConc,1)
+       call MPAS_pool_get_array(tracers, "verticalAmmoniumConc",verticalAmmoniumConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSConc",verticalDMSConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPpConc",verticalDMSPpConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPdConc",verticalDMSPdConc,1)
+       call MPAS_pool_get_array(tracers, "verticalNonreactiveConc",verticalNonreactiveConc,1)
+       call MPAS_pool_get_array(tracers, "verticalHumicsConc",verticalHumicsConc,1)
+       call MPAS_pool_get_array(tracers, "verticalParticulateIronConc",verticalParticulateIronConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDissolvedIronConc",verticalDissolvedIronConc,1)
+       call MPAS_pool_get_array(tracers, "verticalAlgaeSnow",verticalAlgaeSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDOCSnow",verticalDOCSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDICSnow",verticalDICSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDONSnow",verticalDONSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalNitrateSnow",verticalNitrateSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalSilicateSnow",verticalSilicateSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalAmmoniumSnow",verticalAmmoniumSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSSnow",verticalDMSSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPpSnow",verticalDMSPpSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPdSnow",verticalDMSPdSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalNonreactiveSnow",verticalNonreactiveSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalHumicsSnow",verticalHumicsSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalParticulateIronSnow",verticalParticulateIronSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDissolvedIronSnow",verticalDissolvedIronSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalAlgaeIce",verticalAlgaeIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDOCIce",verticalDOCIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDICIce",verticalDICIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDONIce",verticalDONIce,1)
+       call MPAS_pool_get_array(tracers, "verticalNitrateIce",verticalNitrateIce,1)
+       call MPAS_pool_get_array(tracers, "verticalSilicateIce",verticalSilicateIce,1)
+       call MPAS_pool_get_array(tracers, "verticalAmmoniumIce",verticalAmmoniumIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSIce",verticalDMSIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPpIce",verticalDMSPpIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPdIce",verticalDMSPdIce,1)
+       call MPAS_pool_get_array(tracers, "verticalNonreactiveIce",verticalNonreactiveIce,1)
+       call MPAS_pool_get_array(tracers, "verticalHumicsIce",verticalHumicsIce,1)
+       call MPAS_pool_get_array(tracers, "verticalParticulateIronIce",verticalParticulateIronIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDissolvedIronIce",verticalDissolvedIronIce,1)
 
        do iCell = 1, nCellsSolve
           do iCategory = 1, nCategories
-             do iBioTracers = 1, nzAerosols
-                 iSnowCount = (iBioTracers-1)*2
-                 iIceCount = (iBioTracers-1)*nBioLayersP1
-                 iBioData =  (iBioTracers-1)*nBioLayersP3
-                 do iBioCount = 1,2
-                    verticalAerosolsSnow(iBioCount+iSnowCount,iCategory,iCell) = &
-                            verticalAerosolsConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
-                 enddo
-                 do iBioCount = 1, nBioLayersP1
-                    verticalAerosolsIce(iBioCount+iIceCount,iCategory,iCell) = &
-                            verticalAerosolsConc(iBioData+iBioCount,iCategory,iCell)
-                 enddo
-             enddo
+
+             ! aerosols
+             if (config_use_zaerosols) then
+                do iBioTracers = 1, nzAerosols
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalAerosolsSnow(iBioCount+iSnowCount,iCategory,iCell) = &
+                         verticalAerosolsConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
+
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalAerosolsIce(iBioCount+iIceCount,iCategory,iCell) = &
+                         verticalAerosolsConc(iBioData+iBioCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
+             ! algal nitrogen
+             if (config_use_vertical_biochemistry) then
+                do iBioTracers = 1, nAlgae
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalAlgaeSnow(iBioCount+iSnowCount,iCategory,iCell) = &
+                         verticalAlgaeConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalAlgaeIce(iBioCount+iIceCount,iCategory,iCell) = &
+                         verticalAlgaeConc(iBioData+iBioCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
+             ! dissolved organic and inorganic carbon
+             if (config_use_carbon) then
+                do iBioTracers = 1, nDOC
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalDOCSnow(iBioCount+iSnowCount,iCategory,iCell) = &
+                         verticalDOCConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalDOCIce(iBioCount+iIceCount,iCategory,iCell) = &
+                         verticalDOCConc(iBioData+iBioCount,iCategory,iCell)
+                   enddo
+                enddo
+                do iBioTracers = 1, nDIC
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalDICSnow(iBioCount+iSnowCount,iCategory,iCell) = &
+                         verticalDICConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalDICIce(iBioCount+iIceCount,iCategory,iCell) = &
+                         verticalDICConc(iBioData+iBioCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
+             ! nitrate
+             if (config_use_nitrate) then
+                do iBioCount = 1,TWO
+                   verticalNitrateSnow(iBioCount,iCategory,iCell) = &
+                      verticalNitrateConc(nBioLayersP1+iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalNitrateIce(iBioCount,iCategory,iCell) = &
+                      verticalNitrateConc(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! ammonium
+             if (config_use_ammonium) then
+                do iBioCount = 1,TWO
+                   verticalAmmoniumSnow(iBioCount,iCategory,iCell) = &
+                      verticalAmmoniumConc(nBioLayersP1+iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalAmmoniumIce(iBioCount,iCategory,iCell) = &
+                      verticalAmmoniumConc(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! silicate
+             if (config_use_silicate) then
+                do iBioCount = 1,TWO
+                   verticalSilicateSnow(iBioCount,iCategory,iCell) = &
+                      verticalSilicateConc(nBioLayersP1+iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalSilicateIce(iBioCount,iCategory,iCell) = &
+                      verticalSilicateConc(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! DMS, DMSPp, DMPSd
+             if (config_use_DMS) then
+                do iBioCount = 1,TWO
+                   verticalDMSSnow(iBioCount,iCategory,iCell) = &
+                      verticalDMSConc(nBioLayersP1+iBioCount,iCategory,iCell)
+                   verticalDMSPpSnow(iBioCount,iCategory,iCell) = &
+                      verticalDMSPpConc(nBioLayersP1+iBioCount,iCategory,iCell)
+                   verticalDMSPdSnow(iBioCount,iCategory,iCell) = &
+                      verticalDMSPdConc(nBioLayersP1+iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalDMSIce(iBioCount,iCategory,iCell) = &
+                      verticalDMSConc(iBioCount,iCategory,iCell)
+                   verticalDMSPpIce(iBioCount,iCategory,iCell) = &
+                      verticalDMSPpConc(iBioCount,iCategory,iCell)
+                   verticalDMSPdIce(iBioCount,iCategory,iCell) = &
+                      verticalDMSPdConc(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! nonreactive tracer
+             if (config_use_nonreactive) then
+                do iBioCount = 1,TWO
+                   verticalNonreactiveSnow(iBioCount,iCategory,iCell) = &
+                      verticalNonreactiveConc(nBioLayersP1+iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalNonreactiveIce(iBioCount,iCategory,iCell) = &
+                      verticalNonreactiveConc(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! humics
+             if (config_use_humics) then
+                do iBioCount = 1,TWO
+                   verticalHumicsSnow(iBioCount,iCategory,iCell) = &
+                      verticalHumicsConc(nBioLayersP1+iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalHumicsIce(iBioCount,iCategory,iCell) = &
+                      verticalHumicsConc(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! proteins and amino acids
+             if (config_use_DON) then
+                do iBioTracers = 1, nDON
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalDONSnow(iBioCount+iSnowCount,iCategory,iCell) = &
+                         verticalDONConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalDONIce(iBioCount+iIceCount,iCategory,iCell) = &
+                         verticalDONConc(iBioData+iBioCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
+             ! particulate and dissolved iron
+             if (config_use_iron) then
+                do iBioTracers = 1, nParticulateIron
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalParticulateIronSnow(iBioCount+iSnowCount,iCategory,iCell) = &
+                         verticalParticulateIronConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalParticulateIronIce(iBioCount+iIceCount,iCategory,iCell) = &
+                         verticalParticulateIronConc(iBioData+iBioCount,iCategory,iCell)
+                   enddo
+                enddo
+                do iBioTracers = 1, nDissolvedIron
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalDissolvedIronSnow(iBioCount+iSnowCount,iCategory,iCell) = &
+                         verticalDissolvedIronConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalDissolvedIronIce(iBioCount+iIceCount,iCategory,iCell) = &
+                         verticalDissolvedIronConc(iBioData+iBioCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
           enddo
        enddo
 
        block => block % next
     end do
 
-  end subroutine column_separate_snow_ice_aerosols
+  end subroutine column_separate_snow_ice_tracers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  column_combine_snow_ice_aerosols
+!  column_combine_snow_ice_tracers
 !
 !> \brief
 !> \author Nicole Jeffery, LANL
-!> \date 26 Jan 2016
+!> \date 13 Mar 2017
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine  column_combine_snow_ice_aerosols(domain)
+  subroutine  column_combine_snow_ice_tracers(domain)
 
     type(domain_type), intent(inout) :: domain
 
@@ -12248,17 +12614,79 @@ contains
          mesh, &
          tracers
 
+    logical, pointer :: &
+         config_use_vertical_biochemistry, &
+         config_use_nitrate, &
+         config_use_carbon, &
+         config_use_ammonium, &
+         config_use_silicate, &
+         config_use_DMS, &
+         config_use_nonreactive, &
+         config_use_humics, &
+         config_use_DON, &
+         config_use_iron, &
+         config_use_zaerosols
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          verticalAerosolsConc, &
          verticalAerosolsSnow, &
-         verticalAerosolsIce
+         verticalAerosolsIce, &
+         verticalDissolvedIronConc, &
+         verticalParticulateIronConc, &
+         verticalHumicsConc, &
+         verticalNonreactiveConc, &
+         verticalDMSPdConc, &
+         verticalDMSPpConc, &
+         verticalDMSConc, &
+         verticalAmmoniumConc, &
+         verticalSilicateConc, &
+         verticalNitrateConc, &
+         verticalDONConc, &
+         verticalDICConc, &
+         verticalDOCConc, &
+         verticalAlgaeConc, &
+         verticalDissolvedIronSnow, &
+         verticalParticulateIronSnow, &
+         verticalHumicsSnow, &
+         verticalNonreactiveSnow, &
+         verticalDMSPdSnow, &
+         verticalDMSPpSnow, &
+         verticalDMSSnow, &
+         verticalAmmoniumSnow, &
+         verticalSilicateSnow, &
+         verticalNitrateSnow, &
+         verticalDONSnow, &
+         verticalDICSnow, &
+         verticalDOCSnow, &
+         verticalAlgaeSnow, &
+         verticalDissolvedIronIce, &
+         verticalParticulateIronIce, &
+         verticalHumicsIce, &
+         verticalNonreactiveIce, &
+         verticalDMSPdIce, &
+         verticalDMSPpIce, &
+         verticalDMSIce, &
+         verticalAmmoniumIce, &
+         verticalSilicateIce, &
+         verticalNitrateIce, &
+         verticalDONIce, &
+         verticalDICIce, &
+         verticalDOCIce, &
+         verticalAlgaeIce
 
     integer, pointer :: &
          nCellsSolve, &
          nBioLayersP1, &
          nBioLayersP3, &
          nCategories, &
-         nzAerosols
+         nzAerosols, &
+         TWO, &
+         nAlgae, &
+         nDOC, &
+         nDIC, &
+         nDON, &
+         nParticulateIron, &
+         nDissolvedIron
 
     integer :: &
          iCell, &
@@ -12274,6 +12702,18 @@ contains
     block => domain % blocklist
     do while (associated(block))
 
+       call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
+       call MPAS_pool_get_config(block % configs, "config_use_carbon", config_use_carbon)
+       call MPAS_pool_get_config(block % configs, "config_use_ammonium",config_use_ammonium)
+       call MPAS_pool_get_config(block % configs, "config_use_silicate",config_use_silicate)
+       call MPAS_pool_get_config(block % configs, "config_use_DMS",config_use_DMS)
+       call MPAS_pool_get_config(block % configs, "config_use_nonreactive",config_use_nonreactive)
+       call MPAS_pool_get_config(block % configs, "config_use_humics",config_use_humics)
+       call MPAS_pool_get_config(block % configs, "config_use_DON",config_use_DON)
+       call MPAS_pool_get_config(block % configs, "config_use_iron",config_use_iron)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols",config_use_zaerosols)
+
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
@@ -12282,33 +12722,254 @@ contains
        call MPAS_pool_get_dimension(mesh, "nzAerosols", nzAerosols)
        call MPAS_pool_get_dimension(mesh, "nBioLayersP1", nBioLayersP1)
        call MPAS_pool_get_dimension(mesh, "nBioLayersP3", nBioLayersP3)
+       call MPAS_pool_get_dimension(mesh, "TWO", TWO)
+       call MPAS_pool_get_dimension(mesh, "nAlgae", nAlgae)
+       call MPAS_pool_get_dimension(mesh, "nDOC", nDOC)
+       call MPAS_pool_get_dimension(mesh, "nDIC", nDIC)
+       call MPAS_pool_get_dimension(mesh, "nDON", nDON)
+       call MPAS_pool_get_dimension(mesh, "nParticulateIron", nParticulateIron)
+       call MPAS_pool_get_dimension(mesh, "nDissolvedIron", nDissolvedIron)
 
        call MPAS_pool_get_array(tracers, "verticalAerosolsConc",verticalAerosolsConc,1)
        call MPAS_pool_get_array(tracers, "verticalAerosolsSnow",verticalAerosolsSnow,1)
        call MPAS_pool_get_array(tracers, "verticalAerosolsIce",verticalAerosolsIce,1)
+       call MPAS_pool_get_array(tracers, "verticalAlgaeConc",verticalAlgaeConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDOCConc",verticalDOCConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDICConc",verticalDICConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDONConc",verticalDONConc,1)
+       call MPAS_pool_get_array(tracers, "verticalNitrateConc",verticalNitrateConc,1)
+       call MPAS_pool_get_array(tracers, "verticalSilicateConc",verticalSilicateConc,1)
+       call MPAS_pool_get_array(tracers, "verticalAmmoniumConc",verticalAmmoniumConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSConc",verticalDMSConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPpConc",verticalDMSPpConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPdConc",verticalDMSPdConc,1)
+       call MPAS_pool_get_array(tracers, "verticalNonreactiveConc",verticalNonreactiveConc,1)
+       call MPAS_pool_get_array(tracers, "verticalHumicsConc",verticalHumicsConc,1)
+       call MPAS_pool_get_array(tracers, "verticalParticulateIronConc",verticalParticulateIronConc,1)
+       call MPAS_pool_get_array(tracers, "verticalDissolvedIronConc",verticalDissolvedIronConc,1)
+       call MPAS_pool_get_array(tracers, "verticalAlgaeSnow",verticalAlgaeSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDOCSnow",verticalDOCSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDICSnow",verticalDICSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDONSnow",verticalDONSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalNitrateSnow",verticalNitrateSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalSilicateSnow",verticalSilicateSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalAmmoniumSnow",verticalAmmoniumSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSSnow",verticalDMSSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPpSnow",verticalDMSPpSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPdSnow",verticalDMSPdSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalNonreactiveSnow",verticalNonreactiveSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalHumicsSnow",verticalHumicsSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalParticulateIronSnow",verticalParticulateIronSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalDissolvedIronSnow",verticalDissolvedIronSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalAlgaeIce",verticalAlgaeIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDOCIce",verticalDOCIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDICIce",verticalDICIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDONIce",verticalDONIce,1)
+       call MPAS_pool_get_array(tracers, "verticalNitrateIce",verticalNitrateIce,1)
+       call MPAS_pool_get_array(tracers, "verticalSilicateIce",verticalSilicateIce,1)
+       call MPAS_pool_get_array(tracers, "verticalAmmoniumIce",verticalAmmoniumIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSIce",verticalDMSIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPpIce",verticalDMSPpIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDMSPdIce",verticalDMSPdIce,1)
+       call MPAS_pool_get_array(tracers, "verticalNonreactiveIce",verticalNonreactiveIce,1)
+       call MPAS_pool_get_array(tracers, "verticalHumicsIce",verticalHumicsIce,1)
+       call MPAS_pool_get_array(tracers, "verticalParticulateIronIce",verticalParticulateIronIce,1)
+       call MPAS_pool_get_array(tracers, "verticalDissolvedIronIce",verticalDissolvedIronIce,1)
 
        do iCell = 1, nCellsSolve
           do iCategory = 1, nCategories
-             do iBioTracers = 1, nzAerosols
-                 iSnowCount = (iBioTracers-1)*2
-                 iIceCount = (iBioTracers-1)*nBioLayersP1
-                 iBioData =  (iBioTracers-1)*nBioLayersP3
-                 do iBioCount = 1,2
-                    verticalAerosolsConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
-                            verticalAerosolsSnow(iBioCount+iSnowCount,iCategory,iCell)
-                 enddo
-                 do iBioCount = 1, nBioLayersP1
-                    verticalAerosolsConc(iBioData+iBioCount,iCategory,iCell) = &
-                            verticalAerosolsIce(iBioCount+iIceCount,iCategory,iCell)
-                 enddo
-             enddo
+
+             ! aerosols
+             if (config_use_zaerosols) then
+                do iBioTracers = 1, nzAerosols
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalAerosolsConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
+                         verticalAerosolsSnow(iBioCount+iSnowCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalAerosolsConc(iBioData+iBioCount,iCategory,iCell) = &
+                         verticalAerosolsIce(iBioCount+iIceCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
+             ! algal nitrogen
+             if (config_use_vertical_biochemistry) then
+                do iBioTracers = 1, nAlgae
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalAlgaeConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
+                         verticalAlgaeSnow(iBioCount+iSnowCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalAlgaeConc(iBioData+iBioCount,iCategory,iCell) = &
+                         verticalAlgaeIce(iBioCount+iIceCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
+             ! dissolved organic and inorganic carbon
+             if (config_use_carbon) then
+                do iBioTracers = 1, nDOC
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalDOCConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
+                         verticalDOCSnow(iBioCount+iSnowCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalDOCConc(iBioData+iBioCount,iCategory,iCell) = &
+                         verticalDOCIce(iBioCount+iIceCount,iCategory,iCell)
+                   enddo
+                enddo
+                do iBioTracers = 1, nDIC
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalDICConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
+                         verticalDICSnow(iBioCount+iSnowCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalDICConc(iBioData+iBioCount,iCategory,iCell) = &
+                         verticalDICIce(iBioCount+iIceCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
+             ! nitrate
+             if (config_use_nitrate) then
+                do iBioCount = 1,TWO
+                   verticalNitrateConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
+                      verticalNitrateSnow(iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalNitrateConc(iBioCount,iCategory,iCell) = &
+                      verticalNitrateIce(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! ammonium
+             if (config_use_ammonium) then
+                do iBioCount = 1,TWO
+                   verticalAmmoniumConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
+                      verticalAmmoniumSnow(iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalAmmoniumConc(iBioCount,iCategory,iCell) = &
+                      verticalAmmoniumIce(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! silicate
+             if (config_use_silicate) then
+                do iBioCount = 1,TWO
+                   verticalSilicateConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
+                      verticalSilicateSnow(iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalSilicateConc(iBioCount,iCategory,iCell) = &
+                      verticalSilicateIce(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! DMS, DMSPp, DMPSd
+             if (config_use_DMS) then
+                do iBioCount = 1,TWO
+                   verticalDMSConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
+                      verticalDMSSnow(iBioCount,iCategory,iCell)
+                   verticalDMSPpConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
+                      verticalDMSPpSnow(iBioCount,iCategory,iCell)
+                   verticalDMSPdConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
+                      verticalDMSPdSnow(iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalDMSConc(iBioCount,iCategory,iCell) = &
+                      verticalDMSIce(iBioCount,iCategory,iCell)
+                   verticalDMSPpConc(iBioCount,iCategory,iCell) = &
+                      verticalDMSPpIce(iBioCount,iCategory,iCell)
+                   verticalDMSPdConc(iBioCount,iCategory,iCell) = &
+                      verticalDMSPdIce(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! nonreactive tracer
+             if (config_use_nonreactive) then
+                do iBioCount = 1,TWO
+                   verticalNonreactiveConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
+                      verticalNonreactiveSnow(iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalNonreactiveConc(iBioCount,iCategory,iCell) = &
+                      verticalNonreactiveIce(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! humics
+             if (config_use_humics) then
+                do iBioCount = 1,TWO
+                   verticalHumicsConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
+                      verticalHumicsSnow(iBioCount,iCategory,iCell)
+                enddo
+                do iBioCount = 1, nBioLayersP1
+                   verticalHumicsConc(iBioCount,iCategory,iCell) = &
+                      verticalHumicsIce(iBioCount,iCategory,iCell)
+                enddo
+             endif
+
+             ! proteins and amino acids
+             if (config_use_DON) then
+                do iBioTracers = 1, nDON
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalDONConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
+                         verticalDONSnow(iBioCount+iSnowCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalDONConc(iBioData+iBioCount,iCategory,iCell) = &
+                         verticalDONIce(iBioCount+iIceCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
+             ! particulate and dissolved iron
+             if (config_use_iron) then
+                do iBioTracers = 1, nParticulateIron
+                   iSnowCount = (iBioTracers-1)*2
+                   iIceCount = (iBioTracers-1)*nBioLayersP1
+                   iBioData =  (iBioTracers-1)*nBioLayersP3
+
+                   do iBioCount = 1,TWO
+                      verticalDissolvedIronConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
+                         verticalDissolvedIronSnow(iBioCount+iSnowCount,iCategory,iCell)
+                   enddo
+                   do iBioCount = 1, nBioLayersP1
+                      verticalDissolvedIronConc(iBioData+iBioCount,iCategory,iCell) = &
+                         verticalDissolvedIronIce(iBioCount+iIceCount,iCategory,iCell)
+                   enddo
+                enddo
+             endif
+
           enddo
        enddo
 
        block => block % next
     end do
 
-  end subroutine column_combine_snow_ice_aerosols
+  end subroutine column_combine_snow_ice_tracers
 
 !-----------------------------------------------------------------------
 ! Warning messages
