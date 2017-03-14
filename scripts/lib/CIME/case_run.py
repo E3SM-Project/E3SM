@@ -200,6 +200,8 @@ def case_run(case):
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
 
+    caseroot = case.get_value("CASEROOT")
+
     # set up the LID
     lid = new_lid()
 
@@ -212,7 +214,7 @@ def case_run(case):
             lid = new_lid()
 
         if prerun_script != "UNSET":
-            do_external(prerun_script, case.get_value("CASEROOT"), cycle, lid, prefix="prerun")
+            do_external(prerun_script, caseroot, cycle, lid, prefix="prerun")
 
         run_model(case, lid)
         save_logs(case, lid)       # Copy log files back to caseroot
@@ -221,11 +223,10 @@ def case_run(case):
 
 
         if data_assimilation:
-            do_external(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid, 
-                        prefix="data_assimilation")
+            do_external(data_assimilation_script, caseroot, cycle, lid, prefix="data_assimilation")
 
         if postrun_script != "UNSET":
-            do_external(postrun_script, case.get_value("CASEROOT"), cycle, lid, prefix="postrun")
+            do_external(postrun_script, caseroot, cycle, lid, prefix="postrun")
 
         save_postrun_provenance(case)
 
