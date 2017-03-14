@@ -16,6 +16,8 @@ module mpas_init_atm_gwd
 
    private
 
+   integer, parameter :: I1KIND = selected_int_kind(2)
+
    real (kind=RKIND), parameter :: Re = 6371229.0_RKIND        ! Earth radius in MPAS-Atmosphere
    real (kind=RKIND), parameter :: Pi = 2.0_RKIND * asin(1.0_RKIND)
    real (kind=RKIND), parameter :: rad2deg = 180.0_RKIND / Pi
@@ -37,6 +39,12 @@ module mpas_init_atm_gwd
    real (kind=RKIND), dimension(:,:), pointer :: dxm   ! Size (meters) in zonal direction of a grid cell
    real (kind=RKIND) :: box_mean                       ! Mean value of topography in box
    integer :: nx, ny                                   ! Dimensions of box covering grid cell
+   integer (kind=I1KIND), dimension(:,:), pointer :: landuse         ! Global 30-arc-second landuse
+   integer (kind=I1KIND), dimension(:,:), pointer :: box_landuse     ! Subset of landuse covering a grid cell
+
+   ! NB: At present, only the USGS GLCC land cover dataset is supported, so we can assume 16 == water 
+   !     See the read_global_30s_landuse function 
+   integer (kind=I1KIND), parameter :: WATER = 16
 
 
    contains
@@ -89,6 +97,7 @@ module mpas_init_atm_gwd
 
 
       allocate(topo(topo_x,topo_y))
+      allocate(landuse(topo_x,topo_y))
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', mesh)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
@@ -152,6 +161,12 @@ module mpas_init_atm_gwd
       iErr = read_global_30s_topo(config_geog_data_path, geog_sub_path)
       if (iErr /= 0) then
          call mpas_log_write('Error reading global 30-arc-sec topography for GWD statistics', messageType=MPAS_LOG_ERR)
+         return
+      end if
+
+      iErr = read_global_30s_landuse(config_geog_data_path)
+      if (iErr /= 0) then
+         call mpas_log_write('Error reading global 30-arc-sec landuse for GWD statistics', messageType=MPAS_LOG_ERR)
          return
       end if
 
@@ -227,6 +242,7 @@ module mpas_init_atm_gwd
       end do
 
       deallocate(topo)
+      deallocate(landuse)
 
       iErr = 0
 
@@ -312,6 +328,70 @@ module mpas_init_atm_gwd
 
    !***********************************************************************
    !
+   !  function read_global_30s_landuse
+   !
+   !> \brief   Reads global 30-arc-second landuse into 'landuse' module variable
+   !> \author  Michael Duda
+   !> \date    14 March 2017
+   !> \details 
+   !>  This subroutine reads the global 30-arc-second USGS landuse from
+   !>   the subdirectory 'landuse_30s' of the path provided as an argument.
+   !
+   !-----------------------------------------------------------------------
+   function read_global_30s_landuse(path) result(iErr)
+
+      implicit none
+
+      character(len=*), intent(in) :: path
+
+      integer :: iErr
+
+      integer, parameter :: tile_x = 1200       ! x-dimension of each tile of global 30-arc-second landuse
+      integer, parameter :: tile_y = 1200       ! y-dimension of each tile of global 30-arc-second landuse
+
+      integer :: istatus
+      integer :: ix, iy
+      integer :: isigned, endian, wordsize, nx, ny, nz
+      real (kind=R4KIND) :: scalefactor
+      real (kind=R4KIND), dimension(:,:,:), allocatable :: tile
+      character(len=StrKIND) :: filename
+
+      allocate(tile(tile_x,tile_y,1))
+
+      isigned  = 1
+      endian   = 0
+      wordsize = 1
+      scalefactor = 1.0
+      nx = tile_x
+      ny = tile_y
+      nz = 1
+
+      do iy=1,topo_y,tile_y
+      do ix=1,topo_x,tile_x
+         write(filename,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(path)//'/landuse_30s/', ix, '-', (ix+tile_x-1), '.', &
+                                                                                      iy, '-', (iy+tile_y-1)
+         call read_geogrid(filename, len_trim(filename), tile, nx, ny, nz, isigned, endian, &
+                           scalefactor, wordsize, istatus)
+         if (istatus /= 0) then
+            call mpas_log_write('Error reading landuse tile '//trim(filename))
+            iErr = 1
+            return
+         end if
+
+         landuse(ix:(ix+tile_x-1),iy:(iy+tile_y-1)) = int(tile(1:tile_x,1:tile_y,1), kind=I1KIND)
+
+      end do
+      end do
+
+      deallocate(tile)
+
+      iErr = 0
+
+   end function read_global_30s_landuse
+
+
+   !***********************************************************************
+   !
    !  subroutine get_box
    !
    !> \brief   Cuts out a rectangular box of data centered at a given (lat,lon)
@@ -366,6 +446,9 @@ module mpas_init_atm_gwd
       if (associated(box)) deallocate(box)
       allocate(box(nx,ny))
 
+      if (associated(box_landuse)) deallocate(box_landuse)
+      allocate(box_landuse(nx,ny))
+
       if (associated(dxm)) deallocate(dxm)
       allocate(dxm(nx,ny))
 
@@ -396,6 +479,7 @@ module mpas_init_atm_gwd
          end do
  
          box(i,j) = topo(ii,jj)
+         box_landuse(i,j) = landuse(ii,jj)
          sg_lat = (start_lat + (real(jj-1,RKIND) + 0.5) / pts_per_degree) / rad2deg  ! Add 0.5 for cell center
          dxm(i,j) = sg_delta * cos(sg_lat)
          box_mean = box_mean + box(i,j)
