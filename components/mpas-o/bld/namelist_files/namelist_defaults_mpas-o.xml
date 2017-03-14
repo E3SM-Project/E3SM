@@ -1051,7 +1051,7 @@
 <!-- AM_timeSeriesStatsMonthly -->
 <config_AM_timeSeriesStatsMonthly_enable>.true.</config_AM_timeSeriesStatsMonthly_enable>
 <config_AM_timeSeriesStatsMonthly_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthly_compute_on_startup>
-<config_AM_timeSeriesStatsMonthly_write_on_startup>.true.</config_AM_timeSeriesStatsMonthly_write_on_startup>
+<config_AM_timeSeriesStatsMonthly_write_on_startup>.false.</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
 <config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
 <config_AM_timeSeriesStatsMonthly_restart_stream>'timeSeriesStatsMonthlyRestart'</config_AM_timeSeriesStatsMonthly_restart_stream>
