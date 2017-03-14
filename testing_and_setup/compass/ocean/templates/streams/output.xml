@@ -34,5 +34,23 @@
 				<member name="CFLNumberGlobal" type="var"/>
 			</add_contents>
 		</stream>
+
+		<stream name="block_debug_output">
+			<attribute name="filename_template">output_debug_block_$B.nc</attribute>
+			<attribute name="name">block_debug_output</attribute>
+			<attribute name="filename_interval">1000-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">1000-00-00_00:00:00</attribute>
+			<add_contents>
+				<member name="mesh" type="stream"/>
+				<member name="xtime" type="var"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="layerThickness" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="ssh" type="var"/>
+			</add_contents>
+		</stream>
 	</streams>
 </template>
