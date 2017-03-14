@@ -245,7 +245,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_minSalinity', minSalinity)
       call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_maxSalinity', maxSalinity)
 
-      if(predefRegions == .true.) then
+      if (predefRegions .eqv. .true.) then
          !!! hard-wired regions init
          call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nOceanRegionsTmpCensus', nOceanRegionsTmpCensus)
          ! allocate buffer for message passing
@@ -306,7 +306,7 @@ contains
          zPositionOfTSDiagram(:,:,:)=0.0_RKIND
       endif
 
-      if(additionalRegion /= '') then
+      if (additionalRegion /= '') then
          !!! region file init
          ! if a region file is given and a region is selected, set up region file version
          ! region file dimensions
@@ -405,7 +405,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
-         if(additionalRegion == '') then
+         if (additionalRegion == '') then
             call mpas_pool_get_dimension(block % dimensions, 'nOceanRegionsTmpCensus', nOceanRegionsTmpCensus)
          else
             call mpas_pool_get_array(regionPool, 'regionCellMasks', regionCellMasks)
@@ -432,7 +432,7 @@ contains
                if (iSalinityBin < 1) cycle
                if (iSalinityBin > nSalinityBins) cycle
 
-               if(predefRegions == .true.) then
+               if (predefRegions .eqv. .true.) then
                   !!! hard-wired regions compute
                   do iRegion=1,nOceanRegionsTmpCensus
                     ! add volume into water mass census array for each region
@@ -449,7 +449,7 @@ contains
                endif
 
                !!! region file compute
-               if(additionalRegion /= '') then
+               if (additionalRegion /= '') then
                   do i=1,regionsInAddGroup
                      curRegion = regionsInGroup(i, regionGroupNumber)
                      ! add volume into water mass census array for each region
@@ -470,7 +470,7 @@ contains
          block => block % next
       enddo   ! block loop
 
-      if(predefRegions == .true.) then
+      if (predefRegions .eqv. .true.) then
          !!! hard-wired regions efficient computed
          ! store data in buffer in order to allow only one dmpar calls
          kBuffer=0
@@ -546,7 +546,7 @@ contains
 
       !!!region file version efficient computed
       ! store data in buffer in order to allow only one dmpar calls
-      if(additionalRegion /= '') then
+      if (additionalRegion /= '') then
          kBufferRegion=0
          do iTemperatureBin=1,nTemperatureBins
             do iSalinityBin=1,nSalinityBins
@@ -642,47 +642,47 @@ contains
    if (iRegion.eq.1) then
       ! Arctic
       do iCell=1,nCellsSolve
-        if(latCell(iCell).lt. 60.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).lt. 60.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
 !      write(stdoutUnit,*) ' Arctic ', sum(workMask)
    elseif (iRegion.eq.2) then
       ! Equatorial
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt. 15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt.-15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).gt. 15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).lt.-15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
 !      write(stdoutUnit,*) ' Equatorial ', sum(workMask)
    elseif (iRegion.eq.3) then
       ! Southern Ocean
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.-50.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).gt.-50.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
 !      write(stdoutUnit,*) ' Southern Ocean ', sum(workMask)
    elseif (iRegion.eq.4) then
       ! Nino 3
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.270.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (lonCell(iCell).lt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (lonCell(iCell).gt.270.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
 !      write(stdoutUnit,*) ' Nino 3 ', sum(workMask)
    elseif (iRegion.eq.5) then
       ! Nino 4
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.160.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (lonCell(iCell).lt.160.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (lonCell(iCell).gt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
 !      write(stdoutUnit,*) ' Nino 4 ', sum(workMask)
    elseif (iRegion.eq.6) then
       ! Nino 3.4
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.190.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.240.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (lonCell(iCell).lt.190.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if (lonCell(iCell).gt.240.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
 !      write(stdoutUnit,*) ' Nino 3.4 ', sum(workMask)
    else
