@@ -1,0 +1,101 @@
+MODULE ncdf_fail_tgv
+  use pio_tutil
+  implicit none	
+
+  ! tgv = test global vars
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: tgv_fname = "pio_ncdf_test_file.nc"
+  integer :: tgv_iotype
+END MODULE ncdf_fail_tgv
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_clob_then_no_clob
+  use ncdf_fail_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: clob_fname = "pio_clob_test_file.nc"
+  integer :: ret
+  
+  ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, clob_fname, PIO_CLOBBER)
+  PIO_TF_CHECK_ERR(ret, "Failed to create:" // trim(clob_fname))
+
+  call PIO_closefile(pio_file)
+  
+  ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, clob_fname, PIO_NOCLOBBER)
+  PIO_TF_PASSERT(ret /= PIO_NOERR, "Create file with clobber then no clobber did not fail as expected")
+
+  ! No close since createfile should fail
+  call PIO_deletefile(pio_tf_iosystem_, clob_fname)
+
+PIO_TF_AUTO_TEST_SUB_END test_clob_then_no_clob
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_redef_with_no_write
+  use ncdf_fail_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  integer :: ret
+  
+  ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_nowrite)
+  PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
+
+  ! A simple redef and then enddef
+  ret = PIO_redef(pio_file)
+  PIO_TF_PASSERT(ret /= PIO_NOERR, "Redef with nowrite did not fail as expected")
+
+  ! No enddef because redef is expected to fail
+  call PIO_closefile(pio_file)
+
+PIO_TF_AUTO_TEST_SUB_END test_redef_with_no_write
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_redef_twice
+  use ncdf_fail_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  integer :: ret
+  
+  ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_write)
+  PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
+
+  ! A simple redef and then enddef
+  ret = PIO_redef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to enter redef mode" // trim(tgv_fname))
+
+  ret = PIO_redef(pio_file)
+  PIO_TF_PASSERT(ret /= PIO_NOERR, "Entering redef twice did not fail as expected")
+
+  ret = PIO_enddef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to end redef mode" // trim(tgv_fname))
+
+  call PIO_closefile(pio_file)
+
+PIO_TF_AUTO_TEST_SUB_END test_redef_twice
+
+PIO_TF_TEST_DRIVER_BEGIN
+  use ncdf_fail_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  integer :: ret, i
+  ! iotypes = valid NC types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes) 
+  do i=1,num_iotypes
+    tgv_iotype = iotypes(i)
+    ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname)
+    PIO_TF_CHECK_ERR(ret,&
+      "Failed to create:"//trim(iotype_descs(i))//":"//trim(tgv_fname))
+
+    call PIO_closefile(pio_file)
+
+    ! Make sure that global variables are set correctly before running the tests
+    PIO_TF_AUTO_TESTS_RUN(trim(iotype_descs(i)))
+
+    call PIO_deletefile(pio_tf_iosystem_, tgv_fname)
+  end do 
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+PIO_TF_TEST_DRIVER_END
