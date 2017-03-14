@@ -1,4 +1,47 @@
 ======================================================================
+
+Originator: Chris Fischer 
+Date: 3-14-2017
+Tag: cime5.3.0-alpha.04
+Answer Changes: Answer changes for gx3v7
+Tests: scripts_regression_test, SMS.f09_g16.B1850 
+Dependencies:
+
+Brief Summary:
+  -Need to set RTM to NULL in both cases in order to have this work with fix
+   needed for upcoming pythonization of rtm and mosart buildnml
+  -Improve create_test output
+  -Remove a misleading print statement from tests.
+  -Better way to handle batch errors.
+  -Change in location of $SRCROOT/config/allactive to $SRCROOT/cime_config.
+  -Update so that all relevent grids contain a mask variable.
+
+User interface changes: New SUBMIT phase! 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+34a244a Merge pull request #1239 from ESMCI/mvertens/fix_ssptest
+867711d Merge pull request #1238 from ESMCI/jgfouca/create_test_better_output
+d050c08 Merge pull request #1235 from jedwards4b/mask_updates
+5058c33 Merge pull request #1234 from ESMCI/fischer/config_cesm_allactive_mv
+64d6bd2 Merge pull request #1230 from ESMCI/jgfouca/add_submit_phase_2
+dec7437 Merge pull request #1232 from jedwards4b/remove_incorrect_statement
+
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_files.xml
+M       config/cesm/config_grids.xml
+M       config/xml_schemas/config_grids_v2.xsd
+M       scripts/lib/CIME/SystemTests/ssp.py
+M       scripts/lib/CIME/SystemTests/system_tests_common.py
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/case_submit.py
+M       scripts/lib/CIME/case_test.py
+M       scripts/lib/CIME/test_scheduler.py
+M       scripts/lib/CIME/test_status.py
+M       scripts/tests/scripts_regression_tests.p
+
+======================================================================
 Originator: Chris Fischer	 
 Date: 3-11-2017 
 Tag: cime5.3.0-alpha.03
