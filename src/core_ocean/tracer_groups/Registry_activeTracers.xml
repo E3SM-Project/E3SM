@@ -100,7 +100,7 @@
 			 description="Flux of temperature that is ignored coming into the ocean. Positive into ocean."
 				/>
 				<var name="salinitySurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="PSU m s^{-1}"
-			 description="Flux of salinity that is ignroed coming into the ocean. Positive into ocean."
+			 description="Flux of salinity that is ignored coming into the ocean. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="nonLocalSurfaceTracerFlux" type="real" dimensions="nCells Time" packages="activeTracersPKG">
