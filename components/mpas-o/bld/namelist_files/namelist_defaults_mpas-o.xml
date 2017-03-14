@@ -901,11 +901,11 @@
 <config_AM_testComputeInterval_output_stream>'testComputeIntervalOutput'</config_AM_testComputeInterval_output_stream>
 
 <!-- AM_highFrequencyOutput -->
-<config_AM_highFrequencyOutput_enable>.false.</config_AM_highFrequencyOutput_enable>
+<config_AM_highFrequencyOutput_enable>.true.</config_AM_highFrequencyOutput_enable>
 <config_AM_highFrequencyOutput_compute_interval>'output_interval'</config_AM_highFrequencyOutput_compute_interval>
 <config_AM_highFrequencyOutput_output_stream>'highFrequencyOutput'</config_AM_highFrequencyOutput_output_stream>
-<config_AM_highFrequencyOutput_compute_on_startup>.true.</config_AM_highFrequencyOutput_compute_on_startup>
-<config_AM_highFrequencyOutput_write_on_startup>.true.</config_AM_highFrequencyOutput_write_on_startup>
+<config_AM_highFrequencyOutput_compute_on_startup>.false.</config_AM_highFrequencyOutput_compute_on_startup>
+<config_AM_highFrequencyOutput_write_on_startup>.false.</config_AM_highFrequencyOutput_write_on_startup>
 
 <!-- AM_timeFilters -->
 <config_AM_timeFilters_enable>.false.</config_AM_timeFilters_enable>

@@ -507,15 +507,15 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
-	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="00-00-05_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="highFrequencyOutputAMPKG">' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '    <var name="xtime"/>' . "\n";
 	print $stream_file '    <var name="daysSinceStartOfSim"/>' . "\n";
-	print $stream_file '    <stream name="mesh"/>' . "\n";
 	print $stream_file '    <var_array name="activeTracersAtSurface"/>' . "\n";
+	print $stream_file '    <var name="kineticEnergyAtSurface"/>' . "\n";
 	print $stream_file '    <var name="kineticEnergyAt100m"/>' . "\n";
 	print $stream_file '    <var name="relativeVorticityAt100m"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
