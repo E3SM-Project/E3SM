@@ -163,7 +163,6 @@ contains
 
       call mpas_pool_create_pool(analysisMemberList)
       call mpas_pool_add_config(analysisMemberList, 'globalStats', 1)
-      call mpas_pool_add_config(analysisMemberList, 'testComputeInterval', 1)
       call mpas_pool_add_config(analysisMemberList, 'layerVolumeWeightedAverage', 1)
       call mpas_pool_add_config(analysisMemberList, 'meridionalHeatTransport', 1)
       call mpas_pool_add_config(analysisMemberList, 'okuboWeiss', 1)
@@ -176,7 +175,6 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'eliassenPalm', 1)
       call mpas_pool_add_config(analysisMemberList, 'mixedLayerDepths', 1)
       call mpas_pool_add_config(analysisMemberList, 'rpnCalculator', 1)
-      call mpas_pool_add_config(analysisMemberList, 'regionalStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsClimatology', 1)
