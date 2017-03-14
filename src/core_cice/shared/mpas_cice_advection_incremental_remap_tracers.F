@@ -384,50 +384,71 @@ contains
        call add_tracer_to_tracer_linked_list(tracersHead, 'mobileFraction',              'brineFraction')
 
     ! algal nitrogen
-    if (pkgTracerVerticalAlgaeActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAlgaeConc',           'brineFraction')
+    if (pkgTracerVerticalAlgaeActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAlgaeSnow',           'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAlgaeIce',            'brineFraction')
+    endif
 
     ! nitrate
-    if (pkgTracerVerticalNitrateActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNitrateConc',         'brineFraction')
+    if (pkgTracerVerticalNitrateActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNitrateSnow',         'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNitrateIce',          'brineFraction')
+    endif
 
     ! carbon
     if (pkgTracerVerticalCarbonActive) then
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDOCConc',             'brineFraction')
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDICConc',             'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDOCSnow',             'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDICSnow',             'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDOCIce',              'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDICIce',              'brineFraction')
     endif
 
     ! DON (proteins...)
-    if (pkgTracerVerticalDONActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDONConc',             'brineFraction')
+    if (pkgTracerVerticalDONActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDONSnow',             'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDONIce',              'brineFraction')
+    endif
 
     ! ammonium
-    if (pkgTracerVerticalAmmoniumActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAmmoniumConc',        'brineFraction')
+    if (pkgTracerVerticalAmmoniumActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAmmoniumSnow',        'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAmmoniumIce',         'brineFraction')
+    endif
 
     ! silicate
-    if (pkgTracerVerticalSilicateActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSilicateConc',        'brineFraction')
+    if (pkgTracerVerticalSilicateActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSilicateSnow',        'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSilicateIce',         'brineFraction')
+    endif
 
     ! DMS and related products
     if (pkgTracerVerticalDMSActive) then
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSConc',             'brineFraction')
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPpConc',           'brineFraction')
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPdConc',           'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSSnow',             'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPpSnow',           'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPdSnow',           'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSIce',              'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPpIce',            'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPdIce',            'brineFraction')
     endif
 
     ! nonreactive mobile tracer
-    if (pkgTracerVerticalNonreactiveActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNonreactiveConc',     'brineFraction')
+    if (pkgTracerVerticalNonreactiveActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNonreactiveSnow',     'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNonreactiveIce',      'brineFraction')
+    endif
 
     ! humic material
-    if (pkgTracerVerticalHumicsActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalHumicsConc',          'brineFraction')
+    if (pkgTracerVerticalHumicsActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalHumicsSnow',          'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalHumicsIce',           'brineFraction')
+    endif
 
     ! iron
     if (pkgTracerVerticalIronActive) then
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalParticulateIronConc', 'brineFraction')
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDissolvedIronConc',   'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalParticulateIronSnow', 'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDissolvedIronSnow',   'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalParticulateIronIce',  'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDissolvedIronIce',    'brineFraction')
     endif
 
     ! vertical aerosols
