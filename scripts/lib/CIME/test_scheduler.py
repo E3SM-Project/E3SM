@@ -737,6 +737,8 @@ class TestScheduler(object):
             template = template.replace("<PATH>",
                                         os.path.join(self._cime_root,"scripts","Tools")).replace\
                                         ("<TESTID>", self._test_id)
+            if not os.path.exists(self._test_root):
+                os.makedirs(self._test_root)
             cs_status_file = os.path.join(self._test_root, "cs.status.%s" % self._test_id)
             with open(cs_status_file, "w") as fd:
                 fd.write(template)
