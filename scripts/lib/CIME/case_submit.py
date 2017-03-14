@@ -71,9 +71,13 @@ def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
         casebaseid = case.get_value("CASEBASEID")
         # This should take care of the race condition where the submitted job
         # begins immediately and tries to set RUN phase. We proactively assume
-        # a passed SUBMIT phase.
+        # a passed SUBMIT phase. If this state is already PASS, don't set it again
+        # because then we'll lose RUN phase info if it's there. This info is important
+        # for system_tests_common to know if it needs to reinitialize the test or not.
         with TestStatus(test_dir=caseroot, test_name=casebaseid) as ts:
-            ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
+            phase_status = ts.get_status(SUBMIT_PHASE)
+            if phase_status != TEST_PASS_STATUS:
+                ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
 
     try:
         functor = lambda: _submit(case, job, resubmit, no_batch, batch_args)
