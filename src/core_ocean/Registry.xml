@@ -1347,6 +1347,23 @@
 			<var name="landIceFraction"/>
 			<var name="landIceDraft"/>
 		</stream>
+		<stream name="block_debug_output"
+				type="output"
+				filename_template="output_debug_block_$B.nc"
+				filename_interval="1000-00-00_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				clobber_mode="truncate"
+				output_interval="1000-00-00_00:00:00"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="xtime"/>
+			<var_struct name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="ssh"/>
+		</stream>
 		<stream name="KPP_testing"
 				type="output"
 				filename_template="output/KPP_test.$Y-$M-$D_$h.$m.$s.nc"
@@ -1354,7 +1371,8 @@
 				reference_time="0001-01-01_00:00:00"
 				clobber_mode="truncate"
 				output_interval="0000_01:00:00"
-				runtime_format="single_file" >
+				runtime_format="single_file"
+				mode="forward">
 
 			<stream name="mesh"/>
 			<var name="xtime"/>
