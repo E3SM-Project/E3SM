@@ -280,7 +280,6 @@ module ocn_time_integration_split
          call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-! mrp
          call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
          nCells = nCellsPtr
@@ -1618,7 +1617,7 @@ module ocn_time_integration_split
                         end do
                         !$omp end do
 
-!mrp limit Salinity in separate loop
+                        ! limit salinity in separate loop
                         if ( trim(groupItr % memberName) == 'activeTracers' ) then
                            !$omp do schedule(runtime) private(k)
                            do iCell = 1, nCells
