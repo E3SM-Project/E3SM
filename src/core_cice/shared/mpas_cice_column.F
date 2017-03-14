@@ -12323,18 +12323,18 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalAerosolsSnow(iBioCount+iSnowCount,iCategory,iCell) = &
                          verticalAerosolsConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
-                         
+
                    enddo
                    do iBioCount = 1, nBioLayersP1
                       verticalAerosolsIce(iBioCount+iIceCount,iCategory,iCell) = &
                          verticalAerosolsConc(iBioData+iBioCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
              ! algal nitrogen
              if (config_use_vertical_biochemistry) then
@@ -12342,7 +12342,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalAlgaeSnow(iBioCount+iSnowCount,iCategory,iCell) = &
                          verticalAlgaeConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12352,7 +12352,7 @@ contains
                          verticalAlgaeConc(iBioData+iBioCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
              ! dissolved organic and inorganic carbon
              if (config_use_carbon) then
@@ -12360,7 +12360,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalDOCSnow(iBioCount+iSnowCount,iCategory,iCell) = &
                          verticalDOCConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12374,7 +12374,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalDICSnow(iBioCount+iSnowCount,iCategory,iCell) = &
                          verticalDICConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12384,10 +12384,10 @@ contains
                          verticalDICConc(iBioData+iBioCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
              ! nitrate
-             if (config_use_nitrate) then 
+             if (config_use_nitrate) then
                 do iBioCount = 1,TWO
                    verticalNitrateSnow(iBioCount,iCategory,iCell) = &
                       verticalNitrateConc(nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12396,10 +12396,10 @@ contains
                    verticalNitrateIce(iBioCount,iCategory,iCell) = &
                       verticalNitrateConc(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! ammonium
-             if (config_use_ammonium) then 
+             if (config_use_ammonium) then
                 do iBioCount = 1,TWO
                    verticalAmmoniumSnow(iBioCount,iCategory,iCell) = &
                       verticalAmmoniumConc(nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12408,10 +12408,10 @@ contains
                    verticalAmmoniumIce(iBioCount,iCategory,iCell) = &
                       verticalAmmoniumConc(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! silicate
-             if (config_use_silicate) then 
+             if (config_use_silicate) then
                 do iBioCount = 1,TWO
                    verticalSilicateSnow(iBioCount,iCategory,iCell) = &
                       verticalSilicateConc(nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12420,10 +12420,10 @@ contains
                    verticalSilicateIce(iBioCount,iCategory,iCell) = &
                       verticalSilicateConc(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! DMS, DMSPp, DMPSd
-             if (config_use_DMS) then 
+             if (config_use_DMS) then
                 do iBioCount = 1,TWO
                    verticalDMSSnow(iBioCount,iCategory,iCell) = &
                       verticalDMSConc(nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12440,10 +12440,10 @@ contains
                    verticalDMSPdIce(iBioCount,iCategory,iCell) = &
                       verticalDMSPdConc(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! nonreactive tracer
-             if (config_use_nonreactive) then 
+             if (config_use_nonreactive) then
                 do iBioCount = 1,TWO
                    verticalNonreactiveSnow(iBioCount,iCategory,iCell) = &
                       verticalNonreactiveConc(nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12452,10 +12452,10 @@ contains
                    verticalNonreactiveIce(iBioCount,iCategory,iCell) = &
                       verticalNonreactiveConc(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! humics
-             if (config_use_humics) then 
+             if (config_use_humics) then
                 do iBioCount = 1,TWO
                    verticalHumicsSnow(iBioCount,iCategory,iCell) = &
                       verticalHumicsConc(nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12464,7 +12464,7 @@ contains
                    verticalHumicsIce(iBioCount,iCategory,iCell) = &
                       verticalHumicsConc(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! proteins and amino acids
              if (config_use_DON) then
@@ -12472,7 +12472,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalDONSnow(iBioCount+iSnowCount,iCategory,iCell) = &
                          verticalDONConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12482,7 +12482,7 @@ contains
                          verticalDONConc(iBioData+iBioCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
              ! particulate and dissolved iron
              if (config_use_iron) then
@@ -12490,7 +12490,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalParticulateIronSnow(iBioCount+iSnowCount,iCategory,iCell) = &
                          verticalParticulateIronConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12504,7 +12504,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalDissolvedIronSnow(iBioCount+iSnowCount,iCategory,iCell) = &
                          verticalDissolvedIronConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
@@ -12514,7 +12514,7 @@ contains
                          verticalDissolvedIronConc(iBioData+iBioCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
           enddo
        enddo
@@ -12718,7 +12718,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalAerosolsConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
                          verticalAerosolsSnow(iBioCount+iSnowCount,iCategory,iCell)
@@ -12728,7 +12728,7 @@ contains
                          verticalAerosolsIce(iBioCount+iIceCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
              ! algal nitrogen
              if (config_use_vertical_biochemistry) then
@@ -12736,7 +12736,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalAlgaeConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
                          verticalAlgaeSnow(iBioCount+iSnowCount,iCategory,iCell)
@@ -12746,7 +12746,7 @@ contains
                          verticalAlgaeIce(iBioCount+iIceCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
              ! dissolved organic and inorganic carbon
              if (config_use_carbon) then
@@ -12754,7 +12754,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalDOCConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
                          verticalDOCSnow(iBioCount+iSnowCount,iCategory,iCell)
@@ -12768,7 +12768,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalDICConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
                          verticalDICSnow(iBioCount+iSnowCount,iCategory,iCell)
@@ -12778,10 +12778,10 @@ contains
                          verticalDICIce(iBioCount+iIceCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
              ! nitrate
-             if (config_use_nitrate) then 
+             if (config_use_nitrate) then
                 do iBioCount = 1,TWO
                    verticalNitrateConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
                       verticalNitrateSnow(iBioCount,iCategory,iCell)
@@ -12790,10 +12790,10 @@ contains
                    verticalNitrateConc(iBioCount,iCategory,iCell) = &
                       verticalNitrateIce(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! ammonium
-             if (config_use_ammonium) then 
+             if (config_use_ammonium) then
                 do iBioCount = 1,TWO
                    verticalAmmoniumConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
                       verticalAmmoniumSnow(iBioCount,iCategory,iCell)
@@ -12802,10 +12802,10 @@ contains
                    verticalAmmoniumConc(iBioCount,iCategory,iCell) = &
                       verticalAmmoniumIce(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! silicate
-             if (config_use_silicate) then 
+             if (config_use_silicate) then
                 do iBioCount = 1,TWO
                    verticalSilicateConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
                       verticalSilicateSnow(iBioCount,iCategory,iCell)
@@ -12814,10 +12814,10 @@ contains
                    verticalSilicateConc(iBioCount,iCategory,iCell) = &
                       verticalSilicateIce(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! DMS, DMSPp, DMPSd
-             if (config_use_DMS) then 
+             if (config_use_DMS) then
                 do iBioCount = 1,TWO
                    verticalDMSConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
                       verticalDMSSnow(iBioCount,iCategory,iCell)
@@ -12834,10 +12834,10 @@ contains
                    verticalDMSPdConc(iBioCount,iCategory,iCell) = &
                       verticalDMSPdIce(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! nonreactive tracer
-             if (config_use_nonreactive) then 
+             if (config_use_nonreactive) then
                 do iBioCount = 1,TWO
                    verticalNonreactiveConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
                       verticalNonreactiveSnow(iBioCount,iCategory,iCell)
@@ -12846,10 +12846,10 @@ contains
                    verticalNonreactiveConc(iBioCount,iCategory,iCell) = &
                       verticalNonreactiveIce(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! humics
-             if (config_use_humics) then 
+             if (config_use_humics) then
                 do iBioCount = 1,TWO
                    verticalHumicsConc(nBioLayersP1+iBioCount,iCategory,iCell) = &
                       verticalHumicsSnow(iBioCount,iCategory,iCell)
@@ -12858,7 +12858,7 @@ contains
                    verticalHumicsConc(iBioCount,iCategory,iCell) = &
                       verticalHumicsIce(iBioCount,iCategory,iCell)
                 enddo
-             endif 
+             endif
 
              ! proteins and amino acids
              if (config_use_DON) then
@@ -12866,7 +12866,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalDONConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
                          verticalDONSnow(iBioCount+iSnowCount,iCategory,iCell)
@@ -12876,7 +12876,7 @@ contains
                          verticalDONIce(iBioCount+iIceCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
              ! particulate and dissolved iron
              if (config_use_iron) then
@@ -12884,21 +12884,7 @@ contains
                    iSnowCount = (iBioTracers-1)*2
                    iIceCount = (iBioTracers-1)*nBioLayersP1
                    iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
-                   do iBioCount = 1,TWO
-                      verticalParticulateIronConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
-                         verticalParticulateIronSnow(iBioCount+iSnowCount,iCategory,iCell)
-                   enddo
-                   do iBioCount = 1, nBioLayersP1
-                      verticalParticulateIronConc(iBioData+iBioCount,iCategory,iCell) = &
-                         verticalParticulateIronIce(iBioCount+iIceCount,iCategory,iCell)
-                   enddo
-                enddo
-                do iBioTracers = 1, nDissolvedIron
-                   iSnowCount = (iBioTracers-1)*2
-                   iIceCount = (iBioTracers-1)*nBioLayersP1
-                   iBioData =  (iBioTracers-1)*nBioLayersP3
-                      
+
                    do iBioCount = 1,TWO
                       verticalDissolvedIronConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
                          verticalDissolvedIronSnow(iBioCount+iSnowCount,iCategory,iCell)
@@ -12908,7 +12894,7 @@ contains
                          verticalDissolvedIronIce(iBioCount+iIceCount,iCategory,iCell)
                    enddo
                 enddo
-             endif 
+             endif
 
           enddo
        enddo
