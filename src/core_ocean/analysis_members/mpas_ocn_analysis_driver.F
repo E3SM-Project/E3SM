@@ -34,6 +34,7 @@ module ocn_analysis_driver
    use ocn_okubo_weiss
    use ocn_water_mass_census
    use ocn_meridional_heat_transport
+   use ocn_test_compute_interval
    use ocn_high_frequency_output
    use ocn_time_filters
    use ocn_lagrangian_particle_tracking
@@ -1027,6 +1028,8 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
+      !if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+      !   call ocn_bootstrap_test_compute_interval(domain, err_tmp)
       if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call ocn_bootstrap_time_series_stats(domain, timeSeriesDailyTAG, &
            err_tmp)
@@ -1075,6 +1078,8 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
          call ocn_init_global_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+         call ocn_init_test_compute_interval(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'layerVolumeWeightedAverage' ) then
          call ocn_init_layer_volume_weighted_averages(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'meridionalHeatTransport' ) then
@@ -1161,6 +1166,8 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
          call ocn_compute_global_stats(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+         call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'layerVolumeWeightedAverage' ) then
          call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'meridionalHeatTransport' ) then
@@ -1250,6 +1257,8 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
          call ocn_restart_global_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+         call ocn_restart_test_compute_interval(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'layerVolumeWeightedAverage' ) then
          call ocn_restart_layer_volume_weighted_averages(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'meridionalHeatTransport' ) then
@@ -1335,6 +1344,8 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
          call ocn_finalize_global_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+         call ocn_finalize_test_compute_interval(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'layerVolumeWeightedAverage' ) then
          call ocn_finalize_layer_volume_weighted_averages(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'meridionalHeatTransport' ) then
