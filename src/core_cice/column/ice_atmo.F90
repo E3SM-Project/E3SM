@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_atmo.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_atmo.F90 1173 2017-03-02 03:57:43Z njeffery $
 !=======================================================================
 
 ! Atmospheric boundary interface (stability based flux calculations)
