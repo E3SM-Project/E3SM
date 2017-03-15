@@ -48,7 +48,7 @@
                             hin_old,            iDin,         &
                             darcy_V,            brine_sal,    &
                             brine_rho,          ibrine_sal,   &
-                            ibrine_rho,                       &
+                            ibrine_rho,         dh_direct,    &
                             Rayleigh_criteria,                &
                             first_ice,          sss,          &
                             sst,                dh_top,       &
@@ -90,7 +90,8 @@
          hbrin         , & ! new brine height  (m)
          vicen         , & ! ice volume (m)
          aicen         , & ! ice area (m)
-         bphi_min   
+         bphi_min      , & !
+         dh_direct         ! flooded or runoff amount (m)
 
       real (kind=dbl_kind), intent(inout) :: &
          zsal_tot      , & ! tot salinity (psu*rhosi*total vol ice)
@@ -158,7 +159,7 @@
                                    hin_old,            iDin,         &
                                    darcy_V,            brine_sal,    &
                                    brine_rho,          ibrine_sal,   &
-                                   ibrine_rho,                       &
+                                   ibrine_rho,         dh_direct,    &
                                    Rayleigh_criteria,                &
                                    first_ice,          sss,          &
                                    sst,                dh_top,       &
@@ -196,7 +197,7 @@
                                    hin_old,            iDin,         &
                                    darcy_V,            brine_sal,    &
                                    brine_rho,          ibrine_sal,   &
-                                   ibrine_rho,                       &
+                                   ibrine_rho,         dh_direct,    &
                                    Rayleigh_criteria,                &
                                    first_ice,          sss,          &
                                    sst,                dh_top,       &
@@ -239,7 +240,8 @@
          hbr_old       , & ! old brine height  (m)
          hin           , & ! new ice thickness (m)
          hbrin         , & ! new brine height  (m)
-         bphi_min   
+         bphi_min      , & !
+         dh_direct         ! flooded or runoff amount (m)
  
       real (kind=dbl_kind), intent(out) :: &
          fzsaln        , & ! total flux of salt out of ice over timestep(kg/m^2/s)
@@ -355,7 +357,8 @@
 
       if (abs(dh_top) > puny .AND. abs(darcy_V) > puny) then 
          bSin(1) = max(min_salin,-(brine_rho(2)*brine_sal(2)/rhosi &
-                 * darcy_V*dt - (dh_top +darcy_V*dt/bphi_min)*min_salin)/dh_top)
+                 * darcy_V*dt - (dh_top + darcy_V*dt/bphi_min - dh_direct)*min_salin &
+                 + max(c0,-dh_direct) * sss  )/dh_top)
          brine_sal(1) = brine_sal(2)
          brine_rho(1) = brine_rho(2)
          bphin(1) = bphi_min

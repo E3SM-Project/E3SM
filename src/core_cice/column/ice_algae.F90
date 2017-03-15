@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_algae.F90 1178 2017-03-08 19:24:07Z eclare $
+!  SVN:$Id: ice_algae.F90 1175 2017-03-02 19:53:26Z akt $
 !=======================================================================
 !
 ! Compute sea ice biogeochemistry (vertical or skeletal layer)
@@ -56,7 +56,7 @@
                          bphi_min,                  &
                          dhice,        iTin,        &
                          Zoo,                       &
-                         flux_bio,                  &
+                         flux_bio,     dh_direct,   &
                          upNO,         upNH,        &
                          fbio_snoice,  fbio_atmice, &
                          PP_net,       ice_bio_net, &
@@ -105,7 +105,8 @@
          dh_bot,     & ! change in brine bottom (m)
          dh_bot_chl, & ! change in brine bottom (m) felt by algae
          dh_top,     & ! change in brine top (m)
-         dh_top_chl    ! change in brine top (m) felt by algae
+         dh_top_chl, & ! change in brine top (m) felt by algae
+         dh_direct     ! surface flooding or surface runoff (m)
 
       real (kind=dbl_kind), dimension (nbtrcr), intent(inout) :: &
          snow_bio_net,& ! net bio tracer in snow (mmol/m^2)
@@ -139,7 +140,7 @@
          intent(inout) :: &
          trcrn 
 
-    real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: & 
+      real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: & 
          zfswin         ! visible Short wave flux on igrid (W/m^2)  
        
       real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: & 
@@ -185,13 +186,46 @@
          zbgc_snown, & ! aerosol contribution from snow to ice
          zbgc_atmn     ! and atm to ice concentration * volume (mmol/m^3*m)
 
+      real (kind=dbl_kind), dimension(nbtrcr) :: &
+         Tot_BGC_i, & ! initial column sum, ice + snow,  of BGC tracer (mmol/m^2)
+         Tot_BGC_f, & ! final column sum
+         flux_bio_sno !
+
+      real (kind=dbl_kind) :: &
+         Tot_Nit, &  !
+         hsnow_i,  & ! initial snow thickness (m)
+         hsnow_f     ! final snow thickness (m)
+
+      logical (kind=log_kind) :: &
+         write_flux_diag
+
+      real (kind=dbl_kind) :: &
+         a_ice
+
       character(len=char_len_long) :: &
          warning  
 
       zbgc_snown(:) = c0
       zbgc_atmn (:) = c0
       flux_bion (:) = c0
-
+      flux_bio_sno(:) = c0
+      Tot_BGC_i (:) = c0
+      Tot_BGC_f (:) = c0
+      hsnow_i = c0
+      hsnow_f = c0
+      write_flux_diag = .false.
+    
+      if (write_flux_diag) then
+         if (aice_old > c0) then
+            hsnow_i = vsno_old/aice_old
+            do  mm = 1,nbtrcr
+               call bgc_column_sum (nblyr, nslyr, hsnow_i, hbri_old, &
+                              trcrn(bio_index(mm):bio_index(mm)+nblyr+2), &
+                              Tot_BGC_i(mm))
+            enddo
+         endif
+      endif
+ 
       call update_snow_bgc     (dt,        nblyr,        &
                                 nslyr,                   &
                                 meltt,     melts,        &
@@ -203,7 +237,7 @@
                                 vice_old,  vsno_old,     &
                                 vicen,     vsnon,        &
                                 aicen,     flux_bio_atm, &
-                                zbgc_atmn, flux_bion)
+                                zbgc_atmn, flux_bio_sno)
 
       call z_biogeochemistry   (n_cat,        dt,        &
                                 nilyr,        nslyr,     &
@@ -227,36 +261,41 @@
                                 igrid,        icgrid,    &
                                 bphi_min,     zbgc_snown,&
                                 dhice,        zbgc_atmn, &
-                                iTin,                    &
+                                iTin,         dh_direct, &
                                 Zoo,          meltb,     &
-                                l_stop,       stop_label)
+                                congel,       l_stop,    &
+                                stop_label)
+      
+      do mm = 1,nbtrcr
+         flux_bion(mm) = flux_bion(mm) + flux_bio_sno(mm)
+      enddo
 
-!      if (write_flux_diag) then
-!         if (aicen > c0) then
-!            hsnow_f = vsnon/aicen
-!            do mm = 1,nbtrcr
-!               call bgc_column_sum (nblyr, nslyr, hsnow_f, hbri, &
-!                              trcrn(bio_index(mm):bio_index(mm)+nblyr+2), &
-!                              Tot_BGC_f(mm))
-!               write(warning,*) 'mm, Tot_BGC_i(mm), Tot_BGC_f(mm)'
-!               call add_warning(warning)
-!               write(warning,*)  mm, Tot_BGC_i(mm), Tot_BGC_f(mm)
-!               call add_warning(warning)
-!               write(warning,*) 'flux_bion(mm), flux_bio_atm(mm)'
-!               call add_warning(warning)
-!               write(warning,*)  flux_bion(mm), flux_bio_atm(mm)
-!               call add_warning(warning)
-!               write(warning,*) 'zbgc_snown(mm),zbgc_atmn(mm)'
-!               call add_warning(warning)
-!               write(warning,*)  zbgc_snown(mm),zbgc_atmn(mm)
-!               call add_warning(warning)
-!               write(warning,*) 'Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt'
-!               call add_warning(warning)
-!               write(warning,*)  Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt
-!               call add_warning(warning)
-!            enddo
-!         endif
-!      endif
+      if (write_flux_diag) then
+         if (aicen > c0) then
+            hsnow_f = vsnon/aicen
+            do mm = 1,nbtrcr
+               call bgc_column_sum (nblyr, nslyr, hsnow_f, hbri, &
+                              trcrn(bio_index(mm):bio_index(mm)+nblyr+2), &
+                              Tot_BGC_f(mm))
+               write(warning,*) 'mm, Tot_BGC_i(mm), Tot_BGC_f(mm)'
+               call add_warning(warning)
+               write(warning,*)  mm, Tot_BGC_i(mm), Tot_BGC_f(mm)
+               call add_warning(warning)
+               write(warning,*) 'flux_bion(mm), flux_bio_atm(mm)'
+               call add_warning(warning)
+               write(warning,*)  flux_bion(mm), flux_bio_atm(mm)
+               call add_warning(warning)
+               write(warning,*) 'zbgc_snown(mm),zbgc_atmn(mm)'
+               call add_warning(warning)
+               write(warning,*)  zbgc_snown(mm),zbgc_atmn(mm)
+               call add_warning(warning)
+               write(warning,*) 'Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt'
+               call add_warning(warning)
+               write(warning,*)  Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt
+               call add_warning(warning)
+            enddo
+         endif
+      endif
 
       if (l_stop) return
 
@@ -275,26 +314,26 @@
                                snow_bio_net, grow_alg,   &
                                grow_net)
  
-!      if (write_flux_diag) then
-!         if (aicen > c0) then
-!            if (n_cat .eq. 1) a_ice = c0
-!            a_ice = a_ice + aicen
-!            write(warning,*) 'after merge_bgc_fluxes, n_cat:', n_cat
-!            call add_warning(warning)
-!            do mm = 1,nbtrcr
-!               write(warning,*)  'mm, flux_bio(mm):',mm,flux_bio(mm)
-!               call add_warning(warning)
-!               write(warning,*) 'fbio_snoice(mm)',fbio_snoice(mm)
-!               call add_warning(warning)
-!               write(warning,*) 'fbio_atmice(mm)',fbio_atmice(mm)
-!               call add_warning(warning)
-!               write(warning,*)  'flux_bio_atm(mm)', flux_bio_atm(mm)
-!               call add_warning(warning)
-!               write(warning,*)  'flux_bio_atm(mm)*a_ice', flux_bio_atm(mm)*a_ice
-!               call add_warning(warning)
-!            enddo
-!         endif
-!      endif
+      if (write_flux_diag) then
+         if (aicen > c0) then
+            if (n_cat .eq. 1) a_ice = c0
+            a_ice = a_ice + aicen
+            write(warning,*) 'after merge_bgc_fluxes, n_cat:', n_cat
+            call add_warning(warning)
+            do mm = 1,nbtrcr
+               write(warning,*)  'mm, flux_bio(mm):',mm,flux_bio(mm)
+               call add_warning(warning)
+               write(warning,*) 'fbio_snoice(mm)',fbio_snoice(mm)
+               call add_warning(warning)
+               write(warning,*) 'fbio_atmice(mm)',fbio_atmice(mm)
+               call add_warning(warning)
+               write(warning,*)  'flux_bio_atm(mm)', flux_bio_atm(mm)
+               call add_warning(warning)
+               write(warning,*)  'flux_bio_atm(mm)*a_ice', flux_bio_atm(mm)*a_ice
+               call add_warning(warning)
+            enddo
+         endif
+      endif
 
       end subroutine zbio    
 
@@ -369,7 +408,7 @@
          grow_alg       ! algal growth rate          (mmol/m^3/s)
 
       real (kind=dbl_kind), dimension (nbtrcr) :: &
-         flux_bion      ! tracer flux to ocean
+         flux_bion       !tracer flux to ocean
 
       character(len=char_len_long) :: &
          warning ! warning message
@@ -723,15 +762,16 @@
                                     i_grid,       ic_grid,   &
                                     bphi_min,     zbgc_snow, &
                                     dhice,        zbgc_atm,  &
-                                    iTin,                    &
+                                    iTin,         dh_direct, &
                                     Zoo,          meltb,     &
-                                    l_stop,       stop_label)
+                                    congel,       l_stop,    &   
+                                    stop_label)
 
       use ice_colpkg_tracers, only: nt_fbri, nt_zbgc_frac, &
                                     ntrcr, nlt_bgc_Nit, tr_bgc_Fe, tr_zaero, &
                                     nlt_bgc_Fed, nlt_zaero, bio_index, tr_bgc_N, &
                                     nlt_bgc_N
-      use ice_constants_colpkg, only: c0, c1, c2, p5, puny
+      use ice_constants_colpkg, only: c0, c1, c2, p5, puny, pi
       use ice_colpkg_shared, only: hi_ssl, dEdd_algae, solve_zbgc, &
                                    R_dFe2dust, dustFe_sol, algal_vel
 
@@ -757,12 +797,14 @@
          sss        , & ! ocean salinity (ppt)
          hice_old   , & ! ice height (m)
          meltb      , & ! bottom melt in dt (m)
+         congel     , & ! bottom growth in dt (m)
          darcy_V    , & ! darcy velocity
          darcy_V_chl, & ! darcy velocity for algae
          dh_bot     , & ! change in brine bottom (m)
          dh_bot_chl , & ! change in brine bottom (m) felt by algae
          dh_top     , & ! change in brine top (m)
-         dh_top_chl     ! change in brine top (m) felt by algae
+         dh_top_chl , & ! change in brine top (m) felt by algae
+         dh_direct      ! surface flooding or runoff (m)
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          bgrid      , & ! biology nondimensional vertical grid points
@@ -819,7 +861,10 @@
          zspace      , & ! 1/nblyr
          darcyV      , & !
          dhtop       , & !
-         dhbot           !
+         dhbot       , & !
+         dhmelt      , & ! >=0 (m) melt contribution to surface brine height
+         dhrunoff    , & ! >=0 (m) surface runoff to ocean
+         dhflood         ! >=0 (m) surface flooding from the ocean
 
       real (kind=dbl_kind), dimension (nblyr+2) :: &
          bphin_N         ! porosity for tracer model has minimum 
@@ -831,7 +876,7 @@
          diagz        , & ! diagonal matrix elements
          spdiagz      , & ! super-diagonal matrix elements
          rhsz         , & ! rhs of tri-diagonal matrix equation
-         Ml_diag      , & ! lumped mass matrix
+         ML_diag      , & ! lumped mass matrix
          D_spdiag     , & ! artificial diffusion matrix
          D_sbdiag     , & ! artificial diffusion matrix
          biomat_low   , & ! Low order solution
@@ -857,7 +902,9 @@
          rtau_ret,      & ! retention frequency (s^-1)
          rtau_rel     , & ! release frequency   (s^-1)
          atm_add_cons , & ! zbgc_snow+zbgc_atm (mmol/m^3*m)
-         dust_Fe          ! contribution of dust surface flux to dFe (umol/m*3*m)
+         dust_Fe      , & ! contribution of dust surface flux to dFe (umol/m*3*m)
+         source       , & ! mmol/m^2 surface input from snow/atmosphere
+         sum_stationary   ! sum of stationary tracer (mmol/m^2)
 
       real (kind=dbl_kind), dimension (ntrcr+2) :: &
          trtmp0       , & ! temporary, remapped tracers
@@ -884,14 +931,30 @@
       real (kind=dbl_kind):: &
          bio_tmp          ! temporary variable
 
+      real (kind=dbl_kind):: &
+         Sat_conc   , & ! adsorbing saturation concentration  (mmols/m^3)
+         phi_max    , & ! maximum porosity
+         S_col      , & ! surface area of collector (um^2)
+         P_b        , & ! projected area of diatoms (um^2)
+         V_c        , & ! volume of collector  (um^3)
+         V_alg          ! volume of algae (um^3)
+
       real (kind=dbl_kind), dimension(nbtrcr) :: & 
          mobile           ! c1 if mobile, c0 otherwise
 
       ! local parameters
          
       real (kind=dbl_kind), parameter :: &
-         accuracy = 1.0e-14_dbl_kind
-
+         accuracy = 1.0e-14_dbl_kind, &
+         r_c  = 3.0e3_dbl_kind     , & ! ice crystal radius (um)
+         r_bac= 15.0_dbl_kind    , & ! diatom large radius (um)
+         r_alg= 10.0_dbl_kind    , & ! diatom small radius (um)
+	 N_vol = 0.04e-12_dbl_kind  , & ! (g) Nitrogen per um^3
+         Ng_to_mmol =0.0140067_dbl_kind , & ! (g/mmol) Nitrogen
+         f_s = c1 , &  ! fracton of sites available for saturation
+         f_a = c1 , &  ! fraction of collector available for attachment
+         f_v = 0.7854  ! fraction of algal coverage on area availabel for attachment 4(pi r^2)/(4r)^2  [Johnson et al, 1995, water res. research]
+          
       integer, parameter :: &
          nt_zfswin = 1    ! for interpolation of short wave to bgrid
 
@@ -913,7 +976,7 @@
       C_top(:) = c0
       mobile(:) = c0
       conserve_N(:) = .true.
-          
+
       do m = 1, nbtrcr
          do k  = 1, nblyr+1
 
@@ -925,6 +988,9 @@
             if (first_ice) then
                trcrn(bio_index(m) + k-1) = ocean_bio(m)*zbgc_init_frac(m)
                in_init_cons(k,m) = trcrn(bio_index(m) + k-1)*hbri_old
+            elseif (abs(trcrn(bio_index(m) + k-1)) < puny) then               
+               trcrn(bio_index(m) + k-1) = c0
+               in_init_cons(k,m) = c0
             else
                in_init_cons(k,m) = trcrn(bio_index(m) + k-1)* hbri_old
             endif         ! first_ice
@@ -946,7 +1012,6 @@
                stop_label = 'zbgc initialization error'
             endif 
             if (l_stop) return
-
         enddo         !k
       enddo           !m
 
@@ -956,8 +1021,19 @@
 
       ice_conc = c0
       hin = vicen/aicen
-      hin_old = hice_old 
-      
+      hin_old = hice_old       
+
+      !-----------------------------------------------------------------
+      !    calculate the saturation concentration for attachment: Sat_conc
+      !-----------------------------------------------------------------
+
+      phi_max = maxval(bphin_N(2:nblyr+1))
+      S_col   = 4.0_dbl_kind*pi*r_c**2
+      P_b     = pi*r_bac**2    !*10-6 for colloids
+      V_c     = 4.0_dbl_kind*pi*r_c**3/3.0_dbl_kind*(1.0e-6_dbl_kind)**3  ! (m^3) sphere
+      V_alg   = pi/6.0_dbl_kind*r_bac*r_alg**2       ! prolate spheroid (*10-9 for colloids)
+      Sat_conc= f_s*f_a*f_v*(c1-phi_max)/V_c*S_col/P_b*N_vol*V_alg/Ng_to_mmol
+      	      	!mmol/m^3 (algae, don, hum...) and umols/m^3 for colloids 
 
       !-----------------------------------------------------------------
       !    convert surface dust flux (n_zaero > 2) to dFe(1) flux    
@@ -970,17 +1046,16 @@
          dust_Fe(nlt_bgc_Fed(1)) = dust_Fe(nlt_bgc_Fed(1)) + &
               (zbgc_snow(nlt_zaero(m)) + zbgc_atm(nlt_zaero(m))) * &
                R_dFe2dust * dustFe_sol
-         dust_Fe(nlt_zaero(m)) = -(zbgc_snow(nlt_zaero(m)) + zbgc_atm(nlt_zaero(m))) * &
-               dustFe_sol
+        ! dust_Fe(nlt_zaero(m)) = -(zbgc_snow(nlt_zaero(m)) + zbgc_atm(nlt_zaero(m))) * &
+        !       dustFe_sol
        enddo  
       endif
 
       do m = 1,nbtrcr 
-
       !-----------------------------------------------------------------
       !   time constants for mobile/stationary phase changes
       !-----------------------------------------------------------------
-
+       
          if (m .ne. nlt_bgc_N(1)) then  
             if (hin_old  > hin) then  !melting
                rtau_rel(m) = c1/tau_rel(m)
@@ -1002,17 +1077,22 @@
          dhbot      = dh_bot
          darcyV     = darcy_V
          C_top(m)   = in_init_cons(1,m)*trcrn(nt_zbgc_frac+m-1)!mobile fraction
+         source(m)  = abs(zbgc_snow(m) + zbgc_atm(m) + dust_Fe(m))
+	 dhflood  = max(c0,-dh_direct)                              ! ocean water flooding surface
+	 dhrunoff = max(c0,dh_direct)
 
-         if (dhtop+darcyV/bphin_N(1)*dt < -puny) then !snow/top ice melt
-            C_top(m) = (zbgc_snow(m)+zbgc_atm(m) + dust_Fe(m))/abs(dhtop &
-                     + darcyV/bphin_N(1)*dt + puny)*hbri_old       
-         elseif (dhtop+darcyV/bphin_N(1)*dt >= -puny .and. &
-                        abs((zbgc_snow(m)+zbgc_atm(m) + dust_Fe(m))*dt) >  puny) then
-             atm_add_cons(m) =  abs(zbgc_snow(m) + zbgc_atm(m)+ dust_Fe(m))
-         else   ! only positive fluxes 
-             flux_bio(m) = flux_bio(m) +  &
-                        max(c0,(zbgc_atm(m) + zbgc_snow(m)+ dust_Fe(m))/dt)
-         endif
+	 if (dhtop+darcyV/bphin_N(1)*dt < -puny) then !snow/top ice melt
+	     C_top(m) = (zbgc_snow(m)+zbgc_atm(m) + dust_Fe(m))/abs(dhtop &
+	                + darcyV/bphin_N(1)*dt + puny)*hbri_old    
+	 elseif (dhtop+darcyV/bphin_N(1)*dt >= -puny .and. &
+	                abs((zbgc_snow(m)+zbgc_atm(m) + dust_Fe(m)) + &
+                        ocean_bio(m)*bphin_N(1)*dhflood) >  puny) then
+	      atm_add_cons(m) =  abs(zbgc_snow(m) + zbgc_atm(m)+ dust_Fe(m)) + &
+	     		         ocean_bio(m)*bphin_N(1)*dhflood      
+	 else   ! only positive fluxes 
+              atm_add_cons(m) =  abs(zbgc_snow(m) + zbgc_atm(m)+ dust_Fe(m))
+	 endif
+
          C_bot(m) = ocean_bio(m)*hbri_old*iphin_N(nblyr+1)            
 
       enddo             ! m
@@ -1066,7 +1146,6 @@
       do mm = 1, nbtrcr 
 
          if (hbri_old > thinS .and. hbri > thinS) then 
-
             do k = 1,nblyr+1
                initcons_mobile(k) = in_init_cons(k,mm)*trcrn(nt_zbgc_frac+mm-1)
                initcons_stationary(k) = mobile(mm)*(in_init_cons(k,mm)-initcons_mobile(k))
@@ -1074,6 +1153,10 @@
                                  initcons_stationary(k)*(c1-exp(-dt*rtau_rel(mm))))
                initcons_mobile(k) = max(c0,initcons_mobile(k) + dmobile(k))
                initcons_stationary(k) = max(c0,initcons_stationary(k) - dmobile(k))
+               if (initcons_stationary(k)/hbri_old > Sat_conc) then
+                  initcons_mobile(k) = initcons_mobile(k) + initcons_stationary(k) - Sat_conc*hbri_old
+ 		  initcons_stationary(k) = Sat_conc*hbri_old
+               endif
 
                Diff(k) = iDin(k) 
                initcons(k) = initcons_mobile(k)                          
@@ -1106,7 +1189,9 @@
                                 Sink_bot(mm),          &
                                 Sink_top(mm),          &
                                 dt, flux_bio(mm),     &
-                                l_stop, nblyr)
+                                l_stop, nblyr, &
+                                source(mm))
+
             if (l_stop) return
                 
             call compute_FCT_corr & 
@@ -1117,24 +1202,31 @@
             top_conc = c0        ! or frazil ice concentration
  
             ! assume diatoms actively maintain there relative position in the ice
-            if (mm .ne. nlt_bgc_N(1)) then  
-            call regrid_stationary &
+
+            if (mm .ne. nlt_bgc_N(1)) then    
+	       	
+               call regrid_stationary & 
                                 (initcons_stationary,    hbri_old,    &
                                  hbri,                   dt,          &
                                  ntrcr,                               &
                                  nblyr,                  top_conc,    &
                                  i_grid,                 flux_bio(mm),&
                                  l_stop,                 stop_label,  &
-                                 meltb)
-           elseif (tr_bgc_N .and. meltb > algal_vel*dt) then  
-            call regrid_stationary &
+                                 meltb,                  congel)
+
+            elseif (tr_bgc_N .and. mm .eq. nlt_bgc_N(1)) then  
+               if (meltb > algal_vel*dt) then             
+
+                  call regrid_stationary &
                                 (initcons_stationary,    hbri_old,    &
                                  hbri,                   dt,          &
                                  ntrcr,                               &
                                  nblyr,                  top_conc,    &
                                  i_grid,                 flux_bio(mm),&
                                  l_stop,                 stop_label,  &
-                                 meltb)
+                                 meltb,                  congel)       
+
+               endif
             endif
             if (l_stop) return
 
@@ -1150,11 +1242,10 @@
             enddo
             trcrn(nt_zbgc_frac+mm-1) = zbgc_frac_init(mm)
             if (sum_tot > c0 .and. mobile(mm) > c0) trcrn(nt_zbgc_frac+mm-1) = sum_new/sum_tot
-
+	    
             if (abs(sum_new-sum_old) > accuracy*sum_old .or. &
                 minval(biocons(:)) < c0  .or. minval(initcons_stationary(:)) < c0 &
                 .or. l_stop) then
-
                 write(warning,*)'zbgc FCT tracer solution failed,nn', nn
                 call add_warning(warning)
                 write(warning,*)'sum_new,sum_old:',sum_new,sum_old
@@ -1188,10 +1279,12 @@
             endif
             if (l_stop) return
 
-         else
+         else              
+  
             Call thin_ice_flux(hbri,hbri_old,iphin_N, biomat_cons(:,mm), &
-                               flux_bio(mm),zbgc_snow(mm),zbgc_atm(mm),    &
+                               flux_bio(mm),source(mm), &
                                i_grid, dt, nblyr,ocean_bio(mm))
+
          endif ! thin or not
 
          do k = 1,nblyr+1 
@@ -1224,8 +1317,8 @@
     
       do m = 1,nbtrcr
          do k = 1,nblyr+1                  ! back to bulk quantity
-            bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k)*hbri
-                       
+            bio_tmp = (biomat_brine(k,m) + react(k,m))*iphin_N(k) 
+                     
             if (.not. conserve_N(k)) then  
                 write(warning, *) 'N in algal_dyn not conserved'
                 call add_warning(warning)
@@ -1289,8 +1382,7 @@
                 call add_warning(warning)
                 return
             endif
-
-            trcrn(bio_index(m)+k-1) = max(c0, bio_tmp/hbri)
+            trcrn(bio_index(m)+k-1) = max(c0, bio_tmp)
             if (ocean_bio(m) .le. c0 .and. flux_bio(m) < c0) then
                 if (flux_bio(m) < -1.0e-12_dbl_kind) then
                   write(warning, *) 'no ocean_bio but flux_bio < c0'
@@ -2056,7 +2148,7 @@
 ! authors     Nicole Jeffery, LANL
 
       subroutine thin_ice_flux (hin, hin_old, phin, Cin, flux_o_tot, &
-                                zbgc_snow, zbgc_atm, i_grid,dt, nblyr, &
+                                source, i_grid,dt, nblyr, &
                                 ocean_bio) 
 
       use ice_constants_colpkg, only: c1, p5, c0
@@ -2074,8 +2166,7 @@
          hin_old   , &     ! brine thickness (m) 
          hin       , &     ! new brine thickness (m)
          dt        , &     ! time step
-         zbgc_atm  , &     ! atmospheric flux (mmol/m^3*h)
-         zbgc_snow , &     ! snow flux (mmol/m^3*h)
+         source    , &     ! atm, ocean, dust flux (mmol/m^2)
          ocean_bio         ! ocean tracer concentration (mmol/m^3)
 
       real (kind=dbl_kind), intent(inout) :: &
@@ -2102,7 +2193,7 @@
      dC = c0
      sum_bio = c0
      dh = hin-hin_old
-
+ 
      if (dh .le. c0) then  ! keep the brine concentration fixed
        sum_bio = (Cin(1)+Cin(nblyr+1))/hin_old*zspace*p5
        Cin(1) = Cin(1)/hin_old*hin 
@@ -2113,12 +2204,12 @@
        enddo
      else
        dC = dh*ocean_bio
-       do k = 1, nblyr
+       do k = 1, nblyr+1
          Cin(k) = Cin(k) + dC
        enddo
      endif
-        
-     flux_o_tot = flux_o_tot - dh*sum_bio/dt - dC/dt + zbgc_atm/dt + zbgc_snow/dt
+     
+     flux_o_tot = - dh*sum_bio/dt - dC/dt + source/dt 
 
      end subroutine thin_ice_flux
 
@@ -2137,7 +2228,7 @@
                                       atm_add, bphin_N,           &
                                       C_top, C_bot, Qbot, Qtop,   &
                                       Sink_bot, Sink_top,         &
-                                      D_sbdiag, D_spdiag, Ml)
+                                      D_sbdiag, D_spdiag, ML)
 
        use ice_constants_colpkg, only: c1, c0, p5, c2, puny
        use ice_colpkg_shared, only: grid_o
@@ -2323,8 +2414,8 @@
 
      spdiag = -dt * (D_spdiag + K_spdiag + S_spdiag)
      sbdiag = -dt * (D_sbdiag + K_sbdiag + S_sbdiag)
-     diag = Ml - dt *  (D_diag + K_diag + S_diag)
-     rhs = Ml * C_in + dt * Q_top + dt* Q_bot 
+     diag = ML - dt *  (D_diag + K_diag + S_diag)
+     rhs = ML * C_in + dt * Q_top + dt* Q_bot 
       
      end subroutine compute_FCT_matrix
 
@@ -2517,7 +2608,8 @@
       subroutine check_conservation_FCT &
                                      (C_init, C_new, C_low, S_top, &
                                       S_bot, L_bot, L_top, dt,     &
-                                      fluxbio, l_stop, nblyr)
+                                      fluxbio, l_stop, nblyr, &
+                                      source) 
 
       use ice_constants_colpkg, only: p5, c1, c4, c0
 
@@ -2534,9 +2626,10 @@
       real (kind=dbl_kind),  intent(in) :: &
          S_top         , & ! surface flux into ice (mmol/m^2/s)
          S_bot         , & ! bottom flux into ice (mmol/m^2/s)
-         L_bot         , & !remaining  bottom flux into ice (mmol/m^2/s)
-         L_top         , & !remaining  top  flux into ice (mmol/m^2/s)
-         dt         
+         L_bot         , & ! remaining  bottom flux into ice (mmol/m^2/s)
+         L_top         , & ! remaining  top  flux into ice (mmol/m^2/s)
+         dt            , & 
+         source            ! nutrient source from snow and atmosphere (mmol/m^2)
 
       real (kind=dbl_kind), intent(inout) :: &
          fluxbio            ! (mmol/m^2/s)  positive down (into the ocean)
@@ -2566,7 +2659,6 @@
      !  Ocean flux: positive into the ocean
      !-------------------------------------    
          C_init_tot = (C_init(1) + C_init(nblyr+1))*zspace*p5
-         
          C_new_tot = (C_new(1) + C_new(nblyr+1))*zspace*p5
          C_low(1) = C_new(1)
          C_low(nblyr+1) = C_new(nblyr+1)
@@ -2578,8 +2670,8 @@
          enddo
 
          accuracy = 1.0e-14_dbl_kind*max(c1, C_init_tot, C_new_tot)  
-         fluxbio = fluxbio - S_bot- L_bot*C_new(nblyr+1) !-L_top*C_new(1) 
-         diff_dt =C_new_tot - C_init_tot - (S_top+S_bot+ L_bot*C_new(nblyr+1)+L_top*C_new(1))*dt
+         fluxbio = (C_init_tot - C_new_tot + source)/dt
+         diff_dt =C_new_tot - C_init_tot - (S_top+S_bot+L_bot*C_new(nblyr+1)+L_top*C_new(1))*dt
 
          if (minval(C_low) < c0) then 
            write(warning,*) 'Positivity of zbgc low order solution failed: C_low:',C_low
@@ -2608,6 +2700,55 @@
          
      end subroutine check_conservation_FCT
 
+!=======================================================================
+
+! For each grid cell, sum field over all ice and snow layers
+!
+! author: Nicole Jeffery, LANL
+
+      subroutine bgc_column_sum (nblyr, nslyr, hsnow, hbrine, xin, xout)
+
+      use ice_colpkg_shared, only: hs_ssl 
+      use ice_constants_colpkg, only: p5, c1, c0
+
+      integer (kind=int_kind), intent(in) :: &
+         nblyr, &         ! number of ice layers
+         nslyr            ! number of snow layers
+
+      real (kind=dbl_kind), dimension(nblyr+3), intent(in) :: &
+         xin              ! input field
+
+      real (kind=dbl_kind), intent(in) :: &
+         hsnow, &         ! snow thickness
+         hbrine           ! brine height 
+
+      real (kind=dbl_kind), intent(out) :: &
+         xout             ! output field
+
+      ! local variables
+
+      real (kind=dbl_kind) :: &
+         dzssl, &        ! snow surface layer (m)
+         dzint, &        ! snow interior depth (m)
+         hslyr, &        ! snow layer thickness (m)
+         zspace          ! brine layer thickness/hbrine
+
+      integer (kind=int_kind) :: &
+         n                ! category/layer index
+
+      hslyr      = hsnow/real(nslyr,kind=dbl_kind)
+      dzssl      = min(hslyr*p5, hs_ssl)
+      dzint      = max(c0,hsnow - dzssl)
+      zspace     = c1/real(nblyr,kind=dbl_kind)  
+
+      xout = c0
+      xout = (xin(1) + xin(nblyr+1))*hbrine*p5*zspace
+      do n = 2, nblyr
+         xout = xout + xin(n)*zspace*hbrine
+      enddo                 ! n
+      xout = xout + dzssl*xin(nblyr+2) + dzint*xin(nblyr+3)
+
+      end subroutine bgc_column_sum
 
 !=======================================================================
 

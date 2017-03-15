@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_shortwave.F90 1178 2017-03-08 19:24:07Z eclare $
+!  SVN:$Id: ice_shortwave.F90 1175 2017-03-02 19:53:26Z akt $
 !=======================================================================
 !
 ! The albedo and absorbed/transmitted flux parameterizations for
@@ -2370,7 +2370,7 @@
 
 
             ! aerosol in snow
-             if (tr_zaero) then 
+             if (tr_zaero .and. dEdd_algae) then 
                do k = 0,nslyr
                   gzaer(ns,k) = gzaer(ns,k)/(wzaer(ns,k)+puny)
                   wzaer(ns,k) = wzaer(ns,k)/(tzaer(ns,k)+puny)
@@ -2549,7 +2549,7 @@
             w0(k)  = (sig/(sig+kabs))
             g(k)   = gi_int(ns)
             ! aerosol in sea ice
-            if (tr_zaero) then
+            if (tr_zaero .and. dEdd_algae) then
                do k = kii, klev                  
                   gzaer(ns,k) = gzaer(ns,k)/(wzaer(ns,k)+puny)
                   wzaer(ns,k) = wzaer(ns,k)/(tzaer(ns,k)+puny)

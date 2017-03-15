@@ -467,7 +467,9 @@
                                 dhS_top,    dhS_bottom,  &
                                 dh_top_chl, dh_bot_chl,  &
                                 kperm,      bphi_min,    &
-                                darcy_V, darcy_V_chl, bphin)
+                                darcy_V, darcy_V_chl,    &
+                                bphin,      aice0,       &
+                                dh_direct)
 
       use ice_colpkg_shared, only: rhosi
 
@@ -486,7 +488,8 @@
          kperm,       & ! avg ice permeability 
          bphin,       & ! upper brine porosity  
          snoice,      & ! snoice change (m)
-         dhS_bottom     ! change in bottom hbr initially before darcy flow
+         dhS_bottom,  & ! change in bottom hbr initially before darcy flow
+         aice0          ! open water area fraction
 
       real (kind=dbl_kind), intent(inout):: &
          darcy_V    , & ! Darcy velocity: m/s
@@ -498,6 +501,9 @@
          fbri       , & ! brine height ratio tracer (hbr/hin) 
          bphi_min       ! surface porosity   
 
+      real (kind=dbl_kind), intent(out):: &
+         dh_direct      ! surface flooding or runoff (m)
+ 
       ! local variables
 
       real (kind=dbl_kind) :: &  
@@ -507,7 +513,9 @@
          dhbr       , & ! change in brine surface
          h_ocn      , & ! new ocean surface from ice bottom (m)
          darcy_coeff, & ! magnitude of the Darcy velocity/hbrocn (1/s)
-         hbrocn_new     ! hbrocn after flushing
+         hbrocn_new , & ! hbrocn after flushing
+         dhflood    , & ! surface flooding by ocean
+         dhrunoff       ! direct runoff to ocean
 
       real (kind=dbl_kind), parameter :: &
          dh_min = p001  ! brine remains within dh_min of sea level
@@ -531,19 +539,27 @@
 
             if (hbrocn > c0 .AND. hbr > thinS ) then 
                bphi_min   = bphin  
-               hbrocn_new = hbrocn*exp(-darcy_coeff/bphi_min*dt)
-               hbr = max(hbrmin, h_ocn + hbrocn_new)    
-            elseif (hbrocn < c0 .AND. hbr > thinS) then
-               if (hbr < hin .OR. hsn <= c0 .OR. phi_snow > c1) bphi_min = bphin
+               dhrunoff  = -dhS_top*aice0
+               hbrocn    = max(c0,hbrocn - dhrunoff)
                hbrocn_new = hbrocn*exp(-darcy_coeff/bphi_min*dt)
                hbr = max(hbrmin, h_ocn + hbrocn_new)
+               hbrocn_new = hbr-h_ocn
+               darcy_V = -SIGN((hbrocn-hbrocn_new)/dt*bphi_min, hbrocn)
+               darcy_V_chl= darcy_V 
+               dhS_top    = dhS_top - darcy_V*dt/bphi_min + dhrunoff
+               dh_top_chl = dh_top_chl - darcy_V_chl*dt/bphi_min + dhrunoff
+               dh_direct  = dhrunoff
+            elseif (hbrocn < c0 .AND. hbr > thinS) then
+               hbrocn_new = hbrocn*exp(-darcy_coeff/bphi_min*dt)
+               dhflood  = max(c0,hbrocn_new - hbrocn)*aice0               
+               hbr = max(hbrmin, h_ocn + hbrocn_new)
+               darcy_V    = -SIGN((hbrocn-hbrocn_new + dhflood)/dt*bphi_min, hbrocn)
+               darcy_V_chl= darcy_V 
+               dhS_top    = dhS_top - darcy_V*dt/bphi_min - dhflood
+               dh_top_chl = dh_top_chl - darcy_V_chl*dt/bphi_min - dhflood
+               dh_direct  = -dhflood
             endif
-
-            hbrocn_new = hbr - h_ocn
-            darcy_V    = -SIGN((hbrocn-hbrocn_new)/dt*bphi_min, hbrocn)
-            darcy_V_chl= darcy_V 
-            dhS_top    = dhS_top - darcy_V*dt/bphi_min 
-            dh_top_chl = dh_top_chl - darcy_V_chl*dt/bphi_min
+            
             dh_bot_chl = dhS_bottom 
   
          else    ! very thin brine height 
