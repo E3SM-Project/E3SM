@@ -1478,9 +1478,7 @@ contains
 
     seq_comm_getnthreads = -1
 #ifdef _OPENMP
-!$OMP PARALLEL
-    seq_comm_getnthreads = omp_get_num_threads()
-!$OMP END PARALLEL
+    seq_comm_getnthreads = omp_get_max_threads()
 #endif
 
   end function seq_comm_getnthreads
