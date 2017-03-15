@@ -530,7 +530,7 @@ class Case(object):
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None, ninst=1, test=False,
-                  walltime=None, queue=None, output_root=None, run_unsupported=False):
+                  walltime=None, queue=None, output_root=None, run_unsupported=False, answer=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -752,7 +752,11 @@ class Case(object):
             logging.debug("wdir is %s"%wdir)
             if os.path.exists(wdir):
                 expect(not test, "Directory %s already exists, aborting test"% wdir)
-                response = raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
+                if answer is None:
+                    response = raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
+                else:
+                    response = answer
+
                 if response.startswith("r"):
                     shutil.rmtree(wdir)
                 else:

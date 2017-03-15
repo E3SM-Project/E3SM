@@ -114,6 +114,10 @@ OR
     parser.add_argument("-q", "--queue", default=None,
                         help="Force batch system to use a certain queue")
 
+    parser.add_argument("-a", "--answer", choices=("a", "r", "u"), default=None,
+                        help="Pre-answer what to do pre-existing bld/exe dirs. Valid answers are (a)bort (r)eplace or (u)se existing."
+                        "This can be useful if you need to run create_newcase non-iteractively.")
+
     args = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(args)
@@ -148,7 +152,7 @@ OR
         args.mpilib, args.project, args.pecount, \
         args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.walltime, args.queue, args.output_root, run_unsupported
+        args.walltime, args.queue, args.output_root, run_unsupported, args.answer
 
 ###############################################################################
 def _main_func(description):
@@ -159,7 +163,7 @@ def _main_func(description):
         mpilib, project, pecount,  \
         user_mods_dir, user_compset, pesfile, \
         user_grid, gridfile, srcroot, test, ninst, walltime, queue, \
-        output_root, run_unsupported = parse_command_line(sys.argv, cimeroot, description)
+        output_root, run_unsupported, answer = parse_command_line(sys.argv, cimeroot, description)
 
     caseroot = os.path.abspath(caseroot)
 
@@ -180,7 +184,7 @@ def _main_func(description):
                        user_compset=user_compset, pesfile=pesfile,
                        user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
                        walltime=walltime, queue=queue, output_root=output_root,
-                       run_unsupported=run_unsupported)
+                       run_unsupported=run_unsupported, answer=answer)
 
         case.create_caseroot()
 
