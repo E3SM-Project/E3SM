@@ -799,7 +799,7 @@ def format_time(time_format, input_format, input_time):
     for field in input_fields[1:]:
         # Find all of the digits at the start of the string
         spec = field[0]
-        value_re = re.match('\d*', input_time)
+        value_re = re.match(r'\d*', input_time)
         expect(value_re is not None,
                "Failed to parse the input time for the '%s' specifier, expected an integer"
                % spec)
