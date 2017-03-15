@@ -2,7 +2,6 @@
 Interface to the env_batch.xml file.  This class inherits from EnvBase
 """
 import stat
-import time
 import re
 import math
 from CIME.XML.standard_module_setup import *
