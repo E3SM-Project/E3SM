@@ -139,7 +139,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / dwav_nml / &
-        wav_in, decomp, restfilm, restfils
+         decomp, restfilm, restfils
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dwav_comp_init) ',8a)"
@@ -205,7 +205,6 @@ CONTAINS
     !write(logunit,F00)' dwav_readnml...'
 
     filename = "dwav_in"//trim(inst_suffix)
-    wav_in = "unset"
     decomp = "1d"
     restfilm = trim(nullstr)
     restfils = trim(nullstr)
@@ -224,7 +223,6 @@ CONTAINS
        write(logunit,F00)' restfilm = ',trim(restfilm)
        write(logunit,F00)' restfils = ',trim(restfils)
     endif
-    call shr_mpi_bcast(wav_in,mpicom,'wav_in')
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
@@ -237,7 +235,7 @@ CONTAINS
     !----------------------------------------------------------------------------
     !write(logunit,F00)' read dshr nml...'
 
-    call shr_strdata_readnml(SDWAV,trim(wav_in),mpicom=mpicom)
+    call shr_strdata_readnml(SDWAV,trim(filename),mpicom=mpicom)
 
     !----------------------------------------------------------------------------
     ! Validate mode

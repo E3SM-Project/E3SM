@@ -142,7 +142,7 @@ module piolib_mod
 !! @defgroup PIO_initdecomp PIO_initdecomp
 !! @brief PIO_initdecomp is an overload interface the models decomposition to pio.
 !! @details initdecomp_1dof_bin_i8, initdecomp_1dof_nf_i4, initdecomp_2dof_bin_i4,
-!! and initdecomp_2dof_nf_i4 are all depreciated, but supported for backwards
+!! and initdecomp_2dof_nf_i4 are all deprecated, but supported for backwards
 !! compatibility.
 !<
   interface PIO_initdecomp

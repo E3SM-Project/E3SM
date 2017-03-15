@@ -19,6 +19,7 @@ my $CAM_DYCORE		= `./xmlquery  CAM_DYCORE		-value`;
 my $CAM_TARGET		= `./xmlquery  CAM_TARGET		-value`;
 my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
 my $CCSM_CO2_PPMV	= `./xmlquery  CCSM_CO2_PPMV		-value`;
+$CCSM_CO2_PPMV          = sprintf("%f", $CCSM_CO2_PPMV); # for floating point notation
 my $SRCROOT		= `./xmlquery  SRCROOT			-value`;
 my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE		-value`;
 my $COMP_OCN		= `./xmlquery  COMP_OCN			-value`;

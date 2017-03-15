@@ -2,4 +2,4 @@
 
 3) Determine what tests to run by setting namelist values in input.nl
 
-4) Use your machine's mpirun to launch "piotest" with the desired number of tasks
+4) Use your machine's mpirun to launch "piotest" with the desired number of tasks 

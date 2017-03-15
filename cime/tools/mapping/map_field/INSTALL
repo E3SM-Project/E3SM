@@ -5,7 +5,7 @@ HOW TO BUILD
 Prior to building, you must make sure $CIMEROOT is set.
 
 (1) $ cd src
-(2) $ $CIMEROOT/tools/configure -mach [machine name]
+(2) $ $CIMEROOT/tools/configure macros-format Makefile
 (3) Bash users:
     $ . .env_mach_specific.sh
     csh users:

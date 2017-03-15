@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "pionfget_mod.F90"
 !>
-!! @file
+!! @file 
 !! @brief Read Routines for non-decomposed NetCDF data.
 !<
 module pionfget_mod
@@ -17,8 +17,8 @@ module pionfget_mod
 !! @defgroup PIO_get_var PIO_get_var
 !! @brief Reads non-decomposed data from a NetCDF file
 !! @details The get_var interface is provided as a simplified interface to
-!!  read variables from a NetCDF format file.   The variable is read on the
-!!  root IO task and broadcast in its entirety to all tasks.
+!!  read variables from a NetCDF format file.   The variable is read on the 
+!!  root IO task and broadcast in its entirety to all tasks.  
 !<
   public :: get_var
   interface get_var
@@ -284,7 +284,7 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-!! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything.
+!! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
@@ -332,7 +332,7 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-!! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything.
+!! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
@@ -379,11 +379,11 @@ CONTAINS
     integer, intent(in) :: varid
     {VTYPE}, intent(out) :: ival
     {VTYPE}  :: aival(1)
-
+    
 
     ierr = PIOc_get_var_{NCTYPE} (File%fh, varid-1, aival)
     ival = aival(1)
-
+       
   end function Get_var_0d_{TYPE}
 
 ! DIMS 1,2,3,4,5
@@ -395,7 +395,7 @@ CONTAINS
     ierr = get_var_text_internal(File%fh, varid, size(ival), ival)
 
   end function get_var_{DIMS}d_text
-
+ 
   integer function get_var_text_internal (ncid,varid, nstrs, ival) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid

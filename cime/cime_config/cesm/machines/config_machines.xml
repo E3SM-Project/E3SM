@@ -39,42 +39,41 @@
  The attributes used to choose the mpirun command are:
 
  mpilib: can either be 'default' the name of an mpi library, or a compiler name so one can choose the mpirun
-         based on the mpi library in use.
+	 based on the mpi library in use.
 
    the 'executable' tag must have arguments required for the chosen mpirun, as well as the executable name.
 
 
 -->
 
-<config_machines>
+<config_machines version="2.0">
 
   <machine MACH="bluewaters">
-    <NODENAME_REGEX>h2o</NODENAME_REGEX>
     <DESC>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>h2o</NODENAME_REGEX>
+    <OS>CNL</OS>
     <COMPILERS>pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>/scratch/sciteam/$USER</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/scratch/sciteam/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/sciteam/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
-    <OS>CNL</OS>
-    <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <GMAKE_J> 8</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>16</PES_PER_NODE>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
-	<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+	<arg name="num_tasks"> -n $TOTALPES</arg>
 	<!-- <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg> -->
-	<arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
-	<arg name="thread_count"> -d {{ thread_count }}</arg>
+	<arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
+	<arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -121,8 +120,8 @@
       <modules>
 	<command name="load">cmake/3.1.3</command>
 	<command name="rm">darshan</command>
-        <command name="use">/sw/modulefiles/CESM</command>
-        <command name="load">CESM-ENV</command>
+	<command name="use">/sw/modulefiles/CESM</command>
+	<command name="load">CESM-ENV</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -132,29 +131,27 @@
 
   <machine MACH="brutus">
     <DESC>Brutus Linux Cluster ETH (pgi(9.0-1)/intel(10.1.018) with openi(1.4.1)/mvapich2(1.4rc2), 16 pes/node, batch system LSF, added by UB</DESC>
+    <OS>LINUX</OS>
     <COMPILERS>pgi,intel</COMPILERS>
     <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
-    <OS>LINUX</OS>
-    <RUNDIR>/cluster/work/uwis/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/cluster/work/uwis/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/cluster/work/uwis/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/cluster/work/uwis/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/cluster/work/uwis/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/`echo $USER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/cluster/work/uwis/ccsm/ccsm_baselines</CCSM_BASELINE>
+    <DOUT_L_MSROOT>$SHELL{echo $USER | tr '[a-z]' '[A-Z]'}/csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/cluster/work/uwis/ccsm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/cluster/work/uwis/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>1</GMAKE_J>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J>1</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>16</PES_PER_NODE>
     <mpirun mpilib="mpich">
       <executable>mpirun</executable>
       <arguments>
 	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
-	<arg name="tasks_per_node"> -ppn {{ tasks_per_node }}</arg>
-	<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+	<arg name="tasks_per_node"> -ppn $PES_PER_NODE</arg>
+	<arg name="num_tasks"> -n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
@@ -197,23 +194,89 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="cheyenne">
+    <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <!-- have not seen any performance benefit in smt -->
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>36</PES_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpiexec_mpt</executable>
+      <arguments>
+	<arg name="labelstdout">-p "%g:"</arg>
+	<arg name="threadplacement"> omplace </arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/7.2.1/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">ncarenv/1.0</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">intel/17.0.1</command>
+	<command name="load">mkl</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">gnu/6.3.0</command>
+      </modules>
+      <modules>
+	<command name="load">mpt/2.15</command>
+	<command name="load">ncarcompilers/0.3.5</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.1.1</command>
+      </modules>
+      <modules mpilib="mpt">
+	<command name="load">netcdf-mpi/4.4.1.1</command>
+	<command name="load">pnetcdf/1.8.0</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="constance">
     <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi</COMPILERS>
     <MPILIBS>mvapich2,openmpi,intelmpi,mvapich</MPILIBS>
-    <RUNDIR>/pic/scratch/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/pic/scratch/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/pic/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/pic/scratch/$USER/cases/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/pic/scratch/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/people/tcraig/bin/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>24</PES_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
@@ -223,30 +286,30 @@
     <mpirun mpilib="mvapich2">
       <executable>srun</executable>
       <arguments>
-        <arg name="mpi">--mpi=none</arg>
-        <arg name="num_tasks">--ntasks={{ num_tasks }}</arg>
-        <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
-        <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+	<arg name="mpi">--mpi=none</arg>
+	<arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	<arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
+	<arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mvapich">
       <executable>srun</executable>
       <arguments>
-        <arg name="num_tasks">--ntasks={{ num_tasks }}</arg>
-        <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
-        <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+	<arg name="num_tasks">--ntasks=$TOTALPES</arg>
+	<arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
+	<arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="intelmpi">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="num_tasks">-n {{ num_tasks }}</arg>
+	<arg name="num_tasks">-n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="num_tasks">-n {{ num_tasks }}</arg>
+	<arg name="num_tasks">-n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -297,32 +360,31 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="corip1">
+  <machine MACH="cori-haswell">
+    <!-- NODENAME_REGEX makes haswell the default machine for cori -->
+    <!-- to make knl the default comment this line and uncomment the one in cori-knl -->
     <DESC>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is Slurm</DESC>
     <NODENAME_REGEX>cori</NODENAME_REGEX>
+    <OS>CNL</OS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.corip1/cprnc</CCSM_CPRNC>
-    <OS>CNL</OS>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>32</PES_PER_NODE>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
 	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
-	<arg name="thread_count" > -c {{ thread_count }}</arg>
+	<arg name="num_tasks" > -n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -356,7 +418,109 @@
 
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/16.0.3.210</command>
+	<command name="switch">intel intel/17.0.1.132</command>
+	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" >
+	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" >
+	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpiuni-O</command>
+      </modules>
+
+      <modules compiler="cray">
+	<command name="load">PrgEnv-cray</command>
+	<command name="switch">cce cce/8.5.4</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">PrgEnv-gnu</command>
+	<command name="switch">gcc gcc/6.2.0</command>
+      </modules>
+      <modules>
+	<command name="load">cray-memkind</command>
+	<command name="load">papi/5.4.3.2</command>
+	<command name="swap">craype craype/2.5.7</command>
+      </modules>
+      <modules>
+	<command name="switch">cray-libsci/16.09.1</command>
+      </modules>
+      <modules>
+	<command name="load">cray-mpich/7.4.4</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+	<command name="load">cray-hdf5/1.10.0</command>
+	<command name="load">cray-netcdf/4.4.1</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+	<command name="load">cray-hdf5-parallel/1.8.16</command>
+	<command name="load">cray-parallel-netcdf/1.7.0</command>
+      </modules>
+      <modules>
+	<command name="load">cmake/3.5.2</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+    </environment_variables>
+  </machine>
+  <machine MACH="cori-knl">
+    <!-- NODENAME_REGEX makes haswell the default machine for cori -->
+    <!-- to make knl the default comment this line and uncomment the one in cori-knl -->
+    <!-- <NODENAME_REGEX>cori</NODENAME_REGEX> -->
+    <DESC>NERSC XC* KNL, os is CNL, 68 pes/node, batch system is Slurm</DESC>
+    <OS>CNL</OS>
+    <COMPILERS>intel,gnu,cray</COMPILERS>
+    <MPILIBS>mpt,mpi-serial</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.corip1/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="label"> --label</arg>
+	<arg name="num_tasks" > -n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="rm">craype-mic-knl</command>
+	<command name="rm">craype-haswell</command>
+	<command name="rm">PrgEnv-intel</command>
+	<command name="rm">PrgEnv-cray</command>
+	<command name="rm">PrgEnv-gnu</command>
+	<command name="rm">intel</command>
+	<command name="rm">cce</command>
+	<command name="rm">cray-parallel-netcdf</command>
+	<command name="rm">cray-parallel-hdf5</command>
+	<command name="rm">pmi</command>
+	<command name="rm">cray-libsci</command>
+	<command name="rm">cray-mpich2</command>
+	<command name="rm">cray-mpich</command>
+	<command name="rm">cray-netcdf</command>
+	<command name="rm">cray-hdf5</command>
+	<command name="rm">cray-netcdf-hdf5parallel</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">PrgEnv-intel</command>
+	<command name="switch">intel intel/17.0.1.132</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
       </modules>
@@ -364,38 +528,40 @@
 	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" >
-        <command name="load">esmf/6.3.0rp1-defio-intel2016-mpiuni-O</command>
+	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpiuni-O</command>
       </modules>
 
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.5.1</command>
+	<command name="switch">cce cce/8.5.4</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/5.3.0</command>
+	<command name="switch">gcc gcc/6.2.0</command>
       </modules>
       <modules>
+	<command name="load">cray-memkind</command>
+	<command name="load">craype-mic-knl</command>
 	<command name="load">papi/5.4.3.2</command>
-	<command name="swap">craype craype/2.5.5</command>
+	<command name="swap">craype craype/2.5.7</command>
       </modules>
       <modules compiler="!intel">
-	<command name="switch">cray-libsci/16.06.1</command>
+	<command name="switch">cray-libsci/16.09.1</command>
       </modules>
       <modules>
-	<command name="load">cray-mpich/7.4.0</command>
+	<command name="load">cray-mpich/7.4.4</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.8.16</command>
-	<command name="load">cray-netcdf/4.4.0</command>
+	<command name="load">cray-hdf5/1.10.0</command>
+	<command name="load">cray-netcdf/4.4.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
 	<command name="load">cray-hdf5-parallel/1.8.16</command>
 	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
-	<command name="load">cmake/3.3.2</command>
+	<command name="load">cmake/3.5.2</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -403,30 +569,116 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="theta">
+    <DESC>ALCF Cray XC* KNL, os is CNL, 64 pes/node, batch system is cobalt</DESC>
+    <NODENAME_REGEX>theta.*</NODENAME_REGEX>
+    <OS>CNL</OS>
+    <COMPILERS>intel,gnu,cray</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <PROJECT>EarlyPerf_theta</PROJECT>
+    <CIME_OUTPUT_ROOT>/projects/EarlyPerf_theta/cesm/scratch/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/projects/EarlyPerf_theta/cesm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/projects/EarlyPerf_theta/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>/projects/EarlyPerf_theta/cesm/csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/projects/EarlyPerf_theta/cesm/baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/projects/EarlyPerf_theta/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>aprun</executable>
+      <arguments>
+	<arg name="num_tasks" >-n $TOTALPES</arg>
+	<arg name="tasks_per_node" >-N $PES_PER_NODE</arg>
+	<arg name="thread_count">--cc depth -d $OMP_NUM_THREADS</arg>
+	<arg name="env_omp_stacksize">-e OMP_STACKSIZE=64M</arg>
+	<arg name="env_thread_count">-e OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="rm">PrgEnv-intel</command>
+	<command name="rm">PrgEnv-cray</command>
+	<command name="rm">PrgEnv-gnu</command>
+	<command name="rm">intel</command>
+	<command name="rm">cce</command>
+	<command name="rm">cray-parallel-netcdf</command>
+	<command name="rm">cray-hdf5-parallel</command>
+	<command name="rm">pmi</command>
+	<command name="rm">cray-libsci</command>
+	<command name="rm">cray-mpich</command>
+	<command name="rm">cray-netcdf</command>
+	<command name="rm">cray-hdf5</command>
+	<command name="rm">cray-netcdf-hdf5parallel</command>
+	<command name="rm">craype-mic-knl</command>
+	<command name="rm">craype</command>
+      </modules>
+
+      <modules compiler="intel">
+	<command name="load">PrgEnv-intel/6.0.3</command>
+	<command name="switch">intel intel/17.0.0.098</command>
+	<command name="rm">cray-libsci</command>
+      </modules>
+
+      <modules compiler="cray">
+	<command name="load">PrgEnv-cray/6.0.3</command>
+	<command name="switch">cce cce/8.5.4</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">PrgEnv-gnu/6.0.3</command>
+	<command name="switch">gcc gcc/6.2.0</command>
+      </modules>
+      <modules>
+	<command name="load">papi/5.4.3.3</command>
+	<command name="swap">craype craype/2.5.7</command>
+      </modules>
+      <modules compiler="!intel">
+	<command name="switch">cray-libsci/16.09.1</command>
+      </modules>
+      <modules>
+	<command name="load">cray-mpich/7.4.4</command>
+      </modules>
+      <modules mpilib="mpt">
+	<command name="load">cray-netcdf-hdf5parallel/4.4.1</command>
+	<command name="load">cray-hdf5-parallel/1.10.0</command>
+	<command name="load">cray-parallel-netcdf/1.7.0</command>
+      </modules>
+    </module_system>
+  </machine>
 
   <machine MACH="eastwind">
     <DESC>PNL IBM Xeon cluster, os is Linux (pgi), batch system is SLURM</DESC>
     <OS>LINUX</OS>
     <COMPILERS>pgi,intel</COMPILERS>
     <MPILIBS>mvapich2,mvapich</MPILIBS>
-    <RUNDIR>/lustre/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/lustre/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/lustre/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/lustre/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/lustre/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/lustre/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>12</PES_PER_NODE>
     <mpirun mpilib="mvapich">
       <executable>srun</executable>
       <arguments>
-	<arg name="num_tasks"> --ntasks={{ num_tasks }}</arg>
+	<arg name="num_tasks"> --ntasks=$TOTALPES</arg>
 	<arg name="cpubind"> --cpu_bind=sockets</arg>
 	<arg name="cpubind"> --cpu_bind=verbose</arg>
 	<arg name="killonbadexit"> --kill-on-bad-exit</arg>
@@ -436,7 +688,7 @@
       <executable>srun</executable>
       <arguments>
 	<arg name="mpinone"> --mpi=none</arg>
-	<arg name="num_tasks"> --ntasks={{ num_tasks }}</arg>
+	<arg name="num_tasks"> --ntasks=$TOTALPES</arg>
 	<arg name="cpubind"> --cpu_bind=sockets</arg>
 	<arg name="cpubind"> --cpu_bind=verbose</arg>
 	<arg name="killonbadexit"> --kill-on-bad-exit</arg>
@@ -451,9 +703,9 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-        <command name="load">perl/5.20.7</command>
-        <command name="load">cmake/3.0.0</command>
-        <command name="load">pgi/15.5</command>
+	<command name="load">perl/5.20.7</command>
+	<command name="load">cmake/3.0.0</command>
+	<command name="load">pgi/15.5</command>
 	<command name="load">mpi/mvapich2/1.5.1p1/pgi11.3</command>
 	<command name="load">netcdf/4.1.2/pgi</command>
       </modules>
@@ -465,30 +717,28 @@
 
   <machine MACH="edison">
     <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
-    <COMPILERS>intel,gnu,cray</COMPILERS>
     <NODENAME_REGEX>edison</NODENAME_REGEX>
+    <OS>CNL</OS>
+    <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{CSCRATCH}</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>$ENV{CSCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/project/projectdirs/ccsm1/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
-    <OS>CNL</OS>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>24</PES_PER_NODE>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
 	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
-     	<arg name="thread_count" > -c {{ thread_count }}</arg>
+	<arg name="num_tasks" > -n $TOTALPES</arg>
+     	<arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -522,7 +772,7 @@
 
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/16.0.0.109</command>
+	<command name="switch">intel intel/16.0.2.181</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
       </modules>
@@ -530,7 +780,7 @@
 	<command name="load">esmf/6.3.0rp1-defio-intel15.0-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" >
-        <command name="load">esmf/6.3.0rp1-defio-intel15.0-mpiuni-O</command>
+	<command name="load">esmf/6.3.0rp1-defio-intel15.0-mpiuni-O</command>
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
@@ -538,19 +788,18 @@
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/5.2.0</command>
+	<command name="switch">gcc gcc/6.1.0</command>
       </modules>
       <modules>
-	<command name="load">papi/5.4.1.3</command>
-	<command name="swap">craype craype/2.5.1</command>
+	<command name="load">papi/5.4.3.2</command>
+	<command name="swap">craype craype/2.5.5</command>
 	<command name="load">craype-ivybridge</command>
       </modules>
       <modules compiler="!intel">
-	<command name="switch">cray-libsci/13.3.0</command>
+	<command name="switch">cray-libsci/16.07.1</command>
       </modules>
       <modules>
-	<command name="load">cray-mpich/7.3.1</command>
-<!--	<command name="load">pmi/5.0.6-1.0000.10439.140.2.ari</command> -->
+	<command name="load">cray-mpich/7.4.1</command>
       </modules>
       <modules mpilib="mpi-serial">
 	<command name="load">cray-hdf5/1.8.16</command>
@@ -576,30 +825,27 @@
   <machine MACH="hobart">
     <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
     <NODENAME_REGEX>^hob.*</NODENAME_REGEX>
+    <OS>LINUX</OS>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
     <MPILIBS>mvapich2</MPILIBS>
-    <RUNDIR>/scratch/cluster/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/scratch/cluster/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
-    <OBJROOT>$EXEROOT</OBJROOT>
-    <INCROOT>$EXEROOT/lib/include</INCROOT>
+    <CIME_OUTPUT_ROOT>/scratch/cluster/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/`echo $USER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/fs/cgd/csm/ccsm_baselines</CCSM_BASELINE>
+    <DOUT_L_MSROOT>$SHELL{echo $USER | tr '[a-z]' '[A-Z]'}/csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/fs/cgd/csm/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_hobart/cprnc</CCSM_CPRNC>
-    <OS>LINUX</OS>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <GMAKE>gmake --output-sync</GMAKE>
     <GMAKE_J>4</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY> cseg </SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>24</PES_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpiexec</executable>
       <arguments>
 	<arg name="machine_file">--machinefile $ENV{PBS_NODEFILE}</arg>
-	<arg name="num_tasks"> -n {{ num_tasks }} </arg>
+	<arg name="num_tasks"> -n $TOTALPES </arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -624,51 +870,45 @@
 	<command name="load">compiler/pgi/15.1</command>
       </modules>
       <modules  compiler="pgi" mpilib="mvapich2">
-	  <command name="load">  tool/parallel-netcdf/1.7.0/pgi/mvapich2  </command>
+	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
       </modules>
       <modules compiler="nag">
 	<command name="load">compiler/nag/6.1</command>
       </modules>
-<!--      <modules compiler="nag" mpilib="mvapich2">
-	  <command name="load">  tool/parallel-netcdf/1.7.0/nag/mvapich2 </command>
-      </modules> -->
       <modules compiler="gnu">
 	<command name="load">compiler/gnu/4.8.5</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="PATH">$PATH:/usr/local/bin</env>
     </environment_variables>
   </machine>
 
   <machine MACH="gaea">
     <DESC>NOAA XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
+    <OS>CNL</OS>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <RUNDIR>/lustre/fs/scratch/Julio.T.Bacmeister/$CASE/run</RUNDIR>
-    <EXEROOT>/lustre/fs/scratch/Julio.T.Bacmeister/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/lustre/fs/scratch/Julio.T.Bacmeister</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-    <CCSM_BASELINE>UNSET</CCSM_BASELINE>
+    <BASELINE_ROOT>UNSET</BASELINE_ROOT>
     <CCSM_CPRNC>UNSET</CCSM_CPRNC>
-    <OS>CNL</OS>
+    <GMAKE_J> 8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>julio -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J> 8</GMAKE_J>
     <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>24</PES_PER_NODE>
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
 	<arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
+	<arg name="num_tasks" > -n $TOTALPES</arg>
 	<arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-	<arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
-	<arg name="thread_count" > -d {{ thread_count }}</arg>
+	<arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
+	<arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -712,35 +952,100 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="laramie">
+    <DESC>NCAR SGI test platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
+    <NODENAME_REGEX>.*.laramie.ucar.edu</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <CIME_OUTPUT_ROOT>/picnic/scratch/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <!-- have not seen any performance benefit in smt -->
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>36</PES_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpiexec_mpt</executable>
+      <arguments>
+	<arg name="labelstdout">-p "%g:"</arg>
+	<arg name="threadplacement"> omplace </arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/picnic/u/apps/la/opt/lmod/6.5/gnu/4.8.5/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/picnic/u/apps/la/opt/lmod/6.5/gnu/4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/picnic/u/apps/la/opt/lmod/6.5/gnu/4.8.5/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/picnic/u/apps/la/opt/lmod/6.5/gnu/4.8.5/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/picnic/u/apps/la/opt/lmod/6.5/gnu/4.8.5/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/picnic/u/apps/la/opt/lmod/6.5/gnu/4.8.5/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">ncarenv/1.0</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">intel/16.0.3</command>
+	<command name="load">mkl</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">gnu/6.2.0</command>
+      </modules>
+      <modules>
+	<command name="load">mpt/2.15</command>
+	<command name="load">ncarcompilers/0.3.2</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+	<command name="load">netcdf/4.4.1</command>
+      </modules>
+      <modules mpilib="mpt">
+	<command name="load">netcdf-mpi/4.4.1</command>
+	<command name="load">pnetcdf/1.7.x</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
     <NODENAME_REGEX>(melvin|watson)</NODENAME_REGEX>
-    <PROXY>sonproxy.sandia.gov:80</PROXY>
-    <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
+    <PROXY>sonproxy.sandia.gov:80</PROXY>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-    <OBJROOT>$EXEROOT</OBJROOT>
-    <INCROOT>$EXEROOT/lib/include</INCROOT>
+    <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/sems-data-store/ACME/baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>32</GMAKE_J>
+    <TESTS>acme_developer</TESTS>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
-<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
-    <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>32</PES_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -754,36 +1059,93 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">python/2.7.9</command>
-	<command name="load">gcc/5.1.0/openmpi/1.8.7</command>
-	<command name="load">cmake/2.8.12</command>
-	<command name="load">netcdf/4.3.2/gcc/5.1.0/openmpi/1.8.7</command>
+        <command name="load">sems-env</command>
+        <command name="load">sems-git</command>
+	<command name="load">sems-python/2.7.9</command>
+	<command name="load">sems-gcc/5.1.0</command>
+	<command name="load">sems-openmpi/1.8.7</command>
+	<command name="load">sems-cmake/2.8.12</command>
+	<command name="load">sems-netcdf/4.3.2/parallel</command>
       </modules>
     </module_system>
     <environment_variables>
-      <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-      <env name="PNETCDFROOT">$SEMS_NETCDF_ROOT</env>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="sandia-srn-sems">
+    <DESC>Linux workstation at Sandia on SRN with SEMS TPL modules</DESC>
+    <NODENAME_REGEX>(s999964|climate|penn)</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <PROXY>wwwproxy.sandia.gov:80</PROXY>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/sems-data-store/ACME/baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>32</GMAKE_J>
+    <TESTS>acme_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+        <command name="load">sems-env</command>
+        <command name="load">sems-git</command>
+	<command name="load">sems-python/2.7.9</command>
+	<command name="load">sems-gcc/5.1.0</command>
+	<command name="load">sems-openmpi/1.8.7</command>
+	<command name="load">sems-cmake/2.8.12</command>
+	<command name="load">sems-netcdf/4.3.2/parallel</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
   </machine>
 
   <machine MACH="mira">
     <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
     <NODENAME_REGEX>.*.fst.alcf.anl.gov</NODENAME_REGEX>
+    <OS>BGQ</OS>
     <COMPILERS>ibm</COMPILERS>
     <MPILIBS>ibm</MPILIBS>
-    <CESMSCRATCHROOT>/projects/$PROJECT/usr/$ENV{USER}</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/projects/$PROJECT/usr/$ENV{USER}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/projects/$PROJECT/usr/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
+    <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <OS>BGQ</OS>
+    <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
     <SUPPORTED_BY> cseg </SUPPORTED_BY>
-    <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>8</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -798,13 +1160,13 @@
 	<arg name="locargs">--block $COBALT_PARTNAME --envs OMP_WAIT_POLICY=active --envs BG_SMP_FAST_WAKEUP=yes $LOCARGS</arg>
 	<arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	<arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
-	<arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
+	<arg name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
       <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
-      <cmd_path lang="csh">soft</cmd_path>
       <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
+      <cmd_path lang="csh">soft</cmd_path>
       <cmd_path lang="sh">soft</cmd_path>
       <modules>
 	<command name="add">+mpiwrapper-xl</command>
@@ -826,19 +1188,18 @@
     <OS>LINUX</OS>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <RUNDIR>/pic/scratch/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/pic/scratch/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/pic/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/pic/scratch/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/pic/scratch/tcraig/IRESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/pic/scratch/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>32</PES_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
@@ -847,7 +1208,7 @@
       <executable>mpiexec_mpt</executable>
       <arguments>
 	<arg name="mpi">--mpi=none</arg>
-	<arg name="num_tasks">-n={{ num_tasks }}</arg>
+	<arg name="num_tasks">-n=$TOTALPES</arg>
 	<arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
     </mpirun>
@@ -873,30 +1234,29 @@
 
   <machine MACH="pleiades-has">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), 2.5 GHz Haswell Intel Xeon E5-2680v3 processors, 24 pes/node (two 12-core processors) and 128 GB of memory/node, batch system is PBS</DESC>
+    <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>24</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
     </mpirun>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-        <arg name="num_tasks">-n {{ num_tasks }}</arg>
+	<arg name="num_tasks">-n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -927,29 +1287,29 @@
 
   <machine MACH="pleiades-wes">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.93 GHz Westmere processors, 12 pes/node and 24 GB of memory, batch system is PBS</DESC>
+    <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
-    <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>12</PES_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
     </mpirun>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<arg name="num_tasks">-n {{ num_tasks }}</arg>
+	<arg name="num_tasks">-n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -980,30 +1340,29 @@
 
   <machine MACH="pleiades-san">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.6 GHz Sandy Bridge processors, 16 cores/node and 32 GB of memory, batch system is PBS</DESC>
+    <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>16</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
     </mpirun>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-        <arg name="num_tasks">-n {{ num_tasks }}</arg>
+	<arg name="num_tasks">-n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1034,30 +1393,29 @@
 
   <machine MACH="pleiades-ivy">
     <DESC>NASA/AMES Linux Cluster, Linux (ia64), Altix ICE, 2.8 GHz Ivy Bridge processors, 20 cores/node and 3.2 GB of memory per core, batch system is PBS</DESC>
+    <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/nobackup/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/nobackup/fvitt/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>20</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
     </mpirun>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-        <arg name="num_tasks">-n {{ num_tasks }}</arg>
+	<arg name="num_tasks">-n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1088,38 +1446,30 @@
 
   <machine MACH="rosa">
     <DESC>CSCS Cray XE6, os is CNL, 32 pes/node, batch system is SLURM</DESC>
+    <OS>CNL</OS>
     <COMPILERS>pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <RUNDIR>/scratch/rosa/$USER/$CASE/run</RUNDIR>
-    <EXEROOT>/scratch/rosa/$USER/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>/scratch/rosa/$USER</CESMSCRATCHROOT>
+    <CIME_OUTPUT_ROOT>/scratch/rosa/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/project/s433/cesm_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/s433/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/project/s433/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/project/s433/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/project/s433/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/project/s433/cesm_tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
-    <OS>CNL</OS>
+    <GMAKE_J>12</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>edouard.davin -at- env.ethz.ch</SUPPORTED_BY>
-    <GMAKE_J>12</GMAKE_J>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>32</PES_PER_NODE>
     <mpirun mpilib="default">
       <executable>aprun</executable>
       <arguments>
-        <arg name="num_tasks"> -n {{ num_tasks }}</arg>
-        <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
-        <arg name="thread_count"> -d {{ thread_count }}</arg>
+	<arg name="num_tasks"> -n $TOTALPES</arg>
+	<arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
+	<arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
       </arguments>
     </mpirun>
-    <module_system type="module">
-      <init_path lang="perl"></init_path>
-      <init_path lang="csh"></init_path>
-      <init_path lang="sh"></init_path>
-      <cmd_path lang="perl"></cmd_path>
-      <cmd_path lang="csh"></cmd_path>
-      <cmd_path lang="sh"></cmd_path>
-    </module_system>
+    <module_system type="none"/>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
@@ -1129,71 +1479,96 @@
   <machine MACH="skybridge">
     <DESC>SNL clust</DESC>
     <NODENAME_REGEX>skybridge-login</NODENAME_REGEX>
+    <OS>LINUX</OS>
     <PROXY>wwwproxy.sandia.gov:80</PROXY>
-    <TESTS>acme_integration</TESTS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <OS>LINUX</OS>
-    <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
+    <CIME_OUTPUT_ROOT>/gscratch/$USER/acme_scratch/skybridge</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
     <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
-    <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+    <BASELINE_ROOT>/projects/ccsm/ccsm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc_wrap</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>acme_integration</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
-    <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
+    <PES_PER_NODE>16</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
-        <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+	<arg name="num_tasks"> -np $TOTALPES</arg>
+	<arg name="tasks_per_node"> -npernode $PES_PER_NODE</arg>
       </arguments>
     </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">sems-env</command>
+        <command name="load">sems-git</command>
+        <command name="load">sems-python/2.7.9</command>
+        <command name="load">gnu/4.9.2</command>
+        <command name="load">intel/intel-15.0.3.187</command>
+        <command name="load">libraries/intel-mkl-15.0.2.164</command>
+        <command name="load">libraries/intel-mkl-15.0.2.164</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load" >openmpi-intel/1.8</command>
+        <command name="load" >sems-hdf5/1.8.12/parallel</command>
+        <command name="load" >sems-netcdf/4.3.2/parallel</command>
+        <command name="load" >sems-hdf5/1.8.12/base</command>
+        <command name="load" >sems-netcdf/4.3.2/base</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="stampede">
     <DESC>TACC DELL, os is Linux, 16 pes/node, batch system is SLURM</DESC>
-    <OS>LINUX</OS>
     <NODENAME_REGEX>.*stampede</NODENAME_REGEX>
+    <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>impi,mvapich2</MPILIBS>
-    <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
-    <EXEROOT>$SCRATCH/$CASE/bld</EXEROOT>
-    <CESMSCRATCHROOT>$SCRATCH</CESMSCRATCHROOT>
+    <MPILIBS>mvapich2,impi</MPILIBS>
+    <CIME_OUTPUT_ROOT>$SCRATCH</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/scratch/projects/xsede/CESM/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>/scratch/projects/xsede/CESM/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>16</PES_PER_NODE>
 
     <mpirun mpilib="impi">
-      <executable>srun</executable>
-      <arguments>
-	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
-     	<arg name="thread_count" > -c {{ thread_count }}</arg>
-      </arguments>
+      <executable>ibrun</executable>
     </mpirun>
     <mpirun mpilib="mvapich2">
-      <executable>srun</executable>
-      <arguments>
-	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
-     	<arg name="thread_count" > -c {{ thread_count }}</arg>
-      </arguments>
+      <executable>ibrun</executable>
     </mpirun>
     <mpirun mpilib="mpi-serial">
       <executable></executable>
@@ -1210,7 +1585,7 @@
       <modules>
 	<command name="purge"></command>
 	<command name="load">TACC</command>
-	<command name="load">python/2.7.9</command>
+	<command name="load">python/2.7.12</command>
 	<command name="load">intel/15.0.2</command>
 	<command name="load">perl/5.16.2</command>
 	<command name="load">cmake/3.1.0</command>
@@ -1234,6 +1609,7 @@
       <env name="OMP_STACKSIZE">256M</env>
       <env name="NETCDF_PATH">$TACC_NETCDF_DIR</env>
       <env name="PNETCDF_PATH">$TACC_PNETCDF_DIR</env>
+      <env name="PERL5LIB">/scratch/projects/xsede/CESM/perl5/lib/perl5/x86_64-linux-thread-multi:/scratch/projects/xsede/CESM/perl5/lib/perl5</env>
      </environment_variables>
   </machine>
 
@@ -1244,19 +1620,17 @@
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,gnu,intel15</COMPILERS>
     <MPILIBS>mpich2,pempi</MPILIBS>
-    <CESMSCRATCHROOT>/glade/scratch/$USER</CESMSCRATCHROOT>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/ccsm_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>
+    <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>15</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -1289,6 +1663,7 @@
 	<command name="load">gmake/4.1</command>
 	<command name="load">python</command>
 	<command name="load">all-python-libs</command>
+	<command name="load">git</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/15.0.3</command>
@@ -1324,6 +1699,7 @@
       <modules>
 	<command name="load">ncarcompilers/1.0</command>
 	<command name="load">cmake/3.0.2</command>
+	<command name="load">all-python-libs</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -1332,12 +1708,14 @@
       <env name="MP_INFOLEVEL">2</env>
       <env name="MP_SHARED_MEMORY">yes</env>
       <env name="MP_EUILIB">us</env>
-      <env name="MP_MPILIB">$MPILIB</env>
       <env name="MP_STDOUTMODE">unordered</env>
       <env name="MP_RC_USE_LMC">yes</env>
     </environment_variables>
     <environment_variables debug="true">
       <env name="MP_EAGER_LIMIT">0</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="MP_MPILIB">$MPILIB</env>
     </environment_variables>
   </machine>
 <default_run_suffix>
