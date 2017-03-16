@@ -9,10 +9,9 @@ module mpas_timekeeping
 
    use mpas_kind_types
    use mpas_derived_types
-   use mpas_io_units
    use mpas_dmpar
    use mpas_threading
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    use ESMF
    use ESMF_BaseMod
@@ -111,7 +110,7 @@ module mpas_timekeeping
 !        call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_360DAY)
 !#endif
       else
-         write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
+         call mpas_log_write('mpas_timekeeping_init: Invalid calendar type', MPAS_LOG_ERR)
       end if
 
       yearWidth = 4
@@ -146,7 +145,7 @@ module mpas_timekeeping
       yearWidth = yearWidthIn
 
       if (yearWidthIn <= 0) then
-          write(stderrUnit,*) 'ERROR: mpas_set_year_width: yearWidth cannot be less than or equal to zero.' 
+          call mpas_log_write('mpas_set_year_width: yearWidth cannot be less than or equal to zero.', MPAS_LOG_ERR)
           ierr = 1
           return
       end if
@@ -179,7 +178,7 @@ module mpas_timekeeping
             if (present(stopTime)) then
                if (stopTime /= stop_time) then
                   if (present(ierr)) ierr = 1   ! stopTime and runDuration are inconsistent
-                  write(stderrUnit,*) 'ERROR: MPAS_createClock: stopTime and runDuration are inconsistent'
+                  call mpas_log_write('MPAS_createClock: stopTime and runDuration are inconsistent', MPAS_LOG_ERR)
                   return
                end if
             end if
@@ -187,7 +186,7 @@ module mpas_timekeeping
             stop_time = stopTime
          else
             if (present(ierr)) ierr = 1   ! neither stopTime nor runDuration are specified
-            write(stderrUnit,*) 'ERROR: MPAS_createClock: neither stopTime nor runDuration are specified'
+            call mpas_log_write('MPAS_createClock: neither stopTime nor runDuration are specified', MPAS_LOG_ERR)
             return
          end if
 
@@ -489,9 +488,9 @@ module mpas_timekeeping
 
       if ( len_trim(alarmID) > ShortStrKIND ) then
          if ( threadNum == 0 ) then
-            write(stderrUnit, *) 'ERROR: Length of alarmID ''' // trim(alarmID) // ''' is ', len_trim(alarmID), ' which is longer than the allowable length of ', ShortStrKIND
+            call mpas_log_write('Length of alarmID ''' // trim(alarmID) // ''' is $i which is longer than the allowable length of $i', &
+                   MPAS_LOG_CRIT, intArgs=(/len_trim(alarmID), ShortStrKIND/))
          end if
-         call mpas_dmpar_global_abort('ERROR: alarmID length is too long')
       end if
 
       ! Add a new entry to the linked list of alarms for this clock
@@ -504,14 +503,14 @@ module mpas_timekeeping
             alarmPtr => clock % alarmListHead
             do while (associated(alarmPtr % next))
                if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-                  write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
+                  call mpas_log_write('OOPS -- we have a duplicate alarmID' // trim(alarmID), MPAS_LOG_ERR)
                   if (present(ierr)) ierr = 1
                   return
                end if
                alarmPtr => alarmPtr % next
             end do
                if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-                  write(stderrUnit,*) 'OOPS -- we have a duplicate alarmID', trim(alarmID)
+                  call mpas_log_write('OOPS -- we have a duplicate alarmID' // trim(alarmID), MPAS_LOG_ERR)
                   if (present(ierr)) ierr = 1
                   return
                end if
@@ -723,21 +722,21 @@ module mpas_timekeeping
          alarmPtr => clock % alarmListHead
          do while (associated(alarmPtr))
             if (trim(alarmPtr % alarmID) == trim(alarmID)) then
-               write(stderrUnit,*) 'ALARM ', trim(alarmID)
+               call mpas_log_write('ALARM ' // trim(alarmID))
 
-               write(stderrUnit,*) 'isRecurring', alarmPtr % isRecurring
-               
-               write(stderrUnit,*) 'isSet', alarmPtr % isSet
+               call mpas_log_write('isRecurring $l', logicArgs=(/alarmPtr % isRecurring/))
+
+               call mpas_log_write('isSet $l', logicArgs=(/alarmPtr % isSet/))
 
                call mpas_get_time(alarmPtr % ringTime, dateTimeString=printString, ierr=ierr)
-               write(stderrUnit,*) 'ringTime', printString
+               call mpas_log_write('ringTime ' // printString)
 
                call mpas_get_time(alarmPtr % prevRingTime, dateTimeString=printString, ierr=ierr)
-               write(stderrUnit,*) 'prevRingTime', printString
+               call mpas_log_write('prevRingTime ' // printString)
 
                call mpas_get_timeInterval(alarmPtr % ringTimeInterval, timeString=printString, ierr=ierr)
-               write(stderrUnit,*) 'ringTimeInterval', printString
-               
+               call mpas_log_write('ringTimeInterval ' // printString)
+
                exit
             end if
             alarmPtr => alarmPtr % next
@@ -1049,7 +1048,7 @@ module mpas_timekeeping
          else if (size(subStrings) /= 1) then
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid DateTime string', dateTimeString
+            call mpas_log_write('Invalid DateTime string ' // dateTimeString, MPAS_LOG_ERR)
             return
          else
             deallocate(subStrings)
@@ -1072,7 +1071,7 @@ module mpas_timekeeping
             else
                deallocate(subStrings)
                if (present(ierr)) ierr = 1
-               write(stderrUnit,*) 'ERROR: Invalid DateTime string (invalid time substring)', dateTimeString
+               call mpas_log_write('Invalid DateTime string (invalid time substring) ' // dateTimeString, MPAS_LOG_ERR)
                return
             end if
 
@@ -1087,7 +1086,7 @@ module mpas_timekeeping
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid DateTime string', dateTimeString
+            call mpas_log_write('Invalid DateTime string' // dateTimeString, MPAS_LOG_ERR)
             return
          end if
 
@@ -1101,7 +1100,7 @@ module mpas_timekeeping
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid DateTime string (invalid date substring)', dateTimeString
+            call mpas_log_write('Invalid DateTime string (invalid date substring) ' // dateTimeString, MPAS_LOG_ERR)
             return
          end if
 
@@ -1116,13 +1115,13 @@ module mpas_timekeeping
             if (present(MM)) then
                if (MM /= month) then
                   if (present(ierr)) ierr = 1
-                  write(stderrUnit,*) 'ERROR: MPAS_setTime : DoY and MM are inconsistent - using DoY'
+                  call mpas_log_write('MPAS_setTime : DoY and MM are inconsistent - using DoY', MPAS_LOG_WARN)
                end if
             end if
             if (present(DD)) then
                if (DD /= day) then
                   if (present(ierr)) ierr = 1
-                  write(stderrUnit,*) 'ERROR: MPAS_setTime : DoY and DD are inconsistent - using DoY'
+                  call mpas_log_write('MPAS_setTime : DoY and DD are inconsistent - using DoY', MPAS_LOG_WARN)
                end if
             end if
          else
@@ -1130,7 +1129,7 @@ module mpas_timekeeping
                month = MM
             else
                if (present(ierr)) ierr = 1
-               write(stderrUnit,*) 'ERROR: MPAS_setTime : Neither DoY nor MM are specified'
+               call mpas_log_write('MPAS_setTime : Neither DoY nor MM are specified', MPAS_LOG_ERR)
                return
             end if
 
@@ -1138,13 +1137,13 @@ module mpas_timekeeping
                day = DD
             else
                if (present(ierr)) ierr = 1
-               write(stderrUnit,*) 'ERROR: MPAS_setTime : Neither DoY nor DD are specified'
+               call mpas_log_write('MPAS_setTime : Neither DoY nor DD are specified', MPAS_LOG_ERR)
                return
             end if
          end if
 
          if (.not. isValidDate(YYYY,month,day)) then
-            write(stderrUnit,*) 'ERROR: MPAS_setTime : Invalid date'
+            call mpas_log_write('MPAS_setTime : Invalid date', MPAS_LOG_ERR)
             return
          end if
 
@@ -1314,7 +1313,7 @@ module mpas_timekeeping
          else if (size(subStrings) /= 1) then
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
+            call mpas_log_write('Invalid TimeInterval string ' // trim(timeString), MPAS_LOG_ERR)
             return
          else ! no second decimals are present - do nothing here
             deallocate(subStrings)
@@ -1345,7 +1344,7 @@ module mpas_timekeeping
                year = 0
                month = 0
                day = 0
-               !write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
+               !call mpas_log_write('Invalid TimeInterval string ' // trim(timeString), MPAS_LOG_ERR)
             end if
 
             deallocate(subStrings)
@@ -1358,7 +1357,7 @@ module mpas_timekeeping
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid TimeInterval string ', trim(timeString)
+            call mpas_log_write('Invalid TimeInterval string ' // trim(timeString), MPAS_LOG_ERR)
             return
          end if
 
@@ -1382,7 +1381,7 @@ module mpas_timekeeping
          else
             deallocate(subStrings)
             if (present(ierr)) ierr = 1
-            write(stderrUnit,*) 'ERROR: Invalid TimeInterval string (invalid time substring) ', trim(timeString)
+            call mpas_log_write('Invalid TimeInterval string (invalid time substring) ' // trim(timeString), MPAS_LOG_ERR)
             return
          end if
 
@@ -1403,7 +1402,7 @@ module mpas_timekeeping
 
 !     if (interval <= zeroInterval) then
 !        if (present(ierr)) ierr = 1   
-!        write(stderrUnit,*) 'ERROR: TimeInterval must be greater than zero: ', trim(timeString) !'ERROR: TimeInterval cannot be negative'
+!        call mpas_log_write('TimeInterval must be greater than zero: '// trim(timeString), MPAS_LOG_ERR) !'ERROR: TimeInterval cannot be negative'
 !     end if
       
    end subroutine mpas_set_timeInterval
@@ -1439,7 +1438,8 @@ module mpas_timekeeping
       else
           if ( interval % ti % YR /= 0 .or. interval % ti % MM /= 0 ) then
              if (present(ierr)) ierr = 1
-             write(stderrUnit,*) 'ERROR: mpas_get_timeInterval cannnot return time interval information for an interval containing months and years without a startTimeIn argument.'
+             call mpas_log_write('mpas_get_timeInterval cannnot return time interval information for an interval containing ' // &
+                 'months and years without a startTimeIn argument.', MPAS_LOG_ERR)
              return
           end if
           call ESMF_TimeIntervalGet(interval % ti, D=days, S_i8=seconds, Sn=sn, Sd=sd, rc=ierr)
@@ -1620,7 +1620,7 @@ module mpas_timekeeping
       ! Avoid division by zero
       !
       if (den == zero) then
-         write(stderrUnit,*) 'Error: Attempting to divide by zero.'
+         call mpas_log_write('mpas_interval_division: Attempting to divide by zero.', MPAS_LOG_WARN)
          n = 0
          rem = zero
          return
@@ -2096,12 +2096,12 @@ module mpas_timekeeping
                         else if ( blockID < 10000000 ) then
                            write(timePart, '(i7)') blockID
                         else
-                           call mpas_dmpar_global_abort('ERROR: Block expansion does not yet support block IDs with more than 7 digits')
+                           call mpas_log_write('Block expansion does not yet support block IDs with more than 7 digits', MPAS_LOG_CRIT)
                         end if
                         outString = trim(outString) // trim(timePart)
                      case default
-                        write(stderrUnit, *) 'ERROR: mpas_expand_string option $', inString(i:i), ' is not a valid expansion character.'
-                        call mpas_dmpar_global_abort('ERROR: mpas_timekeeping')
+                        call mpas_log_write('ERROR: mpas_expand_string option DOLLAR'//inString(i:i)// &
+                               ' is not a valid expansion character.', MPAS_LOG_CRIT)
                   end select
 
                   curLen = len_trim(outString)
