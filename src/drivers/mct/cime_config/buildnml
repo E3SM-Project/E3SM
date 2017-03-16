@@ -191,19 +191,19 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
     if len(infiles) != 0:
 
-        # First read the drv_flds_in files and make sure that 
+        # First read the drv_flds_in files and make sure that
         # for any key there are not two conflicting values
         dicts = {}
         for infile in infiles:
-            dict = {}
+            dict_ = {}
             with open(infile) as myfile:
                 for line in myfile:
                     if "=" in line and '!' not in line:
                         name, var = line.partition("=")[::2]
                         name = name.strip()
                         var = var.strip()
-                        dict[name] = var
-            dicts[infile] = dict
+                        dict_[name] = var
+            dicts[infile] = dict_
 
         for first,second in itertools.combinations(dicts.keys(),2):
             compare_drv_flds_in(dicts[first], dicts[second], first, second)
@@ -315,10 +315,10 @@ def buildnml(case, caseroot, component):
 
     # create cplconf/namelist
     infile_text = ""
-    if case.get_value('COMP_ATM') == 'cam':		
-        # cam is actually changing the driver namelist settings		
-        cam_config_opts = case.get_value("CAM_CONFIG_OPTS")		
-        if "aquaplanet" in cam_config_opts:		
+    if case.get_value('COMP_ATM') == 'cam':
+        # cam is actually changing the driver namelist settings
+        cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
+        if "aquaplanet" in cam_config_opts:
             infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
 
     user_nl_file = os.path.join(caseroot, "user_nl_cpl")
