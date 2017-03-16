@@ -117,7 +117,7 @@ derived_variables = {
         (['TREFHT_LAND'],rename)
     ],
     'PRECT_LAND':[ 
-        (['PRECC','PRECL', 'LANDFRAC'], lambda a, b , landfrac: mask_by(aplusb(a, b, target_units="mm/day"), landfrac, low_limit = 0.65) ),
+        (['PRECC','PRECL', 'LANDFRAC'], lambda a, b , landfrac: mask_by(aplusb(a, b, target_units="mm/day"), landfrac, low_limit = 0.5) ), #0.5 just to match amwg
         (['PRECIP_LAND'],rename)
     ],
     'Z3': [
