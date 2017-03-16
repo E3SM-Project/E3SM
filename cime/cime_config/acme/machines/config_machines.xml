@@ -1460,7 +1460,7 @@
         <command name="unload">subversion</command>
         <command name="load">subversion/1.8.3</command>
         <command name="unload">cmake</command>
-        <command name="load">cmake/2.8.10.2</command>
+        <command name="load">cmake3/3.6.0</command>
       </modules>
 
       <modules compiler="pgiacc"> <!-- changing pgi_acc to pgiacc -->
@@ -1533,18 +1533,15 @@
         <command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <!-- Default -->
-      <!--
-       set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
-       if($status == 0) then
-      -->
       <environment_variables>
         <env name="COMPILER">$COMPILER</env>
         <env name="MPILIB">$MPILIB</env>
-        <env name="CESM_REPO">$CESM_REPO</env>
         <env name="MPICH_ENV_DISPLAY">1</env>
         <env name="MPICH_VERSION_DISPLAY">1</env>
         <env name="MPICH_CPUMASK_DISPLAY">1</env>
         <env name="MPSTKZ">128M</env>
+	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+	<env name="PNETCDFROOT" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
         <env name="OMP_STACKSIZE">128M</env>
       </environment_variables>
 
