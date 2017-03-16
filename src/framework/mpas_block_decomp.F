@@ -24,6 +24,7 @@ module mpas_block_decomp
    use mpas_sort
    use mpas_derived_types
    use mpas_io_units
+   use mpas_log
 
    type graph
       integer :: nVerticesTotal
@@ -118,9 +119,8 @@ module mpas_block_decomp
            open(unit=iunit, file=trim(filename), form='formatted', status='old', iostat=istatus)
      
            if (istatus /= 0) then
-              write(stderrUnit,*) 'ERROR: Could not open block decomposition file for ',dminfo % total_blocks,' blocks.'
-              write(stderrUnit,*) 'Filename: ',trim(filename)
-              call mpas_dmpar_abort(dminfo)
+              call mpas_log_write('Could not open block decomposition file for %i blocks.', MPAS_LOG_ERR, intArgs=(/dminfo % total_blocks/) )
+              call mpas_log_write('Filename: '//trim(filename), MPAS_LOG_CRIT)
            end if
   
            local_nvertices(:) = 0
@@ -128,9 +128,8 @@ module mpas_block_decomp
               read(unit=iunit, fmt=*, iostat=err) global_block_id
 
               if ( err .ne. 0 ) then
-                 write(stderrUnit, *) 'ERROR: Decomoposition file: ', trim(filename), ' contains less than ', &
-                                      partial_global_graph_info % nVerticesTotal, ' cells.'
-                 call mpas_dmpar_abort(dminfo)
+                 call mpas_log_write('Decomoposition file: ' // trim(filename) // ' contains less than $i cells', &
+                                      MPAS_LOG_CRIT, intArgs=(/partial_global_graph_info % nVerticesTotal/) )
               end if
               call mpas_get_owning_proc(dminfo, global_block_id, owning_proc)
               local_nvertices(owning_proc+1) = local_nvertices(owning_proc+1) + 1
@@ -139,9 +138,8 @@ module mpas_block_decomp
            read(unit=iunit, fmt=*, iostat=err)
 
            if ( err == 0 ) then
-              write(stderrUnit, *) 'ERROR: Decomposition file: ', trim(filename), ' contains more than ', &
-                                   partial_global_graph_info % nVerticesTotal, ' cells.'
-              call mpas_dmpar_abort(dminfo)
+              call mpas_log_write('Decomposition file: ' // trim(filename) // ' contains more than $i cells', &
+                                   MPAS_LOG_CRIT, intArgs=(/partial_global_graph_info % nVerticesTotal/) )
            end if
      
            allocate(global_cell_list(partial_global_graph_info % nVerticesTotal))
@@ -316,8 +314,8 @@ module mpas_block_decomp
             if (cellsOnEdge(j,i) /= 0) exit
          end do
          if (j > maxCells) &
-            write(stderrUnit,*) 'Error in block_decomp_partitioned_edge_list: ',&
-               'edge/vertex is not adjacent to any valid cells'
+            call mpas_log_write('Error in block_decomp_partitioned_edge_list: ' // &
+               'edge/vertex is not adjacent to any valid cells', MPAS_LOG_CRIT)
          if (mpas_hash_search(h, cellsOnEdge(j,i))) then
             lastEdge = lastEdge + 1
             edgeIDList(lastEdge) = edgeIDListLocal(i)
@@ -326,14 +324,14 @@ module mpas_block_decomp
             edgeIDList(ghostEdgeStart) = edgeIDListLocal(i)
          end if
          if (ghostEdgeStart <= lastEdge) then
-           write(stderrUnit,*) 'block_decomp_partitioned_edge_list: ',&
-              'Somehow we have more edges than we thought we should.'
+           call mpas_log_write('block_decomp_partitioned_edge_list: ' // &
+              'Somehow we have more edges than we thought we should.', MPAS_LOG_CRIT)
          end if
       end do
 
       if (ghostEdgeStart /= lastEdge + 1) then
-         write(stderrUnit,*) 'block_decomp_partitioned_edge_list:',&
-            ' Somehow we didn''t have enough edges to fill edgeIDList.'
+         call mpas_log_write('block_decomp_partitioned_edge_list:' // &
+            ' Somehow we didn''t have enough edges to fill edgeIDList.', MPAS_LOG_CRIT)
       end if
 
       call mpas_hash_destroy(h)
@@ -386,8 +384,8 @@ module mpas_block_decomp
             if (.not. mpas_hash_search(h, edgesOnCell(j,i))) then
                k = k + 1
                if (k > nEdges) then
-                 write(stderrUnit,*) 'block_decomp_all_edges_in_block: ',&
-                    'Trying to add more edges than expected.'
+                 call mpas_log_write('block_decomp_all_edges_in_block: ' // &
+                    'Trying to add more edges than expected.', MPAS_LOG_CRIT)
                  return
                end if
                edgeList(k) = edgesOnCell(j,i)
@@ -399,8 +397,8 @@ module mpas_block_decomp
       call mpas_hash_destroy(h)
 
       if (k < nEdges) then
-         write(stderrUnit,*) 'block_decomp_all_edges_in_block: ',&
-            'Listed fewer edges than expected.'
+         call mpas_log_write('block_decomp_all_edges_in_block: ' // &
+            'Listed fewer edges than expected.', MPAS_LOG_CRIT)
       end if
 
    end subroutine mpas_block_decomp_all_edges_in_block!}}}
@@ -459,8 +457,8 @@ module mpas_block_decomp
 
       do i=1,local_graph_info % nVertices
          if (mpas_hash_search(h, local_graph_info % vertexID(i))) &
-           write(stderrUnit,*) 'block_decomp_add_halo: ', &
-             'There appear to be duplicates in vertexID list.'
+           call mpas_log_write('block_decomp_add_halo: ' // &
+             'There appear to be duplicates in vertexID list.', MPAS_LOG_CRIT)
          call mpas_hash_insert(h, local_graph_info % vertexID(i)) 
          local_graph_with_halo % vertexID(i) = local_graph_info % vertexID(i) 
          local_graph_with_halo % nAdjacent(i) = local_graph_info % nAdjacent(i) 
@@ -469,8 +467,8 @@ module mpas_block_decomp
 
       k = local_graph_with_halo % ghostStart
       if (mpas_hash_size(h) /= k-1) &
-         write(stderrUnit,*) 'block_decomp_add_halo: ',&
-           'Somehow we don''t have the right number of non-ghost cells.'
+         call mpas_log_write('block_decomp_add_halo: ' // &
+           'Somehow we don''t have the right number of non-ghost cells.', MPAS_LOG_CRIT)
       do i=1,local_graph_info % nVertices
          do j=1,local_graph_info % nAdjacent(i)
             if (local_graph_info % adjacencyList(j,i) /= 0) then
@@ -483,8 +481,8 @@ module mpas_block_decomp
          end do
       end do 
       if (local_graph_with_halo % nVerticesTotal /= k-1) &
-         write(stderrUnit,*) 'block_decomp_add_halo: ',& 
-           'Somehow we don''t have the right number of total cells.'
+         call mpas_log_write('block_decomp_add_halo: ' // &
+           'Somehow we don''t have the right number of total cells.', MPAS_LOG_CRIT)
 
       call mpas_hash_destroy(h)
 

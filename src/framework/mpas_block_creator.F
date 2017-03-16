@@ -30,7 +30,7 @@ module mpas_block_creator
    use mpas_domain_routines
    use mpas_field_routines
    use mpas_pool_routines
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    contains
 
@@ -1029,7 +1029,7 @@ module mpas_block_creator
 
        iErr = block_ptr % domain % core % setup_block(block_ptr)
        if ( iErr /= 0 ) then
-          call mpas_dmpar_global_abort('ERROR: Block setup failed for core ' // trim(block_ptr % domain % core % coreName))
+          call mpas_log_write('Block setup failed for core ' // trim(block_ptr % domain % core % coreName), MPAS_LOG_CRIT)
        end if
 
        ! Set block's local id
@@ -1258,12 +1258,12 @@ module mpas_block_creator
 
        iErr = block_ptr % domain % core % setup_decomposed_dimensions(block_ptr, stream_manager, readableDimensions, block_ptr % dimensions, domain % dminfo % total_blocks)
        if ( iErr /= 0 ) then
-          call mpas_dmpar_global_abort('ERROR: Decomposed dimension setup failed for core ' // trim(block_ptr % domain % core % coreName))
+          call mpas_log_write('Decomposed dimension setup failed for core ' // trim(block_ptr % domain % core % coreName), MPAS_LOG_CRIT)
        end if
 
        iErr = block_ptr % domain % core % setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
        if ( iErr /= 0 ) then
-          call mpas_dmpar_global_abort('ERROR: Derived dimension setup failed for core ' // trim(block_ptr % domain % core % coreName))
+          call mpas_log_write('Derived dimension setup failed for core ' // trim(block_ptr % domain % core % coreName), MPAS_LOG_CRIT)
        end if
 
        call mpas_block_creator_allocate_pool_fields(block_ptr % structs, block_ptr % dimensions)
@@ -1780,10 +1780,10 @@ module mpas_block_creator
       character(len=*), intent(in) :: fieldName
 
 
-      write(stderrUnit,*) '********************************************************************************'
-      write(stderrUnit,*) 'ERROR: Dimension '''//trim(dimName)//''' required by field '''//trim(fieldName)//'''' &
-                          //' was neither read nor defined.'
-      call mpas_dmpar_global_abort('********************************************************************************')
+      call mpas_log_write('********************************************************************************', MPAS_LOG_ERR)
+      call mpas_log_write('Dimension '''//trim(dimName)//''' required by field '''//trim(fieldName)//'''' &
+                          //' was neither read nor defined.', MPAS_LOG_ERR)
+      call mpas_log_write('********************************************************************************', MPAS_LOG_CRIT)
 
    end subroutine missing_dim_abort 
 
