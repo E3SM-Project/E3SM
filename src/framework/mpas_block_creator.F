@@ -1780,10 +1780,8 @@ module mpas_block_creator
       character(len=*), intent(in) :: fieldName
 
 
-      call mpas_log_write('********************************************************************************', MPAS_LOG_ERR)
       call mpas_log_write('Dimension '''//trim(dimName)//''' required by field '''//trim(fieldName)//'''' &
-                          //' was neither read nor defined.', MPAS_LOG_ERR)
-      call mpas_log_write('********************************************************************************', MPAS_LOG_CRIT)
+                          //' was neither read nor defined.', MPAS_LOG_CRIT)
 
    end subroutine missing_dim_abort 
 
