@@ -177,7 +177,7 @@ MODULE WRM_modules
               !   call UpdateState_mainchannel(iunit)
               !endif
 
-              if ( ctlSubwWRM%RegulationFlag>0 .and. WRMUnit%INVicell(iunit) > 0 ) then
+              if ( ctlSubwWRM%RegulationFlag>0  .and. WRMUnit%INVicell(iunit) > 0 ) then
                  call Regulation(iunit, localDeltaT)
                  if ( ctlSubwWRM%ExtractionFlag > 0 .and. WRMUnit%subw_Ndepend(iunit) > 0) then
                     call ExtractionRegulatedFlow(iunit, localDeltaT)
@@ -362,6 +362,10 @@ MODULE WRM_modules
            k = 1._r8
            factor = 0._r8
            k = WRMUnit%StorMthStOp(idam) / ( 0.85 * WRMUnit%StorCap(idam) )
+!NV add bells and whistle
+!           if ( (k .lt. 0.1_r8) .or. (k.gt.10) ) then 
+!             k = 1._r8  ! should actually continue with an error message
+!           endif
            if ( WRMUnit%INVc(idam) .gt. 0.1_r8 ) then
               factor = (1._r8/(0.5_r8*WRMUnit%INVc(idam)))*(1._r8/(0.5_r8*WRMUnit%INVc(idam)))
            endif
@@ -393,6 +397,13 @@ MODULE WRM_modules
 
 !       endif
 
+       !NV checks
+       if ( idam .eq. 80) then
+       write(iulog,*) 'Regulation release',idam,month,StorWater%release(idam)
+       write(iulog,*) k,factor, Storwater%pre_release(idam,month)
+       write(iulog,*) 'flows', WRMUnit%MeanMthFlow(idam,month),WRMUnit%MeanMthFlow(idam,13)
+       write(iulog,*) 'storages',StorWater%storage(idam)
+       endif
      end do
 
   end subroutine RegulationRelease
@@ -457,7 +468,7 @@ MODULE WRM_modules
               endif
 
               ! now need to make sure that it will fill up but issue with spilling  in certain hydro-climatic conditions
-              fill = 0  
+              fill = 0._r8  
               Nmth_fill = 0
               if ( WRMUnit%MthNdFC(idam) <= WRMUnit%MthStOP(idam) ) then
                  if ( month >= WRMUnit%MthNdFC(idam) .and. month < WRMUnit%MthStOp(idam) ) then
@@ -662,6 +673,14 @@ MODULE WRM_modules
      !  print*, "WARNING, POTENTIAL EVAP LARGER THEN RESERVOIR STORAGE, iunit ", iunit, evap
      !endif
      ! commented out because evap need to be takren into consideration in the releases
+
+
+!test NV
+     if ( damID .eq. 80) then 
+       flow_vol = flow_vol /  theDeltaT
+       flow_res = flow_res /  theDeltaT
+       write(iulog,'(2a,i8,3f20.2)') subname,'check Coulee',damID,flow_vol,flow_res,StorWater%storage(damID)
+     endif
   end subroutine Regulation
 
 !-----------------------------------------------------------------------
@@ -1079,7 +1098,9 @@ MODULE WRM_modules
      call t_startf('moswrm_ERFlow_writ1')
      !--- g2d sum ---
 !     do idam = 1,ctlSubwWRM%LocalNumDam
-!        write(iulog,'(2a,2i8,2g20.10)') subname,' idam demand =',idam,WRMUnit%damID(idam),aVect_wd%rAttr(1,idam),StorWater%storage(idam)
+!NV check
+        idam = 80
+        write(iulog,'(2a,2i8,2g20.10)') subname,' Coulee demand =',idam,WRMUnit%damID(idam),aVect_wd%rAttr(1,idam),StorWater%storage(idam)
 !     enddo
      call t_stopf('moswrm_ERFlow_writ1')
 
@@ -1157,10 +1178,10 @@ MODULE WRM_modules
            !pro rated demand - no interannual variability
            !demand = demand + ( StorWater%demand(idepend) * WRMUnit%StorCap(damID) / WRMUnit%TotStorCapDepend(idepend))
            !- need adjustement based on storage in each dam
-           !if ( StorWater%Storage(damID) > 0._r8 .and. WRMUnit%TotStorCapDepend(idepend) > 0.1_r8 ) then
+           !if ( StorWater%storage(damID) > 0._r8 .and. WRMUnit%TotStorCapDepend(idepend) > 0.1_r8 ) then
            !  prorata=1._r8
-           !  if ( StorWater%Storage(damID)  / WRMUnit%TotStorCapDepend(idepend) < 1._r8 ) then
-           !    prorata = StorWater%Storage(damID)  / WRMUnit%TotStorCapDepend(idepend)
+           !  if ( StorWater%storage(damID)  / WRMUnit%TotStorCapDepend(idepend) < 1._r8 ) then
+           !    prorata = StorWater%storage(damID)  / WRMUnit%TotStorCapDepend(idepend)
            !  end if
            !  demand = demand +  StorWater%demand(idepend) * prorata
            !end if
@@ -1205,8 +1226,8 @@ MODULE WRM_modules
               !StorWater%supply(idepend)= StorWater%supply(idepend) + (supply/demand * StorWater%demand(idepend) * WRMUnit%StorCap(damID) / WRMUnit%TotStorCapDepend(idepend))
               !CHANGES start
               !prorata=1._r8
-              !if ( StorWater%Storage(damID)  / WRMUnit%TotStorCapDepend(idepend) < 1._r8 ) then
-              !  prorata = StorWater%Storage(damID)  / WRMUnit%TotStorCapDepend(idepend)
+              !if ( StorWater%storage(damID)  / WRMUnit%TotStorCapDepend(idepend) < 1._r8 ) then
+              !  prorata = StorWater%storage(damID)  / WRMUnit%TotStorCapDepend(idepend)
               !end if
               !if ( prorata < 0._r8 ) prorata = 0._r8
 !CHANGES HERE FROM HESS2013 PAPER, USE FLOW FOR THER FISTRIBUTION

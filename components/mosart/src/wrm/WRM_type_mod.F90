@@ -87,6 +87,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: Conveyance(:)     ! (nd) ratio loss / consumptive use - transport efficiency
      integer , pointer :: MthStOp(:)        ! (nd) month showing the start of the operationnal year
      real(r8), pointer :: StorMthStOp(:)    ! (nd) storage at beginning of the start of the operationnal year
+     real(r8), pointer :: StorMthStOpG(:)   ! (b:e) same as StorMthStOp on gridcells
      real(r8), pointer :: MeanMthDemand(:,:)! (nd,13) longterm mean monthly demand
      ! flood control
      integer , pointer :: MthStFC(:)        ! (nd) month showing the strat of the flood control
@@ -119,6 +120,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: storageG(:)       ! (b:e) same as storage on gridcells
      real(r8), pointer :: pre_release(:,:)  ! (nd,13) pre-release without the interannual fluctutation
      real(r8), pointer :: release(:)        ! (nd) pre-release with the interannual fluctutation
+     real(r8), pointer :: releaseG(:)       ! (b:e) same as release on gridcells
      real(r8), pointer :: FCrelease (:)     ! (nd) Flood control release to get to storage target
      real(r8), pointer :: pot_evap(:)       ! (b:e) potential evaporation in mm from the grid
      real(r8), pointer :: Conveyance (:)    ! (nd) Conveyance loss flux

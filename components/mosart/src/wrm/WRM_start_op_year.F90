@@ -136,7 +136,8 @@ MODULE WRM_start_op_year
                     
               endif
            enddo  
-           !write(iulog,*) subname, idam, "final start of FC op is ", WRMUnit%MthStFC(idam) , WRMUnit%MthNdFC(idam), WRMUnit%MthStOp(idam)
+           write(iulog,*) subname, idam, "final start of FC op is ", WRMUnit%MthStFC(idam) , WRMUnit%MthNdFC(idam), WRMUnit%MthStOp(idam)
+           write(iulog,*) subname, WRMUnit%StorCap(idam)
            ! ENForce the FC targets
            !write(iulog,*) subname,"calibration? ",WRMUnit%StorageCalibFlag(idam), WRMUnit%MinStorTarget(idam), WRMUnit%MaxStorTarget(idam)
            if ( WRMUnit%use_FCon(idam) > 0 .and. WRMUnit%MthStFC(idam).eq.0) then

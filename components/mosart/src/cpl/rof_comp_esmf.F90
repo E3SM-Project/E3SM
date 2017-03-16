@@ -31,7 +31,7 @@ module rof_comp_esmf
                                 inst_index, inst_suffix, inst_name, RtmVarSet
   use RtmSpmd          , only : masterproc, iam, npes, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
-  use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size, advance_timestep 
+  use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_x2r_Flrl_rofi, index_x2r_Flrl_rofsur, &
@@ -440,12 +440,10 @@ contains
     call t_stopf ('lc_rof_import')
 
     ! Run mosart (input is *runin, output is rtmCTL%runoff)
-    ! First advance mosart time step
 
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
-    call advance_timestep()
     call Rtmrun(rstwr,nlend,rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)

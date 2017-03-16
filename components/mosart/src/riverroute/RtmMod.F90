@@ -21,7 +21,7 @@ module RtmMod
                                inst_index, inst_suffix, inst_name, wrmflag, &
                                smat_option, decomp_option, barrier_timers
   use RtmFileUtils    , only : getfil, getavu, relavu
-  use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date
+  use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
   use RtmHistFile     , only : RtmHistUpdateHbuf, RtmHistHtapesWrapup, RtmHistHtapesBuild, &
                                rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq,     &
@@ -41,7 +41,7 @@ module RtmMod
                                  updatestate_mainchannel
 #ifdef INCLUDE_WRM
   use WRM_type_mod    , only : ctlSubwWRM, WRMUnit, StorWater
-  use WRM_subw_IO_mod , only : WRM_init
+  use WRM_subw_IO_mod , only : WRM_init, WRM_computeRelease
 #endif
   use RtmIO
   use mct_mod
@@ -1367,6 +1367,7 @@ contains
 !          TRunoff%wr(nr,nt) = rtmCTL%area(nr) * river_depth_minimum * 10._r8
 !       enddo
 !       enddo
+       call WRM_computeRelease()
     endif
 
     do nt = 1,nt_rtm
@@ -1440,7 +1441,7 @@ contains
     integer ,save :: budget_accum_cnt       ! counter for budget_accum
     real(r8) :: budget_input, budget_output, budget_volume, budget_total, &
                 budget_other
-    logical  :: budget_check                ! do global budget check
+    logical  :: budget_check, budget_write  ! do global budget check
 
     ! BUDGET term ids
     ! budget computed in m3 over each coupling period
@@ -1466,7 +1467,7 @@ contains
     integer,parameter :: bv_wr_f   = 6  ! final   wr volume
     integer,parameter :: bv_wh_i   = 7  ! initial wh volume
     integer,parameter :: bv_wh_f   = 8  ! final   wh volume
-    integer,parameter :: bv_dstor_i= 9 ! initial dam storage
+    integer,parameter :: bv_dstor_i= 9  ! initial dam storage
     integer,parameter :: bv_dstor_f= 10 ! final   dam storage
 
     ! Input TERMS (rates, m3/s)
@@ -1530,23 +1531,14 @@ contains
     call t_startf('mosartr_tot')
     call shr_sys_flush(iulog)
 
-    call get_curr_date(yr, mon, day, tod)
-    ymd = yr*10000 + mon*100 + day
-    if (tod == 0 .and. masterproc) then
-       write(iulog,*) ' '
-       write(iulog,'(2a,i10,i6)') trim(subname),' model date is',ymd,tod
-    endif
-
     delt_coupling = coupling_period*1.0_r8
+    budget_check = .true.   ! leave this on all the time for now
     if (first_call) then
        budget_accum = 0._r8
        budget_accum_cnt = 0
        if (masterproc) write(iulog,'(2a,g20.12)') trim(subname),' MOSART coupling period ',delt_coupling
     end if
 
-    budget_check = .false.
-    if (day == 1 .and. mon == 1) budget_check = .true.
-    if (tod == 0) budget_check = .true.
     budget_terms = 0._r8
 
     flow = 0._r8
@@ -1565,7 +1557,7 @@ contains
     rtmCTL%dvolrdtlnd = spval
     rtmCTL%dvolrdtocn = spval
 
-!    if (budget_check) then
+    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
@@ -1593,7 +1585,7 @@ contains
        endif
 #endif
        call t_stopf('mosartr_budget')
-!    endif
+    endif ! budget_check
 
     ! data for euler solver, in m3/s here
     do nr = rtmCTL%begr,rtmCTL%endr
@@ -1788,6 +1780,20 @@ contains
 
     do ns = 1,nsub
 
+       ! this advances the model time one coupling period when ns=1
+       ! we want the advance in the subcycling because of the new_month flag
+       ! this should really be advancing delt per ns, not coupling_period per call, but
+       ! need to modify clock initialization and restart for that to be supported
+       ! and make sure a rational timestep doesn't lead to accumulating errors
+       call advance_timestep(ns)
+
+       call get_curr_date(yr, mon, day, tod)
+       ymd = yr*10000 + mon*100 + day
+       if (tod == 0 .and. masterproc) then
+          write(iulog,*) ' '
+          write(iulog,'(2a,i4,a,i10,i6)') trim(subname),' subcycling=',ns,': model date=',ymd,tod
+       endif
+
        call t_startf('mosartr_euler')
        call Euler()
        call t_stopf('mosartr_euler')
@@ -1894,7 +1900,11 @@ contains
     ! BUDGET
     !-----------------------------------
 
-!    if (budget_check) then
+    budget_write = .false.
+    if (day == 1 .and. mon == 1) budget_write = .true.
+    if (tod == 0) budget_write = .true.
+
+    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
@@ -1950,8 +1960,9 @@ contains
           budget_terms(bv_naccum,nt) = budget_accum(nt)/budget_accum_cnt
        enddo
        call t_stopf('mosartr_budget')
+    endif  ! budget_check
 
-    if (budget_check) then
+    if (budget_check .and. budget_write) then
        call t_startf('mosartr_budget')
        !--- check budget
 
@@ -2074,7 +2085,7 @@ contains
        endif
 
        call t_stopf('mosartr_budget')
-    endif  ! budget_check
+    endif  ! budget_write
 
     !-----------------------------------
     ! Write out MOSART history file
@@ -2771,9 +2782,9 @@ contains
      enddo
      call shr_mpi_sum(areatot_tmp, areatot_new, mpicom_rof, 'areatot_new', all=.true.)
 
-     if (masterproc) then
-        write(iulog,*) trim(subname),' areatot calc ',tcnt,areatot_new
-     endif
+     !if (masterproc) then
+     !   write(iulog,*) trim(subname),' areatot calc ',tcnt,areatot_new
+     !endif
 
   enddo
 

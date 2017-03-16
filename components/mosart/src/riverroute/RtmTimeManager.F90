@@ -33,6 +33,9 @@ module RtmTimeManager
       is_end_curr_day,          &! return true on last timestep in current day
       is_end_curr_month,        &! return true on last timestep in current month
       is_last_step,             &! return true on last timestep
+      is_new_year,              &! return true on new year
+      is_new_month,             &! return true on new month
+      is_new_day,               &! return true on new day
       is_restart                 ! return true if this is a restart run
 
 ! Private module data
@@ -76,6 +79,9 @@ module RtmTimeManager
    logical, save :: tm_first_restart_step = .false.    ! true for first step of a restart or branch run
    integer, save :: cal_type              = uninit_int ! calendar type
    logical, save :: timemgr_set           = .false.    ! true when timemgr initialized
+   logical, save :: new_year              = .false.    ! true for new year
+   logical, save :: new_month             = .false.    ! true for new month
+   logical, save :: new_day               = .false.    ! true for new day
 
 ! Private module methods
    private :: timemgr_spmdbcast
@@ -687,18 +693,47 @@ end subroutine timemgr_print
 
 !=========================================================================================
 
-subroutine advance_timestep()
+subroutine advance_timestep(nsub)
 
   ! Increment the timestep number.
 
-  character(len=*), parameter :: sub = 'rtm::advance_timestep'
+  integer, intent(in) :: nsub  ! subcycling timestep count
+
+  type(ESMF_Time) :: curr_date
+  integer :: yy0, mm0, dd0, tod0   ! before advance
+  integer :: yy1, mm1, dd1, tod1   ! after advance
   integer :: rc
-  
-  call ESMF_ClockAdvance( tm_clock, rc=rc )
-  call chkrc(rc, sub//': error return from ESMF_ClockAdvance')
+  character(len=*), parameter :: sub = 'rtm::advance_timestep'
 
   tm_first_restart_step = .false.
-  
+  new_year = .false.
+  new_month = .false.
+  new_day = .false.
+
+  if (nsub == 1) then
+     call get_curr_date(yy0, mm0, dd0, tod0)
+     call ESMF_ClockAdvance( tm_clock, rc=rc )
+     call chkrc(rc, sub//': error return from ESMF_ClockAdvance')
+     call get_curr_date(yy1, mm1, dd1, tod1)
+
+     if (tod0 == 0._r8) then
+        new_day = .true.
+        if (dd1 == 1) then
+           new_month = .true.
+           if (mm1 == 1) then
+              new_year = .true.
+           endif
+        endif
+     else
+        if (tod1 /= 0._r8) then
+           if (yy1 /= yy0) new_year = .true.
+           if (mm1 /= mm0) new_month = .true.
+           if (dd1 /= dd0) new_day = .true.
+        endif
+     endif
+     write(iulog,'(2a,4i6,3l4)') sub," yy,mm,dd = ",yy1,mm1,dd1,tod1,new_year,new_month,new_day
+  endif
+
 end subroutine advance_timestep
 
 !=========================================================================================
@@ -1072,6 +1107,27 @@ logical function is_restart( )
      is_restart = .false.
   end if
 end function is_restart
+
+!=========================================================================================
+
+logical function is_new_year( )
+  ! Determine if new year
+  is_new_year = new_year
+end function is_new_year
+
+!=========================================================================================
+
+logical function is_new_month( )
+  ! Determine if new month
+  is_new_month = new_month
+end function is_new_month
+
+!=========================================================================================
+
+logical function is_new_day( )
+  ! Determine if new day
+  is_new_day = new_day
+end function is_new_day
 
 !=========================================================================================
 

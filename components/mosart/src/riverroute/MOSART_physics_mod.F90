@@ -17,17 +17,16 @@ MODULE MOSART_physics_mod
   use RunoffMod     , only : Tctl, TUnit, TRunoff, TPara, rtmCTL, &
                              SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
   use RtmSpmd       , only : masterproc, mpicom_rof, iam
-  use RtmTimeManager, only : get_curr_date
+  use RtmTimeManager, only : get_curr_date, is_new_month
 #ifdef INCLUDE_WRM
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
   use WRM_modules   , only : irrigationExtractionSubNetwork, &
                              irrigationExtractionMainChannel, &
-                             Regulation, ExtractionRegulatedFlow, &
-                             RegulationRelease, WRM_storage_targets
+                             Regulation, ExtractionRegulatedFlow
   use WRM_returnflow, only : insert_returnflow_channel, &
                              insert_returnflow_soilcolumn, &
                              estimate_returnflow_deficit
-  use WRM_subw_io_mod, only : WRM_readDemand
+  use WRM_subw_io_mod, only : WRM_readDemand, WRM_computeRelease
 #endif
   use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq
   use perf_mod, only: t_startf, t_stopf
@@ -73,16 +72,16 @@ MODULE MOSART_physics_mod
        if ( ctlSubwWRM%ReturnFlowFlag > 0) then
           call insert_returnflow_soilcolumn
        endif
+
        !call readPotentialEvap(trim(theTime))
-       if ( day == 1 .and. tod == 0) then    ! tcx should this be all timesteps on day=1
-          do idam=1,ctlSubwWRM%localNumDam
-             if ( mon .eq. WRMUnit%MthStOp(idam)) then
-               WRMUnit%StorMthStOp(idam) = StorWater%Storage(idam)
-             end if
-          enddo
+       if ( is_new_month() ) then
+          if (masterproc) write(iulog,*) trim(subname),' updating monthly data at ',yr,mon,day,tod
+
+          ! presently the demand is hardcoded at a monthly time step else need to
+          ! be moved out of this if loopon first time step of the month
           call WRM_readDemand()
-          call RegulationRelease()
-          call WRM_storage_targets()
+          call WRM_computeRelease()
+
        end if
        StorWater%demand = StorWater%demand0 * Tctl%DeltaT
        !supply is set to zero in RtmMod so it can be accumulated there for the budget
@@ -103,6 +102,8 @@ MODULE MOSART_physics_mod
           call hillslopeRouting(iunit,nt,Tctl%DeltaT)
           TRunoff%wh(iunit,nt) = TRunoff%wh(iunit,nt) + TRunoff%dwh(iunit,nt) * Tctl%DeltaT
           call UpdateState_hillslope(iunit,nt)
+! NV WARNNG WARNING JUST FOR TESTING
+!          TRunoff%qsub(iunit,nt) = TRunoff%qsub(iunit,nt) / 1.6_r8
           TRunoff%etin(iunit,nt) = (-TRunoff%ehout(iunit,nt) + TRunoff%qsub(iunit,nt)) * TUnit%area(iunit) * TUnit%frac(iunit)
        endif
     end do
@@ -304,7 +305,6 @@ MODULE MOSART_physics_mod
     !------------------
 
 #ifdef INCLUDE_WRM
-!tcx
     if (wrmflag) then
        if (ctlSubwWRM%RegulationFlag>0) then
           ! compute the erowm_reg terms and adjust the flow diagnostic
@@ -366,7 +366,7 @@ MODULE MOSART_physics_mod
     TRunoff%ehout(iunit,nt) = -CREHT_nosqrt(TUnit%hslpsqrt(iunit), TUnit%nh(iunit), TUnit%Gxr(iunit), TRunoff%yh(iunit,nt))
     if(TRunoff%ehout(iunit,nt) < 0._r8 .and. &
        TRunoff%wh(iunit,nt) + (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) * theDeltaT < TINYVALUE) then
-       TRunoff%ehout(iunit,nt) = -(TRunoff%qsur(iunit,nt) + TRunoff%wh(iunit,nt) / theDeltaT)  
+         TRunoff%ehout(iunit,nt) = -(TRunoff%qsur(iunit,nt) + TRunoff%wh(iunit,nt) / theDeltaT)
     end if
     TRunoff%dwh(iunit,nt) = (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) 
 

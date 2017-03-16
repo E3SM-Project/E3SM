@@ -25,6 +25,7 @@ module RtmRestFile
   use RtmDateTime
 #ifdef INCLUDE_WRM
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
+  use WRM_subw_io_mod, only : WRM_computeRelease
 #endif
   use rof_cpl_indices , only : nt_rtm, rtm_tracers 
 !
@@ -383,12 +384,20 @@ contains
     integer :: ig, idam         ! indices
     logical :: varok            ! variable ok flag for reading/writing
     real(r8) , pointer :: dfld(:) ! temporary array
+    logical :: compute_release  ! if release or stormthstop not read
+    logical :: storage_read     ! check if storage on restart file
+    logical :: release_read     ! check if release on restart file
+    logical :: stormth_read     ! check if stormthstop on restart file
     character(len=32)  :: vname,uname
     character(len=128) :: lname
     !-----------------------------------------------------------------------
 
+    compute_release = .false.
+    storage_read = .true.
+    release_read = .true.
+    stormth_read = .true.
 #ifdef INCLUDE_WRM
-    nvmax = 8
+    nvmax = 10
 #else
     nvmax = 7
 #endif
@@ -435,7 +444,9 @@ contains
           dfld  => rtmCTL%erout(:,nt)
 #ifdef INCLUDE_WRM
        elseif (nv == 8 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          varok = .false.
           if (wrmflag) then
+             varok = .true.
              StorWater%storageG = 0._r8
              if (flag == 'write') then
                 do idam = 1, ctlSubwWRM%localNumDam
@@ -447,6 +458,38 @@ contains
              lname = 'dam storage'
              uname = 'm3'
              dfld  => StorWater%storageG(:)
+          endif
+       elseif (nv == 9 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          varok = .false.
+          if (wrmflag) then
+             varok = .true.
+             StorWater%releaseG = 0._r8
+             if (flag == 'write') then
+                do idam = 1, ctlSubwWRM%localNumDam
+                   ig = WRMUnit%icell(idam)
+                   StorWater%releaseG(ig) = StorWater%release(idam)
+                enddo
+             endif
+             vname = 'DAM_RELEASE_'//trim(rtm_tracers(nt))
+             lname = 'dam release'
+             uname = 'm3'
+             dfld  => StorWater%releaseG(:)
+          endif
+       elseif (nv == 10 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          varok = .false.
+          if (wrmflag) then
+             varok = .true.
+             WRMUnit%StorMthStOpG = 0._r8
+             if (flag == 'write') then
+                do idam = 1, ctlSubwWRM%localNumDam
+                   ig = WRMUnit%icell(idam)
+                   WRMUnit%StorMthStOpG(ig) = WRMUnit%StorMthStOp(idam)
+                enddo
+             endif
+             vname = 'DAM_STORMTHSTOP_'//trim(rtm_tracers(nt))
+             lname = 'dam StorMthStOp'
+             uname = 'm3'
+             dfld  => WRMUnit%StorMthStOpG(:)
           endif
 #endif
        else
@@ -466,6 +509,15 @@ contains
                 call shr_sys_abort()
              else
                 dfld = 0._r8
+                if (vname == 'DAM_STORAGE_LIQ') then
+                   storage_read = .false.
+                elseif (vname == 'DAM_RELEASE_LIQ') then
+                   release_read = .false.
+                   compute_release = .true.
+                elseif (vname == 'DAM_STORMTHSTOP_LIQ') then
+                   stormth_read = .false.
+                   compute_release = .true.
+                endif
              end if
           end if
        end if
@@ -488,6 +540,8 @@ contains
 #ifdef INCLUDE_WRM
           if (wrmflag) then
              if (abs(storWater%storageG(n)) > 1.e30) storWater%storageG(n) = 0.
+             if (abs(storWater%releaseG(n)) > 1.e30) storWater%releaseG(n) = 0.
+             if (abs(WRMUnit%StorMthStOpG(n)) > 1.e30) WRMUnit%StorMthStOpG(n) = 0.
           endif
 #endif
           if (rtmCTL%mask(n) == 1) then
@@ -502,12 +556,19 @@ contains
              enddo
           endif
        enddo  ! n
+
 #ifdef INCLUDE_WRM
+       ! only overwrite fields that have been read, otherwise, use initial values
        if (wrmflag) then
           do idam = 1, ctlSubwWRM%localNumDam
              ig = WRMUnit%icell(idam)
-             StorWater%storage(idam) = StorWater%storageG(ig)
+             if (storage_read) StorWater%storage(idam) = StorWater%storageG(ig)
+             if (release_read) StorWater%release(idam) = StorWater%releaseG(ig)
+             if (stormth_read) WRMUnit%StorMthStOp(idam) = WRMUnit%StorMthStOpG(ig)
           enddo
+          if (compute_release) then
+             call WRM_computeRelease()
+          endif
        endif
 #endif
     endif  ! read
