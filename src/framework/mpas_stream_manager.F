@@ -1329,7 +1329,11 @@ module mpas_stream_manager
 
         threadNum = mpas_threading_get_thread_num()
         
-        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_reset_alarms()')
+        if (present(streamID)) then
+            STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_reset_alarms() for stream ' // trim(streamID))
+        else
+            STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_reset_alarms()')
+        end if
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
@@ -3011,7 +3015,6 @@ module mpas_stream_manager
            else
                if ( stream % filename_interval /= 'none' ) then
                    call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
-    
                    call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, blockID, temp_filename, ierr=local_ierr)
                else
                    call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
@@ -3906,13 +3909,13 @@ module mpas_stream_manager
            direction = -1
         end if
 
-!       call mpas_get_time(when, dateTimeString=temp_string)
+        call mpas_get_time(when, dateTimeString=temp_string)
         STREAM_DEBUG_WRITE(' ** when is: ' COMMA trim(temp_string))
 
-!       call mpas_get_time(ref_time, dateTimeString=temp_string)
+        call mpas_get_time(ref_time, dateTimeString=temp_string)
         STREAM_DEBUG_WRITE(' ** ref_time is: ' COMMA trim(temp_string))
 
-!       call mpas_get_timeInterval(intv, timeString=temp_string)
+        call mpas_get_timeInterval(intv, timeString=temp_string)
         STREAM_DEBUG_WRITE(' ** intv is: ' COMMA trim(temp_string))
 
         call mpas_interval_division(ref_time, intv, filename_interval, nrecs, rem) 
@@ -5813,10 +5816,11 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_derived_types, only : MPAS_streamManager_type, MPAS_Clock_type, MPAS_Time_type, MPAS_TimeInterval_type, &
-                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_START_TIME
-    use mpas_stream_manager, only : MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm
+                                   MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_START_TIME, &
+                                   MPAS_STOP_TIME, MPAS_STREAM_PROPERTY_REF_TIME
+    use mpas_stream_manager, only : MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
-    use mpas_timekeeping, only : mpas_add_clock_alarm, mpas_set_time, mpas_set_timeInterval, mpas_get_clock_time
+    use mpas_timekeeping, only : mpas_add_clock_alarm, mpas_set_time, mpas_get_time, mpas_set_timeInterval, mpas_get_clock_time
 
     implicit none
 
@@ -5829,7 +5833,7 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
 
     type (MPAS_streamManager_type), pointer :: manager
     type (MPAS_Clock_type), pointer :: clock
-    character(len=StrKIND) :: streamID, direction, alarmID, alarmTime, alarmInterval
+    character(len=StrKIND) :: streamID, direction, alarmID, alarmTime, alarmInterval, alarmString
     type (MPAS_Time_type) :: alarmTime_local
     type (MPAS_TimeInterval_type) :: alarmInterval_local
     integer :: idirection
@@ -5858,13 +5862,17 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
 
     call MPAS_stream_mgr_get_clock(manager, clock)
 
-    if (trim(alarmTime) == 'start') then
+    if (trim(alarmTime) == 'start' .and. trim(alarmInterval) == 'final_only') then
+        alarmTime_local = mpas_get_clock_time(clock, MPAS_STOP_TIME, ierr=ierr)
+        call mpas_get_time(alarmTime_local, dateTimeString=alarmString)
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_REF_TIME, alarmString, ierr=ierr)
+    else if (trim(alarmTime) == 'start') then
         alarmTime_local = mpas_get_clock_time(clock, MPAS_START_TIME, ierr=ierr)
     else
         call mpas_set_time(alarmTime_local, dateTimeString=alarmTime)
     end if
 
-    if (trim(alarmInterval) == 'initial_only') then
+    if (trim(alarmInterval) == 'initial_only' .or. trim(alarmInterval) == 'final_only') then
         call mpas_add_clock_alarm(clock, alarmID, alarmTime_local, ierr=ierr)
     else
         call mpas_set_timeInterval(alarmInterval_local, timeString=alarmInterval)
