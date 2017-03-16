@@ -791,7 +791,7 @@ def format_time(time_format, input_format, input_time):
     >>> format_time("%H  %M", "%M.%S", "59,59")
     '0  59'
     >>> format_time("%H, %S", "%H:%M:%S", "2:43:9")
-    '2, 9
+    '2, 09
     """
     input_fields = input_format.split("%")
     expect(input_fields[0] == input_time[:len(input_fields[0])],
