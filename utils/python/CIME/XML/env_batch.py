@@ -278,6 +278,10 @@ class EnvBatch(EnvBase):
                     if flag == "-n" and rval<= 0:
                         rval = 1
 
+                    if flag == "-q" and rval == "batch" and case.get_value("MACH") == "blues":
+                        # Special case. Do not provide '-q batch' for blues
+                        continue
+
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
                        flag.rfind(":", len(flag)-1, len(flag)) >= 0:
                         submitargs+=" %s%s"%(flag,str(rval).strip())
