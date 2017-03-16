@@ -775,6 +775,78 @@ def compute_total_time(job_cost_map, proc_pool):
 
     return current_time
 
+def format_time(time_format, input_format, input_time):
+    """
+    Converts the string input_time from input_format to time_format
+    Valid format specifiers are "%H", "%M", and "%S"
+    % signs must be followed by an H, M, or S and then a separator
+    Separators can be any string without digits or a % sign
+    Each specifier can occur more than once in the input_format,
+    but only the first occurence will be used.
+    An example of a valid format: "%H:%M:%S"
+    Unlike strptime, this does support %H >= 24
+
+    >>> format_time("%H:%M:%S", "%H", "43")
+    '43:00:00'
+    >>> format_time("%H  %M", "%M.%S", "59,59")
+    '0  59'
+    >>> format_time("%H, %S", "%H:%M:%S", "2:43:9")
+    '2, 09
+    """
+    input_fields = input_format.split("%")
+    expect(input_fields[0] == input_time[:len(input_fields[0])],
+           "Failed to parse the input time; does not match the header string")
+    input_time = input_time[len(input_fields[0]):]
+    timespec = {"H": None, "M": None, "S": None}
+    maxvals = {"M": 60, "S": 60}
+    DIGIT_CHECK = re.compile('[^0-9]*')
+    # Loop invariants given input follows the specs:
+    # field starts with H, M, or S
+    # input_time starts with a number corresponding with the start of field
+    for field in input_fields[1:]:
+        # Find all of the digits at the start of the string
+        spec = field[0]
+        value_re = re.match(r'\d*', input_time)
+        expect(value_re is not None,
+               "Failed to parse the input time for the '%s' specifier, expected an integer"
+               % spec)
+        value = value_re.group(0)
+        expect(spec in timespec, "Unknown time specifier '" + spec + "'")
+        # Don't do anything if the time field is already specified
+        if timespec[spec] is None:
+            # Verify we aren't exceeding the maximum value
+            if spec in maxvals:
+                expect(int(value) < maxvals[spec],
+                       "Failed to parse the '%s' specifier: A value less than %d is expected"
+                       % (spec, maxvals[spec]))
+            timespec[spec] = value
+        input_time = input_time[len(value):]
+        # Check for the separator string
+        expect(len(re.match(DIGIT_CHECK, field).group(0)) == len(field),
+               "Numbers are not permissible in separator strings")
+        expect(input_time[:len(field) - 1] == field[1:],
+               "The separator string (%s) doesn't match '%s'" % (field[1:], input_time))
+        input_time = input_time[len(field) - 1:]
+    output_fields = time_format.split("%")
+    output_time = output_fields[0]
+    # Used when a value isn't given
+    min_len_spec = {"H": 1, "M": 2, "S": 2}
+    # Loop invariants given input follows the specs:
+    # field starts with H, M, or S
+    # output_time
+    for field in output_fields[1:]:
+        expect(field == output_fields[-1] or len(field) > 1,
+               "Separator strings are required to properly parse times")
+        spec = field[0]
+        expect(spec in timespec, "Unknown time specifier '" + spec + "'")
+        if timespec[spec] is not None:
+            output_time += "0" * (min_len_spec[spec] - len(timespec[spec]))
+            output_time += timespec[spec]
+        else:
+            output_time += "0" * min_len_spec[spec]
+        output_time += field[1:]
+    return output_time
+
 def append_status(msg, caseroot='.', sfile="CaseStatus"):
     """
     Append msg to sfile in caseroot
