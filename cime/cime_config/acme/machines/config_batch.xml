@@ -44,8 +44,7 @@
        <arg flag="--cwd" name="CASEROOT"/>
        <arg flag="-A" name="PROJECT"/>
        <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-       <!-- ceiling of $a/$b is ($a+$b-1)/$b -->
-       <arg flag="-n" name=" ( $TOTALPES + $MAX_TASKS_PER_NODE - 1 ) / $MAX_TASKS_PER_NODE"/>
+       <arg flag="-n" name=" $TOTALPES/$PES_PER_NODE"/>
        <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
      </submit_args>
