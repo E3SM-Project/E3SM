@@ -84,14 +84,11 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     # Construct the list of streams.
     #----------------------------------------------------
     streams = nmlgen.get_streams()
-
     #----------------------------------------------------
     # For each stream, create stream text file and update
     # shr_strdata_nml group and input data list.
     #----------------------------------------------------
     for stream in streams:
-        nmlgen.clean_streams()
-
         # Ignore null values.
         if stream is None or stream in ("NULL", ""):
             continue
@@ -162,12 +159,11 @@ def buildnml(case, caseroot, compname):
 
     # Create the namelist generator object - independent of instance
     nmlgen = NamelistGenerator(case, definition_file, files=files)
-
     #----------------------------------------------------
     # Loop over instances
     #----------------------------------------------------
     for inst_counter in range(1, ninst+1):
-
+        nmlgen.new_instance()
         # determine instance string
         inst_string = ""
         if ninst > 1:

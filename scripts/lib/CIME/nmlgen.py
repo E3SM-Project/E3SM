@@ -85,7 +85,7 @@ class NamelistGenerator(object):
 
         # Create namelist object.
         self._namelist = Namelist()
-      
+
     # Define __enter__ and __exit__ so that we can use this as a context manager
     def __enter__(self):
         return self
@@ -284,6 +284,13 @@ class NamelistGenerator(object):
     def clean_streams(self):
         for variable in self._streams_variables:
             self._streams_namelists[variable] = []
+        self._streams_namelists["streams"] = []
+
+    def new_instance(self):
+        """ Clean the object just enough to introduce a new instance """
+        self.clean_streams()
+        self._namelist.clean_groups()
+
 
     def _sub_fields(self, varnames):
         """Substitute indicators with given values in a list of fields.

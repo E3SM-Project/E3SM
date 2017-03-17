@@ -839,6 +839,9 @@ class Namelist(object):
                     self._groups[group_lc][variable_lc] = \
                                         groups[group_name][variable_name]
 
+    def clean_groups(self):
+        self._groups = {}
+
     def get_group_names(self):
         """Return a list of all groups in the namelist.
 
