@@ -635,8 +635,7 @@ def expand_literal_list(literals, nindex=None):
             num, _, value = literal.partition('*')
             expanded += int(num) * [value]
         elif nindex is not None:
-            for i in range(0,nindex-1):
-                expanded.append('')
+            expanded = ['']*(nindex-1)
             expanded.append(literal)
         else:
             expanded.append(literal)
