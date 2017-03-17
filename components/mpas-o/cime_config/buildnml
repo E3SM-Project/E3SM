@@ -8,20 +8,21 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CIMEROOT            = `./xmlquery  CIMEROOT            -value`;
+my $CIMEROOT            = `./xmlquery  CIMEROOT			-value`;
 my $CASEROOT		= `./xmlquery  CASEROOT			-value`;
 my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
 my $SRCROOT		= `./xmlquery  SRCROOT			-value`;
-my $OBJROOT		    = `./xmlquery  OBJROOT			-value`;
-my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value`;
-my $DIN_LOC_ROOT    = `./xmlquery  DIN_LOC_ROOT     -value`;
+my $OBJROOT		= `./xmlquery  OBJROOT			-value`;
+my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE		-value`;
+my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT		-value`;
 my $OCN_GRID		= `./xmlquery  OCN_GRID			-value`;
-my $OCN_MASK        = `./xmlquery  MASK_GRID            -value`;
+my $OCN_MASK		= `./xmlquery  MASK_GRID		-value`;
+my $OCN_FORCING		= `./xmlquery  MPASO_FORCING		-value`;
 my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN		-value`;
 #my $NINST_OCN		= `./xmlquery  NINST_OCN		-value`;
 my $NINST_OCN = 1; # Change if you want multiple instances... though this isn't coded yet.
-my $RUNDIR		    = `./xmlquery  RUNDIR			-value`;
-my $STREAM_NAME     = 'streams.ocean';
+my $RUNDIR		= `./xmlquery  RUNDIR			-value`;
+my $STREAM_NAME		= 'streams.ocean';
 
 my @dirs = ("$CIMEROOT/utils/perl5lib");
 unshift @INC, @dirs;
@@ -42,6 +43,7 @@ my $grid_prefix = '';
 my $decomp_prefix = '';
 my $ic_date = '';
 my $ic_prefix = '';
+my $restoring_file = '';
 
 if ( $OCN_GRID eq 'oEC60to30' ) {
 	$grid_date .= '151031';
@@ -61,6 +63,7 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
         $ic_date .= '161222';
         $ic_prefix .= 'oEC60to30v3';
         $decomp_prefix .= 'mpas-o.graph.info.';
+        $restoring_file .= 'sss.monthlyClimatology.PHC2_salx.2004_08_03.nc';
 } elsif ( $OCN_GRID eq 'oEC60to30v3_ICG' ) {
         $grid_date .= '161222';
         $grid_prefix .= 'oEC60to30v3';
@@ -144,6 +147,9 @@ chdir "$CASEBUILD/mpas-oconf";
 open(my $input_list, "+>", "$CASEBUILD/mpas-o.input_data_list");
 print $input_list "mesh = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$grid_prefix.$grid_date.nc\n";
 print $input_list "ic = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$ic_prefix.$ic_date.nc\n";
+if ( $OCN_FORCING eq 'core_forced' ) {
+	print $input_list "sss = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file\n";
+}
 #print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$grid_date\n";
 print $input_list "graph$NTASKS_OCN = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$decomp_prefix$grid_date.part.$NTASKS_OCN\n";
 close($input_list);
@@ -202,6 +208,7 @@ while ($inst_counter <= $NINST_OCN) {
 	$sysmod .= " -inst_string '$inst_string'";
 	$sysmod .= " -date_stamp '$grid_date'";
 	$sysmod .= " -ocn_grid '$OCN_MASK'";
+	$sysmod .= " -ocn_forcing '$OCN_FORCING'";
     # pass in OCN_MASK for now as a short-cut for the grid
     # at some point, we may want to pass both -- but for now this is simpler
 
@@ -350,6 +357,18 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file 'They can be used to perform online analysis of the simulation and control the output of' . "\n";
 	print $stream_file 'the analysis data.' . "\n";
 	print $stream_file '-->' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<stream name="surface_salinity_monthly_data"' . "\n";
+	print $stream_file '       type="input"' . "\n";
+	print $stream_file "       filename_template=" . '"'
+					. "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_MASK/$restoring_file"
+					. '"' . "\n";
+	print $stream_file '       input_interval="none"' . "\n";
+	print $stream_file '       packages="activeTracersBulkRestoringPKG">' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '       <var name="xtime"/>' . "\n";
+	print $stream_file '       <var name="surfaceSalinityMonthlyClimatologyValue"/>' . "\n";
+	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="globalStatsOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";

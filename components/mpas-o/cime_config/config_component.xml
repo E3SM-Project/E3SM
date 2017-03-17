@@ -13,13 +13,26 @@
     <desc>Name of ocean component</desc>
   </entry>
 
+  <entry id="MPASO_FORCING">
+        <type>char</type>
+        <valid_values>active_atm,core_forced</valid_values>
+        <default_value>active_atm</default_value>
+        <values>
+           <value compset="MPASO_">active_atm</value>
+           <value compset="_MPASO%COREFORCED">core_forced</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe the MPASO surface forcing</desc>
+  </entry>
+
   <description>
     <desc compset="_MPASO">mpas ocean default:</desc>
   </description>
 
   <help>
     =========================================
-    POP naming conventions
+    MPAS-O naming conventions
     =========================================
   </help>
 

@@ -49,6 +49,7 @@ module ocn_comp_mct
    use ocn_frazil_forcing
    use ocn_surface_land_ice_fluxes
    use ocn_diagnostics
+   use ocn_tracer_surface_restoring
 
 !
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -190,6 +191,9 @@ contains
 
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
+
+    logical, pointer :: config_use_activeTracers_surface_restoring
+    logical, pointer :: config_use_surface_salinity_monthly_restoring
 
     real (kind=RKIND) :: dt
     type (MPAS_timeInterval_type) :: timeStep
@@ -722,6 +726,17 @@ contains
     call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
     write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
+    ! read initial data required for monthly surface salinity restoring
+    call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
+                                                 config_use_activeTracers_surface_restoring)
+    call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
+                                                 config_use_surface_salinity_monthly_restoring)
+    if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
+      call mpas_timer_start('io_monthly_surface_salinity',.false.)
+      call ocn_get_surfaceSalinityData(domain_ptr % streamManager, domain, domain % clock, .true.)
+      call mpas_timer_stop('io_monthly_surface_salinity')
+    endif
+
     itimestep = 0
 
     ! Reset all output alarms, to prevent intial time step from writing any output, unless it's ringing.
@@ -793,7 +808,10 @@ contains
       integer :: iam, ierr, streamDirection
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
+      logical, pointer :: config_use_activeTracers_surface_restoring
+      logical, pointer :: config_use_surface_salinity_monthly_restoring
       character (len=StrKIND), pointer :: config_restart_timestamp_name
+      character (len=StrKIND), pointer :: config_forcing_restart_file
 
       ! Added for coupling interval initialization
       integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
@@ -809,6 +827,7 @@ contains
       domain_ptr => domain
 
       call mpas_pool_get_config(domain_ptr % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call mpas_pool_get_config(domain_ptr % configs, 'config_forcing_restart_file', config_forcing_restart_file)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
@@ -930,6 +949,22 @@ contains
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
          if (iam==0) then
             write(stderrUnit,*) '   Finished writing output streams'
+            write(stderrUnit,*) '   Reading forcing streams'
+         endif
+
+         ! read next time level data required for monthly surface salinity restoring
+         call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
+                                                      config_use_activeTracers_surface_restoring)
+         call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
+                                                      config_use_surface_salinity_monthly_restoring)
+         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
+           call mpas_timer_start('io_monthly_surface_salinity',.false.)
+           call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .false.)
+           call mpas_timer_stop('io_monthly_surface_salinity')
+         endif
+
+         if (iam==0) then
+            write(stderrUnit,*) '   Finished reading forcing streams'
             write(stderrUnit,*) '   Validating ocean state'
          endif
          call ocn_validate_state(domain, timeLevel=1)
@@ -983,7 +1018,14 @@ contains
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
+
+            open(22, file=config_forcing_restart_file, form='formatted', status='replace')
+            close(22)
          end if
+
+         if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
+             call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
+
          if (iam==0) write(stderrUnit,*) 'Finished writing restart streams'
       end if
 

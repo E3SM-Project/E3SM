@@ -45,6 +45,8 @@ OPTIONS
      -casebuild            CASEBUILD directory variable          
      -cimeroot             CIMEROOT directory variable
      -ocn_grid             OCN_GRID variable
+     -ocn_forcing          variable for defining if the ocn model is forced with an active atm
+                           or using CORE forcing.  Options are: active_atm, core_forced
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPAS-O configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
@@ -87,10 +89,11 @@ my %opts = ( help        => 0,
              preview     => 0,
              caseroot    => undef,
              casebuild   => undef,
-             cimeroot => undef,
+             cimeroot    => undef,
              inst_string => undef,
              ocn_grid    => undef,
-             date_stamp    => undef,
+             ocn_forcing => undef,
+             date_stamp  => undef,
              cfg_dir     => $cfgdir,
            );
 
@@ -104,6 +107,7 @@ GetOptions(
     "cimeroot=s"    => \$opts{'cimeroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
     "ocn_grid=s"    => \$opts{'ocn_grid'},
+    "ocn_forcing=s" => \$opts{'ocn_forcing'},
     "date_stamp=s"  => \$opts{'date_stamp'},
     "cfg_dir=s"     => \$opts{'cfg_dir'},
     "preview"       => \$opts{'preview'},
@@ -132,9 +136,10 @@ if ($print>=2) { print "Setting MPAS-O configuration script directory to $cfgdir
 
 my $CASEROOT    = $opts{'caseroot'};
 my $CASEBUILD   = $opts{'casebuild'};
-my $CIMEROOT = $opts{'cimeroot'};
+my $CIMEROOT    = $opts{'cimeroot'};
 my $inst_string = $opts{'inst_string'};
 my $OCN_GRID    = $opts{'ocn_grid'};
+my $OCN_FORCING = $opts{'ocn_forcing'};
 my $date_stamp  = $opts{'date_stamp'};
 $cfgdir         = $opts{'cfg_dir'};
 
@@ -1292,14 +1297,21 @@ add_default($nl, 'config_isomip_plus_effective_density');
 
 add_default($nl, 'config_use_activeTracers');
 add_default($nl, 'config_use_activeTracers_surface_bulk_forcing');
-add_default($nl, 'config_use_activeTracers_surface_restoring');
+if ($OCN_FORCING eq 'core_forced') {
+	add_default($nl, 'config_use_activeTracers_surface_restoring', 'val'=>".true.");
+	add_default($nl, 'config_use_surface_salinity_monthly_restoring', 'val'=>".true.");
+	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-5");
+	add_default($nl, 'config_salinity_restoring_max_difference', 'val'=>"100.");
+} else {
+	add_default($nl, 'config_use_activeTracers_surface_restoring');
+	add_default($nl, 'config_use_surface_salinity_monthly_restoring');
+	add_default($nl, 'config_salinity_restoring_constant_piston_velocity');
+	add_default($nl, 'config_salinity_restoring_max_difference');
+}
 add_default($nl, 'config_use_activeTracers_interior_restoring');
 add_default($nl, 'config_use_activeTracers_exponential_decay');
 add_default($nl, 'config_use_activeTracers_idealAge_forcing');
 add_default($nl, 'config_use_activeTracers_ttd_forcing');
-add_default($nl, 'config_use_surface_salinity_monthly_restoring');
-add_default($nl, 'config_salinity_restoring_constant_piston_velocity');
-add_default($nl, 'config_salinity_restoring_max_difference');
 
 ###############################################
 # Namelist group: tracer_forcing_debugTracers #
