@@ -85,7 +85,7 @@ class NamelistGenerator(object):
 
         # Create namelist object.
         self._namelist = Namelist()
-
+      
     # Define __enter__ and __exit__ so that we can use this as a context manager
     def __enter__(self):
         return self
@@ -280,6 +280,10 @@ class NamelistGenerator(object):
     def get_streams(self):
         """Get a list of all streams used for the current data model  mode."""
         return self.get_default("streamslist")
+
+    def clean_streams(self):
+        for variable in self._streams_variables:
+            self._streams_namelists[variable] = []
 
     def _sub_fields(self, varnames):
         """Substitute indicators with given values in a list of fields.

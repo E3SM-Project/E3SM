@@ -90,6 +90,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
     # shr_strdata_nml group and input data list.
     #----------------------------------------------------
     for stream in streams:
+        nmlgen.clean_streams()
 
         # Ignore null values.
         if stream is None or stream in ("NULL", ""):
@@ -108,7 +109,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
             nmlgen.update_shr_strdata_nml(config, stream, stream_path)
         else:
             nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
-
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.
     #----------------------------------------------------
