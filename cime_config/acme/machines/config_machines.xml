@@ -358,7 +358,7 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-	<command name="rm">PrgEnv-intel</command>
+	<!--command name="rm">PrgEnv-intel</command-->
 	<command name="rm">PrgEnv-cray</command>
 	<command name="rm">PrgEnv-gnu</command>
 	<command name="rm">intel</command>
@@ -407,6 +407,7 @@
 	<command name="rm">craype</command>
 	<command name="load">craype/2.5.7</command>
 
+	<command name="rm">craype-haswell</command>
 	<command name="load">craype-mic-knl</command>
 
 	<command name="load">cray-mpich/7.4.4</command>
