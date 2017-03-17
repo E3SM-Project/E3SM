@@ -901,7 +901,7 @@ class Namelist(object):
         >>> parse(text='&foo bar=1 / &bazz /').get_value('Bar')
         [u'1']
         >>> parse(text='&foo bar(2)=1 / &bazz /').get_value('Bar')
-        [u'1']
+        ['', u'1']
         >>> parse(text='&foo / &bazz /').get_value('bar')
         [u'']
         """
@@ -1896,11 +1896,11 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x = _NamelistParser("&group\n foo='bar','bazz'\n,, foo2=2*5\n /")
         >>> x._parse_namelist_group()
         >>> x._settings
-        {u'group': {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'2*5']}}
+        {u'group': {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}}
         >>> x = _NamelistParser("&group\n foo='bar','bazz'\n,, foo2=2*5\n /", groupless=True)
         >>> x._parse_namelist_group()
         >>> x._settings
-        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'2*5']}
+        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}
         >>> x._curr()
         u'/'
         >>> x = _NamelistParser("&group /&group /")
@@ -1966,7 +1966,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser("! Comment \n &group /! Comment ").parse_namelist()
         {u'group': {}}
         >>> _NamelistParser("&group1\n foo='bar','bazz'\n,, foo2=2*5\n / &group2 /").parse_namelist()
-        {u'group1': {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'2*5']}, u'group2': {}}
+        {u'group1': {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}, u'group2': {}}
         >>> _NamelistParser("!blah \n foo='bar','bazz'\n,, foo2=2*5\n ", groupless=True).parse_namelist()
         {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}
         >>> _NamelistParser("!blah \n foo='bar','bazz'\n,, foo2=2*5,6\n ", groupless=True).parse_namelist()
