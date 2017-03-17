@@ -530,14 +530,8 @@ class NamelistGenerator(object):
 
         # Use this to see if we need to raise an error when nothing is found.
         have_value = False
-
         # Check for existing value.
         current_literals = self._namelist.get_variable_value(group, name)
-#     I may have broken something here???
-#        if current_literals != [""]:
-#            have_value = True
-            # Do not proceed further since this has been obtained the -infile contents
-#            return
 
         # Check for input argument.
         if value is not None:
