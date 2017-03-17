@@ -30,6 +30,7 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_WILLMOTT.json').read()
     #f_data = open('set5_diags_XIEARKIN.json').read()
     f_data = open('set5_diags_PRECL.json').read()
+    f_data = open('set5_diags_UWisc.json').read()
     #f_data = open('set5_diags_NVAP.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
     json_file = json.loads(f_data)

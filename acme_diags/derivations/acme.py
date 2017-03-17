@@ -140,6 +140,8 @@ derived_variables = {
     ],
     'LHFLX': [
         (['LHFLX'], lambda lhflx: _convert_units(lhflx, target_units="W/m^2")),
-    ]
+    ],
+    'TGCLDLWP_OCN':[ (['TGCLDLWP_OCEAN'], (lambda x: _convert_units(x, target_units='g/m^2')) ),
+                     (['TGCLDLWP', 'OCNFRAC'], lambda tgcldlwp, ocnfrac: mask_by(_convert_units(tgcldlwp, target_units="g/m^2"), ocnfrac, low_limit = 0.65))],
 }
 
