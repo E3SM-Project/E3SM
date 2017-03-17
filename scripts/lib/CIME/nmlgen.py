@@ -274,6 +274,7 @@ class NamelistGenerator(object):
                     default[i] = self.quote_string(scalar)
 
         default = self._to_python_value(name, default)
+
         return default
 
     def get_streams(self):
@@ -407,6 +408,7 @@ class NamelistGenerator(object):
         `stream_path` - Path to write the stream file to.
         `data_list_path` - Path of file to append input data information to.
         """
+
         # Stream-specific configuration.
         config = config.copy()
         config["stream"] = stream
@@ -520,10 +522,11 @@ class NamelistGenerator(object):
 
         # Check for existing value.
         current_literals = self._namelist.get_variable_value(group, name)
-        if current_literals != [""]:
-            have_value = True
+#     I may have broken something here???
+#        if current_literals != [""]:
+#            have_value = True
             # Do not proceed further since this has been obtained the -infile contents
-            return
+#            return
 
         # Check for input argument.
         if value is not None:

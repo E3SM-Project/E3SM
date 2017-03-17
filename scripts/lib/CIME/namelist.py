@@ -112,7 +112,7 @@ logger = logging.getLogger(__name__)
 
 # Fortran syntax regular expressions.
 # Variable names.
-FORTRAN_NAME_REGEX = re.compile(r"^[a-z][a-z0-9_]{0,62}$", re.IGNORECASE)
+FORTRAN_NAME_REGEX = re.compile(r"^[a-z][a-z0-9_]{0,62}(\((\d+)\))?$", re.IGNORECASE)
 FORTRAN_LITERAL_REGEXES = {}
 # Integer literals.
 _int_re_string = r"(\+|-)?[0-9]+"
@@ -170,6 +170,20 @@ def is_valid_fortran_name(string):
     True
     """
     return FORTRAN_NAME_REGEX.search(string) is not None
+
+def fortran_name_index(string):
+    """ Get name index if provided
+
+    >>> fortran_name_index("foo(2)")
+    2
+    >>> fortran_name_index("bar")
+
+    >>> fortran_name_index("foo(a)")
+
+    """
+    m = FORTRAN_NAME_REGEX.search(string)
+    if m is not None and m.group(2) is not None:
+        return int(m.group(2))
 
 
 def fortran_namelist_base_value(string):
@@ -601,7 +615,7 @@ def literal_to_python_value(literal, type_=None):
         return float(literal)
 
 
-def expand_literal_list(literals):
+def expand_literal_list(literals, nindex=None):
     """Expands a list of literal values to get rid of repetition syntax.
 
     >>> expand_literal_list([])
@@ -610,6 +624,8 @@ def expand_literal_list(literals):
     ['true']
     >>> expand_literal_list(['1', '2', 'f*', '3*3', '5'])
     ['1', '2', 'f*', '3', '3', '3', '5']
+    >>> expand_literal_list(['1'],nindex=2)
+    ['', '1']
     >>> expand_literal_list([u'2*f*'])
     [u'f*', u'f*']
     """
@@ -618,6 +634,10 @@ def expand_literal_list(literals):
         if FORTRAN_REPEAT_PREFIX_REGEX.search(literal) is not None:
             num, _, value = literal.partition('*')
             expanded += int(num) * [value]
+        elif nindex is not None:
+            for i in range(0,nindex-1):
+                expanded.append('')
+            expanded.append(literal)
         else:
             expanded.append(literal)
     return expanded
@@ -673,7 +693,7 @@ def compress_literal_list(literals):
                 compressed.append(str(literal))
         return compressed
 
-def merge_literal_lists(default, overwrite):
+def merge_literal_lists(default, overwrite, dindex=None, oindex=None):
     """Merge two lists of literal value strings.
 
     The `overwrite` values have higher precedence, so will overwrite the
@@ -695,12 +715,22 @@ def merge_literal_lists(default, overwrite):
     ['true']
     >>> merge_literal_lists(['true'], [])
     ['true']
+    >>> merge_literal_lists(['true'], ['false'], dindex=2)
+    ['false', 'true']
+    >>> merge_literal_lists(['true'], [], dindex=2)
+    ['', 'true']
+    >>> merge_literal_lists([], ['foo'], oindex=2)
+    ['', 'foo']
+    >>> merge_literal_lists(['true','true','true'], ['false'], oindex=2)
+    ['true', 'false', 'true']
+    >>> merge_literal_lists(['false'],['true','true','true'], dindex=2)
+    ['true', 'true', 'true']
     >>> merge_literal_lists(['3*false', '3*true'], ['true', '4*', 'false'])
     ['true', 'false', 'false', 'true', 'true', 'false']
     """
     merged = []
-    default = expand_literal_list(default)
-    overwrite = expand_literal_list(overwrite)
+    default = expand_literal_list(default, dindex)
+    overwrite = expand_literal_list(overwrite, oindex)
     for default_elem, elem in zip(default, overwrite):
         if elem == '':
             merged.append(default_elem)
@@ -870,6 +900,8 @@ class Namelist(object):
         SystemExit: ERROR: Namelist.get_value: Variable %s is present in multiple groups: [u'bazz', u'foo']
         >>> parse(text='&foo bar=1 / &bazz /').get_value('Bar')
         [u'1']
+        >>> parse(text='&foo bar(2)=1 / &bazz /').get_value('Bar')
+        [u'1']
         >>> parse(text='&foo / &bazz /').get_value('bar')
         [u'']
         """
@@ -1029,7 +1061,7 @@ class Namelist(object):
                 values = group[name]
 
                 # @ is used in a namelist to put the same namelist variable in multiple groups
-                # in the write phase, all characters in the namelist variable name after 
+                # in the write phase, all characters in the namelist variable name after
                 # the @ and including the @ should be removed
                 if "@" in name:
                     name = re.sub('@.+$', "", name)
@@ -1121,6 +1153,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         # name-value pairs as values. (Or a single flat dictionary if
         # `groupless=True`.)
         self._settings = {}
+        # Fortran allows setting a particular index of an array
+        # such as foo(2)='k'
+        # this dict is set to that value if used.
+        self._nameindex = {}
         self._groupless = groupless
 
     def _line_col_string(self):
@@ -1379,6 +1415,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         Traceback (most recent call last):
             ...
         _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 3)
+        >>> _NamelistParser('foo(2)= ')._parse_variable_name()
+        u'foo'
         >>> _NamelistParser('abc ')._parse_variable_name()
         u'abc'
         >>> _NamelistParser('ABC ')._parse_variable_name()
@@ -1401,9 +1439,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         while self._curr() not in separators:
             self._advance()
         text = self._text[old_pos:self._pos]
-
         # @ is used in a namelist to put the same namelist variable in multiple groups
-        # in the write phase, all characters in the namelist variable name after 
+        # in the write phase, all characters in the namelist variable name after
         # the @ and including the @ should be removed
         if "%" in text:
             text_check = re.sub('%.+$', "", text)
@@ -1414,6 +1451,18 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         if not is_valid_fortran_name(text_check):
             raise _NamelistParseError("%r is not a valid variable name at %s" %
                                       (str(text), self._line_col_string()))
+
+        # a particular value of a namelist array may be assigned using syntax
+        # foo(2) = 7
+
+        nindex = fortran_name_index(text_check)
+        if nindex is not None:
+            text = text_check[:text.find('(')]
+            vname = text.lower()
+            if vname in self._nameindex:
+                self._nameindex[vname].append(nindex)
+            else:
+                self._nameindex[vname] = [nindex]
         return text.lower()
 
     def _parse_character_literal(self):
@@ -1766,6 +1815,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
 
         >>> _NamelistParser("foo='bar' /")._parse_name_and_values()
         (u'foo', [u"'bar'"])
+        >>> _NamelistParser("foo(3)='bar' /")._parse_name_and_values()
+        (u'foo', [u"'bar'"])
         >>> _NamelistParser("foo ='bar' /")._parse_name_and_values()
         (u'foo', [u"'bar'"])
         >>> _NamelistParser("foo=\n'bar' /")._parse_name_and_values()
@@ -1780,12 +1831,16 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         (u'foo', [u'', u'', u"'bazz'", u'6*'])
         >>> _NamelistParser("foo='bar' 'bazz' foo2='ban'")._parse_name_and_values()
         (u'foo', [u"'bar'", u"'bazz'"])
+        >>> _NamelistParser("foo='bar' 'bazz' foo2(2)='ban'")._parse_name_and_values()
+        (u'foo', [u"'bar'", u"'bazz'"])
         >>> _NamelistParser("foo= foo2='ban' ")._parse_name_and_values()
         Traceback (most recent call last):
             ...
         _NamelistParseError: Error in parsing namelist: expected literal value, but got "foo2='ban'" at line 1, column 15
         >>> _NamelistParser("foo=,,'bazz',6* ")._parse_name_and_values(allow_eof_end=True)
         (u'foo', [u'', u'', u"'bazz'", u'6*'])
+        >>> _NamelistParser("foo(3)='bazz'")._parse_name_and_values(allow_eof_end=True)
+        (u'foo', [u"'bazz'"])
         >>> _NamelistParser("foo=")._parse_name_and_values()
         Traceback (most recent call last):
             ...
@@ -1878,14 +1933,20 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         self._eat_whitespace()
         while self._curr() != '/':
             name, values = self._parse_name_and_values()
+            oindex = None
+            dsettings = []
+            if name in self._nameindex:
+                oindex = self._nameindex[name].pop(0)
             if self._groupless:
                 if name in self._settings:
-                    values = merge_literal_lists(self._settings[name], values)
+                    dsettings = self._settings[name]
+                values = merge_literal_lists(dsettings, values, oindex=oindex)
                 self._settings[name] = values
             else:
                 group = self._settings[group_name]
                 if name in group:
-                    values = merge_literal_lists(group[name], values)
+                    dsettings = group[name]
+                values = merge_literal_lists(dsettings, values, oindex=oindex)
                 group[name] = values
 
     def parse_namelist(self):
@@ -1907,15 +1968,21 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser("&group1\n foo='bar','bazz'\n,, foo2=2*5\n / &group2 /").parse_namelist()
         {u'group1': {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'2*5']}, u'group2': {}}
         >>> _NamelistParser("!blah \n foo='bar','bazz'\n,, foo2=2*5\n ", groupless=True).parse_namelist()
-        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'2*5']}
+        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}
         >>> _NamelistParser("!blah \n foo='bar','bazz'\n,, foo2=2*5,6\n ", groupless=True).parse_namelist()
-        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'2*5', u'6']}
+        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5', u'6']}
         >>> _NamelistParser("!blah \n foo='bar'", groupless=True).parse_namelist()
         {u'foo': [u"'bar'"]}
         >>> _NamelistParser("foo='bar', foo='bazz'", groupless=True).parse_namelist()
         {u'foo': [u"'bazz'"]}
         >>> _NamelistParser("foo='bar', foo=", groupless=True).parse_namelist()
         {u'foo': [u"'bar'"]}
+        >>> _NamelistParser("foo='bar', foo(3)='bazz'", groupless=True).parse_namelist()
+        {u'foo': [u"'bar'", '', u"'bazz'"]}
+        >>> _NamelistParser("foo(2)='bar'", groupless=True).parse_namelist()
+        {u'foo': ['', u"'bar'"]}
+        >>> _NamelistParser("foo(2)='bar', foo(3)='bazz'", groupless=True).parse_namelist()
+        {u'foo': ['', u"'bar'", u"'bazz'"]}
         """
         # Return empty dictionary for empty files.
         if self._len == 0:
@@ -1930,8 +1997,14 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         if self._groupless and self._curr() != '&':
             while self._pos < self._len:
                 name, values = self._parse_name_and_values(allow_eof_end=True)
+                oindex = None
+                if name in self._nameindex:
+                    oindex = self._nameindex[name].pop(0)
+                dsettings = []
                 if name in self._settings:
-                    values = merge_literal_lists(self._settings[name], values)
+                    dsettings = self._settings[name]
+                values = merge_literal_lists(dsettings, values,
+                                             oindex=oindex)
                 self._settings[name] = values
             return self._settings
         # Loop over namelist groups in the file.
