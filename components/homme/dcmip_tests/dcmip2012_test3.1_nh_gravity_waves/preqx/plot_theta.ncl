@@ -106,19 +106,6 @@ do k=0, nlev-1
   T_mean(k,:,:) = bigG*(1.d0 - exp(N2*h(k)/g))+ Ts0*exp(N2*h(k)/g)
 end do
 
-;_____________________________________________________________________
-; get potential-temperature differences at several times
-
-days2sec = 3600.0*24.0
-t_sec = time(t_index)*days2sec
-
-theta      = f->T(t_index,:,:,:)*(p_ref/p0)^kappa
-theta_mean = T_mean*(p_ref/p0)^kappa
-
-theta_diff = theta - theta_mean
-
-theta_diff_slice = theta_diff(0:nlev-1,equator,:)
-
   ;_____________________________________________________________________
   ; plot contour field of lon vs height at the equator
 
@@ -174,6 +161,21 @@ theta_diff_slice = theta_diff(0:nlev-1,equator,:)
   wks = gsn_open_wks(wks_type,filename)
   gsn_define_colormap(wks,"gui_default")  ; choose a colormap
 
+
+;_____________________________________________________________________
+; get potential-temperature differences at several times
+do t_index = 0,nt-1  
+  days2sec = 3600.0*24.0
+  t_sec = time(t_index)*days2sec
+  
+  theta      = f->T(t_index,:,:,:)*(p_ref/p0)^kappa
+  theta_mean = T_mean*(p_ref/p0)^kappa
+  
+  theta_diff = theta - theta_mean
+  
+  theta_diff_slice = theta_diff(0:nlev-1,equator,:)
+
+
   plot = new(1,graphic)
   res1@gsnStringFontHeightF     = 0.04
   res1@tmXBLabelFontHeightF     = 0.03
@@ -186,8 +188,8 @@ theta_diff_slice = theta_diff(0:nlev-1,equator,:)
 
   plot(0) = gsn_csm_contour(wks,theta_diff_slice,res1)
 
-draw(wks)
-frame(wks)
-
+  draw(wks)
+  frame(wks)
+end do
 end
 

@@ -506,13 +506,16 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
 
   ! set initial conditions
-  do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
-    call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
-    call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
-    dp = pressure_thickness(ps,k,hvcoord)
-    call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
-    call set_tracers(q,1, dp,i,j,k,lat,lon,elem(ie))
-  enddo; enddo; enddo; enddo
+  do ie = nets,nete
+     do k=1,nlev; do j=1,np; do i=1,np
+        call get_coordinates(lat,lon,hyam,hybm, i,j,k,elem(ie),hvcoord)
+        call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyam,hybm,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
+        dp = pressure_thickness(ps,k,hvcoord)
+        call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),1,nt)
+        call set_tracers(q,1, dp,i,j,k,lat,lon,elem(ie))
+     enddo; enddo; enddo; 
+     call tests_finalize(elem(ie),hvcoord,1,nt)
+  enddo
 
 end subroutine
 
