@@ -176,14 +176,14 @@ print("spacing = "+gap)
   pres@lbLabelStride        = 1
   pres@gsnPaperOrientation  = "portrait"
 
-  wks_type                  = "png"
-  wks_type@wkWidth          = 2500
-  wks_type@wkHeight         = 2500
+  ;wks_type                  = "png"
+  ;wks_type@wkWidth          = 2500
+  ;wks_type@wkHeight         = 2500
 
-  ;wks_type                  = "pdf"
-  ;wks_type@wkPaperHeightF   = 8
-  ;wks_type@wkPaperWidthF    = 11
-  ;wks_type@wkOrientation    = "portrait"
+  wks_type                  = "pdf"
+  wks_type@wkPaperHeightF   = 8
+  wks_type@wkPaperWidthF    = 11
+  wks_type@wkOrientation    = "portrait"
 
 if(isvar("t")) then
   name =sprinti("test31_omega_%0.4i",t_index)
