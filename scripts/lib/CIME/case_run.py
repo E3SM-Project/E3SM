@@ -175,20 +175,22 @@ def resubmit_check(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def do_external(script_name, caseroot, lid, prefix):
+def do_external(script_name, caseroot, rundir, lid, prefix):
 ###############################################################################
-    cmd = script_name + " 1> %s.external.log.%s %s 2>&1" %(prefix, lid, caseroot)
-    logger.debug("running %s" %script_name)
+    filename = "%s.external.log.%s" %(prefix, lid)
+    outfile = os.path.join(rundir, filename)
+    cmd = script_name + " 1> %s %s 2>&1" %(outfile, caseroot)
+    logger.info("running %s" %script_name)
     run_cmd_no_fail(cmd)
-    # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
 
 ###############################################################################
-def do_data_assimilation(da_script, caseroot, cycle, lid):
+def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
 ###############################################################################
-    cmd = da_script + " 1> da.log.%s %s %d 2>&1" %(lid, caseroot, cycle)
-    logger.debug("running %s" %da_script)
+    filename = "da.log.%s" %(lid)
+    outfile = os.path.join(rundir, filename)
+    cmd = da_script + " 1> %s %s %d 2>&1" %(outfile, caseroot, cycle)
+    logger.info("running %s" %da_script)
     run_cmd_no_fail(cmd)
-    # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
 
 ###############################################################################
 def case_run(case):
@@ -219,8 +221,10 @@ def case_run(case):
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
 
-        if prerun_script != "UNSET":
-            do_external(prerun_script, case.get_value("CASEROOT"), lid, prefix="prerun")
+        if prerun_script:
+            print "DEBUG: i am here",prerun_script
+            do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"), 
+                        lid, prefix="prerun")
 
         run_model(case, lid)
         save_logs(case, lid)       # Copy log files back to caseroot
@@ -228,10 +232,12 @@ def case_run(case):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
-            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid)
+            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid, 
+                                 case.get_value("RUNDIR")) 
 
-        if postrun_script != "UNSET":
-            do_external(postrun_script, case.get_value("CASEROOT"), lid, prefix="postrun")
+        if postrun_script:
+            do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"), 
+                        lid, prefix="postrun")
 
         save_postrun_provenance(case)
 
