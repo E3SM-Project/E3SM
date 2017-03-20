@@ -15,24 +15,19 @@ import acme_diags.plotting.set5.plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.viewer import OutputViewer
+from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 
 def make_parameters(orginal_parameter):
-<<<<<<< HEAD
-    #f_data = open('set5_diags_default.json').read()
-    f_data = open('set5_diags.json').read()
-    #f_data = open('set5_diags_MERRA_domains.json').read()
-=======
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
+    #f_data = open('set5_diags_default.json').read()
     #f_data = open('set5_diags.json').read()
-    f_data = open('set5_diags_GPCP.json').read()
-    #f_data = open('set5_diags_MERRA.json').read()
->>>>>>> master
+    #f_data = open('set5_diags_MERRA_domains.json').read()
     #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
-    #f_data = open('set5_diags_WILLMOTT.json').read()
+    f_data = open('set5_diags_WILLMOTT.json').read()
     #f_data = open('set5_diags_NVAP.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
     json_file = json.loads(f_data)
@@ -67,7 +62,46 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
 
-<<<<<<< HEAD
+def create_metrics(ref, test, ref_regrid, test_regrid, diff):
+    """ Creates the mean, max, min, rmse, corr in a dictionary """
+    metrics_dict = {}
+    metrics_dict['ref'] = {
+        'min': min_cdms(ref),
+        'max': max_cdms(ref),
+        'mean': mean(ref)
+    }
+    metrics_dict['test'] = {
+        'min': min_cdms(test),
+        'max': max_cdms(test),
+        'mean': mean(test)
+    }
+
+    metrics_dict['diff'] = {
+        'min': min_cdms(diff),
+        'max': max_cdms(diff),
+        'mean': mean(diff)
+    }
+    metrics_dict['misc'] = {
+        'rmse': rmse(test_regrid, ref_regrid),
+        'corr': corr(test_regrid, ref_regrid)
+    }
+
+    return metrics_dict
+
+def add_page_and_top_row(viewer, parameters):
+    """ Setup for OutputViewer """
+    col_labels = ['Description']
+    seasons = []
+    for p in parameters:
+        for s in p.season:
+            if s not in seasons:
+                seasons.append(s)
+    for s in seasons:
+        col_labels.append(s)
+
+    viewer.add_page("Set 5", col_labels)
+
+
 def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
     """masks a variable var to be missing except where maskvar>=low_limit and maskvar<=high_limit. 
     None means to omit the constrint, i.e. low_limit = -infinity or high_limit = infinity. var is changed and returned; we don't make a new variable.
@@ -89,22 +123,6 @@ def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
         newmask = var.mask | maskvarmask
     var.mask = newmask
     return var
-
-=======
-def add_page_and_top_row(viewer, parameters):
-    """ Setup for OutputViewer """
-    col_labels = ['Description']
-    seasons = []
-    for p in parameters:
-        for s in p.season:
-            if s not in seasons:
-                seasons.append(s)
-    for s in seasons:
-        col_labels.append(s)
-
-    viewer.add_page("Set 5", col_labels)
->>>>>>> master
-
 
 parser = ACMEParser()
 original_parameter = parser.get_parameter(default_vars=False)
@@ -141,7 +159,6 @@ for parameter in parameters:
         # domain can pass in process_derived_var after Charles fix cdutil.domain'unit problem
         #mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod, domain)
         #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
-<<<<<<< HEAD
         mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
         mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
         print mv1.units
@@ -152,28 +169,12 @@ for parameter in parameters:
             #mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
             mv2=MV2.masked_where(mv2==-999.,mv2) # this is cdms2 for bad mask, denise's fix should fix
             #following should move to derived variable
-            days_season = {'ANN':365,'DJF':90,'MAM':92,'JJA':92,'SON':91}
-            mv1 = mv1 * days_season[season] * 0.1 #following AMWG approximate way to convert to seasonal cumulative precipitation, need to have solution in derived variable, unit convert from mm/day to cm
-            mv1.units = 'cm'
-            mv2.units = 'cm'
+            if var == 'PRECT_LAND': 
+                days_season = {'ANN':365,'DJF':90,'MAM':92,'JJA':92,'SON':91}
+                #mv1 = mv1 * days_season[season] * 0.1 #following AMWG approximate way to convert to seasonal cumulative precipitation, need to have solution in derived variable, unit convert from mm/day to cm
+                mv2 = mv2 / days_season[season] / 0.1 # convert cm to mm/day instead
+                mv2.units = 'mm/day'
             
-            
-
-=======
-        try:
-            mv1 = f_mod(var)
-        except:
-            mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
-        try:
-            mv2 = f_obs(var)
-        except:
-            mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
-        print regions,"regions"
-
-        # Temporary fix to bypass bug (Zeshawn or Jill will fix)
-        mv1.units = parameter.test_units
-        mv2.units = parameter.test_units
->>>>>>> master
          
         #for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
@@ -209,28 +210,12 @@ for parameter in parameters:
                 mv1_domain = mv1_domain(domain)
                 mv2_domain = mv2_domain(domain)
                 mv1_domain.units = mv1.units
-<<<<<<< HEAD
                 mv2_domain.units = mv1.units
 
                 parameter.output_file = '_'.join([ref_name,var, season,region])
                 parameter.main_title = str(' '.join([var, season]))
         
     
-=======
-                mv2_domain.units = mv2.units
-                parameter.output_file = '_'.join([ref_name, season,region])
-                parameter.main_title = str(' '.join([var, season]))
-
-                #else:
-                #
-                #    parameter.output_file = '_'.join([ref_name, season])
-                #    parameter.main_title = str(' '.join([var, season]))
-
-                #parameter.output_file = '_'.join([ref_name, season,region])
-                #parameter.main_title = str(' '.join([var, season]))
-
-
->>>>>>> master
                 #regrid towards lower resolution of two variables for calculating difference
                 mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
@@ -247,20 +232,13 @@ for parameter in parameters:
                     land_mask = MV2.logical_or(mv1_reg.mask, mv2_reg.mask)
                     mv1_reg = MV2.masked_where(land_mask, mv1_reg)
                     mv2_reg = MV2.masked_where(land_mask, mv2_reg)
-<<<<<<< HEAD
-           
-                plot_set_5.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
-                #plot_set_5.plot(mv2_reg, mv1_reg, mv2_reg, mv1_reg, parameter)
- 
-    
-=======
 
-                print 'hi1'
-                acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                diff = mv1_reg - mv2_reg
+                metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+                acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                 viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
 
-
->>>>>>> master
+    
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
             plev = parameter.levels
@@ -305,13 +283,8 @@ for parameter in parameters:
                 mv2 = mv2_p[:,ilev,]
                 if len(regions) == 0:
                     regions = ['global']
-<<<<<<< HEAD
-        
-                for region in regions: 
-=======
 
-                for region in regions:
->>>>>>> master
+                for region in regions: 
                     print region
                     domain = None
     ##                if region != 'global':
@@ -342,19 +315,16 @@ for parameter in parameters:
                     mv1_domain.units = mv1.units
                     mv2_domain.units = mv1.units
 
-<<<<<<< HEAD
                     parameter.output_file = '_'.join([ref_name,var,str(int(plev[ilev])),season,region,var, str(int(plev[ilev])), 'mb'])
-=======
-                    parameter.output_file = '_'.join([ref_name, season, region, var, str(int(plev[ilev])), 'mb'])
->>>>>>> master
                     parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))
 
                     # Regrid towards lower resolution of two variables for calculating difference
                     mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
 
                     # Plotting
-                    print 'hi2'
-                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, mv2_reg, mv1_reg, parameter)
+                    diff = mv1_reg - mv2_reg
+                    metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
+                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                     viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
 
         else:

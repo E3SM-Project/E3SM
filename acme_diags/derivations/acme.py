@@ -113,7 +113,8 @@ derived_variables = {
         (['TMQ'], rename)
     ],
     'TREFHT_LAND':[ 
-        (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(_convert_units(trefht, target_units="K"), landfrac, low_limit = 0.65) )
+        (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(_convert_units(trefht, target_units="K"), landfrac, low_limit = 0.65)),
+        (['TREFHT_LAND'],rename)
     ],
     'PRECT_LAND':[ 
         (['PRECC','PRECL', 'LANDFRAC'], lambda a, b , landfrac: mask_by(aplusb(a, b, target_units="mm/day"), landfrac, low_limit = 0.65) ),

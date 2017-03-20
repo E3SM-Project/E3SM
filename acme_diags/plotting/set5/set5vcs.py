@@ -7,13 +7,16 @@ import genutil.statistics
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 
-def plot_min_max_mean(canvas, variable, ref_test_or_diff):
-    """canvas is a vcs.Canvas, variable is a
-    cdms2.tvariable.TransientVariable and ref_test_or_diff is a string"""
-    var_min = '%.2f' % min_cdms(variable)
-    var_max = '%.2f' % max_cdms(variable)
-    var_mean = '%.2f' % mean(variable)
+def plot_min_max_mean(canvas, metrics_dict, ref_test_or_diff):
+    """ canvas is a vcs.Canvas, metrics_dict is a dict and 
+    ref_test_or_diff is a string """
+    var_min = '%.2f' % metrics_dict[ref_test_or_diff]['min']
+    var_max = '%.2f' % metrics_dict[ref_test_or_diff]['max']
+    var_mean = '%.2f' % metrics_dict[ref_test_or_diff]['mean']
 
+    if ref_test_or_diff == 'ref':  # Remove this when vcdat is done
+        ref_test_or_diff = 'reference'
+ 
     # can be either 'reference', 'test' or 'diff'
     plot = ref_test_or_diff
     min_label = canvas.createtextcombined(Tt_source = plot + '_min_label',
@@ -40,12 +43,11 @@ def plot_min_max_mean(canvas, variable, ref_test_or_diff):
     canvas.plot(mean_value)
     canvas.plot(mean_label)
 
-def plot_rmse_and_corr(canvas, model, obs):
-    """canvas is a vcs.Canvas, model and obs are
-    a cdms2.tvariable.TransientVariable"""
+def plot_rmse_and_corr(canvas, metrics_dict):
+    """ canvas is a vcs.Canvas, metrics_dict is a dict """
 
-    rmse_str = '%.2f' % rmse(obs, model)
-    corr_str = '%.2f' % corr(obs, model)
+    rmse_str = '%.2f' % metrics_dict['misc']['rmse']
+    corr_str = '%.2f' % metrics_dict['misc']['corr']
 
     rmse_label = canvas.createtextcombined(Tt_source = 'diff_plot_comment1_title',
                                            To_source = 'diff_plot_comment1_title')
@@ -84,9 +86,8 @@ def set_units(ref_or_test, units):
     if units != '':
         ref_or_test.units = units
 
-def plot(reference, test, reference_regrid, test_regrid, parameter):
+def plot(reference, test, diff, metrics_dict, parameter):
 
-    diff = test_regrid - reference_regrid
     case_id = parameter.case_id
     if not os.path.exists(case_id):
         os.makedirs(case_id)
@@ -117,9 +118,9 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     diff.id = parameter.diff_name
 
     # model and observation graph
-    plot_min_max_mean(vcs_canvas, test, 'test')
-    plot_min_max_mean(vcs_canvas, reference, 'reference')
-    plot_min_max_mean(vcs_canvas, diff, 'diff')
+    plot_min_max_mean(vcs_canvas, metrics_dict, 'test')
+    plot_min_max_mean(vcs_canvas, metrics_dict, 'ref')
+    plot_min_max_mean(vcs_canvas, metrics_dict, 'diff')
 
     reference_isofill = vcs.getisofill('reference_isofill')
     test_isofill = vcs.getisofill('test_isofill')
@@ -144,3 +145,14 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     vcs_canvas.plot(test, template_test, test_isofill)
     vcs_canvas.plot(reference, template_ref, reference_isofill)
     vcs_canvas.plot(diff, template_diff, diff_isofill)
+
+    plot_rmse_and_corr(vcs_canvas, metrics_dict)
+
+    # Plotting the main title
+    main_title = vcs_canvas.createtextcombined(Tt_source = 'main_title',
+                                               To_source = 'main_title')
+    main_title.string = parameter.main_title
+    vcs_canvas.plot(main_title)
+
+    vcs_canvas.png(case_id + '/' + parameter.output_file)
+    print 'Plot saved in: ' + case_id + '/' + parameter.output_file
