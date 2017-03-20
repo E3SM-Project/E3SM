@@ -1465,6 +1465,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 self._nameindex[vname].append(nindex)
             else:
                 self._nameindex[vname] = [nindex]
+
         return text.lower()
 
     def _parse_character_literal(self):
