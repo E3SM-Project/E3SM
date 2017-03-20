@@ -49,6 +49,7 @@ module mpas_subdriver
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
       use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2
+      use mpas_log
  
       implicit none
 
@@ -230,7 +231,7 @@ module mpas_subdriver
          call mpas_dmpar_global_abort('ERROR: Clock setup failed for core ' // trim(domain_ptr % core % coreName))
       end if
 
-      write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain_ptr % streams_filename)
+      call mpas_log_write('Reading streams configuration from file '//trim(domain_ptr % streams_filename))
       inquire(file=trim(domain_ptr % streams_filename), exist=streamsExists)
 
       if ( .not. streamsExists ) then
@@ -288,7 +289,7 @@ module mpas_subdriver
           call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
           call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, blockID, mesh_filename, ierr)
       end if
-      write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
+      call mpas_log_write(' ** Attempting to bootstrap MPAS framework using stream: ' // trim(mesh_stream))
       call mpas_bootstrap_framework_phase1(domain_ptr, mesh_filename, mesh_iotype)
 
       !
