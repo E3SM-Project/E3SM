@@ -112,7 +112,7 @@ logger = logging.getLogger(__name__)
 
 # Fortran syntax regular expressions.
 # Variable names.
-FORTRAN_NAME_REGEX = re.compile(r"^[a-z][a-z0-9_]{0,62}(\((\d+)\))?$", re.IGNORECASE)
+FORTRAN_NAME_REGEX = re.compile(r"^[a-z][a-z0-9_]{0,62}(\(([+-]?\d+)\))?$", re.IGNORECASE)
 FORTRAN_LITERAL_REGEXES = {}
 # Integer literals.
 _int_re_string = r"(\+|-)?[0-9]+"
@@ -1459,6 +1459,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
 
         nindex = fortran_name_index(text_check)
         if nindex is not None:
+            if nindex <= 0 or nindex > self._len:
+                raise _NamelistParseError("index value of %s is not supported in variable %s"%
+                                           (nindex, str(text)))
+
             text = text_check[:text.find('(')]
             vname = text.lower()
             if vname in self._nameindex:
