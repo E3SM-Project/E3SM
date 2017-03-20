@@ -21,8 +21,7 @@ module mpas_matrix_operations
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
-   use mpas_io_units
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    implicit none
    private
@@ -427,7 +426,7 @@ contains
 
       ! mrp: find out how to do correct error check.
       if (size(A,1).ne.n.or.size(A,2).ne.m) then
-        call mpas_dmpar_global_abort('ERROR: in subroutine mpas_outer_product(), size of A must match u and v')
+        call mpas_log_write('In subroutine mpas_outer_product(), size of A must match u and v', MPAS_LOG_CRIT)
       endif
 
       do i=1,n

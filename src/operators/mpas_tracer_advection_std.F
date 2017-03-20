@@ -21,7 +21,7 @@ module mpas_tracer_advection_std
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_io_units
+   use mpas_log
 
    use mpas_tracer_advection_helpers
 
@@ -299,7 +299,7 @@ module mpas_tracer_advection_std
       else
           vert2ndOrder = .true.
           if(vert_adv_order /= 2) then
-            write(stderrUnit,*) 'Invalid value for vert_adv_order, defaulting to 2nd order'
+            call mpas_log_write('Invalid value for vert_adv_order, defaulting to 2nd order', MPAS_LOG_WARN)
           end if
       end if
 
