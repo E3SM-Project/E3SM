@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+"""
+case.setup - create the $caseroot/case.run script and user_nl_xxx component namelist mod files
+"""
+
+from standard_script_setup import *
+
+from CIME.case_setup import case_setup
+from CIME.case       import Case
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [<casedir>] [--verbose] [--clean] [--reset]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Setup case \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to setup")
+
+    parser.add_argument("-c", "--clean", action="store_true",
+                        help="Removes the batch run script for target machine."
+                        "If the testmode argument is present then keep the test "
+                        "script if it is present - otherwise remove it. "
+                        "The user_nl_xxx and Macros files are never removed by case.setup - "
+                        "you must remove them manually")
+
+    parser.add_argument("-t", "--test-mode", action="store_true",
+                        help="Keeps the test script when the --clean argument is used")
+    parser.add_argument("-r", "--reset", action="store_true",
+                        help="Does a clean followed by setup")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.caseroot, args.clean, args.test_mode, args.reset
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot, clean, test_mode, reset = parse_command_line(sys.argv, description)
+    with Case(caseroot, read_only=False) as case:
+        case_setup(case, clean, test_mode, reset)
+
+if __name__ == "__main__":
+    _main_func(__doc__)
