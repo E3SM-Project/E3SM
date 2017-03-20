@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <!-- attributes -->
+  <xs:attribute name="version" type="xs:decimal"/>
+  <xs:attribute name="alias" type="xs:NMTOKEN"/>
+  <xs:attribute name="compset" type="xs:token"/>
+  <xs:attribute name="not_compset" type="xs:NMTOKEN"/>
+  <xs:attribute name="name" type="xs:NMTOKEN"/>
+  <xs:attribute name="grid" type="xs:token"/>
+  <xs:attribute name="lnd_mask" type="xs:NMTOKEN"/>
+  <xs:attribute name="mask" type="xs:NCName"/>
+  <xs:attribute name="ocn_mask" type="xs:NMTOKEN"/>
+  <xs:attribute name="grid1" type="xs:NCName"/>
+  <xs:attribute name="grid2" type="xs:NCName"/>
+  <xs:attribute name="atm_grid" type="xs:NMTOKEN"/>
+  <xs:attribute name="glc_grid" type="xs:NCName"/>
+  <xs:attribute name="lnd_grid" type="xs:NMTOKEN"/>
+  <xs:attribute name="ocn_grid" type="xs:NCName"/>
+  <xs:attribute name="rof_grid" type="xs:NCName"/>
+  <xs:attribute name="wav_grid" type="xs:NCName"/>
+
+  <!-- simple elements -->
+  <xs:element name="support" type="xs:string"/>
+  <xs:element name="help" type="xs:string"/>
+  <xs:element name="mask" type="xs:NCName"/>
+  <xs:element name="nx" type="xs:integer"/>
+  <xs:element name="ny" type="xs:integer"/>
+  <xs:element name="desc" type="xs:string"/>
+
+  <!-- complex elements -->
+
+  <xs:element name="grid_data">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="help"/>
+        <xs:element ref="grids"/>
+        <xs:element ref="domains"/>
+        <xs:element ref="required_gridmaps"/>
+        <xs:element ref="gridmaps"/>
+      </xs:sequence>
+      <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="grids">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="model_grid_defaults"/>
+        <xs:element ref="model_grid" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="model_grid_defaults">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="grid" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="model_grid">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="grid" maxOccurs="unbounded"/>
+        <xs:choice minOccurs="0">
+          <xs:element ref="support"/>
+          <xs:element ref="mask"/>
+        </xs:choice>
+      </xs:sequence>
+      <xs:attribute ref="alias" use="required"/>
+      <xs:attribute ref="compset"/>
+      <xs:attribute ref="not_compset"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="domains">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="domain" maxOccurs="unbounded" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="domain">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="nx"/>
+        <xs:element ref="ny"/>
+        <xs:element ref="file" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="desc"/>
+        <xs:element ref="support" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="file">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="grid"/>
+      <xs:attribute ref="lnd_mask" />
+      <xs:attribute ref="mask" />
+      <xs:attribute ref="ocn_mask"/>
+    </xs:complexType>
+  </xs:element>
+
+
+  <xs:element name="required_gridmaps">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="required_gridmap" maxOccurs="unbounded" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="required_gridmap">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:NCName">
+          <xs:attribute ref="grid1" use="required" />
+          <xs:attribute ref="grid2" use="required" />
+          <xs:attribute ref="not_compset" />
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="gridmaps">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="gridmap" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="gridmap">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="map" maxOccurs="unbounded" />
+      </xs:sequence>
+      <xs:attribute ref="atm_grid"/>
+      <xs:attribute ref="glc_grid" />
+      <xs:attribute ref="lnd_grid" />
+      <xs:attribute ref="ocn_grid"/>
+      <xs:attribute ref="rof_grid" />
+      <xs:attribute ref="wav_grid"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="map">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="name"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="grid">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:NMTOKEN">
+          <xs:attribute ref="compset" />
+          <xs:attribute ref="name" use="required"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,16 @@
+# To run all CIME unit tests on caldera, run the following command:
+# (Note that this must be done from an interactive caldera session, not from yellowstone)
+# Note also that this requires module load all-python-libs
+#
+# The creation of a temporary directory ensures that you are doing a completely
+# clean build of the unit tests. (The use of the --clean flag to run_tests.py
+# cleans most, but not all of the files created by the unit test build.) For
+# rerunning the tests after an incremental change, you can instead use an
+# existing build directory.
+#
+# We would encourage you to port these tests to other platforms.
+# The test requires an install of pFunit available from
+# https://sourceforge.net/projects/pfunit/
+#
+
+tools/unit_testing/run_tests.py --test-spec-dir=. --compiler=intel --mpilib=mpich2 --use-openmp --mpirun-command=mpirun.lsf --build-dir `mktemp -d --tmpdir=. unit_tests.XXXXXXXX`
