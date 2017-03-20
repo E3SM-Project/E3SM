@@ -526,6 +526,7 @@
          darcy_V_chl = c0  
          hbrocn_new  = c0
          h_ocn = rhosi/rhow*hin + rhos/rhow*hsn 
+         dh_direct   = c0
          
          if (hbr_old > thinS .AND. hin_old > thinS .AND. hin > thinS ) then
             hbrmin = thinS

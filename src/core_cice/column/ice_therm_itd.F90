@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_itd.F90 1175 2017-03-02 19:53:26Z akt $
+!  SVN:$Id: ice_therm_itd.F90 1182 2017-03-16 19:29:26Z njeffery $
 !=======================================================================
 !
 ! Thermo calculations after call to coupler, related to ITD:

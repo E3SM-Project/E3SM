@@ -3104,7 +3104,7 @@ contains
              atmosDustFlux(iBioTracers,iCell) =  1.e-13_RKIND
           enddo
 #endif
-
+          atmosBioFluxes(:,:) = 0.0_RKIND
           if (config_use_zaerosols) then
              indexj = ciceTracerObject % index_verticalAerosolsConcLayer(1)
              do iBioTracers = 1, maxBCType

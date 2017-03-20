@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_shared.F90 1173 2017-03-02 03:57:43Z njeffery $
+!  SVN:$Id: ice_therm_shared.F90 1182 2017-03-16 19:29:26Z njeffery $
 !=========================================================================
 !
 ! Shared thermo variables, subroutines
