@@ -12,11 +12,16 @@ class OutputViewer(object):
         self.path = os.path.abspath(path)
         self.index = OutputIndex(index_name)
         self.group = None
+        self.groups = {}
         self.page = None
 
     def add_group(self, name):
-        self.group = OutputGroup(name)
-        self.page.addGroup(self.group)
+        if name not in self.groups:
+            self.group = OutputGroup(name)
+            self.groups[name] = self.group
+            self.page.addGroup(self.group)
+        else:
+            self.group = self.groups[name]
 
     def add_page(self, name, cols):
         self.page = OutputPage(name, cols)

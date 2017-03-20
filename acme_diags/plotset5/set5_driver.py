@@ -27,7 +27,7 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
-    f_data = open('set5_diags_WILLMOTT.json').read()
+    #f_data = open('set5_diags_WILLMOTT.json').read() # qflx not called
     #f_data = open('set5_diags_XIEARKIN.json').read()
     #f_data = open('set5_diags_PRECL.json').read()
     #f_data = open('set5_diags_UWisc.json').read()
@@ -146,7 +146,7 @@ viewer = OutputViewer(path=parameters[0].case_id, index_name='index name')
 add_page_and_top_row(viewer, parameters)
 
 for parameter in parameters:
-    viewer.add_group(parameter.reference_name)
+    viewer.add_group(parameter.case_id)
 
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
