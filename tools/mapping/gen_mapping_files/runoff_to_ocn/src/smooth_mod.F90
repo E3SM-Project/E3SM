@@ -394,9 +394,9 @@ SUBROUTINE smooth(map,efold,rmax)
         wgtsum = 0.0
         nbox = 0
         gdcnt = 0
+        kStart = 1
 
 #ifdef _BREADTH
-        kStart = 2
         i2ind(1) = ic
         j2ind(1) = jc
         imask_JMD = -1000
@@ -408,7 +408,6 @@ SUBROUTINE smooth(map,efold,rmax)
                 rdist,rmax,i2ind,j2ind, strPtr, length)
 
 #else
-        kStart = 1
         !--- recursive function to find dest cells ---
 
         call depth_setDist(ic,jc,ni,nj,map%xc_a,map%yc_a,0.0,imask,rdist,rmax,i2ind,j2ind,length)
