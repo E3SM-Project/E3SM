@@ -31,6 +31,15 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_XIEARKIN.json').read()
     f_data = open('set5_diags_PRECL.json').read()
     f_data = open('set5_diags_UWisc.json').read()
+    #f_data = open('set5_diags_SSMI.json').read()
+    f_data = open('set5_diags_LARYEA.json').read()
+    f_data = open('set5_diags_ERA40.json').read()
+    f_data = open('set5_diags_ERAI.json').read()
+    f_data = open('set5_diags_JRA25.json').read()
+    f_data = open('set5_diags_AIRS.json').read()
+    f_data = open('set5_diags_CERES-EBAF.json').read()
+    f_data = open('set5_diags_ERBE.json').read()
+    f_data = open('set5_diags_ISCCPFD.json').read()
     #f_data = open('set5_diags_NVAP.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
     json_file = json.loads(f_data)
@@ -152,7 +161,8 @@ for parameter in parameters:
             filename1 = filename
 
         ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
-        for filename in fnmatch.filter(ref_files, '*'+season+'*'):
+        #for filename in fnmatch.filter(ref_files, '*'+season+'*'):
+        for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+season+'*'):
             print filename
             filename2 = filename
 
@@ -164,8 +174,6 @@ for parameter in parameters:
         #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
         mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
         mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
-        print mv1.units
-        print mv2.units
 
         # special case, cdms didn't properly convert mask with fill value -999.0, filed issue with denise
         if ref_name == 'WILLMOTT':
@@ -264,7 +272,12 @@ for parameter in parameters:
 
 
                 elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
+
                     mv = f_in (var)
+                    if ref_name == 'AIRS':
+                        #mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
+                        print mv.fill_value
+                        mv=MV2.masked_where(mv==mv.fill_value,mv) # this is cdms2 for bad mask, denise's fix should fix
                     #Construct pressure level for interpolation
                     levels_orig = MV2.array(mv_plv[:])
                     levels_orig.setAxis(0,mv_plv)

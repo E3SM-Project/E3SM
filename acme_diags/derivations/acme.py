@@ -48,6 +48,7 @@ def aplusb(var1, var2, target_units=None):
 
     return var1 + var2
 
+
 def _convert_units(var, target_units):
     ''' Converts units of var to target_units.
     var is a cdms.TransientVariable. '''
@@ -94,9 +95,9 @@ def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
 
 def qflx_convert_units (var):
     print "testtest"
+    print '%%%%%%%%%%%%%%%%%%%%%%%%%'
     var = _convert_units( var, 'kg/(m^2 s)' )
     var = var *3600.0*24  #convert to mm/day
-    print '%%%%%%%%%%%%%%%%%%%%%%%%%'
     var.units = 'mm/day'
     return var
 
@@ -111,6 +112,103 @@ derived_variables = {
     ],
     'PREH2O': [
         (['TMQ'], rename)
+    ],
+    'ALBEDO': [
+        (['ALBEDO'], rename),
+        (['SOLIN','FSNTOA'], lambda solin, fsntoa: (solin-fsntoa)/solin)
+    ],
+    'ALBEDOC': [
+        (['ALBEDOC'], rename),
+        (['SOLIN','FSNTOAC'], lambda solin, fsntoac: (solin-fsntoac)/solin)
+    ],
+    'SWCF': [
+        (['SWCF'], rename),
+        (['FSNTOA', 'FSNTOAC'], lambda fsntoa, fsntoac: fsntoa-fsntoac)
+    ],
+    'SWCFSRF': [
+        (['SWCFSRF'], rename),
+        (['FSNS', 'FSNSC'], lambda fsns, fsnsc: fsns-fsnsc)
+    ],
+    'LWCF': [
+        (['LWCF'], rename),
+        (['FLNTOA', 'FLNTOAC'], lambda flntoa, flntoac: flntoa-flntoac)
+    ],
+    'LWCFSRF': [
+        (['LWCFSRF'], rename),
+        (['FLNSC','FLNS'], lambda flns, flnsc: flnsc-flns)
+    ],
+    'FLNS': [
+        (['FLNS'], lambda flns: _convert_units(flns, target_units="W/m^2"))
+    ],
+    'FLNSC': [
+        (['FLNSC'], lambda flnsc: _convert_units(flns, target_units="W/m^2"))
+    ],
+    'FLDS': [
+        (['FLDS'], lambda flds: _convert_units(flds, target_units="W/m^2"))
+    ],
+    'FLDSC': [
+        (['FLDSC'], lambda fldsc: _convert_units(fldsc, target_units="W/m^2"))
+    ],
+    'FSNS': [
+        (['FSNS'], lambda fsns: _convert_units(fsns, target_units="W/m^2"))
+    ],
+    'FSNSC': [
+        (['FSNSC'], lambda fsnsc: _convert_units(fsnsc, target_units="W/m^2"))
+    ],
+    'FSDS': [
+        (['FSDS'], lambda fsds: _convert_units(fsds, target_units="W/m^2"))
+    ],
+    'FSDSC': [
+        (['FSDSC'], lambda fsdsc: _convert_units(fsdsc, target_units="W/m^2"))
+    ],
+    'FLUT': [
+        (['FLUT'], lambda flut: _convert_units(flut, target_units="W/m^2"))
+    ],
+    'FLUTC': [
+        (['FLUTC'], lambda flutc: _convert_units(flutc, target_units="W/m^2"))
+    ],
+    'FSNTOA': [
+        (['FSNTOA'], lambda fsntoa: _convert_units(fsntoa, target_units="W/m^2"))
+    ],
+    'FSNTOAC': [
+        (['FSNTOAC'], lambda fsntoac: _convert_units(fsntoac, target_units="W/m^2"))
+    ],
+    'RESTOM': [
+        (['RESTOA'], rename),
+        (['FSNT','FLNT'],  lambda fsnt, flnt: fsnt-flnt)
+    ],
+    'RESTOA': [
+        (['RESTOA'], rename),
+        (['FSNTOA','FLNTOA'],  lambda fsntoa, flntoa: fsntoa-flntoa)
+    ],
+    'TREFHT_LAND':[ 
+        (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(_convert_units(trefht, target_units="K"), landfrac, low_limit = 0.65)),
+        (['TREFHT_LAND'],rename)
+    ],
+    'PRECT_LAND':[ 
+        (['PRECC','PRECL', 'LANDFRAC'], lambda a, b , landfrac: mask_by(aplusb(a, b, target_units="mm/day"), landfrac, low_limit = 0.5) ), #0.5 just to match amwg
+        (['PRECIP_LAND'],rename)
+    ],
+    'Z3': [
+        (['Z3'], lambda z3: _convert_units(z3, target_units="hectometer"))
+    ],
+    'PSL': [
+        (['PSL'], lambda psl: _convert_units(psl, target_units="hectopascal"))
+    ],
+    'T': [
+        (['T'], lambda t: _convert_units(t, target_units="K"))
+    ],
+    'U': [
+        (['U'], lambda u: _convert_units(u, target_units="m/s"))
+    ],
+    'TREFHT': [
+        (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
+    ],
+    'FLNS': [
+        (['FLNS'], lambda flns: _convert_units(flns, target_units="W/m^2"))
+    ],
+    'FSNS': [
+        (['FSNS'], lambda fsns: _convert_units(fsns, target_units="W/m^2"))
     ],
     'TREFHT_LAND':[ 
         (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(_convert_units(trefht, target_units="K"), landfrac, low_limit = 0.65)),
@@ -141,7 +239,15 @@ derived_variables = {
     'LHFLX': [
         (['LHFLX'], lambda lhflx: _convert_units(lhflx, target_units="W/m^2")),
     ],
+    'SHFLX': [
+        (['SHFLX'], lambda shflx: _convert_units(shflx, target_units="W/m^2")),
+    ],
     'TGCLDLWP_OCN':[ (['TGCLDLWP_OCEAN'], (lambda x: _convert_units(x, target_units='g/m^2')) ),
                      (['TGCLDLWP', 'OCNFRAC'], lambda tgcldlwp, ocnfrac: mask_by(_convert_units(tgcldlwp, target_units="g/m^2"), ocnfrac, low_limit = 0.65))],
+    'PRECT_OCN':[ (['PRECT_OCEAN'], (lambda x: _convert_units(x, target_units='mm/day')) ),
+                     (['PRECC','PRECL', 'OCNFRAC'], lambda a, b , ocnfrac: mask_by(aplusb(a, b, target_units="mm/day"), ocnfrac, low_limit = 0.65))],
+    'PREH2O_OCN':[ (['PREH2O_OCEAN'], (lambda x: _convert_units(x, target_units='mm')) ),
+		     #(['TMQ', 'OCNFRAC'], lambda preh2o, ocnfrac: mask_by(_convert_units(preh2o, target_units="mm"), ocnfrac, low_limit = 0.65))],
+                     (['TMQ', 'OCNFRAC'], lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit = 0.65))],
 }
 
