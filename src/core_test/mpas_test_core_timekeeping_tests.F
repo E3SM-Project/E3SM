@@ -12,7 +12,7 @@ module test_core_timekeeping_tests
    use mpas_field_routines
    use mpas_dmpar
    use mpas_threading
-   use mpas_io_units
+   use mpas_log
    use mpas_timer
    use mpas_timekeeping
 
@@ -53,59 +53,59 @@ module test_core_timekeeping_tests
       err = 0
 
       if ( threadNum == 0 ) then
-         write(stderrUnit, *) ' Performing time interval tests'
+         call mpas_log_write(' Performing time interval tests')
 
-         write(stderrUnit, *) '  Test 1:'
+         call mpas_log_write('  Test 1:')
          call test_core_interval_test('0001-01-01_00:00:00', '0000-01-00_10:00:00', '0001_00:00:00', 31, '0000_10:00:00', err_tmp)
          if ( err_tmp == 0 ) then
-            write(stderrUnit, *) '   Result: PASSED'
+            call mpas_log_write('   Result: PASSED')
          else
-            write(stderrUnit, *) ' * Result: FAILED'
+            call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
          end if
 
-         write(stderrUnit, *) '  Test 2:'
+         call mpas_log_write('  Test 2:')
          call test_core_interval_test('0001-01-01_00:00:00', '0000-01-00_00:00:00', '0001_00:00:00', 31, '0000_00:00:00', err_tmp)
          if ( err_tmp == 0 ) then
-            write(stderrUnit, *) '   Result: PASSED'
+            call mpas_log_write('   Result: PASSED')
          else
-            write(stderrUnit, *) ' * Result: FAILED'
+            call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
          end if
 
-         write(stderrUnit, *) '  Test 3:'
+         call mpas_log_write('  Test 3:')
          call test_core_interval_test('0001-02-01_00:00:00', '0000-01-00_10:00:00', '0001_00:00:00', 28, '0000_10:00:00', err_tmp)
          if ( err_tmp == 0 ) then
-            write(stderrUnit, *) '   Result: PASSED'
+            call mpas_log_write('   Result: PASSED')
          else
-            write(stderrUnit, *) ' * Result: FAILED'
+            call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
          end if
 
-         write(stderrUnit, *) '  Test 4:'
+         call mpas_log_write('  Test 4:')
          call test_core_interval_test('0001-02-01_00:00:00', '0000-01-00_00:00:00', '0001_00:00:00', 28, '0000_00:00:00', err_tmp)
          if ( err_tmp == 0 ) then
-            write(stderrUnit, *) '   Result: PASSED'
+            call mpas_log_write('   Result: PASSED')
          else
-            write(stderrUnit, *) ' * Result: FAILED'
+            call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
          end if
 
-         write(stderrUnit, *) '  Test 5:'
+         call mpas_log_write('  Test 5:')
          call test_core_interval_test('0001-01-01_00:00:00', '0000-00-00_01:00:00', '0000_00:30:00', 2, '0000_00:00:00', err_tmp)
          if ( err_tmp == 0 ) then
-            write(stderrUnit, *) '   Result: PASSED'
+            call mpas_log_write('   Result: PASSED')
          else
-            write(stderrUnit, *) ' * Result: FAILED'
+            call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
          end if
 
-         write(stderrUnit, *) '  Test 6:'
+         call mpas_log_write('  Test 6:')
          call test_core_interval_test('0001-01-01_00:00:00', '0001-01-00_00:00:00', '0001-00-00_00:00:00', 1, '0000-00-31_00:00:00', err_tmp)
          if ( err_tmp == 0 ) then
-            write(stderrUnit, *) '   Result: PASSED'
+            call mpas_log_write('   Result: PASSED')
          else
-            write(stderrUnit, *) ' * Result: FAILED'
+            call mpas_log_write(' * Result: FAILED', MPAS_LOG_ERR)
          end if
 
 
 
-         write(stderrUnit, *) ' Completed time interval tests'
+         call mpas_log_write(' Completed time interval tests')
       end if
 
       call mpas_timer_stop('timekeeping tests')
@@ -130,39 +130,39 @@ module test_core_timekeeping_tests
 
       ierr = 0
 
-      write(stderrUnit, *) ''
-      write(stderrUnit, *) '  Testing time intervals:'
-      write(stderrUnit, *) '      Reference time: ', trim(ref_str)
-      write(stderrUnit, *) '      Interval 1: ', trim(int1_str)
-      write(stderrUnit, *) '      Interval 2: ', trim(int2_str)
+      call mpas_log_write('')
+      call mpas_log_write('  Testing time intervals:')
+      call mpas_log_write('      Reference time: ' // trim(ref_str))
+      call mpas_log_write('      Interval 1: ' // trim(int1_str))
+      call mpas_log_write('      Interval 2: ' // trim(int2_str))
 
       call mpas_set_time(ref_time, dateTimeString=ref_str, ierr=err_tmp)
       call mpas_set_timeinterval(int1, timeString=int1_str, ierr=err_tmp)
       call mpas_set_timeinterval(int2, timeString=int2_str, ierr=err_tmp)
       call mpas_set_timeinterval(expected_remainder, timeString=expected_remainder_str, ierr=err_tmp)
 
-      write(stderrUnit, *) '      -- Calling interval division'
+      call mpas_log_write('      -- Calling interval division')
 
       call mpas_interval_division(ref_time, int1, int2, divs, remainder)
 
       call mpas_get_timeinterval(remainder, startTimeIn=ref_time, timeString=remainder_str)
 
-      write(stderrUnit, *) '      Interval Division summary'
-      write(stderrUnit, *) '          Divisions: ', divs
-      write(stderrUnit, *) '          Remainder: ', trim(remainder_str)
-      write(stderrUnit, *) ''
+      call mpas_log_write('      Interval Division summary')
+      call mpas_log_write('          Divisions: $i', intArgs=(/divs/))
+      call mpas_log_write('          Remainder: ' // trim(remainder_str))
+      call mpas_log_write('')
 
       if ( divs == expected_divs ) then
-         write(stderrUnit, *) '          Div Test: PASSED'
+         call mpas_log_write('          Div Test: PASSED')
       else
-         write(stderrUnit, *) ' **       Div Test: FAILED'
+         call mpas_log_write(' **       Div Test: FAILED', MPAS_LOG_ERR)
          ierr = 1
       end if
 
       if ( remainder == expected_remainder ) then
-         write(stderrUnit, *) '          Remainder Test: PASSED'
+         call mpas_log_write('          Remainder Test: PASSED')
       else
-         write(stderrUnit, *) ' **       Remainder Test: FAILED'
+         call mpas_log_write(' **       Remainder Test: FAILED', MPAS_LOG_ERR)
          ierr = 1
       end if
 

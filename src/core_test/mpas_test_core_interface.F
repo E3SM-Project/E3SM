@@ -11,7 +11,7 @@ module test_core_interface
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_constants
-   use mpas_io_units
+   use mpas_log
    use mpas_attlist
    use test_core
 
@@ -194,7 +194,7 @@ module test_core_interface
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
-               write(stderrUnit,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               call mpas_log_write('config_run_duration and config_stop_time are inconsitent: using config_run_duration.', MPAS_LOG_WARN)
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
@@ -202,7 +202,7 @@ module test_core_interface
          timeStep = stopTime - startTime
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=local_err)
       else
-          write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
+          call mpas_log_write('Neither config_run_duration nor config_stop_time were specified.', MPAS_LOG_ERR)
           ierr = 1
       end if
 

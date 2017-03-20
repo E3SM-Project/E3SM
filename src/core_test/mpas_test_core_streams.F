@@ -11,7 +11,7 @@ module test_core_streams
    use mpas_pool_routines
    use mpas_field_routines
    use mpas_dmpar
-   use mpas_io_units
+   use mpas_log
 
 
    contains
@@ -116,7 +116,7 @@ module test_core_streams
                                          ierr=local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error creating ''R4_stream''.'
+         call mpas_log_write('Error creating ''R4_stream''.')
          return
       end if
 
@@ -126,7 +126,7 @@ module test_core_streams
                                          ierr=local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error creating ''R8_stream''.'
+         call mpas_log_write('Error creating ''R8_stream''.')
          return
       end if
 
@@ -137,7 +137,7 @@ module test_core_streams
                                          ierr=local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error creating ''R8_stream''.'
+         call mpas_log_write('Error creating ''R8_stream''.')
          return
       end if
 
@@ -166,14 +166,14 @@ module test_core_streams
       call MPAS_stream_mgr_destroy_stream(domain % streamManager, 'R4_stream', local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error destroying ''R4_stream''.'
+         call mpas_log_write('Error destroying ''R4_stream''.', MPAS_LOG_ERR)
          return
       end if
 
       call MPAS_stream_mgr_destroy_stream(domain % streamManager, 'R8_stream', local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error destroying ''R8_stream''.'
+         call mpas_log_write('Error destroying ''R8_stream''.', MPAS_LOG_ERR)
          return
       end if
 
@@ -189,7 +189,7 @@ module test_core_streams
                                          ierr=local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error creating ''R4_stream''.'
+         call mpas_log_write('Error creating ''R4_stream''.', MPAS_LOG_ERR)
          return
       end if
 
@@ -199,7 +199,7 @@ module test_core_streams
                                          ierr=local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error creating ''R8_stream''.'
+         call mpas_log_write('Error creating ''R8_stream''.', MPAS_LOG_ERR)
          return
       end if
 
@@ -257,40 +257,40 @@ module test_core_streams
          d(1) = d(1) + (real1D(i) - realValue)
       end do
       if (real0D /= real(2.0_RKIND * asin(1.0_RKIND),kind=R4KIND)) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 0-d field from single-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 0-d field from single-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 0-d field from single-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 0-d field from single-precision stream - SUCCESS')
       end if
       if (d(1) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 1-d field from single-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 1-d field from single-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 1-d field from single-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 1-d field from single-precision stream - SUCCESS')
       end if
       if (d(2) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 2-d field from single-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 2-d field from single-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 2-d field from single-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 2-d field from single-precision stream - SUCCESS')
       end if
       if (d(3) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 3-d field from single-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 3-d field from single-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 3-d field from single-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 3-d field from single-precision stream - SUCCESS')
       end if
       if (d(4) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 4-d field from single-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 4-d field from single-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 4-d field from single-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 4-d field from single-precision stream - SUCCESS')
       end if
       if (d(5) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 5-d field from single-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 5-d field from single-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 5-d field from single-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 5-d field from single-precision stream - SUCCESS')
       end if
 
       !
@@ -337,40 +337,40 @@ module test_core_streams
          d(1) = d(1) + (real1D(i) - realValue)
       end do
       if (real0D /= (2.0_RKIND * asin(1.0_RKIND))) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 0-d field from double-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 0-d field from double-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 0-d field from double-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 0-d field from double-precision stream - SUCCESS')
       end if
       if (d(1) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 1-d field from double-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 1-d field from double-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 1-d field from double-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 1-d field from double-precision stream - SUCCESS')
       end if
       if (d(2) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 2-d field from double-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 2-d field from double-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 2-d field from double-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 2-d field from double-precision stream - SUCCESS')
       end if
       if (d(3) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 3-d field from double-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 3-d field from double-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 3-d field from double-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 3-d field from double-precision stream - SUCCESS')
       end if
       if (d(4) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 4-d field from double-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 4-d field from double-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 4-d field from double-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 4-d field from double-precision stream - SUCCESS')
       end if
       if (d(5) /= 0.0) then
-         write(stderrUnit,'(a)') '   Difference detected when reading back 5-d field from double-precision stream - FAILURE'
+         call mpas_log_write('   Difference detected when reading back 5-d field from double-precision stream - FAILURE', MPAS_LOG_ERR)
          ierr = ierr + 1
       else
-         write(stderrUnit,'(a)') '   Reading 5-d field from double-precision stream - SUCCESS'
+         call mpas_log_write('   Reading 5-d field from double-precision stream - SUCCESS')
       end if
 
 
@@ -380,14 +380,14 @@ module test_core_streams
       call MPAS_stream_mgr_destroy_stream(domain % streamManager, 'R4_stream', local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error destroying ''R4_stream''.'
+         call mpas_log_write('Error destroying ''R4_stream''.', MPAS_LOG_ERR)
          return
       end if
 
       call MPAS_stream_mgr_destroy_stream(domain % streamManager, 'R8_stream', local_ierr)
       if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
          ierr = 1
-         write(stderrUnit,*) 'Error destroying ''R8_stream''.'
+         call mpas_log_write('Error destroying ''R8_stream''.', MPAS_LOG_ERR)
          return
       end if
 
