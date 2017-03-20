@@ -2120,6 +2120,30 @@ Default: .true.
 </entry>
 
 <!-- micro_mg -->
+<entry id="micro_do_nccons" type="logical" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Specify in-stratus cloud droplet number concentration for stratiform microphysics and radiation.
+Default: FALSE
+</entry>
+
+<entry id="micro_do_nicons" type="logical" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Specify in-stratus cloud ice number concentration for stratiform microphysics and radiation.
+Default: FALSE
+</entry>
+
+<entry id="micro_nccons" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Liquid droplet concentration (in #/cc) when micro_do_nccons=.true.
+Default: set by build-namelist
+</entry>   
+
+<entry id="micro_nicons" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Ice crystal concentration (in #/cc) when micro_do_nicons=.true.
+Default: set by build-namelist
+</entry> 
+
 <entry id="micro_mg_version" type="integer" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Version number for MG microphysics
@@ -4142,6 +4166,24 @@ Default: ""
 <entry id="scm_relaxation" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use relaxation.
+Default: FALSE
+</entry>
+
+<entry id="scm_observed_aero" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Initialize with observed aerosols. This works only for mode three and with prescribed aerosol model.
+Default: FALSE
+</entry>
+
+<entry id="swrad_off" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Assume night time (turn off SW rad).
+Default: FALSE
+</entry>
+
+<entry id="lwrad_off" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Assume turn off LW rad.
 Default: FALSE
 </entry>
 

@@ -24,7 +24,8 @@ use cam_abortutils,      only: endrun
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
 use scamMod,         only: scm_crm_mode, single_column,have_cld,cldobs,&
-                           have_clwp,clwpobs,have_tg,tground
+                           have_clwp,clwpobs,have_tg,tground,swrad_off,&
+                           lwrad_off
 use perf_mod,        only: t_startf, t_stopf
 use cam_logfile,     only: iulog
 
@@ -868,6 +869,10 @@ end function radiation_nextsw_cday
 
     call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
+    if (swrad_off) then
+       coszrs(:)=0._r8 ! coszrs is only output for zenith
+    endif
+
     ! Gather night/day column indices.
     Nday = 0
     Nnite = 0
@@ -1175,6 +1180,21 @@ end function radiation_nextsw_cday
                   do i=1,ncol
                      lwcf(i)=flutc(i) - flut(i)
                   end do
+
+                  if (lwrad_off) then
+                     qrl(:,:) = 0._r8
+                     qrlc(:,:) = 0._r8
+                     flns(:) = 0._r8
+                     flnt(:) = 0._r8
+                     flnsc(:) = 0._r8
+                     flntc(:) = 0._r8
+                     cam_out%flwds(:) = 0._r8
+                     flut(:) = 0._r8
+                     flutc(:) = 0._r8
+                     fnl(:,:) = 0._r8
+                     fcnl(:,:) = 0._r8
+                     fldsc(:) = 0._r8
+                  end if !lwrad_off
 
                   !  Output fluxes at 200 mb
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fnl, fln200)

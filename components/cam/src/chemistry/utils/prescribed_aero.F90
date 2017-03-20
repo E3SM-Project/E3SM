@@ -460,6 +460,7 @@ end subroutine spec_c_to_a
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk, &
          pbuf_get_index
     use ppgrid,       only : pcols, pver
+    use scamMod,      only : single_column
 
     !Arguments
     type(physics_state), intent(in)    :: state(begchunk:endchunk)
@@ -476,6 +477,12 @@ end subroutine spec_c_to_a
     real(r8) :: logm_data(pcols,pver),logv_data(pcols,pver)
 
     randn = randn_prescribed_aero()
+   
+    ! random sampling is off (randn=0) in single column model setting. 
+    if (single_column) then
+      randn = 0._r8
+    endif
+    
     do i = 1, aero_cnt
        !Species with '_a' are updated using random sampling.
        !Cloud borne species (ends with _c1,_c2, etc.) have to be skipped

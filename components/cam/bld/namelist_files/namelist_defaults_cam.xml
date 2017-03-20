@@ -636,6 +636,7 @@
 <num_a1_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_surf_2000_c120315.nc</num_a1_emis_file>
 <num_a2_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a2_surf_2000_c120315.nc</num_a2_emis_file>
 
+<soag_ext_file     ver="mam">atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc</soag_ext_file>
 <so2_ext_file      ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_elev_2000_c120315.nc </so2_ext_file>
 <so4_a1_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_elev_2000_c120315.nc</so4_a1_ext_file>
 <so4_a2_ext_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a2_elev_2000_c120315.nc</so4_a2_ext_file>

@@ -484,6 +484,10 @@
     <lname>AR97_CAM5%SCAM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>FSCM5</alias>
+    <lname>SCM5_CAM5%SCAM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset> 
 
   <compset>
     <alias>FC4AQUAP</alias>
@@ -530,7 +534,12 @@
   <compset>
     <alias>F_ARM97_SCAM5</alias>
     <lname>AR97_CAM5%SCAM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
-  </compset>  
+  </compset> 
+  
+  <compset>
+    <alias>F_SCAM5</alias>
+    <lname>SCAM_CAM5%SCAM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>   
 
   <entries>
 
