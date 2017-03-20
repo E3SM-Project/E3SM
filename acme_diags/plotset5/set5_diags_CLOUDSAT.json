@@ -1,0 +1,41 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_CLOUDSAT",
+      "variables": "CLDHGH",
+      "ref_name": "CLOUDSAT",
+      "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_CLOUDSAT",
+      "variables": "CLDLOW",
+      "ref_name": "CLOUDSAT",
+      "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_CLOUDSAT",
+      "variables": "CLDMED",
+      "ref_name": "CLOUDSAT",
+      "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_CLOUDSAT",
+      "variables": "CLDTOT",
+      "ref_name": "CLOUDSAT",
+      "reference_name": "CLOUDSAT(Radar+Lidar)Sep2006-Dec2010",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                }
+          ]
+}
