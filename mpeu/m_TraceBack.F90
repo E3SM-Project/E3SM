@@ -2,15 +2,15 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_TraceBack - Generation of Traceback Information
 !
 ! !DESCRIPTION:
-! This module supports the generation of traceback information for 
-! a given routine.  
-! 
+! This module supports the generation of traceback information for
+! a given routine.
+!
 !
 ! !INTERFACE:
 
@@ -61,10 +61,10 @@
 !
 ! !DESCRIPTION:
 ! This routine takes in CHARACTER form the names of the calling routine
-! (the input argument {\tt RoutineName} and returns a {\tt String} 
+! (the input argument {\tt RoutineName} and returns a {\tt String}
 ! (the output argument {\tt TraceBackString}) that portrays this routine
-! as the starting point of a downwards procedural trace.  The contents 
-! of {\tt TraceBackString} is merely an {\tt '|X|'}, followed immediately 
+! as the starting point of a downwards procedural trace.  The contents
+! of {\tt TraceBackString} is merely an {\tt '|X|'}, followed immediately
 ! by the value of {\tt RoutineName}.
 !
 ! !INTERFACE:
@@ -78,7 +78,7 @@
 
       use m_String, only : String
       use m_String, only : String_init => init
-      
+
       implicit none
 
 ! !INPUT PARAMETERS:
@@ -108,7 +108,7 @@
        ! Set up ScratchBuffer:
 
   ScratchBufferLength = len(StartChar) + RoutineNameLength
-                        
+
   allocate(ScratchBuffer(ScratchBufferLength), stat=ierr)
   if(ierr /= 0) then
      write(stderr,'(2a,i8)') myname_, &
@@ -149,11 +149,11 @@
 ! !IROUTINE: GenTraceBackString2 - Connect Two Routine Names in a TraceBack
 !
 ! !DESCRIPTION:
-! This routine takes in CHARACTER form the names of the parent and 
-! child routines (the input arguments {\tt ParentName} and 
-! {\tt ChildName}, repsectively), and returns a {\tt String} (the output 
-! argument {\tt TraceBackString}) that portrays their procedural 
-! relationship.  The contents of {\tt TraceBackString} is merely 
+! This routine takes in CHARACTER form the names of the parent and
+! child routines (the input arguments {\tt ParentName} and
+! {\tt ChildName}, repsectively), and returns a {\tt String} (the output
+! argument {\tt TraceBackString}) that portrays their procedural
+! relationship.  The contents of {\tt TraceBackString} is merely
 ! {\tt ParentName}, followe by an arrow ({\tt "->"}), followed by
 ! {\tt ChildName}.
 !
@@ -168,7 +168,7 @@
 
       use m_String, only : String
       use m_String, only : String_init => init
-      
+
       implicit none
 
 ! !INPUT PARAMETERS:

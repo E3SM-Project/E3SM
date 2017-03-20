@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_Filename - Filename manipulation routines

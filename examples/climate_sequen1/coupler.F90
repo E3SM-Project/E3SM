@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: coupler.F90,v 1.6 2006-10-17 21:46:35 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE: coupler -- coupler for sequential model example
@@ -106,7 +106,7 @@ subroutine cplinit(SrcGSMap,DstGSMap,comm,compid)
 !   INITIALIZATION PHASE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      
+
   ! LOCAL RANK AND SIZE
   call MPI_COMM_RANK(comm,rank,ierr)
   call MPI_COMM_SIZE(comm,nprocs,ierr)
@@ -124,19 +124,19 @@ subroutine cplinit(SrcGSMap,DstGSMap,comm,compid)
      read(mdev,*) num_elements
      read(mdev,*) src_dims(1), src_dims(2)
      read(mdev,*) dst_dims(1), dst_dims(2)
-     
+
      allocate(rows(num_elements), columns(num_elements), &
           weights(num_elements), stat=ierr)
 
      do n=1, num_elements
         read(mdev,*) rows(n), columns(n), weights(n)
      end do
-     
+
      close(mdev)
 
      ! Initialize a Sparsematrix
      nRows = dst_dims(1) * dst_dims(2)
-     nColumns = src_dims(1) * src_dims(2)     
+     nColumns = src_dims(1) * src_dims(2)
      call SparseMatrix_init(sMat,nRows,nColumns,num_elements)
      call SparseMatrix_importGRowInd(sMat, rows, size(rows))
      call SparseMatrix_importGColInd(sMat, columns, size(columns))
@@ -211,4 +211,4 @@ subroutine cplfin
 end subroutine cplfin
 
 end module coupler
-         
+

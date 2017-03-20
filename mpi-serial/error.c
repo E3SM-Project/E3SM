@@ -3,7 +3,7 @@
 
 /*
  * Error handling code
- * Just a stub for now to support the MPI interface without actually 
+ * Just a stub for now to support the MPI interface without actually
  * doing anything
  */
 

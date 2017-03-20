@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_rankMerge - A merging tool through ranking
@@ -106,10 +106,10 @@ end subroutine set_
 
   descend_=.false.
   if(present(descend)) descend_=descend
-  
+
   ni=size(krank_i)
   nj=size(krank_j)
-  
+
   i=1
   j=1
   krank=0		! a preset rank value
@@ -137,7 +137,7 @@ end subroutine set_
           krank=krank+1		! the next rank value
           value_sv=value
         endif
-        
+
         if(geti) then
           krank_i(i)=krank
           i=i+1
@@ -183,13 +183,13 @@ end subroutine imerge_
   real(SP)    :: value_sv,value
   integer :: krank
   integer :: i,j
-  
+
   descend_=.false.
   if(present(descend)) descend_=descend
 
   ni=size(krank_i)
   nj=size(krank_j)
-  
+
   i=1
   j=1
   krank=0		! a preset rank value
@@ -212,12 +212,12 @@ end subroutine imerge_
           endif
           if(.not.geti) value = value_j(j)
         endif
-        
+
         if(krank==0 .or. value /= value_sv) then
           krank=krank+1		! the next rank value
           value_sv=value
         endif
-        
+
         if(geti) then
           krank_i(i)=krank
           i=i+1
@@ -263,13 +263,13 @@ end subroutine rmerge_
   real(DP):: value_sv,value
   integer :: krank
   integer :: i,j
-  
+
   descend_=.false.
   if(present(descend)) descend_=descend
 
   ni=size(krank_i)
   nj=size(krank_j)
-  
+
   i=1
   j=1
   krank=0		! a preset rank value
@@ -292,12 +292,12 @@ end subroutine rmerge_
           endif
           if(.not.geti) value = value_j(j)
         endif
-        
+
         if(krank==0 .or. value /= value_sv) then
           krank=krank+1		! the next rank value
           value_sv=value
         endif
-        
+
         if(geti) then
           krank_i(i)=krank
           i=i+1
@@ -347,10 +347,10 @@ end subroutine dmerge_
 
   descend_=.false.
   if(present(descend)) descend_=descend
-  
+
   ni=size(krank_i)
   nj=size(krank_j)
-  
+
   i=1
   j=1
   krank=0		! a preset rank value
@@ -381,7 +381,7 @@ end subroutine dmerge_
           krank=krank+1		! the next rank value
           value_sv=value_
         endif
-        
+
         if(geti) then
           krank_i(i)=krank
           i=i+1
@@ -429,13 +429,13 @@ end subroutine iindexmerge_
   real(SP):: value_sv,value_
   integer :: krank
   integer :: i,j,li,lj
-  
+
   descend_=.false.
   if(present(descend)) descend_=descend
 
   ni=size(krank_i)
   nj=size(krank_j)
-  
+
   i=1
   j=1
   krank=0		! a preset rank value
@@ -461,12 +461,12 @@ end subroutine iindexmerge_
           endif
           if(.not.geti) value_ = value(lj)
         endif
-        
+
         if(krank==0 .or. value_ /= value_sv) then
           krank=krank+1		! the next rank value
           value_sv=value_
         endif
-        
+
         if(geti) then
           krank_i(i)=krank
           i=i+1
@@ -513,13 +513,13 @@ end subroutine rindexmerge_
   real(DP):: value_sv,value_
   integer :: krank
   integer :: i,j,li,lj
-  
+
   descend_=.false.
   if(present(descend)) descend_=descend
 
   ni=size(krank_i)
   nj=size(krank_j)
-  
+
   i=1
   j=1
   krank=0		! a preset rank value
@@ -545,12 +545,12 @@ end subroutine rindexmerge_
           endif
           if(.not.geti) value_ = value(lj)
         endif
-        
+
         if(krank==0 .or. value_ /= value_sv) then
           krank=krank+1		! the next rank value
           value_sv=value_
         endif
-        
+
         if(geti) then
           krank_i(i)=krank
           i=i+1
@@ -603,7 +603,7 @@ end subroutine dindexmerge_
           geti = i<=ni
           if(geti) geti = krank_i(i) <= krank_j(j)	! if(i<=ni) ..
         endif
-        
+
         krank=krank+1		! the next rank value
 
 	if(geti) then

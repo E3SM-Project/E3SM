@@ -2,36 +2,36 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_Merge - Merge flux and state data from multiple sources.
 !
 ! !DESCRIPTION:  This module supports {\em merging} of state and flux
-! data from multiple components with overlapping spatial domains for use 
-! by another component.  For example, let the vectors ${\bf a}$ and 
-! ${\bf b}$ be data from Components $A$ and $B$ that have been 
+! data from multiple components with overlapping spatial domains for use
+! by another component.  For example, let the vectors ${\bf a}$ and
+! ${\bf b}$ be data from Components $A$ and $B$ that have been
 ! interpolated onto the physical grid of another component $C$.  We wish
 ! to combine the data from $A$ and $B$ to get a vector ${\bf c}$, which
-! represents the merged data on the grid of component $C$.  This merge 
+! represents the merged data on the grid of component $C$.  This merge
 ! process is an element-by-element masked weighted average:
-! $$ c_i = {{{{\prod_{j=1}^J} M_{i}^j} {{\prod_{k=1}^K} F_{i}^k} a_i + 
+! $$ c_i = {{{{\prod_{j=1}^J} M_{i}^j} {{\prod_{k=1}^K} F_{i}^k} a_i +
 ! {{\prod_{p=1}^P} N_{i}^p} {{\prod_{q=1}^Q} G_{i}^q} b_i} \over
-! {{{\prod_{j=1}^J} M_{i}^j} {{\prod_{k=1}^K} F_{i}^k} + 
+! {{{\prod_{j=1}^J} M_{i}^j} {{\prod_{k=1}^K} F_{i}^k} +
 ! {{\prod_{p=1}^P} N_{i}^p} {{\prod_{q=1}^Q} G_{i}^q}}}, $$
-! Where ${M_{i}^j}$ and ${N_{i}^p}$ are {\em integer masks} (which have 
-! value either $0$ or $1$), and ${F_{i}^k}$ and ${G_{i}^q}$ are {\em real 
+! Where ${M_{i}^j}$ and ${N_{i}^p}$ are {\em integer masks} (which have
+! value either $0$ or $1$), and ${F_{i}^k}$ and ${G_{i}^q}$ are {\em real
 ! masks} (which are in the closed interval $[0,1]$).
 !
-! Currently, we assume that the integer and real masks are stored in 
-! the same {\tt GeneralGrid} datatype.  We also assume--and this is of 
-! critical importance to the user--that the attributes to be merged are 
-! the same for all the inputs and output.  If the user violates this 
-! assumption, incorrect merges will occur for any attributes that are 
+! Currently, we assume that the integer and real masks are stored in
+! the same {\tt GeneralGrid} datatype.  We also assume--and this is of
+! critical importance to the user--that the attributes to be merged are
+! the same for all the inputs and output.  If the user violates this
+! assumption, incorrect merges will occur for any attributes that are
 ! present in only some (that is not all) of the inputs.
 !
-! This module supports explicitly the merging data from two, three, and 
-! four components.  There is also a routine named {\tt MergeInData} that 
+! This module supports explicitly the merging data from two, three, and
+! four components.  There is also a routine named {\tt MergeInData} that
 ! allows the user to construct other merging schemes.
 !
 ! !INTERFACE:
@@ -96,61 +96,61 @@
 !
 ! !IROUTINE: MergeTwoGGSP_ - Merge Data from Two Sources
 !
-! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
-! two input {\tt AttrVect} arguments {\tt inAv1} and {\tt inAv2} to 
-! a third {\tt AttrVect} {\tt outAv}.  The attributes to be merged are 
-! determined entirely by the real attributes of {\tt outAv}.  If 
-! {\tt outAv} shares one or more attributes with either of the inputs 
-! {\tt inAv1} or {\tt inAv2}, a merge is performed on the individual 
+! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from
+! two input {\tt AttrVect} arguments {\tt inAv1} and {\tt inAv2} to
+! a third {\tt AttrVect} {\tt outAv}.  The attributes to be merged are
+! determined entirely by the real attributes of {\tt outAv}.  If
+! {\tt outAv} shares one or more attributes with either of the inputs
+! {\tt inAv1} or {\tt inAv2}, a merge is performed on the individual
 ! {\em intersections} of attributes between the pairs $({\tt outAv},
 ! {\tt inAv1})$ and $({\tt outAv},{\tt inAv1})$.  Currently, it is assumed
-! that these pairwise intersections are all equal.  This assumption is of 
-! critical importance to the user.  If the user violates this 
-! assumption, incorrect merges of attributes that are present in some 
+! that these pairwise intersections are all equal.  This assumption is of
+! critical importance to the user.  If the user violates this
+! assumption, incorrect merges of attributes that are present in some
 ! (but not all) of the inputs will result.
 !
-! The merge operatrion is a masked 
-! weighted element-by-element sum, as outlined in the following example.  
-! Let the vectors ${\bf a}$ and ${\bf b}$ be data from Components $A$ 
-! and $B$ that have been interpolated onto the physical grid of another 
-! component $C$.  We wish to combine the data from $A$ and $B$ to get 
-! a vector ${\bf c}$, which represents the merged data on the grid of 
-! component $C$.  The merge relation to obtain the $i$th element of 
-! {\bf c} is 
-! $$ c_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j} 
-! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l} 
+! The merge operatrion is a masked
+! weighted element-by-element sum, as outlined in the following example.
+! Let the vectors ${\bf a}$ and ${\bf b}$ be data from Components $A$
+! and $B$ that have been interpolated onto the physical grid of another
+! component $C$.  We wish to combine the data from $A$ and $B$ to get
+! a vector ${\bf c}$, which represents the merged data on the grid of
+! component $C$.  The merge relation to obtain the $i$th element of
+! {\bf c} is
+! $$ c_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j}
+! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l}
 ! {{\prod_{m=1}^M} \beta_{i}^m} {b_i} \bigg\} , $$
 ! where
-! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} + 
+! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} +
 ! {{\prod_{l=1}^L} \lambda_{i}^l} {{\prod_{m=1}^M} \beta_{i}^m}. $$
 ! The quantities ${\kappa_{i}^j}$ and ${\lambda_{i}^l}$ are {\em integer
-! masks} (which have value either $0$ or $1$), and ${\alpha_{i}^k}$ and 
-! ${\beta_{i}^m}$ are {\em real masks} (which are in the closed interval 
+! masks} (which have value either $0$ or $1$), and ${\alpha_{i}^k}$ and
+! ${\beta_{i}^m}$ are {\em real masks} (which are in the closed interval
 ! $[0,1]$).
 !
-! The integer and real masks are stored as attributes to the same input 
-! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are 
-! stored as substrings to the colon-separated strings contained in the 
-! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2}, 
-! {\tt rMaskTags1}, and {\tt rMaskTags2}.  The {\tt LOGICAL} input 
-! argument {\tt CheckMasks} governs how the masks are applied.  If 
-! ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are checked to ensure 
-! they meet the definitions of real and integer masks.  If 
-! ${\tt CheckMasks} = {\tt .TRUE.}$ then the masks are multiplied 
-! together on an element-by-element basis with no validation of their 
+! The integer and real masks are stored as attributes to the same input
+! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are
+! stored as substrings to the colon-separated strings contained in the
+! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2},
+! {\tt rMaskTags1}, and {\tt rMaskTags2}.  The {\tt LOGICAL} input
+! argument {\tt CheckMasks} governs how the masks are applied.  If
+! ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are checked to ensure
+! they meet the definitions of real and integer masks.  If
+! ${\tt CheckMasks} = {\tt .TRUE.}$ then the masks are multiplied
+! together on an element-by-element basis with no validation of their
 ! entries (this option results in slightly higher performance).
 !
 ! This routine returns the sume of the masked weights as a diagnostic.
 ! This quantity is returned in the output {\tt REAL} array {\tt WeightSum}.
 !
-! The correspondence between the quantities in the above merge relation 
+! The correspondence between the quantities in the above merge relation
 ! and the arguments to this routine are summarized in the table.
 ! \begin{center}
 ! \begin{tabular}{|l|l|l|}\hline
 ! {\bf Quantity} & {\bf Stored in} & {\bf Referenced by}  \\
 !  & {\bf Argument}    & {\bf Argument} \\
 ! \hline
-! \hline 
+! \hline
 ! $ {a_i} $ & {\tt inAv1} & \\
 ! \hline
 ! $ {b_i} $ & {\tt inAv2} & \\
@@ -218,7 +218,7 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
-!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument
 !                 checking.
 !EOP ___________________________________________________________________
 !
@@ -315,10 +315,10 @@
      WeightSum(i) = 0._FP
   end do
 
-       ! Process the incoming data one input AttrVect and mask tag 
+       ! Process the incoming data one input AttrVect and mask tag
        ! combination at a time.
 
-       ! First input AttrVect/mask combination...must work through 
+       ! First input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags1 and
        ! rMaskTags1.
 
@@ -347,7 +347,7 @@
 
   endif ! if(present(iMaskTags1))...
 
-       ! Second input AttrVect/mask combination...must work through 
+       ! Second input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags2 and
        ! rMaskTags2.
 
@@ -376,7 +376,7 @@
 
   endif ! if(present(iMaskTags2))...
 
-       ! Now we must renormalize the entries in outAv by dividing 
+       ! Now we must renormalize the entries in outAv by dividing
        ! element-by-element by the sums of the merge weights, which
        ! were accumulated in WeightSum(:)
 
@@ -391,7 +391,7 @@
      endif
 
      do j=1,AttrVect_nRAttr(outAv)
-	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i) 
+	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i)
      end do
 
   end do
@@ -453,7 +453,7 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
-!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument
 !                 checking.
 !_______________________________________________________________________
 !
@@ -550,10 +550,10 @@
      WeightSum(i) = 0._FP
   end do
 
-       ! Process the incoming data one input AttrVect and mask tag 
+       ! Process the incoming data one input AttrVect and mask tag
        ! combination at a time.
 
-       ! First input AttrVect/mask combination...must work through 
+       ! First input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags1 and
        ! rMaskTags1.
 
@@ -582,7 +582,7 @@
 
   endif ! if(present(iMaskTags1))...
 
-       ! Second input AttrVect/mask combination...must work through 
+       ! Second input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags2 and
        ! rMaskTags2.
 
@@ -611,7 +611,7 @@
 
   endif ! if(present(iMaskTags2))...
 
-       ! Now we must renormalize the entries in outAv by dividing 
+       ! Now we must renormalize the entries in outAv by dividing
        ! element-by-element by the sums of the merge weights, which
        ! were accumulated in WeightSum(:)
 
@@ -626,7 +626,7 @@
      endif
 
      do j=1,AttrVect_nRAttr(outAv)
-	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i) 
+	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i)
      end do
 
   end do
@@ -641,64 +641,64 @@
 !
 ! !IROUTINE: MergeThreeGGSP_ - Merge Data from Three Sources
 !
-! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
-! three input {\tt AttrVect} arguments {\tt inAv1} , {\tt inAv2}, and 
-! {\tt inAv3} to a fourth {\tt AttrVect} {\tt outAv}.  The attributes to 
+! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from
+! three input {\tt AttrVect} arguments {\tt inAv1} , {\tt inAv2}, and
+! {\tt inAv3} to a fourth {\tt AttrVect} {\tt outAv}.  The attributes to
 ! be merged are determined entirely by the real attributes of {\tt outAv}.
-!   If {\tt outAv} shares one or more attributes with any of the inputs 
-! {\tt inAv1}, {\tt inAv2}, or {\tt inAv3}, a merge is performed on the 
-! individual {\em intersections} of attributes between the pairs 
-! $({\tt outAv},{\tt inAv1})$,  $({\tt outAv},{\tt inAv2})$, 
-! and $({\tt outAv},{\tt inAv3})$.  Currently, it is assumed that these 
-! pairwise intersections are all equal.  This assumption is of 
-! critical importance to the user.  If the user violates this 
-! assumption, incorrect merges of any attributes present only in some 
+!   If {\tt outAv} shares one or more attributes with any of the inputs
+! {\tt inAv1}, {\tt inAv2}, or {\tt inAv3}, a merge is performed on the
+! individual {\em intersections} of attributes between the pairs
+! $({\tt outAv},{\tt inAv1})$,  $({\tt outAv},{\tt inAv2})$,
+! and $({\tt outAv},{\tt inAv3})$.  Currently, it is assumed that these
+! pairwise intersections are all equal.  This assumption is of
+! critical importance to the user.  If the user violates this
+! assumption, incorrect merges of any attributes present only in some
 ! (but not all) inputs will result.
 !
-! The merge operatrion is a masked 
-! weighted element-by-element sum, as outlined in the following example.  
-! Let the vectors ${\bf a}$,${\bf b}$, and ${\bf c}$ be data from 
-! Components $A$, $B$, and $C$ that have been interpolated onto the 
-! physical grid of another component $D$.  We wish to combine the data 
-! from $A$, $B$ and $C$ to get a vector ${\bf d}$, which represents the 
-! merged data on the grid of component $D$.  The merge relation to obtain 
-! the $i$th element of ${\bf d}$ is 
-! $$ d_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j} 
-! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l} 
-! {{\prod_{m=1}^M} \beta_{i}^m} {b_i} + {{\prod_{p=1}^P} \mu_{i}^p} 
+! The merge operatrion is a masked
+! weighted element-by-element sum, as outlined in the following example.
+! Let the vectors ${\bf a}$,${\bf b}$, and ${\bf c}$ be data from
+! Components $A$, $B$, and $C$ that have been interpolated onto the
+! physical grid of another component $D$.  We wish to combine the data
+! from $A$, $B$ and $C$ to get a vector ${\bf d}$, which represents the
+! merged data on the grid of component $D$.  The merge relation to obtain
+! the $i$th element of ${\bf d}$ is
+! $$ d_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j}
+! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l}
+! {{\prod_{m=1}^M} \beta_{i}^m} {b_i} + {{\prod_{p=1}^P} \mu_{i}^p}
 ! {{\prod_{q=1}^Q} \gamma_{i}^q} {c_i} \bigg\} , $$
 ! where
-! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} + 
-! {{\prod_{l=1}^L} \lambda_{i}^l} {{\prod_{m=1}^M} \beta_{i}^m} + 
+! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} +
+! {{\prod_{l=1}^L} \lambda_{i}^l} {{\prod_{m=1}^M} \beta_{i}^m} +
 ! {{\prod_{p=1}^P} \mu_{i}^p} {{\prod_{q=1}^Q} \gamma_{i}^q}. $$
-! The quantities ${\kappa_{i}^j}$, ${\lambda_{i}^p}$, and ${\mu_{i}^p}$ are 
-! {\em integer masks} (which have value either $0$ or $1$), and 
-! ${\alpha_{i}^k}$, ${\beta_{i}^m}$, and ${\gamma_{i}^q}$ are {\em real 
+! The quantities ${\kappa_{i}^j}$, ${\lambda_{i}^p}$, and ${\mu_{i}^p}$ are
+! {\em integer masks} (which have value either $0$ or $1$), and
+! ${\alpha_{i}^k}$, ${\beta_{i}^m}$, and ${\gamma_{i}^q}$ are {\em real
 ! masks} (which are in the closed interval $[0,1]$).
 !
-! The integer and real masks are stored as attributes to the same input 
-! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are 
-! stored as substrings to the colon-separated strings contained in the 
-! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2}, 
-! {\tt iMaskTags3}, {\tt rMaskTags1}, {\tt rMaskTags2}, and 
-! {\tt rMaskTags3}.  The {\tt LOGICAL} input argument {\tt CheckMasks} 
-! governs how the masks are applied.  If ${\tt CheckMasks} = {\tt .TRUE.}$, 
-! the entries are checked to ensure they meet the definitions of real 
-! and integer masks.  If ${\tt CheckMasks} = {\tt .FALSE.}$ then the masks 
-! are multiplied together on an element-by-element basis with no validation 
-! of their entries (this option results in slightly higher performance).  
+! The integer and real masks are stored as attributes to the same input
+! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are
+! stored as substrings to the colon-separated strings contained in the
+! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2},
+! {\tt iMaskTags3}, {\tt rMaskTags1}, {\tt rMaskTags2}, and
+! {\tt rMaskTags3}.  The {\tt LOGICAL} input argument {\tt CheckMasks}
+! governs how the masks are applied.  If ${\tt CheckMasks} = {\tt .TRUE.}$,
+! the entries are checked to ensure they meet the definitions of real
+! and integer masks.  If ${\tt CheckMasks} = {\tt .FALSE.}$ then the masks
+! are multiplied together on an element-by-element basis with no validation
+! of their entries (this option results in slightly higher performance).
 !
 ! This routine returns the sum of the masked weights as a diagnostic.
 ! This quantity is returned in the output {\tt REAL} array {\tt WeightSum}.
 !
-! The correspondence between the quantities in the above merge relation 
+! The correspondence between the quantities in the above merge relation
 ! and the arguments to this routine are summarized in the table.
 ! \begin{center}
 ! \begin{tabular}{|l|l|l|}\hline
 ! {\bf Quantity} & {\bf Stored in} & {\bf Referenced by}  \\
 !  & {\bf Argument}    & {\bf Argument} \\
 ! \hline
-! \hline 
+! \hline
 ! $ {a_i} $ & {\tt inAv1} & \\
 ! \hline
 ! $ {b_i} $ & {\tt inAv2} & \\
@@ -778,7 +778,7 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
-!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument
 !                 checking.
 !EOP ___________________________________________________________________
 !
@@ -889,10 +889,10 @@
      WeightSum(i) = 0._FP
   end do
 
-       ! Process the incoming data one input AttrVect and mask tag 
+       ! Process the incoming data one input AttrVect and mask tag
        ! combination at a time.
 
-       ! First input AttrVect/mask combination...must work through 
+       ! First input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags1 and
        ! rMaskTags1.
 
@@ -921,7 +921,7 @@
 
   endif ! if(present(iMaskTags1))...
 
-       ! Second input AttrVect/mask combination...must work through 
+       ! Second input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags2 and
        ! rMaskTags2.
 
@@ -950,7 +950,7 @@
 
   endif ! if(present(iMaskTags2))...
 
-       ! Third input AttrVect/mask combination...must work through 
+       ! Third input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags3 and
        ! rMaskTags3.
 
@@ -979,7 +979,7 @@
 
   endif ! if(present(iMaskTags3))...
 
-       ! Now we must renormalize the entries in outAv by dividing 
+       ! Now we must renormalize the entries in outAv by dividing
        ! element-by-element by the sums of the merge weights, which
        ! were accumulated in WeightSum(:)
 
@@ -994,7 +994,7 @@
      endif
 
      do j=1,AttrVect_nRAttr(outAv)
-	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i) 
+	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i)
      end do
 
   end do
@@ -1060,7 +1060,7 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
-!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument
 !                 checking.
 !_______________________________________________________________________
 !
@@ -1171,10 +1171,10 @@
      WeightSum(i) = 0._FP
   end do
 
-       ! Process the incoming data one input AttrVect and mask tag 
+       ! Process the incoming data one input AttrVect and mask tag
        ! combination at a time.
 
-       ! First input AttrVect/mask combination...must work through 
+       ! First input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags1 and
        ! rMaskTags1.
 
@@ -1203,7 +1203,7 @@
 
   endif ! if(present(iMaskTags1))...
 
-       ! Second input AttrVect/mask combination...must work through 
+       ! Second input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags2 and
        ! rMaskTags2.
 
@@ -1232,7 +1232,7 @@
 
   endif ! if(present(iMaskTags2))...
 
-       ! Third input AttrVect/mask combination...must work through 
+       ! Third input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags3 and
        ! rMaskTags3.
 
@@ -1261,7 +1261,7 @@
 
   endif ! if(present(iMaskTags3))...
 
-       ! Now we must renormalize the entries in outAv by dividing 
+       ! Now we must renormalize the entries in outAv by dividing
        ! element-by-element by the sums of the merge weights, which
        ! were accumulated in WeightSum(:)
 
@@ -1276,7 +1276,7 @@
      endif
 
      do j=1,AttrVect_nRAttr(outAv)
-	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i) 
+	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i)
      end do
 
   end do
@@ -1291,67 +1291,67 @@
 !
 ! !IROUTINE: MergeFourGGSP_ - Merge Data from Four Sources
 !
-! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
-! four input {\tt AttrVect} arguments {\tt inAv1} , {\tt inAv2}, 
-! {\tt inAv3}, and {\tt inAv4} to a fifth {\tt AttrVect} {\tt outAv}.  The 
-! attributes to be merged are determined entirely by the real attributes 
-! of {\tt outAv}.  If {\tt outAv} shares one or more attributes with any of 
-! the inputs {\tt inAv1}, {\tt inAv2}, {\tt inAv3}, or {\tt inAv4}, a merge 
-! is performed on the individual {\em intersections} of attributes between 
-! the pairs $({\tt outAv},{\tt inAv1})$,  $({\tt outAv},{\tt inAv2})$, 
-! $({\tt outAv},{\tt inAv3})$, and $({\tt outAv},{\tt inAv3})$.  Currently, 
-! it is assumed that these pairwise intersections are all equal.  This 
-! assumption is of critical importance to the user.  If the user violates 
+! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from
+! four input {\tt AttrVect} arguments {\tt inAv1} , {\tt inAv2},
+! {\tt inAv3}, and {\tt inAv4} to a fifth {\tt AttrVect} {\tt outAv}.  The
+! attributes to be merged are determined entirely by the real attributes
+! of {\tt outAv}.  If {\tt outAv} shares one or more attributes with any of
+! the inputs {\tt inAv1}, {\tt inAv2}, {\tt inAv3}, or {\tt inAv4}, a merge
+! is performed on the individual {\em intersections} of attributes between
+! the pairs $({\tt outAv},{\tt inAv1})$,  $({\tt outAv},{\tt inAv2})$,
+! $({\tt outAv},{\tt inAv3})$, and $({\tt outAv},{\tt inAv3})$.  Currently,
+! it is assumed that these pairwise intersections are all equal.  This
+! assumption is of critical importance to the user.  If the user violates
 ! this assumption, incorrect merges of any attributes present only in some
 ! (but not all) the inputs will result.
 !
-! The merge operatrion is a masked 
-! weighted element-by-element sum, as outlined in the following example.  
-! Let the vectors ${\bf a}$,${\bf b}$, ${\bf c}$ and ${\bf d}$ be data from 
-! Components $A$, $B$, $C$, and $D$ that have been interpolated onto the 
-! physical grid of another component $E$.  We wish to combine the data 
-! from $A$, $B$, $C$, and $D$ to get a vector ${\bf e}$, which represents the 
-! merged data on the grid of component $E$.  The merge relation to obtain 
-! the $i$th element of {\bf e} is 
-! $$ e_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j} 
-! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l} 
-! {{\prod_{m=1}^M} \beta_{i}^m} {b_i} + {{\prod_{p=1}^P} \mu_{i}^p} 
-! {{\prod_{q=1}^Q} \gamma_{i}^q} {c_i} +  
+! The merge operatrion is a masked
+! weighted element-by-element sum, as outlined in the following example.
+! Let the vectors ${\bf a}$,${\bf b}$, ${\bf c}$ and ${\bf d}$ be data from
+! Components $A$, $B$, $C$, and $D$ that have been interpolated onto the
+! physical grid of another component $E$.  We wish to combine the data
+! from $A$, $B$, $C$, and $D$ to get a vector ${\bf e}$, which represents the
+! merged data on the grid of component $E$.  The merge relation to obtain
+! the $i$th element of {\bf e} is
+! $$ e_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j}
+! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l}
+! {{\prod_{m=1}^M} \beta_{i}^m} {b_i} + {{\prod_{p=1}^P} \mu_{i}^p}
+! {{\prod_{q=1}^Q} \gamma_{i}^q} {c_i} +
 ! {{\prod_{r=1}^R} \nu_{i}^r} {{\prod_{s=1}^S} \delta_{i}^s} {d_i} \bigg\} , $$
 ! where
-! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} + 
-! {{\prod_{l=1}^L} \lambda_{i}^l} {{\prod_{m=1}^M} \beta_{i}^m} + 
-! {{\prod_{p=1}^P} \mu_{i}^p} {{\prod_{q=1}^Q} \gamma_{i}^q} + 
+! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} +
+! {{\prod_{l=1}^L} \lambda_{i}^l} {{\prod_{m=1}^M} \beta_{i}^m} +
+! {{\prod_{p=1}^P} \mu_{i}^p} {{\prod_{q=1}^Q} \gamma_{i}^q} +
 ! {{\prod_{r=1}^R} \nu_{i}^r} {{\prod_{s=1}^S} \delta_{i}^s}. $$
-! The quantities ${\kappa_{i}^j}$, ${\lambda_{i}^p}$, ${\mu_{i}^p}$, and 
-! ${\nu_{i}^r}$ are {\em integer masks} (which have value either $0$ or $1$), 
-! and ${\alpha_{i}^k}$, ${\beta_{i}^m}$, ${\gamma_{i}^q}$, and ${\delta_{i}^s}$ 
+! The quantities ${\kappa_{i}^j}$, ${\lambda_{i}^p}$, ${\mu_{i}^p}$, and
+! ${\nu_{i}^r}$ are {\em integer masks} (which have value either $0$ or $1$),
+! and ${\alpha_{i}^k}$, ${\beta_{i}^m}$, ${\gamma_{i}^q}$, and ${\delta_{i}^s}$
 ! are {\em real masks} (which are in the closed interval $[0,1]$).
 !
-! The integer and real masks are stored as attributes to the same input 
-! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are 
-! stored as substrings to the colon-separated strings contained in the 
-! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2}, 
+! The integer and real masks are stored as attributes to the same input
+! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are
+! stored as substrings to the colon-separated strings contained in the
+! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2},
 ! {\tt iMaskTags3}, {\tt iMaskTags4}, {\tt rMaskTags1}, and {\tt rMaskTags2},
-! {\tt rMaskTags3}, and {\tt rMaskTags4}, .  The {\tt LOGICAL} input 
-! argument {\tt CheckMasks} governs how the masks are applied.    If 
-! ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are checked to ensure 
-! they meet the definitions of real and integer masks.  If ${\tt CheckMasks} 
-! = {\tt .FALSE.}$ then the masks are multiplied together on an 
+! {\tt rMaskTags3}, and {\tt rMaskTags4}, .  The {\tt LOGICAL} input
+! argument {\tt CheckMasks} governs how the masks are applied.    If
+! ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are checked to ensure
+! they meet the definitions of real and integer masks.  If ${\tt CheckMasks}
+! = {\tt .FALSE.}$ then the masks are multiplied together on an
 ! element-by-element basis with no validation of their entries (this option
 ! results in slightly higher performance).
 !
 ! This routine returns the sume of the masked weights as a diagnostic.
 ! This quantity is returned in the output {\tt REAL} array {\tt WeightSum}.
 !
-! The correspondence between the quantities in the above merge relation 
+! The correspondence between the quantities in the above merge relation
 ! and the arguments to this routine are summarized in the table.
 ! \begin{center}
 ! \begin{tabular}{|l|l|l|}\hline
 ! {\bf Quantity} & {\bf Stored in} & {\bf Referenced by}  \\
 !  & {\bf Argument}    & {\bf Argument} \\
 ! \hline
-! \hline 
+! \hline
 ! $ {a_i} $ & {\tt inAv1} & \\
 ! \hline
 ! $ {b_i} $ & {\tt inAv2} & \\
@@ -1443,7 +1443,7 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
-!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument
 !                 checking.
 !EOP ___________________________________________________________________
 !
@@ -1570,10 +1570,10 @@
      WeightSum(i) = 0._FP
   end do
 
-       ! Process the incoming data one input AttrVect and mask tag 
+       ! Process the incoming data one input AttrVect and mask tag
        ! combination at a time.
 
-       ! First input AttrVect/mask combination...must work through 
+       ! First input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags1 and
        ! rMaskTags1.
 
@@ -1602,7 +1602,7 @@
 
   endif ! if(present(iMaskTags1))...
 
-       ! Second input AttrVect/mask combination...must work through 
+       ! Second input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags2 and
        ! rMaskTags2.
 
@@ -1631,7 +1631,7 @@
 
   endif ! if(present(iMaskTags2))...
 
-       ! Third input AttrVect/mask combination...must work through 
+       ! Third input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags3 and
        ! rMaskTags3.
 
@@ -1660,7 +1660,7 @@
 
   endif ! if(present(iMaskTags3))...
 
-       ! Fourth input AttrVect/mask combination...must work through 
+       ! Fourth input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags4 and
        ! rMaskTags4.
 
@@ -1689,7 +1689,7 @@
 
   endif ! if(present(iMaskTags4))...
 
-       ! Now we must renormalize the entries in outAv by dividing 
+       ! Now we must renormalize the entries in outAv by dividing
        ! element-by-element by the sums of the merge weights, which
        ! were accumulated in WeightSum(:)
 
@@ -1704,7 +1704,7 @@
      endif
 
      do j=1,AttrVect_nRAttr(outAv)
-	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i) 
+	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i)
      end do
 
   end do
@@ -1774,7 +1774,7 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
-!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument
 !                 checking.
 !_______________________________________________________________________
 !
@@ -1901,10 +1901,10 @@
      WeightSum(i) = 0._FP
   end do
 
-       ! Process the incoming data one input AttrVect and mask tag 
+       ! Process the incoming data one input AttrVect and mask tag
        ! combination at a time.
 
-       ! First input AttrVect/mask combination...must work through 
+       ! First input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags1 and
        ! rMaskTags1.
 
@@ -1933,7 +1933,7 @@
 
   endif ! if(present(iMaskTags1))...
 
-       ! Second input AttrVect/mask combination...must work through 
+       ! Second input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags2 and
        ! rMaskTags2.
 
@@ -1962,7 +1962,7 @@
 
   endif ! if(present(iMaskTags2))...
 
-       ! Third input AttrVect/mask combination...must work through 
+       ! Third input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags3 and
        ! rMaskTags3.
 
@@ -1991,7 +1991,7 @@
 
   endif ! if(present(iMaskTags3))...
 
-       ! Fourth input AttrVect/mask combination...must work through 
+       ! Fourth input AttrVect/mask combination...must work through
        ! all the possible cases for optional arguments iMaskTags4 and
        ! rMaskTags4.
 
@@ -2020,7 +2020,7 @@
 
   endif ! if(present(iMaskTags4))...
 
-       ! Now we must renormalize the entries in outAv by dividing 
+       ! Now we must renormalize the entries in outAv by dividing
        ! element-by-element by the sums of the merge weights, which
        ! were accumulated in WeightSum(:)
 
@@ -2035,7 +2035,7 @@
      endif
 
      do j=1,AttrVect_nRAttr(outAv)
-	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i) 
+	outAv%rAttr(j,i) = invWeightSum * outAv%rAttr(j,i)
      end do
 
   end do
@@ -2050,42 +2050,42 @@
 !
 ! !IROUTINE: MergeInDataGGSP_ - Add Data into a Merge
 !
-! !DESCRIPTION:  This routine takes input field data from the input 
-! {\tt AttrVect} argument {\tt inAv}, and merges the real attributes it 
-! shares with the input/output {\tt AttrVect} argument {\tt outAv}.  
-! The merge is a masked merge of the form 
-! $$ c_i = c_i + {{\prod_{j=1}^J} M_{i}^j} {{\prod_{k=1}^K} F_{i}^k} 
+! !DESCRIPTION:  This routine takes input field data from the input
+! {\tt AttrVect} argument {\tt inAv}, and merges the real attributes it
+! shares with the input/output {\tt AttrVect} argument {\tt outAv}.
+! The merge is a masked merge of the form
+! $$ c_i = c_i + {{\prod_{j=1}^J} M_{i}^j} {{\prod_{k=1}^K} F_{i}^k}
 ! a_i , $$
-! where ${c_i}$ represents one element of one of the real attributes of 
-! {\tt outAv}, and ${a_i}$ represents one element of one of the real 
-! attributes of {\tt inAv}.  The ${M_{i}^j}$ are {\em integer masks} which 
-! have value either $0$ or $1$, and are integer attributes of the input 
-! {\tt GeneralGrid} argument {\tt GGrid}.  The ${F_{i}^k}$ are {\em real 
-! masks} whose values are in the closed interval $[0,1]$, and are real 
-! attributes of the input {\tt GeneralGrid} argument {\tt GGrid}.  The 
+! where ${c_i}$ represents one element of one of the real attributes of
+! {\tt outAv}, and ${a_i}$ represents one element of one of the real
+! attributes of {\tt inAv}.  The ${M_{i}^j}$ are {\em integer masks} which
+! have value either $0$ or $1$, and are integer attributes of the input
+! {\tt GeneralGrid} argument {\tt GGrid}.  The ${F_{i}^k}$ are {\em real
+! masks} whose values are in the closed interval $[0,1]$, and are real
+! attributes of the input {\tt GeneralGrid} argument {\tt GGrid}.  The
 ! input {\tt CHARACTER} argument {\tt iMaskTags} is a string of colon-
-! delimited strings that name the integer attributes in {\tt GGrid} 
-! that are used as the masks ${M_{i}^j}$.  The input {\tt CHARACTER} 
-! argument {\tt rMaskTags} is a string of colon-delimited strings 
-! that name the real attributes in {\tt GGrid} that are used as the 
-! masks ${F_{i}^k}$.  The output {\tt REAL} array {\tt WeightSum} is 
-! used to store a running sum of the product of the masks.  The 
-! {\tt LOGICAL} input argument {\tt CheckMasks} governs how the masks 
-! are applied.  If ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are 
-! checked to ensure they meet the definitions of real and integer masks.  
-! If ${\tt CheckMasks} = {\tt .FALSE.}$ then the masks are multiplied 
-! together on an element-by-element basis with no validation of their 
+! delimited strings that name the integer attributes in {\tt GGrid}
+! that are used as the masks ${M_{i}^j}$.  The input {\tt CHARACTER}
+! argument {\tt rMaskTags} is a string of colon-delimited strings
+! that name the real attributes in {\tt GGrid} that are used as the
+! masks ${F_{i}^k}$.  The output {\tt REAL} array {\tt WeightSum} is
+! used to store a running sum of the product of the masks.  The
+! {\tt LOGICAL} input argument {\tt CheckMasks} governs how the masks
+! are applied.  If ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are
+! checked to ensure they meet the definitions of real and integer masks.
+! If ${\tt CheckMasks} = {\tt .FALSE.}$ then the masks are multiplied
+! together on an element-by-element basis with no validation of their
 ! entries (this option results in slightly higher performance).
 !
-! {\tt N.B.:}  The lengths of the {\tt AttrVect} arguments {\tt inAv} 
-! and {\tt outAv} must be equal, and this length must also equal the 
+! {\tt N.B.:}  The lengths of the {\tt AttrVect} arguments {\tt inAv}
+! and {\tt outAv} must be equal, and this length must also equal the
 ! lengths of {\tt GGrid} and {\tt WeightSum}.
 !
-! {\tt N.B.:}  This algorithm assumes the {\tt AttrVect} argument 
+! {\tt N.B.:}  This algorithm assumes the {\tt AttrVect} argument
 ! {\tt outAv} has been created, and its real attributes have been
 ! initialized.
 !
-! {\tt N.B.:}  This algorithm assumes that the array {\tt WeightSum} 
+! {\tt N.B.:}  This algorithm assumes that the array {\tt WeightSum}
 ! has been created and initialized.
 !
 ! !INTERFACE:
@@ -2139,7 +2139,7 @@
 
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - initial verson.
-!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument
 !                 checking.
 !EOP ___________________________________________________________________
 !
@@ -2225,12 +2225,12 @@
 
        ! ...end argument sanity checks.
 
-       ! Check for INTEGER masks.  If they are present, retrieve 
+       ! Check for INTEGER masks.  If they are present, retrieve
        ! them and combine them into a single integer mask iMask(:)
 
   if(present(iMaskTags)) then
 
-       ! allocate two arrays:  iMask (the final product), 
+       ! allocate two arrays:  iMask (the final product),
        ! and iDummy (storage space for each mask as it is retrieved)
 
      allocate(iMask(AttrVect_lsize(inAv)), iDummy(AttrVect_lsize(inAv)), &
@@ -2246,14 +2246,14 @@
 
        ! turn the colon-delimited string of tags into a List:
      call List_init(iMaskList,iMaskTags)
-     
+
        ! Loop over the items in iMaskList, retrieving each mask
-       ! into the array iDummy, checking it (if CheckMasks=.TRUE.), 
+       ! into the array iDummy, checking it (if CheckMasks=.TRUE.),
        ! and multiplying it element-by-element into the array iMask.
 
      do i=1,List_nitem(iMaskList)
        ! grab item as a String
-	call List_get(DummStr, i, iMaskList) 
+	call List_get(DummStr, i, iMaskList)
        ! use this String to identify an INTEGER GeneralGrid attribute
        ! for export to iDummy(:)
 	call GeneralGrid_exportIAttr(GGrid, String_ToChar(DummStr), &
@@ -2284,12 +2284,12 @@
 
   endif ! if(present(iMaskTags))...
 
-       ! Check for REAL masks.  If they are present, retrieve 
+       ! Check for REAL masks.  If they are present, retrieve
        ! them and combine them into a single real mask rMask(:)
 
   if(present(rMaskTags)) then
 
-       ! allocate two arrays:  rMask (the final product), 
+       ! allocate two arrays:  rMask (the final product),
        ! and rDummy (storage space for each mask as it is retrieved)
 
      allocate(rMask(AttrVect_lsize(inAv)), rDummy(AttrVect_lsize(inAv)), &
@@ -2305,14 +2305,14 @@
 
        ! turn the colon-delimited string of tags into a List:
      call List_init(rMaskList,rMaskTags)
-     
+
        ! Loop over the items in rMaskList, retrieving each mask
-       ! into the array rDummy, checking it (if CheckMasks=.TRUE.), 
+       ! into the array rDummy, checking it (if CheckMasks=.TRUE.),
        ! and multiplying it element-by-element into the array rMask.
 
      do i=1,List_nitem(rMaskList)
        ! grab item as a String
-	call List_get(DummStr, i, rMaskList) 
+	call List_get(DummStr, i, rMaskList)
        ! use this String to identify an INTEGER GeneralGrid attribute
        ! for export to rDummy(:)
 	call GeneralGrid_exportRAttr(GGrid, String_ToChar(DummStr), &
@@ -2341,17 +2341,17 @@
 
   endif ! if(present(rMaskTags))...
 
-       ! Now we have (at most) a single INTEGER mask iMask(:) and 
+       ! Now we have (at most) a single INTEGER mask iMask(:) and
        ! a single REAL mask rMask(:).  Before we perform the merge,
-       ! we must tackle one more issue:  are the REAL attributes 
+       ! we must tackle one more issue:  are the REAL attributes
        ! of inAv and outAv identical and in the same order?  If they
-       ! are, the merge is a straightforward double loop over the 
+       ! are, the merge is a straightforward double loop over the
        ! elements and over all the attributes.  If the attribute lists
        ! differ, we must cross-reference common attributes, and store
        ! their indices.
 
   RAttrIdentical = List_identical(inAv%rList, outAv%rList)
-  if(.not.(RAttrIdentical)) then 
+  if(.not.(RAttrIdentical)) then
        ! Determine the number of shared REAL attributes NumSharedRAttr,
        ! and form cross-index tables inAvIndices, outAvIndices.
      call SharedAttrIndexList(inAv, outAv, 'REAL', NumSharedRAttr, &
@@ -2377,7 +2377,7 @@
 		 outAv%rAttr(outAVIndices(j),i) = &
 		      		 outAv%rAttr(outAvIndices(j),i) + &
 		      		 rMask(i) * iMask(i) * &
-				 inAv%rAttr(inAvIndices(j),i) 
+				 inAv%rAttr(inAvIndices(j),i)
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
 	      WeightSum(i) = WeightSum(i) + iMask(i) * rMask(i)
@@ -2400,7 +2400,7 @@
 	      do j=1,NumSharedRAttr
 		 outAv%rAttr(outAVIndices(j),i) = &
 		      		 outAv%rAttr(outAvIndices(j),i) + &
-		      		 rMask(i) * inAv%rAttr(inAvIndices(j),i) 
+		      		 rMask(i) * inAv%rAttr(inAvIndices(j),i)
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
 	      WeightSum(i) = WeightSum(i) + rMask(i)
@@ -2409,7 +2409,7 @@
 
      endif ! if(present(iMaskTags))...
 
-  else ! No REAL Mask 
+  else ! No REAL Mask
 
      if(present(iMaskTags)) then ! Have iMask(:), but no rMask(:)
 
@@ -2427,7 +2427,7 @@
 	      do j=1,NumSharedRAttr
 		 outAv%rAttr(outAVIndices(j),i) = &
 		      		 outAv%rAttr(outAvIndices(j),i) + &
-		      		 iMask(i) * inAv%rAttr(inAvIndices(j),i) 
+		      		 iMask(i) * inAv%rAttr(inAvIndices(j),i)
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
 	      WeightSum(i) = WeightSum(i) + iMask(i)
@@ -2449,7 +2449,7 @@
 	      do j=1,NumSharedRAttr
 		 outAv%rAttr(outAVIndices(j),i) = &
 		      		 outAv%rAttr(outAvIndices(j),i) + &
-		      		         inAv%rAttr(inAvIndices(j),i) 
+		      		         inAv%rAttr(inAvIndices(j),i)
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
 	      WeightSum(i) = WeightSum(i) + 1._FP
@@ -2554,7 +2554,7 @@
 
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - initial verson.
-!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument
 !                 checking.
 !_______________________________________________________________________
 !
@@ -2640,12 +2640,12 @@
 
        ! ...end argument sanity checks.
 
-       ! Check for INTEGER masks.  If they are present, retrieve 
+       ! Check for INTEGER masks.  If they are present, retrieve
        ! them and combine them into a single integer mask iMask(:)
 
   if(present(iMaskTags)) then
 
-       ! allocate two arrays:  iMask (the final product), 
+       ! allocate two arrays:  iMask (the final product),
        ! and iDummy (storage space for each mask as it is retrieved)
 
      allocate(iMask(AttrVect_lsize(inAv)), iDummy(AttrVect_lsize(inAv)), &
@@ -2661,14 +2661,14 @@
 
        ! turn the colon-delimited string of tags into a List:
      call List_init(iMaskList,iMaskTags)
-     
+
        ! Loop over the items in iMaskList, retrieving each mask
-       ! into the array iDummy, checking it (if CheckMasks=.TRUE.), 
+       ! into the array iDummy, checking it (if CheckMasks=.TRUE.),
        ! and multiplying it element-by-element into the array iMask.
 
      do i=1,List_nitem(iMaskList)
        ! grab item as a String
-	call List_get(DummStr, i, iMaskList) 
+	call List_get(DummStr, i, iMaskList)
        ! use this String to identify an INTEGER GeneralGrid attribute
        ! for export to iDummy(:)
 	call GeneralGrid_exportIAttr(GGrid, String_ToChar(DummStr), &
@@ -2699,12 +2699,12 @@
 
   endif ! if(present(iMaskTags))...
 
-       ! Check for REAL masks.  If they are present, retrieve 
+       ! Check for REAL masks.  If they are present, retrieve
        ! them and combine them into a single real mask rMask(:)
 
   if(present(rMaskTags)) then
 
-       ! allocate two arrays:  rMask (the final product), 
+       ! allocate two arrays:  rMask (the final product),
        ! and rDummy (storage space for each mask as it is retrieved)
 
      allocate(rMask(AttrVect_lsize(inAv)), rDummy(AttrVect_lsize(inAv)), &
@@ -2720,14 +2720,14 @@
 
        ! turn the colon-delimited string of tags into a List:
      call List_init(rMaskList,rMaskTags)
-     
+
        ! Loop over the items in rMaskList, retrieving each mask
-       ! into the array rDummy, checking it (if CheckMasks=.TRUE.), 
+       ! into the array rDummy, checking it (if CheckMasks=.TRUE.),
        ! and multiplying it element-by-element into the array rMask.
 
      do i=1,List_nitem(rMaskList)
        ! grab item as a String
-	call List_get(DummStr, i, rMaskList) 
+	call List_get(DummStr, i, rMaskList)
        ! use this String to identify an INTEGER GeneralGrid attribute
        ! for export to rDummy(:)
 	call GeneralGrid_exportRAttr(GGrid, String_ToChar(DummStr), &
@@ -2756,17 +2756,17 @@
 
   endif ! if(present(rMaskTags))...
 
-       ! Now we have (at most) a single INTEGER mask iMask(:) and 
+       ! Now we have (at most) a single INTEGER mask iMask(:) and
        ! a single REAL mask rMask(:).  Before we perform the merge,
-       ! we must tackle one more issue:  are the REAL attributes 
+       ! we must tackle one more issue:  are the REAL attributes
        ! of inAv and outAv identical and in the same order?  If they
-       ! are, the merge is a straightforward double loop over the 
+       ! are, the merge is a straightforward double loop over the
        ! elements and over all the attributes.  If the attribute lists
        ! differ, we must cross-reference common attributes, and store
        ! their indices.
 
   RAttrIdentical = List_identical(inAv%rList, outAv%rList)
-  if(.not.(RAttrIdentical)) then 
+  if(.not.(RAttrIdentical)) then
        ! Determine the number of shared REAL attributes NumSharedRAttr,
        ! and form cross-index tables inAvIndices, outAvIndices.
      call SharedAttrIndexList(inAv, outAv, 'REAL', NumSharedRAttr, &
@@ -2792,7 +2792,7 @@
 		 outAv%rAttr(outAVIndices(j),i) = &
 		      		 outAv%rAttr(outAvIndices(j),i) + &
 		      		 rMask(i) * iMask(i) * &
-				 inAv%rAttr(inAvIndices(j),i) 
+				 inAv%rAttr(inAvIndices(j),i)
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
 	      WeightSum(i) = WeightSum(i) + iMask(i) * rMask(i)
@@ -2815,7 +2815,7 @@
 	      do j=1,NumSharedRAttr
 		 outAv%rAttr(outAVIndices(j),i) = &
 		      		 outAv%rAttr(outAvIndices(j),i) + &
-		      		 rMask(i) * inAv%rAttr(inAvIndices(j),i) 
+		      		 rMask(i) * inAv%rAttr(inAvIndices(j),i)
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
 	      WeightSum(i) = WeightSum(i) + rMask(i)
@@ -2824,7 +2824,7 @@
 
      endif ! if(present(iMaskTags))...
 
-  else ! No REAL Mask 
+  else ! No REAL Mask
 
      if(present(iMaskTags)) then ! Have iMask(:), but no rMask(:)
 
@@ -2842,7 +2842,7 @@
 	      do j=1,NumSharedRAttr
 		 outAv%rAttr(outAVIndices(j),i) = &
 		      		 outAv%rAttr(outAvIndices(j),i) + &
-		      		 iMask(i) * inAv%rAttr(inAvIndices(j),i) 
+		      		 iMask(i) * inAv%rAttr(inAvIndices(j),i)
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
 	      WeightSum(i) = WeightSum(i) + iMask(i)
@@ -2864,7 +2864,7 @@
 	      do j=1,NumSharedRAttr
 		 outAv%rAttr(outAVIndices(j),i) = &
 		      		 outAv%rAttr(outAvIndices(j),i) + &
-		      		         inAv%rAttr(inAvIndices(j),i) 
+		      		         inAv%rAttr(inAvIndices(j),i)
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
 	      WeightSum(i) = WeightSum(i) + 1._FP

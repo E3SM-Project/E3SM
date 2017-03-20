@@ -2,26 +2,26 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_AccumulatorComms - MPI Communication Methods for the Accumulator
-!          
+!
 !
 ! !DESCRIPTION:
 !
 ! This module contains communications methods for the {\tt Accumulator}
-! datatype (see {\tt m\_Accumulator} for details).  MCT's communications 
-! are implemented in terms of the Message Passing Interface (MPI) standard, 
-! and we have as best as possible, made the interfaces to these routines 
-! appear as similar as possible to the corresponding MPI routines.  For the 
-! { \tt Accumulator}, we currently support only the following collective 
-! operations: broadcast, gather, and scatter.  The gather and scatter 
+! datatype (see {\tt m\_Accumulator} for details).  MCT's communications
+! are implemented in terms of the Message Passing Interface (MPI) standard,
+! and we have as best as possible, made the interfaces to these routines
+! appear as similar as possible to the corresponding MPI routines.  For the
+! { \tt Accumulator}, we currently support only the following collective
+! operations: broadcast, gather, and scatter.  The gather and scatter
 ! operations rely on domain decomposition descriptors that are defined
-! elsewhere in MCT:  the {\tt GlobalMap}, which is a one-dimensional 
-! decomposition (see the MCT module {\tt m\_GlobalMap} for more details); 
+! elsewhere in MCT:  the {\tt GlobalMap}, which is a one-dimensional
+! decomposition (see the MCT module {\tt m\_GlobalMap} for more details);
 ! and the {\tt GlobalSegMap}, which is a segmented decomposition capable
-! of supporting multidimensional domain decompositions (see the MCT module 
+! of supporting multidimensional domain decompositions (see the MCT module
 ! {\tt m\_GlobalSegMap} for more details).
 !
 ! !INTERFACE:
@@ -44,31 +44,31 @@
       public :: scatter		! scatter from the root to all PEs
       public :: bcast		! bcast from root to all PEs
 
-! Definition of interfaces for the communication methods for 
+! Definition of interfaces for the communication methods for
 ! the Accumulator:
 
     interface gather ; module procedure &
               GM_gather_, &
-              GSM_gather_ 
+              GSM_gather_
     end interface
     interface scatter ; module procedure &
               GM_scatter_, &
-              GSM_scatter_ 
+              GSM_scatter_
     end interface
     interface bcast  ; module procedure bcast_  ; end interface
 
 ! !REVISION HISTORY:
 ! 31Oct00 - Jay Larson <larson@mcs.anl.gov> - initial prototype--
 !           These routines were separated from the module m_Accumulator
-! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - Specification of 
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - Specification of
 !           APIs for the routines GSM_gather_() and GSM_scatter_().
 ! 10May01 - Jay Larson <larson@mcs.anl.gov> - Changes in the
 !           comms routine to match the MPI model for collective
 !           communications, and general clean-up of prologues.
 !  9Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added private routine
-!           bcastp_. Used new Accumulator routines initp_ and 
+!           bcastp_. Used new Accumulator routines initp_ and
 !           initialized_ to simplify the routines.
-!  26Aug02 - E.T. Ong <eong@mcs.anl.gov> - thourough code revision; 
+!  26Aug02 - E.T. Ong <eong@mcs.anl.gov> - thourough code revision;
 !            no added routines
 !EOP ___________________________________________________________________
 
@@ -83,11 +83,11 @@
 ! !IROUTINE: GM_gather_ - Gather Accumulator Distributed by a GlobalMap
 !
 ! !DESCRIPTION:  {\tt GM\_gather()} takes a distributed (across the
-! communicator associated with the handle {\tt comm}) input 
+! communicator associated with the handle {\tt comm}) input
 ! {\tt Accumulator} argument {\tt iC} and gathers its data to the
-! {\tt Accumulator} {\tt oC} on the {\tt root}.  The decomposition of 
+! {\tt Accumulator} {\tt oC} on the {\tt root}.  The decomposition of
 ! {\tt iC} is described by the input {\tt GlobalMap} argument {\tt Gmap}.
-! The success (failure) of this operation is signified by the zero (nonzero) 
+! The success (failure) of this operation is signified by the zero (nonzero)
 ! value of the optional output argument {\tt stat}.
 !
 ! !INTERFACE:
@@ -109,14 +109,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(Accumulator), intent(in)  :: iC
       type(GlobalMap) ,  intent(in)  :: GMap
       integer,           intent(in)  :: root
       integer,           intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(Accumulator), intent(out) :: oC
       integer, optional,intent(out)  :: stat
@@ -126,9 +126,9 @@
 ! 31Oct00 - Jay Larson <larson@mcs.anl.gov> - relocated to the
 !           module m_AccumulatorComms
 ! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_gather_
-! 10May01 - Jay Larson <larson@mcs.anl.gov> - revamped comms 
+! 10May01 - Jay Larson <larson@mcs.anl.gov> - revamped comms
 !           model to match MPI comms model, and cleaned up prologue
-!  9Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the 
+!  9Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the
 !           intiialized_ and accumulator init routines.
 !EOP ___________________________________________________________________
 
@@ -143,18 +143,18 @@
   call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Argument check of iC: kill if iC is not initialized 
+        ! Argument check of iC: kill if iC is not initialized
         ! on all processes
 
   status = Accumulator_initialized(iC,die_flag=.true.,source_name=myname_)
 
-        ! NOTE: removed argument check for oC on the root. 
-        ! Is there any good way to check if an accumulator is NOT initialized? 
+        ! NOTE: removed argument check for oC on the root.
+        ! Is there any good way to check if an accumulator is NOT initialized?
 
         ! Initialize oC from iC. Clean oC%data - we don't want this av.
 
   if(myID == root) then
-     
+
      call Accumulator_initv(oC,iC,lsize=1, &
                             num_steps=iC%num_steps,steps_done=iC%steps_done)
      call AttrVect_clean(oC%data)
@@ -173,7 +173,7 @@
   endif
 
         ! Check oC to see if its valid
-  
+
   if(myID == root) then
      status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
   endif
@@ -187,11 +187,11 @@
 ! !IROUTINE: GSM_gather_ - Gather Accumulator Distributed by a GlobalSegMap
 !
 ! !DESCRIPTION:  This routine takes the distrubuted (on the communcator
-! associated with the handle {\tt comm}) input {\tt Accumulator} 
-! argument {\tt iC} gathers it to the the {\tt Accumulator} argument 
+! associated with the handle {\tt comm}) input {\tt Accumulator}
+! argument {\tt iC} gathers it to the the {\tt Accumulator} argument
 ! {\tt oC} (valid only on the {\tt root}).  The decompositon of {\tt iC}
-! is contained in the input {\tt GlobalSegMap} argument {\tt GSMap}.  
-! The success (failure) of this operation is signified by the zero 
+! is contained in the input {\tt GlobalSegMap} argument {\tt GSMap}.
+! The success (failure) of this operation is signified by the zero
 ! (nonzero) returned value of the {\tt INTEGER} flag {\tt stat}.
 !
 ! !INTERFACE:
@@ -213,14 +213,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(Accumulator),  intent(in) :: iC
       type(GlobalSegMap), intent(in) :: GSMap
       integer,            intent(in) :: root
       integer,            intent(in) :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(Accumulator), intent(out) :: oC
       integer, optional, intent(out) :: stat
@@ -229,7 +229,7 @@
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 ! 	10May01 - Jay Larson <larson@mcs.anl.gov> - Initial code and
 !                 cleaned up prologue.
-!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the 
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the
 !                 intiialized_ and accumulator init routines.
 !EOP ___________________________________________________________________
 
@@ -244,12 +244,12 @@
   call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Argument check of iC 
+        ! Argument check of iC
 
   status = Accumulator_initialized(iC,die_flag=.true.,source_name=myname_)
 
-        ! NOTE: removed argument check for oC on the root. 
-        ! Is there any good way to check if an accumulator is NOT initialized? 
+        ! NOTE: removed argument check for oC on the root.
+        ! Is there any good way to check if an accumulator is NOT initialized?
 
         ! Initialize oC from iC. Clean oC%data - we don't want this av.
 
@@ -262,7 +262,7 @@
        ! Gather distributed iC%data to oC%data on the root
 
   call AttrVect_gather(iC%data, oC%data, GSMap, root, comm, ier)
-  
+
   if(ier /= 0) then
     call perr(myname_,'AttrVect_gather(iC%data, oC%data...',ier)
     if(.not.present(stat)) call die(myname_)
@@ -275,7 +275,7 @@
   if(myID == root) then
      status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
   endif
-  
+
 
  end subroutine GSM_gather_
 
@@ -286,12 +286,12 @@
 ! !IROUTINE: GM_scatter_ - Scatter an Accumulator using a GlobalMap
 !
 ! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
-! {\tt iC} (valid only on the {\tt root}), and scatters it to the 
-! distributed {\tt Accumulator} argument {\tt oC} on the processes 
+! {\tt iC} (valid only on the {\tt root}), and scatters it to the
+! distributed {\tt Accumulator} argument {\tt oC} on the processes
 ! associated with the communicator handle {\tt comm}.  The decompositon
-! used to scatter the data is contained in the input {\tt GlobalMap} 
-! argument {\tt GMap}.  The success (failure) of this operation is 
-! signified by the zero (nonzero) returned value of the {\tt INTEGER} 
+! used to scatter the data is contained in the input {\tt GlobalMap}
+! argument {\tt GMap}.  The success (failure) of this operation is
+! signified by the zero (nonzero) returned value of the {\tt INTEGER}
 ! flag {\tt stat}.
 !
 ! !INTERFACE:
@@ -313,14 +313,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(Accumulator), intent(in)  :: iC
       type(GlobalMap),   intent(in)  :: GMap
       integer,           intent(in)  :: root
       integer,           intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(Accumulator), intent(out) :: oC
       integer, optional, intent(out) :: stat
@@ -332,7 +332,7 @@
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_scatter_.
 !       10May01 - Jay Larson <larson@mcs.anl.gov> - revamped code to fit
 !                 MPI-like comms model, and cleaned up prologue.
-!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the  
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the
 !                 initialized_, Accumulator init_, and bcastp_ routines.
 !EOP ___________________________________________________________________
 
@@ -348,17 +348,17 @@
   call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Argument check of iC 
+        ! Argument check of iC
 
   if(myID==root) then
      status = Accumulator_initialized(iC,die_flag=.true.,source_name=myname_)
   endif
 
-        ! NOTE: removed argument check for oC on all processes. 
-        ! Is there any good way to check if an accumulator is NOT initialized? 
+        ! NOTE: removed argument check for oC on all processes.
+        ! Is there any good way to check if an accumulator is NOT initialized?
 
         ! Copy accumulator from iC to oC
-        ! Clean up oC%data on root. 
+        ! Clean up oC%data on root.
 
   if(myID == root) then
      call Accumulator_initv(oC,iC,lsize=1,num_steps=iC%num_steps, &
@@ -394,12 +394,12 @@
 ! !IROUTINE: GSM_scatter_ - Scatter an Accumulator using a GlobalSegMap
 !
 ! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
-! {\tt iC} (valid only on the {\tt root}), and scatters it to the 
-! distributed {\tt Accumulator} argument {\tt oC} on the processes 
+! {\tt iC} (valid only on the {\tt root}), and scatters it to the
+! distributed {\tt Accumulator} argument {\tt oC} on the processes
 ! associated with the communicator handle {\tt comm}.  The decompositon
-! used to scatter the data is contained in the input {\tt GlobalSegMap} 
-! argument {\tt GSMap}.  The success (failure) of this operation is 
-! signified by the zero (nonzero) returned value of the {\tt INTEGER} 
+! used to scatter the data is contained in the input {\tt GlobalSegMap}
+! argument {\tt GSMap}.  The success (failure) of this operation is
+! signified by the zero (nonzero) returned value of the {\tt INTEGER}
 ! flag {\tt stat}.
 !
 ! !INTERFACE:
@@ -421,14 +421,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(Accumulator),  intent(in)  :: iC
       type(GlobalSegMap), intent(in)  :: GSMap
       integer,            intent(in)  :: root
       integer,            intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(Accumulator),  intent(out) :: oC
       integer, optional,  intent(out) :: stat
@@ -452,17 +452,17 @@
   call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Argument check of iC 
+        ! Argument check of iC
 
   if(myID == root) then
      status = Accumulator_initialized(iC,die_flag=.true.,source_name=myname_)
   endif
 
-        ! NOTE: removed argument check for oC on all processes. 
-        ! Is there any good way to check if an accumulator is NOT initialized? 
-  
+        ! NOTE: removed argument check for oC on all processes.
+        ! Is there any good way to check if an accumulator is NOT initialized?
+
         ! Copy accumulator from iC to oC
-        ! Clean up oC%data on root. 
+        ! Clean up oC%data on root.
 
   if(myID == root) then
      call Accumulator_initv(oC,iC,lsize=1,num_steps=iC%num_steps, &
@@ -488,7 +488,7 @@
         ! Check oC if its valid
 
   status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
-  
+
 
  end subroutine GSM_scatter_
 
@@ -499,9 +499,9 @@
 ! !IROUTINE: bcast_ - Broadcast an Accumulator
 !
 ! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
-! {\tt aC} (on input valid only on the {\tt root}), and broadcasts it 
-! to all the processes associated with the communicator handle 
-! {\tt comm}.  The success (failure) of this operation is signified by 
+! {\tt aC} (on input valid only on the {\tt root}), and broadcasts it
+! to all the processes associated with the communicator handle
+! {\tt comm}.  The success (failure) of this operation is signified by
 ! the zero (nonzero) returned value of the {\tt INTEGER} flag {\tt stat}.
 !
 ! !INTERFACE:
@@ -520,16 +520,16 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,intent(in) :: root
       integer,intent(in) :: comm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(Accumulator), intent(inout) :: aC ! (IN) on root, (OUT) elsewhere
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional, intent(out)   :: stat
 
@@ -559,10 +559,10 @@
   if(myID == root) then
      status = Accumulator_initialized(aC,die_flag=.true.,source_name=myname_)
   endif
-  
-        ! NOTE: removed argument check for aC on all non-root processes. 
-        ! Is there any good way to check if an accumulator is NOT initialized? 
-  
+
+        ! NOTE: removed argument check for aC on all non-root processes.
+        ! Is there any good way to check if an accumulator is NOT initialized?
+
   call bcastp_(aC, root, comm, stat)
 
 
@@ -583,7 +583,7 @@
 
 
  end subroutine bcast_
- 
+
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -591,10 +591,10 @@
 !
 ! !IROUTINE: bcastp_ - Broadcast an Accumulator (but Not its Registers)
 !
-! !DESCRIPTION:  This routine broadcasts all components of the accumulator 
+! !DESCRIPTION:  This routine broadcasts all components of the accumulator
 !                aC except for aC%data. This is a private routine, only meant
 !                to be used by accumulator scatter and gather routines.
-!                 
+!
 !
 ! !INTERFACE:
 !
@@ -613,16 +613,16 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,intent(in) :: root
       integer,intent(in) :: comm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(Accumulator), intent(inout) :: aC ! (IN) on root, (OUT) elsewhere
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional, intent(out)   :: stat
 
@@ -636,7 +636,7 @@
   integer :: ier, i
   integer :: aC_num_steps, aC_steps_done, aC_nIAttr, aC_nRAttr
   integer :: FirstiActionIndex, LastiActionIndex
-  integer :: FirstrActionIndex, LastrActionIndex  
+  integer :: FirstrActionIndex, LastrActionIndex
   integer :: AccBuffSize
   integer :: nIAttr, nRAttr
   integer, dimension(:), allocatable :: AccBuff, aC_iAction, aC_rAction
@@ -649,8 +649,8 @@
 
         ! STEP 1: Pack broadcast buffer.
 
-        ! On the root, load up the Accumulator Buffer: Buffer Size = 
-        ! num_steps {1} + steps_done {1} + nIAttr {1} + nRAttr {1} + 
+        ! On the root, load up the Accumulator Buffer: Buffer Size =
+        ! num_steps {1} + steps_done {1} + nIAttr {1} + nRAttr {1} +
         ! iAction {nIAttr} + rAction {nRAttr}
 
 
@@ -684,7 +684,7 @@
   if(myID == root) then
 
         ! load up iC%num_steps and iC%steps_done
-  
+
      AccBuff(1) = aC%num_steps
      AccBuff(2) = aC%steps_done
 
@@ -705,8 +705,8 @@
 	AccBuff(4+nIAttr+i) = aC%rAction(i)
      enddo
   endif
-  
-        ! STEP 2: Broadcast 
+
+        ! STEP 2: Broadcast
 
 	! Broadcast the root value of AccBuff
 
@@ -724,15 +724,15 @@
   aC_steps_done = AccBuff(2)
   aC_nIAttr = AccBuff(3)
   aC_nRAttr = AccBuff(4)
- 
+
         ! Unload iC%iAction and iC%rAction
 
   if(aC_nIAttr > 0) then
      allocate(aC_iAction(aC_nIAttr),stat=ier)
      if(ier /= 0) call die(myname_,"allocate aC_iAction",ier)
-     
+
      FirstiActionIndex = 5
-     LastiActionIndex = 4+aC_nIAttr       
+     LastiActionIndex = 4+aC_nIAttr
      aC_iAction(1:aC_nIAttr) = AccBuff(FirstiActionIndex:LastiActionIndex)
 
   endif
@@ -755,7 +755,7 @@
 	call Accumulator_initp(aC,iAction=aC_iAction,rAction=aC_rAction, &
                                num_steps=aC_num_steps, &
                                steps_done=aC_steps_done)
-     endif 
+     endif
 
      deallocate(aC_iAction,aC_rAction,stat=ier)
      if(ier /= 0) call die(myname_,"deallocate aC_iAction...",ier)
@@ -791,7 +791,7 @@
 
 
  end subroutine bcastp_
- 
+
 
  end module m_AccumulatorComms
 

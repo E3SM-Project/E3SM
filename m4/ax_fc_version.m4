@@ -2,7 +2,7 @@
 # -------------------------------------------------
 # Link a trivial Fortran program, compiling with a version output FLAG
 # (which default value, $ac_cv_prog_fc_version, is computed by
-# AX_FC_VERSION), and return the output in $ac_fc_version_output.  
+# AX_FC_VERSION), and return the output in $ac_fc_version_output.
 AC_DEFUN([AX_FC_VERSION_OUTPUT],
 [AC_REQUIRE([AC_PROG_FC])dnl
 AC_LANG_PUSH(Fortran)dnl
@@ -10,7 +10,7 @@ AC_LANG_PUSH(Fortran)dnl
 AC_LANG_CONFTEST([AC_LANG_PROGRAM([])])
 
 # Compile and link our simple test program by passing a flag (argument
-# 1 to this macro) to the Fortran 90 compiler in order to get "version" output 
+# 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_FCFLAGS=$FCFLAGS
 FCFLAGS="$FCFLAGS m4_default([$1], [$ac_cv_prog_fc_version])"
 (eval echo $as_me:__oline__: \"$ac_link\") >&AS_MESSAGE_LOG_FD
