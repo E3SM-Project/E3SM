@@ -249,5 +249,33 @@ derived_variables = {
     'PREH2O_OCN':[ (['PREH2O_OCEAN'], (lambda x: _convert_units(x, target_units='mm')) ),
 		     #(['TMQ', 'OCNFRAC'], lambda preh2o, ocnfrac: mask_by(_convert_units(preh2o, target_units="mm"), ocnfrac, low_limit = 0.65))],
                      (['TMQ', 'OCNFRAC'], lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit = 0.65))],
+    'CLDHGH': [
+        (['CLDHGH'], lambda cldhgh: _convert_units(cldhgh, target_units="%")),#below fraction to percent conversion not working
+    ],
+    'CLDLOW': [
+        (['CLDLOW'], lambda cldlow: _convert_units(cldlow, target_units="%")),
+    ],
+    'CLDMED': [
+        (['CLDMED'], lambda cldmed: _convert_units(cldmed, target_units="%")),
+    ],
+    'CLDTOT': [
+        (['CLDTOT'], lambda cldtot: _convert_units(cldtot, target_units="%")),
+    ],
+    'CLDHGH_VISIR': [
+        (['CLDHGH'], rename),
+        (['CLDHGH_VISIR'], rename),
+    ],
+    'CLDLOW_VISIR': [
+        (['CLDLOW'], rename),
+        (['CLDLOW_VISIR'], rename),
+    ],
+    'CLDMED_VISIR': [
+        (['CLDMED'], rename),
+        (['CLDMED_VISIR'], rename),
+    ],
+    'CLDTOT_VISIR': [
+        (['CLDTOT'], rename),
+        (['CLDHGH_VISIR'], rename),
+    ],
 }
 
