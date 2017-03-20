@@ -1,0 +1,498 @@
+<!-- ======================================================================= -->
+<chapter id="streams_c">
+  <title></title>
+  <!-- ======================================================================= -->
+
+  <!-- ======================================================================= -->
+  <sect1 id="streams">
+    <title>Input Data Streams</title>
+    <!-- ======================================================================= -->
+
+    <!-- ======================================================================= -->
+    <sect2 id="streams_overview">
+      <title>Overview</title>
+      <!-- ======================================================================= -->
+
+      <para>
+
+	An <emphasis>input data stream</emphasis> is a time-series of input data files
+	where all the fields in the stream are located in the same data file
+	and all share the same spatial and temporal coordinates
+	(ie. are all on the same grid and share the same time axis).
+	Normally a time axis has a uniform dt, but this is not a requirement.
+
+      </para> <para>
+
+	The data models can have multiple input streams.
+
+      </para> <para>
+
+	The data for one stream may be all in one file or may be spread over several files.
+	For example, 50 years of monthly average data might be contained all in one data file
+	or it might be spread over 50 files, each containing one year of data.
+
+      </para> <para>
+
+	The data models can <emphasis>loop</emphasis> over stream data --
+	repeatedly cycle over some subset of an input stream's time axis.
+	When looping, the models can only loop over whole years.
+	For example, an input stream might have SST data for years 1950 through 2000,
+	but a model could loop over the data for years 1960 through 1980.
+	A model <emphasis>cannot</emphasis> loop over partial years, for example,
+	from 1950-Feb-10 through 1980-Mar-15.
+
+      </para> <para>
+
+	The input data must be in a netcdf file and the time axis in that file
+	must be CF-1.0 compliant.
+
+      </para> <para>
+	There are two main categories of information that the data models need
+	to know about a stream:
+	<itemizedlist>
+	  <listitem>
+	    <para> data that describes what a user wants --
+	      what streams to use and how to use them -- things that can be changed by a user.  </para>
+	  </listitem>
+	  <listitem>
+	    <para> data that describes the stream data -- meta-data about the
+	      inherent properties of the data itself -- things that cannot be
+	      changed by a user.  </para>
+	  </listitem>
+	</itemizedlist>
+
+	Generally, information about what streams a user wants to use and how
+	to use them is input via the strdata ("stream data") Fortran namelist,
+	while meta-data that describes the stream data itself is found in an
+	xml-like text file called a "stream description file."
+      </para>
+    </sect2>
+
+    <!-- ======================================================================= -->
+    <sect2 id="strdata">
+      <title>Stream Data</title>
+      <!-- ======================================================================= -->
+
+      <para>
+	The <emphasis>strdata</emphasis> (short for "stream data") input is
+	set via a fortran namelist called shr_strdata_nml.  That namelist, the
+	strdata datatype, and the methods are contained in the share source
+	code file, models/csm_share/shr/shr_strdata_mod.F90.  In general,
+	strdata input defines an array of input streams and operations to
+	perform on those streams.  Therefore, many namelist inputs are arrays
+	of character strings.  Different variable of the same index are
+	associated.  For instance, mapalgo(1) spatial interpolation will be
+	performed between streams(1) and the target domain.
+      </para>
+
+      <para>
+	The following namelist are available with the strdata namelist.
+
+	<simplelist type='vert'>
+	  <member>dataMode  - component specific mode</member>
+	  <member>domainFile- final domain</member>
+	  <member>streams   - input files</member>
+	  <member>vectors   - paired vector field names</member>
+	  <member>fillalgo  - fill algorithm</member>
+	  <member>fillmask  - fill mask</member>
+	  <member>fillread  - fill mapping file to read</member>
+	  <member>fillwrite - fill mapping file to write</member>
+	  <member>mapalgo   - spatial interpolation algorithm</member>
+	  <member>mapmask   - spatial interpolation mask</member>
+	  <member>mapread   - spatial interpolation mapping file to read</member>
+	  <member>mapwrite  - spatial interpolation mapping file to write </member>
+	  <member>tintalgo  - time interpolation algorithm </member>
+	  <member>taxMode   - time interpolation mode</member>
+	  <member>dtlimit    - delta time axis limit </member>
+	</simplelist>
+
+	The set of shr_strdata_nml namelist keywords are the same for all data
+	models. As a result, any of the data model namelist documentation can
+	be used to view a full description. For example, see <ulink
+								url="../../cesm/doc/modelnl/nl_datm.html#stream"> stream specific namelist
+	  settings </ulink>.
+
+      </para>
+    </sect2>
+
+    <!-- ======================================================================= -->
+    <sect2 id="streams_namelist">
+      <title>Specifying What Streams to Use</title>
+      <!-- ======================================================================= -->
+      <para>
+	The data models have a namelist variable that specifies which input
+	streams to use and, for each input stream, the name of the
+	corresponding stream description file, what years of data to use, and
+	how to align the input stream time axis with the model run time axis.
+	This input is set in the strdata namelist input.
+      </para>
+      <para>
+	General format:
+      </para>
+      <screen>
+	&amp;shr_strdata_nml
+	streams = 'stream1.txt year_align year_first year_last ',
+        'stream2.txt year_align year_first year_last ',
+        ...
+        'streamN.txt year_align year_first year_last '
+	/
+      </screen>
+
+      <para>
+	where:
+      </para>
+
+      <variablelist>
+
+	<varlistentry><term><option>streamN.txt</option></term><listitem><para>
+	      the stream description file, a plain text file containing details about the input stream (see below)
+	</para></listitem></varlistentry>
+
+	<varlistentry><term><option>year_first</option></term><listitem><para>
+	      the first year of data that will be used
+	</para></listitem></varlistentry>
+
+	<varlistentry><term><option>year_last</option></term><listitem><para>
+	      the last  year of data that will be used
+	</para></listitem></varlistentry>
+
+	<varlistentry><term><option>year_align</option></term><listitem><para>
+	      a model year that will be aligned with data for year_first
+	</para></listitem></varlistentry>
+
+      </variablelist>
+
+      <para>
+	The stream text files for a given data model mode are automatically
+	generated by the corresponding data model
+	<command>build-namelist</command> with present names.  As an example
+	we refer to the following <filename>datm_atm_in</filename> example
+	file (that would appear in both
+	<filename>$CASEROOT/CaseDocs</filename> and
+	<filename>$RUNDIR</filename>):
+      </para>
+
+      <screen>
+	datamode   = 'CLMNCEP'
+	domainfile = '/glade/proj3/cseg/inputdata/share/domains/domain.lnd.fv1.9x2.5_gx1v6.090206.nc'
+	dtlimit    = 1.5,1.5,1.5,1.5
+	fillalgo   = 'nn','nn','nn','nn'
+	fillmask   = 'nomask','nomask','nomask','nomask'
+	mapalgo    = 'bilinear','bilinear','bilinear','bilinear'
+	mapmask    = 'nomask','nomask','nomask','nomask'
+	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1972  ",
+        "datm.streams.txt.CLM_QIAN.Precip 1895 1948 1972  ",
+        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1972  ",
+        "datm.streams.txt.presaero.trans_1850-2000 1849 1849 2006"
+	taxmode    = 'cycle','cycle','cycle','cycle'
+	tintalgo   = 'coszen','nearest','linear','linear'
+	vectors    = 'null'
+      </screen>
+
+      <para>
+	As is discussed in the CESM1.2 User's Guide, to change the contents of
+	<filename>datm_atm_in</filename>, you can edit
+	<filename>$CASEROOT/user_nl_datm</filename> to change any of the above
+	settings EXCEPT FOR THE NAMES
+	<filename>datm.streams.txt.CLM_QIAN.Solar</filename>,
+	<filename>datm.streams.txt.CLM_QIAN.Precip</filename>,
+	<filename>datm.streams.txt.CLM_QIAN.TPQW</filename> and
+	<filename>datm.streams.txt.presaero.trans_1850-2000</filename>.  Note
+	that any namelist variable from shr_strdata_nml and datm_nml can be
+	modified by adding the appropriate keyword/value pairs to
+	<filename>user_nl_datm</filename>.  As an example, the following could
+	be the contents of <filename>$CASEROOT/user_nl_datm</filename>:
+      </para>
+
+      <screen>
+	!------------------------------------------------------------------------
+	! Users should ONLY USE user_nl_datm to change namelists variables
+	! Users should add all user specific namelist changes below in the form of
+	! namelist_var = new_namelist_value
+	! Note that any namelist variable from shr_strdata_nml and datm_nml can
+	! be modified below using the above syntax
+	! User preview_namelists to view (not modify) the output namelist in the
+	! directory $CASEROOT/CaseDocs
+	! To modify the contents of a stream txt file, first use preview_namelists
+	! to obtain the contents of the stream txt files in CaseDocs, and then
+	! place a copy of the  modified stream txt file in $CASEROOT with the string
+	! user_ prepended.
+	!------------------------------------------------------------------------
+	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1900  ",
+        "datm.streams.txt.CLM_QIAN.Precip 1895 1948 1900  ",
+        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1900  ",
+        "datm.streams.txt.presaero.trans_1850-2000 1849 1849 2006"
+      </screen>
+
+      <para>
+	and the contents of shr_strdata_nml (in both $CASEROOT/CaseDocs and $RUNDIR)
+	would be
+      </para>
+
+      <screen>
+	datamode   = 'CLMNCEP'
+	domainfile = '/glade/proj3/cseg/inputdata/share/domains/domain.lnd.fv1.9x2.5_gx1v6.090206.nc'
+	dtlimit    = 1.5,1.5,1.5,1.5
+	fillalgo   = 'nn','nn','nn','nn'
+	fillmask   = 'nomask','nomask','nomask','nomask'
+	mapalgo    = 'bilinear','bilinear','bilinear','bilinear'
+	mapmask    = 'nomask','nomask','nomask','nomask'
+	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1900  ",
+        "datm.streams.txt.CLM_QIAN.Precip 1895 1948 1900  ",
+        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1900  ",
+        "datm.streams.txt.presaero.trans_1850-2000 1849 1849 2006"
+	taxmode    = 'cycle','cycle','cycle','cycle'
+	tintalgo   = 'coszen','nearest','linear','linear'
+	vectors    = 'null'
+      </screen>
+
+      <para> As is discussed in the User's Guide, you should use
+	<command>preview_namelists</command> to view (not modify) the output
+	namelist in <filename>CaseDocs</filename>.
+      </para>
+
+    </sect2>
+
+    <!-- ======================================================================= -->
+    <sect2 id="streams_description_file">
+      <title>Stream Description File</title>
+      <!-- ======================================================================= -->
+
+      <para>
+	The <emphasis>stream description file</emphasis> is not a Fortran
+	namelist, but a locally built xml-like parsing implementation.
+	Sometimes it is called a "stream dot-text file" because it has a
+	".txt." in the filename.  Stream description files contain data that
+	specifies the names of the fields in the stream, the names of the
+	input data files, and the file system directory where the data files
+	are located.  In addition, a few other options are available such as
+	the time axis offset parameter.
+      </para>
+
+      <para>
+	In CESM1.2, each data model's <command>build-namelist</command>
+	utility (e.g. models/atm/datm/bld/build-namelist) automatically
+	generates these stream description files. The directory contents of
+	each data model will look like the following (using DATM as an
+	example)
+      </para>
+
+      <screen>
+	models/atm/datm/bld/build-namelist
+	models/atm/datm/bld/namelist_files/namelist_definition_datm.xml
+	models/atm/datm/bld/namelist_files/namelist_defaults_datm.xml
+      </screen>
+
+      <para>
+	The <filename>namelist_definition_datm.xml</filename> file defines all
+	the namelist variables and associated groups. The
+	<filename>namelist_defaults_datm.xml</filename> provides the out of
+	the box settings for the target data model and target stream.
+	<command>build-namelist</command> utilizes these two files to
+	construct the stream files for the given compset settings. You can
+	modify the generated stream files for your particular needs by doing
+	the following:
+
+	<orderedlist>
+
+	  <listitem><para> Call <command>setup</command> OR
+	      <command>preview_namelists</command>.  </para></listitem>
+
+	  <listitem><para> Copy the relevant description file from
+	      <filename>$CASEROOT/CaseDocs</filename> to
+	      <filename>$CASEROOT</filename> and pre-pend a "user_" string to the
+	      filename. Change the permission of the file to write.  For example,
+	      assuming you are in <command>$CASEROOT</command>
+	      <screen>
+		cp CaseDocs/datm.streams.txt.CLM_QIAN.Solar  user_datm.streams.txt.CLM_QIAN.Solar
+		chmod u+w user_datm.streams.txt.CLM_QIAN.Solar
+	      </screen>
+	  </para></listitem>
+
+	  <listitem>
+
+	    <itemizedlist>
+	      <listitem>
+		<para>Edit <filename>user_datm.streams.txt.CLM_QIAN.Solar </filename>
+		  with your desired changes.
+		</para>
+	      </listitem>
+	      <listitem>
+		<para><emphasis>Be sure not to put any tab characters in the file: use spaces instead.</emphasis></para>
+	      </listitem>
+	      <listitem>
+		<para>In contrast to other user_nl_xxx files, be sure to set all relevant data model settings in the xml files, issue the <command>preview_namelist </command>
+		  command and THEN edit the <filename>user_datm.streams.txt.CLM_QIAN.Solar </filename>  file.
+		</para>
+	      </listitem>
+	      <listitem>
+		<para><command>Once you have created a user_xxx.streams.txt.* file, further modifications to the relevant data model settings in the xml files will be ignored.</command></para>
+	      </listitem>
+	      <listitem>
+		<para>If you later realize that you need to change some settings in an xml file, you should remove the user_xxx.streams.txt.* file(s), make the modifications in the xml file, rerun <command>preview_namelists, </command>
+		  and then reintroduce your modifications into a new user_xxx.streams.txt.* stream file(s).
+		</para>
+	      </listitem>
+	    </itemizedlist>
+
+	  </listitem>
+
+	  <listitem><para> Call <command>preview_namelists</command>
+	  </para></listitem>
+
+	  <listitem><para> Verify that your changes do indeed appear in the
+	      resultant stream description file appear in
+	      <filename>CaseDocs/datm.streams.txt.CLM_QIAN.Solar</filename>.  These
+	      changes will also appear in
+	      <filename>$RUNDIR/datm.streams.txt.CLM_QIAN.Solar</filename>.
+	  </para></listitem>
+
+	</orderedlist>
+      </para>
+
+      <para>
+	The data elements found in the stream description file are:
+      </para>
+
+      <variablelist>
+
+	<varlistentry><term><option>dataSource</option></term><listitem><para>
+	      A comment about the source of the data -- always set to GENERIC in
+	      CESM1.2 and not used by the model.  This is there only for backwards
+	      compatibility.
+	</para></listitem></varlistentry>
+
+	<varlistentry><term><option>fieldInfo</option></term><listitem><para>
+	      Information about the field data for this stream...
+	      <variablelist>
+		<varlistentry><term><option>variableNames</option></term><listitem><para>
+		      A list of the field variable names.  This is a paired list
+		      with the name of the variable in the netCDF file on the left and the
+		      name of the corresponding model variable on the right.
+		      This is the list of fields to read in from the data file, there may be
+		      other fields in the file which are not read in (ie. they won't be used).
+		</para></listitem></varlistentry>
+		<varlistentry><term><option>filePath</option></term><listitem><para>
+		      The file system directory where the data files are located.
+		</para></listitem></varlistentry>
+		<varlistentry><term><option>fileNames</option></term><listitem><para>
+		      The list of data files to use.  If there is more than one file,
+		      the files must be in chronological order, that is, the dates in time axis
+		      of the first file are before the dates in the time axis of the second file.
+		</para></listitem></varlistentry>
+		<varlistentry><term><option>tInterpAlgo</option></term><listitem><para>
+		      The option is obsolete and no longer performs a function.  Control
+		      of the time interpolation algorithm is in the strdata namelists,
+		      <ulink url="../cesm/doc/modelnl/nl_datm.html#stream"> tinterp_algo and taxMode
+		      </ulink>.
+		</para></listitem></varlistentry>
+
+		<varlistentry><term><option>offset</option></term>
+		  <listitem>
+		    <para>The offset allows a user to shift the time axis of a data stream by a fixed and constant number of seconds. For instance, if a data set contains daily average data with timestamps for the data at the end of the day, it might be appropriate to shift the time axis by 12 hours so the data is taken to be at the middle of the day instead of the end of the day. This feature supports only simple shifts in seconds as a way of correcting input data time axes without having to modify the input data time axis manually. This feature does not support more complex shifts such as end of month to mid-month. But in conjunction with the time interpolation methods in the strdata input, hopefully most user needs can be accommodated with the two settings. Note that a positive offset advances the input data time axis forward by that number of seconds.</para>
+
+		    <para>The data models advance in time discretely.  At a given time, they read/derive fields from input files.  Those input files have data on a discrete time axis as well.  Each data point in the input files are associated with a discrete time (as opposed to a time interval).  Depending whether you pick lower, upper, nearest, linear, or coszen; the data in the input file will be "interpolated" to the time in the model. </para>
+
+		    <para>The offset shifts the time axis of the input data the given number of seconds.  so if the input data is at 0, 3600, 7200, 10800 seconds (hourly) and you set an offset of 1800, then the input data will be set at times 1800, 5400, 9000, and 12600.  so a model at time 3600 using linear interpolation would have data at "n=2" with offset of 0 will have data at "n=(2+3)/2" with an offset of 1800.  n=2 is the 2nd data in the time list 0, 3600, 7200, 10800 in this example.  n=(2+3)/2
+		      is the average of the 2nd and 3rd data in the time list 0, 3600, 7200, 10800.   offset can be positive or negative.
+		</para></listitem></varlistentry>
+
+		<varlistentry>
+		  <term><option>domainInfo</option></term>
+		  <listitem>
+		    <para>
+		      Information about the domain data for this stream...
+		      <variablelist>
+			<varlistentry><term><option>variableNames</option></term>
+			  <listitem>
+			    <para>
+			      A list of the domain variable names.  This is a paired list
+			      with the name of the variable in the netCDF file on the left and the
+			      name of the corresponding model variable on the right.
+			      This data models require five variables in this list.
+			      The names of model's variables (names on the right) must be:
+			      "time," "lon," "lat," "area," and "mask."
+			    </para>
+			  </listitem>
+			</varlistentry>
+			<varlistentry><term><option>filePath</option></term>
+			  <listitem>
+			    <para>
+			      The file system directory where the domain data file is located.
+			    </para>
+			  </listitem>
+			</varlistentry>
+			<varlistentry><term><option>fileNames</option></term>
+			  <listitem>
+			    <para>
+			      The name of the domain data file.
+			      Often the domain data is located in the same file as the field data (above),
+			      in which case the name of the domain file could simply be the name of the
+			      first field data file.  Sometimes the field data files don't contain the
+			      domain data required by the data models, in this case, one new file can
+			      be created that contains the required data.
+			    </para>
+			  </listitem>
+			</varlistentry>
+		      </variablelist>
+		    </para>
+                  </listitem>
+		</varlistentry>
+	      </variablelist>
+
+	    </varlistentry>
+	  </variablelist>
+
+	  <para>
+	    Actual example:
+	  </para>
+
+	  <screen>
+
+	    &lt;stream&gt;
+	    &lt;dataSource&gt;
+	    GENERIC
+	    &lt;/dataSource&gt;
+	    &lt;domainInfo&gt;
+	    &lt;variableNames&gt;
+	    time   time
+	    lon    lon
+	    lat    lat
+	    area   area
+	    mask   mask
+	    &lt;/variableNames&gt;
+	    &lt;filePath&gt;
+	    /glade/proj3/cseg/inputdata/atm/datm7/NYF
+	    &lt;/filePath&gt;
+	    &lt;fileNames&gt;
+	    nyf.ncep.T62.050923.nc
+	    &lt;/fileNames&gt;
+	    &lt;/domainInfo&gt;
+	    &lt;fieldInfo&gt;
+	    &lt;variableNames&gt;
+	    dn10  dens
+	    slp_  pslv
+	    q10   shnum
+	    t_10  tbot
+	    u_10  u
+	    v_10  v
+	    &lt;/variableNames&gt;
+	    &lt;filePath&gt;
+	    /glade/proj3/cseg/inputdata/atm/datm7/NYF
+	    &lt;/filePath&gt;
+	    &lt;offset&gt;
+	    0
+	    &lt;/offset&gt;
+	    &lt;fileNames&gt;
+	    nyf.ncep.T62.050923.nc
+	    &lt;/fileNames&gt;
+	    &lt;/fieldInfo&gt;
+	    &lt;/stream&gt;
+
+	  </screen>
+
+	</sect2>
+
+      </sect1>
+
+    </chapter>
