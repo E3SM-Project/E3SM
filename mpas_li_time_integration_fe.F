@@ -27,6 +27,7 @@ module li_time_integration_fe
    use mpas_dmpar
    use mpas_timer
    use mpas_vector_reconstruction
+   use mpas_log
    use li_velocity, only: li_velocity_solve
    use li_tendency
    use li_diagnostic_vars
@@ -135,7 +136,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err == 1) then
-          write (0,*) "An error has occurred in li_time_integrator_forwardeuler."
+          call mpas_log_write("An error has occurred in li_time_integrator_forwardeuler.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -247,11 +248,11 @@ module li_time_integration_fe
           err = ior(err,err_tmp)
           call mpas_get_timeInterval(allowableDtMinStringInterval, timeString=allowableDtMinString, ierr=err_tmp)
           err = ior(err,err_tmp)
-          write(6,*) '  Maximum allowable time step (yr) for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString) //  '  Time step is limited by processor number ', allowableDtMinProcNumber
+          call mpas_log_write('  Maximum allowable time step (yr) for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString) //  '  Time step is limited by processor number $i', intArgs=(/allowableDtMinProcNumber/))
       endif
 
       if (err .gt. 0) then
-           write(0,*) 'Error in calculating thickness tendency (possibly CFL violation)'
+           call mpas_log_write('Error in calculating thickness tendency (possibly CFL violation)', MPAS_LOG_ERR)
       endif
 
 
@@ -292,7 +293,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in calculate_tendencies."
+          call mpas_log_write("An error has occurred in calculate_tendencies.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -410,7 +411,7 @@ module li_time_integration_fe
 
          if (config_print_thickness_advection_info) then
             if (sum(masktmp) > 0) then
-               write(6,*) '  Cells with negative thickness (set to 0):',sum(masktmp)
+               call mpas_log_write('  Cells with negative thickness (set to 0): $i', intArgs=(/sum(masktmp)/))
             endif
 
             ! Note how many cells have ice.
@@ -418,7 +419,7 @@ module li_time_integration_fe
             where (thicknessNew > 0.0_RKIND)
                masktmp = 1
             end where
-            write(6,*) '  Cells with nonzero thickness:', sum(masktmp)
+            call mpas_log_write('  Cells with nonzero thickness: $i', intArgs=(/sum(masktmp)/))
          endif
          deallocate(masktmp)
 
@@ -447,7 +448,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in update_prognostics."
+          call mpas_log_write("An error has occurred in update_prognostics.", MPAS_LOG_ERR)
       endif
 
 

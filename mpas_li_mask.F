@@ -24,6 +24,7 @@ module li_mask
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
+   use mpas_log
    use li_setup
 
    implicit none
@@ -399,7 +400,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_calculate_mask."
+          call mpas_log_write("An error has occurred in li_calculate_mask.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------

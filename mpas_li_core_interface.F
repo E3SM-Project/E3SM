@@ -11,9 +11,9 @@ module li_core_interface
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_constants
-   use mpas_io_units
    use mpas_attlist
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_io_units
+   use mpas_log
    use li_core
 
    public
@@ -208,7 +208,7 @@ module li_core_interface
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 
       if (.not. associated(config_do_restart)) then
-         call mpas_dmpar_global_abort('ERROR: config_do_restart is not associated.')
+         call mpas_log_write('ERROR: config_do_restart is not associated.', MPAS_LOG_CRIT)
       else if (config_do_restart) then
          write(stream,'(a)') 'restart'
       else
