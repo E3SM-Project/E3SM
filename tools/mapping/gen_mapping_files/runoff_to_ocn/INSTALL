@@ -2,17 +2,17 @@
 HOW TO BUILD
 ============
 
-Prior to building, you must make sure $CIMEROOT is set.
-
 (1) $ cd src
-(2) $ $CIMEROOT/tools/configure -mach [machine name]
-(3) Bash users:
-    $ . .env_mach_specific.sh
-    csh users:
-    $ source .env_mach_specific.csh
-(4) $ gmake
+Bash users:
+(2) $ (export MPILIB=mpi-serial; ../../../../configure --macros-format Makefile)
+(3) $ (. .env_mach_specific.sh ; gmake)
+csh users:
+(2) $ (setenv MPILIB mpi-serial; ../../../../configure --macros-format Makefile)
+(3) $ (source .env_mach_specific.csh ; gmake)
 
-Note: in the second step, replace [machine name] with the machine you are
-building on. Also, some machines have dedicated build nodes, so you might need
-to SSH to another node before the 'gmake' step.
+Note: in the second step, you may need to include "--machine [machine name]",
+where [machine name] is the name of the machine you are building on. In most
+cases configure can figure that out on its own, but if you get an error that is
+the first fix to try. Also, some machines have dedicated build nodes, so you
+might need to SSH to another node before the 'gmake' step.
 
