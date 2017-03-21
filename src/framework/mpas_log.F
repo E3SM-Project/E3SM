@@ -61,7 +61,8 @@ module mpas_log
    public :: mpas_log_init, &
              mpas_log_open, &
              mpas_log_finalize, &
-             mpas_log_write
+             mpas_log_write, &
+             mpas_log_escape_dollars
 
    !--------------------------------------------------------------------
    ! Private module variables
@@ -707,6 +708,68 @@ module mpas_log
    end subroutine mpas_log_finalize
 
 
+   !-----------------------------------------------------------------------
+   !  routine mpas_log_escape_dollars
+   !
+   !> \brief Changes occurrences of '$' character to '$$' in a string
+   !> \author Michael Duda
+   !> \date   21 March 2017
+   !> \details This routine changes all occurrences of the '$' character
+   !>   in a string to '$$' so that subsequent expansion of that string
+   !>   during a call to mpas_log_write( ) will not treat the character
+   !>   after the original '$' as a variable to be expanded (e.g., $r).
+   !>
+   !>   Note that this routine returns a string of the precise length
+   !>   needed to capture the trimmed input string plus any added '$'
+   !>   characters, so there is no need to wrap the result with trim( ).
+   !-----------------------------------------------------------------------
+   function mpas_log_escape_dollars(str) result(escape_str)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      character (len=*), intent(in) :: str
+
+      !-----------------------------------------------------------------
+      ! return variable
+      !-----------------------------------------------------------------
+      character (len=:), allocatable :: escape_str
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: i, j, n_in, n_out
+
+
+      !
+      ! Every '$' in the input string translates to one extra '$' in the output string
+      !
+      n_in = len_trim(str)
+      n_out = n_in
+      do i=1,n_in
+         if (str(i:i) == '$') then
+            n_out = n_out + 1
+         end if
+      end do
+
+      allocate(character(len=n_out) :: escape_str)
+
+      !
+      ! Change every '$' to '$$'
+      !
+      j = 1
+      do i=1,n_in
+         escape_str(j:j) = str(i:i)
+         if (str(i:i) == '$') then
+            j = j + 1
+            escape_str(j:j) = '$'
+         end if
+         j = j + 1
+      end do
+
+   end function mpas_log_escape_dollars
+
+
 !***********************************************************************
 ! PRIVATE ROUTINES
 !***********************************************************************
@@ -874,9 +937,9 @@ module mpas_log
 
       ! Loop over character positions in inString
       do i = 1, len_trim(inString)
-         if (inString(i:i) == '$' ) then
+         if (inString(i:i) == '$' .and. (.not. charExpand)) then
              charExpand = .true.
-         else if (inString(i:i) /= '$') then
+         else
              if (charExpand) then
                 select case (inString(i:i))
                    case ('i')
@@ -908,6 +971,8 @@ module mpas_log
                       else
                          varPart = errVarPart
                       endif
+                   case ('$')
+                         varPart = '$'
                    case default
                       varPart = errVarPart
                 end select
@@ -919,7 +984,6 @@ module mpas_log
                 outString(curLen+1:curLen+1) = inString(i:i)
                 curLen = curLen+1
              end if
-         else
          end if
       end do
 
