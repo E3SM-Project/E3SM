@@ -53,8 +53,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="mpascice" compclass="ice">
-    <rest_file_extension>\.rst.*</rest_file_extension>
-    <hist_file_extension>\.hist.*</hist_file_extension>
+    <rest_file_extension>\.rst.*\.*\.*\.nc</rest_file_extension>
+    <hist_file_extension>\.hist.*\.*\.*\.nc</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ice</rpointer_file>
@@ -76,8 +76,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="mpaso" compclass="ocn">
-    <rest_file_extension>\.rst.*</rest_file_extension>
-    <hist_file_extension>\.hist.*</hist_file_extension>
+    <rest_file_extension>\.rst.*\.*\.*\.nc</rest_file_extension>
+    <hist_file_extension>\.hist.*\.*\.*\.nc</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ocn</rpointer_file>
