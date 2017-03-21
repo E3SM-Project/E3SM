@@ -123,8 +123,12 @@ def plot(reference, test, diff, metrics_dict, parameter):
     plot_min_max_mean(vcs_canvas, metrics_dict, 'diff')
 
     reference_isofill = vcs.getisofill('reference_isofill')
+    reference_isofill.missing = 'grey'
     test_isofill = vcs.getisofill('test_isofill')
+    test_isofill.missing = 'grey'
     diff_isofill = vcs.getisofill('diff_isofill')
+    diff_isofill.missing = 'grey'
+
 
     set_levels_of_graphics_method(reference_isofill, parameter.reference_levels, reference)
     set_levels_of_graphics_method(test_isofill, parameter.test_levels, test)
