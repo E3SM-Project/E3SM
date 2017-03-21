@@ -28,6 +28,8 @@ CONTAINS
 
 SUBROUTINE smooth_init(ofilename, map_in, map_out)
 
+   use mapread_mod
+
    implicit none
 
    !--- arguments ---
@@ -126,19 +128,9 @@ SUBROUTINE smooth_init(ofilename, map_in, map_out)
    allocate(map_out%area_a(            map_in%n_b) )
    allocate(map_out%frac_a(map_in%n_b) )
 
-   allocate(map_out%  xc_b(            map_in%n_b) )
-   allocate(map_out%  yc_b(            map_in%n_b) )
-   allocate(map_out%  xv_b(map_in%nv_b,map_in%n_b) )
-   allocate(map_out%  yv_b(map_in%nv_b,map_in%n_b) )
-   allocate(map_out%mask_b(            map_in%n_b) )
-   allocate(map_out%area_b(            map_in%n_b) )
-   allocate(map_out%frac_b(map_in%n_b) )
-
    allocate(map_out%s  (ns))
    allocate(map_out%row(ns))
    allocate(map_out%col(ns))
-   allocate(map_out%sn1(map_in%n_b) )
-   allocate(map_out%sn2(map_in%n_b) )
 
    !------------------------------------------------
    ! set values
@@ -173,20 +165,9 @@ SUBROUTINE smooth_init(ofilename, map_in, map_out)
    write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
 
    ! destination of map_out must be read in from file
-   map_out%   n_b = map_in%   n_b
-   map_out%dims_b = map_in%dims_b
-   map_out%  ni_b = map_in%  ni_b
-   map_out%  nj_b = map_in%  nj_b
-   map_out%  nv_b = map_in%  nv_b
-   map_out%  xc_b = map_in%  xc_b
-   map_out%  yc_b = map_in%  yc_b
-   map_out%  xv_b = map_in%  xv_b
-   map_out%  yv_b = map_in%  yv_b
-   map_out%mask_b = map_in%mask_b
-   map_out%area_b = map_in%area_b
+   call mapread_dest_grid(map_out, ofilename)
 
-!  map_out%frac_a = map_in%frac_b
-!  map_out%frac_b = map_in%frac_b
+   ! Overwrite frac_a and frac_b to be 1 globally
    map_out%frac_a = 1.0
    map_out%frac_b = 1.0
 
@@ -194,8 +175,6 @@ SUBROUTINE smooth_init(ofilename, map_in, map_out)
    map_out%s      = 1.0
    map_out%row    = 1
    map_out%col    = 1
-   map_out%sn1    = map_in%sn1
-   map_out%sn2    = map_in%sn2
 
    map_out%title      = "CCSM conservative smoothing map"
    map_out%normal     = map_in%normal
