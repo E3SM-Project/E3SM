@@ -52,25 +52,25 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '151020';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30_ICG' ) {
-        $grid_date .= '160827';
+	$grid_date .= '160827';
 	$grid_prefix .= 'cice.EC60to30km.restartFrom_eos1b';
 	$decomp_date .= '151020';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30v3' ) {
-        $grid_date .= '161222';
+	$grid_date .= '161222';
 	$grid_prefix .= 'seaice.EC60to30v3';
 	$decomp_date .= '161222';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30v3_ICG' ) {
-        $grid_date .= '170301';
+	$grid_date .= '170301';
 	$grid_prefix .= 'seaice.EC60to30v3.restartFrom_anvil0221';
 	$decomp_date .= '161222';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oEC60to30wLI' ) {
-        $grid_date .= '160830';
-        $grid_prefix .= 'cice.EC60to30wLI';
-        $decomp_date .= '160830';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
+	$grid_date .= '160830';
+	$grid_prefix .= 'cice.EC60to30wLI';
+	$decomp_date .= '160830';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'mpas120' ) {
 	$grid_date .= '121116';
 	$grid_prefix .= 'cice120km';
@@ -87,45 +87,50 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$decomp_date .= '151209';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oQU240wLI' ) {
-        $grid_date .= '160929';
-        $grid_prefix .= 'cice.QU240wLI';
-        $decomp_date .= '160929';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
+	$grid_date .= '160929';
+	$grid_prefix .= 'cice.QU240wLI';
+	$decomp_date .= '160929';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'mpasgx1' ) {
 	$grid_date .= '121116';
 	$grid_prefix .= 'grid_gx1';
 	$decomp_date .= '121116';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS30to10' ) {
-        $grid_date .= '151031';
-        $grid_prefix .= 'seaice.RRS.30-10km';
-        $decomp_date .= '151031';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
+	$grid_date .= '151031';
+	$grid_prefix .= 'seaice.RRS.30-10km';
+	$decomp_date .= '151031';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS30to10v3' ) {
-        $grid_date .= '161221';
-        $grid_prefix .= 'seaice.RRS30to10v3';
-        $decomp_date .= '161221';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
+	$grid_date .= '161221';
+	$grid_prefix .= 'seaice.RRS30to10v3';
+	$decomp_date .= '161221';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS30to10wLI' ) {
-        $grid_date .= '160930';
-        $grid_prefix .= 'seaice.RRS30-10wLI';
-        $decomp_date .= '160930';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
+	$grid_date .= '160930';
+	$grid_prefix .= 'seaice.RRS30-10wLI';
+	$decomp_date .= '160930';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS18to6' ) {
-        $grid_date .= '160830';
-        $grid_prefix .= 'seaice.RRS.18to6km';
-        $decomp_date .= '160830';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
+	$grid_date .= '160830';
+	$grid_prefix .= 'seaice.RRS.18to6km';
+	$decomp_date .= '160830';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS18to6v3' ) {
-        $grid_date .= '170111';
-        $grid_prefix .= 'seaice.RRS18to6v3';
-        $decomp_date .= '170111';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
+	$grid_date .= '170111';
+	$grid_prefix .= 'seaice.RRS18to6v3';
+	$decomp_date .= '170111';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oRRS18to6v3_ICG' ) {
+	$grid_date .= '170321';
+	$grid_prefix .= 'seaice.RRS18to6v3.restartFrom_titan0228';
+	$decomp_date .= '161222';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'oRRS15to5' ) {
-        $grid_date .= '151209';
-        $grid_prefix .= 'seaice.RRS.15to5km';
-        $decomp_date .= '151209';
-        $decomp_prefix .= 'mpas-cice.graph.info.';
+	$grid_date .= '151209';
+	$grid_prefix .= 'seaice.RRS.15to5km';
+	$decomp_date .= '151209';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 }
 
 chdir "$CASEBUILD/mpas-ciceconf";
