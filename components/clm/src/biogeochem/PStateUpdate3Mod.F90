@@ -17,10 +17,11 @@ module PStateUpdate3Mod
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
   use soilorder_varcon    , only : smax,ks_sorption
+  use tracer_varcon       , only : is_active_betr_bgc
   !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   use clm_varctl          , only : nu_com
-  use EcophysConType      , only : ecophyscon 
+  use EcophysConType      , only : ecophyscon
   !
   implicit none
   save
@@ -58,14 +59,14 @@ contains
     real(r8):: dt         ! radiation time step (seconds)
 
    real(r8):: smax_c       ! parameter(gP/m2), maximum amount of sorbed P in equilibrium with solution P
-   real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P 
+   real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P
    real(r8):: flux_mineralization(bounds%begc:bounds%endc,1:nlevdecomp)   !! local temperary variable
    real(r8):: temp_solutionp(bounds%begc:bounds%endc,1:nlevdecomp)
    real(r8):: aa,bb,cc ! solve quadratic function
 
     !-----------------------------------------------------------------------
 
-    associate(& 
+    associate(&
          isoilorder     => cnstate_vars%isoilorder ,&
          pdep_prof      => cnstate_vars%pdep_prof_col ,&
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool ,&
@@ -87,7 +88,7 @@ contains
             flux_mineralization(c,j) = 0._r8
          enddo
       enddo
-
+      if(.not. is_active_betr_bgc)then
       do k = 1, ndecomp_cascade_transitions
          if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
             do j = 1, nlevdecomp
@@ -141,13 +142,13 @@ contains
                     + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt &
                     - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
                     ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
-                             
+
                pf%desorb_to_solutionp_vr(c,j) = ( flux_mineralization(c,j)/dt + pf%primp_to_labilep_vr_col(c,j) &
                                 + pf%secondp_to_labilep_vr_col(c,j) &
                                 + pf%supplement_to_sminp_vr_col(c,j) - pf%sminp_to_plant_vr_col(c,j) &
                                 - pf%labilep_to_secondp_vr_col(c,j) - pf%sminp_leached_vr_col(c,j) ) / &
                                 (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+ps%solutionp_vr_col(c,j))**2._r8)
-            
+
                 pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                              ( flux_mineralization(c,j)/dt + pf%primp_to_labilep_vr_col(c,j) + pf%secondp_to_labilep_vr_col(c,j) &
                              + pf%supplement_to_sminp_vr_col(c,j) - pf%sminp_to_plant_vr_col(c,j) &
@@ -155,7 +156,7 @@ contains
                              ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
             end do
          end do
-      else ! ECA  
+      else ! ECA
         do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
@@ -178,15 +179,15 @@ contains
             enddo
          enddo
       end if
-             
+
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            
+
             do l = 1, ndecomp_pools
                 ps%decomp_ppools_vr_col(c,j,l) = ps%decomp_ppools_vr_col(c,j,l)- pf%biochem_pmin_ppools_vr_col(c,j,l)*dt
             end do
- 
+
             ps%secondp_vr_col(c,j) = ps%secondp_vr_col(c,j) + ( pf%labilep_to_secondp_vr_col(c,j) - pf%secondp_to_labilep_vr_col(c,j) &
                                      - pf%secondp_to_occlp_vr_col(c,j) )*dt
 
@@ -223,8 +224,8 @@ contains
          end do
       end do
 
-
-      ! patch-level phosphorus fluxes 
+      endif !is_active_betr_bgc
+      ! patch-level phosphorus fluxes
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -280,7 +281,7 @@ contains
          ps%retransp_patch(p)           =  ps%retransp_patch(p) - pf%m_retransp_to_litter_fire_patch(p) * dt
       end do
 
-    end associate 
+    end associate
 
   end subroutine PStateUpdate3
 

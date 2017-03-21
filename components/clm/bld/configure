@@ -47,31 +47,31 @@ OPTIONS
      or double leading dashes.  A consequence of this is that single letter options may
      NOT be bundled.
 
-     -bgc <name>            Build CLM with BGC package [ none | cn | cndv ] 
+     -bgc <name>            Build CLM with BGC package [ none | cn | cndv ]
                             (default is none).
      -cache <file>          Name of output cache file (default: config_cache.xml).
-     -cachedir <file>       Name of directory where output cache file is written 
+     -cachedir <file>       Name of directory where output cache file is written
                             (default: CLM build directory).
-     -clm_root <dir>        Root directory of clm source code 
+     -clm_root <dir>        Root directory of clm source code
                             (default: directory above location of this script)
      -cppdefs <string>      A string of user specified CPP defines.  Appended to
                             Makefile defaults.  e.g. -cppdefs '-DVAR1 -DVAR2'
-     -crop <name>           Toggle for prognostic crop model. [on | off] (default is off) 
+     -crop <name>           Toggle for prognostic crop model. [on | off] (default is off)
                             (can ONLY be turned on when BGC type is CN or CNDV)
      -comp_intf <name>      Component interface to use (ESMF or MCT) (default MCT)
-     -defaults <file>       Specify full path to a configuration file which will be used 
+     -defaults <file>       Specify full path to a configuration file which will be used
                             to supply defaults instead of the defaults in bld/config_files.
                             This file is used to specify model configuration parameters only.
                             Parameters relating to the build which are system dependent will
                             be ignored.
      -help [or -h]          Print usage to STDOUT.
-     -nofire                Turn off wildfires for BGC setting of CN 
+     -nofire                Turn off wildfires for BGC setting of CN
                             (default includes fire for CN)
      -noio                  Turn history output completely off (typically for testing).
-     -phys <name>           Value of clm4_0, clm4_5, or clm5_0 (default is clm4_0)   
+     -phys <name>           Value of clm4_0, clm4_5, or clm5_0 (default is clm4_0)
      -silent [or -s]        Turns on silent mode - only fatal messages issued.
      -sitespf_pt <name>     Setup for the given site specific single-point resolution.
-     -snicar_frc <name>     Turn on SNICAR radiative forcing calculation. [on | off] 
+     -snicar_frc <name>     Turn on SNICAR radiative forcing calculation. [on | off]
                             (default is off)
      -spinup <name>         CLM 4.0 Only. For CLM 4.5, spinup is controlled from build-namelist.
                             Turn on given spinup mode for BGC setting of CN		  (level)
@@ -92,7 +92,7 @@ EOF
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
 
-*STDOUT->autoflush();                  
+*STDOUT->autoflush();
 
 #-----------------------------------------------------------------------------------------------
 # Set the directory that contains the CLM configuration scripts.  If the configure command was
@@ -105,7 +105,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -126,8 +126,8 @@ my %opts = (
             spinup      => "normal",
 	    );
 GetOptions(
-    "spinup=s"                  => \$opts{'spinup'}, 
-    "bgc=s"                     => \$opts{'bgc'}, 
+    "spinup=s"                  => \$opts{'spinup'},
+    "bgc=s"                     => \$opts{'bgc'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
     "snicar_frc=s"              => \$opts{'snicar_frc'},
@@ -140,20 +140,20 @@ GetOptions(
     "nofire"                    => \$opts{'nofire'},
     "noio"                      => \$opts{'noio'},
     "phys=s"                    => \$opts{'phys'},
-    "snicar_frc=s"              => \$opts{'snicar_frc'}, 
+    "snicar_frc=s"              => \$opts{'snicar_frc'},
     "s|silent"                  => \$opts{'silent'},
     "sitespf_pt=s"              => \$opts{'sitespf_pt'},
     "usr_src=s"                 => \$opts{'usr_src'},
     "v|verbose"                 => \$opts{'verbose'},
     "version"                   => \$opts{'version'},
-    "crop=s"                    => \$opts{'crop'}, 
+    "crop=s"                    => \$opts{'crop'},
 )  or usage();
 
 # Give usage message.
 usage() if $opts{'help'};
 
 # Echo version info.
-version($cfgdir) if $opts{'version'};    
+version($cfgdir) if $opts{'version'};
 
 # Check for unparsed arguments
 if (@ARGV) {
@@ -201,7 +201,7 @@ my $phys_string = $phys->as_filename();
 
 my $config_def_file = "config_definition_$phys_string.xml";
 (-f "$cfgdir/config_files/$config_def_file")  or  die <<"EOF";
-** Cannot find configuration definition file \"$config_def_file\" in directory 
+** Cannot find configuration definition file \"$config_def_file\" in directory
     \"$cfgdir/config_files\" **
 EOF
 
@@ -229,11 +229,11 @@ if ($print>=2) { print "Using configuration defaults file $config_defaults_file$
 # Initialize the configuration.  The $config_def_file provides the definition of a CLM
 # configuration, and the $config_defaults_file provides default values for a specific CLM
 # configuration.   $cfg_ref is a reference to the new configuration object.
-my $cfg_ref = Build::Config->new("$cfgdir/config_files/$config_def_file", 
+my $cfg_ref = Build::Config->new("$cfgdir/config_files/$config_def_file",
 				 "$config_defaults_file");
 
 #-----------------------------------------------------------------------------------------------
-# CLM root directory.  
+# CLM root directory.
 my $clm_root;
 
 if ( ! defined($opts{'clm_root'} ) ) {
@@ -247,7 +247,7 @@ if ( &is_valid_directory( "$clm_root/src", allowEnv=>0 ) ) {
 } else {
     die <<"EOF";
 ** Invalid CLM root directory: $clm_root
-** 
+**
 ** The CLM root directory must contain the subdirectory /src/.
 ** clm_root can be entered on the command line or it will be derived
 ** from the location of this script.
@@ -316,9 +316,9 @@ if ($print>=2) { print "The configuration cache file will be created in $config_
 
 $cfg_ref->set('phys', $opts{'phys'});
 my $phys_string = $phys->as_string();
-if ($print>=2) { 
-   if( defined($opts{'phys'}) ) { 
-      print "Using version $phys_string physics.$eol"; 
+if ($print>=2) {
+   if( defined($opts{'phys'}) ) {
+      print "Using version $phys_string physics.$eol";
    }
 }
 
@@ -330,9 +330,9 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
     $cfg_ref->set('sitespf_pt', $opts{'sitespf_pt'});
   }
   $sitespf_pt = $cfg_ref->get('sitespf_pt');
-  if ($print>=2) { 
-    if( defined($opts{'sitespf_pt'}) ) { 
-      print "Using $sitespf_pt for supported single point configuration.$eol"; 
+  if ($print>=2) {
+    if( defined($opts{'sitespf_pt'}) ) {
+      print "Using $sitespf_pt for supported single point configuration.$eol";
     }
   }
 }
@@ -345,7 +345,7 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
     $cfg_ref->set('noio', "on" );
   }
   $noio = $cfg_ref->get('noio');
-  if ($print>=2) { 
+  if ($print>=2) {
     if ( $noio eq "on") { print "ALL history output is turned OFF.$eol";       }
   }
 }
@@ -372,10 +372,10 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   $nofire = $cfg_ref->get('nofire');
   if ( ($nofire eq "on") && ($bgc_mode ne "cn") ) {
     die <<"EOF";
-** Cannot turn nofire mode on -- without cn for bgc mode** 
+** Cannot turn nofire mode on -- without cn for bgc mode**
 EOF
   }
-  if ($print>=2 && $bgc_mode =~ /^cn/ ) { 
+  if ($print>=2 && $bgc_mode =~ /^cn/ ) {
     if ( $nofire eq "off") { print "Wildfires are active as normal.$eol"; }
     else                   { print "Wildfires are turned off.$eol";       }
   }
@@ -391,11 +391,11 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   $spinup = $cfg_ref->get('spinup');
   if ( ($spinup ne "normal" ) && ($bgc_mode ne "cn") ) {
     die <<"EOF";
-** Cannot turn spinup mode on -- without cn for bgc mode** 
-** 
+** Cannot turn spinup mode on -- without cn for bgc mode**
+**
 ** Set the bgc mode by the following means from highest to lowest precedence:
 ** * by the command-line option -bgc cn
-** * by a default configuration file, specified by -defaults 
+** * by a default configuration file, specified by -defaults
 EOF
   }
   if ($print>=2) { print "Using $spinup for spinup for cn mode.$eol"; }
@@ -432,11 +432,11 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   }
   if ( ($crop eq "on" ) && ($bgc_mode ne "cn") && ($bgc_mode ne "cndv") ) {
     die <<"EOF";
-** Cannot turn crop mode on -- without some form of cn for bgc mode** 
-** 
+** Cannot turn crop mode on -- without some form of cn for bgc mode**
+**
 ** Set the bgc mode by the following means from highest to lowest precedence:
 ** * by the command-line options -bgc cn
-** * by a default configuration file, specified by -defaults 
+** * by a default configuration file, specified by -defaults
 EOF
   }
 }
@@ -455,21 +455,21 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if ( (($bgc_mode eq "cn") || ($bgc_mode eq "cndv")) && ($maxpft != $maxpatchpft{$crpmode}) ) {
     die <<"EOF";
 ** For CN or CNDV BGC mode you MUST set max patch PFT's to $maxpatchpft{$crpmode}
-** 
+**
 ** When the crop model is on then it must be set to $maxpatchpft{'crop'} otherwise to $maxpatchpft{'nocrop'}
 ** Set the bgc mode, crop and maxpft by the following means from highest to lowest precedence:
 ** * by the command-line options -bgc, -crop and -maxpft
-** * by a default configuration file, specified by -defaults 
+** * by a default configuration file, specified by -defaults
 **
 EOF
   }
   if ( $maxpft > $maxpatchpft{$crpmode} ) {
     die <<"EOF";
 ** Max patch PFT's can NOT exceed $maxpatchpft{$crpmode}
-** 
+**
 ** Set maxpft by the following means from highest to lowest precedence:
 ** * by the command-line options -maxpft
-** * by a default configuration file, specified by -defaults 
+** * by a default configuration file, specified by -defaults
 **
 EOF
   }
@@ -507,7 +507,7 @@ if ($print>=2) { print "Name of CLM executable: $clm_exe.$eol"; }
 my $usr_cppdefs = $cfg_ref->get('cppdefs');
 if (defined $opts{'cppdefs'}) {
     $usr_cppdefs .= " $opts{'cppdefs'}";
-    print "Warning:: running with user defined cppdefs is NOT validated / " . 
+    print "Warning:: running with user defined cppdefs is NOT validated / " .
           "scientifically supported.$eol";
 }
 $cfg_ref->set('cppdefs', $usr_cppdefs);
@@ -521,13 +521,13 @@ my $cfg_cppdefs = '';
 if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   $cfg_cppdefs .= " -DMAXPATCH_PFT=$maxpft";
 
-  if ($bgc_mode eq 'cn') { 
+  if ($bgc_mode eq 'cn') {
     $cfg_cppdefs .= " -DCN";
   }
-  if ($crop eq 'on') { 
+  if ($crop eq 'on') {
     $cfg_cppdefs .= " -DCROP";
   }
-  if ($bgc_mode eq 'cndv') { 
+  if ($bgc_mode eq 'cndv') {
     $cfg_cppdefs .= " -DCNDV -DCN";
   }
   if ($nofire eq 'on') {
@@ -536,9 +536,9 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if ($noio eq 'on') {
     $cfg_cppdefs .= " -D_NOIO";
   }
-  if ($spinup eq 'AD') { 
+  if ($spinup eq 'AD') {
     $cfg_cppdefs .= " -DAD_SPINUP";
-  } elsif ($spinup eq 'exit') { 
+  } elsif ($spinup eq 'exit') {
     $cfg_cppdefs .= " -DEXIT_SPINUP";
   }
   if ( $snicar_frc eq 'on' ) {
@@ -644,9 +644,10 @@ sub write_filepath_cesmbld
 	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
 
 	# source directories under root
-	my @dirs = ( "main", 
+	my @dirs = ( "main",
 		     "external_models/betr/src/betr/betr_core",
 		     "external_models/betr/src/betr/betr_dtype",
+		     "external_models/betr/src/betr/betr_bgc",
 		     "external_models/betr/src/betr/betr_grid",
 		     "external_models/betr/src/betr/betr_main",
 		     "external_models/betr/src/betr/betr_math",
@@ -654,16 +655,19 @@ sub write_filepath_cesmbld
 		     "external_models/betr/src/betr/betr_util",
 		     "external_models/betr/src/driver/shared",
 		     "external_models/betr/src/driver/alm",
+		     "external_models/betr/src/Applications/app_util",
+		     "external_models/betr/src/Applications/soil-farm/bgcfarm_util",
+		     "external_models/betr/src/Applications/soil-farm/CENT_ECACNP",
 		     "biogeophys",
-                     "biogeophys/vsfm",
-		     "biogeochem", 
+         "biogeophys/vsfm",
+		     "biogeochem",
 		     "dyn_subgrid",
-		     "ED", 
-		     "ED/main", 
-		     "ED/biogeophys", 
-		     "ED/biogeochem", 
-		     "ED/fire", 
-		     "utils", 
+		     "ED",
+		     "ED/main",
+		     "ED/biogeophys",
+		     "ED/biogeochem",
+		     "ED/fire",
+		     "utils",
 		     "cpl" );
 
 	foreach my $dir ( @dirs ) {
@@ -699,7 +703,7 @@ sub mkdirp {
     my (@subdirs, $path);
 
     # if $dir is absolute pathname then @dirs will start with ""
-    if ($dirs[0] eq "") { push @subdirs, shift @dirs; }  
+    if ($dirs[0] eq "") { push @subdirs, shift @dirs; }
 
     while ( @dirs ) { # check that each subdir exists and mkdir if it doesn't
 	push @subdirs, shift @dirs;
@@ -743,6 +747,5 @@ sub is_valid_directory {
   my $valid = 0;
   if ( -d $dir ) { $valid = 1; }
   return( $valid );
-  
-}
 
+}

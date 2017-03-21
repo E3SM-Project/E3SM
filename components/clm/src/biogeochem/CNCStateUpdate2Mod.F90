@@ -15,7 +15,8 @@ module CNCStateUpdate2Mod
   use PatchType        , only : pft
   use pftvarcon        , only : npcropmin
   use clm_varctl       , only : use_pflotran, pf_cmode
-  use PatchType           , only : pft   
+  use PatchType        , only : pft
+  use tracer_varcon    , only : is_active_betr_bgc
   !
   implicit none
   save
@@ -36,7 +37,6 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by gap-phase mortality fluxes
     !
-    use tracer_varcon, only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -50,8 +50,8 @@ contains
     integer  :: fp,fc  ! lake filter indices
     real(r8) :: dt     ! radiation time step (seconds)
     !-----------------------------------------------------------------------
-    
-    associate(                   & 
+
+    associate(                   &
          cf => carbonflux_vars , &
          cs => carbonstate_vars  &
          )
@@ -59,13 +59,13 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-     if (  .not. is_active_betr_bgc          .and. &
-          (.not.(use_pflotran .and. pf_cmode))) then
+      if ( .not. is_active_betr_bgc .and. &
+           .not.(use_pflotran .and. pf_cmode)) then
          ! column level carbon fluxes from gap-phase mortality
          do j = 1,nlevdecomp
             ! column loop
             do fc = 1,num_soilc
-               c = filter_soilc(fc)               
+               c = filter_soilc(fc)
 
                ! column gap mortality fluxes
                cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
@@ -76,25 +76,6 @@ contains
                     cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
                cs%decomp_cpools_vr_col(c,j,i_cwd) = &
                     cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
-
-            end do
-         end do
-      else if (is_active_betr_bgc) then
-
-         do j = 1,nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
-               ! column gap mortality fluxes
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
 
             end do
          end do
@@ -143,7 +124,6 @@ contains
     ! Update all the prognostic carbon state
     ! variables affected by harvest mortality fluxes
     !
-    use tracer_varcon,  only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -158,16 +138,16 @@ contains
     real(r8):: dt        ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                   & 
+    associate(                   &
          ivt => pft%itype      , & ! Input:  [integer (:)]  pft vegetation type
          cf => carbonflux_vars , &
          cs => carbonstate_vars  &
          )
-     
+
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      if ( (.not. is_active_betr_bgc) .and. &
+      if ( .not. is_active_betr_bgc .and. &
            .not.(use_pflotran .and. pf_cmode)) then
          ! column level carbon fluxes from harvest mortality
          do j = 1, nlevdecomp
@@ -186,22 +166,6 @@ contains
                     cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
 
                ! wood to product pools - states updated in CNWoodProducts()
-            end do
-         end do
-
-      else if (is_active_betr_bgc) then
-         do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)          
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
-                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
             end do
          end do
       endif

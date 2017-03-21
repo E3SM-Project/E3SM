@@ -8,7 +8,7 @@ module PhosphorusStateType
   use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use clm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use clm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi
-  use landunit_varcon        , only : istcrop, istsoil 
+  use landunit_varcon        , only : istcrop, istsoil
   use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
   use clm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
@@ -16,13 +16,13 @@ module PhosphorusStateType
   use CNDecompCascadeConType , only : decomp_cascade_con
   use EcophysConType         , only : ecophyscon
   use abortutils             , only : endrun
-  use spmdMod                , only : masterproc 
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
+  use spmdMod                , only : masterproc
+  use LandunitType           , only : lun
+  use ColumnType             , only : col
   use PatchType              , only : pft
   use clm_varctl             , only : nu_com
-              
-  ! 
+
+  !
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -33,7 +33,7 @@ module PhosphorusStateType
      real(r8), pointer :: grainp_patch                 (:)     ! patch (gP/m2) grain P (crop)
      real(r8), pointer :: grainp_storage_patch         (:)     ! patch (gP/m2) grain P storage (crop)
      real(r8), pointer :: grainp_xfer_patch            (:)     ! patch (gP/m2) grain P transfer (crop)
-     real(r8), pointer :: leafp_patch                  (:)     ! patch (gP/m2) leaf P 
+     real(r8), pointer :: leafp_patch                  (:)     ! patch (gP/m2) leaf P
      real(r8), pointer :: leafp_storage_patch          (:)     ! patch (gP/m2) leaf P storage
      real(r8), pointer :: leafp_xfer_patch             (:)     ! patch (gP/m2) leaf P transfer
      real(r8), pointer :: frootp_patch                 (:)     ! patch (gP/m2) fine root P
@@ -54,8 +54,9 @@ module PhosphorusStateType
      real(r8), pointer :: retransp_patch               (:)     ! patch (gP/m2) plant pool of retranslocated P
      real(r8), pointer :: ppool_patch                  (:)     ! patch (gP/m2) temporary plant P pool
      real(r8), pointer :: ptrunc_patch                 (:)     ! patch (gP/m2) pft-level sink for P truncation
+     real(r8), pointer :: plant_p_buffer_patch        (:)     ! patch (gP/m2) pft-level abstract p storage
 
-     real(r8), pointer :: decomp_ppools_vr_col         (:,:,:)     ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools 
+     real(r8), pointer :: decomp_ppools_vr_col         (:,:,:)     ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
      real(r8), pointer :: solutionp_vr_col             (:,:)       ! col (gP/m3) vertically-resolved soil solution P
      real(r8), pointer :: labilep_vr_col               (:,:)       ! col (gP/m3) vertically-resolved soil labile mineral P
      real(r8), pointer :: secondp_vr_col               (:,:)       ! col (gP/m3) vertically-resolved soil secondary mineralP
@@ -90,10 +91,10 @@ module PhosphorusStateType
      real(r8), pointer :: totsomp_col                  (:)     ! col (gP/m2) total soil organic matter phosphorus
      real(r8), pointer :: totlitp_1m_col               (:)     ! col (gP/m2) total litter phosphorus to 1 meter
      real(r8), pointer :: totsomp_1m_col               (:)     ! col (gP/m2) total soil organic matter phosphorus to 1 meter
-     real(r8), pointer :: totecosysp_col               (:)     ! col (gP/m2) total ecosystem phosphorus, incl veg 
+     real(r8), pointer :: totecosysp_col               (:)     ! col (gP/m2) total ecosystem phosphorus, incl veg
      real(r8), pointer :: totcolp_col                  (:)     ! col (gP/m2) total column phosphorus, incl veg
 
-     ! patch averaged to column variables 
+     ! patch averaged to column variables
      real(r8), pointer :: totvegp_col                  (:)     ! col (gP/m2) total vegetation phosphorus (p2c)
      real(r8), pointer :: totpftp_col                  (:)     ! col (gP/m2) total pft-level phosphorus (p2c)
 
@@ -110,7 +111,7 @@ module PhosphorusStateType
      real(r8), pointer :: actual_livewdcp              (:)     ! dynamic live wood cp ratio
      real(r8), pointer :: actual_deadwdcp              (:)     ! dynamic dead wood cp ratio
      real(r8), pointer :: actual_graincp               (:)     ! dynamic grain cp ratio
-     
+
      ! debug
      real(r8), pointer :: totpftp_beg_col              (:)
      real(r8), pointer :: solutionp_beg_col            (:)
@@ -119,7 +120,7 @@ module PhosphorusStateType
      real(r8), pointer :: totlitp_beg_col              (:)
      real(r8), pointer :: cwdp_beg_col                 (:)
      real(r8), pointer :: totsomp_beg_col              (:)
-         
+
      real(r8), pointer :: totlitp_end_col              (:)
      real(r8), pointer :: totpftp_end_col              (:)
      real(r8), pointer :: solutionp_end_col            (:)
@@ -127,18 +128,18 @@ module PhosphorusStateType
      real(r8), pointer :: secondp_end_col              (:)
      real(r8), pointer :: cwdp_end_col                 (:)
      real(r8), pointer :: totsomp_end_col              (:)
-     
+
    contains
 
-     procedure , public  :: Init   
+     procedure , public  :: Init
      procedure , public  :: Restart
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
+     procedure , public  :: pbuffer_update
      procedure , private :: InitAllocate
-     procedure , private :: InitHistory  
-     procedure , private :: InitCold     
-
+     procedure , private :: InitHistory
+     procedure , private :: InitCold
   end type phosphorusstate_type
   !------------------------------------------------------------------------
 
@@ -150,7 +151,7 @@ contains
        deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
 
     class(phosphorusstate_type)         :: this
-    type(bounds_type) , intent(in)    :: bounds  
+    type(bounds_type) , intent(in)    :: bounds
     real(r8)          , intent(in)    :: leafc_patch          (bounds%begp:)
     real(r8)          , intent(in)    :: leafc_storage_patch  (bounds%begp:)
     real(r8)          , intent(in)    :: frootc_patch         (bounds%begp:)
@@ -175,7 +176,7 @@ contains
     !
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
-    type(bounds_type) , intent(in) :: bounds  
+    type(bounds_type) , intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer           :: begp,endp
@@ -185,15 +186,15 @@ contains
     begp = bounds%begp; endp = bounds%endp
     begc = bounds%begc; endc = bounds%endc
 
-    allocate(this%grainp_patch             (begp:endp))                   ; this%grainp_patch             (:)   = nan     
+    allocate(this%grainp_patch             (begp:endp))                   ; this%grainp_patch             (:)   = nan
     allocate(this%grainp_storage_patch     (begp:endp))                   ; this%grainp_storage_patch     (:)   = nan
-    allocate(this%grainp_xfer_patch        (begp:endp))                   ; this%grainp_xfer_patch        (:)   = nan     
+    allocate(this%grainp_xfer_patch        (begp:endp))                   ; this%grainp_xfer_patch        (:)   = nan
     allocate(this%leafp_patch              (begp:endp))                   ; this%leafp_patch              (:)   = nan
-    allocate(this%leafp_storage_patch      (begp:endp))                   ; this%leafp_storage_patch      (:)   = nan     
-    allocate(this%leafp_xfer_patch         (begp:endp))                   ; this%leafp_xfer_patch         (:)   = nan     
+    allocate(this%leafp_storage_patch      (begp:endp))                   ; this%leafp_storage_patch      (:)   = nan
+    allocate(this%leafp_xfer_patch         (begp:endp))                   ; this%leafp_xfer_patch         (:)   = nan
     allocate(this%frootp_patch             (begp:endp))                   ; this%frootp_patch             (:)   = nan
-    allocate(this%frootp_storage_patch     (begp:endp))                   ; this%frootp_storage_patch     (:)   = nan     
-    allocate(this%frootp_xfer_patch        (begp:endp))                   ; this%frootp_xfer_patch        (:)   = nan     
+    allocate(this%frootp_storage_patch     (begp:endp))                   ; this%frootp_storage_patch     (:)   = nan
+    allocate(this%frootp_xfer_patch        (begp:endp))                   ; this%frootp_xfer_patch        (:)   = nan
     allocate(this%livestemp_patch          (begp:endp))                   ; this%livestemp_patch          (:)   = nan
     allocate(this%livestemp_storage_patch  (begp:endp))                   ; this%livestemp_storage_patch  (:)   = nan
     allocate(this%livestemp_xfer_patch     (begp:endp))                   ; this%livestemp_xfer_patch     (:)   = nan
@@ -213,15 +214,15 @@ contains
     allocate(this%storvegp_patch           (begp:endp))                   ; this%storvegp_patch           (:)   = nan
     allocate(this%totvegp_patch            (begp:endp))                   ; this%totvegp_patch            (:)   = nan
     allocate(this%totpftp_patch            (begp:endp))                   ; this%totpftp_patch            (:)   = nan
-
+    allocate(this%plant_p_buffer_patch    (begp:endp))                   ; this%plant_p_buffer_patch    (:)   = nan
     allocate(this%ptrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ptrunc_vr_col            (:,:) = nan
-    
-    allocate(this%solutionp_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col         (:,:) = nan  
-    allocate(this%labilep_vr_col           (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_col           (:,:) = nan  
-    allocate(this%secondp_vr_col           (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr_col           (:,:) = nan  
-    allocate(this%occlp_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_col             (:,:) = nan  
-    allocate(this%primp_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_col             (:,:) = nan  
-    allocate(this%sminp_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%sminp_vr_col             (:,:) = nan  
+
+    allocate(this%solutionp_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_col         (:,:) = nan
+    allocate(this%labilep_vr_col           (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_col           (:,:) = nan
+    allocate(this%secondp_vr_col           (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr_col           (:,:) = nan
+    allocate(this%occlp_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_col             (:,:) = nan
+    allocate(this%primp_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_col             (:,:) = nan
+    allocate(this%sminp_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%sminp_vr_col             (:,:) = nan
 
     allocate(this%solutionp_col            (begc:endc))                   ; this%solutionp_col            (:)   = nan
     allocate(this%labilep_col              (begc:endc))                   ; this%labilep_col              (:)   = nan
@@ -255,14 +256,14 @@ contains
     allocate(this%endpb_patch (begp:endp));     this%endpb_patch (:) =nan
     allocate(this%endpb_col   (begc:endc));     this%endpb_col   (:) =nan
     allocate(this%errpb_patch (begp:endp));     this%errpb_patch (:) =nan
-    allocate(this%errpb_col   (begc:endc));     this%errpb_col   (:) =nan 
+    allocate(this%errpb_col   (begc:endc));     this%errpb_col   (:) =nan
 
     allocate(this%actual_leafcp       (begp:endp)); this%actual_leafcp       (:) = nan
     allocate(this%actual_frootcp      (begp:endp)); this%actual_frootcp      (:) = nan
     allocate(this%actual_livewdcp     (begp:endp)); this%actual_livewdcp     (:) = nan
     allocate(this%actual_deadwdcp     (begp:endp)); this%actual_deadwdcp     (:) = nan
     allocate(this%actual_graincp      (begp:endp)); this%actual_graincp      (:) = nan
-    
+
     ! debug
     allocate(this%totpftp_beg_col    (begc:endc)); this%totpftp_beg_col      (:) = nan
     allocate(this%solutionp_beg_col  (begc:endc)); this%solutionp_beg_col    (:) = nan
@@ -271,7 +272,7 @@ contains
     allocate(this%totlitp_beg_col    (begc:endc)); this%totlitp_beg_col      (:) = nan
     allocate(this%cwdp_beg_col       (begc:endc)); this%cwdp_beg_col         (:) = nan
     allocate(this%totsomp_beg_col    (begc:endc)); this%totsomp_beg_col      (:) = nan
-         
+
     allocate(this%totlitp_end_col    (begc:endc)); this%totlitp_end_col      (:) = nan
     allocate(this%totpftp_end_col    (begc:endc)); this%totpftp_end_col      (:) = nan
     allocate(this%labilep_end_col    (begc:endc)); this%labilep_end_col      (:) = nan
@@ -279,7 +280,7 @@ contains
     allocate(this%solutionp_end_col  (begc:endc)); this%solutionp_end_col    (:) = nan
     allocate(this%cwdp_end_col       (begc:endc)); this%cwdp_end_col         (:) = nan
     allocate(this%totsomp_end_col    (begc:endc)); this%totsomp_end_col      (:) = nan
-    
+
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -291,20 +292,20 @@ contains
     ! !USES:
     use clm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
     use clm_varpar , only : nlevdecomp, nlevdecomp_full,crop_prog, nlevgrnd
-    use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
+    use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
     use decompMod  , only : bounds_type
     !
     ! !ARGUMENTS:
     class(phosphorusstate_type) :: this
-    type(bounds_type)         , intent(in) :: bounds 
+    type(bounds_type)         , intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer           :: k,l,ii,jj 
+    integer           :: k,l,ii,jj
     character(10)     :: active
     character(8)      :: vr_suffix
     integer           :: begp,endp
     integer           :: begc,endc
-    integer           :: begg,endg 
+    integer           :: begg,endg
     character(24)     :: fieldname
     character(100)    :: longname
     real(r8), pointer :: data1dptr(:)   ! temp. pointer for slicing larger arrays
@@ -318,7 +319,7 @@ contains
     !-------------------------------
     ! P state variables - native to PFT
     !-------------------------------
-    
+
     if (crop_prog) then
        this%grainp_patch(begp:endp) = spval
        call hist_addfld1d (fname='GRAINP', units='gP/m^2', &
@@ -466,7 +467,12 @@ contains
     call hist_addfld1d (fname='actual_graincp', units='gC/gP', &
          avgflag='A', long_name='flexible grainCP', &
          ptr_patch=this%actual_graincp)
-         
+
+    this%plant_p_buffer_patch(begp:endp) = spval
+    call hist_addfld1d (fname='PLANTP_BUFFER', units='gN/m^2', &
+            avgflag='A', long_name='plant phosphorus stored as buffer', &
+            ptr_col=this%plant_p_buffer_patch,default='inactive')
+
     !-------------------------------
     ! P state variables - native to column
     !-------------------------------
@@ -530,7 +536,7 @@ contains
     ! add suffix if number of soil decomposition depths is greater than 1
     if (nlevdecomp > 1) then
        vr_suffix = "_vr"
-    else 
+    else
        vr_suffix = ""
     endif
 
@@ -654,7 +660,7 @@ contains
     !
     ! !ARGUMENTS:
     class(phosphorusstate_type)      :: this
-    type(bounds_type) , intent(in) :: bounds  
+    type(bounds_type) , intent(in) :: bounds
     real(r8)          , intent(in) :: leafc_patch(bounds%begp:)
     real(r8)          , intent(in) :: leafc_storage_patch(bounds%begp:)
     real(r8)          , intent(in) :: frootc_patch(bounds%begp:)
@@ -741,7 +747,7 @@ contains
           else
              this%deadstemp_patch(p) = 0._r8
           end if
-          
+
           if (nu_com .ne. 'RD') then
               ! ECA competition calculate root NP uptake as a function of fine root biomass
               ! better to initialize root CNP pools with a non-zero value
@@ -750,7 +756,7 @@ contains
                  this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
               end if
           end if
-           
+
           this%deadstemp_storage_patch(p)  = 0._r8
           this%deadstemp_xfer_patch(p)     = 0._r8
           this%livecrootp_patch(p)         = 0._r8
@@ -767,13 +773,13 @@ contains
           this%totvegp_patch(p)            = 0._r8
           this%totpftp_patch(p)            = 0._r8
        end if
-       
+
        this%actual_leafcp(p)       = ecophyscon%leafcp(pft%itype(p))
        this%actual_frootcp(p)      = ecophyscon%frootcp(pft%itype(p))
        this%actual_livewdcp(p)     = ecophyscon%livewdcp(pft%itype(p))
        this%actual_deadwdcp(p)     = ecophyscon%deadwdcp(pft%itype(p))
        this%actual_graincp(p)      = ecophyscon%graincp(pft%itype(p))
-       
+       this%plant_p_buffer_patch(p)= 1.e-4_r8
     end do
 
     !-------------------------------------------
@@ -847,9 +853,9 @@ contains
 
        this%seedp_col(c)    = 0._r8
        this%prod1p_col(c)   = 0._r8
-       this%prod10p_col(c)  = 0._r8	  
-       this%prod100p_col(c) = 0._r8	  
-       this%totprodp_col(c) = 0._r8	  
+       this%prod10p_col(c)  = 0._r8
+       this%prod100p_col(c) = 0._r8
+       this%totprodp_col(c) = 0._r8
     end do
 
     ! initialize fields for special filters
@@ -864,7 +870,7 @@ contains
   subroutine Restart ( this,  bounds, ncid, flag, cnstate_vars)
 
     !
-    ! !DESCRIPTION: 
+    ! !DESCRIPTION:
     ! Read/write CN restart data for carbon state
     !
     ! !USES:
@@ -877,8 +883,8 @@ contains
     !
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
-    type(bounds_type)          , intent(in)    :: bounds 
-    type(file_desc_t)          , intent(inout) :: ncid   
+    type(bounds_type)          , intent(in)    :: bounds
+    type(file_desc_t)          , intent(inout) :: ncid
     type(cnstate_type)         , intent(in)    :: cnstate_vars
     character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
     !
@@ -892,12 +898,12 @@ contains
     real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     character(len=128) :: varname    ! temporary
-    integer            :: itemp      ! temporary 
+    integer            :: itemp      ! temporary
     integer , pointer  :: iptemp(:)  ! pointer to memory to be allocated
     ! spinup state as read from restart file, for determining whether to enter or exit spinup mode.
-    integer            :: restart_file_spinup_state 
+    integer            :: restart_file_spinup_state
     ! flags for comparing the model and restart decomposition cascades
-    integer            :: decomp_cascade_state, restart_file_decomp_cascade_state 
+    integer            :: decomp_cascade_state, restart_file_decomp_cascade_state
     !------------------------------------------------------------------------
 
     !--------------------------------
@@ -906,87 +912,92 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leafp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%leafp_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leafp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%leafp_storage_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='leafp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%leafp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%leafp_xfer_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='frootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%frootp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%frootp_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='frootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%frootp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%frootp_storage_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='frootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%frootp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%frootp_xfer_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='livestemp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestemp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livestemp_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='livestemp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestemp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livestemp_storage_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='livestemp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livestemp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livestemp_xfer_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_storage_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='deadstemp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadstemp_xfer_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_storage_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='livecrootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%livecrootp_xfer_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp_storage', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_storage_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_storage_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='deadcrootp_xfer', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_xfer_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%deadcrootp_xfer_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='retransp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%retransp_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%retransp_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='ppool', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%ppool_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%ppool_patch)
 
     call restartvar(ncid=ncid, flag=flag, varname='pft_ptrunc', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%ptrunc_patch) 
+         interpinic_flag='interp', readvar=readvar, data=this%ptrunc_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='plant_p_buffer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%plant_p_buffer_patch)
+
 
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainp', xtype=ncd_double,  &
@@ -1017,7 +1028,7 @@ contains
     call restartvar(ncid=ncid, flag=flag,  varname='actual_graincp', xtype=ncd_double,  &
         dim1name='pft',    long_name='flexible grainCP', units='gC/gP', &
         interpinic_flag='interp', readvar=readvar, data=this%actual_graincp)
-    
+
     !--------------------------------
     ! column phosphorus state variables
     !--------------------------------
@@ -1095,7 +1106,7 @@ contains
           call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double, &
                dim1name='column', dim2name='levgrnd', switchdim=.true., &
                long_name='', units='', &
-               interpinic_flag='interp', readvar=readvar, data=ptr2d) 
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
        else
           ptr1d => this%decomp_ppools_vr_col(:,1,k)
           call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
@@ -1123,39 +1134,39 @@ contains
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
 
-    !!! Debug balance 
+    !!! Debug balance
     call restartvar(ncid=ncid, flag=flag, varname='totsomp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totsomp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%totsomp_col)
     call restartvar(ncid=ncid, flag=flag, varname='cwdp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%cwdp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%cwdp_col)
     call restartvar(ncid=ncid, flag=flag, varname='totlitp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totlitp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%totlitp_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='totcolp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totcolp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%totcolp_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='seedp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%seedp_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%seedp_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod10p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod10p_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%prod10p_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod100p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod100p_col) 
+         interpinic_flag='interp', readvar=readvar, data=this%prod100p_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod1p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod1p_col)
 
-    ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used 
-    ! matches what the restart file was generated with.  
+    ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used
+    ! matches what the restart file was generated with.
     ! add info about the SOM decomposition cascade
 
 !    if (use_century_decomp) then
@@ -1167,7 +1178,7 @@ contains
 !    if (use_nitrif_denitrif) then
 !       decomp_cascade_state = decomp_cascade_state + 10
 !    end if
-!    if (flag == 'write') itemp = decomp_cascade_state    
+!    if (flag == 'write') itemp = decomp_cascade_state
 !    call restartvar(ncid=ncid, flag=flag, varname='decomp_cascade_state', xtype=ncd_int,  &
 !         long_name='BGC of the model that wrote this restart file:' &
 !         // '  1s column: 0 = CLM-CN cascade, 1 = Century cascade;' &
@@ -1175,15 +1186,15 @@ contains
 !         interpinic_flag='skip', readvar=readvar, data=itemp)
 !    if (flag=='read') then
 !       if (.not. readvar) then
-!          ! assume, for sake of backwards compatibility, that if decomp_cascade_state 
-!          ! is not in the restart file, then the current model state is the same as 
+!          ! assume, for sake of backwards compatibility, that if decomp_cascade_state
+!          ! is not in the restart file, then the current model state is the same as
 !          ! the prior model state
 !          restart_file_decomp_cascade_state = decomp_cascade_state
 !          if ( masterproc ) write(iulog,*) ' CNRest: WARNING!  Restart file does not ' &
 !               // ' contain info on decomp_cascade_state used to generate the restart file.  '
 !          if ( masterproc ) write(iulog,*) '   Assuming the same as current setting: ', decomp_cascade_state
 !       else
-!          restart_file_decomp_cascade_state = itemp  
+!          restart_file_decomp_cascade_state = itemp
 !          if (decomp_cascade_state /= restart_file_decomp_cascade_state ) then
 !             if ( masterproc ) then
 !                write(iulog,*) 'CNRest: ERROR--the decomposition cascade differs between the current ' &
@@ -1217,7 +1228,7 @@ contains
        if (readvar) then
           restart_file_spinup_state = idata
        else
-          ! assume, for sake of backwards compatibility, that if spinup_state is not in 
+          ! assume, for sake of backwards compatibility, that if spinup_state is not in
           ! the restart file then current model state is the same as prior model state
           restart_file_spinup_state = spinup_state
           if ( masterproc ) then
@@ -1228,11 +1239,11 @@ contains
        end if
     end if
 
-    ! now compare the model and restart file spinup states, and either take the 
+    ! now compare the model and restart file spinup states, and either take the
     ! model into spinup mode or out of it if they are not identical
-    ! taking model out of spinup mode requires multiplying each decomposing pool 
+    ! taking model out of spinup mode requires multiplying each decomposing pool
     ! by the associated AD factor.
-    ! putting model into spinup mode requires dividing each decomposing pool 
+    ! putting model into spinup mode requires dividing each decomposing pool
     ! by the associated AD factor.
     ! only allow this to occur on first timestep of model run.
 
@@ -1258,10 +1269,10 @@ contains
 	       if ( exit_spinup ) then
 		 m = decomp_cascade_con%spinup_factor(k)
                  if (decomp_cascade_con%spinup_factor(k) > 1) m = m  / cnstate_vars%scalaravg_col(c)
-               else if ( enter_spinup ) then 
+               else if ( enter_spinup ) then
                  m = 1. / decomp_cascade_con%spinup_factor(k)
 		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  * cnstate_vars%scalaravg_col(c)
-               end if 
+               end if
                this%decomp_ppools_vr_col(c,j,k) = this%decomp_ppools_vr_col(c,j,k) * m
              end do
           end do
@@ -1331,11 +1342,11 @@ contains
        this%storvegp_patch(i)           = value_patch
        this%totvegp_patch(i)            = value_patch
        this%totpftp_patch(i)            = value_patch
-       
-       this%actual_leafcp(i)            = value_patch  
-       this%actual_frootcp(i)           = value_patch  
-       this%actual_livewdcp(i)          = value_patch  
-       this%actual_deadwdcp(i)          = value_patch  
+
+       this%actual_leafcp(i)            = value_patch
+       this%actual_frootcp(i)           = value_patch
+       this%actual_livewdcp(i)          = value_patch
+       this%actual_deadwdcp(i)          = value_patch
     end do
 
     if ( crop_prog )then
@@ -1343,8 +1354,8 @@ contains
           i = filter_patch(fi)
           this%grainp_patch(i)          = value_patch
           this%grainp_storage_patch(i)  = value_patch
-          this%grainp_xfer_patch(i)     = value_patch   
-          this%actual_graincp(i)        = value_patch   
+          this%grainp_xfer_patch(i)     = value_patch
+          this%actual_graincp(i)        = value_patch
        end do
     end if
 
@@ -1409,7 +1420,7 @@ contains
     !
     ! !ARGUMENTS:
     class(phosphorusstate_type) :: this
-    type(bounds_type), intent(in)  :: bounds 
+    type(bounds_type), intent(in)  :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: p          ! indices
@@ -1434,7 +1445,7 @@ contains
     !
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
-    type(bounds_type) , intent(in) :: bounds  
+    type(bounds_type) , intent(in) :: bounds
     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
     integer           , intent(in) :: num_soilp       ! number of soil patches in filter
@@ -1457,7 +1468,7 @@ contains
             this%deadstemp_patch(p)  + &
             this%livecrootp_patch(p) + &
             this%deadcrootp_patch(p)
-       
+
       ! stored vegetation phosphorus, including retranslocated N pool (STORVEGN)
       this%storvegp_patch(p) = &
            this%leafp_storage_patch(p)      + &
@@ -1494,7 +1505,8 @@ contains
       ! total pft-level carbon (add pft_ntrunc)
       this%totpftp_patch(p) = &
            this%totvegp_patch(p) + &
-           this%ptrunc_patch(p)
+           this%ptrunc_patch(p)  + &
+           this%plant_p_buffer_patch(p)
 
    end do
 
@@ -1536,7 +1548,7 @@ contains
          this%primp_col(c) = &
               this%primp_col(c) + &
               this%primp_vr_col(c,j) * dzsoi_decomp(j)
-      end do 
+      end do
    end do
 
 
@@ -1587,7 +1599,7 @@ contains
             endif
          end do
       end do
-      
+
       ! total litter phosphorus to 1 meter (TOTLITN_1m)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -1603,7 +1615,7 @@ contains
             end do
          end if
       end do
-      
+
       ! total soil organic matter phosphorus to 1 meter (TOTSOMN_1m)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -1619,9 +1631,9 @@ contains
             end do
          end if
       end do
-      
+
    endif
-   
+
    ! total litter phosphorus (TOTLITN)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -1637,7 +1649,7 @@ contains
          end do
       end if
    end do
-   
+
    ! total soil organic matter phosphorus (TOTSOMN)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -1653,7 +1665,7 @@ contains
          end do
       end if
    end do
-   
+
    ! total cwdn
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -1715,7 +1727,7 @@ contains
       this%totprodp_col(c) = &
            this%prod1p_col(c) + &
            this%prod10p_col(c) + &
-           this%prod100p_col(c)	 
+           this%prod100p_col(c)
 
       ! total ecosystem phosphorus, including veg (TOTECOSYSP)
       this%totecosysp_col(c) = &
@@ -1746,4 +1758,34 @@ contains
 
  end subroutine Summary
 
+
+
+  !-----------------------------------------------------------------------
+
+  subroutine pbuffer_update(this, bounds, num_soilp, filter_soilp,  &
+      plant_p_active_yield_flx_patch, plant_p_passive_yield_flx_patch)
+
+    use clm_time_manager         , only : get_step_size
+    ! !ARGUMENTS:
+    class (phosphorusstate_type) :: this
+    type(bounds_type) , intent(in) :: bounds
+    integer           , intent(in) :: num_soilp       ! number of soil columns in filter
+    integer           , intent(in) :: filter_soilp(:) ! filter for soil columns
+
+    real(r8)          , intent(in) :: plant_p_active_yield_flx_patch(bounds%begp:bounds%endp)
+    real(r8)          , intent(in) :: plant_p_passive_yield_flx_patch(bounds%begp:bounds%endp)
+    integer :: fp, p
+    real(r8) :: dtime
+
+    dtime =  get_step_size()
+
+
+    do fp = 1, num_soilp
+      p = filter_soilp(fp)
+      this%plant_p_buffer_patch(p) = this%plant_p_buffer_patch(p)           + &
+                                  (plant_p_active_yield_flx_patch(p) + &
+                                   plant_p_passive_yield_flx_patch(p))*dtime
+    enddo
+
+  end subroutine pbuffer_update
 end module PhosphorusStateType

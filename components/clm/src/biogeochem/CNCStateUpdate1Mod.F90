@@ -53,7 +53,7 @@ contains
     real(r8):: dt ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                                                          & 
+    associate(                                                          &
          cf                => carbonflux_vars                         , &
          cs                => carbonstate_vars                          &
          )
@@ -83,11 +83,11 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
-    use tracer_varcon       , only : is_active_betr_bgc
     use subgridAveMod       , only : p2c
-    use decompMod           , only : bounds_type    
+    use decompMod           , only : bounds_type
+    use tracer_varcon       , only : is_active_betr_bgc
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds  
+    type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -102,15 +102,15 @@ contains
     real(r8) :: dt        ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                                                                                     & 
-         ivt                           =>    pft%itype                                           , & ! Input:  [integer  (:)     ]  pft vegetation type                                
+    associate(                                                                                     &
+         ivt                           =>    pft%itype                                           , & ! Input:  [integer  (:)     ]  pft vegetation type
 
          woody                         =>    ecophyscon%woody                                    , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
          cascade_donor_pool            =>    decomp_cascade_con%cascade_donor_pool               , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool         =>    decomp_cascade_con%cascade_receiver_pool            , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
-         harvdate                      =>    cnstate_vars%harvdate_patch                         , & ! Input:  [integer  (:)     ]  harvest date                                       
-         
+         harvdate                      =>    cnstate_vars%harvdate_patch                         , & ! Input:  [integer  (:)     ]  harvest date
+
          cf => carbonflux_vars  , &
          cs => carbonstate_vars   &
 
@@ -129,26 +129,7 @@ contains
       end do
 
 
-      if (is_active_betr_bgc) then
-         !summarize litter carbon input
-         ! plant to litter fluxes
-         do j = 1,nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               ! phenology and dynamic land cover fluxes
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                    ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                    ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                    ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
-               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
-                    ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
-            enddo
-         enddo  
-
-      elseif (.not.(use_pflotran .and. pf_cmode)) then
+      if ((.not. is_active_betr_bgc) .and. .not.(use_pflotran .and. pf_cmode)) then
 
          ! plant to litter fluxes
 
@@ -193,9 +174,9 @@ contains
                end do
             end if
          end do
-      endif   !end if is_active_betr_bgc()
-    
-    
+      endif
+
+
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -380,15 +361,7 @@ contains
 
       end do ! end of patch loop
 
-      if(is_active_betr_bgc)then
-
-         !the following is introduced to fix the spinup problem with simultaneous nitrogen competition
-
-         call p2c(bounds, num_soilc, filter_soilc, &
-            cs%frootc_patch(bounds%begp:bounds%endp), &
-            cnstate_vars%frootc_nfix_scalar_col(bounds%begc:bounds%endc))
-      endif     
-    end associate 
+    end associate
 
   end subroutine CStateUpdate1
 

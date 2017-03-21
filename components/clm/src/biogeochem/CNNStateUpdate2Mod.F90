@@ -38,7 +38,7 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -53,7 +53,7 @@ contains
     real(r8) :: dt      ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                      & 
+    associate(                      &
          nf => nitrogenflux_vars  , &
          ns => nitrogenstate_vars   &
          )
@@ -68,7 +68,7 @@ contains
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               
+
                ns%decomp_npools_vr_col(c,j,i_met_lit) = &
                     ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%gap_mortality_n_to_litr_met_n_col(c,j) * dt
                ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
@@ -79,23 +79,6 @@ contains
                     ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
             end do
          end do
-
-      elseif (is_active_betr_bgc) then
-
-         do j = 1, nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               
-               nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) + nf%gap_mortality_n_to_litr_met_n_col(c,j) * dt
-               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) + nf%gap_mortality_n_to_litr_cel_n_col(c,j) * dt
-               nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) + nf%gap_mortality_n_to_litr_lig_n_col(c,j) * dt
-               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     = &
-                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
-            end do
-         end do         
      endif
 
       ! patch -level nitrogen fluxes from gap-phase mortality
@@ -144,7 +127,7 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-    use tracer_varcon, only : is_active_betr_bgc      
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -159,7 +142,7 @@ contains
     real(r8):: dt      ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                      & 
+    associate(                      &
          ivt => pft%itype         , & ! Input:  [integer  (:) ]  pft vegetation type
          nf => nitrogenflux_vars  , &
          ns => nitrogenstate_vars   &
@@ -185,22 +168,6 @@ contains
                     ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
             end do
          end do
-
-      elseif (is_active_betr_bgc) then
-
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) + nf%harvest_n_to_litr_met_n_col(c,j) * dt
-               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) + nf%harvest_n_to_litr_cel_n_col(c,j) * dt
-               nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) + nf%harvest_n_to_litr_lig_n_col(c,j) * dt
-               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     = &
-                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
-            end do
-         end do         
       endif
 
       ! patch-level nitrogen fluxes from harvest mortality
