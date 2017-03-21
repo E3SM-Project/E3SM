@@ -32,31 +32,33 @@ PROGRAM main
    character(10)     :: tstr            ! wall clock time
 
    !--- namelist vars ---
-   character(180) :: gridtype      ! type of run-off grid
-   character(180) :: file_roff     ! file name: rtm rdirc file
-   character(180) :: file_roff_out ! file name: rtm rdirc file
-   character(180) :: file_ocn      ! file name: ocn scrip grid file
-   character(180) :: file_nn       ! file name: orig matrix, corrected
-   character(180) :: file_new      ! file name: orig matrix, corrected, smoothed, sorted -- done
-   character(180) :: file_smooth   ! file name: smoothing matrix
-   character(180) :: title         ! netCDF title attribute
-   logical        :: step1         ! gen nn
-   logical        :: step2         ! gen smooth
-   logical        :: step3         ! mat mult
-   logical        :: lmake_rSCRIP  ! .true. => convert runoff grid to SCRIP
+   character(180) :: gridtype                  ! type of run-off grid
+   character(180) :: file_roff                 ! file name: rtm rdirc file
+   character(180) :: file_roff_out             ! file name: rtm rdirc file
+   character(180) :: file_ocn_global_mask      ! file name: ocn scrip grid file (all ocean points masked as such)
+   character(180) :: file_ocn_coastal_mask     ! file name: ocn scrip grid file (only coastal points masked as ocean)
+   character(180) :: file_nn                   ! file name: orig matrix, corrected
+   character(180) :: file_new                  ! file name: orig matrix, corrected, smoothed, sorted -- done
+   character(180) :: file_smooth               ! file name: smoothing matrix
+   character(180) :: title                     ! netCDF title attribute
+   logical        :: step1                     ! gen nn
+   logical        :: step2                     ! gen smooth
+   logical        :: step3                     ! mat mult
+   logical        :: lmake_rSCRIP              ! .true. => convert runoff grid to SCRIP
 
-   namelist / input_nml / &
-      gridtype      &
-   ,  file_roff     &
-   ,  file_roff_out &
-   ,  file_ocn      &
-   ,  file_nn       &
-   ,  file_new      &
-   ,  file_smooth   &
-   ,  title         &
-   ,  eFold         &
-   ,  rMax          &
-   ,  lmake_rSCRIP  &
+   namelist / input_nml /   &
+      gridtype              &
+   ,  file_roff             &
+   ,  file_roff_out         &
+   ,  file_ocn_global_mask  &
+   ,  file_ocn_coastal_mask &
+   ,  file_nn               &
+   ,  file_new              &
+   ,  file_smooth           &
+   ,  title                 &
+   ,  eFold                 &
+   ,  rMax                  &
+   ,  lmake_rSCRIP          &
    ,  step1, step2, step3
 
    !--- formats ---
@@ -89,18 +91,19 @@ PROGRAM main
    write(6,F10) "Step 0:  read input namelist data"
    !----------------------------------------------------------------------------
 
-   gridtype      = 'unset'
-   file_roff     = 'unset'
-   file_ocn      = 'unset'
-   file_nn       = 'unset'
-   file_smooth   = 'unset'
-   file_new      = 'unset'
-   title         = 'unset'
-   eFold         = 1000000.00000 ! smoothing eFold distance in meters
-   rMax          =  500000.00000 ! max smoothing radius in meters
-   step1         = .true.
-   step2         = .true.
-   step3         = .true.
+   gridtype              = 'unset'
+   file_roff             = 'unset'
+   file_ocn_global_mask  = 'unset'
+   file_ocn_coastal_mask = 'unset'
+   file_nn               = 'unset'
+   file_smooth           = 'unset'
+   file_new              = 'unset'
+   title                 = 'unset'
+   eFold                 = 1000000.00000 ! smoothing eFold distance in meters
+   rMax                  =  500000.00000 ! max smoothing radius in meters
+   step1                 = .true.
+   step2                 = .true.
+   step3                 = .true.
 
    ! These two variables typically don't appear in namelist
    lmake_rSCRIP  = .false.
@@ -110,18 +113,19 @@ PROGRAM main
    read (10,nml=input_nml,iostat=rCode)
    close(10)
    write(6,F00) "Namelist values..."
-   write(6,F00) "   gridtype       = ",trim(gridtype      )
-   write(6,F00) "   file_roff      = ",trim(file_roff     )
-   write(6,F00) "   file_ocn       = ",trim(file_ocn      )
-   write(6,F00) "   file_nn        = ",trim(file_nn       )
-   write(6,F00) "   file_smooth    = ",trim(file_smooth   )
-   write(6,F00) "   file_new       = ",trim(file_new      )
-   write(6,F00) "   title          = ",trim(title         )
-   write(6,F02) "   eFold distance = ",eFold
-   write(6,F02) "   rMax  distance = ",rMax
-   write(6,F03) "   step1          = ",step1
-   write(6,F03) "   step2          = ",step2
-   write(6,F03) "   step3          = ",step3
+   write(6,F00) "   gridtype          = ",trim(gridtype      )
+   write(6,F00) "   file_roff         = ",trim(file_roff     )
+   write(6,F00) "   file_ocn (global) = ",trim(file_ocn_global_mask)
+   write(6,F00) "   file_ocn (coast)  = ",trim(file_ocn_coastal_mask)
+   write(6,F00) "   file_nn           = ",trim(file_nn       )
+   write(6,F00) "   file_smooth       = ",trim(file_smooth   )
+   write(6,F00) "   file_new          = ",trim(file_new      )
+   write(6,F00) "   title             = ",trim(title         )
+   write(6,F02) "   eFold distance    = ",eFold
+   write(6,F02) "   rMax  distance    = ",rMax
+   write(6,F03) "   step1             = ",step1
+   write(6,F03) "   step2             = ",step2
+   write(6,F03) "   step3             = ",step3
 !  if (rCode > 0) then
 !     write(6,F01) 'ERROR: reading input namelist, iostat=',rCode
 !     stop
@@ -147,7 +151,7 @@ if (step1) then
    !----------------------------------------------------------------------------
    write(6,F10) "Step 1: read grid info & create nearest neighbor map"
    !----------------------------------------------------------------------------
-   call map_gridRead(map_orig , trim(file_roff), trim(file_ocn), gridtype)
+   call map_gridRead(map_orig , trim(file_roff), trim(file_ocn_coastal_mask), gridtype)
 
    call date_and_time(dstr,tstr)
    call map_print(map_orig)
@@ -176,7 +180,7 @@ if (step2) then
    !----------------------------------------------------------------------------
    write(6,F02) "   eFold distance = ",eFold
    write(6,F02) "   rMax  distance = ",rMax
-   call smooth_init(map_orig,map_smooth)
+   call smooth_init(file_ocn_global_mask, map_orig,map_smooth)
 !  call restrictSources(map_smooth,trim(file_sources)) ! restrict cells subject to smoothing
    call smooth(map_smooth,eFold,rMax)
    call mapsort_sort(map_smooth)

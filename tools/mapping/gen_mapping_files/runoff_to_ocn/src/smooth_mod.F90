@@ -26,13 +26,14 @@ MODULE smooth_mod
 CONTAINS
 !===============================================================================
 
-SUBROUTINE smooth_init(map_in, map_out)
+SUBROUTINE smooth_init(ofilename, map_in, map_out)
 
    implicit none
 
    !--- arguments ---
-   type(sMatrix),intent( in)   :: map_in   ! original unsmoothed, matrix
-   type(sMatrix),intent(inout) :: map_out  ! smoothing matrix
+   character(*)     , intent(in)    :: ofilename    ! name of ocn scrip grid file
+   type(sMatrix),intent( in)        :: map_in   ! original unsmoothed, matrix
+   type(sMatrix),intent(inout)      :: map_out  ! smoothing matrix
 
    !--- local ---
    integer :: i,j,n ! indicies: row, col, sparse matrix
@@ -123,6 +124,7 @@ SUBROUTINE smooth_init(map_in, map_out)
    allocate(map_out%  yv_a(map_in%nv_b,map_in%n_b) )
    allocate(map_out%mask_a(            map_in%n_b) )
    allocate(map_out%area_a(            map_in%n_b) )
+   allocate(map_out%frac_a(map_in%n_b) )
 
    allocate(map_out%  xc_b(            map_in%n_b) )
    allocate(map_out%  yc_b(            map_in%n_b) )
@@ -130,8 +132,6 @@ SUBROUTINE smooth_init(map_in, map_out)
    allocate(map_out%  yv_b(map_in%nv_b,map_in%n_b) )
    allocate(map_out%mask_b(            map_in%n_b) )
    allocate(map_out%area_b(            map_in%n_b) )
-
-   allocate(map_out%frac_a(map_in%n_b) )
    allocate(map_out%frac_b(map_in%n_b) )
 
    allocate(map_out%s  (ns))
@@ -143,6 +143,10 @@ SUBROUTINE smooth_init(map_in, map_out)
    !------------------------------------------------
    ! set values
    !------------------------------------------------
+
+   ! map_in maps from runoff -> coastal ocean
+   ! map_out maps from coastal ocean -> global ocean
+   ! So source of map_out = dest of map_in
    map_out%   n_a = map_in%   n_b
    map_out%dims_a = map_in%dims_b
    map_out%  ni_a = map_in%  ni_b
@@ -168,6 +172,7 @@ SUBROUTINE smooth_init(map_in, map_out)
    write(*,*) subName,'number of source points is =  ',jmd_count
    write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
 
+   ! destination of map_out must be read in from file
    map_out%   n_b = map_in%   n_b
    map_out%dims_b = map_in%dims_b
    map_out%  ni_b = map_in%  ni_b

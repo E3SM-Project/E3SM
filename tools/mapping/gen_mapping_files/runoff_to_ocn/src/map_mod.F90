@@ -1,90 +1,13 @@
-!===============================================================================
-! SVN $Id: map_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/runoff_to_ocn/src/map_mod.F90 $
-!===============================================================================
-
 MODULE map_mod
 
    use shr_sys_mod
    use shr_timer_mod
    use kind_mod
+   use maptype_mod
 
    implicit none
 
 #include <netcdf.inc>
-
-   integer,parameter :: strLen = 240
-
-   real(r8)   ,parameter :: pi =  3.14159265358979323846_r8
-   real(r8)   ,parameter :: rEarth     =  6.37122e+6         ! radius of earth (m)
-   real(r8)   ,parameter :: DEGtoRAD = pi/180.0_r8  ! degrees to radians
-   real(r8)   ,parameter :: RADtoDEG = 180.0_r8/pi  ! radians to degrees
-
-   integer,parameter :: nibx = 360          ! size of sort bin boxes
-   integer,parameter :: njbx = nibx/2
-   integer,parameter :: vcells_req = 20     ! number of valid cells required per bin
-
-   !----------------------------------------------------------------------------
-   ! sparse matrix data type
-   !----------------------------------------------------------------------------
-   TYPE sMatrix
-
-     !--- global text attributes ---
-     character(strLen) :: title
-     character(strLen) :: normal
-     character(strLen) :: method
-     character(strLen) :: history
-     character(strLen) :: convention
-     character(strLen) :: domain_a
-     character(strLen) :: domain_b
-
-     !--- domain a ---
-     integer         ::    n_a      ! number of non-zero matrix elements
-     integer         ::   ni_a      ! number of 2d array i indicies
-     integer         ::   nj_a      ! number of 2d array j indicies
-     integer         ::   nv_a      ! number of vertices per cell on a grid
-     real(r8)   ,pointer ::   xc_a(:)   ! x-coords of centers   ~ deg east
-     real(r8)   ,pointer ::   yc_a(:)   ! y-coords of centers   ~ deg north
-     real(r8)   ,pointer ::   xv_a(:,:) ! x-coords of verticies ~ deg east, (nv_a,n)
-     real(r8)   ,pointer ::   yv_a(:,:) ! y-coords of verticies ~ deg north (nv_a,n)
-     integer,pointer :: mask_a(:)   ! mask: 0 <=> out-of-domain (invalid data)
-     real(r8)   ,pointer :: area_a(:)   ! area of grid cell ~ radians squared
-     integer         :: dims_a(2)       ! hardwire to 2 for now
-
-     !--- domain b ---
-     integer         ::    n_b      ! number of non-zero matrix elements
-     integer         ::   ni_b      ! number of 2d array i indicies
-     integer         ::   nj_b      ! number of 2d array j indicies
-     integer         ::   nv_b      ! number of vertices per cell on b grid
-     real(r8)   ,pointer ::   xc_b(:)   ! x-coords of centers   ~ deg east
-     real(r8)   ,pointer ::   yc_b(:)   ! y-coords of centers   ~ deg north
-     real(r8)   ,pointer ::   xv_b(:,:) ! x-coords of verticies ~ deg east, (nv_b,n)
-     real(r8)   ,pointer ::   yv_b(:,:) ! y-coords of verticies ~ deg north (nv_b,n)
-     integer,pointer :: mask_b(:)   ! mask: 0 <=> out-of-domain (invalid data)
-     real(r8)   ,pointer :: area_b(:)   ! area of grid cell ~ radians squared
-     integer         :: dims_b(2)       ! hardwire to 2 for now
-
-     !--- fraction of cell mapped to domain b or from domain a ---
-     real(r8)   ,pointer :: frac_a(:)   ! area of grid cell ~ radians squared
-     real(r8)   ,pointer :: frac_b(:)   ! area of grid cell ~ radians squared
-
-     !--- map: a->b ---
-     integer         :: n_s         ! number of non-zero matrix elements
-     real(kind=r8)   ,pointer :: s  (:)      ! the non-zero matrix elements
-     integer,pointer :: row(:)      ! matrix row corresponding to each element
-     integer,pointer :: col(:)      ! matrix col corresponding to each element
-
-     !--- used for OMP/threading in mat-mult ---
-     integer,pointer :: sn1(:)      ! # links in a given row
-     integer,pointer :: sn2(:)      ! # links previous to a given row
-
-     !--- required for computing NN maps ---
-     integer :: imin_b(nibx,njbx)   ! xc_b least index for lat 0:360
-     integer :: imax_b(nibx,njbx)   ! xc_b max index for lat 0:360
-     integer :: jmin_b(nibx,njbx)   ! yc_b least index for lat 0:90
-     integer :: jmax_b(nibx,njbx)   ! yc_b max index for lat 0:90
-
-   END TYPE sMatrix
 
    SAVE
 
@@ -318,6 +241,8 @@ END SUBROUTINE map_read
 SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
 
    !--- modules ---
+
+   use mapread_mod
 
    implicit none
 
@@ -746,88 +671,7 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
    !----------------------------------------------------------------------------
    write(*,F00) "read destination domain info -- pop grid"
    !----------------------------------------------------------------------------
-   write(6,F00) 'ocn data file',' = ',trim(ofilename)
-   rcode = nf_open(ofilename,NF_NOWRITE,fid)
-
-   rcode = nf_inq_dimid (fid, 'grid_size' , did)
-   rcode = nf_inq_dimlen(fid, did   , map%n_b  )
-   rcode = nf_inq_dimid (fid, 'grid_corners' , did)
-   rcode = nf_inq_dimlen(fid, did   , map%nv_b  )
-   rcode = nf_inq_dimid (fid, 'grid_rank', did)
-   rcode = nf_inq_dimlen(fid, did   , grid_rank)
-   allocate(grid_dims(grid_rank))
-   rcode = nf_inq_varid  (fid, 'grid_dims', vid)
-   rcode = nf_get_var_int(fid, vid   , grid_dims)
-   if (grid_rank.eq.1) then
-     map%ni_b = grid_dims(1)
-     map%nj_b = 1
-   elseif (grid_rank.eq.2) then
-     map%ni_b = grid_dims(1)
-     map%nj_b = grid_dims(2)
-   else
-      deallocate(grid_dims)
-      write(6,*) 'ERROR: grid_rank is ',grid_rank,' in ',trim(ofilename)
-      call shr_sys_abort(subName//"ERROR: ofilename grid_rank")
-   endif
-   deallocate(grid_dims)
-   map%dims_b(1) = map%ni_b
-   map%dims_b(2) = map%nj_b
-
-   allocate(map%  xc_b(         map%n_b)) ! x-coordinates of center
-   allocate(map%  yc_b(         map%n_b)) ! y-coordinates of center
-   allocate(map%  xv_b(map%nv_b,map%n_b)) ! x-coordinates of verticies
-   allocate(map%  yv_b(map%nv_b,map%n_b)) ! y-coordinates of verticies
-   allocate(map%mask_b(         map%n_b)) ! domain mask
-   allocate(map%area_b(         map%n_b)) ! grid cell area
-   allocate(map%frac_b(         map%n_b)) ! grid cell area
-   allocate(map%sn1            (map%n_b))
-   allocate(map%sn2            (map%n_b))
-
-   rcode = nf_inq_varid     (fid,'grid_center_lon'  ,vid)
-   rcode = nf_get_var_double(fid,vid     ,map%xc_b )
-   units = "" ! units needs to be emptied before reading from netCDF file
-   rcode = nf_get_att_text(fid, vid, "units", units)
-   if (trim(units).eq."radians") then
-      map%xc_b = map%xc_b * RADtoDEG
-   end if
-
-   rcode = nf_inq_varid     (fid,'grid_center_lat'  ,vid)
-   rcode = nf_get_var_double(fid,vid     ,map%yc_b )
-   units = "" ! units needs to be emptied before reading from netCDF file
-   rcode = nf_get_att_text(fid, vid, "units", units)
-   if (trim(units).eq."radians") then
-      map%yc_b = map%yc_b * RADtoDEG
-   end if
-
-   rcode = nf_inq_varid     (fid,'grid_corner_lon'  ,vid)
-   rcode = nf_get_var_double(fid,vid     ,map%xv_b )
-   units = "" ! units needs to be emptied before reading from netCDF file
-   rcode = nf_get_att_text(fid, vid, "units", units)
-   if (trim(units).eq."radians") then
-      map%xv_b = map%xv_b * RADtoDEG
-   end if
-
-   rcode = nf_inq_varid     (fid,'grid_corner_lat'  ,vid)
-   rcode = nf_get_var_double(fid,vid     ,map%yv_b )
-   units = "" ! units needs to be emptied before reading from netCDF file
-   rcode = nf_get_att_text(fid, vid, "units", units)
-   if (trim(units).eq."radians") then
-      map%yv_b = map%yv_b * RADtoDEG
-   end if
-
-   rcode = nf_inq_varid     (fid,'grid_imask',vid )
-   rcode = nf_get_var_int   (fid,vid     ,map%mask_b)
-   rcode = nf_inq_varid     (fid,'grid_area',vid )
-   if (rcode.eq.0) then
-      rcode = nf_get_var_double(fid,vid     ,map%area_b)
-   else
-      write(6,*) "ERROR: could not find variable grid_area in destination grid input file!"
-      stop
-   end if
-
-   map%frac_b = map%mask_b * 1.0_r8
-
-   rcode = nf_close(fid)
+   call mapread_dest_grid(map, ofilename)
 
    !----------------------------------------------------------------------------
    write(*,F00) "derive info required to compute NN map"
