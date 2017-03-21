@@ -4009,12 +4009,14 @@
   do i=2,sharedIndices%num_indices
      if(sharedIndices%aVindices1(i) /= sharedIndices%aVindices1(i-1)+1) then
         sharedIndices%contiguous = .false.
+        exit
      endif
   enddo
   if(sharedIndices%contiguous) then
      do i=2,sharedIndices%num_indices
         if(sharedIndices%aVindices2(i) /= sharedIndices%aVindices2(i-1)+1) then
            sharedIndices%contiguous=.false.
+           exit
         endif
      enddo
   endif
