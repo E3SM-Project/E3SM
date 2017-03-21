@@ -40,6 +40,7 @@ module cice_core_interface
       core % setup_packages => cice_setup_packages
       core % setup_decompositions => cice_setup_decompositions
       core % setup_clock => cice_setup_clock
+      core % setup_log => cice_setup_log
       core % get_mesh_stream => cice_get_mesh_stream
       core % setup_immutable_streams => cice_setup_immutable_streams
       core % setup_derived_dimensions => cice_setup_derived_dimensions
@@ -600,6 +601,47 @@ module cice_core_interface
 
    end function cice_setup_clock!}}}
 
+   !***********************************************************************
+   !
+   !  function cice_setup_log
+   !
+   !> \brief   Log setup routine
+   !> \author  Matt Hoffman, Adrian K. Turner
+   !> \date    21 March 2017
+   !> \details
+   !>  The purpose of this routine is to set up the logging manager
+   !>  and allow the core to specify details of the configuration.
+   !
+   !-----------------------------------------------------------------------
+   function cice_setup_log(logInfo, domain) result(iErr)!{{{
+
+      use mpas_derived_types
+      use mpas_log
+
+      implicit none
+
+      type (mpas_log_type), intent(inout), pointer :: logInfo  !< logging information object to set up
+      type (domain_type), intent(in), pointer :: domain  !< domain object to provide info for setting up log manager
+      integer :: iErr
+
+      ! Local variables
+      integer :: local_err
+
+      iErr = 0
+
+      ! Initialize log manager
+      call mpas_log_init(logInfo, domain, err=local_err)
+      iErr = ior(iErr, local_err)
+
+      ! Set core specific options here
+      ! (At present, there are not any.  There could eventually be choices about the file naming conventions
+      !  or other settings controlling behavior.)
+
+      ! After core has had a chance to modify log defaults, open the output log
+      call mpas_log_open(err=local_err)
+      iErr = ior(iErr, local_err)
+
+   end function cice_setup_log!}}}
 
    !***********************************************************************
    !
