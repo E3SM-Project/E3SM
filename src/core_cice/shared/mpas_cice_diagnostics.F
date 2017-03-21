@@ -215,7 +215,8 @@ contains
          filename
 
     integer :: &
-         errorUnit
+         errorUnit, &
+         iostat
 
     logical :: &
          errorFlag
@@ -289,7 +290,11 @@ contains
           ! open the error file
           call mpas_new_unit(errorUnit)
           write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
-          open(errorUnit, file=trim(filename), position="append")
+          open(errorUnit, file=trim(filename), position="append", iostat=iostat)
+          if (iostat /= 0) then
+             write(stderrUnit,*) "cice_check_state: problem opening state check: ", iostat
+             call MPAS_dmpar_global_abort("MPAS-seaice: problem opening state check")
+          endif
 
           block => domain % blocklist
           do while (associated(block))
@@ -408,7 +413,8 @@ contains
          message
 
     integer :: &
-         errorUnit
+         errorUnit, &
+         iostat
 
     character(len=strKIND) :: &
          filename
@@ -421,7 +427,11 @@ contains
 
     call mpas_new_unit(errorUnit)
     write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
-    open(errorUnit, file=trim(filename), position="append")
+    open(errorUnit, file=trim(filename), position="append", iostat=iostat)
+    if (iostat /= 0) then
+       write(stderrUnit,*) "cice_warning_message: Problem opening state check file", iostat
+       call MPAS_dmpar_global_abort("MPAS-seaice: Problem opening state check file")
+    endif
 
     call MPAS_pool_get_subpool(domain % blocklist % structs, "diagnostics", diagnosticsPool)
     call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
