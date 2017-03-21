@@ -544,6 +544,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd2, "      use mpas_pool_routines\n");
 	fortprintf(fd2, "      use mpas_io_units\n");
 	fortprintf(fd2, "      use mpas_abort, only : mpas_dmpar_global_abort\n");
+	fortprintf(fd2, "      use mpas_log, only : mpas_log_write\n");
 	fortprintf(fd2, "      implicit none\n");
 	fortprintf(fd2, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 	fortprintf(fd2, "      character (len=*), intent(in) :: namelistFilename\n");
@@ -555,7 +556,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd2, "\n");
 	fortprintf(fd2, "      iErr = 0\n");
 	fortprintf(fd2, "      unitNumber = 21\n");
-	fortprintf(fd2, "      write(stderrUnit, *) 'Reading namelist from file '//trim(namelistFilename)\n");
+	fortprintf(fd2, "      call mpas_log_write('Reading namelist from file '//trim(namelistFilename))\n");
 	fortprintf(fd2, "      inquire(file=trim(namelistFilename), exist=nmlExists)\n");
 	fortprintf(fd2, "      if ( .not. nmlExists ) then\n");
 	fortprintf(fd2, "         call mpas_dmpar_global_abort('ERROR: Namelist file '//trim(namelistFilename)//' does not exist.')\n");
@@ -589,6 +590,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 		// Start defining new subroutine for namelist record.
 		fortprintf(fd, "   subroutine %s_setup_nmlrec_%s(configPool, unitNumber, dminfo)\n", core_string, nmlrecname);
+		fortprintf(fd, "      use mpas_log, only : mpas_log_write\n");
 		fortprintf(fd, "      implicit none\n");
 		fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 		fortprintf(fd, "      integer, intent(in) :: unitNumber\n");
@@ -668,24 +670,33 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 			}
 		}
 		fortprintf(fd, "         if (ierr < 0) then\n");
-		fortprintf(fd, "            write(stderrUnit,*) '*** Encountered an issue while attempting to read namelist record %s'\n", nmlrecname);
-		fortprintf(fd, "            write(stderrUnit,*) '    The following values will be used for variables in this record:'\n");
-		fortprintf(fd, "            write(stderrUnit,*) ' '\n");
+		fortprintf(fd, "            call mpas_log_write('*** Encountered an issue while attempting to read namelist record %s')\n", nmlrecname);
+		fortprintf(fd, "            call mpas_log_write('    The following values will be used for variables in this record:')\n");
+		fortprintf(fd, "            call mpas_log_write(' ')\n");
 		for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
 			nmloptname = ezxml_attr(nmlopt_xml, "name");
 			nmlopttype = ezxml_attr(nmlopt_xml, "type");
 
-			if(strncmp(nmlopttype, "character", 1024) == 0){
-				fortprintf(fd, "            write(stderrUnit,*) '        %s = ', trim(%s)\n", nmloptname, nmloptname);
-			} else {
-				fortprintf(fd, "            write(stderrUnit,*) '        %s = ', %s\n", nmloptname, nmloptname);
+			if (strncmp(nmlopttype, "character", 1024) == 0) {
+				fortprintf(fd, "            call mpas_log_write('        %s = '//trim(%s))\n", nmloptname, nmloptname);
+			}
+			else if (strncmp(nmlopttype, "integer", 1024) == 0) {
+				fortprintf(fd, "            call mpas_log_write('        %s = $i', intArgs=(/%s/))\n", nmloptname, nmloptname);
+			}
+			else if (strncmp(nmlopttype, "real", 1024) == 0) {
+				fortprintf(fd, "            call mpas_log_write('        %s = $r', realArgs=(/%s/))\n", nmloptname, nmloptname);
+			}
+			else if (strncmp(nmlopttype, "logical", 1024) == 0) {
+				fortprintf(fd, "            call mpas_log_write('        %s = $l', logicArgs=(/%s/))\n", nmloptname, nmloptname);
+			}
+			else {
+				fortprintf(fd, "            call mpas_log_write('        %s = <unhandled namelist type>')\n", nmloptname);
 			}
 		}
-		fortprintf(fd, "            write(stderrUnit,*) ' '\n");
+		fortprintf(fd, "            call mpas_log_write(' ')\n");
 		fortprintf(fd, "         end if\n");
 		fortprintf(fd, "      else if (ierr > 0) then\n");
-		fortprintf(fd, "         write(stderrUnit, *) 'Error while reading namelist record %s.'\n", nmlrecname);
-		fortprintf(fd, "         call mpas_dmpar_abort(dminfo)\n");
+		fortprintf(fd, "         call mpas_log_write('Error while reading namelist record %s.', MPAS_LOG_CRIT)\n", nmlrecname);
 		fortprintf(fd, "      end if\n");
 		fortprintf(fd, "\n");
 
@@ -736,6 +747,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      use mpas_derived_types\n");
 	fortprintf(fd, "      use mpas_pool_routines\n");
 	fortprintf(fd, "      use mpas_io_units\n");
+	fortprintf(fd, "      use mpas_log, only : mpas_log_write\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      implicit none\n");
 	fortprintf(fd, "\n");
@@ -832,7 +844,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	fortprintf(fd, "\n");
 
-	fortprintf(fd, "write(stderrUnit,\'(a)\') \'Assigning remaining dimensions from definitions in Registry.xml ...\'\n");
+	fortprintf(fd, "call mpas_log_write('Assigning remaining dimensions from definitions in Registry.xml ...')\n");
 
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next) {
 		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next) {
@@ -848,10 +860,10 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				if(strncmp(dimdef, "namelist:", 9) == 0){
 					snprintf(option_name, 1024, "%s", (dimdef)+9);
 					fortprintf(fd, "         %s = %s\n", dimname, option_name);
-					fortprintf(fd, "write(stderrUnit,\'(a,a20,a,i8,a)\') \'       \', \'%s\', \' =\', %s, \' (%s)\'\n", dimname, option_name, option_name);
+					fortprintf(fd, "call mpas_log_write('       %s = %s (%s)')\n", dimname, option_name, option_name);
 				} else {
 					fortprintf(fd, "         %s = %s\n", dimname, dimdef);
-					fortprintf(fd, "write(stderrUnit,\'(a,a20,a,i8)\') \'       \', \'%s\', \' =\', %s\n", dimname, dimdef);
+					fortprintf(fd, "call mpas_log_write('       %s = %s')\n", dimname, dimdef);
 				}
 				fortprintf(fd, "         call mpas_pool_add_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
 
@@ -874,10 +886,10 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 			}
 		}
 	}
-	fortprintf(fd, "write(stderrUnit,*) \' '\n");
-	fortprintf(fd, "write(stderrUnit,\'(a)\') \' ----- done assigning dimensions from Registry.xml -----\'\n");
-	fortprintf(fd, "write(stderrUnit,*) \' '\n");
-	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "      call mpas_log_write(' ')\n");
+	fortprintf(fd, "      call mpas_log_write(' ----- done assigning dimensions from Registry.xml -----')\n");
+	fortprintf(fd, "      call mpas_log_write(' ')\n");
+	fortprintf(fd, "      call mpas_log_write(' ')\n");
 
 	fortprintf(fd, "      call mpas_pool_set_error_level(errLevel)\n\n");
 
@@ -892,6 +904,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      use mpas_pool_routines\n");
 	fortprintf(fd, "      use mpas_io_units\n");
 	fortprintf(fd, "      use mpas_abort, only : mpas_dmpar_global_abort\n");
+	fortprintf(fd, "      use mpas_log, only : mpas_log_write\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      implicit none\n");
 	fortprintf(fd, "\n");
@@ -920,7 +933,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      iErr = 0\n");
-	fortprintf(fd, "      write(stderrUnit,\'(a)\') \'Processing decomposed dimensions ...\'\n\n");
+	fortprintf(fd, "      call mpas_log_write('Processing decomposed dimensions ...')\n\n");
 
 	/* Retrieve dimension integers */
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next) {
@@ -931,7 +944,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 			if ( dimdecomp != NULL && strcmp(dimdecomp, "none") != 0 ) {
 				fortprintf(fd, "      call mpas_pool_get_dimension(readDimensions, '%s', %s)\n", dimname, dimname);
 				fortprintf(fd, "      if ( .not. associated(%s)) then\n", dimname);
-				fortprintf(fd, "         write(stderrUnit, *) 'WARNING: Dimension \'\'%s\'\' was not defined, and cannot be decomposed.'\n", dimname);
+				fortprintf(fd, "         call mpas_log_write('Dimension ''%s'' was not defined, and cannot be decomposed.', MPAS_LOG_WARN)\n", dimname);
 				fortprintf(fd, "      else\n");
 				fortprintf(fd, "         call mpas_decomp_get_method(block %% domain %% decompositions, '%s', decompFunc, iErr)\n", dimdecomp);
 				fortprintf(fd, "         if ( iErr /= MPAS_DECOMP_NOERR ) then\n");
@@ -952,17 +965,17 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd, "         call mpas_pool_add_field(block %% allFields, '%sOwnedIndices', ownedIndices)\n", dimname);
 				fortprintf(fd, "         call mpas_pool_get_dimension(block %% dimensions, '%s', %s)\n", dimname, dimname);
 				fortprintf(fd, "         %s = size(ownedIndices %% array, dim=1)\n", dimname);
-				fortprintf(fd, "         write(stderrUnit,\'(a,a20,a,i8,a,i8)\') \'       \', \'%s\', \' =>\', %s, \' indices owned by block\', block %% blockID\n", dimname, dimname);
+				fortprintf(fd, "         call mpas_log_write('       %s => $i indices owned by block $i', intArgs=(/%s, block %% blockID/))\n", dimname, dimname);
 				fortprintf(fd, "      end if\n");
 				fortprintf(fd, "\n");
 			}
 		}
 	}
 
-	fortprintf(fd, "      write(stderrUnit,*) \' '\n");
-	fortprintf(fd, "      write(stderrUnit,\'(a)\') \' ----- done processing decomposed dimensions -----\'\n");
-	fortprintf(fd, "      write(stderrUnit,*) \' '\n");
-	fortprintf(fd, "      write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "      call mpas_log_write(' ')\n");
+	fortprintf(fd, "      call mpas_log_write(' ----- done processing decomposed dimensions -----')\n");
+	fortprintf(fd, "      call mpas_log_write(' ')\n");
+	fortprintf(fd, "      call mpas_log_write(' ')\n");
 
 	fortprintf(fd, "\n");
 	fortprintf(fd, "   end function %s_setup_decomposed_dimensions\n", core_string);
@@ -1891,7 +1904,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 				fortprintf(fd, "      call mpas_pool_get_field(poolLevel%d, '%s', %s, %d)\n", curLevel+1, varname, pointer_name, time_lev);
 				fortprintf(fd, "      if(associated(%s)) then\n", pointer_name);
 				fortprintf(fd, "#ifdef MPAS_DEBUG\n");
-				fortprintf(fd, "         write(stderrUnit,*) 'Linking %s'\n", varname);
+				fortprintf(fd, "         call mpas_log_write('Linking %s')\n", varname);
 				fortprintf(fd, "#endif\n");
 				fortprintf(fd, "         if(associated(prevBlock)) then\n");
 				fortprintf(fd, "            call mpas_pool_get_field(prevPoolLevel%d, '%s', %s %% prev, %d)\n", curLevel+1, varname, pointer_name, time_lev);
@@ -1964,7 +1977,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 			for(time_lev = 1; time_lev <= time_levs; time_lev++){
 				fortprintf(fd, "! Linking %s for time level %d with name\n", varname, time_lev, varname_in_code);
 				fortprintf(fd, "#ifdef MPAS_DEBUG\n");
-				fortprintf(fd, "      write(stderrUnit,*) 'Linking %s with name %s'\n", varname, varname_in_code);
+				fortprintf(fd, "      call mpas_log_write('Linking %s with name %s')\n", varname, varname_in_code);
 				fortprintf(fd, "#endif\n");
 				fortprintf(fd, "      call mpas_pool_get_field(poolLevel%d, '%s', %s, %d)\n", curLevel+1, varname_in_code, pointer_name, time_lev);
 				fortprintf(fd, "      if(associated(%s)) then\n", pointer_name);
