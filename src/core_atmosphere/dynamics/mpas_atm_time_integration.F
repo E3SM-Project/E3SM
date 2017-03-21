@@ -27,6 +27,8 @@ module atm_time_integration
 
    use mpas_atm_iau  
 
+   use mpas_abort, only : mpas_dmpar_global_abort
+
    integer :: timerid, secs, u_secs
 
    ! Used to store physics tendencies for dynamics variables
