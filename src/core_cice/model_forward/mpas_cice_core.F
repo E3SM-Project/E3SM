@@ -174,8 +174,16 @@ module cice_core
 
       ! Set time to the user-specified start time OR use a restart time from file
       if ( trim(config_start_time) == "file" ) then
-         open(22, file=config_restart_timestamp_name, form='formatted', status='old')
-         read(22,*) restartTimeStamp
+         open(22, file=config_restart_timestamp_name, form='formatted', status='old', iostat=local_err)
+         if (local_err /= 0) then
+            write(stderrUnit,*) "cice_simulation_clock_init: problem opening restart timestamp file for reading: ", local_err
+            call MPAS_dmpar_global_abort("MPAS-seaice: Problem opening restart timestamp file for reading")
+         endif
+         read(22,*,iostat=local_err) restartTimeStamp
+         if (local_err /= 0) then
+            write(stderrUnit,*) "cice_simulation_clock_init: problem reading restart timestamp file: ", local_err
+            call MPAS_dmpar_global_abort("MPAS-seaice: Problem reading restart timestamp file")
+         endif
          close(22)
          call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=local_err)
       else
@@ -327,8 +335,16 @@ module cice_core
          ! update the restart_timestamp file with the new time if needed
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &
               streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
-            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
-            write(22, *) timeStamp
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace', iostat=ierr)
+            if (ierr /= 0) then
+               write(stderrUnit,*) "cice_core_run: problem opening restart timestamp file for writing: ", ierr
+               call MPAS_dmpar_global_abort("MPAS-seaice: Problem opening restart timestamp file for writing")
+            endif
+            write(22, *, iostat=ierr) timeStamp
+            if (ierr /= 0) then
+               write(stderrUnit,*) "cice_core_run: problem writing restart timestamp file: ", ierr
+               call MPAS_dmpar_global_abort("MPAS-seaice: Problem writing restart timestamp file")
+            endif
             close(22)
             call cice_forcing_write_restart_times(domain)
          end if
