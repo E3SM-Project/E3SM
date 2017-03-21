@@ -12,6 +12,7 @@ module isobaric_diagnostics
     use mpas_derived_types
     use mpas_pool_routines
     use mpas_constants
+    use mpas_io_units, only : stderrUnit
 
     type (MPAS_pool_type), pointer :: mesh
     type (MPAS_pool_type), pointer :: state
