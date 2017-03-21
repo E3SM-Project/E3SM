@@ -255,7 +255,7 @@ for parameter in parameters:
                 diff = mv1_reg - mv2_reg
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                 acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
+                viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file, file_title=season)
 
     
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
@@ -349,7 +349,7 @@ for parameter in parameters:
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                    viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
+                    viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file, file_title=season)
 
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")

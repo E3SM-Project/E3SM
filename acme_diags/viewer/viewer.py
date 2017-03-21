@@ -27,14 +27,14 @@ class OutputViewer(object):
         self.page = OutputPage(name, cols)
         self.index.addPage(self.page)
 
-    def add_row(self, var_name, description, file_name):
+    def add_row(self, var_name, description, file_name, file_title=''):
         ''' Adds a description and all of the files in self.path to an 
         OutputRow, which is then added to the current page'''
         cols = []
         cols.append(description)
-        #file_path = [fnm for fnm in os.listdir(self.path) if '.png' in fnm]
+        title = file_name if file_title == '' else file_title
         file_path = os.path.abspath(os.path.join(file_name + '.png'))
-        cols.append(OutputFile(file_path))
+        cols.append(OutputFile(file_path, title=title))
         
         if self.group is None:
             self.group = OutputGroup('Variables for this data set')
