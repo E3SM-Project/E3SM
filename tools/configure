@@ -64,6 +64,10 @@ def parse_command_line(args):
                         "To see list of supported mpilibs for each machine, use the utility manage_case in this directory. "
                         "The default is the first listing in MPILIBS in config_machines.xml")
 
+    parser.add_argument("--clean", action="store_true", 
+                        help="Remove old Macros and env files before attempting to create new ones")
+
+
     args = parser.parse_args()
     CIME.utils.handle_standard_logging_options(args)
 
@@ -80,6 +84,12 @@ def parse_command_line(args):
                    "variable must be specified!")
 
     opts['machobj'] = machobj
+
+    if args.clean:
+        files = ["Macros.make", "Macros.cmake", "env_mach_specific.xml", ".env_mach_specific.sh", ".env_mach_specific.csh"]
+        for file_ in files:
+            if os.path.isfile(file_):
+                os.remove(file_)
 
     if args.macros_format is None:
         opts['macros_format'] = []
