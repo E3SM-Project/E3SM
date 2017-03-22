@@ -33,6 +33,7 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
+from CIME.aprun import get_aprun_cmd_for_case
 
 logger = logging.getLogger(__name__)
 
@@ -1093,11 +1094,7 @@ class Case(object):
 
         # special case for aprun
         if executable == "aprun":
-            args["aprun special args"] = ""
-            if self.get_value("COMPILER") == "intel" and self.tasks_per_node > 1:
-                args["aprun special args"] += " -S %d -cc numa_node" % self.tasks_per_numa
-
-            args["aprun special args"] = " -n %d -N %d -d %d " % (self.total_tasks, self.tasks_per_node, self.thread_count)
+            return get_aprun_cmd_for_case(self, run_exe)
 
         mpi_arg_string = " ".join(args.values())
 
