@@ -2592,7 +2592,7 @@
 !$OMP PARALLEL DO PRIVATE(i,j)
         do i=1,mySharedIndices%num_indices
 !CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+!DIR$ IVDEP
            do j=1,aVsize
               aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
            enddo
@@ -2600,9 +2600,8 @@
      else
         outxmin=mySharedIndices%aVindices2(1)-1
         inxmin=mySharedIndices%aVindices1(1)-1
-!$OMP PARALLEL DO PRIVAtE(j,i)
+!$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
         do j=1,aVsize
-!DIR$ CONCURRENT
            do i=1,mySharedIndices%num_indices
               aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
            enddo
@@ -2611,9 +2610,8 @@
 
   else
 
-!$OMP PARALLEL DO PRIVATE(j,i,outx,inx)
+!$OMP PARALLEL DO PRIVATE(j,i,outx,inx) COLLAPSE(2)
      do j=1,aVsize
-!DIR$ CONCURRENT
         do i=1,mySharedIndices%num_indices
            outx=mySharedIndices%aVindices2(i)
            inx=mySharedIndices%aVindices1(i)
