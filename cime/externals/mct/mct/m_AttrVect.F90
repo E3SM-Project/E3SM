@@ -2502,9 +2502,6 @@
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
-      use m_List,          only : GetSharedListIndices
-      use m_List,          only : GetIndices => get_indices
-
       implicit none
 
 ! !INPUT PARAMETERS:
@@ -2527,8 +2524,7 @@
 
   integer :: i,j,ier       ! dummy variables
   integer :: aVsize        ! The lsize of aVin and aVout
-  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
-  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  integer :: inxmin, outxmin      ! Index variables
   logical :: usevector    ! true if vector flag is present and true.
   character*7 :: data_flag ! character variable used as data type flag
   type(AVSharedIndicesOneType) :: mySharedIndices  ! copied from sharedIndices, or
@@ -2586,9 +2582,9 @@
 
   if(mySharedIndices%contiguous) then
 
+     outxmin=mySharedIndices%aVindices2(1)-1
+     inxmin=mySharedIndices%aVindices1(1)-1
      if(usevector) then
-        outxmin=mySharedIndices%aVindices2(1)-1
-        inxmin=mySharedIndices%aVindices1(1)-1
 !$OMP PARALLEL DO PRIVATE(i,j)
         do i=1,mySharedIndices%num_indices
 !CDIR SELECT(VECTOR)
@@ -2598,8 +2594,6 @@
            enddo
         enddo
      else
-        outxmin=mySharedIndices%aVindices2(1)-1
-        inxmin=mySharedIndices%aVindices1(1)-1
 !$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
         do j=1,aVsize
            do i=1,mySharedIndices%num_indices
@@ -2610,12 +2604,10 @@
 
   else
 
-!$OMP PARALLEL DO PRIVATE(j,i,outx,inx) COLLAPSE(2)
+!$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
      do j=1,aVsize
         do i=1,mySharedIndices%num_indices
-           outx=mySharedIndices%aVindices2(i)
-           inx=mySharedIndices%aVindices1(i)
-           aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
+           aVout%rAttr(mySharedIndices%aVindices2(i),j) = aVin%rAttr(mySharedIndices%aVindices1(i),j)
         enddo
      enddo
 
@@ -2663,7 +2655,6 @@
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
-      use m_List,          only : GetSharedListIndices
       use m_List,          only : GetIndices => get_indices
 
       implicit none
@@ -2691,12 +2682,10 @@
   integer :: i,j,ier       ! dummy variables
   integer :: num_indices   ! Overlapping attribute index number
   integer :: aVsize        ! The lsize of aVin and aVout
-  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
-  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  integer :: inxmin, outxmin   ! Index variables
   logical :: TrListIsPresent   ! true if list argument is present
   logical :: contiguous    ! true if index segments are contiguous in memory
   logical :: usevector    ! true if vector flag is present and true.
-  character*7 :: data_flag ! character variable used as data type flag
 
   ! Overlapping attribute index storage arrays:
   integer, dimension(:), pointer :: aVinindices, aVoutindices
@@ -2754,48 +2743,48 @@
 ! Check if the indices are contiguous in memory for faster copy
   contiguous=.true.
   do i=2,num_indices
-     if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
+     if(aVinindices(i) /= aVinindices(i-1)+1) then
+        contiguous = .false.
+        exit
+     endif
   enddo
   if(contiguous) then
      do i=2,num_indices
-         if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
+        if(aVoutindices(i) /= aVoutindices(i-1)+1) then
+           contiguous=.false.
+           exit
+        endif
      enddo
   endif
 
 ! Start copying (arranged loop order optimized for xlf90)
   if(contiguous) then
 
+     outxmin=aVoutindices(1)-1
+     inxmin=aVinindices(1)-1
      if(usevector) then
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
 !$OMP PARALLEL DO PRIVATE(i,j)
         do i=1,num_indices
-!DIR$ CONCURRENT
-	   do j=1,aVsize
-	     aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
-	   enddo
-	enddo
+!DIR$ IVDEP
+           do j=1,aVsize
+              aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+           enddo
+        enddo
      else
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
-!$OMP PARALLEL DO PRIVATE(j,i)
+!$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
         do j=1,aVsize
-!DIR$ CONCURRENT
-	   do i=1,num_indices
-	      aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
-	   enddo
-	enddo
+           do i=1,num_indices
+              aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+           enddo
+        enddo
      endif
 
   else
 
-!$OMP PARALLEL DO PRIVATE(j,i,outx,inx)
+!$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
     do j=1,aVsize
-!DIR$ CONCURRENT
        do i=1,num_indices
-          outx=aVoutindices(i)
-          inx=aVinindices(i)
-          aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
+          aVout%rAttr(aVoutindices(i),j) = aVin%rAttr(aVinindices(i),j)
        enddo
     enddo
 
@@ -2840,9 +2829,6 @@
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
-      use m_List,          only : GetSharedListIndices
-      use m_List,          only : GetIndices => get_indices
-
       implicit none
 
 ! !INPUT PARAMETERS:
@@ -2866,8 +2852,7 @@
 
   integer :: i,j,ier       ! dummy variables
   integer :: aVsize        ! The lsize of aVin and aVout
-  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
-  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  integer :: inxmin, outxmin      ! Index variables
   logical :: usevector    ! true if vector flag is present and true.
   character*7 :: data_flag ! character variable used as data type flag
   type(AVSharedIndicesOneType) :: mySharedIndices  ! copied from sharedIndices, or
@@ -2924,23 +2909,20 @@
 
   if(mySharedIndices%contiguous) then
 
+     outxmin=mySharedIndices%aVindices2(1)-1
+     inxmin=mySharedIndices%aVindices1(1)-1
      if(usevector) then
-        outxmin=mySharedIndices%aVindices2(1)-1
-        inxmin=mySharedIndices%aVindices1(1)-1
 !$OMP PARALLEL DO PRIVATE(i,j)
         do i=1,mySharedIndices%num_indices
 !CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+!DIR$ IVDEP
            do j=1,aVsize
               aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
            enddo
         enddo
      else
-        outxmin=mySharedIndices%aVindices2(1)-1
-        inxmin=mySharedIndices%aVindices1(1)-1
-!$OMP PARALLEL DO PRIVATE(j,i)
+!$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
         do j=1,aVsize
-!DIR$ CONCURRENT
            do i=1,mySharedIndices%num_indices
               aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
            enddo
@@ -2949,13 +2931,10 @@
 
   else
 
-!$OMP PARALLEL DO PRIVATE(j,i,outx,inx)
+!$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
      do j=1,aVsize
-!DIR$ CONCURRENT
         do i=1,mySharedIndices%num_indices
-           outx=mySharedIndices%aVindices2(i)
-           inx=mySharedIndices%aVindices1(i)
-           aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+           aVout%iAttr(mySharedIndices%aVindices2(i),j) = aVin%iAttr(mySharedIndices%aVindices1(i),j)
         enddo
      enddo
 
@@ -3029,12 +3008,10 @@
   integer :: i,j,ier       ! dummy variables
   integer :: num_indices   ! Overlapping attribute index number
   integer :: aVsize        ! The lsize of aVin and aVout
-  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
-  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  integer :: inxmin, outxmin      ! Index variables
   logical :: TiListIsPresent     ! true if list argument is present
   logical :: contiguous    ! true if index segments are contiguous in memory
   logical :: usevector    ! true if vector flag is present and true.
-  character*7 :: data_flag ! character variable used as data type flag
 
   ! Overlapping attribute index storage arrays:
   integer, dimension(:), pointer :: aVinindices, aVoutindices
@@ -3092,49 +3069,49 @@
 ! Check if the indices are contiguous in memory for faster copy
   contiguous=.true.
   do i=2,num_indices
-    if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
+    if(aVinindices(i) /= aVinindices(i-1)+1) then
+       contiguous = .false.
+       exit
+    endif
   enddo
   if(contiguous) then
     do i=2,num_indices
-      if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
+      if(aVoutindices(i) /= aVoutindices(i-1)+1) then
+         contiguous=.false.
+         exit
+      endif
     enddo
   endif
 
 ! Start copying (arranged loop order optimized for xlf90)
   if(contiguous) then
 
+    outxmin=aVoutindices(1)-1
+    inxmin=aVinindices(1)-1
     if(usevector) then
-      outxmin=aVoutindices(1)-1
-      inxmin=aVinindices(1)-1
 !$OMP PARALLEL DO PRIVAtE(i,j)
       do i=1,num_indices
 !CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
+!DIR$ IVDEP
          do j=1,aVsize
-   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+            aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
          enddo
       enddo
     else
-      outxmin=aVoutindices(1)-1
-      inxmin=aVinindices(1)-1
-!$OMP PARALLEL DO PRIVATE(j,i)
+!$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
       do j=1,aVsize
-!DIR$ CONCURRENT
          do i=1,num_indices
-   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+            aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
          enddo
       enddo
     endif
 
   else
 
-!$OMP PARALLEL DO PRIVATE(j,i,outx,inx)
+!$OMP PARALLEL DO PRIVATE(j,i) COLLAPSE(2)
      do j=1,aVsize
-!DIR$ CONCURRENT
        do i=1,num_indices
-          outx=aVoutindices(i)
-          inx=aVinindices(i)
-          aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+          aVout%iAttr(aVoutindices(i),j) = aVin%iAttr(aVinindices(i),j)
        enddo
      enddo
 
@@ -3196,9 +3173,6 @@
       use m_die ,          only : die, warn
       use m_stdio ,        only : stderr
 
-      use m_List,          only : GetSharedListIndices
-      use m_List,          only : GetIndices => get_indices
-
       implicit none
 
 ! !INPUT PARAMETERS:
@@ -3242,7 +3216,6 @@
   logical :: TiListIsPresent, TrListIsPresent! true if list argument is present
   logical :: contiguous    ! true if index segments are contiguous in memory
   logical :: usevector    ! true if vector flag is present and true.
-  character*7 :: data_flag ! character variable used as data type flag
 
   ! Overlapping attribute index storage arrays:
   integer, dimension(:), pointer :: aVinindices, aVoutindices
@@ -3265,48 +3238,48 @@
 
   ! Copy the listed real attributes
   if(present(rList)) then
-	! TrList is present if it is provided and its length>0
-	TrListIsPresent = .false.
-	if(present(TrList)) then
-	   if(len_trim(TrList) > 0) then
-	      TrListIsPresent = .true.
-	   endif
-	endif
+     ! TrList is present if it is provided and its length>0
+     TrListIsPresent = .false.
+     if(present(TrList)) then
+        if(len_trim(TrList) > 0) then
+           TrListIsPresent = .true.
+        endif
+     endif
 
-        if(present(sharedIndices)) then
-           call warn(myname_,'Use of sharedIndices not implemented in RCopyL; &
+     if(present(sharedIndices)) then
+        call warn(myname_,'Use of sharedIndices not implemented in RCopyL; &
                      &ignoring sharedIndices',1)
-        end if
+     endif
 
-	if(TrListIsPresent) then
-	   call RCopyL_(aVin,aVout,rList,TrList,vector=usevector)
-	else
-	   call RCopyL_(aVin,aVout,rList,vector=usevector)
-	endif
+     if(TrListIsPresent) then
+        call RCopyL_(aVin,aVout,rList,TrList,vector=usevector)
+     else
+        call RCopyL_(aVin,aVout,rList,vector=usevector)
+     endif
 
   endif   ! if(present(rList)
 
   !  Copy the listed integer attributes
   if(present(iList)) then
 
-	! TiList is present if its provided and its length>0
-	TiListIsPresent = .false.
-	if(present(TiList)) then
-	   if(len_trim(TiList) > 0) then
-	      TiListIsPresent = .true.
-	   endif
-	endif
+     ! TiList is present if its provided and its length>0
+     TiListIsPresent = .false.
+     if(present(TiList)) then
+        if(len_trim(TiList) > 0) then
+           TiListIsPresent = .true.
+        endif
+     endif
 
-        if(present(sharedIndices)) then
-           call warn(myname_,'Use of sharedIndices not implemented in ICopyL; &
+     if(present(sharedIndices)) then
+        call warn(myname_,'Use of sharedIndices not implemented in ICopyL; &
                      &ignoring sharedIndices',1)
-        end if
+     endif
 
-	if(TiListIsPresent) then
-	   call ICopyL_(aVin,aVout,iList,TiList,vector=usevector)
-	else
-	   call ICopyL_(aVin,aVout,iList,vector=usevector)
-	endif
+     if(TiListIsPresent) then
+        call ICopyL_(aVin,aVout,iList,TiList,vector=usevector)
+     else
+        call ICopyL_(aVin,aVout,iList,vector=usevector)
+     endif
 
   endif   ! if(present(iList))
 

@@ -1473,7 +1473,7 @@ contains
   integer function seq_comm_getnthreads()
 
     implicit none
-    integer :: omp_get_num_threads
+    integer :: omp_get_max_threads
     character(*),parameter :: subName =   '(seq_comm_getnthreads) '
 
     seq_comm_getnthreads = -1
