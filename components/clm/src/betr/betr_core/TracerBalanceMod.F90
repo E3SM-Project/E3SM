@@ -53,7 +53,7 @@ implicit none
       call tracerflux_vars%Reset(bounds, numf, filter)
 
       call betr_tracer_mass_summary(bounds, lbj, ubj, numf, filter, betrtracer_vars, tracerstate_vars, &
-           tracerstate_vars%beg_tracer_molarmass_col)
+           tracerstate_vars%beg_tracer_molarmass_col(bounds%begc:bounds%endc, 1:betrtracer_vars%ntracers))
 
     end subroutine begin_betr_tracer_massbalance
 
@@ -108,7 +108,7 @@ implicit none
            )
 
         call betr_tracer_mass_summary(bounds, lbj, ubj, numf, filter, betrtracer_vars, tracerstate_vars, &
-             end_tracer_molarmass)
+             end_tracer_molarmass(bounds%begc:bounds%endc, 1:betrtracer_vars%ntracers))
 
         dtime=get_step_size()
 
@@ -118,8 +118,9 @@ implicit none
            call tracerflux_vars%flux_summary(c, betrtracer_vars)
 
            do kk = 1, ngwmobile_tracers
-              errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk)  &
-                   + tracer_flx_netpro(c,kk)-tracer_flx_netphyloss(c,kk)
+              if(c>maxval(filter))print*,'crazy happend'
+              errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk)  
+              errtracer(c,kk) = errtracer(c,kk) + tracer_flx_netpro(c,kk)-tracer_flx_netphyloss(c,kk)
               if(abs(errtracer(c,kk))<err_min)then
                  err_rel=1.e-4_r8
               else
