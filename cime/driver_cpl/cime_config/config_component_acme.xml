@@ -539,6 +539,8 @@
       <value compset="^2000.+AV1C-04P"				>368.865</value>
       <value compset="^2000.+AV1C-04P2"				>368.865</value>
       <value compset="^2000.+AV1C-L"				>368.865</value>
+      <value compset="^2000.+AV1C-H01A"				>368.865</value>
+      <value compset="^2000.+AV1C-H01B"				>368.865</value>
       <!-- Override values based on CAM (WACCM) chemistry -->
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>

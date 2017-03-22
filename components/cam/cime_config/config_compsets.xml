@@ -165,6 +165,16 @@
   </compset>
 
   <compset>
+    <alias>FC5AV1C-H01A</alias>
+    <lname>2000_CAM5%AV1C-H01A_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5AV1C-H01B</alias>
+    <lname>2000_CAM5%AV1C-H01B_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FC5AV1F</alias>
     <lname>2000_CAM5%AV1F_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
