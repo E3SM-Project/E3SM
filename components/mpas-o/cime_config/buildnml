@@ -124,6 +124,12 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 } elsif ( $OCN_GRID eq 'oRRS18to6v3' ) {
 	$grid_date .= '170111';
 	$grid_prefix .= 'oRRS18to6v3';
+	$ic_date .= '170111';
+	$ic_prefix .= 'oRRS18to6v3';
+	$decomp_prefix .= 'mpas-o.graph.info.';
+} elsif ( $OCN_GRID eq 'oRRS18to6v3_ICG' ) {
+	$grid_date .= '170111';
+	$grid_prefix .= 'oRRS18to6v3';
 	$ic_date .= '170321';
 	$ic_prefix .= 'oRRS18to6v3.restartFrom_titan0228';
 	$decomp_prefix .= 'mpas-o.graph.info.';
