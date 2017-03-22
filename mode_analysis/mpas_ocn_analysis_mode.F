@@ -28,7 +28,7 @@ module ocn_analysis_mode
    use mpas_timekeeping
    use mpas_dmpar
    use mpas_timer
-   use mpas_io_units
+   use mpas_log
    use mpas_decomp
    use mpas_abort, only : mpas_dmpar_global_abort
 
