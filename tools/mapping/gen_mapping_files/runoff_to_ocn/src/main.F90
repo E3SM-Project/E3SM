@@ -109,9 +109,7 @@ PROGRAM main
    lmake_rSCRIP  = .false.
    file_roff_out = "runoff.nc"
 
-   open (10,file="runoff_map.nml",status="old",action="read")
-   read (10,nml=input_nml,iostat=rCode)
-   close(10)
+   read (*,nml=input_nml,iostat=rCode)
    write(6,F00) "Namelist values..."
    write(6,F00) "   gridtype          = ",trim(gridtype      )
    write(6,F00) "   file_roff         = ",trim(file_roff     )

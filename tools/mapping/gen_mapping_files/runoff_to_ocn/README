@@ -15,9 +15,10 @@ and outputs a map from the former to the latter:
 HOW TO USE THIS TOOL
 ====================
 
-1) Build (in the src/ directory)
-2) Setup a namelist file (runoff_map.nml)
-3) Run ./runoff_map
+1) Build (see the INSTALL file in this directory for details)
+2) Setup a namelist file (see any of runoff_map_*.nml for an example)
+3) Run with the following command:
+$ ./runoff_map < [namelist file]
 
 ============
 HOW TO BUILD
