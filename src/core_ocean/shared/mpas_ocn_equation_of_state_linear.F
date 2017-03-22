@@ -25,7 +25,7 @@ module ocn_equation_of_state_linear
    use mpas_pool_routines
    use ocn_constants
    use mpas_dmpar
-   use mpas_io_units
+   use mpas_log
 
    implicit none
    private

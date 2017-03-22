@@ -11,7 +11,7 @@ module ocn_core_interface
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_constants
-   use mpas_io_units
+   use mpas_log
    use ocn_core
    use mpas_attlist
 

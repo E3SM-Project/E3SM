@@ -26,7 +26,7 @@ module ocn_equation_of_state
    use ocn_equation_of_state_linear
    use ocn_equation_of_state_jm
    use ocn_constants
-   use mpas_io_units
+   use mpas_log
 
    implicit none
    private
@@ -183,8 +183,7 @@ contains
          jmEos = .true.
          call ocn_equation_of_state_jm_init(err)
       else
-         write (stderrUnit,*) 'Invalid choice for config_eos_type.'
-         write (stderrUnit,*) '  Choices are: linear, jm'
+         call mpas_log_write('Invalid choice for config_eos_type. Choices are: linear, jm')
          err = 1
       endif
 
