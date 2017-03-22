@@ -14,7 +14,7 @@ import re
 
 from CIME.namelist import fortran_namelist_base_value, \
     is_valid_fortran_namelist_literal, character_literal_to_string, \
-    expand_literal_list, Namelist
+    expand_literal_list, Namelist, get_variable_name
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
@@ -344,7 +344,7 @@ class NamelistDefinition(EntryID):
                 # Check that the variable is defined...
                 self._expect_variable_in_definition(variable_name, variable_template)
 
-                # Check if can actually change this variable via filename change
+                # Check if can actuax1lly change this variable via filename change
                 if filename is not None:
                     self._user_modifiable_in_variable_definition(variable_name)
 
@@ -379,7 +379,7 @@ class NamelistDefinition(EntryID):
         groups = {}
         for variable_name in dict_:
             variable_lc = variable_name.lower()
-            self._expect_variable_in_definition(variable_lc, variable_template)
+            self._expect_variable_in_definition(get_variable_name(variable_lc), variable_template)
             group_name = self.get_group(variable_lc)
             expect (group_name is not None, "No group found for var %s"%variable_lc)
             if group_name not in groups:
