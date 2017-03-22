@@ -1,0 +1,16 @@
+  &input_nml
+   gridtype     = 'obs'
+   file_roff    = '/glade/p/cesm/cseg/inputdata/lnd/dlnd7/RX1/runoff.daitren.annual.090225.nc'
+   file_ocn_coastal_mask = '/glade/p/cesm/cseg/mapping/grids/gx3v7_ac_161214.nc'
+   file_ocn_global_mask  = '/glade/p/cesm/cseg/mapping/grids/gx3v7_120309.nc'
+   file_nn      = 'maps/map_rx1_to_gx3v7_ac_nearestdtos_170322.nc '
+   file_smooth  = 'maps/map_gx3v7_ac_to_gx3v7_smooth_170322.nc '
+   file_new     = 'maps/map_rx1_to_gx3v7_e1000r500_170322.nc'
+   title        = 'runoff map: rx1 -> gx3v7, smoothed '
+   eFold        = 1000000.0
+   rMax         =  500000.0
+   step1 = .true.
+   step2 = .true.
+   step3 = .true.
+
+  /
