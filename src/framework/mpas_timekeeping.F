@@ -2100,7 +2100,7 @@ module mpas_timekeeping
                         end if
                         outString = trim(outString) // trim(timePart)
                      case default
-                        call mpas_log_write('ERROR: mpas_expand_string option DOLLAR'//inString(i:i)// &
+                        call mpas_log_write('ERROR: mpas_expand_string option $$'//inString(i:i)// &
                                ' is not a valid expansion character.', MPAS_LOG_CRIT)
                   end select
 
