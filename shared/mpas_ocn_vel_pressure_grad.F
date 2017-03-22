@@ -293,8 +293,8 @@ contains
 
       else
 
-         write (stderrUnit,'(a,a)') ' Pressure type is: ',trim(config_pressure_gradient_type)
-         write (stderrUnit,*) ' Incorrect choice of config_pressure_gradient_type.'
+         call mpas_log_write(' Pressure type is: '//trim(config_pressure_gradient_type))
+         call mpas_log_write(' Incorrect choice of config_pressure_gradient_type.',MPAS_LOG_CRIT)
          err = 1
 
       endif
@@ -636,7 +636,7 @@ contains
 
       if (config_disable_vel_pgrad) pgradOn = .false.
 
-      write (stdoutUnit,'(a,a)') ' Pressure type is: ',trim(config_pressure_gradient_type)
+      call mpas_log_write(' Pressure type is: '//trim(config_pressure_gradient_type))
 
    !--------------------------------------------------------------------
 

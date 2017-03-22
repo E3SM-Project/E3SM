@@ -197,8 +197,8 @@ contains
          block => block % next
       end do
 
-      write(stderrUnit,'(3A,F10.1)') 'in ocn_compute_test_compute_interval, time = ', trim(xtime), &
-         ',   testComputeIntervalCounter = ',testComputeIntervalCounter
+      !write(stderrUnit,'(3A,F10.1)') 'in ocn_compute_test_compute_interval, time = ', trim(xtime), &
+      !   ',   testComputeIntervalCounter = ',testComputeIntervalCounter
 
    end subroutine ocn_compute_test_compute_interval!}}}
 

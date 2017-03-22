@@ -450,8 +450,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
             if (config_pbc_alteration_type .eq. 'partial_cell') then
 
-               write (stdoutUnit,'(a)') ' Altering bottomDepth to avoid very thin cells.'
-               write (stdoutUnit,'(a)') ' Altering layerThickness and tracer initial conditions to conform with partial bottom cells.'
+               call mpas_log_write(' Altering bottomDepth to avoid very thin cells.')
+               call mpas_log_write(' Altering layerThickness and tracer initial conditions to conform with partial bottom cells.')
 
                allocate(minBottomDepth(nVertLevels),minBottomDepthMid(nVertLevels),zMidZLevel(nVertLevels))
 
@@ -510,8 +510,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
             else
 
-                write (stderrUnit,*) ' Incorrect choice of config_pbc_alteration_type.'
-                call mpas_dmpar_abort(dminfo)
+                call mpas_log_write(' Incorrect choice of config_pbc_alteration_type.', MPAS_LOG_CRIT)
 
             endif
 
@@ -533,15 +532,17 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                ! Check if abs(ssh)>2m.  If so, print warning.
                if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>2.0) then
                   consistentSSH = .false.
-                  write (stderrUnit,'(a)') ' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness does not match bottomDepth.'
-                  write (stderrUnit,*) ' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth: ', &
-                                iCell, maxLevelCell(iCell), bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)),bottomDepth(iCell), &
-                                layerThickness(maxLevelCell(iCell),iCell)
+                  call mpas_log_write(' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness does not match bottomDepth.', &
+                     MPAS_LOG_ERR)
+! mrp log this later
+                  !call mpas_log_write(' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth: ', &
+                  !              iCell, maxLevelCell(iCell), bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)),bottomDepth(iCell), &
+                  !              layerThickness(maxLevelCell(iCell),iCell)
                endif
             enddo
 
             if (.not. consistentSSH) then
-               write(stderrUnit,*) 'Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.'
+               call mpas_log_write('Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.')
             end if
 
          endif ! config_check_ssh_consistency
@@ -551,12 +552,12 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                ! Check that bottomDepth and maxLevelCell match.  Some older meshs do not have the bottomDepth variable.
                if (bottomDepth(iCell) > refBottomDepth(maxLevelCell(iCell)).or. &
                    bottomDepth(iCell) < refBottomDepthTopOfCell(maxLevelCell(iCell))) then
-                  write (stderrUnit,'(a)') ' fatal error: bottomDepth and maxLevelCell do not match:'
-                  write (stderrUnit,'(a,2i5,10f10.2)') ' iCell, maxLevelCell(iCell), bottomDepth(iCell): ', &
-                                iCell, maxLevelCell(iCell), bottomDepth(iCell)
-                  write (stderrUnit,'(a,10f10.2)') ' refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell)): ', &
-                                refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell))
-                  call mpas_dmpar_abort(dminfo)
+                  call mpas_log_write(' fatal error: bottomDepth and maxLevelCell do not match:', MPAS_LOG_ERR)
+! mrp add this text back in later
+!                  call mpas_log_write(' iCell, maxLevelCell(iCell), bottomDepth(iCell): ', &
+!                                iCell, maxLevelCell(iCell), bottomDepth(iCell)
+!                  call mpas_log_write(' refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell)): ', &
+!                                refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell))
                endif
 
             enddo

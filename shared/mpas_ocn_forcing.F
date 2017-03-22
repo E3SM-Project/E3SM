@@ -25,7 +25,6 @@ module ocn_forcing
    use mpas_timekeeping
    use mpas_log
    use mpas_dmpar
-   use mpas_abort, only : mpas_dmpar_global_abort
    use ocn_forcing_bulk
    use ocn_forcing_restoring
    use ocn_constants
@@ -196,9 +195,8 @@ contains
          restoringOn = .false.
          bulkOn = .false.
       else
-         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'bulk' 'restoring', or 'off'."
          err = 1
-         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'bulk', 'restoring', or 'off'.")
+         call mpas_log_write("ERROR: config_forcing_type not one of 'bulk', 'restoring', or 'off'.")
       end if
 
       err = ior(err,err1)

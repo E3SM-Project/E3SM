@@ -24,7 +24,7 @@ module ocn_analysis_driver
    use mpas_timekeeping
    use mpas_timer
    use mpas_stream_manager
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    use ocn_constants
    use ocn_global_stats
@@ -261,7 +261,7 @@ contains
                end do
    
                if ( .not. streamFound ) then
-                  call mpas_dmpar_global_abort('ERROR: Stream ' // trim(config_AM_stream_name) // ' does not exist. Exiting...')
+                  call mpas_log_write('ERROR: Stream ' // trim(config_AM_stream_name) // ' does not exist. Exiting...')
                end if
             end if
             
@@ -367,8 +367,8 @@ contains
                end if
             else
                if ( config_AM_write_on_startup ) then
-                  write(stderrUnit, *) ' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
-                                        // poolItr % memberName(1:nameLength) // '. Skipping output...'
+                  call mpas_log_write(' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
+                                        // poolItr % memberName(1:nameLength) // '. Skipping output...')
                end if
             end if
          end if

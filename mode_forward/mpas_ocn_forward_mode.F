@@ -29,7 +29,7 @@ module ocn_forward_mode
    use mpas_timer
    use mpas_log
    use mpas_decomp
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    use ocn_analysis_driver
    use ocn_init_routines
@@ -213,7 +213,7 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
-          call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the MPAS-Ocean forward mode')
+          call mpas_log_write('ERROR: An error was encountered while initializing the MPAS-Ocean forward mode')
       endif
 
       call ocn_init_routines_vert_coord(domain)
@@ -222,26 +222,24 @@ module ocn_forward_mode
 
       if (.not.config_do_restart) call ocn_time_integration_split_init(domain)
 
-      write (stdoutUnit,'(a,a)') ' Vertical coordinate movement is: ',trim(config_vert_coord_movement)
+      call mpas_log_write(' Vertical coordinate movement is: ' // trim(config_vert_coord_movement))
 
       if (config_vert_coord_movement.ne.'fixed'.and. &
           config_vert_coord_movement.ne.'uniform_stretching'.and. &
           config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
           config_vert_coord_movement.ne.'user_specified') then
-         write (stderrUnit,*) ' Incorrect choice of config_vert_coord_movement.'
-         call mpas_dmpar_global_abort('ERROR: Incorrect choice of config_vert_coord_movement.')
+         call mpas_log_write(' Incorrect choice of config_vert_coord_movement.')
+         call mpas_log_write('ERROR: Incorrect choice of config_vert_coord_movement.')
       endif
 
       if(config_vert_coord_movement .ne. 'impermeable_interfaces' .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
-         write (stderrUnit,*) ' Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type'
-         call mpas_dmpar_global_abort('ERROR: Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type')
+         call mpas_log_write(' Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type')
+         call mpas_log_write('ERROR: Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type')
       end if
 
       if (config_filter_btr_mode.and. &
           config_vert_coord_movement.ne.'fixed')then
-         write (stderrUnit,*) 'filter_btr_mode has only been tested with'// &
-            ' config_vert_coord_movement=fixed.'
-         call mpas_dmpar_global_abort('ERROR: filter_btr_mode has only been tested with config_vert_coord_movement=fixed.')
+         call mpas_log_write('ERROR: filter_btr_mode has only been tested with config_vert_coord_movement=fixed.')
       endif
 
       ! find the maximum value of the meshDensity
@@ -268,7 +266,7 @@ module ocn_forward_mode
       do while (associated(block))
          call ocn_init_routines_block(block, dt, ierr)
          if(ierr.eq.1) then
-             call mpas_dmpar_global_abort('ERROR: An error was encountered in ocn_init_routines_block')
+             call mpas_log_write('ERROR: An error was encountered in ocn_init_routines_block')
          endif
 
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
@@ -337,14 +335,14 @@ module ocn_forward_mode
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
             if(startTime + runduration /= stopTime) then
-               write(stderrUnit,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               call mpas_log_write('Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.')
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)
       else
-          write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
+          call mpas_log_write('Error: Neither config_run_duration nor config_stop_time were specified.')
           ierr = 1
       end if
 
@@ -395,7 +393,7 @@ module ocn_forward_mode
 
       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-      write(stderrUnit,*) 'Initial time ', trim(timeStamp)
+      call mpas_log_write('Initial time ' // trim(timeStamp))
 
       call ocn_analysis_compute_startup(domain, err)
 
@@ -428,7 +426,7 @@ module ocn_forward_mode
 
          currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
+         call mpas_log_write('Doing timestep ' // trim(timeStamp))
 
          block_ptr => domain % blocklist
          do while(associated(block_ptr))
