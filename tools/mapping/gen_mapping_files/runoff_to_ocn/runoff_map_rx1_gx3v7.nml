@@ -5,7 +5,7 @@
    file_ocn_global_mask  = '/glade/p/cesm/cseg/mapping/grids/gx3v7_120309.nc'
    file_nn      = 'maps/map_rx1_to_gx3v7_ac_nearestdtos_170322.nc '
    file_smooth  = 'maps/map_gx3v7_ac_to_gx3v7_smooth_170322.nc '
-   file_new     = 'maps/map_rx1_to_gx3v7_e1000r500_170322.nc'
+   file_new     = 'maps/map_rx1_to_gx3v7_nnsm_e1000r500_170322.nc'
    title        = 'runoff map: rx1 -> gx3v7, smoothed '
    eFold        = 1000000.0
    rMax         =  500000.0
