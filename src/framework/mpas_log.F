@@ -1010,7 +1010,9 @@ end module mpas_log
 !> \date    24 February 2017
 !> \details
 !>  This routine writes a message to the log file, and is intended to be
-!>  called from C code.
+!>  called from C code. At present, the expansion of variables is not supported
+!>  in strings written via this routine, and all '$' characters in strings
+!>  will be transferred verbatim to the log file.
 !>
 !>  This routine should be declared in C code with:
 !>      void mpas_log_write_c(const char *message_c, const char *messageType_c);
@@ -1028,7 +1030,7 @@ subroutine mpas_log_write_c(message_c, messageType_c) bind(c)
 
    use mpas_c_interfacing, only : mpas_c_to_f_string
    use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-   use mpas_log, only : mpas_log_write
+   use mpas_log, only : mpas_log_write, mpas_log_escape_dollars
    use mpas_kind_types, only : StrKIND
    use mpas_derived_types, only : MPAS_LOG_OUT, MPAS_LOG_WARN, MPAS_LOG_ERR, MPAS_LOG_CRIT
 
@@ -1064,6 +1066,6 @@ subroutine mpas_log_write_c(message_c, messageType_c) bind(c)
          messageType = MPAS_LOG_OUT
    end select
 
-   call mpas_log_write(message, messageType=messageType)
+   call mpas_log_write(mpas_log_escape_dollars(message), messageType=messageType)
 
 end subroutine mpas_log_write_c
