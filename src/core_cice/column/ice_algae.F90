@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_algae.F90 1175 2017-03-02 19:53:26Z akt $
+!  SVN:$Id: ice_algae.F90 1183 2017-03-16 19:50:34Z njeffery $
 !=======================================================================
 !
 ! Compute sea ice biogeochemistry (vertical or skeletal layer)
@@ -1384,18 +1384,18 @@
             endif
             trcrn(bio_index(m)+k-1) = max(c0, bio_tmp)
             if (ocean_bio(m) .le. c0 .and. flux_bio(m) < c0) then
-                if (flux_bio(m) < -1.0e-12_dbl_kind) then
-                  write(warning, *) 'no ocean_bio but flux_bio < c0'
-                  call add_warning(warning)
-                  write(warning, *) 'm,ocean_bio(m),flux_bio(m)'
-                  call add_warning(warning)
-                  write(warning, *) m,ocean_bio(m),flux_bio(m)
-                  call add_warning(warning)
-                  write(warning, *) 'setting flux_bio(m) = c0'
-                  call add_warning(warning)
-                !  l_stop = .true.
-                !  stop_label = 'flux_bio < 0 when ocean_bio = 0'
-                endif
+           !     if (flux_bio(m) < -1.0e-12_dbl_kind) then
+           !       write(warning, *) 'no ocean_bio but flux_bio < c0'
+           !       call add_warning(warning)
+           !       write(warning, *) 'm,ocean_bio(m),flux_bio(m)'
+           !       call add_warning(warning)
+           !       write(warning, *) m,ocean_bio(m),flux_bio(m)
+           !       call add_warning(warning)
+           !       write(warning, *) 'setting flux_bio(m) = c0'
+           !       call add_warning(warning)
+           !       l_stop = .true.
+           !       stop_label = 'flux_bio < 0 when ocean_bio = 0'
+           !     endif
                 flux_bio(m) = max(c0,flux_bio(m))
             endif
          enddo        ! k
