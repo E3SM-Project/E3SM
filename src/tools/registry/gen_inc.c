@@ -590,7 +590,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 		// Start defining new subroutine for namelist record.
 		fortprintf(fd, "   subroutine %s_setup_nmlrec_%s(configPool, unitNumber, dminfo)\n", core_string, nmlrecname);
-		fortprintf(fd, "      use mpas_log, only : mpas_log_write\n");
+		fortprintf(fd, "      use mpas_log, only : mpas_log_write, mpas_log_escape_dollars\n");
 		fortprintf(fd, "      implicit none\n");
 		fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 		fortprintf(fd, "      integer, intent(in) :: unitNumber\n");
@@ -678,7 +678,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 			nmlopttype = ezxml_attr(nmlopt_xml, "type");
 
 			if (strncmp(nmlopttype, "character", 1024) == 0) {
-				fortprintf(fd, "            call mpas_log_write('        %s = '//trim(%s))\n", nmloptname, nmloptname);
+				fortprintf(fd, "            call mpas_log_write('        %s = '//mpas_log_escape_dollars(%s))\n", nmloptname, nmloptname);
 			}
 			else if (strncmp(nmlopttype, "integer", 1024) == 0) {
 				fortprintf(fd, "            call mpas_log_write('        %s = $i', intArgs=(/%s/))\n", nmloptname, nmloptname);
