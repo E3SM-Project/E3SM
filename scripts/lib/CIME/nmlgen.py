@@ -211,7 +211,8 @@ class NamelistGenerator(object):
         """
         var_group = self._definition.get_group(name)
         literals = self._to_namelist_literals(name, value)
-        self._namelist.set_variable_value(var_group, name, literals)
+        _, _, var_size, = self._definition.split_type_string(name)
+        self._namelist.set_variable_value(var_group, name, literals, var_size)
 
     def get_default(self, name, config=None, allow_none=False):
         """Get the value of a variable from the namelist definition file.
@@ -550,7 +551,8 @@ class NamelistGenerator(object):
 
         # Go through file names and prepend input data root directory for
         # absolute pathnames.
-        if ignore_abs_path is None:
+        var_type, _, var_size = self._definition.split_type_string(name)
+        if var_type == "char" and ignore_abs_path is None:
             var_input_pathname = self._definition.get_input_pathname(name)
             if var_input_pathname == 'abs':
                 current_literals = expand_literal_list(current_literals)
@@ -570,7 +572,7 @@ class NamelistGenerator(object):
                 current_literals = compress_literal_list(current_literals)
 
         # Set the new value.
-        self._namelist.set_variable_value(group, name, current_literals)
+        self._namelist.set_variable_value(group, name, current_literals, var_size)
 
     def create_shr_strdata_nml(self):
         """Set defaults for `shr_strdata_nml` variables other than the variable domainfile """

@@ -14,7 +14,7 @@ import re
 
 from CIME.namelist import fortran_namelist_base_value, \
     is_valid_fortran_namelist_literal, character_literal_to_string, \
-    expand_literal_list, Namelist, get_variable_name
+    expand_literal_list, Namelist, get_fortran_name_only
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.entry_id import EntryID
@@ -342,21 +342,22 @@ class NamelistDefinition(EntryID):
         for group_name in namelist.get_group_names():
             for variable_name in namelist.get_variable_names(group_name):
                 # Check that the variable is defined...
-                self._expect_variable_in_definition(variable_name, variable_template)
+                qualified_variable_name = get_fortran_name_only(variable_name)
+                self._expect_variable_in_definition(qualified_variable_name, variable_template)
 
                 # Check if can actuax1lly change this variable via filename change
                 if filename is not None:
-                    self._user_modifiable_in_variable_definition(variable_name)
+                    self._user_modifiable_in_variable_definition(qualified_variable_name)
 
                 # and has the right group name...
-                var_group = self.get_group(variable_name)
+                var_group = self.get_group(qualified_variable_name)
                 expect(var_group == group_name,
                        (variable_template + " is in a group named %r, but should be in %r.") %
                        (str(variable_name), str(group_name), str(var_group)))
 
                 # and has a valid value.
                 value = namelist.get_variable_value(group_name, variable_name)
-                expect(self.is_valid_value(variable_name, value),
+                expect(self.is_valid_value(qualified_variable_name, value),
                        (variable_template + " has invalid value %r.") %
                        (str(variable_name), [str(scalar) for scalar in value]))
 
@@ -379,8 +380,9 @@ class NamelistDefinition(EntryID):
         groups = {}
         for variable_name in dict_:
             variable_lc = variable_name.lower()
-            self._expect_variable_in_definition(get_variable_name(variable_lc), variable_template)
-            group_name = self.get_group(variable_lc)
+            qualified_varname = get_fortran_name_only(variable_lc)
+            self._expect_variable_in_definition(qualified_varname, variable_template)
+            group_name = self.get_group(qualified_varname)
             expect (group_name is not None, "No group found for var %s"%variable_lc)
             if group_name not in groups:
                 groups[group_name] = {}

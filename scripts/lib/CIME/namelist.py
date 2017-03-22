@@ -112,7 +112,21 @@ logger = logging.getLogger(__name__)
 
 # Fortran syntax regular expressions.
 # Variable names.
-FORTRAN_NAME_REGEX = re.compile(r"(^[a-z][a-z0-9_]{0,62})(\([+-]?\d*:?[+-]?\d*:?[+-]?\d*\))?$", re.IGNORECASE)
+#FORTRAN_NAME_REGEX = re.compile(r"(^[a-z][a-z0-9_]{0,62})(\([+-]?\d*:?[+-]?\d*:?[+-]?\d*\))?$", re.IGNORECASE)
+FORTRAN_NAME_REGEX = re.compile(r"""(^[a-z][a-z0-9_]{0,62})                             #  The variable name
+                                  (\(                                                   # begin optional index expression
+                                  (([+-]?\d+)                                           # Single valued index
+                                  |                                                     # or
+                                  (([+-]?\d+)?:([+-]?\d+)?:?([+-]?\d+)?))               # colon seperated triplet
+                                  \))?\s*$"""                                           # end optional index expression
+                                , re.IGNORECASE | re.VERBOSE)
+
+
+
+
+
+
+
 FORTRAN_LITERAL_REGEXES = {}
 # Integer literals.
 _int_re_string = r"(\+|-)?[0-9]+"
@@ -183,10 +197,53 @@ def is_valid_fortran_name(string):
     """
     return FORTRAN_NAME_REGEX.search(string) is not None
 
-def get_variable_name(full_var):
-    """ Return the variable name with all array syntax info removed """
+def get_fortran_name_only(full_var):
+    """ remove array section if any and return only the variable name
+    >>> get_fortran_name_only('foo')
+    'foo'
+    >>> get_fortran_name_only('foo(3)')
+    'foo'
+    >>> get_fortran_name_only('foo(::)')
+    'foo'
+    >>> get_fortran_name_only('foo(1::)')
+    'foo'
+    >>> get_fortran_name_only('foo(:+2:)')
+    'foo'
+    >>> get_fortran_name_only('foo(::-3)')
+    'foo'
+    >>> get_fortran_name_only('foo(::)')
+    'foo'
+    """
     m = FORTRAN_NAME_REGEX.search(full_var)
     return m.group(1)
+
+def get_fortran_variable_indices(varname, varlen=1):
+    """ get indices from a fortran namelist variable as a triplet of minindex, maxindex and step
+
+    >>> get_fortran_variable_indices('foo(3)')
+    (3, 3, 1)
+    >>> get_fortran_variable_indices('foo(1:2:3)')
+    (1, 2, 3)
+    >>> get_fortran_variable_indices('foo(::)', varlen=4)
+    (1, 4, 1)
+    """
+    m = FORTRAN_NAME_REGEX.search(varname)
+    (minindex, maxindex, step) = (1, varlen, 1)
+
+    if m.group(4) is not None:
+        minindex = int(m.group(4))
+        maxindex = minindex
+        step = 1
+
+    elif m.group(5) is not None:
+        if m.group(6) is not None:
+            minindex = int(m.group(6))
+        if m.group(7) is not None:
+            maxindex = int(m.group(7))
+        if m.group(8) is not None:
+            step = int(m.group(8))
+
+    return (minindex, maxindex, step)
 
 def fortran_namelist_base_value(string):
     r"""Strip off whitespace and repetition syntax from a namelist value.
@@ -718,6 +775,7 @@ def merge_literal_lists(default, overwrite):
     merged = []
     default = expand_literal_list(default)
     overwrite = expand_literal_list(overwrite)
+
     for default_elem, elem in zip(default, overwrite):
         if elem == '':
             merged.append(default_elem)
@@ -840,34 +898,34 @@ class Namelist(object):
         """
         return self._groups.keys()
 
-    def get_variable_qualified_names(self, group_name):
-        """Return a list of all variables in the given namelist group.
+    # def get_variable_qualified_names(self, group_name):
+    #     """Return a list of all variables in the given namelist group.
 
-        If the specified group is not in the namelist, returns an empty list.
+    #     If the specified group is not in the namelist, returns an empty list.
 
-        >>> Namelist().get_variable_names('foo')
-        []
-        >>> x = parse(text='&foo bar=,bazz=true,bazz(2)=fred,bang=6*""/')
-        >>> sorted(x.get_variable_names('fOo'))
-        [u'bang', u'bar', u'bazz']
-        >>> x = parse(text='&foo bar=,bazz=true,bang=6*""/')
-        >>> sorted(x.get_variable_names('fOo'))
-        [u'bang', u'bar', u'bazz']
-        >>> x = parse(text='&foo bar(::)=,bazz=false,bazz(2)=true,bazz(:2:)=6*""/')
-        >>> sorted(x.get_variable_names('fOo'))
-        [u'bar', u'bazz']
-        """
-        group_name = group_name.lower()
-        if group_name not in self._groups:
-            return []
-        var_full_names = self._groups[group_name].keys()
-        varnames = []
-        for var in var_full_names:
-            varname = get_variable_name(var)
-            if varname not in varnames:
-                varnames.append(varname)
+    #     >>> Namelist().get_variable_names('foo')
+    #     []
+    #     >>> x = parse(text='&foo bar=,bazz=true,bazz(2)=fred,bang=6*""/')
+    #     >>> sorted(x.get_variable_names('fOo'))
+    #     [u'bang', u'bar', u'bazz']
+    #     >>> x = parse(text='&foo bar=,bazz=true,bang=6*""/')
+    #     >>> sorted(x.get_variable_names('fOo'))
+    #     [u'bang', u'bar', u'bazz']
+    #     >>> x = parse(text='&foo bar(::)=,bazz=false,bazz(2)=true,bazz(:2:)=6*""/')
+    #     >>> sorted(x.get_variable_names('fOo'))
+    #     [u'bar', u'bazz']
+    #     """
+    #     group_name = group_name.lower()
+    #     if group_name not in self._groups:
+    #         return []
+    #     var_full_names = self._groups[group_name].keys()
+    #     varnames = []
+    #     for var in var_full_names:
+    #         varname = get_variable_name(var)
+    #         if varname not in varnames:
+    #             varnames.append(varname)
 
-        return varnames
+    #     return varnames
 
     def get_variable_names(self, group_name):
         """Return a list of all variables in the given namelist group.
@@ -878,13 +936,13 @@ class Namelist(object):
         []
         >>> x = parse(text='&foo bar=,bazz=true,bazz(2)=fred,bang=6*""/')
         >>> sorted(x.get_variable_names('fOo'))
-        [u'bang', u'bar', u'bazz']
+        [u'bang', u'bar', u'bazz', u'bazz(2)']
         >>> x = parse(text='&foo bar=,bazz=true,bang=6*""/')
         >>> sorted(x.get_variable_names('fOo'))
         [u'bang', u'bar', u'bazz']
         >>> x = parse(text='&foo bar(::)=,bazz=false,bazz(2)=true,bazz(:2:)=6*""/')
         >>> sorted(x.get_variable_names('fOo'))
-        [u'bar', u'bazz']
+        [u'bar(::)', u'bazz', u'bazz(2)', u'bazz(:2:)']
         """
         group_name = group_name.lower()
         if group_name not in self._groups:
@@ -942,26 +1000,53 @@ class Namelist(object):
         else:
             return [u'']
 
-    def set_variable_value(self, group_name, variable_name, value):
+    def set_variable_value(self, group_name, variable_name, value, var_size=1):
         """Set the value of the specified variable.
 
         >>> x = parse(text='&foo bar=1 /')
+        >>> x.get_variable_value('foo', 'bar')
+        [u'1']
+        >>> x.set_variable_value('foo', 'bar(2)', [u'3'], var_size=4)
+        >>> x.get_variable_value('foo', 'bar')
+        [u'1', u'3']
         >>> x.set_variable_value('foo', 'bar', [u'2'])
+        >>> x.get_variable_value('foo', 'bar')
+        [u'2', u'3']
         >>> x.set_variable_value('foo', 'bazz', [u'3'])
         >>> x.set_variable_value('Brack', 'baR', [u'4'])
-        >>> x.get_variable_value('foo', 'bar')
-        [u'2']
         >>> x.get_variable_value('foo', 'bazz')
         [u'3']
         >>> x.get_variable_value('brack', 'bar')
         [u'4']
         """
         group_name = group_name.lower()
-        variable_name = variable_name.lower()
+
+#        print "BEFORE name %s value %s"%(variable_name, value)
+        minindex, maxindex, step = get_fortran_variable_indices(variable_name, var_size)
+        variable_name = get_fortran_name_only(variable_name.lower())
+
+        expect(minindex > 0, "CIME indices < 1 not supported in CIME interface to fortran namelists minindex=%s"%minindex)
 
         if group_name not in self._groups:
             self._groups[group_name] = {}
-        self._groups[group_name][variable_name] = value
+        tlen = 1
+        if variable_name in self._groups[group_name]:
+            tlen = len(self._groups[group_name][variable_name])
+        else:
+            tlen = 0
+            self._groups[group_name][variable_name] = []
+
+        if minindex > tlen:
+            self._groups[group_name][variable_name].extend(['']*(minindex-tlen-1))
+
+        for i in range(minindex-1, maxindex, step):
+            if i < tlen:
+                self._groups[group_name][variable_name][i] = value.pop(0)
+            else:
+                self._groups[group_name][variable_name].append(value.pop(0))
+            if len(value) == 0:
+                break
+
 
     def delete_variable(self, group_name, variable_name):
         """Delete a variable from a specified group.
@@ -992,6 +1077,8 @@ class Namelist(object):
 
         >>> x = parse(text='&foo bar=1 bazz=,2 brat=3/')
         >>> y = parse(text='&foo bar=2 bazz=3*1 baker=4 / &foo2 barter=5 /')
+        >>> y.get_value('bazz')
+        [u'1', u'1', u'1']
         >>> x.merge_nl(y)
         >>> sorted(x.get_group_names())
         [u'foo', u'foo2']
@@ -1009,7 +1096,6 @@ class Namelist(object):
         [u'4']
         >>> x.get_value('barter')
         [u'5']
-
         >>> x = parse(text='&foo bar=1 bazz=,2 brat=3/')
         >>> y = parse(text='&foo bar=2 bazz=3*1 baker=4 / &foo2 barter=5 /')
         >>> x.merge_nl(y, overwrite=True)
@@ -1040,7 +1126,8 @@ class Namelist(object):
                     merged_val = merge_literal_lists(self_val, other_val)
                 else:
                     merged_val = merge_literal_lists(other_val, self_val)
-                self.set_variable_value(group_name, variable_name, merged_val)
+                self.set_variable_value(group_name, variable_name, merged_val,
+                                        var_size=len(merged_val))
 
     def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True):
         """Write a Fortran namelist to a file.
@@ -1183,7 +1270,6 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         # Fortran allows setting a particular index of an array
         # such as foo(2)='k'
         # this dict is set to that value if used.
-        self._nameindex = {}
         self._groupless = groupless
 
     def _line_col_string(self):
@@ -1450,6 +1536,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         u'abc'
         >>> _NamelistParser('abc\n')._parse_variable_name()
         u'abc'
+        >>> _NamelistParser('abc%fred\n')._parse_variable_name()
+        u'abc%fred'
+        >>> _NamelistParser('abc(2)@fred\n')._parse_variable_name()
+        u'abc(2)@fred'
         >>> _NamelistParser('abc(1:2:3)\n')._parse_variable_name()
         u'abc(1:2:3)'
         >>> _NamelistParser('abc=')._parse_variable_name()
@@ -1477,11 +1567,13 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             text_check = re.sub('@.+$', "", text)
         else:
             text_check = text
+
         if not is_valid_fortran_name(text_check):
             raise _NamelistParseError("%r is not a valid variable name at %s" %
                                       (str(text), self._line_col_string()))
+        name = text.lower()
 
-        return text.lower()
+        return name
 
     def _parse_character_literal(self):
         """Parse and return a character literal (a string).
