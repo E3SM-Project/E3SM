@@ -30,7 +30,7 @@ module ocn_analysis_mode
    use mpas_timer
    use mpas_log
    use mpas_decomp
-   use mpas_abort, only : mpas_dmpar_global_abort
+   use mpas_log
 
    use ocn_analysis_driver
    use ocn_init_routines
@@ -121,7 +121,7 @@ module ocn_analysis_mode
 
          call ocn_init_routines_block(block, dt, ierr)
          if(ierr.eq.1) then
-             call mpas_dmpar_global_abort('ERROR: An error was encountered in ocn_init_routines_block')
+             call mpas_log_write('ERROR: An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
          endif
 
          xtime = startTimeStamp
@@ -225,7 +225,7 @@ module ocn_analysis_mode
 
       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-      write(stderrUnit,*) 'Initial time ', trim(timeStamp)
+      call mpas_log_write('Initial time ' // trim(timeStamp))
 
       ! fill in diagnostics variables
       call mpas_timer_start("diagnostic solve")

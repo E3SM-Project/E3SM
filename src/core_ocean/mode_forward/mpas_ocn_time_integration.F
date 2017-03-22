@@ -122,8 +122,7 @@ module ocn_time_integration
         nanCheck = sum(normalVelocity)
 
         if (nanCheck /= nanCheck) then
-           write(stderrUnit,*) 'Abort: NaN detected'
-           call mpas_dmpar_abort(dminfo)
+           call mpas_log_write('Abort: NaN detected', MPAS_LOG_CRIT)
         endif
 
         block => block % next
@@ -151,8 +150,8 @@ module ocn_time_integration
           splitOn = .true.
       else
           err = 1
-          write (stderrUnit,*) 'Incorrect choice for config_time_integrator:', trim(config_time_integrator)
-          write (stderrUnit,*) '   choices are: RK4, split_explicit, unsplit_explicit'
+          call mpas_log_write('Incorrect choice for config_time_integrator:' // trim(config_time_integrator) // &
+             '   choices are: RK4, split_explicit, unsplit_explicit', MPAS_LOG_CRIT)
       endif
 
 
