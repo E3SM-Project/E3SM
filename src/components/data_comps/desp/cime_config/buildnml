@@ -122,7 +122,6 @@ def buildnml(case, caseroot, compname):
     # Loop over instances
     #----------------------------------------------------
     for inst_counter in range(1, ninst+1):
-        nmlgen.new_instance()
         # determine instance string
         inst_string = ""
         if ninst > 1:

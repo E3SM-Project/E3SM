@@ -96,6 +96,9 @@ class NamelistGenerator(object):
     def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
         """Return array of names of all definition nodes
         """
+        # first clean out any settings left over from previous calls
+        self.new_instance()
+
         self._definition.set_nodes(skip_groups=skip_groups)
 
         # Determine the array of entry nodes that will be acted upon
@@ -561,7 +564,7 @@ class NamelistGenerator(object):
                         continue
                     file_path = character_literal_to_string(literal)
                     # NOTE - these are hard-coded here and a better way is to make these extensible
-                    if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'unknown_gridcpl_file':
+                    if file_path == 'UNSET' or file_path == 'idmap':
                         continue
                     if file_path == 'null':
                         continue
