@@ -98,11 +98,12 @@ def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
 #    return lhflx
 
 def qflx_convert_units (var):
-    print "testtest"
-    print '%%%%%%%%%%%%%%%%%%%%%%%%%'
-    var = _convert_units( var, 'kg m-2 s-1)' )
-    var = var *3600.0*24  #convert to mm/day
-    var.units = 'mm/day'
+    print var.units
+    if var.units == 'kg/m2/s':
+    #need to find a solution for units not included in udunits
+    #var = _convert_units( var, 'kg/m2/s' )
+        var = var *3600.0*24  #convert to mm/day
+        var.units = 'mm/day'
     return var
 
 
@@ -151,7 +152,8 @@ derived_variables = {
         (['FLDS'], rename)
     ],
     'FLDSC': [
-        (['FLDSC'], rename)
+        (['FLDSC'], rename),
+        (['TS','FLNSC'], lambda ts, flnsc: 5.67e-8*ts**4-flnsc)
     ],
     'FSNS': [
         (['FSNS'], rename)
