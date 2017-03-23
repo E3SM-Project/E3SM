@@ -46,6 +46,10 @@ optional arguments:
                         for each machine, use the utility manage_case in this
                         directory. The default is the first listing in MPILIBS
                         in config_machines.xml
+  --clean               Remove old Macros and env files before attempting to
+                        create new ones
+
+
 
 It will create a Macros file in make or cmake format along with the module support
 for the specified or default compiler.   It will also create two files
