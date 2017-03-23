@@ -561,7 +561,7 @@ class NamelistGenerator(object):
                         continue
                     file_path = character_literal_to_string(literal)
                     # NOTE - these are hard-coded here and a better way is to make these extensible
-                    if file_path == 'UNSET' or file_path == 'idmap':
+                    if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'unknown_gridcpl_file':
                         continue
                     if file_path == 'null':
                         continue
