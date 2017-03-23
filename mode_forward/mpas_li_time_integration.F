@@ -24,9 +24,8 @@ module li_time_integration
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
-   use mpas_dmpar
    use mpas_timekeeping
-   use mpas_io_units
+   use mpas_log
 
    use li_time_integration_fe
    use li_setup
@@ -167,16 +166,15 @@ module li_time_integration
       ! ===
       ! === Perform timestep
       ! ===
-      !write(stdoutUnit,*) 'Using ', trim(config_time_integration), ' time integration.'
+      !call mpas_log_write('Using ' // trim(config_time_integration) // ' time integration.')
       select case (config_time_integration)
       case ('forward_euler')
          call li_time_integrator_forwardeuler(domain, err_tmp)
       case ('rk4')
-         write(stderrUnit,*) trim(config_time_integration), ' is not currently supported.'
-         call mpas_dmpar_abort(domain % dminfo)
+         call mpas_log_write(trim(config_time_integration) // ' is not currently supported.', MPAS_LOG_ERR)
          err_tmp = 1
       case default
-         write(stderrUnit,*) trim(config_time_integration), ' is not a valid land ice time integration option.'
+         call mpas_log_write(trim(config_time_integration) // ' is not a valid land ice time integration option.', MPAS_LOG_ERR)
          err_tmp = 1
       end select
       err = ior(err,err_tmp)
@@ -207,8 +205,7 @@ module li_time_integration
       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
       err = ior(err, err_tmp)
-      write(stderrUnit,*) '  Completed timestep.  New time is: ', trim(timeStamp)
-      write(stdoutUnit,*) '  Completed timestep.  New time is: ', trim(timeStamp)
+      call mpas_log_write('  Completed timestep.  New time is: ' // trim(timeStamp), flushNow=.true.)
 
 
       block => domain % blocklist
@@ -230,7 +227,7 @@ module li_time_integration
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_timestep."
+          call mpas_log_write("An error has occurred in li_timestep.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------

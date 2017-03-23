@@ -27,7 +27,7 @@ module li_time_integration_fe
    use mpas_dmpar
    use mpas_timer
    use mpas_vector_reconstruction
-   use mpas_io_units
+   use mpas_log
 
    use li_advection
    use li_calving, only: li_calve_ice, li_restore_calving_front
@@ -172,7 +172,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err == 1) then
-          write (stderrUnit,*) "An error has occurred in li_time_integrator_forwardeuler."
+          call mpas_log_write("An error has occurred in li_time_integrator_forwardeuler.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -358,8 +358,8 @@ module li_time_integration_fe
       err = ior(err,err_tmp)
 
       if (config_print_thickness_advection_info) then
-         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on advective CFL is (Days_hhh:mmm:sss):   ' &
-            // trim(allowableAdvecDtOnProcString)
+         call mpas_log_write('  Maximum allowable time step on THIS processor based on advective CFL is (Days_hhh:mmm:sss):   ' &
+            // trim(allowableAdvecDtOnProcString))
       endif
 
 
@@ -373,8 +373,8 @@ module li_time_integration_fe
       err = ior(err,err_tmp)
 
       if (config_print_thickness_advection_info) then
-         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on diffusive CFL is (Days_hhh:mmm:sss):   ' &
-            // trim(allowableDiffDtOnProcString)
+         call mpas_log_write('  Maximum allowable time step on THIS processor based on diffusive CFL is (Days_hhh:mmm:sss):   ' &
+            // trim(allowableDiffDtOnProcString))
       endif
 
 
@@ -428,11 +428,13 @@ module li_time_integration_fe
 
       ! Write messages if they are turned on
       if (config_print_thickness_advection_info) then
-          write(stdoutUnit,*) '  Maximum allowable time step for all processors based on advective CFL is (Days_hhh:mmm:sss): ' &
-             // trim(allowableAdvecDtAllProcsString) // '  Time step is limited by processor number ', allowableAdvecDtProcNumber
+          call mpas_log_write('  Maximum allowable time step for all processors based on advective CFL is (Days_hhh:mmm:sss): ' &
+             // trim(allowableAdvecDtAllProcsString) // '  Time step is limited by processor number $i', &
+             intArgs=(/allowableAdvecDtProcNumber/))
           if (config_adaptive_timestep_include_DCFL) then
-             write(stdoutUnit,*) '  Maximum allowable time step for all processors based on diffusive CFL is (Days_hhh:mmm:sss): '&
-                // trim(allowableDiffDtAllProcsString) // '  Time step is limited by processor number ', allowableDiffDtProcNumber
+             call mpas_log_write('  Maximum allowable time step for all processors based on diffusive CFL is (Days_hhh:mmm:sss): '&
+                // trim(allowableDiffDtAllProcsString) // '  Time step is limited by processor number $i', &
+                intArgs=(/allowableDiffDtProcNumber/))
           endif
       endif
 
@@ -456,19 +458,19 @@ module li_time_integration_fe
 
       ! Check for CFL error before finishing
       if (dtSeconds > allowableAdvecDtOnProc) then
-         write(stderrUnit,*) 'ERROR: Advective CFL violation on this processor.  ', &
-            'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString)
+         call mpas_log_write('Advective CFL violation on this processor.  ' // &
+          'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString), MPAS_LOG_ERR)
          err = ior(err,1)
       endif
 
       ! Local diffusive CFL info
       if ( (config_adaptive_timestep_include_DCFL) .and. (dtSeconds > allowableDiffDtOnProc) ) then
-         write(stderrUnit,*) 'WARNING: Diffusive CFL violation on this processor.  ', &
-            'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString)
+         call mpas_log_write('Diffusive CFL violation on this processor.  ' // &
+            'Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString), MPAS_LOG_WARN)
       endif
 
       if (err > 0) then
-           write(stderrUnit,*) 'Error in calculating thickness advection  (possibly CFL violation)'
+           call mpas_log_write('Error in calculating thickness advection  (possibly CFL violation)', MPAS_LOG_ERR)
       endif
 
 
@@ -492,7 +494,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in prepare_advection."
+          call mpas_log_write("An error has occurred in prepare_advection.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -602,7 +604,7 @@ module li_time_integration_fe
             ! Note: This subroutine requires that thickness and tracers are correct in halos
 
             if (config_print_thickness_advection_info) then
-               write(stdoutUnit,*) 'Advect thickness and tracers, dt =', deltat
+               call mpas_log_write('Advect thickness and tracers, dt=$r', realArgs=(/deltat/))
             endif
 
             call li_advection_thickness_tracers(&
@@ -620,7 +622,7 @@ module li_time_integration_fe
          elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none') then
 
             if (config_print_thickness_advection_info) then
-               write(stdoutUnit,*) 'Advect thickness (but not tracers), dt =', deltat
+               call mpas_log_write('Advect thickness (but not tracers), dt=$r', realArgs=(/deltat/))
             endif
 
             call li_advection_thickness_tracers(&
@@ -663,7 +665,7 @@ module li_time_integration_fe
          if (config_print_thickness_advection_info) then
 
             if (sum(masktmp) > 0) then
-               write(stdoutUnit,*) '  Cells with negative thickness (set to 0):', sum(masktmp)
+               call mpas_log_write('  Cells with negative thickness (set to 0): $i', intArgs=(/sum(masktmp)/))
             endif
 
             ! Count how many cells have ice.
@@ -671,7 +673,7 @@ module li_time_integration_fe
             where (thickness > 0.0_RKIND)
                masktmp = 1
             end where
-            write(stdoutUnit,*) '  Cells with nonzero thickness:', sum(masktmp)
+            call mpas_log_write('  Cells with nonzero thickness: $i', intArgs=(/sum(masktmp)/))
 
          endif
 
@@ -692,7 +694,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in advection_solver."
+          call mpas_log_write("An error has occurred in advection_solver.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -780,9 +782,9 @@ module li_time_integration_fe
       !print *, proposedDt, secondsToNextForceTime
       dtSeconds = min(proposedDt, secondsToNextForceTime)
 
-      write(stdOutUnit,*) '  Setting time step (days) to:', dtSeconds / (86400.0_RKIND)
+      call mpas_log_write('  Setting time step (days) to: $r', realArgs=(/dtSeconds / (86400.0_RKIND)/))
       if (dtSeconds < config_min_adaptive_timestep) then
-         write(stdErrUnit,*) 'ERROR: New deltat is less than config_min_adaptive_timestep.'
+         call mpas_log_write('New deltat is less than config_min_adaptive_timestep.', MPAS_LOG_ERR)
          err = 1
       endif
 
