@@ -1018,6 +1018,9 @@ class Namelist(object):
         [u'3']
         >>> x.get_variable_value('brack', 'bar')
         [u'4']
+        >>> x.set_variable_value('foo', 'red(2:6:2)', [u'2', u'4', u'6'], var_size=12)
+        >>> x.get_variable_value('foo', 'red')
+        ['', u'2', '', u'4', '', u'6']
         """
         group_name = group_name.lower()
 
@@ -1033,8 +1036,8 @@ class Namelist(object):
         if variable_name in self._groups[group_name]:
             tlen = len(self._groups[group_name][variable_name])
         else:
-            tlen = 0
-            self._groups[group_name][variable_name] = []
+            tlen = 1
+            self._groups[group_name][variable_name] = ['']
 
         if minindex > tlen:
             self._groups[group_name][variable_name].extend(['']*(minindex-tlen-1))
@@ -1043,7 +1046,10 @@ class Namelist(object):
             if i < tlen:
                 self._groups[group_name][variable_name][i] = value.pop(0)
             else:
+                if tlen < i:
+                    self._groups[group_name][variable_name].extend(['']*(i-tlen))
                 self._groups[group_name][variable_name].append(value.pop(0))
+            tlen = len(self._groups[group_name][variable_name])
             if len(value) == 0:
                 break
 
