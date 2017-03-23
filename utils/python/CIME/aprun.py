@@ -18,19 +18,19 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
     """
     No one really understands this code, but we can at least test it.
 
-    >>> ntasks = []
-    >>> nthreads = []
-    >>> rootpes = []
-    >>> pstrids = []
-    >>> max_tasks_per_node = 1
-    >>> pes_per_node = 1
-    >>> pio_num_tasks = 1
-    >>> pio_async_interface = True
+    >>> ntasks = [512, 675, 168, 512, 128, 168, 168, 512, 1]
+    >>> nthreads = [2, 2, 2, 2, 4, 2, 2, 2, 1]
+    >>> rootpes = [0, 0, 512, 0, 680, 512, 512, 0, 0]
+    >>> pstrids = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+    >>> max_tasks_per_node = 16
+    >>> pes_per_node = 16
+    >>> pio_numtasks = -1
+    >>> pio_async_interface = False
     >>> compiler = "pgi"
     >>> machine = "titan"
     >>> run_exe = "acme.exe"
     >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, pes_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
-    ''
+    'aprun -S 4 -n 680 -N 8 -d 2 acme.exe : -S 2 -n 128 -N 4 -d 4 acme.exe '
     """
     max_tasks_per_node = 1 if max_tasks_per_node < 1 else max_tasks_per_node
 
@@ -57,13 +57,13 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
     logger.info("total tasks is: %s" % total_tasks)
 
     # make sure all maxt values at least 1, don't know why we start at index 1
-    for c1 in xrange(1, total_tasks):
+    for c1 in xrange(0, total_tasks):
         if maxt[c1] < 1:
             maxt[c1] = 1
 
     # Compute task and thread settings for batch commands
     tasks_per_node, task_count, thread_count, max_thread_count, aprun = \
-        0, 1, maxt[0], maxt[0], ""
+        0, 1, maxt[0], maxt[0], "aprun"
     for c1 in xrange(1, total_tasks):
         if maxt[c1] != thread_count:
             tasks_per_node = min(pes_per_node, max_tasks_per_node / thread_count)
@@ -74,10 +74,9 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
             task_per_numa = int(math.ceil(tasks_per_node / 2.0))
             # Option for Titan
             if machine == "titan" and tasks_per_node > 1:
+                aprun += " -S %d" % task_per_numa
                 if compiler == "intel":
-                    aprun += " -S %d -cc numa_node " % task_per_numa
-                else:
-                    aprun += " -S %d " % task_per_numa
+                    aprun += " -cc numa_node"
 
             aprun += " -n %d -N %d -d %d %s :" % (task_count, tasks_per_node, thread_count, run_exe)
 
@@ -97,9 +96,11 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
 
     task_per_numa = int(math.ceil(tasks_per_node / 2.0))
 
-    # Special option for Titan or intel compiler
-    if compiler == "intel" or machine == "titan" and tasks_per_node > 1:
-        aprun += " -S %d -cc numa_node " % task_per_numa
+    # Special option for Titan with intel compiler
+    if machine == "titan" and tasks_per_node > 1:
+        aprun += " -S %d" % task_per_numa
+        if compiler == "intel":
+            aprun += " -cc numa_node"
 
     aprun += " -n %d -N %d -d %d %s " % (task_count, tasks_per_node, thread_count, run_exe)
 
