@@ -26,16 +26,18 @@ MODULE smooth_mod
 CONTAINS
 !===============================================================================
 
-SUBROUTINE smooth_init(ofilename, map_in, map_out)
+SUBROUTINE smooth_init(ofilename, dest_in_as_src_out,  map_in, map_out)
 
    use mapread_mod
 
    implicit none
 
    !--- arguments ---
-   character(*)     , intent(in)    :: ofilename    ! name of ocn scrip grid file
-   type(sMatrix),intent( in)        :: map_in   ! original unsmoothed, matrix
-   type(sMatrix),intent(inout)      :: map_out  ! smoothing matrix
+   character(*), intent(in)    :: ofilename           ! name of ocn scrip grid file
+   type(sMatrix),intent(in)    :: map_in              ! original unsmoothed, matrix
+   logical,      intent(in)    :: dest_in_as_src_out  ! map_out%mask_a = pts mapped to
+                                                      !           map_in
+   type(sMatrix),intent(inout) :: map_out             ! smoothing matrix
 
    !--- local ---
    integer :: i,j,n ! indicies: row, col, sparse matrix
@@ -148,21 +150,25 @@ SUBROUTINE smooth_init(ofilename, map_in, map_out)
    map_out%  yc_a = map_in%  yc_b
    map_out%  xv_a = map_in%  xv_b
    map_out%  yv_a = map_in%  yv_b
-!  map_out%mask_a = map_in%mask_b ! all active ocn cells
    map_out%area_a = map_in%area_b
+   map_out%domain_a   = map_in%domain_b
 
-   !--- compute minimal src domain mask for smoothing matrix ---
-   jmd_count = 0
-   map_out%mask_a = 0
-   do n=1,map_in%n_s
-      i = map_in%row(n)     ! this ocn cell could get runoff
-      map_out%mask_a(i) = 1 ! this ocn cell's runoff get's smoothed
-      if(map_in%s(n) > 0.0) then
-        jmd_count = jmd_count+1
-      endif
-   end do
-   write(*,*) subName,'number of source points is =  ',jmd_count
-   write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
+   if (dest_in_as_src_out) then
+      !--- compute minimal src domain mask for smoothing matrix ---
+      jmd_count = 0
+      map_out%mask_a = 0
+      do n=1,map_in%n_s
+         i = map_in%row(n)     ! this ocn cell could get runoff
+         map_out%mask_a(i) = 1 ! this ocn cell's runoff get's smoothed
+         if(map_in%s(n) > 0.0) then
+            jmd_count = jmd_count+1
+         endif
+      end do
+      write(*,*) subName,'number of source points is =  ',jmd_count
+      write(*,*) subName,'map_in%ns                  =  ',map_in%n_s
+   else
+      map_out%mask_a = map_in%mask_b ! all active ocn cells
+   end if
 
    ! destination of map_out must be read in from file
    call mapread_dest_grid(map_out, ofilename)
@@ -181,8 +187,6 @@ SUBROUTINE smooth_init(ofilename, map_in, map_out)
    map_out%method     = "created using SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $"
    map_out%history    = map_in%history
    map_out%convention = map_in%convention
-   map_out%domain_a   = map_in%domain_b
-   map_out%domain_b   = map_in%domain_b
 
 END SUBROUTINE smooth_init
 

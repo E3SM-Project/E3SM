@@ -34,7 +34,7 @@ begin
          (.not. isvar("MAP_OUT_FNAME"))) then
         print((/"ERROR: either run via ../run_merge_mapping_files.sh or use"/))
         print((/"       NCL_N_ARGS=4 and set NCL_ARG_[1-4]"/))
-        exit
+        status_exit(1)
      end if
   else
      MAP_IN_OO_FNAME   = getenv("NCL_ARG_1")
@@ -44,7 +44,16 @@ begin
   end if
 
   map_in_oo_fp      = addfile(MAP_IN_OO_FNAME, "r")
+  if (ismissing(map_in_oo_fp)) then
+    print((/"ERROR: can not find ", MAP_IN_OO_FNAME/))
+    status_exit(1)
+  end if
+
   map_in_ms_fp      = addfile(MAP_IN_MS_FNAME, "r")
+  if (ismissing(map_in_ms_fp)) then
+    print((/"ERROR: can not find ", MAP_IN_MS_FNAME/))
+    status_exit(1)
+  end if
 
   ; ensure grid definitions in MAP_IN_MS_FNAME agrees with grid definitions in MAP_IN_MS_FNAME
   print("comparing grid vars in")

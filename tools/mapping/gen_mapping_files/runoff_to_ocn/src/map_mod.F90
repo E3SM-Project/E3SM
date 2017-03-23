@@ -310,7 +310,6 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
    map%convention = 'NCAR-CCSM'
    map%history    = 'history'
    map%domain_a   = trim(rfilename)
-   map%domain_b   = trim(ofilename)
 
    if (trim(gridtype) == "rtm") then
       !-------------------------------------------------------------------------

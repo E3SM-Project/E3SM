@@ -44,47 +44,52 @@ into the executable.
 
 The namelist looks like this
 
-  &input_nml
-   gridtype              = 'scrip'
-   file_roff             = '/glade/p/cesm/cseg/mapping/grids/wr50a_090614.nc'
-   file_ocn_coastal_mask = '/glade/p/cesm/cseg/mapping/grids/ar9v4_100920.nc'
-   file_ocn_global_mask  = '/glade/p/cesm/cseg/mapping/grids/ar9v4_100920.nc'
-   file_nn               = 'map_wr50a_ar9v4_nn.nc '
-   file_smooth           = 'map_ar9v4_ar9v4_smoother.nc '
-   file_new              = 'map_wr50a_to_ar9v4_e1000r300_130507.nc'
-   title                 = 'runoff map: wr50a -> ar9v4, smoothed '
-   eFold                 = 1000000.0
-   rMax                  =  300000.0
-   step1 = .true.
-   step2 = .false.
-   step3 = .false.
-  /
-
 where
 
+&input_nml
+   gridtype     = 'rtm'
+   file_roff    = '/glade/p/cesm/cseg/inputdata/lnd/clm2/rtmdata/rdirc.05.061026'
+   file_ocn_global_mask  = '/glade/p/cesm/cseg/mapping/grids/gx1v7_151008.nc'
+   file_ocn_coastal_mask = '/glade/p/cesm/cseg/mapping/grids/gx1v7_ac_170322.nc'
+   file_nn      = 'map_r05_to_gx1v7_ac_nearestdtos_170323.nc '
+   file_smooth  = 'map_gx1v7_ac_to_gx1v7_smooth_170323.nc '
+   file_new     = 'map_r05_to_gx1v7_nnsm_e1000r300_170323.nc'
+   title        = 'runoff map: r05 -> gx1v7, nearest neighbor and smoothed '
+   eFold        = 1000000.0
+   rMax         =  300000.0
+   nn_dest_is_smooth_src = .true.
+   step1 = .true.
+   step2 = .true.
+   step3 = .true.
+/
+
 Input grid files:
-  gridtype  =  type of file_roff file, "rtm" or "obs" or "scrip"
-     rtm is a 720 x 360 grid ascii file
-     obs is a netcdf file with xc, yc, xv, yv, mask and area variable names
-     scrip is a scrip type grid file (must contain grid_area along with typical
-       scrip grid variables)
-  file_roff =   an ascii rdirc file OR an obs rtm file OR a scrip grid file
-  file_ocn_coastal_mask  =  a scrip ocean grid file where the mask is only 1
-                            for coastal grid cells
+  gridtype =  type of file_roff file, "rtm" or "obs" or "scrip"
+              * rtm is a 720 x 360 grid ascii file
+              * obs is a netcdf file with xc, yc, xv, yv, mask and area variable names
+              * scrip is a scrip type grid file (must contain grid_area along with
+                typical scrip grid variables)
+  file_roff              =   an ascii rdirc file OR an obs rtm file OR a scrip grid file
   file_ocn_global_mask   =  a scrip ocean grid file where the mask is 1 for
                             all ocean grid cells
+  file_ocn_coastal_mask  =  a scrip ocean grid file where the mask is only 1
+                            for coastal grid cells (if omitted, code will use
+                            file_ocn_global_mask instead)
 NOTE: both file_ocn_* variables must contain grid_area along with typical scrip
       grid variables
 
 Input parameters:
-  eFold  = smoothing eFold distance in meters
-  rMax   = maximum radius of effect in meters
+  eFold = smoothing eFold distance in meters
+  rMax  = maximum radius of effect in meters
 
 Settings:
-  title = ascii string to add to mapping files
-  step1 = computes nearest neighbor map
-  step2 = computes smooth map
-  step3 = multiple two maps together
+  title                 = ascii string to add to mapping files
+  nn_dest_is_smooth_src = option to limit the srouce points for step2 to just
+                          the points that get mapped to in step1; if false,
+                          use all ocean points in file_ocn_coastal_mask instead
+  step1                 = computes nearest neighbor map
+  step2                 = computes smooth map
+  step3                 = multiple two maps together
 
 Output fields:
   file_nn     = nearest neighbor mapping file

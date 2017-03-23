@@ -117,6 +117,7 @@ SUBROUTINE mapread_dest_grid(map, filename)
    end if
 
    map%frac_b = map%mask_b * 1.0_r8
+   map%domain_b = trim(filename)
    rcode = nf_close(fid)
 
 END SUBROUTINE mapread_dest_grid

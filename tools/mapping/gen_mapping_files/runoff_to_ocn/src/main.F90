@@ -41,6 +41,8 @@ PROGRAM main
    character(180) :: file_new                  ! file name: orig matrix, corrected, smoothed, sorted -- done
    character(180) :: file_smooth               ! file name: smoothing matrix
    character(180) :: title                     ! netCDF title attribute
+   logical        :: nn_dest_is_smooth_src     ! use step1 dest cells as
+                                               ! step2 source cells
    logical        :: step1                     ! gen nn
    logical        :: step2                     ! gen smooth
    logical        :: step3                     ! mat mult
@@ -59,6 +61,7 @@ PROGRAM main
    ,  eFold                 &
    ,  rMax                  &
    ,  lmake_rSCRIP          &
+   ,  nn_dest_is_smooth_src &
    ,  step1, step2, step3
 
    !--- formats ---
@@ -101,6 +104,7 @@ PROGRAM main
    title                 = 'unset'
    eFold                 = 1000000.00000 ! smoothing eFold distance in meters
    rMax                  =  500000.00000 ! max smoothing radius in meters
+   nn_dest_is_smooth_src = .true.
    step1                 = .true.
    step2                 = .true.
    step3                 = .true.
@@ -110,20 +114,25 @@ PROGRAM main
    file_roff_out = "runoff.nc"
 
    read (*,nml=input_nml,iostat=rCode)
+   if (trim(file_ocn_coastal_mask) == 'unset') then
+     file_ocn_coastal_mask = file_ocn_global_mask
+   end if
+
    write(6,F00) "Namelist values..."
-   write(6,F00) "   gridtype          = ",trim(gridtype      )
-   write(6,F00) "   file_roff         = ",trim(file_roff     )
-   write(6,F00) "   file_ocn (global) = ",trim(file_ocn_global_mask)
-   write(6,F00) "   file_ocn (coast)  = ",trim(file_ocn_coastal_mask)
-   write(6,F00) "   file_nn           = ",trim(file_nn       )
-   write(6,F00) "   file_smooth       = ",trim(file_smooth   )
-   write(6,F00) "   file_new          = ",trim(file_new      )
-   write(6,F00) "   title             = ",trim(title         )
-   write(6,F02) "   eFold distance    = ",eFold
-   write(6,F02) "   rMax  distance    = ",rMax
-   write(6,F03) "   step1             = ",step1
-   write(6,F03) "   step2             = ",step2
-   write(6,F03) "   step3             = ",step3
+   write(6,F00) "   gridtype              = ",trim(gridtype      )
+   write(6,F00) "   file_roff             = ",trim(file_roff     )
+   write(6,F00) "   file_ocn (global)     = ",trim(file_ocn_global_mask)
+   write(6,F00) "   file_ocn (coast)      = ",trim(file_ocn_coastal_mask)
+   write(6,F00) "   file_nn               = ",trim(file_nn       )
+   write(6,F00) "   file_smooth           = ",trim(file_smooth   )
+   write(6,F00) "   file_new              = ",trim(file_new      )
+   write(6,F00) "   title                 = ",trim(title         )
+   write(6,F02) "   eFold distance        = ",eFold
+   write(6,F02) "   rMax  distance        = ",rMax
+   write(6,F03) "   nn_dest_is_smooth_src = ",nn_dest_is_smooth_src
+   write(6,F03) "   step1                 = ",step1
+   write(6,F03) "   step2                 = ",step2
+   write(6,F03) "   step3                 = ",step3
 !  if (rCode > 0) then
 !     write(6,F01) 'ERROR: reading input namelist, iostat=',rCode
 !     stop
@@ -178,7 +187,7 @@ if (step2) then
    !----------------------------------------------------------------------------
    write(6,F02) "   eFold distance = ",eFold
    write(6,F02) "   rMax  distance = ",rMax
-   call smooth_init(file_ocn_global_mask, map_orig,map_smooth)
+   call smooth_init(file_ocn_global_mask, nn_dest_is_smooth_src, map_orig,map_smooth)
 !  call restrictSources(map_smooth,trim(file_sources)) ! restrict cells subject to smoothing
    call smooth(map_smooth,eFold,rMax)
    call mapsort_sort(map_smooth)
