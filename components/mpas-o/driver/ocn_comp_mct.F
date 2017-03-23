@@ -791,7 +791,7 @@ contains
       character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
       integer :: iam, ierr, streamDirection
-      logical :: streamActive
+      logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       character (len=StrKIND), pointer :: config_restart_timestamp_name
 
@@ -806,6 +806,11 @@ contains
       call mpas_io_units_set_stdout(ocnStdOutUnit)
       call mpas_io_units_set_stderr(ocnStdErrUnit)
 
+      debugOn = .false.
+#ifdef MPAS_DEBUG
+      debugOn = .true.
+#endif
+ 
       domain_ptr => domain
 
       call mpas_pool_get_config(domain_ptr % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
@@ -857,7 +862,7 @@ contains
          write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
 
          ! Build forcing arrays.
-         if (iam==0) write(stderrUnit,*) '   Building forcing arrays'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Building forcing arrays'
          block_ptr => domain_ptr % blocklist
          do while(associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -877,15 +882,14 @@ contains
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
             block_ptr => block_ptr % next
          end do
-         if (iam==0) write(stderrUnit,*) '   Finished building forcing arrays'
-
-         if (iam==0) write(stderrUnit,*) '   Performing forward update'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished building forcing arrays'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Performing forward update'
          call mpas_timer_start("time integration", .false.)
          !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
          call ocn_timestep(domain, dt, timeStamp)
          !$omp end parallel
          call mpas_timer_stop("time integration")
-         if (iam==0) write(stderrUnit,*) '   Finished performing forward update'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished performing forward update'
 
          ! Move time level 2 fields back into time level 1 for next time step
          block_ptr => domain_ptr % blocklist
@@ -895,22 +899,22 @@ contains
             block_ptr => block_ptr % next
          end do
 
-         if (iam==0) write(stderrUnit,*) '   Computing analysis members'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Computing analysis members'
          call ocn_analysis_compute(domain_ptr, ierr) 
-         if (iam==0) then
+         if (iam==0.and.debugOn) then
             write(stderrUnit,*) '   Finished computing analysis members'
             write(stderrUnit,*) '   Preparing analysis members for restart'
          endif
          call ocn_analysis_restart(domain_ptr, ierr) 
-         if (iam==0) then
+         if (iam==0.and.debugOn) then
             write(stderrUnit,*) '   Finished preparing analysis members for restart'
             write(stderrUnit,*) '   Writing analysis member output'
          endif
          call ocn_analysis_write(domain_ptr, ierr)
-         if (iam==0) write(stderrUnit,*) '   Finished writing analysis member output'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished writing analysis member output'
 
          ! Reset any restart alarms to prevent restart files being written without the coupler requesting it.
-         if (iam==0) write(stderrUnit,*) '   Resetting restart alarms'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Resetting restart alarms'
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
 
          do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
@@ -920,21 +924,21 @@ contains
                call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
             end if
          end do
-         if (iam==0) write(stderrUnit,*) '   Finished resetting restart alarms'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished resetting restart alarms'
 
-         if (iam==0) write(stderrUnit,*) '   Writing output streams'
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Writing output streams'
          call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-         if (iam==0) then
+         if (iam==0.and.debugOn) then
             write(stderrUnit,*) '   Finished writing output streams'
             write(stderrUnit,*) '   Validating ocean state'
          endif
          call ocn_validate_state(domain, timeLevel=1)
-         if (iam==0) write(stderrUnit,*) '   Completed validating ocean state'
-         write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
+         if (iam==0.and.debugOn) write(stderrUnit,*) '   Completed validating ocean state'
+         if (iam==0.and.debugOn) write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
       end do
 
       ! update coupled variables that get calculated on coupling intervals
@@ -966,16 +970,16 @@ contains
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
-         if (iam==0) write(stderrUnit,*) 'Writing restart streams'
+         if (iam==0.and.debugOn) write(stderrUnit,*) 'Writing restart streams'
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
 
          do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive ) )
 
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
-               if (iam==0) write(stderrUnit,*) '   Writing stream ' // trim(streamName)
+               if (iam==0.and.debugOn) write(stderrUnit,*) '   Writing stream ' // trim(streamName)
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, ierr=ierr)
-               if (iam==0) write(stderrUnit,*) '   Finished writing stream ' // trim(streamName)
+               if (iam==0.and.debugOn) write(stderrUnit,*) '   Finished writing stream ' // trim(streamName)
             end if
          end do
 
@@ -984,13 +988,13 @@ contains
             write(22, *) trim(timeStamp)
             close(22)
          end if
-         if (iam==0) write(stderrUnit,*) 'Finished writing restart streams'
+         if (iam==0.and.debugOn) write(stderrUnit,*) 'Finished writing restart streams'
       end if
 
       ! Export state to coupler
-      if (iam==0) write(stderrUnit,*) 'Exporting ocean state'
+      if (iam==0.and.debugOn) write(stderrUnit,*) 'Exporting ocean state'
       call ocn_export_mct(o2x_o, ierr)
-      if (iam==0) write(stderrUnit,*) 'Finished exporting ocean state'
+      if (iam==0.and.debugOn) write(stderrUnit,*) 'Finished exporting ocean state'
 
       ! Check if clocks are in sync
       currTime = mpas_get_clock_time(domain_ptr % clock, MPAS_NOW, ierr)

@@ -835,6 +835,7 @@
 
 <!-- AM_surfaceAreaWeightedAverages -->
 <config_AM_surfaceAreaWeightedAverages_enable>.true.</config_AM_surfaceAreaWeightedAverages_enable>
+<config_AM_surfaceAreaWeightedAverages_enable ocn_grid="oRRS18to6v3">.false.</config_AM_surfaceAreaWeightedAverages_enable>
 <config_AM_surfaceAreaWeightedAverages_compute_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_compute_on_startup>
 <config_AM_surfaceAreaWeightedAverages_write_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_write_on_startup>
 <config_AM_surfaceAreaWeightedAverages_compute_interval>'0000-00-00_01:00:00'</config_AM_surfaceAreaWeightedAverages_compute_interval>
@@ -884,6 +885,7 @@
 
 <!-- AM_meridionalHeatTransport -->
 <config_AM_meridionalHeatTransport_enable>.true.</config_AM_meridionalHeatTransport_enable>
+<config_AM_meridionalHeatTransport_enable ocn_grid="oRRS18to6v3">.false.</config_AM_meridionalHeatTransport_enable>
 <config_AM_meridionalHeatTransport_compute_interval>'0000-00-00_01:00:00'</config_AM_meridionalHeatTransport_compute_interval>
 <config_AM_meridionalHeatTransport_compute_on_startup>.true.</config_AM_meridionalHeatTransport_compute_on_startup>
 <config_AM_meridionalHeatTransport_write_on_startup>.true.</config_AM_meridionalHeatTransport_write_on_startup>
@@ -901,11 +903,12 @@
 <config_AM_testComputeInterval_output_stream>'testComputeIntervalOutput'</config_AM_testComputeInterval_output_stream>
 
 <!-- AM_highFrequencyOutput -->
-<config_AM_highFrequencyOutput_enable>.false.</config_AM_highFrequencyOutput_enable>
+<config_AM_highFrequencyOutput_enable>.true.</config_AM_highFrequencyOutput_enable>
+<config_AM_highFrequencyOutput_enable ocn_grid="oRRS18to6v3">.false.</config_AM_highFrequencyOutput_enable>
 <config_AM_highFrequencyOutput_compute_interval>'output_interval'</config_AM_highFrequencyOutput_compute_interval>
 <config_AM_highFrequencyOutput_output_stream>'highFrequencyOutput'</config_AM_highFrequencyOutput_output_stream>
-<config_AM_highFrequencyOutput_compute_on_startup>.true.</config_AM_highFrequencyOutput_compute_on_startup>
-<config_AM_highFrequencyOutput_write_on_startup>.true.</config_AM_highFrequencyOutput_write_on_startup>
+<config_AM_highFrequencyOutput_compute_on_startup>.false.</config_AM_highFrequencyOutput_compute_on_startup>
+<config_AM_highFrequencyOutput_write_on_startup>.false.</config_AM_highFrequencyOutput_write_on_startup>
 
 <!-- AM_timeFilters -->
 <config_AM_timeFilters_enable>.false.</config_AM_timeFilters_enable>
@@ -947,6 +950,7 @@
 
 <!-- AM_mixedLayerDepths -->
 <config_AM_mixedLayerDepths_enable>.true.</config_AM_mixedLayerDepths_enable>
+<config_AM_mixedLayerDepths_enable ocn_grid="oRRS18to6v3">.false.</config_AM_mixedLayerDepths_enable>
 <config_AM_mixedLayerDepths_compute_interval>'0000-00-00_01:00:00'</config_AM_mixedLayerDepths_compute_interval>
 <config_AM_mixedLayerDepths_output_stream>'mixedLayerDepthsOutput'</config_AM_mixedLayerDepths_output_stream>
 <config_AM_mixedLayerDepths_write_on_startup>.true.</config_AM_mixedLayerDepths_write_on_startup>
@@ -1051,7 +1055,7 @@
 <!-- AM_timeSeriesStatsMonthly -->
 <config_AM_timeSeriesStatsMonthly_enable>.true.</config_AM_timeSeriesStatsMonthly_enable>
 <config_AM_timeSeriesStatsMonthly_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthly_compute_on_startup>
-<config_AM_timeSeriesStatsMonthly_write_on_startup>.true.</config_AM_timeSeriesStatsMonthly_write_on_startup>
+<config_AM_timeSeriesStatsMonthly_write_on_startup>.false.</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
 <config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
 <config_AM_timeSeriesStatsMonthly_restart_stream>'timeSeriesStatsMonthlyRestart'</config_AM_timeSeriesStatsMonthly_restart_stream>

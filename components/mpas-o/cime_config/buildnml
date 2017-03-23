@@ -127,6 +127,12 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$ic_date .= '170111';
 	$ic_prefix .= 'oRRS18to6v3';
 	$decomp_prefix .= 'mpas-o.graph.info.';
+} elsif ( $OCN_GRID eq 'oRRS18to6v3_ICG' ) {
+	$grid_date .= '170111';
+	$grid_prefix .= 'oRRS18to6v3';
+	$ic_date .= '170321';
+	$ic_prefix .= 'oRRS18to6v3.restartFrom_titan0228';
+	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oRRS15to5' ) {
 	$grid_date .= '151209';
 	$grid_prefix .= 'ocean.RRS.15-5km';
@@ -346,6 +352,26 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<!--' . "\n";
+	print $stream_file 'Block debugging stream produces a file per core where errors have occured.' . "\n";
+	print $stream_file '-->' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<stream name="block_debug_output"' . "\n";
+	print $stream_file '		type="output"' . "\n";
+	print $stream_file '		filename_template="mpaso.output_debug_block_$B.nc"' . "\n";
+	print $stream_file '		filename_interval="1000-00-00_00:00:00"' . "\n";
+	print $stream_file '		clobber_mode="truncate"' . "\n";
+	print $stream_file '		output_interval="1000-00-00_00:00:00">' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '	<stream name="mesh"/>' . "\n";
+	print $stream_file '	<var name="xtime"/>' . "\n";
+	print $stream_file '	<var_struct name="tracers"/>' . "\n";
+	print $stream_file '	<var name="layerThickness"/>' . "\n";
+	print $stream_file '	<var name="normalVelocity"/>' . "\n";
+	print $stream_file '	<var name="ssh"/>' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '</stream>' . "\n";
+	print $stream_file '' . "\n";
+	print $stream_file '<!--' . "\n";
 	print $stream_file 'Streams between this line and the auxiliary stream line below are analysis member streams.' . "\n";
 	print $stream_file 'They can be used to perform online analysis of the simulation and control the output of' . "\n";
 	print $stream_file 'the analysis data.' . "\n";
@@ -487,15 +513,15 @@ if ( -e "$CASEROOT/SourceMods/src.mpaso/$STREAM_NAME" ) {
 	print $stream_file '<stream name="highFrequencyOutput"' . "\n";
 	print $stream_file '        type="output"' . "\n";
 	print $stream_file '        filename_template="mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
-	print $stream_file '        filename_interval="00-01-00_00:00:00"' . "\n";
-	print $stream_file '        output_interval="00-00-01_00:00:00"' . "\n";
+	print $stream_file '        filename_interval="01-00-00_00:00:00"' . "\n";
+	print $stream_file '        output_interval="00-00-05_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        packages="highFrequencyOutputAMPKG">' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '    <var name="xtime"/>' . "\n";
 	print $stream_file '    <var name="daysSinceStartOfSim"/>' . "\n";
-	print $stream_file '    <stream name="mesh"/>' . "\n";
 	print $stream_file '    <var_array name="activeTracersAtSurface"/>' . "\n";
+	print $stream_file '    <var name="kineticEnergyAtSurface"/>' . "\n";
 	print $stream_file '    <var name="kineticEnergyAt100m"/>' . "\n";
 	print $stream_file '    <var name="relativeVorticityAt100m"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
