@@ -12,6 +12,7 @@ module sw_time_integration
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_log
 
    use sw_constants
 
@@ -45,9 +46,8 @@ module sw_time_integration
       if (trim(config_time_integration) == 'RK4') then
          call sw_rk4(domain, dt)
       else
-         write(0,*) 'Unknown time integration option '//trim(config_time_integration)
-         write(0,*) 'Currently, only ''RK4'' is supported.'
-         stop
+         call mpas_log_write('Unknown time integration option '//trim(config_time_integration), MPAS_LOG_ERR)
+         call mpas_log_write('Currently, only ''RK4'' is supported.', MPAS_LOG_CRIT)
       end if
 
       block => domain % blocklist

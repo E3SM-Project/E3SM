@@ -9,6 +9,7 @@ module sw_core
 
    use mpas_framework
    use mpas_timekeeping
+   use mpas_log
 
    type (MPAS_Clock_type), pointer :: clock
 
@@ -129,14 +130,14 @@ module sw_core
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
-               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               call mpas_log_write('config_run_duration and config_stop_time are inconsitent: using config_run_duration.', MPAS_LOG_WARN)
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=local_err)
       else
-          write(0,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
+          call mpas_log_write('Neither config_run_duration nor config_stop_time were specified.', MPAS_LOG_ERR)
           ierr = 1
       end if
 
@@ -225,7 +226,7 @@ module sw_core
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
-      write(0,*) 'Initial timestep ', trim(timeStamp)
+      call mpas_log_write('Initial timestep ' // trim(timeStamp))
 
       ! Avoid writing a restart file at the initial time
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -243,7 +244,7 @@ module sw_core
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
-         write(0,*) 'Doing timestep ', trim(timeStamp)
+         call mpas_log_write('Doing timestep ' // trim(timeStamp))
 
          call mpas_timer_start("time integration")
          call mpas_timestep(domain, itimestep, dt, timeStamp)
@@ -293,8 +294,8 @@ module sw_core
           if(mod(itimestep, config_stats_interval) == 0) then
               block_ptr => domain % blocklist
               if(associated(block_ptr % next)) then
-                  write(0,*) 'Error: computeGlobalDiagnostics assumes ',&
-                             'that there is only one block per processor.'
+                  call mpas_log_write('computeGlobalDiagnostics assumes '//&
+                             'that there is only one block per processor.', MPAS_LOG_ERR)
               end if
 
               call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
