@@ -552,7 +552,7 @@ class NamelistGenerator(object):
         # Go through file names and prepend input data root directory for
         # absolute pathnames.
         var_type, _, var_size = self._definition.split_type_string(name)
-        if var_type == "char" and ignore_abs_path is None:
+        if var_type == "character" and ignore_abs_path is None:
             var_input_pathname = self._definition.get_input_pathname(name)
             if var_input_pathname == 'abs':
                 current_literals = expand_literal_list(current_literals)
