@@ -22,9 +22,9 @@ def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
     #f_data = open('set5_diags_default.json').read()
-    f_data = open('set5_diags.json').read()
+    #f_data = open('set5_diags.json').read()
     #f_data = open('set5_diags_MERRA_domains.json').read()
-    f_data = open('set5_diags_HADISST.json').read()
+    #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
     #f_data = open('set5_diags_WILLMOTT.json').read()
@@ -37,14 +37,15 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_ERAI.json').read()
     #f_data = open('set5_diags_JRA25.json').read()
     #f_data = open('set5_diags_AIRS.json').read()
-    f_data = open('set5_diags_CERES-EBAF.json').read()
+    #f_data = open('set5_diags_CERES-EBAF.json').read()
     #f_data = open('set5_diags_ERBE.json').read()
-    f_data = open('set5_diags_ISCCPFD.json').read()
+    #f_data = open('set5_diags_ISCCPFD.json').read()
     #f_data = open('set5_diags_ISCCP.json').read()
     #f_data = open('set5_diags_WARREN.json').read()
     #f_data = open('set5_diags_CLOUDSAT.json').read()
     #f_data = open('set5_diags_NVAP.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
+    f_data = open('set5_diags_AMWG_default.json').read()
     json_file = json.loads(f_data)
 
     parameters = []

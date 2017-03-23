@@ -1,0 +1,14 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_PRECL",
+      "variables": "PRECT_LAND",
+      "ref_name": "PRECL",
+      "reference_name": "PREC/L (CMAP) 1948-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                }
+          ]
+}

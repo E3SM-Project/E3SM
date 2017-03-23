@@ -1,0 +1,14 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_NVAP",
+      "variables": "PREH2O",
+      "ref_name": "NVAP",
+      "reference_name": "NVAP 1988-1999",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                }
+          ]
+}

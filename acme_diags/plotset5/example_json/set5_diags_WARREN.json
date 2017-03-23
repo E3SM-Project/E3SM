@@ -1,0 +1,23 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_WARREN",
+      "variables": "CLDTOT",
+      "ref_name": "WARREN",
+      "reference_name": "Warren Cloud Surface OBS",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_WARREN",
+      "variables": "CLDLOW",
+      "ref_name": "WARREN",
+      "reference_name": "Warren Cloud Surface OBS",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                }
+          ]
+}
