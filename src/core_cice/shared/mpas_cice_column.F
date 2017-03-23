@@ -1,8 +1,3 @@
-#define COMMA ,
-#define COLUMN_DEBUG_WRITE(M) ! write(stderrUnit,*) M
-#define COLUMN_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
-#define COLUMN_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
-
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  cice_column
@@ -21,8 +16,7 @@ module cice_column
   use mpas_pool_routines
   use mpas_timekeeping
   use mpas_timer
-  use mpas_io_units
-  use mpas_abort
+  use mpas_log, only: mpas_log_write
 
   use cice_debug
 
@@ -331,6 +325,9 @@ contains
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
+       abortFlag = .false.
+       abortMessage = ""
+
        call colpkg_init_itd(&
             nCategories, &
             categoryThicknessLimits, &
@@ -339,9 +336,7 @@ contains
 
        ! code abort
        if (abortFlag) then
-          COLUMN_ERROR_WRITE("init_column_itd")
-          COLUMN_ERROR_WRITE(trim(abortMessage))
-          call MPAS_dmpar_global_abort("MPAS-seaice: init_column_itd: "//trim(abortMessage))
+          call mpas_log_write("init_column_itd: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
        endif
 
        block => block % next
@@ -532,9 +527,7 @@ contains
        call column_write_warnings(warnings)
 
        if (abortFlag) then
-          COLUMN_ERROR_WRITE("colpkg_init_orbit")
-          COLUMN_ERROR_WRITE(trim(abortMessage))
-          call MPAS_dmpar_global_abort("MPAS-seaice: "//trim(abortMessage))
+          call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
       endif
 
     endif
@@ -1619,10 +1612,8 @@ contains
 
           ! code abort
           if (abortFlag) then
-             COLUMN_ERROR_WRITE("column_vertical_thermodynamics")
-             COLUMN_ERROR_WRITE(trim(abortMessage))
-             write(abortLocation,*) indexToCellID(iCell)
-             call MPAS_dmpar_global_abort("MPAS-seaice: iCell "//trim(abortLocation)//": "//trim(abortMessage))
+             call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
           endif
 
           ! aerosol
@@ -1951,10 +1942,8 @@ contains
 
           ! code abort
           if (abortFlag) then
-             COLUMN_ERROR_WRITE("column_itd_thermodynamics")
-             COLUMN_ERROR_WRITE(trim(abortMessage))
-             write(abortLocation,*) indexToCellID(iCell)
-             call MPAS_dmpar_global_abort("MPAS-seaice: iCell "//trim(abortLocation)//": "//trim(abortMessage))
+             call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
           endif
 
        enddo ! iCell
@@ -2739,10 +2728,8 @@ contains
 
           ! code abort
           if (abortFlag) then
-             COLUMN_ERROR_WRITE("column_ridging")
-             COLUMN_ERROR_WRITE(trim(abortMessage))
-             write(abortLocation,*) indexToCellID(iCell)
-             call MPAS_dmpar_global_abort("MPAS-seaice: iCell "//trim(abortLocation)//": "//trim(abortMessage))
+             call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
           endif
 
        enddo ! iCell
@@ -3201,10 +3188,8 @@ contains
 
           ! code abort
           if (abortFlag) then
-             COLUMN_ERROR_WRITE("column_biogeochemistry")
-             COLUMN_ERROR_WRITE(trim(abortMessage))
-             write(abortLocation,*) indexToCellID(iCell)
-             call MPAS_dmpar_global_abort("MPAS-seaice: iCell "//trim(abortLocation)//": "//trim(abortMessage))
+             call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_CRIT, intArgs=(/indexToCellID(iCell)/))
           endif
 
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -3447,8 +3432,7 @@ contains
 
        else
 
-          COLUMN_ERROR_WRITE("cice_column_update_state: Unknown update type: "//trim(stateUpdateType))
-          call MPAS_dmpar_global_abort("MPAS-seaice: cice_column_update_state: Unknown update type")
+          call mpas_log_write("cice_column_update_state: Unknown update type: "//trim(stateUpdateType), messageType=MPAS_LOG_CRIT)
 
        endif
 
@@ -7767,103 +7751,124 @@ contains
     if (config_use_level_meltponds) nPondSchemesActive = nPondSchemesActive + 1
     if (config_use_topo_meltponds)  nPondSchemesActive = nPondSchemesActive + 1
     if (nPondSchemesActive > 1) then
-       COLUMN_ERROR_WRITE('More than one melt pond scheme active')
-       call MPAS_dmpar_global_abort('MPAS-seaice: More than one melt pond scheme active')
+       call mpas_log_write(&
+            'check_column_package_configs: More than one melt pond scheme active', &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check for itd remapping with only one category
     if (nCategories == 1 .and. trim(config_itd_conversion_type) == "linear remap") then
-       COLUMN_ERROR_WRITE('Remapping the ITD is not allowed for nCategories=1')
-       COLUMN_ERROR_WRITE("Use config_itd_conversion_type = 'delta function' with config_category_bounds_type = 'original'")
-       COLUMN_ERROR_WRITE("or for column configurations use config_category_bounds_type = 'single category'")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible nCategories and config_itd_conversion_type')
+       call mpas_log_write(&
+            'check_column_package_configs: Remapping the ITD is not allowed for nCategories=1', &
+            messageType=MPAS_LOG_ERR)
+       call mpas_log_write(&
+            "Use config_itd_conversion_type = 'delta function' with config_category_bounds_type = 'original'", &
+            messageType=MPAS_LOG_ERR)
+       call mpas_log_write(&
+            "or for column configurations use config_category_bounds_type = 'single category'", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check itd and category bounds discrepancy
     if (nCategories /= 1 .and. trim(config_category_bounds_type) == 'single category') then
-       COLUMN_ERROR_WRITE("nCategories /= 1 .and. config_category_bounds_type = 'single category'")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible nCategories and config_category_bounds_type')
+       call mpas_log_write(&
+            "check_column_package_configs: nCategories /= 1 .and. config_category_bounds_type = 'single category'", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check config_snow_to_ice_transition_depth and level ponds
     if (config_use_level_meltponds .and. abs(config_snow_to_ice_transition_depth) > cicePuny) then
-       COLUMN_ERROR_WRITE("config_use_level_meltponds = .true. and config_snow_to_ice_transition_depth /= 0")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_level_meltponds and config_snow_to_ice_transition_depth')
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_level_meltponds = .true. and config_snow_to_ice_transition_depth /= 0", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check cesm ponds and freezing lids inconsistency
     if (config_use_cesm_meltponds .and. trim(config_pond_refreezing_type) /= "cesm") then
-       COLUMN_ERROR_WRITE("config_use_cesm_meltponds = .true. and config_pond_refreezing_type /= 'cesm'")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_cesm_meltponds and config_pond_refreezing_type')
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_cesm_meltponds = .true. and config_pond_refreezing_type /= 'cesm'", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check dEdd shortwave if using ponds
     use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
     if (trim(config_shortwave_type) /= 'dEdd' .and. use_meltponds .and. config_calc_surface_temperature) then
-       COLUMN_ERROR_WRITE("config_shortwave_type) /= 'dEdd' .and. use_meltponds = .true. .")
-       COLUMN_ERROR_WRITE("and. config_calc_surface_temperature ==.true.")
-       call MPAS_dmpar_global_abort(&
-            'MPAS-seaice: Incompatible config_shortwave_type, use_meltponds and config_calc_surface_temperature')
+       call mpas_log_write(&
+            "check_column_package_configs: config_shortwave_type) /= 'dEdd' .and. use_meltponds = .true.", &
+            messageType=MPAS_LOG_ERR)
+       call mpas_log_write(&
+            ".and. config_calc_surface_temperature ==.true.", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check range of config_min_meltwater_retained_fraction and config_max_meltwater_retained_fraction
     if (config_min_meltwater_retained_fraction < 0.0_RKIND .or. &
         config_min_meltwater_retained_fraction > 1.0_RKIND) then
-       COLUMN_ERROR_WRITE('config_min_meltwater_retained_fraction out of bounds')
-       call MPAS_dmpar_global_abort('MPAS-seaice: config_min_meltwater_retained_fraction out of bounds')
+       call mpas_log_write(&
+            'check_column_package_configs: config_min_meltwater_retained_fraction out of bounds', &
+            messageType=MPAS_LOG_CRIT)
     endif
     if (config_max_meltwater_retained_fraction < 0.0_RKIND .or. &
         config_max_meltwater_retained_fraction > 1.0_RKIND) then
-       COLUMN_ERROR_WRITE('config_max_meltwater_retained_fraction out of bounds')
-       call MPAS_dmpar_global_abort('MPAS-seaice: config_max_meltwater_retained_fraction out of bounds')
+       call mpas_log_write(&
+            'check_column_package_configs: config_max_meltwater_retained_fraction out of bounds', &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check not mushy physics and dont calculate surface temperature
     if (trim(config_thermodynamics_type) == "mushy" .and. .not. config_calc_surface_temperature) then
-       COLUMN_ERROR_WRITE("config_thermodynamics_type = 'mushy' and config_calc_surface_temperature = .false.")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_thermodynamics_type and config_calc_surface_temperature')
+       call mpas_log_write(&
+            "check_column_package_configs: config_thermodynamics_type = 'mushy' and config_calc_surface_temperature = .false.", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check not form drag with constant atmosphere boundary method
     if (config_use_form_drag .and. trim(config_atmos_boundary_method) == "constant") then
-       COLUMN_ERROR_WRITE("config_use_form_drag = .true. and config_atmos_boundary_method = 'constant'")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_form_drag and config_atmos_boundary_method')
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_form_drag = .true. and config_atmos_boundary_method = 'constant'", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check not form drag with not calculating surface stresses
     if (config_use_form_drag .and. .not. config_calc_surface_stresses) then
-       COLUMN_ERROR_WRITE("config_use_form_drag = .true. and config_calc_surface_stresses = .false.")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_form_drag and config_calc_surface_stresses')
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_form_drag = .true. and config_calc_surface_stresses = .false.", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check am not using form drag with cesm ponds
     if (config_use_form_drag .and. config_use_cesm_meltponds) then
-       COLUMN_ERROR_WRITE("config_use_form_drag = .true. and config_use_cesm_meltponds = .true.")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_form_drag and config_use_cesm_meltponds')
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_form_drag = .true. and config_use_cesm_meltponds = .true.", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check using form drag but not level ice
     if (config_use_form_drag .and. .not. config_use_level_ice) then
-       COLUMN_ERROR_WRITE("config_use_form_drag = .true. and config_use_level_ice = .false.")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_form_drag and config_use_level_ice')
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_form_drag = .true. and config_use_level_ice = .false.", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check form drag and ocean heat flux type
     if (.not. config_use_form_drag .and. trim(config_ocean_heat_transfer_type) == "Cdn_ocn") then
-       COLUMN_ERROR_WRITE("config_use_form_drag = .false. and config_ocean_heat_transfer_type == 'Cdn_ocn'")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_form_drag and config_ocean_heat_transfer_type')
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_form_drag = .false. and config_ocean_heat_transfer_type == 'Cdn_ocn'", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check thermodynamic type and sea freezing temperature type
     if (trim(config_thermodynamics_type) == "BL99" .and. trim(config_sea_freezing_temperature_type) /= "linear_salt") then
-       COLUMN_ERROR_WRITE("config_thermodynamics_type == 'BL99' and config_sea_freezing_temperature_type /= 'linear_salt'")
-       call MPAS_dmpar_global_abort(&
-            'MPAS-seaice: Incompatible config_thermodynamics_type and config_sea_freezing_temperature_type')
+       call mpas_log_write(&
+            "check_column_package_configs: config_thermodynamics_type == 'BL99' "//&
+            "and config_sea_freezing_temperature_type /= 'linear_salt'", &
+            messageType=MPAS_LOG_CRIT)
     endif
     if (trim(config_thermodynamics_type) == "mushy" .and. trim(config_sea_freezing_temperature_type) /= "mushy") then
-       COLUMN_ERROR_WRITE("config_thermodynamics_type == 'mushy' and config_sea_freezing_temperature_type /= 'mushy'")
-       call MPAS_dmpar_global_abort(&
-            'MPAS-seaice: Incompatible config_thermodynamics_type and config_sea_freezing_temperature_type')
+       call mpas_log_write(&
+            "check_column_package_configs: config_thermodynamics_type == 'mushy' and "//&
+            "config_sea_freezing_temperature_type /= 'mushy'", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check biogeochemistry flags:
@@ -7872,46 +7877,48 @@ contains
         config_use_skeletal_biochemistry .or. config_use_nitrate .or. config_use_carbon .or. config_use_chlorophyll .or. &
         config_use_ammonium .or. config_use_silicate .or. config_use_DMS .or. config_use_nonreactive .or. config_use_humics .or. &
         config_use_DON .or. config_use_iron .or. config_use_modal_aerosols .or. config_use_zaerosols)) then
-       COLUMN_ERROR_WRITE("config_use_column_biogeochemistry = false. All biogeochemistry namelist flags must also be false")
-       call MPAS_dmpar_global_abort &
-            ('MPAS-seaice: Incompatible config_use_column_biogeochemistry and true biogeochemistry flag')
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_column_biogeochemistry = false. "//&
+            "All biogeochemistry namelist flags must also be false", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check vertical zSalinity requirements
     if (config_use_vertical_zsalinity .and. ((.not. config_use_brine) .or. &
          (.not. (trim(config_thermodynamics_type) == "BL99")))) then
-       COLUMN_ERROR_WRITE("vertical zSalinity requires config_use_brine = true and 'BL99' ")
-       call MPAS_dmpar_global_abort &
-            ('MPAS-seaice: Incompatible config_use_vertical_zsalinity, config_use_brine, and config_thermodynamics_type')
+       call mpas_log_write(&
+            "check_column_package_configs: vertical zSalinity requires config_use_brine = true and 'BL99' ", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check that vertical bio tracers use brine height
     if ((config_use_vertical_biochemistry .or. config_use_zaerosols) .and. &
          (.not. config_use_brine .or. .not. config_use_vertical_tracers )) then
-       COLUMN_ERROR_WRITE("vertical biochemistry and zaerosols require config_use_brine and config_use_vertical_tracer = true")
-       call MPAS_dmpar_global_abort &
-            ('MPAS-seaice: Incompatible config_use_vertical_biochemistry, '// &
-             'config_use_zaerosols, config_use_brine, and config_use_vertical_tracer')
+       call mpas_log_write(&
+            "check_column_package_configs: vertical biochemistry and zaerosols require " //&
+            "config_use_brine and config_use_vertical_tracer = true", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check that vertical bio tracers and not used with skeletal bio tracers
     if (config_use_vertical_tracers  .and.  config_use_skeletal_biochemistry) then
-       COLUMN_ERROR_WRITE("vertical bio tracers and skeletal bio tracers cannot both be true")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_vertical_tracers, config_use_skeletal_biochemistry')
+       call mpas_log_write(&
+            "check_column_package_configs: vertical bio tracers and skeletal bio tracers cannot both be true", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check that the shortwave scheme and bioabsorption is consistent
     if (config_use_shortwave_bioabsorption .and. .not. (trim(config_shortwave_type) == "dEdd")) then
-       COLUMN_ERROR_WRITE("shortwave bioabsorption requires config_shortwave_type ==  'dEdd'")
-       call MPAS_dmpar_global_abort('MPAS-seaice: Incompatible config_use_shortwave, config_shortwave_type')
+       call mpas_log_write(&
+            "check_column_package_configs: shortwave bioabsorption requires config_shortwave_type ==  'dEdd'", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
     ! check that nitrate is true for biogeochemistry
     if ((config_use_vertical_biochemistry .or. config_use_skeletal_biochemistry) .and. .not. config_use_nitrate) then
-       COLUMN_ERROR_WRITE("biochemistry needs at the very least config_use_nitrate = true")
-       call MPAS_dmpar_global_abort&
-            ('MPAS-seaice: Incompatible config_use_vertical_biochemistry, '// &
-             'config_use_skeletal_biochemistry, and config_use_nitrate')
+       call mpas_log_write(&
+            "check_column_package_configs: biochemistry needs at the very least config_use_nitrate = true", &
+            messageType=MPAS_LOG_CRIT)
     endif
 
   end subroutine check_column_package_configs
@@ -9826,10 +9833,9 @@ contains
          config_value, &
          valid_options
 
-    COLUMN_ERROR_WRITE(trim(config_name) COMMA ' has invalid value')
-    COLUMN_ERROR_WRITE(trim(config_name) COMMA ': ' COMMA trim(config_value))
-    COLUMN_ERROR_WRITE('valid options: ' COMMA trim(valid_options))
-    call MPAS_dmpar_global_abort("MPAS-seaice: "//trim(config_name)//' has invalid value')
+    call mpas_log_write("config_error: "//trim(config_name)//' has invalid value', messageType=MPAS_LOG_ERR)
+    call mpas_log_write(trim(config_name)//': '//trim(config_value), messageType=MPAS_LOG_ERR)
+    call mpas_log_write('valid options: '//trim(valid_options), messageType=MPAS_LOG_CRIT)
 
   end subroutine config_error
 
@@ -11343,10 +11349,9 @@ contains
 
     ! check calculated tracer array size
     if (nTracers_temp /= tracerObject % nTracers) then
-       COLUMN_ERROR_WRITE("init_column_tracer_object Error: nTracers_temp, nTracers")
-       WRITE (stderrUnit,*) nTracers_temp
-       WRITE (stderrUnit,*) tracerObject % nTracers
-       call MPAS_dmpar_global_abort("MPAS-seaice: tracer number error")
+       call mpas_log_write(&
+            "init_column_tracer_object_for_biogeochemistry: nTracers_temp: $i, nTracers: $i", &
+            messageType=MPAS_LOG_CRIT, intArgs=(/nTracers_temp, tracerObject % nTracers/))
     endif
 
   end subroutine init_column_tracer_object_for_biogeochemistry
@@ -11612,9 +11617,9 @@ contains
                   abortMessage)
 
              if (abortFlag) then
-                 COLUMN_ERROR_WRITE("colpkg_init_bgc")
-                 COLUMN_ERROR_WRITE(trim(abortMessage))
-                 call MPAS_dmpar_global_abort("MPAS-seaice: "//trim(abortMessage))
+                call mpas_log_write(&
+                     "init_column_biogeochemistry_profiles: colpkg_init_bgc: "//trim(abortMessage), &
+                     messageType=MPAS_LOG_CRIT)
              endif
           endif ! biogeochemistry
 
@@ -12326,7 +12331,7 @@ contains
 
     do iWarning = 1, size(warnings)
 
-       write(stderrUnit,*) trim(warnings(iWarning))
+       call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
 
     enddo ! iWarning
 
