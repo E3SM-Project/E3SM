@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
+
+<entry_id>
+
+  <entry id="COMP_ICE">
+    <type>char</type>
+    <valid_values>xice</valid_values>
+    <default_value>xice</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of sea-ice component</desc>
+  </entry>
+
+  <description>
+    <desc compset="_XICE">Dead ice component</desc>
+  </description>
+
+</entry_id>
