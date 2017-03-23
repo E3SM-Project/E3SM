@@ -168,10 +168,6 @@ module li_core_interface
       ! (At present, there are not any.  There could eventually be choices about the file naming conventions
       !  or other settings controlling behavior.)
 
-      ! ATTENTION: DISABLING LOG MANAGER FOR NOW
-      logInfo % outputLog % isActive = .false.
-      logInfo % errorLog % isActive = .false.
-
       ! After core has had a chance to modify log defaults, open the output log
       call mpas_log_open(err=local_err)
       iErr = ior(iErr, local_err)
