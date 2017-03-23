@@ -25,6 +25,8 @@ module li_velocity_simple
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
+   use mpas_log
+
    use li_mask
    use li_setup
    use li_constants
@@ -241,6 +243,9 @@ contains
       integer, parameter :: ncellsPerRow = 40
       integer, parameter :: nRows = 46
       integer :: i, iRow
+
+      character (len=strKind) :: msg
+
       !--------------------------------
 
       ! No block init needed.
@@ -360,13 +365,16 @@ contains
       !WHL - debug
       iCell = config_stats_cell_ID
       iLevel = 1
-      write(stderrUnit,*) ' '
-      write(stderrUnit,*) 'Prescribed velocity, iCell, uvel, vvel (m/yr):', iCell, uVelocityX(iCell)*scyr, uVelocityY(iCell)*scyr
-      write(stderrUnit,*) 'xCell, yCell:', xCell(iCell), yCell(iCell)
-      write(stderrUnit,*) 'iEdgeOnCell, cellsOnEdge, normalVelocity:'
+      call mpas_log_write(' ')
+      write(msg,*) 'Prescribed velocity, iCell, uvel, vvel (m/yr):', iCell, uVelocityX(iCell)*scyr, uVelocityY(iCell)*scyr
+      call mpas_log_write(msg)
+      write(msg,*) 'xCell, yCell:', xCell(iCell), yCell(iCell)
+      call mpas_log_write(msg)
+      call mpas_log_write('iEdgeOnCell, cellsOnEdge, normalVelocity:')
       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
          iEdge = edgesOnCell(iEdgeOnCell,iCell)
-         write(stderrUnit,*) iEdgeOnCell, cellsOnEdge(:,iEdge), normalVelocityInitial(iLevel,iEdge)*scyr
+         write(msg,*) iEdgeOnCell, cellsOnEdge(:,iEdge), normalVelocityInitial(iLevel,iEdge)*scyr
+         call mpas_log_write(msg)
       enddo
 
       if (velocity_simple_bug_check) then
@@ -387,20 +395,24 @@ contains
 
             if (iCell == config_stats_cell_ID) then
                iLevel = 1
-               write(stderrUnit,*) ' '
-               write(stderrUnit,*) 'Velocity reconstruction, iCell =', iCell
-               write(stderrUnit,*) 'Initial velocity:', uVelocityX(iCell), uVelocityY(iCell)
-               write(stderrUnit,*) 'Reconstructed velocity:', uReconstructX(iLevel,iCell), uReconstructY(iLevel,iCell)
-               write(stderrUnit,*) 'Reconstruction coefficients:'
-               write(stderrUnit,*) ' '
+               call mpas_log_write(' ')
+               write(msg,*) 'Velocity reconstruction, iCell =', iCell
+               call mpas_log_write(msg)
+               write(msg,*) 'Initial velocity:', uVelocityX(iCell), uVelocityY(iCell)
+               call mpas_log_write(msg)
+               write(msg,*) 'Reconstructed velocity:', uReconstructX(iLevel,iCell), uReconstructY(iLevel,iCell)
+               call mpas_log_write('Reconstruction coefficients:')
+               call mpas_log_write(' ')
                do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-                  write(stderrUnit,*) iEdgeOnCell, coeffsReconstruct(:,iEdgeOnCell,iCell)
+                  write(msg,*) iEdgeOnCell, coeffsReconstruct(:,iEdgeOnCell,iCell)
+                  call mpas_log_write(msg)
                enddo
-               write(stderrUnit,*) ' '
-               write(stderrUnit,*) 'iEdgeOnCell, cellsOnEdge, normalVelocity:'
+               call mpas_log_write(' ')
+               call mpas_log_write('iEdgeOnCell, cellsOnEdge, normalVelocity:')
                do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                  write(stderrUnit,*) iEdgeOnCell, cellsOnEdge(:,iEdge), normalVelocityInitial(iLevel,iEdge)
+                  write(msg,*) iEdgeOnCell, cellsOnEdge(:,iEdge), normalVelocityInitial(iLevel,iEdge)
+                  call mpas_log_write(msg)
                enddo
             endif
 
@@ -412,15 +424,19 @@ contains
                xDiff = abs(uReconstructX(iLevel,iCell) - uVelocityX(iCell)) / speed
                yDiff = abs(uReconstructY(iLevel,iCell) - uVelocityY(iCell)) / speed
 
-               write(stderrUnit,*) ' '
-               write(stderrUnit,*) 'WARNING: Reconstructed velocity not equal to uniform velocity, iCell, xDiff, yDiff=', &
+               call mpas_log_write(' ')
+               write(msg,*) 'WARNING: Reconstructed velocity not equal to uniform velocity, iCell, xDiff, yDiff=', &
                   iCell, xDiff, yDiff
-               write(stderrUnit,*) 'Prescribed velocity:   ', uVelocityX(iCell), uVelocityY(iCell)
-               write(stderrUnit,*) 'Reconstructed velocity:', uReconstructX(iLevel,iCell), uReconstructY(iLevel,iCell)
-               write(stderrUnit,*) 'iEdgeOnCell, cellsOnEdge, normal velocity:'
+               call mpas_log_write(msg)
+               write(msg,*) 'Prescribed velocity:   ', uVelocityX(iCell), uVelocityY(iCell)
+               call mpas_log_write(msg)
+               write(msg,*) 'Reconstructed velocity:', uReconstructX(iLevel,iCell), uReconstructY(iLevel,iCell)
+               call mpas_log_write(msg)
+               call mpas_log_write('iEdgeOnCell, cellsOnEdge, normal velocity:')
                do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                  write(stderrUnit,*) iEdgeOnCell, cellsOnEdge(:,iEdge), normalVelocityInitial(iLevel,iEdge)
+                  write(msg,*) iEdgeOnCell, cellsOnEdge(:,iEdge), normalVelocityInitial(iLevel,iEdge)
+                  call mpas_log_write(msg)
                enddo
                err = 1
             endif
@@ -437,8 +453,9 @@ contains
 
       if (radialMelting) then   ! force the calving front to retreat
 
-         write(stderrUnit,*) 'Setting up radially symmetric melting'
-         write(stderrUnit,*) 'Melt rate at periphery (m/yr) =', maxMelt * scyr / 910.0_RKIND
+         call mpas_log_write('Setting up radially symmetric melting')
+         write(msg,*) 'Melt rate at periphery (m/yr) =', maxMelt * scyr / 910.0_RKIND
+         call mpas_log_write(msg)
 
          ! Zero out the normal velocities, since we are testing ice retreat
          normalVelocityInitial(:,:) = 0.0_RKIND
@@ -458,37 +475,37 @@ contains
             sfcMassBal(iCell) = maxMelt * (-radius/maxRadius)
          enddo
 
-         write(stderrUnit,*) ' '
-         write(stderrUnit,*) 'thickness (m):'
-         do iRow = nRows, 1, -1
-            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-               write(stderrUnit,'(a3)',advance='no') '    '
-            endif
-            do i = nCellsPerRow/2 - 2, nCellsPerRow
-               iCell = (iRow-1)*nCellsPerRow + i
-               write(stderrUnit,'(f8.2)',advance='no') thickness(iCell)
-            enddo
-            write(stderrUnit,*) ' '
-         enddo
-
-         write(stderrUnit,*) ' '
-         write(stderrUnit,*) 'melt rate (m/yr):'
-         do iRow = nRows, 1, -1
-            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-               write(stderrUnit,'(a3)',advance='no') '    '
-            endif
-            do i = nCellsPerRow/2 - 2, nCellsPerRow
-               iCell = (iRow-1)*nCellsPerRow + i
-               write(stderrUnit,'(f8.2)',advance='no') -sfcMassBal(iCell)*scyr/910.0_RKIND
-            enddo
-            write(stderrUnit,*) ' '
-         enddo
+!         call mpas_log_write(' ')
+!         call mpas_log_write('thickness (m):')
+!         do iRow = nRows, 1, -1
+!            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!               write(stderrUnit,'(a3)',advance='no') '    '
+!            endif
+!            do i = nCellsPerRow/2 - 2, nCellsPerRow
+!               iCell = (iRow-1)*nCellsPerRow + i
+!               write(stderrUnit,'(f8.2)',advance='no') thickness(iCell)
+!            enddo
+!            write(stderrUnit,*) ' '
+!         enddo
+!
+!         write(stderrUnit,*) ' '
+!         write(stderrUnit,*) 'melt rate (m/yr):'
+!         do iRow = nRows, 1, -1
+!            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!               write(stderrUnit,'(a3)',advance='no') '    '
+!            endif
+!            do i = nCellsPerRow/2 - 2, nCellsPerRow
+!               iCell = (iRow-1)*nCellsPerRow + i
+!               write(stderrUnit,'(f8.2)',advance='no') -sfcMassBal(iCell)*scyr/910.0_RKIND
+!            enddo
+!            write(stderrUnit,*) ' '
+!         enddo
 
       endif   ! radialMelting
 
       if (trim(config_calving) == 'topographic_threshold') then
 
-         write(stderrUnit,*) 'Setting topography to drop off at periphery'
+         call mpas_log_write('Setting topography to drop off at periphery')
 
          ! Set the bed topography to drop off near the periphery of the ice
          ! so as to check that the calving topographic threshold option is working.
@@ -504,23 +521,24 @@ contains
             endif
          enddo
 
-         write(stderrUnit,*) ' '
-         write(stderrUnit,*) 'bedTopography (m):'
-         do iRow = nRows, 1, -1
-            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-               write(stderrUnit,'(a3)',advance='no') '    '
-            endif
-            do i = nCellsPerRow/2 - 2, nCellsPerRow
-               iCell = (iRow-1)*nCellsPerRow + i
-               write(stderrUnit,'(f8.2)',advance='no') -bedTopography(iCell)
-            enddo
-            write(stderrUnit,*) ' '
-         enddo
+!         write(stderrUnit,*) ' '
+!         write(stderrUnit,*) 'bedTopography (m):'
+!         do iRow = nRows, 1, -1
+!            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!               write(stderrUnit,'(a3)',advance='no') '    '
+!            endif
+!            do i = nCellsPerRow/2 - 2, nCellsPerRow
+!               iCell = (iRow-1)*nCellsPerRow + i
+!               write(stderrUnit,'(f8.2)',advance='no') -bedTopography(iCell)
+!            enddo
+!            write(stderrUnit,*) ' '
+!         enddo
 
       elseif (trim(config_calving) == 'floating') then
 
-         write(stderrUnit,*) 'Setting topography to be mostly grounded'
-         write(stderrUnit,*) 'Spike depth =', spikeTopography
+         call mpas_log_write('Setting topography to be mostly grounded')
+         write(msg,*) 'Spike depth =', spikeTopography
+         call mpas_log_write(msg)
 
          ! Put in a large spike that grounds most of the ice, but leaves the peripheral ice floating,
          ! so as to check that the calving no-float option is working.
@@ -536,18 +554,18 @@ contains
             endif
          enddo
 
-         write(stderrUnit,*) ' '
-         write(stderrUnit,*) 'bed depth (m):'
-         do iRow = nRows, 1, -1
-            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-               write(stderrUnit,'(a3)',advance='no') '    '
-            endif
-            do i = nCellsPerRow/2 - 2, nCellsPerRow
-               iCell = (iRow-1)*nCellsPerRow + i
-               write(stderrUnit,'(f8.2)',advance='no') -bedTopography(iCell)
-            enddo
-            write(stderrUnit,*) ' '
-         enddo
+!         write(stderrUnit,*) ' '
+!         write(stderrUnit,*) 'bed depth (m):'
+!         do iRow = nRows, 1, -1
+!            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!               write(stderrUnit,'(a3)',advance='no') '    '
+!            endif
+!            do i = nCellsPerRow/2 - 2, nCellsPerRow
+!               iCell = (iRow-1)*nCellsPerRow + i
+!               write(stderrUnit,'(f8.2)',advance='no') -bedTopography(iCell)
+!            enddo
+!            write(stderrUnit,*) ' '
+!         enddo
 
       endif   ! config_calving
       !--------------------------------
@@ -558,7 +576,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_velocity_uniform_init."
+          call mpas_log_write("An error has occurred in li_velocity_uniform_init.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------

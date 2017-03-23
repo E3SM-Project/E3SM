@@ -25,6 +25,8 @@ module li_calving
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_log
+
    use li_setup
    use li_mask
    use li_constants
@@ -197,8 +199,8 @@ module li_calving
          calvingFraction = min(deltat/config_calving_timescale, 1.0_RKIND)
          !WHL - debug
          if (config_print_calving_info) then
-            write(stdoutUnit,*) 'Calving a fraction of the ice thickness at each timestep'
-            write(stdoutUnit,*) 'deltat (yr), calvingFraction =', deltat/scyr, calvingFraction
+            call mpas_log_write('Calving a fraction of the ice thickness at each timestep')
+            call mpas_log_write('deltat (yr) = $r, calvingFraction = $r', realArgs=(/deltat/scyr, calvingFraction/))
          endif
       else
          calvingFraction = 1.0_RKIND   ! calve the entire thickness in eligible columns
@@ -229,26 +231,26 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          if (config_print_calving_info) then
-            write(stdoutUnit,*) 'Do ice calving, option = ', trim(config_calving)
-            write(stdoutUnit,*) 'Calving timscale (yr) = ', config_calving_timescale / scyr
+            call mpas_log_write('Do ice calving, option = ' // trim(config_calving))
+            call mpas_log_write('Calving timscale (yr) = $r', realArgs=(/config_calving_timescale / scyr/))
 
             !WHL - debug - for circular shelf test case
-            if (circular_shelf) then
-               write(stdoutUnit,*) ' '
-               write(stdoutUnit,*) 'Ice thickness before calving'
-               do iRow = nRows, 1, -1
-                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                     write(stdoutUnit,'(a3)',advance='no') '    '
-                  endif
-!!                 do i = 1, nCellsPerRow
-                  do i = nCellsPerRow/2 - 2, nCellsPerRow
-                     iCell = (iRow-1)*nCellsPerRow + i
-!!                    write(stdoutUnit,'(i5)',advance='no') iCell
-                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
-                  enddo
-                  write(stdoutUnit,*) ' '
-               enddo
-            endif   ! circular_shelf
+!            if (circular_shelf) then
+!               write(stdoutUnit,*) ' '
+!               write(stdoutUnit,*) 'Ice thickness before calving'
+!               do iRow = nRows, 1, -1
+!                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                     write(stdoutUnit,'(a3)',advance='no') '    '
+!                  endif
+!!!                 do i = 1, nCellsPerRow
+!                  do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                     iCell = (iRow-1)*nCellsPerRow + i
+!!!                    write(stdoutUnit,'(i5)',advance='no') iCell
+!                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+!                  enddo
+!                  write(stdoutUnit,*) ' '
+!               enddo
+!            endif   ! circular_shelf
 
          endif  ! config_print_calving_info
 
@@ -289,18 +291,17 @@ module li_calving
             !      - Calve ice in ocean cells that are not on the inactive margin.
 
             if (config_print_calving_info) then
-               write(stdoutUnit,*) 'Calving thickness (m) =', config_calving_thickness
-               write(stdoutUnit,*) 'Dynamic thickness (m) =', config_dynamic_thickness
+               call mpas_log_write('Calving thickness (m) = $r', realArgs=(/config_calving_thickness/))
+               call mpas_log_write('Dynamic thickness (m) = $r', realArgs=(/config_dynamic_thickness/))
             endif
 
             ! Make sure config_calving_thickness > config_dynamic_thickness.
             ! Otherwise the algorithm will not work.
 
             if (config_calving_thickness < config_dynamic_thickness) then
-               write(stderrUnit,*) 'ERROR: Must have config_calving_thickness > config_dynamic_thickness'
-               write(stderrUnit,*) 'config_calving_thickness (m) =', config_calving_thickness
-               write(stderrUnit,*) 'config_dynamic_thickness (m) =', config_dynamic_thickness
-!!               call mpas_dmpar_global_abort('MPAS-landice: Aborting with calving error')
+               call mpas_log_write('config_calving_thickness (m) = $r', realArgs=(/config_calving_thickness/), messageType=MPAS_LOG_ERR)
+               call mpas_log_write('config_dynamic_thickness (m) = $r', realArgs=(/config_dynamic_thickness/), messageType=MPAS_LOG_ERR)
+               call mpas_log_write('Must have config_calving_thickness > config_dynamic_thickness', messageType=MPAS_LOG_CRIT)
             endif
 
             ! get scratch fields for calving
@@ -443,7 +444,7 @@ module li_calving
                ! calve ice where the bed topography lies below a threshold depth
 
                if (config_print_calving_info) then
-                  write(stdoutUnit,*) 'Calving topographic threshold (m) =', config_calving_topography
+                  call mpas_log_write('Calving topographic threshold (m) = $r', realArgs=(/config_calving_topography/))
                endif
 
                where (bedTopography < config_calving_topography + config_sea_level)
@@ -481,31 +482,31 @@ module li_calving
 
          if (config_print_calving_info) then
 
-            write(stdoutUnit,*) ' '
-            write(stdoutUnit,*) 'Global cell ID, bedTopography, calvingThickness:'
+            call mpas_log_write(' ')
+            call mpas_log_write('Global cell ID, bedTopography, calvingThickness:')
             do iCell = 1, nCells
                if (calvingThickness(iCell) > 0.0_RKIND) then
-                  write(stdoutUnit,*) indexToCellID(iCell), bedTopography(iCell), calvingThickness(iCell)
+                  call mpas_log_write("$i $r $r", intArgs=(/indexToCellID(iCell)/), realArgs=(/bedTopography(iCell), calvingThickness(iCell)/))
                endif
             enddo
 
             !WHL - debug - for circular shelf test case
-            if (circular_shelf) then
-               write(stdoutUnit,*) ' '
-               write(stdoutUnit,*) 'Ice thickness after calving'
-               do iRow = nRows, 1, -1
-                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                     write(stdoutUnit,'(a3)',advance='no') '    '
-                  endif
-!!                 do i = 1, nCellsPerRow
-                  do i = nCellsPerRow/2 - 2, nCellsPerRow
-                     iCell = (iRow-1)*nCellsPerRow + i
-!!                    write(stdoutUnit,'(i5)',advance='no') iCell
-                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
-                  enddo
-                  write(stdoutUnit,*) ' '
-               enddo
-            endif   ! circular_shelf
+!            if (circular_shelf) then
+!               write(stdoutUnit,*) ' '
+!               write(stdoutUnit,*) 'Ice thickness after calving'
+!               do iRow = nRows, 1, -1
+!                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                     write(stdoutUnit,'(a3)',advance='no') '    '
+!                  endif
+!!!                 do i = 1, nCellsPerRow
+!                  do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                     iCell = (iRow-1)*nCellsPerRow + i
+!!!                    write(stdoutUnit,'(i5)',advance='no') iCell
+!                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+!                  enddo
+!                  write(stdoutUnit,*) ' '
+!               enddo
+!            endif   ! circular_shelf
 
          endif   ! config_print_calving_info
 
@@ -515,7 +516,7 @@ module li_calving
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_calve_ice."
+          call mpas_log_write("An error has occurred in li_calve_ice.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -653,25 +654,25 @@ module li_calving
          call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 
          if (config_print_calving_info) then
-            write(stdoutUnit,*) 'Restore calving front'
-            write(stdoutUnit,*) 'max thickness (m) =', maxval(thickness)
+            call mpas_log_write('Restore calving front')
+            call mpas_log_write('max thickness (m) = $r', realArgs=(/maxval(thickness)/))
 
             !WHL - debug - for circular shelf test case
-            if (circular_shelf) then
-               write(stdoutUnit,*) 'Initial ice thickness'
-               do iRow = nRows, 1, -1
-                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                     write(stdoutUnit,'(a3)',advance='no') '    '
-                  endif
-!!                 do i = 1, nCellsPerRow
-                  do i = nCellsPerRow/2 - 2, nCellsPerRow
-                     iCell = (iRow-1)*nCellsPerRow + i
-!!                    write(stdoutUnit,'(i5)',advance='no') iCell
-                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
-                  enddo
-                  write(stdoutUnit,*) ' '
-               enddo
-            endif   ! circular_shelf
+!            if (circular_shelf) then
+!               call mpas_log_write('Initial ice thickness'
+!               do iRow = nRows, 1, -1
+!                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                     write(stdoutUnit,'(a3)',advance='no') '    '
+!                  endif
+!!!                 do i = 1, nCellsPerRow
+!                  do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                     iCell = (iRow-1)*nCellsPerRow + i
+!!!                    write(stdoutUnit,'(i5)',advance='no') iCell
+!                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+!                  enddo
+!                  write(stdoutUnit,*) ' '
+!               enddo
+!            endif   ! circular_shelf
 
          endif
 
@@ -706,7 +707,7 @@ module li_calving
                   !       Save the difference (restoreThicknessMin - thickness) so as to keep track of energy non-conservation.
 
                   if (config_print_calving_info) then
-                     write(stdoutUnit,*) 'Restore ice: iCell, thickness =', iCell, thickness(iCell)
+                     call mpas_log_write('Restore ice: iCell=$i, thickness=$r', intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
                   endif
 
                   restoreThickness(iCell) = restoreThicknessMin - thickness(iCell)
@@ -731,7 +732,7 @@ module li_calving
                   ! Remove the ice and add it to calvingThickness.
 
                   if (config_print_calving_info) then
-                     write(stdoutUnit,*) 'Remove ice:  iCell, thickness =', iCell, thickness(iCell)
+                     call mpas_log_write('Remove ice:  iCell=$i, thickness=$r', intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
                   endif
 
                   calvingThickness(iCell) = thickness(iCell)
@@ -747,30 +748,30 @@ module li_calving
       enddo
 
       if (config_print_calving_info) then
-         write(stdoutUnit,*) 'Restored the initial calving front'
+         call mpas_log_write('Restored the initial calving front')
 
          !WHL - debug - for circular shelf test case
-         if (circular_shelf) then
-            write(stdoutUnit,*) 'Final ice thickness'
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stdoutUnit,'(a3)',advance='no') '    '
-               endif
-!!               do i = 1, nCellsPerRow
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-!!                  write(stdoutUnit,'(i5)',advance='no') iCell
-                  write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
-               enddo
-               write(stdoutUnit,*) ' '
-            enddo
-         endif  ! circular shelf
+!         if (circular_shelf) then
+!            write(stdoutUnit,*) 'Final ice thickness'
+!            do iRow = nRows, 1, -1
+!               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                  write(stdoutUnit,'(a3)',advance='no') '    '
+!               endif
+!!!               do i = 1, nCellsPerRow
+!               do i = nCellsPerRow/2 - 2, nCellsPerRow
+!                  iCell = (iRow-1)*nCellsPerRow + i
+!!!                  write(stdoutUnit,'(i5)',advance='no') iCell
+!                  write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+!               enddo
+!               write(stdoutUnit,*) ' '
+!            enddo
+!         endif  ! circular shelf
 
       endif
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_restore_calving_front."
+          call mpas_log_write("An error has occurred in li_restore_calving_front.", MPAS_LOG_ERR)
       endif
 
 

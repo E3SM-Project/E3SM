@@ -26,7 +26,7 @@ module li_velocity
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_timer
-   use mpas_io_units
+   use mpas_log
 
    use li_velocity_external
    use li_velocity_simple
@@ -112,7 +112,7 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
-      write(stdoutUnit,*) 'Using ', trim(config_velocity_solver), ' dynamical core.'
+      call mpas_log_write('Using ' // trim(config_velocity_solver) // ' velocity solver.')
       select case (config_velocity_solver)
       case ('none')
          ! Do nothing
@@ -123,13 +123,13 @@ contains
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_init(domain, err)
       case default
-          write(stderrUnit,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
           err = 1
       end select
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_velocity_init."
+          call mpas_log_write("An error has occurred in li_velocity_init.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -195,13 +195,13 @@ contains
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_block_init(block, err)
       case default
-          write(stderrUnit,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
           err = 1
       end select
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_velocity_block_init."
+          call mpas_log_write("An error has occurred in li_velocity_block_init.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -364,7 +364,7 @@ contains
                 uReconstructX = 0.0_RKIND
                 uReconstructY = 0.0_RKIND
                 uReconstructZ = 0.0_RKIND
-                write (stderrUnit,*) "Notice: Skipping velocity solve because there is no dynamic ice in domain."
+                call mpas_log_write("Notice: Skipping velocity solve because there is no dynamic ice in domain.", MPAS_LOG_WARN)
              else
                 call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err_tmp)
              endif
@@ -386,7 +386,7 @@ contains
 
         case default
 
-             write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+             call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
              err = 1
              call mpas_timer_stop("velocity solve")
              return
@@ -416,8 +416,8 @@ contains
                     ( li_mask_is_dynamic_ice(cellMask(cell2)) .and.     &
                       upperSurface(cell1) > upperSurface(cell2) ) ) then
                   if (config_print_velocity_cleanup_details) then
-                     write (stderrUnit,*) "Notice: Nonzero velocity has been calculated on an 'uphill' margin edge.  ", &
-                        "normalVelocity here has been set to 0.  Location is edge index:", indexToEdgeID(iEdge)
+                     call mpas_log_write("Notice: Nonzero velocity has been calculated on an 'uphill' margin edge.  " // &
+                        "normalVelocity here has been set to 0.  Location is edge index: $i", intArgs=(/indexToEdgeID(iEdge)/))
                   endif
                   normalVelocity(:, iEdge) = 0.0_RKIND
                   uphillMarginEdgesFixed = uphillMarginEdgesFixed + 1
@@ -430,9 +430,9 @@ contains
       end do
 
      if (uphillMarginEdgesFixed > 0) then
-          write (stderrUnit,*) "Notice: Nonzero velocity has been calculated on 'uphill' margin edge(s).  normalVelocity has " &
-                            // "been set to 0 at these location(s).  Number of edges affected on this processor:", &
-                            uphillMarginEdgesFixed
+          call mpas_log_write("Notice: Nonzero velocity has been calculated on 'uphill' margin edge(s).  normalVelocity has " &
+                            // "been set to 0 at these location(s).  Number of edges affected on this processor: $i", &
+                            intArgs=(/uphillMarginEdgesFixed/))
       endif
 
       ! ---
@@ -510,7 +510,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_velocity_solve."
+          call mpas_log_write("An error has occurred in li_velocity_solve.", MPAS_LOG_ERR)
       endif
 
       call mpas_timer_stop("velocity solve")
@@ -577,14 +577,14 @@ contains
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_finalize(err)
       case default
-          write(stdoutUnit,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          call mpas_log_write(trim(config_velocity_solver) // ' is not a valid land ice velocity solver option.', MPAS_LOG_ERR)
           err = 1
           return
       end select
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_velocity_finalize."
+          call mpas_log_write("An error has occurred in li_velocity_finalize.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------

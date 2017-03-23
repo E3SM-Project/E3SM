@@ -20,7 +20,7 @@ module li_velocity_external
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timer
-   use mpas_io_units
+   use mpas_log
 
    use li_setup
    use, intrinsic :: iso_c_binding
@@ -135,20 +135,20 @@ contains
 
       ! Check for configuration options that are incompatible with external velocity solver conventions
       if (config_num_halos < 2) then
-         write(stderrUnit,*) "Error: External velocity solvers require that config_num_halos >= 2"
+         call mpas_log_write("External velocity solvers require that config_num_halos >= 2", MPAS_LOG_ERR)
          err_tmp = 1
       endif
       err = ior(err,err_tmp)
 
       if (config_number_of_blocks /= 0) then
-         write(stderrUnit,*) "Error: External velocity solvers require that config_number_of_blocks=0"
+         call mpas_log_write("External velocity solvers require that config_number_of_blocks=0", MPAS_LOG_ERR)
          err_tmp = 1
       endif
       err = ior(err,err_tmp)
 
       ! Check if we are on a sphere - not supported by external dycores
       if (domain % on_a_sphere) then
-         write(stderrUnit,*) "ERROR: External velocity solvers cannot be run with a spherical mesh."
+         call mpas_log_write("External velocity solvers cannot be run with a spherical mesh.", MPAS_LOG_ERR)
          err_tmp = 1
       endif
       err = ior(err,err_tmp)
@@ -156,14 +156,12 @@ contains
       ! These calls are needed for setting up the external velocity solvers
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       !call external first order solver to set the grid of the velocity solver
-      write(stdoutUnit,*) "Initializing external velocity solver."
-      flush(stdoutUnit)  ! Flush log files before handing control to C++
-      flush(stderrUnit)
+      call mpas_log_write("Initializing external velocity solver.", flushNow=.true.)
 
       call velocity_solver_init_mpi(domain % dminfo % comm)
 #else
       err = 1
-      write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."
+      call mpas_log_write("To run with an external velocity solver you must compile MPAS with one.", MPAS_LOG_ERR)
 #endif
 
 
@@ -171,7 +169,7 @@ contains
 #ifdef USE_EXTERNAL_STOKES
           call interface_phg_init(domain, err)
 #else
-          write(stderrUnit,*) "Error: External Stokes library needed to run Stokes dycore."
+          call mpas_log_write("External Stokes library needed to run Stokes dycore.", MPAS_LOG_ERR)
           err = 1
           return
 #endif
@@ -181,7 +179,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_velocity_external_init."
+          call mpas_log_write("An error has occurred in li_velocity_external_init.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -304,9 +302,7 @@ contains
       !zCell is supposed to be zero when working on planar geometries (radius = 0)
       !nVertLevels should be equal to nVertLevelsSolve (no splitting of the domain in the vertical direction)
       call mpas_timer_start("velocity_solver_set_grid_data")
-      write(stdoutUnit,*) "Initializing external velocity solver grid data."
-      flush(stdoutUnit)  ! Flush log files before handing control to C++
-      flush(stderrUnit)
+      call mpas_log_write("Initializing external velocity solver grid data.", flushNow=.true.)
 
       call velocity_solver_set_grid_data(nCells, nEdges, nVertices, nVertInterfaces, &
               nCellsSolve, nEdgesSolve, nVerticesSolve, maxNEdgesOnCell, radius, &
@@ -318,7 +314,7 @@ contains
               sendVerticesArray, recvVerticesArray)
       call mpas_timer_stop("velocity_solver_set_grid_data")
 #else
-      write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."
+      call mpas_log_write("To run with an external velocity solver you must compile MPAS with one.", MPAS_LOG_ERR)
       err = 1
 #endif
 
@@ -347,7 +343,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_velocity_external_block_init."
+          call mpas_log_write("An error has occurred in li_velocity_external_block_init.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -474,9 +470,7 @@ contains
       ! initialize vertexMask to garbage which sets anyDynamicVertexMaskChanged to 1.
       if ((anyDynamicVertexMaskChanged == 1) .or. (config_always_compute_fem_grid) .or. &
           (dirichletMaskChanged == 1) ) then
-         write(stdoutUnit,*) "Generating new external velocity solver FEM grid."
-         flush(stdoutUnit)  ! Flush log files before handing control to C++
-         flush(stderrUnit)
+         call mpas_log_write("Generating new external velocity solver FEM grid.", flushNow=.true.)
          call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
               floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
       endif
@@ -491,9 +485,7 @@ contains
       uReconstructX =  uReconstructX  * secondsInYear
       uReconstructY =  uReconstructY  * secondsInYear
 
-      write(stdoutUnit,*) "Beginning velocity solve using external velocity solver."
-      flush(stdoutUnit)  ! Flush log files before handing control to C++
-      flush(stderrUnit)
+      call mpas_log_write("Beginning velocity solve using external velocity solver.", flushNow=.true.)
 
       select case (config_velocity_solver)
       case ('L1L2') ! ===============================================
@@ -512,7 +504,7 @@ contains
              call mpas_timer_stop("velocity_solver export")
           endif
 #else
-              write(stderrUnit,*) "Error: External LifeV library needed to run L1L2 dycore."
+              call mpas_log_write("External LifeV library needed to run L1L2 dycore.", MPAS_LOG_ERR)
               err = 1
               return
 #endif
@@ -535,7 +527,7 @@ contains
              call mpas_timer_stop("velocity_solver export")
           endif
 #else
-              write(stderrUnit,*) "Error: External library needed to run FO dycore."
+              call mpas_log_write("External library needed to run FO dycore.", MPAS_LOG_ERR)
               err = 1
               return
 #endif
@@ -549,12 +541,12 @@ contains
           uReconstructZ = uReconstructZ / (365.0_RKIND * 24.0_RKIND * 3600.0_RKIND)  ! convert from m/yr to m/s
           call mpas_timer_stop("velocity_solver_solve_stokes")
 #else
-          write(stderrUnit,*) "Error: External Stokes library needed to run stokes dycore."
+          call mpas_log_write("External Stokes library needed to run stokes dycore.", MPAS_LOG_ERR)
           err = 1
           return
 #endif
       end select
-      write(stdoutUnit,*) "Completed velocity solve using external velocity solver."
+      call mpas_log_write("Completed velocity solve using external velocity solver.")
 
       ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
       normalVelocity = normalVelocity / secondsInYear
@@ -625,7 +617,7 @@ contains
       ! This call is needed for using any of the external velocity solvers
    !   call velocity_solver_finalize()
 #else
-      write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."
+      call mpas_log_write("To run with an external velocity solver you must compile MPAS with one.", MPAS_LOG_ERR)
       err = 1
       return
 #endif
@@ -690,7 +682,7 @@ contains
       ! This call is needed for using any of the PHG velocity solvers
       call phg_init(domain % dminfo % comm)
 #else
-      write(stderrUnit,*) "Error: External Stokes library needed to run stokes dycore."
+      call mpas_log_write("External Stokes library needed to run stokes dycore.", MPAS_LOG_ERR)
       err = 1
       return
 #endif
@@ -745,7 +737,7 @@ contains
           call velocity_solver_compute_2d_grid(vertexMask, cellMask, dirichletVelocityMask, floatingEdges)
           call mpas_timer_stop("velocity_solver_compute_2d_grid")
 #else
-          write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."
+          call mpas_log_write("To run with an external velocity solver you must compile MPAS with one.", MPAS_LOG_ERR)
           err = 1
           return
 #endif
@@ -758,7 +750,7 @@ contains
               call velocity_solver_init_L1L2(layerThicknessFractions)
               call mpas_timer_stop("velocity_solver_init_L1L2")
 #else
-              write(stderrUnit,*) "Error: External LifeV library needed to run L1L2 dycore."
+              call mpas_log_write("External LifeV library needed to run L1L2 dycore.", MPAS_LOG_ERR)
               err = 1
               return
 #endif
@@ -772,7 +764,7 @@ contains
               call velocity_solver_init_FO(layerThicknessFractions)
               call mpas_timer_stop("velocity_solver_init_FO")
 #else
-              write(stderrUnit,*) "Error: External library needed to run FO dycore."
+              call mpas_log_write("External library needed to run FO dycore.", MPAS_LOG_ERR)
               err = 1
               return
 #endif
@@ -786,7 +778,7 @@ contains
               call velocity_solver_init_stokes(layerThicknessFractions)
               call mpas_timer_stop("velocity_solver_init_stokes")
 #else
-              write(stderrUnit,*) "Error: External Stokes library needed to run stokes dycore."
+              call mpas_log_write("External Stokes library needed to run stokes dycore.", MPAS_LOG_ERR)
               err = 1
               return
 #endif

@@ -24,7 +24,6 @@ module li_analysis_driver
    use mpas_timekeeping
    use mpas_timer
    use mpas_stream_manager
-   use mpas_io_units
    use mpas_abort
 
    use li_constants
@@ -355,8 +354,8 @@ contains
                end if
             else
                if ( config_AM_write_on_startup ) then
-                  write(stderrUnit, *) ' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
-                                        // poolItr % memberName(1:nameLength) // '. Skipping output...'
+                  call mpas_log_write('write_on_startup called without compute_on_startup for analysis member: ' &
+                                        // poolItr % memberName(1:nameLength) // '. Skipping output...', MPAS_LOG_WARN)
                end if
             end if
          end if

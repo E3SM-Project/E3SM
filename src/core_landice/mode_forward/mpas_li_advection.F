@@ -23,6 +23,8 @@ module li_advection
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_log
+
    use li_setup
    use li_mask
    use li_constants
@@ -294,11 +296,11 @@ module li_advection
       case ('fo')
 
          if (config_print_thickness_advection_info) then
-            write(stdoutUnit,*) 'Using first-order upwind for thickness advection'
-            write(stdoutUnit,*) 'advectTracers =', advectTracers
+            call mpas_log_write('Using first-order upwind for thickness advection')
+            call mpas_log_write('advectTracers = $l', logicArgs=(/advectTracers/))
             if (dome_test) then
-               write(stdoutUnit,*) ' '
-               write(stdoutUnit,*) 'Dome test diagnostics:'
+               call mpas_log_write(' ')
+               call mpas_log_write('Dome test diagnostics:')
             endif
          endif
 
@@ -334,12 +336,12 @@ module li_advection
 
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  write(stdoutUnit,*) 'Before thickness advection, iCell (local, global), thickness, layer 1 tracer:', &
-                       iCell, indexToCellID(iCell), thickness(iCell), advectedTracers(1,1,iCell)
+                  call mpas_log_write('Before thickness advection, iCell (local=$i, global=$i), thickness=$r, layer 1 tracer:=$r', &
+                       intArgs=(/iCell, indexToCellID(iCell)/), realArgs=(/thickness(iCell), advectedTracers(1,1,iCell)/))
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                     write(stdoutUnit,*) 'iEdge (local, global), layerNormalVelocity:', &
-                        iEdge, indexToEdgeID(iEdge), layerNormalVelocity(1,iEdge)
+                     call mpas_log_write('iEdge (local=$i, global=$i), layerNormalVelocity=$r:', &
+                        intArgs=(/iEdge, indexToEdgeID(iEdge)/), realArgs=(/layerNormalVelocity(1,iEdge)/))
                   enddo
                endif
             enddo
@@ -364,10 +366,11 @@ module li_advection
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  write(stdoutUnit,*) ' '
-                  write(stdoutUnit,*) 'After thickness advection, iCell (local, global), new layer thickness, tracer 1:'
+                  call mpas_log_write(' ')
+                  call mpas_log_write('After thickness advection, iCell (local, global), new layer thickness, tracer 1:')
                   do k = 1, nVertLevels
-                     write(stdoutUnit,*) iCell, indexToCellID(iCell), layerThickness(k,iCell), advectedTracers(1,k,iCell)
+                     call mpas_log_write("$i $i $r $r", intArgs=(/iCell, indexToCellID(iCell)/), &
+                         realArgs=(/layerThickness(k,iCell), advectedTracers(1,k,iCell)/))
                   enddo
                endif
             enddo
@@ -435,10 +438,10 @@ module li_advection
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  write(stdoutUnit,*) ' '
-                  write(stdoutUnit,*) 'After vertical remap, iCell, new layer thickness, tracer 1:'
+                  call mpas_log_write(' ')
+                  call mpas_log_write('After vertical remap, iCell, new layer thickness, tracer 1:')
                   do k = 1, nVertLevels
-                     write(stdoutUnit,*) iCell, layerThickness(k,iCell), advectedTracers(1,k,iCell)
+                     call mpas_log_write("$i $r $r", intArgs=(/iCell/), realArgs=(/layerThickness(k,iCell), advectedTracers(1,k,iCell)/))
                   enddo
                endif
             enddo
@@ -463,7 +466,7 @@ module li_advection
 
       case default
 
-         write(stderrUnit,*) trim(config_thickness_advection), ' is not a valid option for thickness/tracer advection.'
+         call mpas_log_write(trim(config_thickness_advection) // ' is not a valid option for thickness/tracer advection.', MPAS_LOG_ERR)
          err_tmp = 1
 
       end select
@@ -479,7 +482,7 @@ module li_advection
 
       ! === error check
       if (err > 0) then
-         write (stderrUnit,*) "An error has occurred in li_advection_thickness_tracers"
+         call mpas_log_write("An error has occurred in li_advection_thickness_tracers", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -1146,10 +1149,9 @@ module li_advection
          invAreaCell = 1.0_RKIND / areaCell(iCell)
 
          if (indexToCellID(iCell) == config_stats_cell_ID .and. config_print_thickness_advection_info) then
-            write(stdoutUnit,*) 'In advect_thickness_tracer, iCell (local, global) =', iCell, indexToCellID(iCell)
-            write(stdoutUnit,*)
-            write(stdoutUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, ', &
-               'thicknessFluxEdge, thicknessTendency, thicknessTracerTendency:'
+            call mpas_log_write('In advect_thickness_tracer, iCell (local=$i, global=$i) =', intArgs=(/iCell, indexToCellID(iCell)/))
+            call mpas_log_write('k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, ' // &
+               'thicknessFluxEdge, thicknessTendency, thicknessTracerTendency:')
          endif
 
          ! loop over layers
@@ -1189,8 +1191,8 @@ module li_advection
 
                !WHL - debug
                if (indexToCellID(iCell) == config_stats_cell_ID .and. k==1 .and. config_print_thickness_advection_info) then
-                  write(stdoutUnit,*) k, iEdgeOnCell, layerNormalVelocity(k,iEdge), layerThicknessEdge(k,iEdge), &
-                       thicknessFluxEdge, thicknessTendency, thicknessTracerTendency(1)
+                  call mpas_log_write("$i $i $r $r $r $r $r", intArgs=(/k, iEdgeOnCell/), realArgs=(/layerNormalVelocity(k,iEdge), &
+                        layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency, thicknessTracerTendency(1)/) )
                endif
 
             enddo      ! iEdgeOnCell
@@ -1234,25 +1236,25 @@ module li_advection
          enddo
 
          if (config_print_thickness_advection_info) then
-            write(stdoutUnit,*) 'init volume, final volume, difference:', &
-               initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum
-            write(stdoutUnit,*) 'init energy, final energy, difference:', &
-               initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+            call mpas_log_write('init volume, final volume, difference: $r $r $r' , &
+               realArgs=(/initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum/))
+            call mpas_log_write('init energy, final energy, difference: $r $r $r', &
+               realArgs=(/initEnergySum, finalEnergySum, finalEnergySum - initEnergySum/))
          endif
 
          !TODO - Make these fatal errors instead of warnings?
          difference = abs(finalVolumeSum - initVolumeSum)
          if (difference/initVolumeSum > eps11) then
-            write(stderrUnit,*) 'WARNING: upwind advection, mass conservation error'
-            write(stderrUnit,*) 'init volume, final volume, difference:', &
-               initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum
+            call mpas_log_write('upwind advection, mass conservation error', MPAS_LOG_WARN)
+            call mpas_log_write('init volume, final volume, difference: $r $r $r', &
+               realArgs=(/initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum/))
          endif
 
          difference = abs(finalEnergySum - initEnergySum)
          if (difference/initEnergySum > eps11) then
-            write(stderrUnit,*) 'WARNING: upwind advection, mass*tracer conservation error'
-            write(stderrUnit,*) 'init energy, final energy, difference:', &
-               initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+            call mpas_log_write('upwind advection, mass*tracer conservation error', MPAS_LOG_WARN)
+            call mpas_log_write('init energy, final energy, difference: $r $r $r', &
+               realArgs=(/initEnergySum, finalEnergySum, finalEnergySum - initEnergySum/))
          endif
 
       endif
@@ -1264,7 +1266,7 @@ module li_advection
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in advect_thickness_tracers_upwind."
+          call mpas_log_write("An error has occurred in advect_thickness_tracers_upwind.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -1389,7 +1391,7 @@ module li_advection
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in li_layer_normal_velocity."
+          call mpas_log_write("An error has occurred in li_layer_normal_velocity.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
@@ -1549,9 +1551,9 @@ module li_advection
             difference = abs(finalEnergySum - initEnergySum)
             if (initEnergySum > eps11) then
                if (difference/initEnergySum > eps11) then
-                  write(stderrUnit,*) 'WARNING: vertical_remap, mass*tracer conservation error, iCell =', iCell
-                  write(stderrUnit,*) 'init energy, final energy, difference:', &
-                     initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+                  call mpas_log_write('vertical_remap, mass*tracer conservation error, iCell = $i', MPAS_LOG_WARN, intArgs=(/iCell/))
+                  call mpas_log_write('init energy, final energy, difference: $r $r $r', &
+                     realArgs=(/initEnergySum, finalEnergySum, finalEnergySum - initEnergySum/))
                   stop
                endif
             endif
