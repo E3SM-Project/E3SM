@@ -59,7 +59,7 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
 
     logger.info("total tasks is: %s" % total_tasks)
 
-    # make sure all maxt values at least 1, don't know why we start at index 1
+    # make sure all maxt values at least 1
     for c1 in xrange(0, total_tasks):
         if maxt[c1] < 1:
             maxt[c1] = 1
