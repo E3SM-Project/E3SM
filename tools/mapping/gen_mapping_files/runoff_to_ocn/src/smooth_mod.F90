@@ -1,8 +1,3 @@
-!===============================================================================
-! SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/runoff_to_ocn/src/smooth_mod.F90 $
-!===============================================================================
-
 MODULE smooth_mod
 
 #define _NEW 1
@@ -184,7 +179,6 @@ SUBROUTINE smooth_init(ofilename, dest_in_as_src_out,  map_in, map_out)
 
    map_out%title      = "CCSM conservative smoothing map"
    map_out%normal     = map_in%normal
-   map_out%method     = "created using SVN $Id: smooth_mod.F90 56089 2013-12-18 00:50:07Z mlevy@ucar.edu $"
    map_out%history    = map_in%history
    map_out%convention = map_in%convention
 

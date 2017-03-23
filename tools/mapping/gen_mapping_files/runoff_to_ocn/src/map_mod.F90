@@ -1317,10 +1317,6 @@ SUBROUTINE map_write(map, filename)
    rcode = nf_put_att_text(fid,NF_GLOBAL,'normalization',len_trim(str),str)
     str  = map%method
    rcode = nf_put_att_text(fid,NF_GLOBAL,'map_method' ,len_trim(str),str)
-    str  = "$SVN"
-   rcode = nf_put_att_text(fid,NF_GLOBAL,'SVN URL'     ,len_trim(str),str)
-    str  = "$Id"
-   rcode = nf_put_att_text(fid,NF_GLOBAL,'SVN Id'      ,len_trim(str),str)
     str  = map%history
    call date_and_time(cdate,ctime) ! f90 intrinsic
     str = 'File created: '//cdate(1:4)//'-'//cdate(5:6)//'-'//cdate(7:8) &
