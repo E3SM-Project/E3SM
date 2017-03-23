@@ -20,6 +20,7 @@ module cice_initialize
   use mpas_io_units
   use mpas_abort
   use cice_debug
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -69,6 +70,8 @@ contains
     type(block_type), pointer :: &
          block
 
+    call mpas_log_write("cice_init: Initialize sea-ice model")
+
     ! initialize junk values
     call init_junk_values(domain)
 
@@ -76,33 +79,43 @@ contains
     call init_test_ice_shelf_mask(domain)
 
     ! mesh initialization
+    call mpas_log_write(" Initialize mesh...")
     call cice_init_mesh(domain)
 
     ! init the basic column physics package
+    call mpas_log_write(" Initialize column parameters...")
     call cice_init_column_physics_package_parameters(domain)
 
     ! init coupler fluxes
+    call mpas_log_write(" Initialize coupler fields...")
     call initialize_coupler_fields(domain)
 
     ! initialize forcing
+    call mpas_log_write(" Initialize forcing...")
     call cice_forcing_init(domain)
 
     ! init dynamics
+    call mpas_log_write(" Initialize velocity solver...")
     call cice_init_velocity_solver(domain)
 
     ! init advection
+    call mpas_log_write(" Initialize advection...")
     call cice_init_advection(domain)
 
     ! column physics initialization
+    call mpas_log_write(" Initialize column variables...")
     call cice_init_column_physics_package_variables(domain, clock)
 
     ! init ice state
+    call mpas_log_write(" Initialize ice state...")
     call init_ice_state(domain, clock)
 
     ! initial halo exchange
+    call mpas_log_write(" Initial halo exchanges...")
     call initial_halo_exchanges(domain)
 
     ! coupler flux reset
+    call mpas_log_write(" Initialize coupler fluxes...")
     call cice_reset_coupler_fluxes(domain)
 
   end subroutine cice_init!}}}
@@ -320,9 +333,9 @@ contains
 
           else
 
-             write(stderrUnit,*) "Ice initial condition type unknown!"
-             write(stderrUnit,*) "config_initial_condition_type: ", trim(config_initial_condition_type)
-             call MPAS_dmpar_global_abort('MPAS-seaice: Ice initial condition type unknown')
+             call mpas_log_write(&
+                  "init_ice_state: config_initial_condition_type unknown:"//trim(config_initial_condition_type), &
+                  MPAS_LOG_CRIT)
 
           endif
 
@@ -380,9 +393,9 @@ contains
 
           else
 
-             write(stderrUnit,*) "Ice initial velocity type unknown!"
-             write(stderrUnit,*) "config_initial_velocity_type: ", trim(config_initial_velocity_type)
-             call MPAS_dmpar_global_abort('MPAS-seaice: Ice initial velocity type unknown')
+             call mpas_log_write(&
+                  "init_ice_state: config_initial_velocity_type unknown: "//trim(config_initial_velocity_type), &
+                  MPAS_LOG_CRIT)
 
           endif
 
@@ -779,7 +792,9 @@ contains
 
        ! code abort
        if (abortFlag) then
-          call MPAS_dmpar_global_abort("MPAS-seaice: initial_category_areas_and_volumes: "//trim(abortMessage))
+          call mpas_log_write(&
+               "initial_category_areas_and_volumes: "//trim(abortMessage), &
+               MPAS_LOG_CRIT)
        endif
 
     endif

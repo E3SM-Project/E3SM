@@ -16,7 +16,7 @@ module cice_diagnostics
   use mpas_pool_routines
   use mpas_timekeeping
   use mpas_io_units
-  use mpas_abort
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -294,8 +294,8 @@ contains
           write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
           open(errorUnit, file=trim(filename), position="append", iostat=iostat)
           if (iostat /= 0) then
-             write(stderrUnit,*) "cice_check_state: problem opening state check: ", iostat
-             call MPAS_dmpar_global_abort("MPAS-seaice: problem opening state check")
+             call mpas_log_write("cice_check_state: problem opening state check: $i", &
+                  messageType=MPAS_LOG_CRIT, intArgs=(/iostat/))
           endif
 
           block => domain % blocklist
@@ -431,8 +431,7 @@ contains
     write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
     open(errorUnit, file=trim(filename), position="append", iostat=iostat)
     if (iostat /= 0) then
-       write(stderrUnit,*) "cice_warning_message: Problem opening state check file", iostat
-       call MPAS_dmpar_global_abort("MPAS-seaice: Problem opening state check file")
+       call mpas_log_write("cice_warning_message: Problem opening state check file $i", messageType=MPAS_LOG_CRIT, intArgs=(/iostat/))
     endif
 
     call MPAS_pool_get_subpool(domain % blocklist % structs, "diagnostics", diagnosticsPool)

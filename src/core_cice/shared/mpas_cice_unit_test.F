@@ -15,6 +15,7 @@ module cice_unit_test
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_io_units
+  use mpas_log, only: mpas_log_write
 
   private
   save
@@ -54,7 +55,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_unit_test_type", config_unit_test_type)
     call MPAS_pool_get_config(domain % configs, "config_unit_test_subtype", config_unit_test_subtype)
 
-    write(stderrUnit,*) "Unit test: ", trim(config_unit_test_type), " ", trim(config_unit_test_subtype)
+    call mpas_log_write("Unit test: "//trim(config_unit_test_type)//" "//trim(config_unit_test_subtype))
 
     select case (trim(config_unit_test_type))
     case ("strain rate operator")
@@ -64,8 +65,7 @@ contains
     case ("constitutive relationship")
        call cice_constitutive_relationship_unit_test(domain)
     case default
-       write(*,*) "Unit test unknown!"
-       write(*,*) "config_unit_test_type:", trim(config_unit_test_type)
+       call mpas_log_write("cice_perform_unit_test: config_unit_test_type unknown: "//trim(config_unit_test_type))
     end select
 
   end subroutine cice_perform_unit_test!}}}

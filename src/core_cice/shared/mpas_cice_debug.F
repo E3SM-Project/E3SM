@@ -14,7 +14,7 @@ module cice_debug
 
   use mpas_derived_types
   use mpas_pool_routines
-  use mpas_io_units
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -2698,8 +2698,6 @@ contains
 
     close(60)
 
-    !write(stderrUnit,*) "cice_debug_output_array"
-
   end subroutine cice_debug_output_array
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2766,7 +2764,7 @@ contains
          poolName  = "atmos_coupling", &
          fieldName = "airPotentialTemperature"
 
-    write(stderrUnit,*) trim(poolName), " ", trim(fieldName)
+    call mpas_log_write("cice_debug_output_domain: "//trim(poolName)//" "//trim(fieldName))
 
     block => domain % blocklist
     do while (associated(block))
@@ -2831,8 +2829,8 @@ contains
 
     call MPAS_pool_get_field_info(pool, trim(fieldname), fieldInfo)
 
-    write(stderrUnit,*) "cice_debug_write_out_field: ", fieldInfo % nDims, " ", &
-         trim(poolname), " ", trim(fieldname), " ", trim(cicename)
+    call mpas_log_write("cice_debug_write_out_field: $i "//trim(poolname)//" "//trim(fieldname)//" "//trim(cicename), &
+         intArgs=(/fieldInfo % nDims/))
 
     select case (fieldInfo % nDims)
     case(1)
@@ -2935,13 +2933,13 @@ contains
 ! cice_timestep
 ! cice_run_velocity_solver
 
-    write(stderrUnit,*) trim(callingSubroutine), trim(callingSubroutineDesired), location, locationDesired, iStep, iStepDesired
+    write(*,*) trim(callingSubroutine), trim(callingSubroutineDesired), location, locationDesired, iStep, iStepDesired
 
     if (trim(callingSubroutine) == trim(callingSubroutineDesired) .and. &
         location == locationDesired .and. &
         iStep == iStepDesired) then
 
-       write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
+       write(*,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
 
        ! tracer
        call cice_debug_write_out_field(domain, "tracers", "iceAreaCategory", "aicen")
