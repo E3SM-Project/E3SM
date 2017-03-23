@@ -257,7 +257,9 @@ for parameter in parameters:
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                 acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                 viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
-
+                f_mod.close()
+                f_obs.close()
+                 
     
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
@@ -266,6 +268,8 @@ for parameter in parameters:
 
             for filename in [filename1, filename2]:
                 f_in = cdms2.open(filename)
+                if filename == filename1:
+                    f_mod = f_in
                 mv = f_in[var] # Square brackets for metadata preview
                 mv_plv = mv.getLevel()
 
@@ -351,7 +355,8 @@ for parameter in parameters:
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                     viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
-
+                    f_in.close()
+                    f_mod.close()
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
 

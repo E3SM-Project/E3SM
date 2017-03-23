@@ -211,10 +211,10 @@ derived_variables = {
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
     ],
     'FLNS': [
-        (['FLNS'], lambda flns: _convert_units(flns, target_units="W/m^2"))
+        (['FLNS'], rename)
     ],
     'FSNS': [
-        (['FSNS'], lambda fsns: _convert_units(fsns, target_units="W/m^2"))
+        (['FSNS'], rename)
     ],
     'TREFHT_LAND':[ 
         (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(_convert_units(trefht, target_units="K"), landfrac, low_limit = 0.65)),
@@ -243,10 +243,10 @@ derived_variables = {
         (['QFLX'], lambda qflx: qflx_convert_units(qflx))
     ],
     'LHFLX': [
-        (['LHFLX'], lambda lhflx: _convert_units(lhflx, target_units="W/m^2")),
+        (['LHFLX'], rename)
     ],
     'SHFLX': [
-        (['SHFLX'], lambda shflx: _convert_units(shflx, target_units="W/m^2")),
+        (['SHFLX'], rename)
     ],
     'TGCLDLWP_OCN':[ (['TGCLDLWP_OCEAN'], (lambda x: _convert_units(x, target_units='g/m^2')) ),
                      (['TGCLDLWP', 'OCNFRAC'], lambda tgcldlwp, ocnfrac: mask_by(_convert_units(tgcldlwp, target_units="g/m^2"), ocnfrac, low_limit = 0.65))],
