@@ -3,57 +3,68 @@
 ;
 ; merge two mapping files into one
 ;
+; Keith Lindsay, 2017-03-08
+; Mike Levy, 2017-03-23 (updated how arguments are passed to this script)
+;
 ;   3 options for running this program:
 ;
 ;     1) use the ../run_merge_mapping_files.sh wrapper script
-;        $ ./run_merge_mapping_files.sh --map-in-oo-fname file1_name   \
-;                                       --map-in-ms-fname file2_name   \
-;                                       --region_mask-fname file3_name \
-;                                       --map-out-fname file4_name
+;        $ ../run_merge_mapping_files.sh --map_in_oo MAP_IN_OO_FNAME     \
+;                                        --map_in_ms MAP_IN_MS_FNAME     \
+;                                        --region_mask REGION_MASK_FNAME \
+;                                        --map_out MAP_OUT_FNAME
 ;
 ;     2) ncl merge_mapping_files.ncl 'MAP_IN_OO_FNAME="file1_name"'   \
 ;                                    'MAP_IN_MS_FNAME="file2_name"'   \
 ;                                    'REGION_MASK_FNAME="file3_name"' \
 ;                                    'MAP_OUT_FNAME="file4_name"'
 ;
-;     3) use NCL_N_ARGS / NCL_ARGS environment variables
-;        NCL_ARG_1 = MAP_IN_OO_FNAME (entries into the open ocean)
-;        NCL_ARG_2 = MAP_IN_MS_FNAME (entries into marginal seas)
-;        NCL_ARG_3 = REGION_MASK_FNAME (marginal seas designation)
-;        NCL_ARG_4 = MAP_OUT_FNAME (output file)
-; Keith Lindsay, 2017-03-08
-; Mike Levy, 2017-03-22 (updated how arguments are passed to this script)
+;     3) Set following environment variables:
+;        MAP_IN_OO_FNAME (entries into the open ocean)
+;        MAP_IN_MS_FNAME (entries into marginal seas)
+;        REGION_MASK_FNAME (marginal seas designation)
+;        MAP_OUT_FNAME (output file)
 ;
 
 begin
   ; Initialize variables from command line or environment
-  if (ismissing(getenv("NCL_N_ARGS"))) then
-     if ((.not. isvar("MAP_IN_OO_FNAME")) .or. \
-         (.not. isvar("MAP_IN_MS_FNAME")) .or. \
-         (.not. isvar("REGION_MASK_FNAME")) .or. \
-         (.not. isvar("MAP_OUT_FNAME"))) then
-        print((/"ERROR: either run via ../run_merge_mapping_files.sh or use"/))
-        print((/"       NCL_N_ARGS=4 and set NCL_ARG_[1-4]"/))
-        status_exit(1)
-     end if
-  else
-     MAP_IN_OO_FNAME   = getenv("NCL_ARG_1")
-     MAP_IN_MS_FNAME   = getenv("NCL_ARG_2")
-     REGION_MASK_FNAME = getenv("NCL_ARG_3")
-     MAP_OUT_FNAME     = getenv("NCL_ARG_4")
+  if (.not. isvar("MAP_IN_OO_FNAME")) then
+     MAP_IN_OO_FNAME   = getenv("MAP_IN_OO_FNAME")
+  end if
+
+  if (.not. isvar("MAP_IN_MS_FNAME")) then
+     MAP_IN_MS_FNAME   = getenv("MAP_IN_MS_FNAME")
+  end if
+
+  if (.not. isvar("REGION_MASK_FNAME")) then
+     REGION_MASK_FNAME   = getenv("REGION_MASK_FNAME")
+  end if
+
+  if (.not. isvar("MAP_OUT_FNAME")) then
+     MAP_OUT_FNAME   = getenv("MAP_OUT_FNAME")
+  end if
+
+  ; Make sure all input files exist
+  missing_files = False
+  if (.not. fileexists(MAP_IN_OO_FNAME)) then
+    print((/"ERROR: can not find open ocean map ("+MAP_IN_OO_FNAME+ ")"/))
+    missing_files = True
+  end if
+  if (.not. fileexists(MAP_IN_MS_FNAME)) then
+    print((/"ERROR: can not find marginal sea map ("+MAP_IN_MS_FNAME+ ")"/))
+    missing_files = True
+  end if
+  if (.not. fileexists(REGION_MASK_FNAME)) then
+    print((/"ERROR: can not find region mask ("+REGION_MASK_FNAME+ ")"/))
+    missing_files = True
+  end if
+
+  if (missing_files) then
+    status_exit(1)
   end if
 
   map_in_oo_fp      = addfile(MAP_IN_OO_FNAME, "r")
-  if (ismissing(map_in_oo_fp)) then
-    print((/"ERROR: can not find ", MAP_IN_OO_FNAME/))
-    status_exit(1)
-  end if
-
   map_in_ms_fp      = addfile(MAP_IN_MS_FNAME, "r")
-  if (ismissing(map_in_ms_fp)) then
-    print((/"ERROR: can not find ", MAP_IN_MS_FNAME/))
-    status_exit(1)
-  end if
 
   ; ensure grid definitions in MAP_IN_MS_FNAME agrees with grid definitions in MAP_IN_MS_FNAME
   print("comparing grid vars in")
@@ -85,7 +96,7 @@ begin
   if (.not. diffs_found) then
     print("grid variables are compatible")
   else
-    exit
+    status_exit(1)
   end if
 
   print("reading grid info and map from " + MAP_IN_OO_FNAME)
@@ -111,11 +122,11 @@ begin
   map_in_ms_col_unique = get_unique_values(map_in_ms_col)
   if (dimsizes(map_in_oo_col_unique) .ne. dimsizes(map_in_ms_col_unique)) then
     print("number of unique col values in " + MAP_IN_OO_FNAME + " and " + MAP_IN_MS_FNAME + " differ")
-    exit
+    status_exit(1)
   end if
   if (any(map_in_oo_col_unique .ne. map_in_ms_col_unique)) then
     print("unique col values in " + MAP_IN_OO_FNAME + " and " + MAP_IN_MS_FNAME + " differ")
-    exit
+    status_exit(1)
   end if
 
   ; load POP region mask from REGION_MASK_FNAME
@@ -173,8 +184,9 @@ begin
 
   map_out_fp@history = "File created: "+systemfunc("date +%Y-%m-%d\ %H:%M:%S")
   map_out_fp@conventions = "NCAR-CCSM"
-  map_out_fp@mapping_file_open_ocean = MAP_IN_OO_FNAME
-  map_out_fp@mapping_file_marginal_seas = MAP_IN_MS_FNAME
+  map_out_fp@open_ocean_mapping_fname = MAP_IN_OO_FNAME
+  map_out_fp@marginal_seas_mapping_fname = MAP_IN_MS_FNAME
+  map_out_fp@region_mask_fname = REGION_MASK_FNAME
 
   copy_varnames = (/ "xc_a", "yc_a", "xv_a", "yv_a", "mask_a", "area_a", "frac_a", "src_grid_dims", \
                      "xc_b", "yc_b", "xv_b", "yv_b", "mask_b", "area_b", "frac_b", "dst_grid_dims" /)
