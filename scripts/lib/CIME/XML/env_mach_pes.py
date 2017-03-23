@@ -70,4 +70,4 @@ class EnvMachPes(EnvBase):
     def get_total_nodes(self, total_tasks, max_thread_count):
         tasks_per_node = self.get_tasks_per_node(total_tasks, max_thread_count)
         num_nodes = int(math.ceil(float(total_tasks) / tasks_per_node))
-        return num_nodes
+        return num_nodes + self.get_value("NUM_SPARE_NODES")

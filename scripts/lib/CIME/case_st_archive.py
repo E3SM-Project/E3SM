@@ -198,10 +198,9 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
                     histfile = matchobj.group(1).strip()
                     histfile = os.path.basename(histfile)
                     # append histfile to the list ONLY if it exists in rundir before the archiving
-                    if os.path.isfile(os.path.join(rundir,histfile)): 
+                    if os.path.isfile(os.path.join(rundir,histfile)):
                         histfiles.append(histfile)
     return histfiles
-
 
 ###############################################################################
 def _archive_restarts(case, archive, archive_entry,
@@ -355,7 +354,7 @@ def _archive_process(case, archive):
 
 
 ###############################################################################
-def case_st_archive(case):
+def case_st_archive(case, no_resubmit=False):
 ###############################################################################
     """
     Create archive object and perform short term archiving
@@ -387,7 +386,7 @@ def case_st_archive(case):
 
     # resubmit case if appropriate
     resubmit = case.get_value("RESUBMIT")
-    if resubmit > 0:
+    if resubmit > 0 and not no_resubmit:
         logger.info("resubmitting from st_archive, resubmit=%d"%resubmit)
         if case.get_value("MACH") == "mira":
             expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")

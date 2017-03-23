@@ -5,6 +5,7 @@ from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 from CIME.preview_namelists         import create_namelists
+from CIME.case_st_archive           import case_st_archive
 
 import shutil, time, sys, os, glob
 
@@ -80,6 +81,8 @@ def _run_model_impl(case, lid):
 
     pre_run_check(case, lid)
 
+    model = case.get_value("MODEL")
+
     # Set OMP_NUM_THREADS
     env_mach_pes = case.get_env("mach_pes")
     os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_values("COMP_CLASSES")))
@@ -92,7 +95,35 @@ def _run_model_impl(case, lid):
     logger.info("run command is %s " %cmd)
 
     rundir = case.get_value("RUNDIR")
-    run_cmd_no_fail(cmd, from_dir=rundir)
+    loop = True
+    num_spare_nodes = case.get_value("NUM_SPARE_NODES")
+    while loop:
+        loop = False
+        stat = run_cmd(cmd, from_dir=rundir)[0]
+        # Determine if failure was due to a failed node, if so, try to restart
+        if stat != 0:
+            node_fail_re = case.get_value("NODE_FAIL_RE")
+            if node_fail_re and num_spare_nodes > 0:
+                node_fail_regex = re.compile(node_fail_re)
+                model_logfile = os.path.join(rundir, model + ".log." + lid)
+                if os.path.exists(model_logfile):
+                    search = node_fail_regex.search(open(model_logfile, 'r').read())
+                    if search is not None:
+                        # We failed due to node failure!
+                        logger.warning("Detected model run failed due to node failure, restarting")
+
+                        case_st_archive(case, no_resubmit=True)
+
+                        case.set_value("CONTINUE_RUN", "TRUE")
+                        lid = new_lid()
+                        loop = True
+
+                        num_spare_nodes -= 1
+
+            if not loop:
+                # We failed and we're not restarting
+                expect(False, "Command '%s' failed" % cmd)
+
     logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     post_run_check(case, lid)
