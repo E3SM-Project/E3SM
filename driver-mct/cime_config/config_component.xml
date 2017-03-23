@@ -1804,6 +1804,17 @@
     </desc>
   </entry>
 
+  <entry id="NODE_FAIL_REGEX">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to search for an indication that a run failure was caused by a node failure
+      and should therefore be re-attempted.
+    </desc>
+  </entry>
+
   <entry id="PROXY">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -1878,6 +1889,14 @@
   <!-- ===================================================================== -->
   <!-- definitions pelayout -->
   <!-- ===================================================================== -->
+
+  <entry id="NUM_SPARE_NODES">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Number of spare nodes to allocate</desc>
+  </entry>
 
   <entry id="NTASKS">
     <type>integer</type>
