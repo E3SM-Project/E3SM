@@ -27,9 +27,25 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
-    f_data = open('set5_diags_WILLMOTT.json').read()
+    #f_data = open('set5_diags_WILLMOTT.json').read()
+    #f_data = open('set5_diags_XIEARKIN.json').read()
+    #f_data = open('set5_diags_PRECL.json').read()
+    #f_data = open('set5_diags_UWisc.json').read()
+    #f_data = open('set5_diags_SSMI.json').read()
+    #f_data = open('set5_diags_LARYEA.json').read()
+    #f_data = open('set5_diags_ERA40.json').read()
+    #f_data = open('set5_diags_ERAI.json').read()
+    #f_data = open('set5_diags_JRA25.json').read()
+    #f_data = open('set5_diags_AIRS.json').read()
+    #f_data = open('set5_diags_CERES-EBAF.json').read()
+    #f_data = open('set5_diags_ERBE.json').read()
+    #f_data = open('set5_diags_ISCCPFD.json').read()
+    #f_data = open('set5_diags_ISCCP.json').read()
+    #f_data = open('set5_diags_WARREN.json').read()
+    #f_data = open('set5_diags_CLOUDSAT.json').read()
     #f_data = open('set5_diags_NVAP.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
+    f_data = open('set5_diags_AMWG_default.json').read()
     json_file = json.loads(f_data)
 
     parameters = []
@@ -149,7 +165,8 @@ for parameter in parameters:
             filename1 = filename
 
         ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
-        for filename in fnmatch.filter(ref_files, '*'+season+'*'):
+        #for filename in fnmatch.filter(ref_files, '*'+season+'*'):
+        for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+season+'*'):
             print filename
             filename2 = filename
 
@@ -161,13 +178,16 @@ for parameter in parameters:
         #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
         mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
         mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
-        print mv1.units
-        print mv2.units
 
         # special case, cdms didn't properly convert mask with fill value -999.0, filed issue with denise
-        if ref_name == 'WILLMOTT':
+        if ref_name == 'WARREN':
+            mv2=MV2.masked_where(mv2==-0.9,mv2) # this is cdms2 for bad mask, denise's fix should fix
+            #following should move to derived variable
+        if ref_name == 'WILLMOTT' or ref_name == 'CLOUDSAT':
+            print mv2.fill_value
             #mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
             mv2=MV2.masked_where(mv2==-999.,mv2) # this is cdms2 for bad mask, denise's fix should fix
+            
             #following should move to derived variable
             if var == 'PRECT_LAND': 
                 days_season = {'ANN':365,'DJF':90,'MAM':92,'JJA':92,'SON':91}
@@ -237,7 +257,9 @@ for parameter in parameters:
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                 acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                 viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
-
+                f_mod.close()
+                f_obs.close()
+                 
     
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
@@ -246,6 +268,8 @@ for parameter in parameters:
 
             for filename in [filename1, filename2]:
                 f_in = cdms2.open(filename)
+                if filename == filename1:
+                    f_mod = f_in
                 mv = f_in[var] # Square brackets for metadata preview
                 mv_plv = mv.getLevel()
 
@@ -261,7 +285,12 @@ for parameter in parameters:
 
 
                 elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
+
                     mv = f_in (var)
+                    if ref_name == 'AIRS':
+                        #mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
+                        print mv.fill_value
+                        mv=MV2.masked_where(mv==mv.fill_value,mv) # this is cdms2 for bad mask, denise's fix should fix
                     #Construct pressure level for interpolation
                     levels_orig = MV2.array(mv_plv[:])
                     levels_orig.setAxis(0,mv_plv)
@@ -326,7 +355,8 @@ for parameter in parameters:
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                     viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
-
+                    f_in.close()
+                    f_mod.close()
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
 

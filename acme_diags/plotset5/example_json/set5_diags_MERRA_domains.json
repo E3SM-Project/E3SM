@@ -1,0 +1,15 @@
+{
+	"set5": [
+
+	  {
+      "case_id": "set5_MERRA",
+      "variables": "T",
+      "ref_name": "MERRA",
+      "reference_name": "MERRA Analysis 1979-2013 NASA",
+      "season": ["ANN"],
+      "levels": [200.0,850.0],
+      "region": ["ocean_TROPICS","land","global","ocean"]
+		}
+          ]
+	
+}

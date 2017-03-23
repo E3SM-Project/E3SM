@@ -1,0 +1,51 @@
+{
+	"set5": [
+
+	  {
+      "case_id": "set5_ERA40",
+      "variables": "LHFLX",
+      "ref_name": "ERA40",
+      "reference_name": "ERA40 Reanalysis 1980-2001",
+      "season": ["ANN"],
+      "levels": [],
+      "region": []
+		},
+	  {
+      "case_id": "set5_ERA40",
+      "variables": "PREH2O",
+      "ref_name": "ERA40",
+      "reference_name": "ERA40 Reanalysis 1980-2001",
+      "season": ["ANN"],
+      "levels": [],
+      "region": []
+		},
+	  {
+      "case_id": "set5_ERA40",
+      "variables": "U",
+      "ref_name": "ERA40",
+      "reference_name": "ERA40 Reanalysis 1980-2001",
+      "season": ["ANN"],
+      "levels": [200.0],
+      "region": []
+		},
+	  {
+      "case_id": "set5_ERA40",
+      "variables": "Z3",
+      "ref_name": "ERA40",
+      "reference_name": "ERA40 Reanalysis 1980-2001",
+      "season": ["ANN"],
+      "levels": [300.0,500.0],
+      "region": []
+		},
+	  {
+      "case_id": "set5_ERA40",
+      "variables": "T",
+      "ref_name": "ERA40",
+      "reference_name": "ERA40 Reanalysis 1980-2001",
+      "season": ["ANN"],
+      "levels": [850.0,200.0],
+      "region": []
+		}
+          ]
+	
+}

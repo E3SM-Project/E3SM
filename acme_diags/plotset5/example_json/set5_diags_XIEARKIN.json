@@ -1,0 +1,14 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_XIEARKIN",
+      "variables": "PRECT",
+      "ref_name": "XIEARKIN",
+      "reference_name": "CMAP 1979-1998",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                }
+          ]
+}

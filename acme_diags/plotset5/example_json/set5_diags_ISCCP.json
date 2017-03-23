@@ -1,0 +1,77 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_ISCCP",
+      "variables": "CLDHGH",
+      "ref_name": "ISCCP",
+      "reference_name": "ISCCP D2 1983-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_ISCCP",
+      "variables": "CLDHGH_VISIR",
+      "ref_name": "ISCCP",
+      "reference_name": "ISCCP D2 1983-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_ISCCP",
+      "variables": "CLDLOW",
+      "ref_name": "ISCCP",
+      "reference_name": "ISCCP D2 1983-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_ISCCP",
+      "variables": "CLDLOW_VISIR",
+      "ref_name": "ISCCP",
+      "reference_name": "ISCCP D2 1983-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_ISCCP",
+      "variables": "CLDMED",
+      "ref_name": "ISCCP",
+      "reference_name": "ISCCP D2 1983-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_ISCCP",
+      "variables": "CLDMED_VISIR",
+      "ref_name": "ISCCP",
+      "reference_name": "ISCCP D2 1983-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_ISCCP",
+      "variables": "CLDTOT",
+      "ref_name": "ISCCP",
+      "reference_name": "ISCCP D2 1983-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                },
+          {
+      "case_id": "set5_ISCCP",
+      "variables": "CLDTOT_VISIR",
+      "ref_name": "ISCCP",
+      "reference_name": "ISCCP D2 1983-2001",
+      "season": ["ANN"],
+      "region": [],
+      "levels": []
+                }
+          ]
+}
