@@ -83,6 +83,12 @@
   <lname>2000_CAM5%AV1C-H01A_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>A_WCYCL2000_H01AS</alias >
+  <lname>2000_CAM5%AV1C-H01A_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+
 <!-- ACME backup compsets -->
 <compset>
  <alias>A_WCYCL1850_v0atm</alias> 
