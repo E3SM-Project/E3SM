@@ -76,6 +76,13 @@
   <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASCICE_MPASO_RTM_MPASLIALB_SWAV</lname>
 </compset>
 
+<!-- ACME v1 science compsets (hires) -->
+
+<compset>
+  <alias>A_WCYCL2000_H01A</alias >
+  <lname>2000_CAM5%AV1C-H01A_CLM45%SPBC_MPASCICE_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- ACME backup compsets -->
 <compset>
  <alias>A_WCYCL1850_v0atm</alias> 
