@@ -31,6 +31,9 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
     >>> run_exe = "acme.exe"
     >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, pes_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
     'aprun -S 4 -n 680 -N 8 -d 2 acme.exe : -S 2 -n 128 -N 4 -d 4 acme.exe '
+    >>> compiler = "intel"
+    >>> _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids, max_tasks_per_node, pes_per_node, pio_numtasks, pio_async_interface, compiler, machine, run_exe)
+    'aprun -S 4 -cc numa_node -n 680 -N 8 -d 2 acme.exe : -S 2 -cc numa_node -n 128 -N 4 -d 4 acme.exe '
     """
     max_tasks_per_node = 1 if max_tasks_per_node < 1 else max_tasks_per_node
 
