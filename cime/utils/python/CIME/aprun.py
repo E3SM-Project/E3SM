@@ -120,7 +120,7 @@ def get_aprun_cmd_for_case(case, run_exe):
     for model in models:
         model = "CPL" if model == "DRV" else model
         for the_list, item_name in zip([ntasks, nthreads, rootpes, pstrids],
-                                       ["NTASKS", "NTHREADS", "ROOTPE", "PSTRID"]):
+                                       ["NTASKS", "NTHRDS", "ROOTPE", "PSTRID"]):
             the_list.append(case.get_value("_".join([item_name, model])))
 
     return _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
