@@ -1094,14 +1094,14 @@ class Case(object):
 
         # special case for aprun
         if executable == "aprun":
-            return get_aprun_cmd_for_case(self, run_exe)
+            return get_aprun_cmd_for_case(self, run_exe) + " " + run_misc_suffix
+        else:
+            mpi_arg_string = " ".join(args.values())
 
-        mpi_arg_string = " ".join(args.values())
+            if self.get_value("BATCH_SYSTEM") == "cobalt":
+                mpi_arg_string += " : "
 
-        if self.get_value("BATCH_SYSTEM") == "cobalt":
-            mpi_arg_string += " : "
-
-        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
     def set_model_version(self, model):
         version = "unknown"
