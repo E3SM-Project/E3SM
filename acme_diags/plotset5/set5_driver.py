@@ -22,9 +22,9 @@ def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
     #f_data = open('set5_diags_default.json').read()
-    f_data = open('set5_diags.json').read()
+    #f_data = open('set5_diags.json').read()
     #f_data = open('set5_diags_MERRA_domains.json').read()
-    #f_data = open('set5_diags_HADISST.json').read()
+    f_data = open('set5_diags_HADISST.json').read()
     #f_data = open('set5_diags_CRU.json').read()
     #f_data = open('set5_diags_LEGATES.json').read()
     #f_data = open('set5_diags_WILLMOTT.json').read() # qflx not called
@@ -42,7 +42,7 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_ISCCPFD.json').read()
     #f_data = open('set5_diags_ISCCP.json').read()
     #f_data = open('set5_diags_WARREN.json').read()
-    f_data = open('set5_diags_CLOUDSAT.json').read()
+    #f_data = open('set5_diags_CLOUDSAT.json').read()
     #f_data = open('set5_diags_NVAP.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
     json_file = json.loads(f_data)
@@ -157,6 +157,7 @@ for parameter in parameters:
     test_name = parameter.test_name
     regions = parameter.region
     #domain = regions_specs[region]
+
     for season in seasons:
         test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
         for filename in fnmatch.filter(test_files, '*'+season+'*'):
@@ -255,7 +256,9 @@ for parameter in parameters:
                 diff = mv1_reg - mv2_reg
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                 acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file, file_title=season)
+                if season is seasons[0]:
+                    viewer.add_row('%s %s' % (var, region), 'Description for %s' % var)
+                viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
 
     
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
@@ -349,7 +352,9 @@ for parameter in parameters:
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                    viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file, file_title=season)
+                    if season is seasons[0]:
+                        viewer.add_row('%s %s' % (var, region), 'Description for %s' % var)
+                    viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
 
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")

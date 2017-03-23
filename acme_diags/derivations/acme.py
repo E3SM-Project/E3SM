@@ -8,7 +8,6 @@ def process_derived_var(var_key, derived_vars_dict, nc_file):
     ''' Given a key (var_key) to the derived_vars_dict dict, compute and return
      whatever is described in derived_vars_dict[var_key] for the nc_file'''
     if var_key in derived_vars_dict.keys():
-    #if var_key:
         inputs, func = _get_correct_derivation(var_key, derived_vars_dict, nc_file)
         # get all of the variables from nc_file
         args = [nc_file(var)(squeeze=1) for var in inputs]
@@ -21,16 +20,16 @@ def _get_correct_derivation(var_key, derived_vars_dict, nc_file):
     derived_var_list = derived_vars_dict[var_key]
     derived_var_inputs = []  # store a list of all inputs visited, so if Exception, we get a good msg.
 
-    # When nc_file is obs, there is var_key in nc_file, i.e. nc_file(var_key)
-    if var_key in nc_file.variables.keys():
-        return [var_key], lambda x: x  # var_key needs to be in a list
-
     # get the first function and inputs from the derived_vars_dict dict
     for inputs, func in derived_var_list:
         derived_var_inputs.append(inputs)
         # are all of the variables (inputs) in the nc_file?
         if set(inputs).issubset(nc_file.variables.keys()):
             return inputs, func
+
+    # When nc_file is obs, there is var_key in nc_file, i.e. nc_file(var_key)
+    if var_key in nc_file.variables.keys():
+        return [var_key], lambda x: x  # var_key needs to be in a list
 
     raise RuntimeError('None of the variables (%s) are in the file: %s' % (derived_var_inputs, nc_file.id))
 
@@ -52,6 +51,7 @@ def aplusb(var1, var2, target_units=None):
 def _convert_units(var, target_units):
     ''' Converts units of var to target_units.
     var is a cdms.TransientVariable. '''
+    print 'CALLING CONVERT_UNITS'
 
     temp = udunits(1.0, var.units)
     coeff, offset= temp.how(target_units)
@@ -93,7 +93,7 @@ def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
 #    lhflx.long_name = "Surf latent heat flux"
 #    return lhflx
 
-def qflx_convert_units (var):
+def qflx_convert_units(var):
     print "testtest"
     print '%%%%%%%%%%%%%%%%%%%%%%%%%'
     var = _convert_units( var, 'kg/(m^2 s)' )
@@ -233,10 +233,10 @@ derived_variables = {
     'TREFHT': [
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
     ],
-    'QFLX': [
+    u'QFLX': [
         (['QFLX'], lambda qflx: qflx_convert_units(qflx))
     ],
-    'LHFLX': [
+    u'LHFLX': [
         (['LHFLX'], lambda lhflx: _convert_units(lhflx, target_units="W/m^2")),
     ],
     'SHFLX': [

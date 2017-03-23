@@ -14,6 +14,7 @@ class OutputViewer(object):
         self.group = None
         self.groups = {}
         self.page = None
+        self.row = None
 
     def add_group(self, name):
         if name not in self.groups:
@@ -27,23 +28,27 @@ class OutputViewer(object):
         self.page = OutputPage(name, cols)
         self.index.addPage(self.page)
 
-    def add_row(self, var_name, description, file_name, file_title=''):
-        ''' Adds a description and all of the files in self.path to an 
+    def add_row(self, var_name, description):
+        ''' Adds a description and all of the files in self.path to an
         OutputRow, which is then added to the current page'''
         cols = []
         cols.append(description)
-        title = file_name if file_title == '' else file_title
-        file_path = os.path.abspath(os.path.join(file_name + '.png'))
-        cols.append(OutputFile(file_path, title=title))
-        
+
         if self.group is None:
             self.group = OutputGroup('Variables for this data set')
             self.page.addGroup(self.group)
         if self.page is not None:
-            row = OutputRow(var_name, cols)
-            self.page.addRow(row, len(self.page.groups)-1)
+            self.row = OutputRow(var_name, cols)
+            self.page.addRow(self.row, len(self.page.groups)-1)
         else:
             raise RuntimeError('You need to add a page with add_page() before calling add_row()')
+
+    def add_col(self, col, is_file=False, **kwargs):
+        ''' Add a column to the last row. '''
+        if is_file:
+            file_path = os.path.abspath(os.path.join(col))
+            col = OutputFile(file_path, **kwargs)
+        self.row.columns.append(col)
 
     def generate_viewer(self):
         self.index.toJSON(os.path.join(self.path, "index.json"))
