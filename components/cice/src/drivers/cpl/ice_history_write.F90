@@ -467,7 +467,7 @@
 1000    format('This dataset was created on ', &
            a,'-',a,'-',a,' at ',a,':',a)
       end if
-      call broadcast_scalar(start_time, my_task)
+      call broadcast_scalar(start_time, master_task)
       status = pio_put_att(File,pio_global,'history',start_time)
       !-----------------------------------------------------------------
       ! end define mode
