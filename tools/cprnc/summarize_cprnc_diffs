@@ -53,7 +53,8 @@ if (!$opts{'testid'}) {
 #    Dir => directory (gives test name)
 #    Filename  => cprnc filename
 #    Variable  => variable
-#    RMS       => normalized rms value [may or may not be present]
+#    RMS       => rms value            [may or may not be present]
+#    RMS_NORM  => normalized rms value [may or may not be present]
 #    FILLDIFF  => ' '                  [may or may not be present]
 #    DIMSIZEDIFF => ' '                [may or may not be present]
 my ($summary_hash) =
@@ -106,7 +107,7 @@ SYNOPSIS
     it only looks at output for baseline comparisons - NOT output from the test
     itself, such as cprnc output files from the exact restart test.)
 
-    Summaries of cprnc differences (normalized RMS differences, FILLDIFFs and DIMSIZEDIFFs)
+    Summaries of cprnc differences (RMS and normalized RMS differences, FILLDIFFs and DIMSIZEDIFFs)
     are placed in three output files beginning with the name 'cprnc.summary', in
     the current directory.  These files contain the same information, but one is
     sorted by test name, one is sorted by variable name, and is one sorted from
@@ -127,7 +128,7 @@ EOF
 
 
 # process_cprnc_output
-# Read through all cprnc files, and build hashes of instances of RMS, FILLDIFF and DIMSIZEDIFF
+# Read through all cprnc files, and build hashes of instances of RMS, normalized RMS, FILLDIFF and DIMSIZEDIFF
 # Inputs:
 #  - basedir
 #  - testid
@@ -214,13 +215,13 @@ sub process_line {
 
       # For RMS errors, keep the highest error found
       if ($diff_type eq "RMS") {
-         if (exists $diffs->{$key} && exists $diffs->{$key}{$diff_type}) {
-            if ($diffs->{$key}{$diff_type} > $rms_normalized) {
-               warn "WARNING: Ignoring lower RMS value:        $key : $rms_normalized < $diffs->{$key}{$diff_type}\n";
+         if (exists $diffs->{$key} && exists $diffs->{$key}{'RMS_NORM'}) {
+            if ($diffs->{$key}{'RMS_NORM'} > $rms_normalized) {
+               warn "WARNING: Ignoring lower RMS value:        $key : $rms_normalized < $diffs->{$key}{'RMS_NORM'}\n";
                return;
             }
             else {
-               warn "WARNING: Replacing RMS with higher value: $key : $rms_normalized > $diffs->{$key}{$diff_type}\n";
+               warn "WARNING: Replacing RMS with higher value: $key : $rms_normalized > $diffs->{$key}{'RMS_NORM'}\n";
             }
          }
       }
@@ -237,11 +238,16 @@ sub process_line {
       }
 
       # Whether or not the hash already contained the given key, we need to add
-      # the value of interest -- either the normalized RMS error or the fact
-      # that there is a FILLDIFF or DIMSIZEDIFF; in the latter cases, note that
-      # $rms_normalized is irrelevant, but we use it as the value of the hash
-      # anyway for simplicity.
-      $diffs->{$key}{$diff_type} = $rms_normalized;
+      # the value of interest -- either the RMS and normalized RMS errors, or
+      # the fact that there is a FILLDIFF or DIMSIZEDIFF.
+      if ($diff_type eq "RMS") {
+         $diffs->{$key}{'RMS'} = $rms;
+         $diffs->{$key}{'RMS_NORM'} = $rms_normalized;
+      } else {
+         # No meaningful value here - just record the fact that we saw a
+         # FILLDIFF or DIMSIZEDIFF
+         $diffs->{$key}{$diff_type} = "";
+      }
    } elsif ($diff_type ne '') {
       die "Unexpected diff_type: $diff_type";
    }
@@ -349,7 +355,7 @@ sub print_results_by_varname {
 
 
 
-# print_results_by_rms: Print sorted hash entries to a file, sorted by RMS
+# print_results_by_rms: Print sorted hash entries to a file, sorted by RMS_NORM
 # Inputs:
 #  - outfile: name of output file
 #  - summary_hash: hash reference containing results to print
@@ -359,7 +365,7 @@ sub print_results_by_rms {
 
    open OUT, ">", "$outfile" or die "ERROR opening $outfile";
 
-   my @sorted_keys = sort {$summary_hash->{$b}{'RMS'}      <=> $summary_hash->{$a}{'RMS'}
+   my @sorted_keys = sort {$summary_hash->{$b}{'RMS_NORM'} <=> $summary_hash->{$a}{'RMS_NORM'}
                         or $summary_hash->{$a}{'Dir'}      cmp $summary_hash->{$b}{'Dir'}
                         or $summary_hash->{$a}{'Filename'} cmp $summary_hash->{$b}{'Filename'}
                         or $summary_hash->{$a}{'Variable'} cmp $summary_hash->{$b}{'Variable'} }
@@ -381,6 +387,7 @@ sub print_results_by_rms {
 #   - Filename
 #   - Variable
 #   - RMS (optional)
+#   - RMS_NORM (optional)
 #   - FILLDIFF (optional)
 #   - DIMSIZEDIFF (optional)
 # - widths: hash reference giving widths of output strings
@@ -392,10 +399,14 @@ sub format_line {
    my $filename = $hash_ref->{'Filename'};
    my $variable = $hash_ref->{'Variable'};
    my $rms = "";
+   my $rms_normalized = "";
    my $filldiff = "";
    my $dimsizediff = "";
    if (exists $hash_ref->{'RMS'}) {
       $rms = sprintf(" : RMS %-16g", $hash_ref->{'RMS'});
+   }
+   if (exists $hash_ref->{'RMS_NORM'}) {
+      $rms_normalized = sprintf(" : RMS_NORM %-16g", $hash_ref->{'RMS_NORM'});
    }
    if (exists $hash_ref->{'FILLDIFF'}) {
       $filldiff = " : FILLDIFF";
@@ -408,9 +419,9 @@ sub format_line {
    my $format = '%-' . $widths->{'Dir'} . '.' . $widths->{'Dir'} . 's : ' .
                 '%-' . $widths->{'Filename'} . '.' . $widths->{'Filename'} . 's : ' .
                 '%-' . $widths->{'Variable'} . '.' . $widths->{'Variable'} . 's' .
-                '%s%s%s';
+                '%s%s%s%s';
 
-   sprintf($format, $dir, $filename, $variable, $filldiff, $dimsizediff, $rms);
+   sprintf($format, $dir, $filename, $variable, $filldiff, $dimsizediff, $rms, $rms_normalized);
 }
 
 #=======================================================================
@@ -432,10 +443,10 @@ sub format_line {
 # process_line("FILLDIFF var1", "test_dir1", "file_b", \%diffs);
 
 # # add an RMS to existing filldiff
-# process_line("RMS var1 99 NORMALIZED 42", "test_dir1", "file_b", \%diffs);
+# process_line("RMS var1 4200 NORMALIZED 42", "test_dir1", "file_b", \%diffs);
 
 # # test basic rms error
-# process_line("RMS var17 99 NORMALIZED 3.14", "test_dir1", "file_b", \%diffs);
+# process_line("RMS var17 0.314 NORMALIZED 3.14", "test_dir1", "file_b", \%diffs);
 
 # # add a filldiff to existing rms error
 # process_line("FILLDIFF var17", "test_dir1", "file_b", \%diffs);
@@ -450,53 +461,58 @@ sub format_line {
 # process_line("RMS var100 99 NORMALIZED 100", "test_dir2", "file_d", \%diffs);
 
 # # test a warning: should issue a warning and replace the above setting
-# process_line("RMS var100 99 NORMALIZED 200", "test_dir2", "file_d", \%diffs);
+# process_line("RMS var100 9 NORMALIZED 200", "test_dir2", "file_d", \%diffs);
 
 # # test a warning: should issue a warning but NOT replace the above setting
-# process_line("RMS var100 99 NORMALIZED 50", "test_dir2", "file_d", \%diffs);
+# # (normalized RMS is smaller even though standard RMS is bigger: the normalized
+# # one should be considered in deciding whether to replace the previous setting)
+# process_line("RMS var100 999 NORMALIZED 50", "test_dir2", "file_d", \%diffs);
 
 # print Dumper(\%diffs);
 
 
-# THE ABOVE SHOULD PRINT:
+# THE ABOVE SHOULD PRINT SOMETHING LIKE THIS (though the output from Dumper will
+# likely appear in a different order):
 
 # WARNING: Replacing RMS with higher value: test_dir2 file_d var100 : 200 > 100
 # WARNING: Ignoring lower RMS value:        test_dir2 file_d var100 : 50 < 200
 # $VAR1 = {
 #           'test_dir1 file_b var17' => {
-#                                         'FILLDIFF' => '',
-#                                         'RMS' => '3.14',
-#                                         'Filename' => 'file_b',
+#                                         'RMS' => '0.314',
 #                                         'Variable' => 'var17',
-#                                         'Dir' => 'test_dir1'
-#                                       },
-#           'test_dir2 file_c var42' => {
+#                                         'Filename' => 'file_b',
 #                                         'FILLDIFF' => '',
-#                                         'Filename' => 'file_c',
-#                                         'Variable' => 'var42',
-#                                         'Dir' => 'test_dir2'
+#                                         'Dir' => 'test_dir1',
+#                                         'RMS_NORM' => '3.14'
 #                                       },
-#           'test_dir1 file_b var1' => {
-#                                        'FILLDIFF' => '',
-#                                        'RMS' => '42',
-#                                        'Filename' => 'file_b',
-#                                        'Variable' => 'var1',
-#                                        'Dir' => 'test_dir1'
-#                                      },
 #           'test_dir2 file_d var100' => {
-#                                          'RMS' => 200,
+#                                          'Dir' => 'test_dir2',
+#                                          'RMS_NORM' => 200,
 #                                          'Filename' => 'file_d',
 #                                          'Variable' => 'var100',
-#                                          'Dir' => 'test_dir2'
-#                                        }
+#                                          'RMS' => '9'
+#                                        },
+#           'test_dir1 file_b var1' => {
+#                                        'Filename' => 'file_b',
+#                                        'RMS_NORM' => '42',
+#                                        'FILLDIFF' => '',
+#                                        'Dir' => 'test_dir1',
+#                                        'RMS' => '4200',
+#                                        'Variable' => 'var1'
+#                                      },
 #           'test_dir2 file_c var43' => {
-#                                          'Variable' => 'var43',
-#                                          'DIMSIZEDIFF' => '',
-#                                          'Dir' => 'test_dir2',
-#                                          'Filename' => 'file_c'
-#                                        }
+#                                         'Variable' => 'var43',
+#                                         'DIMSIZEDIFF' => '',
+#                                         'Dir' => 'test_dir2',
+#                                         'Filename' => 'file_c'
+#                                       },
+#           'test_dir2 file_c var42' => {
+#                                         'Filename' => 'file_c',
+#                                         'Dir' => 'test_dir2',
+#                                         'FILLDIFF' => '',
+#                                         'Variable' => 'var42'
+#                                       }
 #         };
-
 
 
 #-----------------------------------------------------------------------
@@ -512,19 +528,19 @@ sub format_line {
 # This should give:
 
 # $ cat testout.by_rms
-# test_dir2                                : file_d                                   : var100                                   : RMS 200
-# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 42
-# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 3.14
+# test_dir2                                : file_d                                   : var100                                   : RMS 9                : RMS_NORM 200
+# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 4200             : RMS_NORM 42
+# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 0.314            : RMS_NORM 3.14
 # test_dir2                                : file_c                                   : var42                                    : FILLDIFF
 # test_dir2                                : file_c                                   : var43                                    : DIMSIZEDIFF
 # $ cat testout.by_test
-# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 42
-# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 3.14
+# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 4200             : RMS_NORM 42
+# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 0.314            : RMS_NORM 3.14
 # ======================================================================================================================================================
 # test_dir2                                : file_c                                   : var42                                    : FILLDIFF
 # test_dir2                                : file_c                                   : var43                                    : DIMSIZEDIFF
 # ======================================================================================================================================================
-# test_dir2                                : file_d                                   : var100                                   : RMS 200
+# test_dir2                                : file_d                                   : var100                                   : RMS 9                : RMS_NORM 200
 
 
 
