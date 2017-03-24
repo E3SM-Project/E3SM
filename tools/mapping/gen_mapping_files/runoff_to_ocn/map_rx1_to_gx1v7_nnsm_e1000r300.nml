@@ -2,11 +2,11 @@
    gridtype     = 'obs'
    file_roff    = '/glade/p/cesm/cseg/inputdata/lnd/dlnd7/RX1/runoff.daitren.annual.090225.nc'
    file_ocn     = '/glade/p/cesm/cseg/mapping/grids/gx1v7_151008.nc'
-   file_ocn_coastal_mask = '/glade/p/cesm/cseg/mapping/grids/gx1v7_ac_170322.nc'
-   file_nn      = 'map_rx1_to_gx1v7_ac_nearestdtos_170324.nc'
-   file_smooth  = 'map_gx1v7_ac_to_gx1v7_smooth_170324a.nc'
+   file_ocn_coastal_mask = '/glade/p/cesm/cseg/mapping/grids/gx1v7_coast_170322.nc'
+   file_nn      = 'map_rx1_to_gx1v7_coast_nearestdtos_170324.nc'
+   file_smooth  = 'map_gx1v7_coast_to_gx1v7_sm_e1000r300_170324a.nc'
    file_new     = 'map_rx1_to_gx1v7_nnsm_e1000r300_170324.nc'
-   title        = 'runoff map: rx1 -> gx1v7, smoothed'
+   title        = 'runoff map: rx1 -> gx1v7, nearest neighbor and smoothed'
    eFold        = 1000000.0
    rMax         =  300000.0
    restrict_smooth_src_to_nn_dest = .true.
