@@ -14,37 +14,13 @@ from acme_diags.acme_parameter import ACMEParameter
 import acme_diags.plotting.set5.plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
-from acme_diags.viewer import OutputViewer
+from cdp.cdp_viewer import OutputViewer
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 
 def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
-    #f_data = open('set5_diags_default.json').read()
-    #f_data = open('set5_diags.json').read()
-    #f_data = open('set5_diags_MERRA_domains.json').read()
-    #f_data = open('set5_diags_HADISST.json').read()
-    #f_data = open('set5_diags_CRU.json').read()
-    #f_data = open('set5_diags_LEGATES.json').read()
-    #f_data = open('set5_diags_WILLMOTT.json').read()
-    #f_data = open('set5_diags_XIEARKIN.json').read()
-    #f_data = open('set5_diags_PRECL.json').read()
-    #f_data = open('set5_diags_UWisc.json').read()
-    #f_data = open('set5_diags_SSMI.json').read()
-    #f_data = open('set5_diags_LARYEA.json').read()
-    #f_data = open('set5_diags_ERA40.json').read()
-    #f_data = open('set5_diags_ERAI.json').read()
-    #f_data = open('set5_diags_JRA25.json').read()
-    #f_data = open('set5_diags_AIRS.json').read()
-    #f_data = open('set5_diags_CERES-EBAF.json').read()
-    #f_data = open('set5_diags_ERBE.json').read()
-    #f_data = open('set5_diags_ISCCPFD.json').read()
-    #f_data = open('set5_diags_ISCCP.json').read()
-    #f_data = open('set5_diags_WARREN.json').read()
-    #f_data = open('set5_diags_CLOUDSAT.json').read()
-    #f_data = open('set5_diags_NVAP.json').read()
-    #f_data = open('set5_diags_WHOI.json').read()
     f_data = open('set5_diags_AMWG_default.json').read()
     json_file = json.loads(f_data)
 
@@ -146,8 +122,11 @@ parameters = make_parameters(original_parameter)
 viewer = OutputViewer(path=parameters[0].case_id, index_name='index name')
 add_page_and_top_row(viewer, parameters)
 
+
+
+
 for parameter in parameters:
-    viewer.add_group(parameter.reference_name)
+    viewer.add_group(parameter.case_id)
 
     reference_data_path = parameter.reference_data_path
     test_data_path = parameter.test_data_path
@@ -158,6 +137,7 @@ for parameter in parameters:
     test_name = parameter.test_name
     regions = parameter.region
     #domain = regions_specs[region]
+
     for season in seasons:
         test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
         for filename in fnmatch.filter(test_files, '*'+season+'*'):
@@ -196,7 +176,7 @@ for parameter in parameters:
                 mv2.units = 'mm/day'
             
          
-        #for variables without z axis:
+        # for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
             if len(regions) == 0:
                 regions = ['global']
@@ -204,7 +184,7 @@ for parameter in parameters:
             for region in regions:
                 print region
                 domain = None
-##                if region != 'global':
+                # if region != 'global':
                 if region.find('land') !=-1 or region.find('ocean') !=-1:
                     if region.find('land') !=-1 :
                         land_ocean_frac = f_mod('LANDFRAC')
@@ -256,10 +236,14 @@ for parameter in parameters:
                 diff = mv1_reg - mv2_reg
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                 acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                viewer.add_row('%s %s' % (var, region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
+
+                if season is seasons[0]:
+                    viewer.add_row('%s %s' % (var, region))
+                    viewer.add_col('Description for %s' % var)
+                viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
+                
                 f_mod.close()
                 f_obs.close()
-                 
     
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
@@ -354,7 +338,12 @@ for parameter in parameters:
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
-                    viewer.add_row('%s %s %s' % (var, plev[ilev], region), 'Description for %s' % var, file_name=parameter.case_id + '/' + parameter.output_file)
+
+                    if season is seasons[0]:
+                        viewer.add_row('%s %s' % (var, region))
+                        viewer.add_col('Description for %s' % var)
+                    viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
+                    
                     f_in.close()
                     f_mod.close()
         else:

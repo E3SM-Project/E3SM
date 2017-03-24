@@ -8,7 +8,6 @@ def process_derived_var(var_key, derived_vars_dict, nc_file):
     ''' Given a key (var_key) to the derived_vars_dict dict, compute and return
      whatever is described in derived_vars_dict[var_key] for the nc_file'''
     if var_key in derived_vars_dict.keys():
-    #if var_key:
         inputs, func = _get_correct_derivation(var_key, derived_vars_dict, nc_file)
         # get all of the variables from nc_file
         args = [nc_file(var)(squeeze=1) for var in inputs]
@@ -20,7 +19,6 @@ def _get_correct_derivation(var_key, derived_vars_dict, nc_file):
     ''' Get the first valid derivation from the derived_vars_dict dict. '''
     derived_var_list = derived_vars_dict[var_key]
     derived_var_inputs = []  # store a list of all inputs visited, so if Exception, we get a good msg.
-
 
     # get the first function and inputs from the derived_vars_dict dict
     for inputs, func in derived_var_list:
@@ -49,17 +47,16 @@ def aplusb(var1, var2, target_units=None):
 
     return var1 + var2
 
-
 def _convert_units(var, target_units):
     ''' Converts units of var to target_units.
     var is a cdms.TransientVariable. '''
+
     if var.units == 'fraction':
         var = 100.0 *var 
         var.units = target_units
     else:
         temp = udunits(1.0, var.units)
         coeff, offset= temp.how(target_units)
-
         var = coeff*var + offset
         var.units = target_units
 
@@ -86,16 +83,6 @@ def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
         newmask = var.mask | maskvarmask
     var.mask = newmask
     return var
-
-#def qflx_to_lhflx( var ):
-#    """computes latent heat flux from q flux ."""
-#
-#    qflx = _convert_units( var, 'kg/(m^2 s)' )
-#    lv = 2.501e6              # latent heat of evaporation units J/kg 
-#    lhflx = qflx *lv
-#    lhflx.units = "W/m^2" 
-#    lhflx.long_name = "Surf latent heat flux"
-#    return lhflx
 
 def qflx_convert_units (var):
     print var.units
@@ -239,9 +226,10 @@ derived_variables = {
     'TREFHT': [
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
     ],
-    'QFLX': [
+    u'QFLX': [
         (['QFLX'], lambda qflx: qflx_convert_units(qflx))
     ],
+
     'LHFLX': [
         (['LHFLX'], rename)
     ],
@@ -253,7 +241,6 @@ derived_variables = {
     'PRECT_OCN':[ (['PRECT_OCEAN'], (lambda x: _convert_units(x, target_units='mm/day')) ),
                      (['PRECC','PRECL', 'OCNFRAC'], lambda a, b , ocnfrac: mask_by(aplusb(a, b, target_units="mm/day"), ocnfrac, low_limit = 0.65))],
     'PREH2O_OCN':[ (['PREH2O_OCEAN'], (lambda x: _convert_units(x, target_units='mm')) ),
-		     #(['TMQ', 'OCNFRAC'], lambda preh2o, ocnfrac: mask_by(_convert_units(preh2o, target_units="mm"), ocnfrac, low_limit = 0.65))],
                      (['TMQ', 'OCNFRAC'], lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit = 0.65))],
     'CLDHGH': [
         (['CLDHGH'], lambda cldhgh: _convert_units(cldhgh, target_units="%")),#below fraction to percent conversion not working
