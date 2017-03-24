@@ -11,6 +11,7 @@ This module contains only one class, `NamelistDefinition`, inheriting from
 # pylint:disable=wildcard-import,unused-wildcard-import
 
 import re
+import collections
 
 from CIME.namelist import fortran_namelist_base_value, \
     is_valid_fortran_namelist_literal, character_literal_to_string, \
@@ -385,7 +386,7 @@ class NamelistDefinition(EntryID):
             group_name = self.get_group(qualified_varname)
             expect (group_name is not None, "No group found for var %s"%variable_lc)
             if group_name not in groups:
-                groups[group_name] = {}
+                groups[group_name] = collections.OrderedDict()
             groups[group_name][variable_lc] = dict_[variable_name]
         return Namelist(groups)
 

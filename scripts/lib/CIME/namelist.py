@@ -101,6 +101,7 @@ groups are separated by (optional) whitespace and comments, and nothing else.
 # pylint: disable=line-too-long,too-many-lines,invalid-name
 
 import re
+import collections
 
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import
@@ -882,14 +883,14 @@ class Namelist(object):
             for group_name in groups:
                 expect(group_name is not None, " Got None in groups %s"%groups)
                 group_lc = group_name.lower()
-                self._groups[group_lc] = {}
+                self._groups[group_lc] = collections.OrderedDict()
                 for variable_name in groups[group_name]:
                     variable_lc = variable_name.lower()
                     self._groups[group_lc][variable_lc] = \
                                         groups[group_name][variable_name]
 
     def clean_groups(self):
-        self._groups = {}
+        self._groups = collections.OrderedDict()
 
     def get_group_names(self):
         """Return a list of all groups in the namelist.
@@ -998,7 +999,6 @@ class Namelist(object):
         """
         group_name = group_name.lower()
 
-#        print "BEFORE name %s value %s"%(variable_name, value)
         minindex, maxindex, step = get_fortran_variable_indices(variable_name, var_size)
         variable_name = get_fortran_name_only(variable_name.lower())
 
@@ -1016,14 +1016,10 @@ class Namelist(object):
         if minindex > tlen:
             self._groups[group_name][variable_name].extend(['']*(minindex-tlen-1))
 
-        for i in range(minindex-1, maxindex, step):
-            if i < tlen:
-                self._groups[group_name][variable_name][i] = value.pop(0)
-            else:
-                if tlen < i:
-                    self._groups[group_name][variable_name].extend(['']*(i-tlen))
-                self._groups[group_name][variable_name].append(value.pop(0))
-            tlen = len(self._groups[group_name][variable_name])
+        for i in range(minindex-1, maxindex+step, step):
+            while len(self._groups[group_name][variable_name]) < i+1:
+                self._groups[group_name][variable_name].append('')
+            self._groups[group_name][variable_name][i] = value.pop(0)
             if len(value) == 0:
                 break
 
@@ -1246,7 +1242,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         # Dictionary with group names as keys, and dictionaries of variable
         # name-value pairs as values. (Or a single flat dictionary if
         # `groupless=True`.)
-        self._settings = {}
+        self._settings = collections.OrderedDict()
         # Fortran allows setting a particular index of an array
         # such as foo(2)='k'
         # this dict is set to that value if used.
