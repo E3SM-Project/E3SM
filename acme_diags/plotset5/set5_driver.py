@@ -21,30 +21,7 @@ from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
-    #f_data = open('set5_diags_default.json').read()
-    #f_data = open('set5_diags.json').read()
-    #f_data = open('set5_diags_MERRA_domains.json').read()
-    f_data = open('set5_diags_HADISST.json').read()
-    #f_data = open('set5_diags_CRU.json').read()
-    #f_data = open('set5_diags_LEGATES.json').read()
-    #f_data = open('set5_diags_WILLMOTT.json').read() # qflx not called
-    #f_data = open('set5_diags_XIEARKIN.json').read()
-    #f_data = open('set5_diags_PRECL.json').read()
-    #f_data = open('set5_diags_UWisc.json').read()
-    #f_data = open('set5_diags_SSMI.json').read()
-    #f_data = open('set5_diags_LARYEA.json').read()
-    #f_data = open('set5_diags_ERA40.json').read()
-    #f_data = open('set5_diags_ERAI.json').read()
-    #f_data = open('set5_diags_JRA25.json').read()
-    #f_data = open('set5_diags_AIRS.json').read()
-    #f_data = open('set5_diags_CERES-EBAF.json').read()
-    #f_data = open('set5_diags_ERBE.json').read()
-    #f_data = open('set5_diags_ISCCPFD.json').read()
-    #f_data = open('set5_diags_ISCCP.json').read()
-    #f_data = open('set5_diags_WARREN.json').read()
-    #f_data = open('set5_diags_CLOUDSAT.json').read()
-    #f_data = open('set5_diags_NVAP.json').read()
-    #f_data = open('set5_diags_WHOI.json').read()
+    f_data = open('set5_diags_AMWG_default.json').read()
     json_file = json.loads(f_data)
 
     parameters = []
@@ -199,7 +176,7 @@ for parameter in parameters:
                 mv2.units = 'mm/day'
             
          
-        #for variables without z axis:
+        # for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
             if len(regions) == 0:
                 regions = ['global']
@@ -207,7 +184,7 @@ for parameter in parameters:
             for region in regions:
                 print region
                 domain = None
-##                if region != 'global':
+                # if region != 'global':
                 if region.find('land') !=-1 or region.find('ocean') !=-1:
                     if region.find('land') !=-1 :
                         land_ocean_frac = f_mod('LANDFRAC')
@@ -259,11 +236,14 @@ for parameter in parameters:
                 diff = mv1_reg - mv2_reg
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                 acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
                     viewer.add_col('Description for %s' % var)
                 viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
-
+                
+                f_mod.close()
+                f_obs.close()
     
         #elif mv1.rank() == 4 and mv2.rank() == 4: #for variables with z axis:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
@@ -272,6 +252,8 @@ for parameter in parameters:
 
             for filename in [filename1, filename2]:
                 f_in = cdms2.open(filename)
+                if filename == filename1:
+                    f_mod = f_in
                 mv = f_in[var] # Square brackets for metadata preview
                 mv_plv = mv.getLevel()
 
@@ -356,11 +338,14 @@ for parameter in parameters:
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+
                     if season is seasons[0]:
                         viewer.add_row('%s %s' % (var, region))
                         viewer.add_col('Description for %s' % var)
                     viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
-
+                    
+                    f_in.close()
+                    f_mod.close()
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
 

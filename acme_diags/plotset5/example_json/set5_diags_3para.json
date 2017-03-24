@@ -1,0 +1,21 @@
+{
+	"set5": [
+	  {
+      "case_id": "set5_FSNTOA_CERES",
+      "variables": "FSNTOA",
+      "ref_name": "CERES",
+      "reference_name": "CERES-EBAF 03 2000-02 2013",
+      "season": ["ANN"],
+      "levels": []
+	]
+         },
+	  {
+      "case_id": "set5_FLNTOA_CERES",
+      "variables": "FLNTOA",
+      "ref_name": "CERES",
+      "reference_name": "CERES-EBAF 03 2000-02 2013",
+      "season": ["ANN"],
+      "levels": []
+	]
+         }
+}

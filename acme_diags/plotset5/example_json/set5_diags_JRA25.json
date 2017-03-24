@@ -1,0 +1,78 @@
+{
+	"set5": [
+
+	  {
+      "case_id": "set5_JRA25",
+      "variables": "LHFLX",
+      "ref_name": "JRA25",
+      "reference_name": "JRA25 Reanalysis 1979-2004",
+      "season": ["ANN"],
+      "levels": [],
+      "region": []
+		},
+	  {
+      "case_id": "set5_JRA25",
+      "variables": "SHFLX",
+      "ref_name": "JRA25",
+      "reference_name": "JRA25 Reanalysis 1979-2004",
+      "season": ["ANN"],
+      "levels": [],
+      "region": []
+		},
+	  {
+      "case_id": "set5_JRA25",
+      "variables": "TREFHT",
+      "ref_name": "JRA25",
+      "reference_name": "JRA25 Reanalysis 1979-2004",
+      "season": ["ANN"],
+      "levels": [],
+      "region": []
+		},
+	  {
+      "case_id": "set5_JRA25",
+      "variables": "PREH2O",
+      "ref_name": "JRA25",
+      "reference_name": "JRA25 Reanalysis 1979-2004",
+      "season": ["ANN"],
+      "levels": [],
+      "region": []
+		},
+	  {
+      "case_id": "set5_JRA25",
+      "variables": "TREFHT",
+      "ref_name": "JRA25",
+      "reference_name": "JRA25 Reanalysis 1979-2004",
+      "season": ["ANN"],
+      "levels": [],
+      "region": []
+		},
+	  {
+      "case_id": "set5_JRA25",
+      "variables": "U",
+      "ref_name": "JRA25",
+      "reference_name": "JRA25 Reanalysis 1979-2004",
+      "season": ["ANN"],
+      "levels": [200.0],
+      "region": []
+		},
+	  {
+      "case_id": "set5_JRA25",
+      "variables": "Z3",
+      "ref_name": "JRA25",
+      "reference_name": "JRA25 Reanalysis 1979-2004",
+      "season": ["ANN"],
+      "levels": [300.0,500.0],
+      "region": []
+		},
+	  {
+      "case_id": "set5_JRA25",
+      "variables": "T",
+      "ref_name": "JRA25",
+      "reference_name": "JRA25 Reanalysis 1979-2004",
+      "season": ["ANN"],
+      "levels": [850.0,200.0],
+      "region": []
+		}
+          ]
+	
+}

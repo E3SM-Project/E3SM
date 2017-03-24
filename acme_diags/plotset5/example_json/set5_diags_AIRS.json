@@ -1,0 +1,14 @@
+{
+    "set5": [
+
+          {
+      "case_id": "set5_AIRS",
+      "variables": "T",
+      "ref_name": "AIRS",
+      "reference_name": "AIRS IR Sounder 2002-06",
+      "season": ["ANN"],
+      "region": [],
+      "levels": [200.0,850.0]
+                }
+          ]
+}
