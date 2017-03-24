@@ -23,8 +23,6 @@ CONTAINS
 
 SUBROUTINE smooth_init(ofilename, restrict_smooth_src_to_nn_dest,  map_in, map_out)
 
-   use mapread_mod
-
    implicit none
 
    !--- arguments ---
@@ -165,7 +163,7 @@ SUBROUTINE smooth_init(ofilename, restrict_smooth_src_to_nn_dest,  map_in, map_o
    end if
 
    ! destination of map_out must be read in from file
-   call mapread_dest_grid(map_out, ofilename)
+   call map_DestGridRead(map_out, ofilename)
 
    ! Overwrite frac_a and frac_b to be 1 globally
    map_out%frac_a = 1.0
