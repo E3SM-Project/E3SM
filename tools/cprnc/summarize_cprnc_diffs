@@ -293,7 +293,7 @@ sub print_results_by_test {
    my $last_dir;
    my $last_filename;
 
-   my $separator_width = sum(values %$widths) + 30;
+   my $separator_width = sum(values %$widths) + 57;
 
    for my $key (@sorted_keys) {
 
@@ -333,7 +333,7 @@ sub print_results_by_varname {
 
    my $last_variable;
 
-   my $separator_width = sum(values %$widths) + 30;
+   my $separator_width = sum(values %$widths) + 57;
 
    for my $key (@sorted_keys) {
 
@@ -536,10 +536,10 @@ sub format_line {
 # $ cat testout.by_test
 # test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 4200             : RMS_NORM 42
 # test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 0.314            : RMS_NORM 3.14
-# ======================================================================================================================================================
+# =================================================================================================================================================================================
 # test_dir2                                : file_c                                   : var42                                    : FILLDIFF
 # test_dir2                                : file_c                                   : var43                                    : DIMSIZEDIFF
-# ======================================================================================================================================================
+# =================================================================================================================================================================================
 # test_dir2                                : file_d                                   : var100                                   : RMS 9                : RMS_NORM 200
 
 
