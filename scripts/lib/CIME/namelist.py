@@ -1993,17 +1993,17 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x = _NamelistParser("&group /")
         >>> x._parse_namelist_group()
         >>> x._settings
-        {u'group': {}}
+        OrderedDict([(u'group', {})])
         >>> x._curr()
         u'/'
         >>> x = _NamelistParser("&group\n foo='bar','bazz'\n,, foo2=2*5\n /")
         >>> x._parse_namelist_group()
         >>> x._settings
-        {u'group': {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}}
+        OrderedDict([(u'group', {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']})])
         >>> x = _NamelistParser("&group\n foo='bar','bazz'\n,, foo2=2*5\n /", groupless=True)
         >>> x._parse_namelist_group()
         >>> x._settings
-        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}
+        OrderedDict([(u'foo', [u"'bar'", u"'bazz'", u'']), (u'foo2', [u'5', u'5'])])
         >>> x._curr()
         u'/'
         >>> x = _NamelistParser("&group /&group /")
@@ -2016,15 +2016,15 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x = _NamelistParser("&group foo='bar', foo='bazz' /")
         >>> x._parse_namelist_group()
         >>> x._settings
-        {u'group': {u'foo': [u"'bazz'"]}}
+        OrderedDict([(u'group', {u'foo': [u"'bazz'"]})])
         >>> x = _NamelistParser("&group foo='bar', foo= /")
         >>> x._parse_namelist_group()
         >>> x._settings
-        {u'group': {u'foo': [u"'bar'"]}}
+        OrderedDict([(u'group', {u'foo': [u"'bar'"]})])
         >>> x = _NamelistParser("&group foo='bar', foo= /", groupless=True)
         >>> x._parse_namelist_group()
         >>> x._settings
-        {u'foo': [u"'bar'"]}
+        OrderedDict([(u'foo', [u"'bar'"])])
         """
         group_name = self._parse_namelist_group_name()
         if not self._groupless:
@@ -2056,33 +2056,33 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         first by namelist group name, then by variable name.
 
         >>> _NamelistParser("").parse_namelist()
-        {}
+        OrderedDict()
         >>> _NamelistParser(" \n!Comment").parse_namelist()
-        {}
+        OrderedDict()
         >>> _NamelistParser(" &group /").parse_namelist()
-        {u'group': {}}
+        OrderedDict([(u'group', {})])
         >>> _NamelistParser("! Comment \n &group /! Comment\n ").parse_namelist()
-        {u'group': {}}
+        OrderedDict([(u'group', {})])
         >>> _NamelistParser("! Comment \n &group /! Comment ").parse_namelist()
-        {u'group': {}}
+        OrderedDict([(u'group', {})])
         >>> _NamelistParser("&group1\n foo='bar','bazz'\n,, foo2=2*5\n / &group2 /").parse_namelist()
-        {u'group1': {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}, u'group2': {}}
+        OrderedDict([(u'group1', {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'5', u'5']}), (u'group2', {})])
         >>> _NamelistParser("!blah \n foo='bar','bazz'\n,, foo2=2*5\n ", groupless=True).parse_namelist()
-        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'2*5']}
+        OrderedDict([(u'foo', [u"'bar'", u"'bazz'", u'']), (u'foo2', [u'2*5'])])
         >>> _NamelistParser("!blah \n foo='bar','bazz'\n,, foo2=2*5,6\n ", groupless=True).parse_namelist()
-        {u'foo': [u"'bar'", u"'bazz'", u''], u'foo2': [u'2*5', u'6']}
+        OrderedDict([(u'foo', [u"'bar'", u"'bazz'", u'']), (u'foo2', [u'2*5', u'6'])])
         >>> _NamelistParser("!blah \n foo='bar'", groupless=True).parse_namelist()
-        {u'foo': [u"'bar'"]}
+        OrderedDict([(u'foo', [u"'bar'"])])
         >>> _NamelistParser("foo='bar', foo='bazz'", groupless=True).parse_namelist()
-        {u'foo': [u"'bazz'"]}
+        OrderedDict([(u'foo', [u"'bazz'"])])
         >>> _NamelistParser("foo='bar', foo=", groupless=True).parse_namelist()
-        {u'foo': [u"'bar'"]}
+        OrderedDict([(u'foo', [u"'bar'"])])
         >>> _NamelistParser("foo='bar', foo(3)='bazz'", groupless=True).parse_namelist()
-        {u'foo': [u"'bar'"], u'foo(3)': [u"'bazz'"]}
+        OrderedDict([(u'foo', [u"'bar'"]), (u'foo(3)', [u"'bazz'"])])
         >>> _NamelistParser("foo(2)='bar'", groupless=True).parse_namelist()
-        {u'foo(2)': [u"'bar'"]}
+        OrderedDict([(u'foo(2)', [u"'bar'"])])
         >>> _NamelistParser("foo(2)='bar', foo(3)='bazz'", groupless=True).parse_namelist()
-        {u'foo(2)': [u"'bar'"], u'foo(3)': [u"'bazz'"]}
+        OrderedDict([(u'foo(2)', [u"'bar'"]), (u'foo(3)', [u"'bazz'"])])
         """
         # Return empty dictionary for empty files.
         if self._len == 0:
