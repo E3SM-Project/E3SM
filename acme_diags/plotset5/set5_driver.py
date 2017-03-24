@@ -14,7 +14,7 @@ from acme_diags.acme_parameter import ACMEParameter
 import acme_diags.plotting.set5.plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
-from acme_diags.viewer import OutputViewer
+from cdp.cdp_viewer import OutputViewer
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 
@@ -145,6 +145,9 @@ parameters = make_parameters(original_parameter)
 viewer = OutputViewer(path=parameters[0].case_id, index_name='index name')
 add_page_and_top_row(viewer, parameters)
 
+
+
+
 for parameter in parameters:
     viewer.add_group(parameter.case_id)
 
@@ -257,7 +260,8 @@ for parameter in parameters:
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                 acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                 if season is seasons[0]:
-                    viewer.add_row('%s %s' % (var, region), 'Description for %s' % var)
+                    viewer.add_row('%s %s' % (var, region))
+                    viewer.add_col('Description for %s' % var)
                 viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
 
     
@@ -353,7 +357,8 @@ for parameter in parameters:
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
                     acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
                     if season is seasons[0]:
-                        viewer.add_row('%s %s' % (var, region), 'Description for %s' % var)
+                        viewer.add_row('%s %s' % (var, region))
+                        viewer.add_col('Description for %s' % var)
                     viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
 
         else:
