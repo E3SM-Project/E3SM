@@ -1,0 +1,16 @@
+&input_nml
+   gridtype     = 'rtm'
+   file_roff    = '/glade/p/cesm/cseg/inputdata/lnd/clm2/rtmdata/rdirc.05.061026'
+   file_ocn     = '/glade/p/cesm/cseg/mapping/grids/gx1v7_151008.nc'
+   file_ocn_coastal_mask = '/glade/p/cesm/cseg/mapping/grids/gx1v7_ac_170322.nc'
+   file_nn      = 'map_r05_to_gx1v7_ac_nearestdtos_170324.nc'
+   file_smooth  = 'map_gx1v7_ac_to_gx1v7_smooth_170324.nc'
+   file_new     = 'map_r05_to_gx1v7_nnsm_e1000r300_170324.nc'
+   title        = 'runoff map: r05 -> gx1v7, nearest neighbor and smoothed'
+   eFold        = 1000000.0
+   rMax         =  300000.0
+   restrict_smooth_src_to_nn_dest = .true.
+   step1 = .true.
+   step2 = .true.
+   step3 = .true.
+/

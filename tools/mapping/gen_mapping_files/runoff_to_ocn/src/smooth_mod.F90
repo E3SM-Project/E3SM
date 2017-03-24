@@ -21,18 +21,17 @@ MODULE smooth_mod
 CONTAINS
 !===============================================================================
 
-SUBROUTINE smooth_init(ofilename, dest_in_as_src_out,  map_in, map_out)
+SUBROUTINE smooth_init(ofilename, restrict_smooth_src_to_nn_dest,  map_in, map_out)
 
    use mapread_mod
 
    implicit none
 
    !--- arguments ---
-   character(*), intent(in)    :: ofilename           ! name of ocn scrip grid file
-   type(sMatrix),intent(in)    :: map_in              ! original unsmoothed, matrix
-   logical,      intent(in)    :: dest_in_as_src_out  ! map_out%mask_a = pts mapped to
-                                                      !           map_in
-   type(sMatrix),intent(inout) :: map_out             ! smoothing matrix
+   character(*), intent(in)    :: ofilename                       ! name of ocn scrip grid file
+   type(sMatrix),intent(in)    :: map_in                          ! original unsmoothed, matrix
+   logical,      intent(in)    :: restrict_smooth_src_to_nn_dest  ! map_out%mask_a = pts mapped to map_in
+   type(sMatrix),intent(inout) :: map_out                         ! smoothing matrix
 
    !--- local ---
    integer :: i,j,n ! indicies: row, col, sparse matrix
@@ -148,7 +147,7 @@ SUBROUTINE smooth_init(ofilename, dest_in_as_src_out,  map_in, map_out)
    map_out%area_a = map_in%area_b
    map_out%domain_a   = map_in%domain_b
 
-   if (dest_in_as_src_out) then
+   if (restrict_smooth_src_to_nn_dest) then
       !--- compute minimal src domain mask for smoothing matrix ---
       jmd_count = 0
       map_out%mask_a = 0
