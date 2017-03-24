@@ -22,8 +22,7 @@ module cice_advection_incremental_remap_tracers
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_io_units
-   use mpas_abort
+   use mpas_log, only: mpas_log_write
 
    implicit none
    private
@@ -444,15 +443,15 @@ contains
 
     if (verboseTracers) then
        thisTracer => tracersHead
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'Tracers in initial list:'
-       write(stderrUnit,*) ' '
+       call mpas_log_write(' ')
+       call mpas_log_write('Tracers in initial list:')
+       call mpas_log_write(' ')
        do while (associated(thisTracer))
-          write(stderrUnit,*) 'Tracer: ', trim(thisTracer % tracerName)
+          call mpas_log_write('Tracer: '//trim(thisTracer % tracerName))
           if (associated(thisTracer % nextInitial)) then
-             write(stderrUnit,*) 'next: ', trim(thisTracer % nextInitial % tracerName)
+             call mpas_log_write('next: '//trim(thisTracer % nextInitial % tracerName))
           endif
-          write(stderrUnit,*) ' '
+          call mpas_log_write(' ')
           thisTracer => thisTracer % nextInitial
        enddo
     endif
@@ -474,21 +473,21 @@ contains
     !WHL - debug
     if (verboseTracers) then
        thisTracer => tracersHead
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'Tracers in ordered list:'
-       write(stderrUnit,*) ' '
+       call mpas_log_write(' ')
+       call mpas_log_write('Tracers in ordered list:')
+       call mpas_log_write(' ')
        do while (associated(thisTracer))
-          write(stderrUnit,*) 'Tracer: ', trim(thisTracer % tracerName)
-          write(stderrUnit,*) 'Parent: ', trim(thisTracer % parentName)
-          write(stderrUnit,*) 'hasChild: ', thisTracer % hasChild
-          write(stderrUnit,*) 'nParents: ', thisTracer % nParents
+          call mpas_log_write('Tracer: '//trim(thisTracer % tracerName))
+          call mpas_log_write('Parent: '//trim(thisTracer % parentName))
+          call mpas_log_write('hasChild: $l', logicArgs=(/thisTracer % hasChild/))
+          call mpas_log_write('nParents: $i', intArgs=(/thisTracer % nParents/))
           if (associated(thisTracer % next)) then
-             write(stderrUnit,*) 'next: ', trim(thisTracer % next % tracerName)
+             call mpas_log_write('next: '//trim(thisTracer % next % tracerName))
           endif
-          write(stderrUnit,*) ' '
+          call mpas_log_write(' ')
           thisTracer => thisTracer % next
        enddo
-       if (associated(tracersHead)) write(stderrUnit,*) 'tracersHead:', trim(tracersHead % tracerName)
+       if (associated(tracersHead)) call mpas_log_write('tracersHead:'//trim(tracersHead % tracerName))
     endif
 
   end subroutine cice_add_tracers_to_linked_list
@@ -742,7 +741,7 @@ contains
        if (tracer % isActive) then
 
           if (verboseTracers) then
-             write(stderrUnit,*) 'Active tracer: ', trim(tracer % tracerName)
+             call mpas_log_write('Active tracer: '//trim(tracer % tracerName))
           endif
 
           ! move pointer to the next tracer
@@ -756,7 +755,7 @@ contains
           ! remove this tracer from the list
 
           if (verboseTracers) then
-             write(stderrUnit,*) 'Inactive tracer:', trim(tracer % tracerName)
+             call mpas_log_write('Inactive tracer:'//trim(tracer % tracerName))
           endif
 
           if (associated(tracer % nextInitial)) then
@@ -778,11 +777,9 @@ contains
 
                          ! this is a child of the tracer to be nullified; make sure it is not active
                          if (childTracer % isActive) then
-                            write(stderrUnit,*) 'ERROR, IR tracers: Cannot have an inactive parent with an active child'
-                            write(stderrUnit,*) 'Inactive parent:', trim(tracer % tracerName)
-                            write(stderrUnit,*) 'Active child:', trim(childTracer % tracerName)
-                            call mpas_dmpar_global_abort(&
-                                 'MPAS-seaice: IR tracers: Cannot have an inactive parent with an active child')
+                            call mpas_log_write('IR tracers: Cannot have an inactive parent with an active child', MPAS_LOG_ERR)
+                            call mpas_log_write('Inactive parent:'//trim(tracer % tracerName), MPAS_LOG_ERR)
+                            call mpas_log_write('Active child:'//trim(childTracer % tracerName), MPAS_LOG_CRIT)
                          endif
                       endif
                    endif     ! nParents > 1
@@ -804,8 +801,7 @@ contains
 
              if (first) then ! the list is empty; something is wrong
                 nullify(tracersHead)
-                write(stderrUnit,*) 'ERROR: No active tracers for IR'
-                call mpas_dmpar_global_abort('MPAS-seaice: IR tracers: No active tracers')
+                call mpas_log_write('IR tracers: No active tracers for IR', MPAS_LOG_CRIT)
              endif
 
           endif  ! associated(tracer % nextInitial)
@@ -1124,7 +1120,7 @@ contains
     thisTracer => tracersHead   ! point to first element of linked list
     do while(associated(thisTracer))
 
-       if (verboseTracers) write(stderrUnit,*) 'Halo update:', trim(thisTracer % tracerName)
+       if (verboseTracers) call mpas_log_write('Halo update:'//trim(thisTracer % tracerName))
 
        call MPAS_dmpar_field_halo_exch(domain, trim(thisTracer % tracerName), timeLevel=timeLevel)
 

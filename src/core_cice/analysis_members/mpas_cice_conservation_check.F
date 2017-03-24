@@ -24,7 +24,7 @@ module cice_conservation_check
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
-   use mpas_io_units
+   use mpas_log, only: mpas_log_write
 
    implicit none
    private
@@ -324,10 +324,10 @@ contains
 
       if (config_AM_conservationCheck_write_to_logfile .and. &
           MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
-         write(stdoutUnit,fmt='(a)') '=========================================================='
+         call mpas_log_write('==========================================================')
          currentTime = MPAS_get_clock_time(domain % clock, MPAS_NOW, ierr=ierr)
          call MPAS_get_time(currentTime, dateTimeString=timeStr, ierr=ierr)
-         write(stdoutUnit,fmt='(a,a)') ' Conservation checks: ', trim(timeStr)
+         call mpas_log_write(' Conservation checks: '//trim(timeStr))
       endif
 
       ! energy conservation check
@@ -341,7 +341,7 @@ contains
 
       if (config_AM_conservationCheck_write_to_logfile .and. &
          MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
-         write(stdoutUnit,fmt='(a)') '=========================================================='
+         call mpas_log_write('==========================================================')
 
          ! set precompute to happen next timestep
          call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
@@ -598,24 +598,24 @@ contains
 
             formatString = "(a32,2x,1pe24.17)"
 
-            write(stdoutUnit,fmt='(a)') '----------------------------------------------------------'
-            write(stdoutUnit,fmt='(a)') ' Energy conservation check'
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Initial energy           (J) = ', initialEnergy
-            write(stdoutUnit,fmt=formatString) ' Final energy             (J) = ', finalEnergy
-            write(stdoutUnit,fmt=formatString) ' Energy change            (J) = ', energyChange
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Surface heat flux        (W) = ', accumulatedSurfaceHeatFlux
-            write(stdoutUnit,fmt=formatString) ' Ocean heat flux          (W) = ', accumulatedOceanHeatFlux
-            write(stdoutUnit,fmt=formatString) ' Freezing heat flux       (W) = ', accumulatedFreezingPotential
-            write(stdoutUnit,fmt=formatString) ' Snowfall heat flux       (W) = ', accumulatedSnowfallHeat
-            write(stdoutUnit,fmt=formatString) ' Latent heat flux         (W) = ', accumulatedLatentHeat
-            write(stdoutUnit,fmt=formatString) ' Net energy flux          (W) = ', netEnergyFlux
-            write(stdoutUnit,fmt=formatString) ' Net energy flux          (J) = ', netEnergyFlux * dt
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Absolute energy error    (J) = ', absoluteEnergyError
-            write(stdoutUnit,fmt=formatString) ' Absolute energy error    (W) = ', absoluteEnergyError / dt
-            write(stdoutUnit,fmt=formatString) ' Relative energy error        = ', relativeEnergyError
+            call mpas_log_write('----------------------------------------------------------')
+            call mpas_log_write(' Energy conservation check')
+            call mpas_log_write(' ')
+            call mpas_log_write(' Initial energy           (J) = $r', realArgs=(/initialEnergy/))
+            call mpas_log_write(' Final energy             (J) = $r', realArgs=(/finalEnergy/))
+            call mpas_log_write(' Energy change            (J) = $r', realArgs=(/energyChange/))
+            call mpas_log_write(' ')
+            call mpas_log_write(' Surface heat flux        (W) = $r', realArgs=(/accumulatedSurfaceHeatFlux/))
+            call mpas_log_write(' Ocean heat flux          (W) = $r', realArgs=(/accumulatedOceanHeatFlux/))
+            call mpas_log_write(' Freezing heat flux       (W) = $r', realArgs=(/accumulatedFreezingPotential/))
+            call mpas_log_write(' Snowfall heat flux       (W) = $r', realArgs=(/accumulatedSnowfallHeat/))
+            call mpas_log_write(' Latent heat flux         (W) = $r', realArgs=(/accumulatedLatentHeat/))
+            call mpas_log_write(' Net energy flux          (W) = $r', realArgs=(/netEnergyFlux/))
+            call mpas_log_write(' Net energy flux          (J) = $r', realArgs=(/netEnergyFlux * dt/))
+            call mpas_log_write(' ')
+            call mpas_log_write(' Absolute energy error    (J) = $r', realArgs=(/absoluteEnergyError/))
+            call mpas_log_write(' Absolute energy error    (W) = $r', realArgs=(/absoluteEnergyError / dt/))
+            call mpas_log_write(' Relative energy error        = $r', realArgs=(/relativeEnergyError/))
 
          endif
 
@@ -851,24 +851,24 @@ contains
 
             formatString = "(a32,2x,1pe24.17)"
 
-            write(stdoutUnit,fmt='(a)') '----------------------------------------------------------'
-            write(stdoutUnit,fmt='(a)') ' Mass conservation check'
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Initial mass            (kg) = ', initialMass
-            write(stdoutUnit,fmt=formatString) ' Final mass              (kg) = ', finalMass
-            write(stdoutUnit,fmt=formatString) ' Mass change             (kg) = ', massChange
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Rainfall mass flux    (kg/s) = ', accumulatedRainfallRate
-            write(stdoutUnit,fmt=formatString) ' Snowfall mass flux    (kg/s) = ', accumulatedSnowfallRate
-            write(stdoutUnit,fmt=formatString) ' Evaporative mass flux (kg/s) = ', accumulatedEvaporation
-            write(stdoutUnit,fmt=formatString) ' Fresh water mass flux (kg/s) = ', accumulatedFreshWater
-            write(stdoutUnit,fmt=formatString) ' Frazil water flux     (kg/s) = ', accumulatedFrazilWater
-            write(stdoutUnit,fmt=formatString) ' Net mass flux         (kg/s) = ', netMassFlux
-            write(stdoutUnit,fmt=formatString) ' Net mass flux           (kg) = ', netMassFlux * dt
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Absolute mass error     (kg) = ', absoluteMassError
-            write(stdoutUnit,fmt=formatString) ' Absolute mass error   (kg/s) = ', absoluteMassError / dt
-            write(stdoutUnit,fmt=formatString) ' Relative mass error          = ', relativeMassError
+            call mpas_log_write('----------------------------------------------------------')
+            call mpas_log_write(' Mass conservation check')
+            call mpas_log_write(' ')
+            call mpas_log_write(' Initial mass            (kg) = $r', realArgs=(/initialMass/))
+            call mpas_log_write(' Final mass              (kg) = $r', realArgs=(/finalMass/))
+            call mpas_log_write(' Mass change             (kg) = $r', realArgs=(/massChange/))
+            call mpas_log_write(' ')
+            call mpas_log_write(' Rainfall mass flux    (kg/s) = $r', realArgs=(/accumulatedRainfallRate/))
+            call mpas_log_write(' Snowfall mass flux    (kg/s) = $r', realArgs=(/accumulatedSnowfallRate/))
+            call mpas_log_write(' Evaporative mass flux (kg/s) = $r', realArgs=(/accumulatedEvaporation/))
+            call mpas_log_write(' Fresh water mass flux (kg/s) = $r', realArgs=(/accumulatedFreshWater/))
+            call mpas_log_write(' Frazil water flux     (kg/s) = $r', realArgs=(/accumulatedFrazilWater/))
+            call mpas_log_write(' Net mass flux         (kg/s) = $r', realArgs=(/netMassFlux/))
+            call mpas_log_write(' Net mass flux           (kg) = $r', realArgs=(/netMassFlux * dt/))
+            call mpas_log_write(' ')
+            call mpas_log_write(' Absolute mass error     (kg) = $r', realArgs=(/absoluteMassError/))
+            call mpas_log_write(' Absolute mass error   (kg/s) = $r', realArgs=(/absoluteMassError / dt/))
+            call mpas_log_write(' Relative mass error          = $r', realArgs=(/relativeMassError/))
 
          endif
 
@@ -1063,21 +1063,21 @@ contains
 
             formatString = "(a32,2x,1pe24.17)"
 
-            write(stdoutUnit,fmt='(a)') '----------------------------------------------------------'
-            write(stdoutUnit,fmt='(a)') ' Salt conservation check'
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Initial salt            (kg) = ', initialSalt
-            write(stdoutUnit,fmt=formatString) ' Final salt              (kg) = ', finalSalt
-            write(stdoutUnit,fmt=formatString) ' Salt change             (kg) = ', saltChange
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Ocean salt flux       (kg/s) = ', accumulatedOceanSaltFlux
-            write(stdoutUnit,fmt=formatString) ' Frazil salt flux      (kg/s) = ', accumulatedFrazilSaltFlux
-            write(stdoutUnit,fmt=formatString) ' Net salt flux         (kg/s) = ', netSaltFlux
-            write(stdoutUnit,fmt=formatString) ' Net salt flux           (kg) = ', netSaltFlux * dt
-            write(stdoutUnit,*)
-            write(stdoutUnit,fmt=formatString) ' Absolute mass error     (kg) = ', absoluteSaltError
-            write(stdoutUnit,fmt=formatString) ' Absolute mass error   (kg/s) = ', absoluteSaltError / dt
-            write(stdoutUnit,fmt=formatString) ' Relative salt error          = ', relativeSaltError
+            call mpas_log_write('----------------------------------------------------------')
+            call mpas_log_write(' Salt conservation check')
+            call mpas_log_write(' ')
+            call mpas_log_write(' Initial salt            (kg) = $r', realArgs=(/initialSalt/))
+            call mpas_log_write(' Final salt              (kg) = $r', realArgs=(/finalSalt/))
+            call mpas_log_write(' Salt change             (kg) = $r', realArgs=(/saltChange/))
+            call mpas_log_write(' ')
+            call mpas_log_write(' Ocean salt flux       (kg/s) = $r', realArgs=(/accumulatedOceanSaltFlux/))
+            call mpas_log_write(' Frazil salt flux      (kg/s) = $r', realArgs=(/accumulatedFrazilSaltFlux/))
+            call mpas_log_write(' Net salt flux         (kg/s) = $r', realArgs=(/netSaltFlux/))
+            call mpas_log_write(' Net salt flux           (kg) = $r', realArgs=(/netSaltFlux * dt/))
+            call mpas_log_write(' ')
+            call mpas_log_write(' Absolute mass error     (kg) = $r', realArgs=(/absoluteSaltError/))
+            call mpas_log_write(' Absolute mass error   (kg/s) = $r', realArgs=(/absoluteSaltError / dt/))
+            call mpas_log_write(' Relative salt error          = $r', realArgs=(/relativeSaltError/))
 
          endif
 

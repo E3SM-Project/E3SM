@@ -12,7 +12,7 @@ module cice_core
    use cice_analysis_driver
    use cice_column
    use mpas_threading
-   use mpas_abort
+   use mpas_log, only: mpas_log_write
 
    private
    public :: &
@@ -65,16 +65,16 @@ module cice_core
 
       numThreads = mpas_threading_get_max_threads()
 
-      write(stderrUnit, *) ''
-      write(stderrUnit, *) ' *****************************************************************************'
-      write(stderrUnit, *) ' MPI Task ', domain % dminfo % my_proc_id, ' has access to ', numThreads, ' threads'
-      write(stderrUnit, *) ' *****************************************************************************'
-      write(stderrUnit, *) ''
+      call mpas_log_write(' ')
+      call mpas_log_write(' *****************************************************************************')
+      call mpas_log_write(' MPI Task $i has access to $i threads', intArgs=(/domain % dminfo % my_proc_id, numThreads/))
+      call mpas_log_write(' *****************************************************************************')
+      call mpas_log_write(' ')
 
       ! write out namelist options
-      write(stderrUnit,*) ; write(stderrUnit,*) " ----- namelist options used -----" ;  write(stderrUnit,*)
+      call mpas_log_write(' ') ; call mpas_log_write(" ----- namelist options used -----") ;  call mpas_log_write(' ')
       call mpas_pool_print_summary(domain % configs, MPAS_POOL_CONFIG)
-      write(stderrUnit,*) ; write(stderrUnit,*) " ----- done listing namelist options used -----" ; write(stderrUnit,*)
+      call mpas_log_write(' ') ; call mpas_log_write(" ----- done listing namelist options used -----") ; call mpas_log_write(' ')
 
       call mpas_pool_get_config(domain % configs, 'config_initial_condition_type', config_initial_condition_type)
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
@@ -177,13 +177,13 @@ module cice_core
       if ( trim(config_start_time) == "file" ) then
          open(22, file=config_restart_timestamp_name, form='formatted', status='old', iostat=local_err)
          if (local_err /= 0) then
-            write(stderrUnit,*) "cice_simulation_clock_init: problem opening restart timestamp file for reading: ", local_err
-            call MPAS_dmpar_global_abort("MPAS-seaice: Problem opening restart timestamp file for reading")
+            call mpas_log_write("cice_simulation_clock_init: problem opening restart timestamp file for reading: $i", &
+                 MPAS_LOG_CRIT, intArgs=(/local_err/))
          endif
          read(22,*,iostat=local_err) restartTimeStamp
          if (local_err /= 0) then
-            write(stderrUnit,*) "cice_simulation_clock_init: problem reading restart timestamp file: ", local_err
-            call MPAS_dmpar_global_abort("MPAS-seaice: Problem reading restart timestamp file")
+            call mpas_log_write("cice_simulation_clock_init: problem reading restart timestamp file $i: ", &
+                 MPAS_LOG_CRIT, intArgs=(/local_err/))
          endif
          close(22)
          call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=local_err)
@@ -200,15 +200,19 @@ module cice_core
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
-               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               call mpas_log_write(&
+                    'config_run_duration and config_stop_time are inconsitent: using config_run_duration.', &
+                    MPAS_LOG_WARN)
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=local_err)
       else
-          write(0,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
-          ierr = 1
+         call mpas_log_write(&
+              'Error: Neither config_run_duration nor config_stop_time were specified.', &
+              MPAS_LOG_WARN)!! unclear what kind of error this shoudl be
+         ierr = 1
       end if
 
    end subroutine cice_simulation_clock_init
@@ -286,7 +290,7 @@ module cice_core
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-      write(0,*) 'Initial timestep ', trim(timeStamp)
+      call mpas_log_write('Initial timestep '//trim(timeStamp))
 
       ! compute analysis at startup if required
       ! (note: might require some reordering of call here if cice_forcing_get data is used in analysis members)
@@ -316,7 +320,7 @@ module cice_core
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-         write(0,*) 'Doing timestep ', trim(timeStamp)
+         call mpas_log_write('Doing timestep '//trim(timeStamp))
 
          ! pre-timestep analysis computation
          call cice_analysis_precompute(domain, ierr)
@@ -338,13 +342,13 @@ module cice_core
               streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace', iostat=ierr)
             if (ierr /= 0) then
-               write(stderrUnit,*) "cice_core_run: problem opening restart timestamp file for writing: ", ierr
-               call MPAS_dmpar_global_abort("MPAS-seaice: Problem opening restart timestamp file for writing")
+               call mpas_log_write("cice_core_run: problem opening restart timestamp file for writing: $i", &
+                    MPAS_LOG_CRIT, intArgs=(/ierr/))
             endif
             write(22, *, iostat=ierr) timeStamp
             if (ierr /= 0) then
-               write(stderrUnit,*) "cice_core_run: problem writing restart timestamp file: ", ierr
-               call MPAS_dmpar_global_abort("MPAS-seaice: Problem writing restart timestamp file")
+               call mpas_log_write("cice_core_run: problem writing restart timestamp file: $i", &
+                    MPAS_LOG_CRIT, intArgs=(/ierr/))
             endif
             close(22)
             call cice_forcing_write_restart_times(domain)

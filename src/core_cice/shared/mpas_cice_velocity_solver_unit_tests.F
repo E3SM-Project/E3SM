@@ -14,7 +14,6 @@ module cice_velocity_solver_unit_tests
 
   use mpas_derived_types
   use mpas_pool_routines
-  use mpas_io_units
   use mpas_log, only: mpas_log_write
 
   implicit none

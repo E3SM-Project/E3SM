@@ -18,9 +18,9 @@
 !-----------------------------------------------------------------------
 
 #define COMMA ,
-#define PWAM_DEBUG_WRITE(M) ! write(stderrUnit,*) M
-#define PWAM_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
-#define PWAM_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+#define PWAM_DEBUG_WRITE(M) !call mpas_log_write( M )
+#define PWAM_WARNING_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_WARN)
+#define PWAM_ERROR_WRITE(M) call mpas_log_write( M , messageType=MPAS_LOG_ERR)
 
 module cice_pointwise_stats
 

@@ -13,6 +13,7 @@ module cice_core_interface
    use mpas_io_units
    use cice_core
    use cice_analysis_driver
+   use mpas_log, only: mpas_log_write
 
    public
 
@@ -185,7 +186,7 @@ module cice_core_interface
            else
 
               ! unknown value of config_variational_basis
-              write(*,*) "Unknown variational scheme: ", trim(config_variational_basis)
+              call mpas_log_write("Unknown variational scheme: "//trim(config_variational_basis))
               ierr = 1
 
            endif ! config_variational_basis
@@ -193,7 +194,7 @@ module cice_core_interface
         else
 
            ! unknown value of config_stress_divergence_scheme
-           write(*,*) "Unknown stress divergence scheme: ", trim(config_stress_divergence_scheme)
+           call mpas_log_write("Unknown stress divergence scheme: "//trim(config_stress_divergence_scheme))
            ierr = 1
 
         endif ! config_stress_divergence_scheme
@@ -558,7 +559,7 @@ module cice_core_interface
       decompFunc => mpas_uniform_decomp
 
       if ( associated(decompList) ) then
-         write(0,*) ' It is associated (decompList that is)'
+         call mpas_log_write(' It is associated (decompList that is)')
       end if
 
       call mpas_decomp_register_method(decompList, 'uniform', decompFunc, iErr)
