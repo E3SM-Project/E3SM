@@ -98,10 +98,6 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
 #def plot(reference, test, reference_regrid, test_regrid, parameter):
 def plot(reference, test, diff, metrics_dict, parameter):
 
-    case_id = parameter.case_id
-    if not os.path.exists(case_id):
-        os.makedirs(case_id)
-
     # Create figure, projection
     fig = plt.figure(figsize=[8.5, 11.0])
     proj = ccrs.PlateCarree(central_longitude=180)
@@ -126,3 +122,4 @@ def plot(reference, test, diff, metrics_dict, parameter):
         os.makedirs(case_id)
     for f in parameter.format:
         plt.savefig(case_id + '/' + parameter.output_file + '.' + f)
+    print 'Plot saved in: ' + case_id + '/' + parameter.output_file
