@@ -1949,6 +1949,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         (u'foo', [u'2'])
         >>> _NamelistParser("foo=1,2")._parse_name_and_values(allow_eof_end=True)
         (u'foo', [u'1', u'2'])
+        >>> _NamelistParser("foo(1:2)=1,2,3 ")._parse_name_and_values(allow_eof_end=True)
+        Traceback (most recent call last):
+        ...
+        SystemExit: ERROR: Too many values for array foo(1:2)
         >>> _NamelistParser("foo=1,")._parse_name_and_values(allow_eof_end=True)
         (u'foo', [u'1', u''])
         """
@@ -1976,6 +1980,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 break
             # and if it really is a literal, add it.
             values.append(literal)
+        (minindex, maxindex, step) = get_fortran_variable_indices(name)
+        if minindex > 1 or maxindex > minindex or step > 1:
+            expect(len(values) <= 1 + ((maxindex - minindex)/step), "Too many values for array %s"%(name))
+
         return name, values
 
     def _parse_namelist_group(self):
