@@ -163,6 +163,7 @@ def is_valid_fortran_name(string):
     1. The name must start with a letter.
     2. All characters in a name must be alphanumeric (or underscores).
     3. The maximum name length is 63 characters.
+    4. We only handle a single dimension !!!
 
     >>> is_valid_fortran_name("")
     False
@@ -182,6 +183,8 @@ def is_valid_fortran_name(string):
     True
     >>> is_valid_fortran_name("A(1::+3)")
     True
+    >>> is_valid_fortran_name("A(1,3)")
+    False
     >>> is_valid_fortran_name("2")
     False
     >>> is_valid_fortran_name("_")
@@ -898,35 +901,6 @@ class Namelist(object):
         """
         return self._groups.keys()
 
-    # def get_variable_qualified_names(self, group_name):
-    #     """Return a list of all variables in the given namelist group.
-
-    #     If the specified group is not in the namelist, returns an empty list.
-
-    #     >>> Namelist().get_variable_names('foo')
-    #     []
-    #     >>> x = parse(text='&foo bar=,bazz=true,bazz(2)=fred,bang=6*""/')
-    #     >>> sorted(x.get_variable_names('fOo'))
-    #     [u'bang', u'bar', u'bazz']
-    #     >>> x = parse(text='&foo bar=,bazz=true,bang=6*""/')
-    #     >>> sorted(x.get_variable_names('fOo'))
-    #     [u'bang', u'bar', u'bazz']
-    #     >>> x = parse(text='&foo bar(::)=,bazz=false,bazz(2)=true,bazz(:2:)=6*""/')
-    #     >>> sorted(x.get_variable_names('fOo'))
-    #     [u'bar', u'bazz']
-    #     """
-    #     group_name = group_name.lower()
-    #     if group_name not in self._groups:
-    #         return []
-    #     var_full_names = self._groups[group_name].keys()
-    #     varnames = []
-    #     for var in var_full_names:
-    #         varname = get_variable_name(var)
-    #         if varname not in varnames:
-    #             varnames.append(varname)
-
-    #     return varnames
-
     def get_variable_names(self, group_name):
         """Return a list of all variables in the given namelist group.
 
@@ -1028,7 +1002,7 @@ class Namelist(object):
         minindex, maxindex, step = get_fortran_variable_indices(variable_name, var_size)
         variable_name = get_fortran_name_only(variable_name.lower())
 
-        expect(minindex > 0, "CIME indices < 1 not supported in CIME interface to fortran namelists minindex=%s"%minindex)
+        expect(minindex > 0, "Indices < 1 not supported in CIME interface to fortran namelists... lower bound=%s"%minindex)
 
         if group_name not in self._groups:
             self._groups[group_name] = {}
@@ -1298,7 +1272,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser(' ')._next()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 1)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         """
         # If at the end of the file, we should raise _NamelistEOF. The easiest
         # way to do this is to just advance.
@@ -1340,11 +1314,11 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._advance(1)
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 3, column 2)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser('abc\n')._advance(4)
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 2, column 0)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> x = _NamelistParser('ab')
         >>> x._advance(check_eof=True)
         False
@@ -1369,7 +1343,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         if check_eof:
             return end_of_file
         elif end_of_file:
-            raise _NamelistEOF(message="At "+self._line_col_string())
+            raise _NamelistEOF(message=None)
 
     def _eat_whitespace(self, allow_initial_comment=False):
         r"""Advance until the next non-whitespace character.
@@ -1390,7 +1364,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._eat_whitespace()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 2, column 3)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> x = _NamelistParser(' \n! blah\n ! blah\n a')
         >>> x._eat_whitespace()
         True
@@ -1447,12 +1421,12 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._eat_comment()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 3, column 8)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> x = _NamelistParser('! foo\n')
         >>> x._eat_comment()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 2, column 0)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         """
         if self._curr() != '!':
             return False
@@ -1479,7 +1453,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._expect_char('a')
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: expected 'a' but found 'b' at line 1, column 1
+        _NamelistParseError: Error in parsing namelist: expected 'a' but found 'b'
         >>> x._expect_char('ab')
         """
         if self._curr() not in chars:
@@ -1487,9 +1461,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 char_description = repr(str(chars))
             else:
                 char_description = "one of the characters in %r" % str(chars)
-            raise _NamelistParseError("expected %s but found %r at %s" %
-                                      (char_description, str(self._curr()),
-                                       self._line_col_string()))
+            raise _NamelistParseError("expected %s but found %r" %
+                                      (char_description, str(self._curr())))
 
     def _parse_namelist_group_name(self):
         r"""Parses and returns a namelist group name at the current position.
@@ -1497,11 +1470,11 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('abc')._parse_namelist_group_name()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: expected '&' but found 'a' at line 1, column 0
+        _NamelistParseError: Error in parsing namelist: expected '&' but found 'a'
         >>> _NamelistParser('&abc')._parse_namelist_group_name()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 4)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser('&abc ')._parse_namelist_group_name()
         u'abc'
         >>> _NamelistParser('&abc\n')._parse_namelist_group_name()
@@ -1509,15 +1482,15 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('&abc/ ')._parse_namelist_group_name()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: 'abc/' is not a valid variable name at line 1, column 5
+        _NamelistParseError: Error in parsing namelist: 'abc/' is not a valid variable name
         >>> _NamelistParser('&abc= ')._parse_namelist_group_name()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: 'abc=' is not a valid variable name at line 1, column 5
+        _NamelistParseError: Error in parsing namelist: 'abc=' is not a valid variable name
         >>> _NamelistParser('& ')._parse_namelist_group_name()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: '' is not a valid variable name at line 1, column 1
+        _NamelistParseError: Error in parsing namelist: '' is not a valid variable name
         """
         self._expect_char("&")
         self._advance()
@@ -1533,7 +1506,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('abc')._parse_variable_name()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 3)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser('foo(2)= ')._parse_variable_name()
         u'foo(2)'
         >>> _NamelistParser('abc ')._parse_variable_name()
@@ -1550,20 +1523,29 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         u'abc(1:2:3)'
         >>> _NamelistParser('abc=')._parse_variable_name()
         u'abc'
+        >>> _NamelistParser('abc(1,2) ')._parse_variable_name()
+        Traceback (most recent call last):
+            ...
+        _NamelistParseError: Error in parsing namelist: Multiple dimensions not supported in CIME namelist variables 'abc(1,2)'
         >>> _NamelistParser('abc, ')._parse_variable_name()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: 'abc,' is not a valid variable name at line 1, column 4
+        _NamelistParseError: Error in parsing namelist: 'abc,' is not a valid variable name
         >>> _NamelistParser(' ')._parse_variable_name()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: '' is not a valid variable name at line 1, column 0
+        _NamelistParseError: Error in parsing namelist: '' is not a valid variable name
         """
         old_pos = self._pos
         separators = (' ', '\n', '=') if allow_equals else (' ', '\n')
         while self._curr() not in separators:
             self._advance()
         text = self._text[old_pos:self._pos]
+        if '(' in text:
+            expect(')' in text,"Parsing error ")
+        elif ')' in text:
+            expect(False,"Parsing error ")
+
         # @ is used in a namelist to put the same namelist variable in multiple groups
         # in the write phase, all characters in the namelist variable name after
         # the @ and including the @ should be removed
@@ -1575,8 +1557,11 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             text_check = text
 
         if not is_valid_fortran_name(text_check):
-            raise _NamelistParseError("%r is not a valid variable name at %s" %
-                                      (str(text), self._line_col_string()))
+            if re.search(".*\(.*\,.*\)", text_check):
+                err_str = "Multiple dimensions not supported in CIME namelist variables %r" % str(text)
+            else:
+                err_str = "%r is not a valid variable name" % str(text)
+            raise _NamelistParseError(err_str)
         name = text.lower()
 
         return name
@@ -1590,7 +1575,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('"abc')._parse_character_literal()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 4)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser('"abc" ')._parse_character_literal()
         u'"abc"'
         >>> _NamelistParser("'abc' ")._parse_character_literal()
@@ -1598,7 +1583,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser("*abc* ")._parse_character_literal()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: *abc* is not a valid character literal at line 1, column 4
+        _NamelistParseError: Error in parsing namelist: *abc* is not a valid character literal
         >>> _NamelistParser("'abc''def' ")._parse_character_literal()
         u"'abc''def'"
         >>> _NamelistParser("'abc''' ")._parse_character_literal()
@@ -1622,8 +1607,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 break
         text = self._text[old_pos:self._pos+1]
         if not is_valid_fortran_namelist_literal("character", text):
-            raise _NamelistParseError("%s is not a valid character literal at %s" %
-                                      (text, self._line_col_string()))
+            raise _NamelistParseError("%s is not a valid character literal" %
+                                      (text))
         return text
 
     def _parse_complex_literal(self):
@@ -1635,21 +1620,21 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('(1.,2.')._parse_complex_literal()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 6)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser('(1.,2.) ')._parse_complex_literal()
         u'(1.,2.)'
         >>> _NamelistParser("(A,B) ")._parse_complex_literal()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: '(A,B)' is not a valid complex literal at line 1, column 4
+        _NamelistParseError: Error in parsing namelist: '(A,B)' is not a valid complex literal
         """
         old_pos = self._pos
         while self._curr() != ')':
             self._advance()
         text = self._text[old_pos:self._pos+1]
         if not is_valid_fortran_namelist_literal("complex", text):
-            raise _NamelistParseError("%r is not a valid complex literal at %s"
-                                      % (str(text), self._line_col_string()))
+            raise _NamelistParseError("%r is not a valid complex literal"
+                                      % (str(text)))
         return text
 
     def _look_ahead_for_equals(self, pos):
@@ -1701,7 +1686,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('"abc"')._parse_literal()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 5)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser('"abc"')._parse_literal(allow_eof_end=True)
         u'"abc"'
         >>> _NamelistParser('(1.,2.) ')._parse_literal()
@@ -1709,7 +1694,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('(1.,2.)')._parse_literal()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 7)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser('(1.,2.)')._parse_literal(allow_eof_end=True)
         u'(1.,2.)'
         >>> _NamelistParser('5 ')._parse_literal()
@@ -1725,7 +1710,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('hamburger ')._parse_literal()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: expected literal value, but got 'hamburger' at line 1, column 9
+        _NamelistParseError: Error in parsing namelist: expected literal value, but got 'hamburger'
         >>> _NamelistParser('5,')._parse_literal()
         u'5'
         >>> _NamelistParser('5\n')._parse_literal()
@@ -1743,13 +1728,13 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('6*')._parse_literal()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 2)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser('6*')._parse_literal(allow_eof_end=True)
         u'6*'
         >>> _NamelistParser('foo= ')._parse_literal()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: expected literal value, but got 'foo=' at line 1, column 4
+        _NamelistParseError: Error in parsing namelist: expected literal value, but got 'foo='
         >>> _NamelistParser('5,')._parse_literal(allow_name=True)
         u'5'
         >>> x = _NamelistParser('foo= ')
@@ -1759,7 +1744,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('6*foo= ')._parse_literal(allow_name=True)
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: expected literal value, but got '6*foo=' at line 1, column 6
+        _NamelistParseError: Error in parsing namelist: expected literal value, but got '6*foo='
         >>> x = _NamelistParser('foo = ')
         >>> x._parse_literal(allow_name=True)
         >>> x._curr()
@@ -1799,7 +1784,13 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         if allow_name:
             separators.append('=')
         while new_pos != self._len and self._text[new_pos] not in separators:
+            # allow commas if they are inside ()
+            if self._text[new_pos] == '(':
+                separators.remove(',')
+            elif self._text[new_pos] == ')':
+                separators.append(',')
             new_pos += 1
+
         if not allow_eof_end and new_pos == self._len:
             # At the end of the file, give up by throwing an EOF.
             self._advance(self._len)
@@ -1811,8 +1802,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         text = self._text[old_pos:self._pos]
         if not any(is_valid_fortran_namelist_literal(type_, text)
                    for type_ in ("integer", "logical", "real")):
-            raise _NamelistParseError("expected literal value, but got %r at %s"
-                                      % (str(text), self._line_col_string()))
+            raise _NamelistParseError("expected literal value, but got %r"
+                                      % (str(text)))
         return text
 
     def _expect_separator(self, allow_eof=False):
@@ -1855,7 +1846,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._expect_separator()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: expected one of the characters in ' \n,/' but found 'a' at line 1, column 0
+        _NamelistParseError: Error in parsing namelist: expected one of the characters in ' \n,/' but found 'a'
         >>> x = _NamelistParser(" , a")
         >>> x._expect_separator()
         True
@@ -1888,9 +1879,9 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> x._expect_separator(allow_eof=True)
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: found group-terminating '/' in file without group names at line 1, column 1
+        _NamelistParseError: Error in parsing namelist: found group-terminating '/' in file without group names
         """
-        errstring = "found group-terminating '/' in file without group names at "
+        errstring = "found group-terminating '/' in file without group names"
         # Deal with the possibility that we are already at EOF.
         if allow_eof and self._pos == self._len:
             return False
@@ -1900,8 +1891,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             self._eat_whitespace()
             if self._curr() == '/':
                 if allow_eof:
-                    raise _NamelistParseError(errstring +
-                                              self._line_col_string())
+                    raise _NamelistParseError(errstring)
                 else:
                     return False
         except _NamelistEOF:
@@ -1940,7 +1930,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser("foo 'bar' /")._parse_name_and_values()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: expected '=' but found "'" at line 1, column 4
+        _NamelistParseError: Error in parsing namelist: expected '=' but found "'"
         >>> _NamelistParser("foo='bar','bazz' /")._parse_name_and_values()
         (u'foo', [u"'bar'", u"'bazz'"])
         >>> _NamelistParser("foo=,,'bazz',6*/")._parse_name_and_values()
@@ -1952,7 +1942,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser("foo= foo2='ban' ")._parse_name_and_values()
         Traceback (most recent call last):
             ...
-        _NamelistParseError: Error in parsing namelist: expected literal value, but got "foo2='ban'" at line 1, column 15
+        _NamelistParseError: Error in parsing namelist: expected literal value, but got "foo2='ban'"
         >>> _NamelistParser("foo=,,'bazz',6* ")._parse_name_and_values(allow_eof_end=True)
         (u'foo', [u'', u'', u"'bazz'", u'6*'])
         >>> _NamelistParser("foo(3)='bazz'")._parse_name_and_values(allow_eof_end=True)
@@ -1960,7 +1950,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser("foo=")._parse_name_and_values()
         Traceback (most recent call last):
             ...
-        _NamelistEOF: Unexpected end of file encountered in namelist. (At line 1, column 4)
+        _NamelistEOF: Unexpected end of file encountered in namelist.
         >>> _NamelistParser("foo=")._parse_name_and_values(allow_eof_end=True)
         (u'foo', [u''])
         >>> _NamelistParser("foo= ")._parse_name_and_values(allow_eof_end=True)
@@ -1973,6 +1963,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         (u'foo', [u'1', u''])
         """
         name = self._parse_variable_name()
+
         self._eat_whitespace()
         self._expect_char("=")
         try:
