@@ -14,7 +14,7 @@
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
   tstep             = 1.0                        ! largest timestep in seconds
-  rsplit            = 1
+  rsplit            = 3
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5                         ! 1 => default method
   nu                = 1e15                      ! hyperviscosity
@@ -32,7 +32,7 @@
 &analysis_nl
   output_dir        = "./movies/"              ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 4,                        ! output every 4 hours
+  output_frequency  = 12,                        ! output every 4 hours
   output_varnames1  ='T','ps','u','v','omega','geo'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf

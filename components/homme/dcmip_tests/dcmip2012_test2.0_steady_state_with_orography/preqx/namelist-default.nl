@@ -32,7 +32,7 @@
 &analysis_nl
   output_dir        = "./movies/"              ! destination dir for netcdf file
   output_timeunits  = 2,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 4,                        ! output every 4 hours
+  output_frequency  = 12,                        ! output every 12 hours
   output_varnames1  ='T','ps','u','v','omega','geo'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf

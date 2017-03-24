@@ -28,7 +28,7 @@ begin
   ;_________________________________________________
   ; open file and read in data(time,lev,lat,long)
 
-  f     = addfile("dcmip2012_test2_01.nc","r")
+  f     = addfile("movies/dcmip2012_test2_01.nc","r")
 	lat   = f->lat
 	lon   = f->lon
 	lev   = f->lev
@@ -43,12 +43,11 @@ begin
 
   ;_________________________________________________
   ; get time index from command line
-
   t_index = nt-1
   if(isvar("t")) then
     t_index = t
   end if
-  print ("t_index: t = " + f->time(t_index))
+  print ("t_index: time = " + f->time(t_index))
 
 	equator   = nlat/2
 
@@ -174,7 +173,7 @@ begin
   wks_type="pdf"
   wks_type@wkPaperWidthF    = 11
   wks_type@wkPaperHeightF   = 7.5
-  filename ="dcmip2012_test2_0_"+var_name+"_t"+t_index
+  filename ="dcmip2012_test2_0_"+var_name+"_t"+sprintf("%.2f", time(t_index))
 	wks  = gsn_open_wks(wks_type,filename)
   print("outputfilename = "+filename+".pdf")
 

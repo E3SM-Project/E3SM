@@ -1,9 +1,9 @@
 #!/bin/tcsh 
 #
-#   Jobscript for launching dcmip2012 test3-1 on the NERSC Edison machine
+#   Jobscript for launching dcmip2012 test3-1 on SNL clusters
 #
 #SBATCH -J dcmip3-1           # job name
-#SBATCH -n 12                 # total number of mpi tasks requested
+#SBATCH -N 4                 # total number of mpi tasks requested
 #SBATCH -p ec                 # queue (partition) -- normal, development, etc.
 #SBATCH -t 00:10:00           # run time (hh:mm:ss)
 #SBATCH --account=FY150001
@@ -22,16 +22,15 @@ endif
 set EXEC = ../../../test_execs/theta-nlev20/theta-nlev20
 set namelist = ./namelist-nonhydro.nl
 
-\rm -f input.nl
-cp $namelist input.nl
+\cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 
 ncl plot_omega.ncl
 ncl plot_theta.ncl
 
-mv test31_omega.pdf                 nonhydro_test31_omega.pdf
-mv dcmip2012_test3_theta_diff.pdf   nonhydro_test3_theta_diff.pdf  
-mv movies/dcmip2012_test31.nc        movies/nonhydro_dcmip2012_test31.nc 
+\mv -f test31_omega.pdf                 nonhydro_test31_omega.pdf
+\mv -f dcmip2012_test3_theta_diff.pdf   nonhydro_test3_theta_diff.pdf  
+\mv -f movies/dcmip2012_test31.nc        movies/nonhydro_dcmip2012_test31.nc 
 
 #############################################################################
 # theta (hydrostatic
@@ -39,16 +38,15 @@ mv movies/dcmip2012_test31.nc        movies/nonhydro_dcmip2012_test31.nc
 set EXEC = ../../../test_execs/theta-nlev20/theta-nlev20
 set namelist = ./namelist-default.nl
 
-\rm -f input.nl
-cp $namelist input.nl
+\cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 
 ncl plot_omega.ncl
 ncl plot_theta.ncl
 
-mv test31_omega.pdf                 hydro_test31_omega.pdf
-mv dcmip2012_test3_theta_diff.pdf   hydro_test3_theta_diff.pdf  
-mv movies/dcmip2012_test31.nc       movies/hydro_dcmip2012_test31.nc 
+\mv -f test31_omega.pdf                 hydro_test31_omega.pdf
+\mv -f dcmip2012_test3_theta_diff.pdf   hydro_test3_theta_diff.pdf  
+\mv -f movies/dcmip2012_test31.nc       movies/hydro_dcmip2012_test31.nc 
 
 
 
@@ -58,16 +56,15 @@ mv movies/dcmip2012_test31.nc       movies/hydro_dcmip2012_test31.nc
 set EXEC = ../../../test_execs/preqx-nlev20-interp/preqx-nlev20-interp  
 set namelist = ./namelist-default.nl
 
-\rm -f input.nl
-cp $namelist input.nl
+\cp -f $namelist input.nl
 mpirun -np $NCPU $EXEC < input.nl
 
 ncl plot_omega.ncl
 ncl plot_theta.ncl
 
 
-mv test31_omega.pdf                 preqx_test31_omega.pdf
-mv dcmip2012_test3_theta_diff.pdf   preqx_test3_theta_diff.pdf  
-mv movies/dcmip2012_test31.nc       movies/preqx_dcmip2012_test31.nc 
+\mv -f test31_omega.pdf                 preqx_test31_omega.pdf
+\mv -f dcmip2012_test3_theta_diff.pdf   preqx_test3_theta_diff.pdf  
+\mv -f movies/dcmip2012_test31.nc       movies/preqx_dcmip2012_test31.nc 
 
 

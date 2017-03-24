@@ -39,7 +39,7 @@ begin
 ;   title = "Nonhydrostatic eqns"
 ;  name = "d2non-ne30-discrete-phi"
 ;  title = "Nonhydro, discrete phi"
-  name = "dcmip2012_test2_01.nc"
+  name = "movies/dcmip2012_test2_01.nc"
   title = ""
 
 
