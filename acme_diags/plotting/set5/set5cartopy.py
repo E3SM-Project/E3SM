@@ -95,7 +95,12 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
       fig.text(panel[n][0]+0.6635,panel[n][1]-0.0105,"RMSE\nCORR",ha='left',fontdict=plotSideTitle)
       fig.text(panel[n][0]+0.7635,panel[n][1]-0.0105,"%.2f\n%.2f" % stats,ha='right',fontdict=plotSideTitle)
 
-def plot(reference, test, reference_regrid, test_regrid, parameter):
+#def plot(reference, test, reference_regrid, test_regrid, parameter):
+def plot(reference, test, diff, metrics_dict, parameter):
+
+    case_id = parameter.case_id
+    if not os.path.exists(case_id):
+        os.makedirs(case_id)
 
     # Create figure, projection
     fig = plt.figure(figsize=[8.5, 11.0])
@@ -106,9 +111,11 @@ def plot(reference, test, reference_regrid, test_regrid, parameter):
     plot_panel(1, fig, proj, reference, parameter.reference_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
 
     # Third panel
-    r = rmse(reference_regrid, test_regrid)
-    c = corr(reference_regrid, test_regrid)
-    plot_panel(2, fig, proj, test_regrid-reference_regrid, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
+    #r = rmse(reference_regrid, test_regrid)
+    #c = corr(reference_regrid, test_regrid)
+    r = metrics_dict['misc']['rmse']
+    c = metrics_dict['misc']['corr']
+    plot_panel(2, fig, proj, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)

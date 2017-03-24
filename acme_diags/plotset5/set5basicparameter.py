@@ -18,6 +18,8 @@ regrid_method = 'linear'
 #test_title = 'Model'
 #reference_title = 'Observation'
 #diff_title = 'Model - Observation'
+backend = 'cartopy'
+#backend = 'vcs'
 diff_title = 'test - reference'
 diff_colormap = 'bl_to_darkred'
 

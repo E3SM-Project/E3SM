@@ -21,7 +21,9 @@ from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
-    f_data = open('set5_diags_AMWG_default.json').read()
+    #f_data = open('set5_diags_AMWG_default.json').read()
+    f_data = open('set5_diags_WHOI.json').read()
+    #f_data = open('set5_diags_HadISST.json').read()
     json_file = json.loads(f_data)
 
     parameters = []
