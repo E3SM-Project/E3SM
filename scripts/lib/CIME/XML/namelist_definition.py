@@ -307,7 +307,7 @@ class NamelistDefinition(EntryID):
 
         # Check size of input array.
         if len(expand_literal_list(value)) > size:
-            expect(False, "Value index exceeds variable size for variable %s"%name)
+            expect(False, "Value index exceeds variable size for variable %s, allowed array length is %s value array size is %s"%(name, size, len(expand_literal_list(value))))
         return True
 
     def _expect_variable_in_definition(self, name, variable_template):

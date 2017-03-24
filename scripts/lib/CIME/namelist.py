@@ -248,6 +248,8 @@ def get_fortran_variable_indices(varname, varlen=1, allow_any_len=False):
     if allow_any_len and maxindex == minindex:
         maxindex = -1
 
+    expect(step != 0,"Step size 0 not allowed")
+
     return (minindex, maxindex, step)
 
 def fortran_namelist_base_value(string):
@@ -1017,10 +1019,10 @@ class Namelist(object):
         if minindex > tlen:
             self._groups[group_name][variable_name].extend(['']*(minindex-tlen-1))
 
-        for i in range(minindex-1, maxindex+step, step):
-            while len(self._groups[group_name][variable_name]) < i+1:
+        for i in range(minindex, maxindex+2*step, step):
+            while len(self._groups[group_name][variable_name]) < i:
                 self._groups[group_name][variable_name].append('')
-            self._groups[group_name][variable_name][i] = value.pop(0)
+            self._groups[group_name][variable_name][i-1] = value.pop(0)
             if len(value) == 0:
                 break
 
