@@ -644,6 +644,17 @@ for mct, etc.
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
+<compiler COMPILER="intel" MACH="melvin">
+  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
+  <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="sandia-srn-sems">
   <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>

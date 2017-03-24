@@ -507,7 +507,7 @@
     <PROXY>sonproxy.sandia.gov:80</PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
-    <COMPILERS>gnu</COMPILERS>
+    <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -545,7 +545,8 @@
         <command name="load">sems-env</command>
         <command name="load">sems-git</command>
         <command name="load">sems-python/2.7.9</command>
-        <command name="load">sems-gcc/5.3.0</command>
+        <command name="load" compiler="gcc">sems-gcc/5.3.0</command>
+        <command name="load" compiler="intel">sems-intel/16.0.3</command>
         <command name="load">sems-openmpi/1.8.7</command>
         <command name="load">sems-cmake/2.8.12</command>
         <command name="load">sems-netcdf/4.3.2/parallel</command>
