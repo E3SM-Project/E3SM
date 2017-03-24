@@ -215,7 +215,7 @@ def get_fortran_name_only(full_var):
     m = FORTRAN_NAME_REGEX.search(full_var)
     return m.group(1)
 
-def get_fortran_variable_indices(varname, varlen=1):
+def get_fortran_variable_indices(varname, varlen=1, allow_any_len=False):
     """ get indices from a fortran namelist variable as a triplet of minindex, maxindex and step
 
     >>> get_fortran_variable_indices('foo(3)')
@@ -224,6 +224,10 @@ def get_fortran_variable_indices(varname, varlen=1):
     (1, 2, 3)
     >>> get_fortran_variable_indices('foo(::)', varlen=4)
     (1, 4, 1)
+    >>> get_fortran_variable_indices('foo(::2)', varlen=4)
+    (1, 4, 2)
+    >>> get_fortran_variable_indices('foo(::)', allow_any_len=True)
+    (1, -1, 1)
     """
     m = FORTRAN_NAME_REGEX.search(varname)
     (minindex, maxindex, step) = (1, varlen, 1)
@@ -240,6 +244,11 @@ def get_fortran_variable_indices(varname, varlen=1):
             maxindex = int(m.group(7))
         if m.group(8) is not None:
             step = int(m.group(8))
+
+    expect(step > 0 and minindex <= maxindex,"Bad array index values, negative indexing not allowed in %s"%varname)
+
+    if allow_any_len and maxindex == minindex:
+        maxindex = -1
 
     return (minindex, maxindex, step)
 
@@ -1980,9 +1989,10 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
                 break
             # and if it really is a literal, add it.
             values.append(literal)
-        (minindex, maxindex, step) = get_fortran_variable_indices(name)
-        if minindex > 1 or maxindex > minindex or step > 1:
-            expect(len(values) <= 1 + ((maxindex - minindex)/step), "Too many values for array %s"%(name))
+        (minindex, maxindex, step) = get_fortran_variable_indices(name,allow_any_len=True)
+        if (minindex > 1 or maxindex > minindex or step > 1) and maxindex > 0:
+            arraylen =1 + ((maxindex - minindex)/step)
+            expect(len(values) <= arraylen, "Too many values for array %s"%(name))
 
         return name, values
 
