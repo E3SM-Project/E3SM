@@ -134,11 +134,11 @@ endif
 
 .PHONY: clean
 clean:
-	$(RM) -f *.f *.f90 *.d *.mod $(OBJS) $(EXEC)
+	$(RM) -f *.f *.f90 *.d *.mod $(OBJS) $(EXEC) $(DEPGEN)
 
 .PHONY: distclean
 distclean: clean
-	$(RM) -f $(MACFILE) env_mach_specific.xml Depends* makdep .env_mach_specific.*
+	../../../../configure --clean
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files
