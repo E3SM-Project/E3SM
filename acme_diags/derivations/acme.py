@@ -54,6 +54,11 @@ def _convert_units(var, target_units):
     if var.units == 'fraction':
         var = 100.0 *var 
         var.units = target_units
+    elif var.units == 'mb':
+        var.units = target_units
+    elif var.units == 'gpm': #geopotential meter
+        var = var / 9.8 /100 #convert to hecto meter
+        var.units = target_units
     else:
         temp = udunits(1.0, var.units)
         coeff, offset= temp.how(target_units)
@@ -186,7 +191,7 @@ derived_variables = {
         (['Z3'], lambda z3: _convert_units(z3, target_units="hectometer"))
     ],
     'PSL': [
-        (['PSL'], lambda psl: _convert_units(psl, target_units="hectopascal"))
+        (['PSL'], lambda psl: _convert_units(psl, target_units="mbar"))
     ],
     'T': [
         (['T'], lambda t: _convert_units(t, target_units="K"))

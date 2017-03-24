@@ -18,13 +18,14 @@ from cdp.cdp_viewer import OutputViewer
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 
-@profile
 def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
-    f_data = open('set5_diags_AMWG_default.json').read()
+    #f_data = open('set5_diags_AMWG_default.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
     #f_data = open('set5_diags_HadISST.json').read()
+    #f_data = open('set5_diags_JRA25.json').read()
+    f_data = open('set5_diags_AMWG_reanalysis.json').read()
     json_file = json.loads(f_data)
 
     parameters = []
@@ -41,7 +42,6 @@ def make_parameters(orginal_parameter):
     return parameters
 
 
-@profile
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     """regrid transient variable toward lower resolution of two variables"""
 
@@ -58,7 +58,6 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
         mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool, regridMethod=regrid_method)
     return mv1_reg, mv2_reg
 
-@profile
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     """ Creates the mean, max, min, rmse, corr in a dictionary """
     metrics_dict = {}
@@ -163,6 +162,7 @@ for parameter in parameters:
         #mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs, domain)
         mv1 = acme.process_derived_var(var, acme.derived_variables, f_mod)
         mv2 = acme.process_derived_var(var, acme.derived_variables, f_obs)
+        print mv1.units,mv2.units
 
         # special case, cdms didn't properly convert mask with fill value -999.0, filed issue with denise
         if ref_name == 'WARREN':
@@ -276,6 +276,7 @@ for parameter in parameters:
                 elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1: # levels are presure levels
 
                     mv = f_in (var)
+                    #mv = acme.process_derived_var(var, acme.derived_variables, f_in)
                     if ref_name == 'AIRS':
                         #mv2=MV2.masked_where(mv2==mv2.fill_value,mv2)
                         print mv.fill_value
