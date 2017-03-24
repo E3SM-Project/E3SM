@@ -1553,7 +1553,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             text_check = text
 
         if not is_valid_fortran_name(text_check):
-            if re.search(".*\(.*\,.*\)", text_check):
+            if re.search(r".*\(.*\,.*\)", text_check):
                 err_str = "Multiple dimensions not supported in CIME namelist variables %r" % str(text)
             else:
                 err_str = "%r is not a valid variable name" % str(text)
