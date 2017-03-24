@@ -346,7 +346,7 @@ class NamelistDefinition(EntryID):
                 qualified_variable_name = get_fortran_name_only(variable_name)
                 self._expect_variable_in_definition(qualified_variable_name, variable_template)
 
-                # Check if can actuax1lly change this variable via filename change
+                # Check if can actually change this variable via filename change
                 if filename is not None:
                     self._user_modifiable_in_variable_definition(qualified_variable_name)
 
