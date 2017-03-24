@@ -245,8 +245,6 @@ def get_fortran_variable_indices(varname, varlen=1, allow_any_len=False):
         if m.group(8) is not None:
             step = int(m.group(8))
 
-    expect(step > 0 and minindex <= maxindex,"Bad array index values, negative indexing not allowed in %s"%varname)
-
     if allow_any_len and maxindex == minindex:
         maxindex = -1
 
@@ -1991,7 +1989,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             values.append(literal)
         (minindex, maxindex, step) = get_fortran_variable_indices(name,allow_any_len=True)
         if (minindex > 1 or maxindex > minindex or step > 1) and maxindex > 0:
-            arraylen =1 + ((maxindex - minindex)/step)
+            arraylen =max(0,1 + ((maxindex - minindex)/step))
             expect(len(values) <= arraylen, "Too many values for array %s"%(name))
 
         return name, values
