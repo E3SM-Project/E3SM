@@ -122,12 +122,6 @@ FORTRAN_NAME_REGEX = re.compile(r"""(^[a-z][a-z0-9_]{0,62})                     
                                   \))?\s*$"""                                           # end optional index expression
                                 , re.IGNORECASE | re.VERBOSE)
 
-
-
-
-
-
-
 FORTRAN_LITERAL_REGEXES = {}
 # Integer literals.
 _int_re_string = r"(\+|-)?[0-9]+"
