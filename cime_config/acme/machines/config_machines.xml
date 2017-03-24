@@ -1540,8 +1540,14 @@
         <env name="MPICH_VERSION_DISPLAY">1</env>
         <env name="MPICH_CPUMASK_DISPLAY">1</env>
         <env name="MPSTKZ">128M</env>
-	<env name="NETCDFROOT">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
-	<env name="PNETCDFROOT" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="NETCDFROOT" compiler="pgi">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+	<env name="PNETCDFROOT" compiler="pgi" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="NETCDFROOT" compiler="pgiacc">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+	<env name="PNETCDFROOT" compiler="pgiacc" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="NETCDFROOT" compiler="intel">/opt/cray/netcdf-hdf5parallel/4.4.1.1/INTEL/15.0/</env>
+	<env name="PNETCDFROOT" compiler="intel" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/INTEL/15.0</env>
+	<env name="NETCDFROOT" compiler="cray">/opt/cray/netcdf-hdf5parallel/4.4.1.1/CRAY/8.3/</env>
+	<env name="PNETCDFROOT" compiler="cray" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/CRAY/8.3</env>
         <env name="OMP_STACKSIZE">128M</env>
       </environment_variables>
 
