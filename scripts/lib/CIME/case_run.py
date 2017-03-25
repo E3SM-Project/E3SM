@@ -5,7 +5,7 @@ from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 from CIME.preview_namelists         import create_namelists
-from CIME.case_st_archive           import case_st_archive
+from CIME.case_st_archive           import case_st_archive, restore_from_archive
 
 import shutil, time, sys, os, glob
 
@@ -85,7 +85,9 @@ def _run_model_impl(case, lid):
 
     # Set OMP_NUM_THREADS
     env_mach_pes = case.get_env("mach_pes")
-    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_values("COMP_CLASSES")))
+    comp_classes = case.get_values("COMP_CLASSES")
+    thread_count = env_mach_pes.get_max_thread_count(comp_classes)
+    os.environ["OMP_NUM_THREADS"] = str(thread_count)
 
     # Run the model
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
@@ -96,29 +98,38 @@ def _run_model_impl(case, lid):
 
     rundir = case.get_value("RUNDIR")
     loop = True
-    num_spare_nodes = case.get_value("NUM_SPARE_NODES")
+
+    total_tasks  = env_mach_pes.get_total_tasks(comp_classes)
+    num_spare_nodes = env_mach_pes.get_spare_nodes(total_tasks, thread_count)
+
     while loop:
         loop = False
         stat = run_cmd(cmd, from_dir=rundir)[0]
         # Determine if failure was due to a failed node, if so, try to restart
         if stat != 0:
-            node_fail_re = case.get_value("NODE_FAIL_RE")
-            if node_fail_re and num_spare_nodes > 0:
+            node_fail_re = case.get_value("NODE_FAIL_REGEX")
+            if node_fail_re:
                 node_fail_regex = re.compile(node_fail_re)
                 model_logfile = os.path.join(rundir, model + ".log." + lid)
                 if os.path.exists(model_logfile):
-                    search = node_fail_regex.search(open(model_logfile, 'r').read())
-                    if search is not None:
+                    num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
+                    if num_fails > 0 and num_spare_nodes >= num_fails:
                         # We failed due to node failure!
                         logger.warning("Detected model run failed due to node failure, restarting")
 
+                        # Archive the last consistent set of restart files and restore them
                         case_st_archive(case, no_resubmit=True)
+                        restore_from_archive(case)
 
-                        case.set_value("CONTINUE_RUN", "TRUE")
+                        orig_cont = case.set_value("CONTINUE_RUN")
+                        if not orig_cont:
+                            case.set_value("CONTINUE_RUN", True)
+                            create_namelists(case)
+
                         lid = new_lid()
                         loop = True
 
-                        num_spare_nodes -= 1
+                        num_spare_nodes -= num_fails
 
             if not loop:
                 # We failed and we're not restarting

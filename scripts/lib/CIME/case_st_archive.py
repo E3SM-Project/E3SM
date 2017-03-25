@@ -352,6 +352,26 @@ def _archive_process(case, archive):
                 _archive_history_files(case, archive, archive_entry,
                                        compclass, compname, histfiles_savein_rundir)
 
+###############################################################################
+def restore_from_archive(case):
+###############################################################################
+    """
+    Take most recent archived restart files and load them into current case.
+    """
+    dout_sr = case.get_value("DOUT_S_ROOT")
+    rundir = case.get_value("RUNDIR")
+    most_recent_rest = run_cmd_no_fail(r'ls -1dt %s/rest/* | head -1"' % dout_sr)
+
+    for item in glob.glob("%s/*" % most_recent_rest):
+        base = os.path.basename(item)
+        dst = os.path.join(rundir, base)
+        if os.path.exists(dst):
+            os.remove(dst)
+
+        if "rpointer" in base:
+            shutil.copy(item, rundir)
+        else:
+            os.symlink(item, dst)
 
 ###############################################################################
 def case_st_archive(case, no_resubmit=False):

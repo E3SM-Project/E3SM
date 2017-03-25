@@ -1806,7 +1806,6 @@
 
   <entry id="NODE_FAIL_REGEX">
     <type>char</type>
-    <default_value>UNSET</default_value>
     <group>run_din</group>
     <file>env_run.xml</file>
     <desc>
@@ -1890,12 +1889,12 @@
   <!-- definitions pelayout -->
   <!-- ===================================================================== -->
 
-  <entry id="NUM_SPARE_NODES">
+  <entry id="PCT_SPARE_NODES">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of spare nodes to allocate</desc>
+    <desc>Percent of extra spare nodes to allocate</desc>
   </entry>
 
   <entry id="NTASKS">
