@@ -3,6 +3,7 @@ import sys
 import numpy
 import cdutil
 import vcs
+import cdms2
 import genutil.statistics
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
@@ -160,3 +161,29 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     vcs_canvas.png(case_id + '/' + parameter.output_file)
     print 'Plot saved in: ' + case_id + '/' + parameter.output_file
+    
+    # Save files being plotted
+    # Set cdms preferences - no compression, no shuffling, no complaining
+    cdms2.setNetcdfDeflateFlag(1)
+    cdms2.setNetcdfDeflateLevelFlag(0) ; # 1-9, min to max - Comes at heavy IO (read/write time cost)
+    cdms2.setNetcdfShuffleFlag(0)
+    cdms2.setCompressionWarnings(0) ; # Turn off warning messages
+    # Save test file
+    file_test = cdms2.open(case_id + '/' + parameter.output_file + '_test.nc','w+')
+    test.id = parameter.variables
+    file_test.write(test) 
+    file_test.close()
+
+    # Save reference file
+    file_ref = cdms2.open(case_id + '/' + parameter.output_file + '_ref.nc','w+')
+    reference.id = parameter.variables
+    file_ref.write(reference) 
+    file_ref.close()
+
+    # Save difference file
+    file_diff = cdms2.open(case_id + '/' + parameter.output_file + '_diff.nc','w+')
+    diff.id = parameter.variables+'(test - reference)'
+    file_diff.write(diff) 
+    file_diff.close()
+
+
