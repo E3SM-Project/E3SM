@@ -22,8 +22,8 @@ def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
     #f_data = open('set5_diags_AMWG_default.json').read()
-    #f_data = open('set5_diags_WHOI.json').read()
-    f_data = open('set5_diags_MERRA_domains.json').read()
+    f_data = open('set5_diags_WHOI.json').read()
+    #f_data = open('set5_diags_MERRA_domains.json').read()
     #f_data = open('set5_diags_HadISST.json').read()
     #f_data = open('set5_diags_JRA25.json').read()
     #f_data = open('set5_diags_AMWG_reanalysis.json').read()
