@@ -508,7 +508,7 @@
     <PROXY>sonproxy.sandia.gov:80</PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
-    <COMPILERS>gnu</COMPILERS>
+    <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -546,7 +546,8 @@
         <command name="load">sems-env</command>
         <command name="load">sems-git</command>
         <command name="load">sems-python/2.7.9</command>
-        <command name="load">sems-gcc/5.3.0</command>
+        <command name="load" compiler="gcc">sems-gcc/5.3.0</command>
+        <command name="load" compiler="intel">sems-intel/16.0.3</command>
         <command name="load">sems-openmpi/1.8.7</command>
         <command name="load">sems-cmake/2.8.12</command>
         <command name="load">sems-netcdf/4.3.2/parallel</command>
@@ -1461,7 +1462,7 @@
         <command name="unload">subversion</command>
         <command name="load">subversion/1.8.3</command>
         <command name="unload">cmake</command>
-        <command name="load">cmake/2.8.10.2</command>
+        <command name="load">cmake3/3.6.0</command>
       </modules>
 
       <modules compiler="pgiacc"> <!-- changing pgi_acc to pgiacc -->
@@ -1527,25 +1528,28 @@
       </modules>
       <!-- mpi lib settings -->
       <modules mpilib="mpi-serial">
-        <command name="load">cray-netcdf/4.4.0</command>
+        <command name="load">cray-netcdf/4.4.1.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1</command>
         <command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <!-- Default -->
-      <!--
-       set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
-       if($status == 0) then
-      -->
       <environment_variables>
         <env name="COMPILER">$COMPILER</env>
         <env name="MPILIB">$MPILIB</env>
-        <env name="CESM_REPO">$CESM_REPO</env>
         <env name="MPICH_ENV_DISPLAY">1</env>
         <env name="MPICH_VERSION_DISPLAY">1</env>
         <env name="MPICH_CPUMASK_DISPLAY">1</env>
         <env name="MPSTKZ">128M</env>
+	<env name="NETCDFROOT" compiler="pgi">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+	<env name="PNETCDFROOT" compiler="pgi" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="NETCDFROOT" compiler="pgiacc">/opt/cray/netcdf-hdf5parallel/4.4.1.1/PGI/15.3/</env>
+	<env name="PNETCDFROOT" compiler="pgiacc" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/PGI/15.3</env>
+	<env name="NETCDFROOT" compiler="intel">/opt/cray/netcdf-hdf5parallel/4.4.1.1/INTEL/15.0/</env>
+	<env name="PNETCDFROOT" compiler="intel" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/INTEL/15.0</env>
+	<env name="NETCDFROOT" compiler="cray">/opt/cray/netcdf-hdf5parallel/4.4.1.1/CRAY/8.3/</env>
+	<env name="PNETCDFROOT" compiler="cray" mpilib="!mpi-serial">/opt/cray/parallel-netcdf/1.7.0/CRAY/8.3</env>
         <env name="OMP_STACKSIZE">128M</env>
       </environment_variables>
 
