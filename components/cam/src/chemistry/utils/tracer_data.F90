@@ -1108,7 +1108,6 @@ contains
     use ppgrid,           only: pcols, pver, pverp,begchunk,endchunk
     use physconst,        only: rair
     use scamMod
-    use iop,              only: scm_dgnum,scm_std,scm_num,scm_div
     use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_props, rad_cnst_get_mode_num
     

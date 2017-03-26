@@ -35,8 +35,6 @@ module iop
   real(r8), allocatable, target :: divq3dsav(:,:,:,:)
   real(r8), allocatable, target :: divt3dsav(:,:,:)       
   real(r8), allocatable, target :: betasav(:)
-  real(r8), allocatable, target :: scm_dgnum( : ),scm_std( : ),&
-                                   scm_num( :), scm_div(:,:)
   integer :: closelatidx,closelonidx,latid,lonid,levid,timeid
 
   real(r8):: closelat,closelon
@@ -49,8 +47,7 @@ module iop
 !  public :: scam_use_iop_srf
 ! !PUBLIC DATA:
   public betasav, &
-         dqfx3sav, divq3dsav, divt3dsav,t2sav, &
-	 scm_dgnum,scm_std,scm_num,scm_div
+         dqfx3sav, divq3dsav, divt3dsav,t2sav
 
 !
 ! !REVISION HISTORY:

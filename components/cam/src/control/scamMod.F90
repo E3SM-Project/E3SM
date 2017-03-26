@@ -33,6 +33,8 @@ module scamMod
   real(r8), public ::  scmlat   ! input namelist latitude for scam
   real(r8), public ::  scmlon   ! input namelist longitude for scam
 
+  real(r8), allocatable, public :: scm_dgnum( : ),scm_std( : ),&
+                                   scm_num( :), scm_div(:,:)
 
   integer, parameter :: num_switches = 20
   integer, parameter :: max_path_len = 128
