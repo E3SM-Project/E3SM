@@ -25,21 +25,22 @@ parser.add_option("--case", dest="casename", default="", \
                   help="Name of case")
 parser.add_option("--ens_file", dest="ens_file", default="", \
                   help="Name of samples file")
-
+parser.add_option("--parm_list", dest="parm_list", default='parm_list', \
+                  help = 'File containing list of parameters to vary')
 (options, args) = parser.parse_args()
 
 
 parm_names=[]
 parm_indices=[]
 parm_values=[]
-myinput = open('./parm_list', 'r')
+myinput = open(options.parm_list, 'r')
 casename = options.casename
 
 #get parameter names and PFT information
 for s in myinput:
    pdata = s.split()
    parm_names.append(pdata[0])
-   if (len(pdata) == 3):
+   if (len(pdata) < 4):
      parm_indices.append(-1)
    else:
      parm_indices.append(int(pdata[1]))
@@ -93,6 +94,8 @@ for f in os.listdir(ens_dir):
                    paramfile_orig = orig_dir+'/'+paramfile_orig[2:]
                 paramfile_new  = './clm_params_'+est[1:]+'.nc'
                 os.system('cp '+paramfile_orig+' '+ens_dir+'/'+paramfile_new)
+                os.system('nccopy -3 '+ens_dir+'/'+paramfile_new+' '+ens_dir+'/'+paramfile_new+'_tmp')
+                os.system('mv '+ens_dir+'/'+paramfile_new+'_tmp '+ens_dir+'/'+paramfile_new)
                 myoutput.write(" paramfile = '"+paramfile_new+"'\n")
                 pftfile = ens_dir+'/clm_params_'+est[1:]+'.nc'
                 pnum = 0
@@ -106,6 +109,10 @@ for f in os.listdir(ens_dir):
                       else:
                          param[:] = parm_values[pnum]
                       ierr = nffun.putvar(pftfile, p, param)
+                      if ('fr_flig' in p):
+                        param=nffun.getvar(pftfile, 'fr_fcel')
+                        param[:]=1.0-parm_values[pnum]-parm_values[pnum-1]
+		        ierr = nffun.putvar(pftfile, 'fr_fcel', param)
                       pnum = pnum+1
             elif ('finidat = ' in s):
                 finidat_file_orig = ((s.split()[2]).strip("'"))
@@ -141,9 +148,9 @@ for f in os.listdir(ens_dir):
                             myvar = parm_values[pnum] * myvar
                             ierr = nffun.putvar(finidat_file_new, v, myvar)
                         #TEMPORARY - add 3 gN to npool
-                      myvar = nffun.getvar(finidat_file_new,'npool')
-                      myvar = myvar+3.
-                      ierr = nffun.putvar(finidat_file_new,'npool',myvar)
+                      #myvar = nffun.getvar(finidat_file_new,'npool')
+                      #myvar = myvar+3.
+                      #ierr = nffun.putvar(finidat_file_new,'npool',myvar)
                       pnum=pnum+1
                    myoutput.write(" finidat = '"+finidat_file_new+"'\n")
                 else:

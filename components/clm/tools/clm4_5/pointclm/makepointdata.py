@@ -104,8 +104,7 @@ ygrid_T62     = int((lat+90)/1.9)
 
 print('Creating domain data')
 os.system('mkdir -p '+csmdir+'/components/clm/tools/clm4_5/pointclm/temp')
-domainfile_orig = ccsm_input+'/atm/datm7/domain.clm/' \
-    +'domain.360x720_ORCHIDEE0to360.100409.nc'
+domainfile_orig = ccsm_input+'/share/domains/domain.clm/domain.lnd.360x720_cruncep.100429.nc'
 domainfile_new = csmdir+'/components/clm/tools/clm4_5/pointclm/temp/' \
     +'domain.lnd.'+str(numxpts)+'x'+str(numypts)+'pt_'+options.site+'_navy.nc'
 if (os.path.isfile(domainfile_new)):

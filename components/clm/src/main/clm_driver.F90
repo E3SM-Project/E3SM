@@ -210,10 +210,10 @@ contains
     !-----------------------------------------------------------------------
 
     call get_curr_time_string(dateTimeString)
-    if (masterproc) then
-       write(iulog,*)'Beginning timestep   : ',trim(dateTimeString)
-       call shr_sys_flush(iulog)
-    endif
+    !if (masterproc) then
+    !   write(iulog,*)'Beginning timestep   : ',trim(dateTimeString)
+    !   call shr_sys_flush(iulog)
+    !endif
     ! Determine processor bounds and clumps for this processor
 
     call get_proc_bounds(bounds_proc)

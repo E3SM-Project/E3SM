@@ -14,6 +14,8 @@ parser.add_option('--restart_year', dest='restart_year', default="", \
                     help='Year of restart file to modify')
 parser.add_option('--BGC', dest='bgc', default=False, action="store_true", \
                     help='Flag to set for BGC compsets')
+parser.add_option('--harvest', dest='harvest', default=False, action="store_true", \
+                    help='Add a 95% above ground harvest')
 
 (options,args)=parser.parse_args()
 
@@ -38,7 +40,10 @@ fname_hist    = options.rundir+'/'+casename+'.clm2.h1.'+str(10000+year)[1:]+ \
     '-01-01-00000.nc'
 
 #save original restart file
-os.system('cp '+fname_restart+' '+fname_restart+'.orig')
+if (os.path.isfile(fname_restart+'.orig')):
+  os.system('cp '+fname_restart+'.orig '+fname_restart)
+else:
+  os.system('cp '+fname_restart+' '+fname_restart+'.orig')
 os.system('chmod a-w '+fname_restart+'.orig')
 
 #Accelerated pools:  Coarse woody debris, dead stem, coarse root, soil3 and soil4 C and N
@@ -49,6 +54,16 @@ if (options.bgc):
 else:
   var_names2d = ['CWDC_vr', 'CWDN_vr', 'CWDP_vr', 'SOIL4C_vr', 'SOIL4N_vr', 'SOIL4P_vr', 'SOIL3C_vr', \
                    'SOIL3N_vr', 'SOIL3P_vr']
+if (options.harvest):
+  var_names_harvest = ['DEADSTEMC','DEADSTEMN','DEADSTEMP','LIVESTEMN','LIVESTEMC','LIVESTEMP', \
+                       'LEAFC', 'LEAFN', 'LEAFP', 'DEADSTEMC_STORAGE', 'DEADSTEMN_STORAGE', \
+	               'DEADSTEMP_STORAGE', 'LIVESTEMC_STORAGE', 'LIVESTEMN_STORAGE', \
+                       'LIVESTEMP_STORAGE', 'LEAFC_STORAGE', 'LEAFN_STORAGE', 'LEAFP_STORAGE', \
+                       'FROOTC_STORAGE', 'FROOTC', 'FROOTN_STORAGE', 'FROOTN', 'FROOTP_STORAGE', \
+                       'FROOTP', 'LIVECROOTC', 'LIVECROOTC_STORAGE', 'LIVECROOTN', 'LIVECROOTN_STORAGE', \
+                       'LIVECROOTP', 'LIVECROOTP_STORAGE', 'DEADCROOTC', 'DEADCROOTC_STORAGE', \
+                       'DEADCROOTN', 'DEADCROOTN_STORAGE', 'DEADCROOTP', 'DEADCROOTP_STORAGE', 'XSMRPOOL', \
+                       'XSMRPOOL_RECOVER']
 
 for v in range(0,len(var_names)):
   hist_vals = nffun.getvar(fname_hist, var_names[v])
@@ -59,6 +74,15 @@ for v in range(0,len(var_names)):
     if (float(rest_vals[i]) > 0.0 and float(hist_vals[0][i]) < 1.0e10 and float(hist_vals[0][i]) > 0.001):
       rest_vals[i] = hist_vals[0][i]
   ierr = nffun.putvar(fname_restart, var_names[v].lower(), rest_vals)
+
+if (options.harvest):
+  for v in range(0,len(var_names_harvest)):	
+    rest_vals = nffun.getvar(fname_restart, var_names_harvest[v].lower())
+    #Loop through all valid values in the restart file.
+    n_rest = len(rest_vals)
+    for i in range(0,n_rest):
+      rest_vals[i] = rest_vals[i]*0.01
+    ierr = nffun.putvar(fname_restart, var_names_harvest[v].lower(), rest_vals)
 
 #get a single, non-depth dependent variable to count # of columns
 rest_vals = nffun.getvar(fname_restart, 'fpg')
