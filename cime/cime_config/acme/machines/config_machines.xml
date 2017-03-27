@@ -546,7 +546,7 @@
         <command name="load">sems-env</command>
         <command name="load">sems-git</command>
         <command name="load">sems-python/2.7.9</command>
-        <command name="load" compiler="gcc">sems-gcc/5.3.0</command>
+        <command name="load" compiler="gnu">sems-gcc/5.3.0</command>
         <command name="load" compiler="intel">sems-intel/16.0.3</command>
         <command name="load">sems-openmpi/1.8.7</command>
         <command name="load">sems-cmake/2.8.12</command>
