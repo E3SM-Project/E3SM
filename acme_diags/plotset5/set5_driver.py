@@ -22,8 +22,8 @@ def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
     #f_data = open('set5_diags_AMWG_default.json').read()
-    f_data = open('set5_diags_WHOI.json').read()
-    #f_data = open('set5_diags_MERRA_domains.json').read()
+    #f_data = open('set5_diags_WHOI.json').read()
+    f_data = open('set5_diags_MERRA_domains.json').read()
     #f_data = open('set5_diags_HadISST.json').read()
     #f_data = open('set5_diags_JRA25.json').read()
     #f_data = open('set5_diags_AMWG_reanalysis.json').read()
@@ -255,11 +255,9 @@ for parameter in parameters:
         elif mv1.getLevel() and mv2.getLevel(): #for variables with z axis:
             plev = parameter.levels
             print 'selected pressure level', plev
-
+            f_mod = cdms2.open(filename1)
             for filename in [filename1, filename2]:
                 f_in = cdms2.open(filename)
-                if filename == filename1:
-                    f_mod = f_in
                 mv = f_in[var] # Square brackets for metadata preview
                 mv_plv = mv.getLevel()
 
@@ -351,8 +349,6 @@ for parameter in parameters:
                         viewer.add_col('Description for %s' % var)
                     viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
                     
-                    f_in.close()
-                    f_mod.close()
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
 
