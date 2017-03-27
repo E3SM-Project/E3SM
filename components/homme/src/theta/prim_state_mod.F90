@@ -12,7 +12,7 @@ module prim_state_mod
   use hybrid_mod,       only: hybrid_t
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   use control_mod,      only: integration, test_case,  moisture, &
-                              qsplit, ftype, use_cpstar, rsplit,&
+                              qsplit, ftype, rsplit,&
                               theta_hydrostatic_mode
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
@@ -757,7 +757,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
-    real (kind=real_kind) :: cp_star1,qval_t1,qval_t2
     real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
     real (kind=real_kind) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
