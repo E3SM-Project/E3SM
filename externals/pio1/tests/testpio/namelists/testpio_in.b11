@@ -1,0 +1,46 @@
+&io_nml
+  casename    = 'b11:pnc:none:stride=2:agg=4'
+ nx_global = 5014
+ ny_global = 1497
+  nz_global   = 30
+  iofmt       = 'pnc'
+  rearr       = 'box'
+  nprocsIO    = -1
+  stride      = 4
+  base        = 0
+  maxiter     = 10
+  dir         = './none/'
+  num_aggregator = 4
+  DebugLevel  = 0
+  compdof_input = 'namelist'
+  compdof_output = 'none'
+  iodof_input = 'namelist'
+/
+&compdof_nml
+  nblksppe = 1
+  grdorder = 'xyz'
+  grddecomp = 'xy'
+  gdx = 0
+  gdy = 0
+  gdz = 0
+  blkorder = 'xyz'
+  blkdecomp1 = 'xy'
+  blkdecomp2 = ''
+  bdx = 0
+  bdy = 0
+  bdz = 0
+/
+&iodof_nml
+  nblksppe = 1
+  grdorder = 'xyz'
+  grddecomp = 'xy'
+  gdx = 0
+  gdy = 0
+  gdz = 0
+  blkorder = 'xyz'
+  blkdecomp1 = 'xy'
+  blkdecomp2 = ''
+  bdx = 0
+  bdy = 0
+  bdz = 0
+/
