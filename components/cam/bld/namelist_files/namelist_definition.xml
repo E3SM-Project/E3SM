@@ -4171,7 +4171,7 @@ Default: FALSE
 
 <entry id="scm_observed_aero" type="logical" category="scam"
        group="cam_inparm" valid_values="">
-Initialize with observed aerosols. This works only for mode three and with prescribed aerosol model.
+Initialize with observed aerosols from IOP file. 
 Default: FALSE
 </entry>
 
@@ -4183,7 +4183,7 @@ Default: FALSE
 
 <entry id="lwrad_off" type="logical" category="scam"
        group="cam_inparm" valid_values="">
-Assume turn off LW rad.
+Turn off LW radiation computation.
 Default: FALSE
 </entry>
 
