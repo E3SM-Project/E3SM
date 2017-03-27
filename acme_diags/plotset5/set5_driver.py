@@ -345,7 +345,7 @@ for parameter in parameters:
                     acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
                     if season is seasons[0]:
-                        viewer.add_row('%s %s' % (var, region))
+                        viewer.add_row('%s %s %s' % (var,str(int(plev[ilev]))+'mb',region))
                         viewer.add_col('Description for %s' % var)
                     viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
                     
