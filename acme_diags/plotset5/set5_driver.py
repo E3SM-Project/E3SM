@@ -21,9 +21,9 @@ from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
-    #f_data = open('set5_diags_AMWG_default.json').read()
+    f_data = open('set5_diags_AMWG_default.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
-    f_data = open('set5_diags_MERRA_domains.json').read()
+    #f_data = open('set5_diags_MERRA_domains.json').read()
     #f_data = open('set5_diags_HadISST.json').read()
     #f_data = open('set5_diags_JRA25.json').read()
     #f_data = open('set5_diags_AMWG_reanalysis.json').read()
@@ -246,8 +246,10 @@ for parameter in parameters:
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
                     viewer.add_col('Description for %s' % var)
-		viewer.set_row('%s %s' % (var, region))
-                viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
+                viewer.set_row('%s %s' % (var, region))
+                files = [parameter.case_id + '/' + parameter.output_file + ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
+                formatted_files = [{'url': f, 'title': f} for f in files]
+                viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season, other_files=formatted_files)
                 
                 f_mod.close()
                 f_obs.close()
@@ -306,7 +308,7 @@ for parameter in parameters:
                 for region in regions: 
                     print region
                     domain = None
-    ##                if region != 'global':
+                    # if region != 'global':
                     if region.find('land') !=-1 or region.find('ocean') !=-1:
                         if region.find('land') !=-1 :
                             land_ocean_frac = f_mod('LANDFRAC')
@@ -348,8 +350,10 @@ for parameter in parameters:
                     if season is seasons[0]:
                         viewer.add_row('%s %s %s' % (var,str(int(plev[ilev]))+'mb',region))
                         viewer.add_col('Description for %s' % var)
-		    viewer.set_row('%s %s %s' % (var,str(int(plev[ilev]))+'mb', region))
-                    viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
+                    viewer.set_row('%s %s %s' % (var,str(int(plev[ilev]))+'mb', region))
+                    files = [parameter.case_id + '/' + parameter.output_file + ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
+                    formatted_files = [{'url': f, 'title': f} for f in files]
+                    viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season, other_files=formatted_files)
                     
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
