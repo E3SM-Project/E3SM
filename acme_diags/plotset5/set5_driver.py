@@ -121,6 +121,32 @@ def mask_by( input_var, maskvar, low_limit=None, high_limit=None ):
     var.mask = newmask
     return var
 
+def save_ncfiles(test, ref, diff, parameter):
+    ''' Saves the test, reference, and difference nc files. '''
+    # Save files being plotted
+    # Set cdms preferences - no compression, no shuffling, no complaining
+    cdms2.setNetcdfDeflateFlag(1)
+    cdms2.setNetcdfDeflateLevelFlag(0) ; # 1-9, min to max - Comes at heavy IO (read/write time cost)
+    cdms2.setNetcdfShuffleFlag(0)
+    cdms2.setCompressionWarnings(0) ; # Turn off warning messages
+    # Save test file
+    file_test = cdms2.open(parameter.case_id + '/' + parameter.output_file + '_test.nc','w+')
+    test.id = parameter.variables
+    file_test.write(test) 
+    file_test.close()
+
+    # Save reference file
+    file_ref = cdms2.open(parameter.case_id + '/' + parameter.output_file + '_ref.nc','w+')
+    ref.id = parameter.variables
+    file_ref.write(ref) 
+    file_ref.close()
+
+    # Save difference file
+    file_diff = cdms2.open(parameter.case_id + '/' + parameter.output_file + '_diff.nc','w+')
+    diff.id = parameter.variables+'(test - reference)'
+    file_diff.write(diff) 
+    file_diff.close()
+
 parser = ACMEParser()
 original_parameter = parser.get_parameter(default_vars=False)
 parameters = make_parameters(original_parameter)
@@ -180,7 +206,7 @@ for parameter in parameters:
                 #mv1 = mv1 * days_season[season] * 0.1 #following AMWG approximate way to convert to seasonal cumulative precipitation, need to have solution in derived variable, unit convert from mm/day to cm
                 mv2 = mv2 / days_season[season] / 0.1 # convert cm to mm/day instead
                 mv2.units = 'mm/day'
-            
+
          
         # for variables without z axis:
         if mv1.getLevel()==None and mv2.getLevel()==None:
@@ -251,6 +277,7 @@ for parameter in parameters:
                 formatted_files = [{'url': f, 'title': f} for f in files]
                 viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season, other_files=formatted_files)
                 
+                save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
                 f_mod.close()
                 f_obs.close()
     
@@ -354,6 +381,8 @@ for parameter in parameters:
                     files = [parameter.case_id + '/' + parameter.output_file + ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
                     formatted_files = [{'url': f, 'title': f} for f in files]
                     viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season, other_files=formatted_files)
+
+                    save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
                     
         else:
             raise RuntimeError("Dimensions of two variables are difference. Abort")
