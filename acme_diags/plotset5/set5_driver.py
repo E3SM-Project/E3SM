@@ -219,7 +219,7 @@ for parameter in parameters:
                 mv2_domain.units = mv1.units
 
                 parameter.output_file = '_'.join([ref_name,var, season,region])
-                parameter.main_title = str(' '.join([var, season]))
+                parameter.main_title = str(' '.join([var, season,region]))
         
     
                 #regrid towards lower resolution of two variables for calculating difference
@@ -246,6 +246,7 @@ for parameter in parameters:
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
                     viewer.add_col('Description for %s' % var)
+		viewer.set_row('%s %s' % (var, region))
                 viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
                 
                 f_mod.close()
@@ -333,8 +334,8 @@ for parameter in parameters:
                     mv1_domain.units = mv1.units
                     mv2_domain.units = mv1.units
 
-                    parameter.output_file = '_'.join([ref_name,var,str(int(plev[ilev])),season,region,var, str(int(plev[ilev])), 'mb'])
-                    parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season]))
+                    parameter.output_file = '_'.join([ref_name,var,str(int(plev[ilev])),season,region])
+                    parameter.main_title = str(' '.join([var, str(int(plev[ilev])), 'mb', season, region]))
 
                     # Regrid towards lower resolution of two variables for calculating difference
                     mv1_reg, mv2_reg = regrid_to_lower_res(mv1_domain, mv2_domain, parameter.regrid_tool, parameter.regrid_method)
@@ -347,6 +348,7 @@ for parameter in parameters:
                     if season is seasons[0]:
                         viewer.add_row('%s %s %s' % (var,str(int(plev[ilev]))+'mb',region))
                         viewer.add_col('Description for %s' % var)
+		    viewer.set_row('%s %s %s' % (var,str(int(plev[ilev]))+'mb', region))
                     viewer.add_col(parameter.case_id + '/' + parameter.output_file + '.png', is_file=True, title=season)
                     
         else:
