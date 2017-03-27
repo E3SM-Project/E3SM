@@ -678,16 +678,6 @@ contains
        local_dp_map = .true. 
        !
     else
-       if  (twin_alg .eq. 1) then
-          ! precompute clon_p_idx: index in lonlat ordering for first 
-          ! occurrence of longitude corresponding to given latitude index,
-          ! used in twin option in create_chunks; used in create_chunks
-          allocate( clon_p_idx(1:clon_p_tot) )
-          clon_p_idx(1) = 1
-          do i=2,clon_p_tot
-             clon_p_idx(i) = clon_p_idx(i-1) + clon_p_cnt(i-1)
-          enddo
-       endif
        !
        ! Option == 0: split local blocks into chunks,
        !               while attempting to create load-balanced chunks.
@@ -716,6 +706,17 @@ contains
        ! Allocate and initialize chunks data structure, then
        ! assign chunks to processes.
        !
+       if  (twin_alg .eq. 1) then
+          ! precompute clon_p_idx: index in lonlat ordering for first 
+          ! occurrence of longitude corresponding to given latitude index,
+          ! used in twin option in create_chunks; used in create_chunks
+          allocate( clon_p_idx(1:clon_p_tot) )
+          clon_p_idx(1) = 1
+          do i=2,clon_p_tot
+             clon_p_idx(i) = clon_p_idx(i-1) + clon_p_cnt(i-1)
+          enddo
+       endif
+
        call create_chunks(lbal_opt, chunks_per_thread)
 
        ! Early clean-up, to minimize memory high water mark
