@@ -7,7 +7,9 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 ; NCL script to plot PS
 ;***********************************************************************;
 begin
-
+if(isvar("fname")) then
+  fnames = fname                 ; use file name from command line
+else
 fnames =  systemfunc(\
 "ls movies/preqx*dcmip2012_test41.nc ;" +  \
 "ls movies/hydro*dcmip2012_test41.nc ;" + \
@@ -16,6 +18,8 @@ fnames =  systemfunc(\
 "ls movies/nonhydro-X100-dcmip2012_test41.nc ;" +\
 "ls movies/nonhydro-X1000-dcmip2012_test41.nc ;" +\
 "")
+end if
+
  f      = addfiles(fnames,"r")       ; Open netCDF files.	
 
 
