@@ -257,7 +257,7 @@ class _TimingParser:
                 maxthrds = m.nthrds
         nmax  = self.gettime(' CPL:INIT ')[1]
         tmax  = self.gettime(' CPL:RUN_LOOP ')[1]
-        wtmax = self.gettime(' CPL:TPROF_WRITE ')[1]
+        wtmin = self.gettime(' CPL:TPROF_WRITE ')[0]
         fmax  = self.gettime(' CPL:FINAL ')[1]
         for k in components:
             if k != "CPL":
@@ -282,7 +282,7 @@ class _TimingParser:
 
         correction = max(0, ocnrunitime - ocnwaittime)
 
-        tmax = tmax + wtmax + correction
+        tmax = tmax + wtmin + correction
         ocn.tmax += ocnrunitime
 
         for m in self.models.values():
