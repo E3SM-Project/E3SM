@@ -51,7 +51,9 @@ def _convert_units(var, target_units):
     ''' Converts units of var to target_units.
     var is a cdms.TransientVariable. '''
 
-    if var.units == 'fraction':
+    if hasattr(var,'units')== False and var.id =='SST':
+        var.units = target_units
+    elif var.units == 'fraction':
         var = 100.0 *var 
         var.units = target_units
     elif var.units == 'mb':
@@ -105,6 +107,7 @@ derived_variables = {
         (['PRECC','PRECL'], lambda a, b: aplusb(a, b, target_units="mm/day"))
     ],
     'SST': [
+        (['SST'],lambda sst: _convert_units(sst, target_units="degC")),
         (['TS', 'OCNFRAC'], lambda ts, ocnfrac: mask_by(_convert_units(ts, target_units="degC"), ocnfrac, low_limit = 0.9))
     ],
     'PREH2O': [
