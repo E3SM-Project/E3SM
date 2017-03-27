@@ -144,6 +144,9 @@ module phys_grid
 
 
    integer, dimension(:), allocatable, private :: clon_p_cnt ! number of repeats for each longitude
+   integer, dimension(:), allocatable, private :: clon_p_idx ! index in lonlat ordering for first 
+                                                             ! occurrence of longitude corresponding to 
+                                                             ! given latitude index
    real(r8), dimension(:), allocatable :: clon_p  ! unique longitudes (radians, increasing)
 
    integer, dimension(:), allocatable, private :: lat_p      ! index into list of unique column latitudes
@@ -675,6 +678,16 @@ contains
        local_dp_map = .true. 
        !
     else
+       if  (twin_alg .eq. 1) then
+          ! precompute clon_p_idx: index in lonlat ordering for first 
+          ! occurrence of longitude corresponding to given latitude index,
+          ! used in twin option in create_chunks; used in create_chunks
+          allocate( clon_p_idx(1:clon_p_tot) )
+          clon_p_idx(1) = 1
+          do i=2,clon_p_tot
+             clon_p_idx(i) = clon_p_idx(i-1) + clon_p_cnt(i-1)
+          enddo
+       endif
        !
        ! Option == 0: split local blocks into chunks,
        !               while attempting to create load-balanced chunks.
@@ -711,6 +724,7 @@ contains
        deallocate( latlon_to_dyn_gcol_map )
        if  (twin_alg .eq. 1) deallocate( lonlat_to_dyn_gcol_map )
        if  (twin_alg .eq. 1) deallocate( clon_p_cnt )
+       if  (twin_alg .eq. 1) deallocate( clon_p_idx )
        if ((twin_alg .eq. 1) .or. (lbal_opt .eq. 3)) deallocate( clat_p_cnt )
 
        !
@@ -4617,10 +4631,6 @@ logical function phys_grid_initialized ()
    integer :: ibtwin(npes)               ! global column indices
    integer :: twinproc, twinsmp          ! process and smp ids
 
-   integer :: clon_p_idx(clon_p_tot)     ! index in lonlat ordering for first 
-                                         !  occurrence of longitude corresponding to 
-                                         !  given latitude index
-
    real(r8):: twopi                      ! 2*pi
    real(r8):: clat, twinclat             ! latitude and twin
    real(r8):: clon, twinclon             ! longitude and twin
@@ -4628,11 +4638,6 @@ logical function phys_grid_initialized ()
 !-----------------------------------------------------------------------
    twingcol_f = -1
 
-   ! precompute clon_p_idx
-   clon_p_idx(1) = 1
-   do i=2,clon_p_tot
-      clon_p_idx(i) = clon_p_idx(i-1) + clon_p_cnt(i-1)
-   enddo
 !
 ! Try day/night and north/south hemisphere complement first
 !
