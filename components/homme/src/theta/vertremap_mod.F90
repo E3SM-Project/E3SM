@@ -105,13 +105,13 @@ contains
 
      if (rsplit>0) then
         ! remove hydrostatic phi befor remap
-        call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta(:,:,:,np1),dp_star,phi_ref)
+        call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp_star,phi_ref)
         elem(ie)%state%phi(:,:,:,np1)=elem(ie)%state%phi(:,:,:,np1)-phi_ref(:,:,:)
 
         !  REMAP u,v,T from levels in dp3d() to REF levels
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
-        ttmp(:,:,:,3)=elem(ie)%state%theta(:,:,:,np1)*dp_star
+        ttmp(:,:,:,3)=elem(ie)%state%theta_dp_cp(:,:,:,np1)
         ttmp(:,:,:,4)=elem(ie)%state%phi(:,:,:,np1)*dp_star
         ttmp(:,:,:,5)=elem(ie)%state%w(:,:,:,np1)*dp_star
 
@@ -121,11 +121,11 @@ contains
 
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
-        elem(ie)%state%theta(:,:,:,np1)=ttmp(:,:,:,3)/dp
+        elem(ie)%state%theta_dp_cp(:,:,:,np1)=ttmp(:,:,:,3)
         elem(ie)%state%phi(:,:,:,np1)=ttmp(:,:,:,4)/dp
         elem(ie)%state%w(:,:,:,np1)=ttmp(:,:,:,5)/dp
 
-        call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta(:,:,:,np1),dp,phi_ref)
+        call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
         elem(ie)%state%phi(:,:,:,np1)=elem(ie)%state%phi(:,:,:,np1)+phi_ref(:,:,:)
      endif
 

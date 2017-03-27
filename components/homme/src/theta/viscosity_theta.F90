@@ -47,7 +47,7 @@ type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
 integer              , intent(in)  :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
-real (kind=real_kind), dimension(np,np,nlev,4,nets:nete) :: stens  ! dp3d, theta, w,phi
+real (kind=real_kind), dimension(np,np,nlev,4,nets:nete) :: stens  ! dp3d, theta_dp_cp, w,phi
 type (EdgeBuffer_t)  , intent(inout) :: edgebuf  ! initialized for 5 vars
 type (derivative_t)  , intent(in) :: deriv
 
@@ -93,7 +93,7 @@ logical var_coef1
       do k=1,nlev
          stens(:,:,k,1,ie)=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)
-         stens(:,:,k,2,ie)=laplace_sphere_wk(elem(ie)%state%theta(:,:,k,nt),&
+         stens(:,:,k,2,ie)=laplace_sphere_wk(elem(ie)%state%theta_dp_cp(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)
          stens(:,:,k,3,ie)=laplace_sphere_wk(elem(ie)%state%w(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)

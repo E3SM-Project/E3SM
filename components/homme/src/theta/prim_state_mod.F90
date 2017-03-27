@@ -95,6 +95,7 @@ contains
     real (kind=real_kind) :: umin_local(nets:nete), umax_local(nets:nete), usum_local(nets:nete), &
          vmin_local(nets:nete), vmax_local(nets:nete), vsum_local(nets:nete), &
          tmin_local(nets:nete), tmax_local(nets:nete), tsum_local(nets:nete), &
+         thetamin_local(nets:nete), thetamax_local(nets:nete), thetasum_local(nets:nete), &
          psmin_local(nets:nete),psmax_local(nets:nete),pssum_local(nets:nete), &
          fumin_local(nets:nete),fumax_local(nets:nete),fusum_local(nets:nete), &
          fvmin_local(nets:nete),fvmax_local(nets:nete),fvsum_local(nets:nete), &
@@ -106,14 +107,14 @@ contains
 
 
     real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d),&
-         psmin_p, dpmin_p
+         psmin_p, dpmin_p, thetamin_p
 
 
     real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d),&
-         psmax_p, dpmax_p
+         psmax_p, dpmax_p, thetamax_p
 
     real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d),&
-         pssum_p, dpsum_p
+         pssum_p, dpsum_p, thetasum_p
 
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
@@ -126,8 +127,9 @@ contains
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
-    real (kind=real_kind) :: KEvertu,KEvertw,IEvert,PEvert,T1,T2,S1,S2,P1,P2
-    real (kind=real_kind) :: KEhorz,KEhorz2,PEhorz,IEhorz,KEH1,KEH2
+    real (kind=real_kind) :: KEvertu,KEvertw,IEvert,IEvert2,PEvert1,PEvert2
+    real (kind=real_kind) :: T1,T2,S1,S2,P1,P2
+    real (kind=real_kind) :: KEhorz,KEhorz2,PEhorz1,PEhorz2,IEhorz,KEH1,KEH2
     real (kind=real_kind) :: ddt_tot,ddt_diss_tot,ddt_diss
     integer               :: n0, nm1, np1, n0q
     integer               :: npts,n,q
@@ -215,6 +217,7 @@ contains
        vmax_local(ie)    = MAXVAL(elem(ie)%state%v(:,:,2,:,n0))
        wmax_local(ie)    = MAXVAL(elem(ie)%state%w(:,:,:,n0))
        phimax_local(ie)  = MAXVAL(dphi(:,:,:))
+       thetamax_local(ie) = MAXVAL(elem(ie)%state%theta_dp_cp(:,:,:,n0)) 
 
        fumax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,1,:))
        fvmax_local(ie)    = MAXVAL(elem(ie)%derived%FM(:,:,2,:))
@@ -232,6 +235,7 @@ contains
        umin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,1,:,n0))
        vmin_local(ie)    = MINVAL(elem(ie)%state%v(:,:,2,:,n0))
        Wmin_local(ie)    = MINVAL(elem(ie)%state%w(:,:,:,n0))
+       thetamin_local(ie) = MINVAL(elem(ie)%state%theta_dp_cp(:,:,:,n0))
        phimin_local(ie)  = MINVAL(dphi)
 
        Fumin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,1,:))
@@ -252,6 +256,7 @@ contains
        usum_local(ie)    = SUM(elem(ie)%state%v(:,:,1,:,n0))
        vsum_local(ie)    = SUM(elem(ie)%state%v(:,:,2,:,n0))
        Wsum_local(ie)    = SUM(elem(ie)%state%w(:,:,:,n0))
+       thetasum_local(ie)= SUM(elem(ie)%state%theta_dp_cp(:,:,:,n0))
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
@@ -282,6 +287,7 @@ contains
        global_shared_buf(ie,9) = Wsum_local(ie)
        global_shared_buf(ie,10)= dpsum_local(ie)
        global_shared_buf(ie,11)= phisum_local(ie)
+       global_shared_buf(ie,12)=thetasum_local(ie)
     end do
 
     !JMD This is a Thread Safe Reduction 
@@ -293,6 +299,9 @@ contains
 
     tmin_p = ParallelMin(tmin_local,hybrid)
     tmax_p = ParallelMax(tmax_local,hybrid)
+
+    thetamin_p = ParallelMin(thetamin_local,hybrid)
+    thetamax_p = ParallelMax(thetamax_local,hybrid)
     
     if (rsplit>0)then
        dpmin_p = ParallelMin(dpmin_local,hybrid)
@@ -320,7 +329,7 @@ contains
     phimin_p = ParallelMin(phimin_local,hybrid)
     phimax_p = ParallelMax(phimax_local,hybrid)
 
-    call wrap_repro_sum(nvars=11, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=12, comm=hybrid%par%comm)
     usum_p = global_shared_sum(1)
     vsum_p = global_shared_sum(2)
     tsum_p = global_shared_sum(3)
@@ -332,6 +341,7 @@ contains
     Wsum_p = global_shared_sum(9)
     dpsum_p = global_shared_sum(10)
     phisum_p = global_shared_sum(11)
+    thetasum_p= global_shared_sum(12)
 
 
     scale=1/g                                  ! assume code is using Pa
@@ -362,6 +372,7 @@ contains
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
        write(iulog,100) "w     = ",wmin_p,wmax_p,wsum_p
        write(iulog,100) "tdiag = ",tmin_p,tmax_p,tsum_p
+       write(iulog,100) "theta = ",thetamin_p,thetamax_p,thetasum_p
        write(iulog,100) "dz(m) = ",phimin_p/g,phimax_p/g,phisum_p/g
        if (rsplit>0) &
        write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
@@ -521,20 +532,38 @@ contains
     IEvert = IEvert*scale
 
     do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%IEvert2
+    enddo
+    IEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    IEvert2 = IEvert2*scale
+
+    do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEhoriz1 
     enddo
-    PEhorz = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    PEhorz = PEhorz*scale
+    PEhorz1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    PEhorz1 = PEhorz1*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%PEhoriz2
+    enddo
+    PEhorz2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    PEhorz2 = PEhorz2*scale
 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PEvert1
     enddo
-    PEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-    PEvert = PEvert*scale
+    PEvert1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    PEvert1 = PEvert1*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%PEvert2
+    enddo
+    PEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
+    PEvert2 = PEvert2*scale
 
     !   KE->IE
     do ie=nets,nete
-       tmp(:,:,ie) = elem(ie)%accum%T1
+       tmp(:,:,ie) = elem(ie)%accum%T01
     enddo
     T1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     T1 = T1*scale
@@ -573,7 +602,7 @@ contains
 
 #else
     T1=0; T2=0; S1=0; S2=0; P1=0; P2=0; KEvertu=0; KEvertw=0; IEvert=0; KEhorz=0; IEhorz=0
-    KEhorz2=0;
+    KEhorz2=0; KEH1=0; KEH2=0; PEhorz1=0; PEhorz2=0; PEvert1=0; PEvert2=0; 
 #endif
 
 
@@ -590,29 +619,33 @@ contains
           write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
-          write(iulog,'(a,2e22.14)')'horiz adv KE-u terms abs/rel, should = 0 :',KEhorz, abs(KEH1+KEH2)/dsqrt(KEH1**2+KEH2**2)
+          write(iulog,'(a,2e22.14)')'horiz adv KE-u terms abs/rel, should = 0 :',KEhorz, abs(KEH1+KEH2)/sqrt(KEH1**2+KEH2**2)
           write(iulog,'(a,2e22.14)')'horiz adv KE-u terms, should+to 0        :',KEH1,KEH2
           write(iulog,'(a,2e22.14)')'vert adv etadot KE-u,w terms = 0         :',KEvertu,KEvertw
           write(iulog,'(a,2e22.14)')'horiz adv KE-w terms, possibly nonzero   :',KEhorz2
-          write(iulog,'(a,2e22.14)')'Tot IE advection vert =0                 :',IEvert
-          write(iulog,'(a,2e22.14)')'Tot PE advection horiz, vert = 0         :',PEhorz,PEvert       
-          write(iulog,'(a,2e22.14)')'(T1+S1 abs/rel = 0)                      :',S1+T1, abs(S1+T1)/dsqrt(S1**2+T1**2)
+          write(iulog,'(a,2e22.14)')'vert adv IE energy abs/rel, should = 0   :',IEvert+IEvert2,abs(IEvert+IEvert2)/sqrt(IEvert**2+IEvert2**2)
+          write(iulog,'(a,2e22.14)')'Tot IE advection vert =0                 :',IEvert,IEvert2
+          write(iulog,'(a,2e22.14)')'Tot PE advection horiz = 0 abs/rel       :',PEhorz1+PEhorz2,abs(PEhorz1+PEhorz2)/sqrt(PEhorz1**2+PEhorz2**2)
+          write(iulog,'(a,2e22.14)')'Tot PE advection vert  = 0 abs/rel       :',PEvert1+PEvert2,abs(PEvert1+PEvert2)/sqrt(PEvert1**2+PEvert2**2)
+          write(iulog,'(a,2e22.14)')'(T1+S1 abs/rel = 0)                      :',S1+T1, abs(S1+T1)/sqrt(S1**2+T1**2)
           write(iulog,'(a,2e22.14)')'(S1,T1)                                  :',S1,T1
-          write(iulog,'(a,2e22.14)')'(T2+S2 = 0)                              :',T2+S2
-          
+          write(iulog,'(a,2e22.14)')'(T2+S2 = 0)                              :',T2+S2, abs(S2+T2)/sqrt(S2**2+T2**2)
+          write(iulog,'(a,2e22.14)')'(S2,T2)                                  :',S2,T2
+          write(iulog,'(a,2e22.14)')'(P1,P2)                                  :',P1,P2
           ddt_tot =  (KEner(2)-KEner(1))/(dt)
           ddt_diss_tot = ddt_tot -(KEhorz+KEhorz2+KEvertu+KEvertw+T1+T2+P1) 
-         ddt_diss = ddt_tot -(T1+T2+P1)
+          ddt_diss = ddt_tot -(T1+T2+P1+KEhorz2)
           write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
           write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
           
           ddt_tot =  (IEner(2)-IEner(1))/(dt)
-          ddt_diss = ddt_tot - (S1+S2+IEVert)
+          ddt_diss_tot = ddt_tot - (S1+S2+IEvert+IEvert2)
+          ddt_diss = ddt_tot - (S1+S2+IEvert+IEvert2)
           write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
-   !       write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
+          write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
           
           ddt_tot = (PEner(2)-PEner(1))/(dt)
-          ddt_diss_tot = ddt_tot - (PEhorz+PEvert+P2)
+          ddt_diss_tot = ddt_tot - (PEhorz1+PEhorz2+PEvert1+PEvert2+P2)
           ddt_diss = ddt_tot - (P2)
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
           write(iulog,'(a,3E22.14)') "diss_tot:", ddt_diss_tot
@@ -745,7 +778,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
 
-       call get_pnh_and_exner(hvcoord,elem(ie)%state%theta(:,:,:,t1),dpt1,&
+       call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
             elem(ie)%state%phi(:,:,:,t1), &
             elem(ie)%state%phis(:,:),elem(ie)%state%Qdp(:,:,:,1,t1_qdp),pnh,dpnh,exner)
    
@@ -777,8 +810,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        suml2=0
        do k=1,nlev
           suml(:,:)=suml(:,:)+&
-               Cp * dpt1(:,:,k) * elem(ie)%state%theta(:,:,k,t1)*exner(:,:,k) 
-          suml2(:,:) = suml2(:,:)  -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)
+                elem(ie)%state%theta_dp_cp(:,:,k,t1)*exner(:,:,k) 
+          suml2(:,:) = suml2(:,:) -dpnh(:,:,k)*elem(ie)%state%phi(:,:,k,t1)
        enddo
        elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
             elem(ie)%state%ps_v(:,:,t1) * elem(ie)%state%phis(:,:)

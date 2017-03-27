@@ -84,8 +84,15 @@ contains
   real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: Qt(np,np,nlev)
   integer :: k
+
+  do k=1,nlev
+     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+  enddo
+
+  !TODO: compute cp_star, change Cp to cp_star
   
-  pottemp(:,:,:) = elem%state%theta(:,:,:,nt)
+  pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp*dp(:,:,:))
   
   end subroutine get_pottemp
   
@@ -117,16 +124,17 @@ contains
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
 
-  call get_pnh_and_exner(hvcoord,elem%state%theta(:,:,:,nt),&
+  call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
           dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),elem%state%Qdp(:,:,:,1,ntQ),&
           pnh,dpnh,exner)
 
-
+  !TODO: compute cp_star, change Cp to cp_star
+  
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
   do k=1,nlev
-     temperature(:,:,k)= elem%state%theta(:,:,k,nt)*exner(:,:,k)
+     temperature(:,:,k)= elem%state%theta_dp_cp(:,:,k,nt)*exner(:,:,k)/(Cp*dp(:,:,k))
   enddo
 
   end subroutine get_temperature
@@ -159,7 +167,7 @@ contains
   enddo
 
 
-  call get_pnh_and_exner(hvcoord,elem%state%theta(:,:,:,nt),&
+  call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
        dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),elem%state%Qdp(:,:,:,1,ntQ),&
        pnh,dpnh,exner)
   dpnh_dp = dpnh/dp
@@ -170,7 +178,7 @@ contains
 
 
 
-  subroutine get_pnh_and_exner(hvcoord,theta,dp3d,phi,phis,Qdp,pnh,dpnh,exner,exner_i_out)
+  subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,Qdp,pnh,dpnh,exner,exner_i_out)
   implicit none
 !
 ! compute exner pressure, nh presure
@@ -182,7 +190,7 @@ contains
 !
 !  
   type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
-  real (kind=real_kind), intent(in) :: theta(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)   
   real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
   real (kind=real_kind), intent(in) :: phi(np,np,nlev)
   real (kind=real_kind), intent(in) :: phis(np,np)
@@ -262,24 +270,23 @@ contains
 
 !     rho_i(:,:,k) = - ((dp3d(:,:,k)+dp3d(:,:,k-1))/2) / &
 !          (phi(:,:,k)-phi(:,:,k-1))
-!     rho_R_theta(:,:,k) = rho_i(:,:,k)*(theta(:,:,k)+theta(:,:,k-1))*&
+!     rho_R_theta(:,:,k) = rho_i(:,:,k)*(theta_dp_cp(:,:,k)/(dp3d(:,:,k)*Cp)     &
+!       +theta_dp_cp(:,:,k-1)/(dp3d(:,:,k)*Cp)*                                  &
 !          (R_star(:,:,k)+R_star(:,:,k-1)) / 4
 !     rho_R_theta(:,:,k) = rho_i(:,:,k)*&
-!          (theta(:,:,k)*R_star(:,:,k) +theta(:,:,k-1)*R_star(:,:,k))/2
-     rho_R_theta(:,:,k) = &
-          (dp3d(:,:,k)  *theta(:,:,k)  *R_star(:,:,k) +&
-            dp3d(:,:,k-1)*theta(:,:,k-1)*R_star(:,:,k-1))/2 / &
-            (phi(:,:,k-1)-phi(:,:,k))
-
+!          (theta(:,:,k)*kappa_star(:,:,k) +theta(:,:,k-1)*kappa_star(:,:,k-1))/2
+     rho_R_theta(:,:,k) =0.5* (theta_dp_cp(:,:,k)*kappa_star(:,:,k)+ &
+                          theta_dp_cp(:,:,k-1)*kappa_star(:,:,k-1))/&
+                          (phi(:,:,k-1)-phi(:,:,k))
 
 
      if (minval(rho_R_theta(:,:,k))<0) then
-        print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2),&
-             minval(phi(:,:,k-1)-phi(:,:,k))
+        print *,k,minval( (dp3d(:,:,k)+dp3d(:,:,k-1))/2)
+        print *,'phi(k-1)-phik',minval(phi(:,:,k-1)-phi(:,:,k))
+        print *, 'theta_dp_cp',minval(theta_dp_cp(:,:,k))
         call abortmp('error: rho<0')
      endif
-
-     
+    
      ! theta = T/e
      ! exner = (p/p0)**kappa         p = p0*exner**(1/kappa)
      ! p/exner = rho* Rstar * theta 
@@ -293,9 +300,9 @@ contains
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  compute pnh at midpoint, then extrapolate to surface:
-!   rho_R_theta(:,:,nlev) = dp3d(:,:,nlev)*theta(:,:,nlev)*R_star(:,:,nlev) / &
+!   rho_R_theta(:,:,nlev) = theta_dp_cp(:,:,nlev)*kappa_star(:,:,nlev) / &
 !        (  (phi(:,:,nlev)+phi(:,:,nlev-1))/2 - phis(:,:)  )
-   rho_R_theta(:,:,nlev) = dp3d(:,:,nlev)*theta(:,:,nlev)*R_star(:,:,nlev) / &
+   rho_R_theta(:,:,nlev) = theta_dp_cp(:,:,nlev)*kappa_star(:,:,nlev) / &
         (  (phi(:,:,nlev) - phis(:,:))*2  )
 
    exner(:,:,nlev) = (rho_R_theta(:,:,nlev)/p0)**&
@@ -330,7 +337,7 @@ contains
 
 
   endif ! hydrostatic/nonhydrostatic version
-  end subroutine 
+  end subroutine get_pnh_and_exner
 
 
 
@@ -345,7 +352,7 @@ contains
 
   elem%state%v(:,:,:,:,nout)=elem%state%v(:,:,:,:,nin)
   elem%state%w(:,:,:,nout)   =elem%state%w(:,:,:,nin)
-  elem%state%theta(:,:,:,nout)   =elem%state%theta(:,:,:,nin)
+  elem%state%theta_dp_cp(:,:,:,nout)   =elem%state%theta_dp_cp(:,:,:,nin)
   elem%state%phi(:,:,:,nout)   =elem%state%phi(:,:,:,nin)
   elem%state%dp3d(:,:,:,nout)=elem%state%dp3d(:,:,:,nin)
   elem%state%ps_v(:,:,nout)  =elem%state%ps_v(:,:,nin)
@@ -359,7 +366,7 @@ contains
 ! and no moisture, compute theta and phi 
 !
 ! input:  ps_v, temperature
-! ouput:  state variables:   theta, phi
+! ouput:  state variables:   theta_dp_cp, phi
 !
   implicit none
   
@@ -382,20 +389,22 @@ contains
   enddo
 
   do k=1,nlev
-     elem%state%theta(:,:,k,nt)=temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)
+     elem%state%theta_dp_cp(:,:,k,nt)=temperature(:,:,k)*(p(:,:,k)/p0)**(-kappa)*      &
+      (Cp*dp(:,:,k))
   enddo
 
-  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta(:,:,:,nt),dp,&
+  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,nt),dp,&
        elem%state%phi(:,:,:,nt))
 
 
   ! debug
-  call get_pnh_and_exner(hvcoord,elem%state%theta(:,:,:,nt),dp,&
+  call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,&
        elem%state%phi(:,:,:,nt),&
        elem%state%phis(:,:),elem%state%Qdp(:,:,:,1,nt),pnh,dpnh,exner)
   do k=1,nlev
      if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
         print *,'WARNING: hydrostatic inverse FAILED!'
+        print *, minval(dpnh(:,:,k)), minval(dp(:,:,k))
         print *,k,minval(dpnh(:,:,k)/dp(:,:,k)),maxval(dpnh(:,:,k)/dp(:,:,k))
      endif
   enddo
@@ -407,7 +416,7 @@ contains
 
 
 
-  subroutine set_hydrostatic_phi(hvcoord,phis,theta,dp,phi)
+  subroutine set_hydrostatic_phi(hvcoord,phis,theta_dp_cp,dp,phi)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! inverse of get_pnh_and_exner():
   ! for dry hydrostatic case
@@ -415,7 +424,7 @@ contains
   implicit none
   
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
-  real (kind=real_kind), intent(in) :: theta(np,np,nlev)
+  real (kind=real_kind), intent(in) :: theta_dp_cp(np,np,nlev)
   real (kind=real_kind), intent(in) :: dp(np,np,nlev)
   real (kind=real_kind), intent(in) :: phis(np,np)
   real (kind=real_kind), intent(out) :: phi(np,np,nlev)
@@ -437,15 +446,15 @@ contains
 
 !  integrand(:,:) = dp(:,:,nlev)*Rgas*temperature(:,:,nlev)/p(:,:,nlev)
   phi(:,:,nlev) = phis(:,:) + (&
-    dp(:,:,nlev)*Rgas*theta(:,:,nlev)*p(:,:,nlev)**(kappa-1)*p0**(-kappa) )/2
+    kappa*theta_dp_cp(:,:,nlev)*p(:,:,nlev)**(kappa-1)*p0**(-kappa) )/2
 
   do k=nlev,2,-1
      !  invert this equation at interfaces:
      !  p/exner = dp_theta_R / d(phi)    
      ! d(phi) = dp_theta_R*exer/p
      dp_theta_R(:,:,k) = &
-          (dp(:,:,k)  *theta(:,:,k)  *Rgas +&
-           dp(:,:,k-1)*theta(:,:,k-1)*Rgas)/2
+          (theta_dp_cp(:,:,k)*kappa +&
+           theta_dp_cp(:,:,k-1)*kappa)/2
      ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
      phi(:,:,k-1) = phi(:,:,k) +&
           dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
@@ -460,6 +469,8 @@ contains
   subroutine set_state(u,v,w,T,ps,phis,p,dp,zm, g,  i,j,k,elem,n0,n1)
 !
 ! set state variables at node(i,j,k) at layer midpoints
+! used by idealized tests for dry initial conditions
+! so we use constants cp, kappa  
 !
   real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,dp,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
@@ -472,7 +483,7 @@ contains
   elem%state%ps_v(i,j,n0:n1)     = ps
   elem%state%phi(i,j,k,n0:n1)      = g*zm
   elem%state%phis(i,j)           = phis
-  elem%state%theta(i,j,k,n0:n1)=T/((p/p0)**kappa)
+  elem%state%theta_dp_cp(i,j,k,n0:n1)=T*Cp*dp*((p/p0)**(-kappa))
 
   end subroutine set_state
 
@@ -520,7 +531,7 @@ contains
     dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem%state%ps_v(:,:,ns)
   enddo
-  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta(:,:,:,ns),dp,elem%state%phi(:,:,:,ns))
+  call set_hydrostatic_phi(hvcoord,elem%state%phis,elem%state%theta_dp_cp(:,:,:,ns),dp,elem%state%phi(:,:,:,ns))
 
   do tl = ns+1,ne
     call copy_state(elem,ns,tl)
