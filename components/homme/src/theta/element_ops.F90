@@ -9,10 +9,28 @@
 !  on reference levels.  To compute these fields on floating levels
 !  the model should do that directly (or we need to modify the interface)
 !
-!  see src/preqx/element_ops.F90 for documentation
-!     
-!  helper fuctions in here not required to be provided by all models:
-!     get_p_[non]hydrostatic
+! ROUTINES REQUIRED FOR ALL MODELS:
+!  get_field() 
+!     returns temperature, potential temperature, phi, etc..
+!  copy_state()
+!     copy state variables from one timelevel to another timelevel 
+!
+! Test case initializaiton:
+!  set_thermostate()    
+!     initial condition interface used by DCMIP 2008 tests
+!  set_state()
+!     initial condition interface used by DCMIP 2012 tests
+!  set_forcing_rayleigh_friction()
+!     used by dcmip2012 test cases
+!  tests_finalize()
+!     used by dcmip2012 test cases
+!
+!
+!
+! OTHER ROUTINES USED BY THETA MODEL
+!     perhaps these should be moved to theta_ops.F90?
+!
+!     get_pnh_and_exner
 !     get_temperature
 !     get_pottemp
 !    
@@ -27,7 +45,7 @@ module element_ops
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa
+  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g
   use control_mod, only:    use_moisture, use_cpstar, theta_hydrostatic_mode
   use prim_si_mod, only: preq_hydrostatic_v2
   implicit none
@@ -506,6 +524,50 @@ contains
      ! (phi(:,:,k-1)-phi(:,:,k)) = dp_theta_R * exner/p
      phi(:,:,k-1) = phi(:,:,k) +&
           dp_theta_R(:,:,k) * (p_i(:,:,k)/p0)**kappa / p_i(:,:,k)
+  enddo
+
+
+  end subroutine
+
+
+
+ 
+  subroutine set_theta_ref(hvcoord,dp,theta_ref)
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! inverse of get_pnh_and_exner() for dry hydrostatic case
+  ! used to initialize phi for dry test cases
+  ! used to compute background phi for reference state
+  ! in both the above uses, we can assume dry and we dont need to compute kappa_star
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  implicit none
+  
+  type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
+  real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+  real (kind=real_kind), intent(out) :: theta_ref(np,np,nlev)
+  
+  !   local
+  real (kind=real_kind) :: p_i(np,np,nlevp)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: T0,T1
+  integer :: k
+
+! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
+! Tref = T0+T1*exner
+! Thetaref = T0/exner + T1
+  T1 = .0065*288d0*Cp/g ! = 191
+  T0 = 288d0-T1         ! = 97
+
+  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
+  do k=1,nlev
+     p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
+  enddo
+#if (defined COLUMN_OPENMP)
+  !$omp parallel do default(shared), private(k)
+#endif
+  do k=1,nlev
+     exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
+     !theta_ref(:,:,k,ie) = (T0/exner(:,:,k) + T1)*Cp*dp_ref(:,:,k,ie)
+     theta_ref(:,:,k) = (T0/exner(:,:,k) + T1)
   enddo
 
 

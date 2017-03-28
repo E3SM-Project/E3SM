@@ -14,7 +14,7 @@ module prim_advance_mod
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
   use element_ops,    only: get_pnh_and_exner, set_hydrostatic_phi, get_kappa_star,&
-       get_cp_star, get_temperature
+       get_cp_star, get_temperature, set_theta_ref
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -534,10 +534,8 @@ contains
   real (kind=real_kind), dimension(np,np,4) :: lap_s  ! dp3d,theta,w,phi
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1(np,np),v2(np,np),heating(np,np)
-  real (kind=real_kind) :: dt,T0,T1
+  real (kind=real_kind) :: dt
   real (kind=real_kind) :: ps_ref(np,np)
-  real (kind=real_kind) :: p_i(np,np,nlevp)
-  real (kind=real_kind) :: exner(np,np,nlev)
 
   real (kind=real_kind) :: theta_ref(np,np,nlev,nets:nete)
   real (kind=real_kind) :: phi_ref(np,np,nlev,nets:nete)
@@ -567,11 +565,6 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute reference states
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
-! Tref = T0+T1*exner
-! Thetaref = T0/exner + T1
-  T1 = .0065*288d0*Cp/g ! = 191
-  T0 = 288d0-T1         ! = 97
   do ie=nets,nete
      ps_ref(:,:) = sum(elem(ie)%state%dp3d(:,:,:,nt),3)
      do k=1,nlev
@@ -583,20 +576,13 @@ contains
           elem(ie)%state%theta_dp_cp(:,:,:,nt),elem(ie)%state%dp3d(:,:,:,nt),&
           phi_ref(:,:,:,ie))
 
-     p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
-     ! subtract of hydrostatic background state 
      do k=1,nlev
-        p_i(:,:,k+1) = p_i(:,:,k) + elem(ie)%state%dp3d(:,:,k,nt)
-     enddo
-     do k=1,nlev
-        exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
-        !theta_ref(:,:,k,ie) = (T0/exner(:,:,k) + T1)*Cp*dp_ref(:,:,k,ie)
-        theta_ref(:,:,k,ie) = (T0/exner(:,:,k) + T1)
-
         ! convert theta_dp_cp -> theta
         elem(ie)%state%theta_dp_cp(:,:,k,nt)=&
              elem(ie)%state%theta_dp_cp(:,:,k,nt)/(Cp*elem(ie)%state%dp3d(:,:,k,nt))
      enddo
+
+     call set_theta_ref(hvcoord,elem(ie)%state%dp3d(:,:,:,nt),theta_ref(:,:,:,ie))
 #if 0
      theta_ref(:,:,:,ie)=0
      phi_ref(:,:,:,ie)=0
@@ -614,7 +600,7 @@ contains
         do ie=nets,nete
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,exner)
+!$omp parallel do private(k)
 #endif
            do k=1,nlev
               elem(ie)%state%theta_dp_cp(:,:,k,nt)=elem(ie)%state%theta_dp_cp(:,:,k,nt)-&

@@ -12,7 +12,7 @@ module vertremap_mod
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp, parallel_t
   use control_mod, only : vert_remap_q_alg
-  use element_ops, only : set_hydrostatic_phi
+  use element_ops, only : set_hydrostatic_phi, set_theta_ref
   implicit none
   private
   public :: vertical_remap
@@ -38,7 +38,7 @@ contains
   use hybvcoord_mod,  only: hvcoord_t
   use control_mod,    only: rsplit
   use hybrid_mod,     only: hybrid_t
-
+  use physical_constants, only : Cp
 
   type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout) :: elem(:)
@@ -49,7 +49,7 @@ contains
   integer :: q
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
-  real (kind=real_kind), dimension(np,np,nlev)  :: phi_ref
+  real (kind=real_kind), dimension(np,np,nlev)  :: phi_ref, theta_ref
   real (kind=real_kind), dimension(np,np,nlev,5)  :: ttmp
 
   call t_startf('vertical_remap')
@@ -106,27 +106,29 @@ contains
      if (rsplit>0) then
         ! remove hydrostatic phi befor remap
         call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp_star,phi_ref)
-        elem(ie)%state%phi(:,:,:,np1)=elem(ie)%state%phi(:,:,:,np1)-phi_ref(:,:,:)
+        !removing theta_ref does not help much and will not conserve theta*dp
+        !call set_theta_ref(hvcoord,dp_star,theta_ref)
 
         !  REMAP u,v,T from levels in dp3d() to REF levels
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
-        ttmp(:,:,:,3)=elem(ie)%state%theta_dp_cp(:,:,:,np1)
-        ttmp(:,:,:,4)=elem(ie)%state%phi(:,:,:,np1)*dp_star
+        ttmp(:,:,:,3)=elem(ie)%state%theta_dp_cp(:,:,:,np1)   ! - theta_ref*dp_star*Cp
+        ttmp(:,:,:,4)=(elem(ie)%state%phi(:,:,:,np1)-phi_ref)*dp_star
         ttmp(:,:,:,5)=elem(ie)%state%w(:,:,:,np1)*dp_star
 
         call t_startf('vertical_remap1_1')
         call remap1(ttmp,np,5,dp_star,dp)
         call t_stopf('vertical_remap1_1')
 
+        !call set_theta_ref(hvcoord,dp,theta_ref)
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
-        elem(ie)%state%theta_dp_cp(:,:,:,np1)=ttmp(:,:,:,3)
-        elem(ie)%state%phi(:,:,:,np1)=ttmp(:,:,:,4)/dp
+        elem(ie)%state%theta_dp_cp(:,:,:,np1)=ttmp(:,:,:,3) ! + theta_ref*dp*Cp
         elem(ie)%state%w(:,:,:,np1)=ttmp(:,:,:,5)/dp
 
+        ! depends on theta, so do this after updating theta:
         call set_hydrostatic_phi(hvcoord,elem(ie)%state%phis,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,phi_ref)
-        elem(ie)%state%phi(:,:,:,np1)=elem(ie)%state%phi(:,:,:,np1)+phi_ref(:,:,:)
+        elem(ie)%state%phi(:,:,:,np1)=ttmp(:,:,:,4)/dp + phi_ref
      endif
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp
