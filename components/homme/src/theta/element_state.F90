@@ -45,16 +45,10 @@ module element_state
     real (kind=real_kind) :: dpdiss_biharmonic(np,np,nlev)            ! mean dp dissipation tendency, if nu_p>0
     real (kind=real_kind) :: dpdiss_ave(np,np,nlev)                   ! mean dp used to compute psdiss_tens
 
-    ! diagnostics for explicit timestep
-    real (kind=real_kind) :: phi(np,np,nlev)                          ! geopotential
+    ! diagnostics 
     real (kind=real_kind) :: omega_p(np,np,nlev)                      ! vertical tendency (derived)
     real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)                ! mean vertical flux from dynamics
     real (kind=real_kind) :: eta_dot_dpdn_prescribed(np,np,nlevp)     ! prescribed wind test cases
-
-    ! semi-implicit diagnostics: computed in explict-component, reused in Helmholtz-component.
-    real (kind=real_kind) :: grad_lnps(np,np,2)                       ! gradient of log surface pressure
-    real (kind=real_kind) :: zeta(np,np,nlev)                         ! relative vorticity
-    real (kind=real_kind) :: div(np,np,nlev,timelevels)               ! divergence
 
     ! tracer advection fields used for consistency and limiters
     real (kind=real_kind) :: dp(np,np,nlev)                           ! for dp_tracers at physics timestep
@@ -64,7 +58,6 @@ module element_state
     real (kind=real_kind) :: FQ(np,np,nlev,qsize_d)                ! tracer forcing
     real (kind=real_kind) :: FM(np,np,3,nlev)                      ! momentum forcing
     real (kind=real_kind) :: FT(np,np,nlev)                        ! temperature forcing
-    real (kind=real_kind) :: pecnd(np,np,nlev)                        ! pressure perturbation from condensate
     real (kind=real_kind) :: FQps(np,np)                   ! forcing of FQ on ps_v
 
   end type derived_state_t

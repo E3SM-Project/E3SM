@@ -49,11 +49,6 @@ module element_state
     real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)                ! mean vertical flux from dynamics
     real (kind=real_kind) :: eta_dot_dpdn_prescribed(np,np,nlevp)     ! prescribed wind test cases
 
-    ! semi-implicit diagnostics: computed in explict-component, reused in Helmholtz-component.
-    real (kind=real_kind) :: grad_lnps(np,np,2)                       ! gradient of log surface pressure
-    real (kind=real_kind) :: zeta(np,np,nlev)                         ! relative vorticity
-    real (kind=real_kind) :: div(np,np,nlev,timelevels)               ! divergence
-
     ! tracer advection fields used for consistency and limiters
     real (kind=real_kind) :: dp(np,np,nlev)                           ! for dp_tracers at physics timestep
     real (kind=real_kind) :: divdp(np,np,nlev)                        ! divergence of dp

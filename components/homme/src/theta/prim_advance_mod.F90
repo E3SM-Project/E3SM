@@ -849,14 +849,13 @@ contains
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
      theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
+     phi => elem(ie)%state%phi(:,:,:,n0)
      call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
+
+     call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
+             kappa_star,pnh,dpnh,exner) ! ,exner_i)
      
      if (theta_hydrostatic_mode) then
-        phi => elem(ie)%derived%phi(:,:,:)
-
-        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
-             kappa_star,pnh,dpnh,exner) ! ,exner_i)
-        
         ! Compute Hydrostatic equation
         do k=1,nlev
            temp(:,:,k) = kappa_star(:,:,k)*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
@@ -865,9 +864,6 @@ contains
         call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
         dpnh_dp(:,:,:) = 1
      else
-        phi => elem(ie)%state%phi(:,:,:,n0)
-        call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,&
-             phi,elem(ie)%state%phis,kappa_star,pnh,dpnh,exner)
         ! d(p-nh) / d(p-hyrdostatic)
         dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
      endif
