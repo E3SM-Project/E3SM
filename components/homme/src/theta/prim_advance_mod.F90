@@ -13,7 +13,8 @@ module prim_advance_mod
   use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize, max_corner_elem
   use edgetype_mod,   only: EdgeDescriptor_t, EdgeBuffer_t
   use element_mod,    only: element_t
-  use element_ops,    only: get_pnh_and_exner, set_hydrostatic_phi
+  use element_ops,    only: get_pnh_and_exner, set_hydrostatic_phi, get_kappa_star,&
+       get_cp_star, get_temperature
   use hybrid_mod,     only: hybrid_t
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind, iulog
@@ -375,12 +376,29 @@ contains
 
   ! local
   integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
-  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
+  real (kind=real_kind) :: v1
+  real (kind=real_kind) :: temperature(np,np,nlev)
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
+  real (kind=real_kind) :: cp_star(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  real (kind=real_kind) :: dpnh(np,np,nlev)
 
   do ie=nets,nete
      ! apply forcing to Qdp
      elem(ie)%derived%FQps(:,:)=0
+
+     ! apply forcing to temperature
+     call get_temperature(elem(ie),temperature,hvcoord,np1,np1_qdp)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+     do k=1,nlev
+        temperature(:,:,k) = temperature(:,:,k) + elem(ie)%derived%FT(:,:,k)
+     enddo
+
+     
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
@@ -418,23 +436,33 @@ contains
 
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,i,j,dp)
+!$omp parallel do private(q,k)
+#endif
+     do k=1,nlev
+        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+     enddo
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,k)
 #endif
      do q=1,qsize
         do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-                 elem(ie)%state%Q(i,j,k,q) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)/dp
-              enddo
-           enddo
+           elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp(:,:,k)
         enddo
      enddo
 
+     ! now that we have updated Qdp and dp, compute theta_dp_cp from temperature
+     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
+     call get_cp_star(cp_star,elem(ie)%state%Qdp(:,:,:,1,np1_qdp),dp)
+     call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
+          elem(ie)%state%phi(:,:,:,np1),elem(ie)%state%phis(:,:),kappa_star,&
+          pnh,dpnh,exner)
+
+     elem(ie)%state%theta_dp_cp(:,:,:,np1) = temperature(:,:,:)*cp_star(:,:,:)&
+          *dp(:,:,:)/exner(:,:,:)
+
   enddo
   call applyCAMforcing_dynamics(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-
   end subroutine applyCAMforcing
 
 
@@ -449,27 +477,9 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete,np1_qdp
 
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: exner(np,np,nlev)
-  real (kind=real_kind) :: dp(np,np,nlev)
-  real (kind=real_kind) :: pnh(np,np,nlev)
-  real (kind=real_kind) :: pnh_i(np,np,nlevp)
-  real (kind=real_kind) :: dpnh(np,np,nlev)
+  integer :: k,ie
 
   do ie=nets,nete
-     do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-     enddo
-     
-     call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,np1),dp,&
-          elem(ie)%state%phi(:,:,:,np1),elem(ie)%state%phis(:,:),&
-          elem(ie)%state%Qdp(:,:,:,1,np1_qdp),pnh,dpnh,exner)
-
-     ! Note: CAM physics uses cp, not cp_star, so lets use that here
-     elem(ie)%state%theta_dp_cp(:,:,:,np1) = elem(ie)%state%theta_dp_cp(:,:,:,np1) + &
-          dt*elem(ie)%derived%FT(:,:,:) *Cp*dp(:,:,:)/ exner(:,:,:)
-     ! TODO: add to above cp*theta*FQps = theta_cp_dp*FQps/dp
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,1:2,:)
      elem(ie)%state%w(:,:,:,np1) = elem(ie)%state%w(:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,3,:)
   enddo
@@ -811,13 +821,13 @@ contains
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: theta_dp_cp
    
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: theta_cp(np,np,nlev)
   real (kind=real_kind) :: omega_p(np,np,nlev)
   real (kind=real_kind) :: vort(np,np,nlev)      ! vorticity
   real (kind=real_kind) :: divdp(np,np,nlev)     
   real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
   real (kind=real_kind) :: dpnh(np,np,nlev)    ! 
-  real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! nh pressu re on interfaces
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
   real (kind=real_kind) :: dpnh_dp(np,np,nlev)   ! dpnh / dp3d  
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
@@ -853,19 +863,17 @@ contains
      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
      theta_dp_cp  => elem(ie)%state%theta_dp_cp(:,:,:,n0)
      theta_cp(:,:,:) = theta_dp_cp(:,:,:)/dp3d(:,:,:)
+     call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,qn0),dp3d)
      
      if (theta_hydrostatic_mode) then
         phi => elem(ie)%derived%phi(:,:,:)
 
         call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,elem(ie)%state%phis,&
-             elem(ie)%state%Qdp(:,:,:,1,qn0),pnh,dpnh,exner) ! ,exner_i)
+             kappa_star,pnh,dpnh,exner) ! ,exner_i)
         
         ! Compute Hydrostatic equation
         do k=1,nlev
-           ! TODO: use kappa_star ???
-           !temp(:,:,k) = Cp*theta(:,:,k)*(exner_i(:,:,k+1)-exner_i(:,:,k))
-           !temp(:,:,k) = dp3d(:,:,k) * ( Rgas*theta(:,:,k)*exner(:,:,k)/pnh(:,:,k))
-           temp(:,:,k) = kappa*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+           temp(:,:,k) = kappa_star(:,:,k)*theta_dp_cp(:,:,k)*exner(:,:,k)/pnh(:,:,k)
         enddo
         !call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,dp)
         call preq_hydrostatic_v2(phi,elem(ie)%state%phis,temp)
@@ -873,7 +881,7 @@ contains
      else
         phi => elem(ie)%state%phi(:,:,:,n0)
         call get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,&
-             phi,elem(ie)%state%phis,elem(ie)%state%Qdp(:,:,:,1,qn0),pnh,dpnh,exner)
+             phi,elem(ie)%state%phis,kappa_star,pnh,dpnh,exner)
         ! d(p-nh) / d(p-hyrdostatic)
         dpnh_dp(:,:,:) = dpnh(:,:,:)/dp3d(:,:,:)
      endif

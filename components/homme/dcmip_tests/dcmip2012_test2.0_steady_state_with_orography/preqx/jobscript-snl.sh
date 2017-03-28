@@ -3,7 +3,7 @@
 # nonhydrostatic model with explicit timestep: 25 nodes, 2h 20min
 # hydrostatic: 300x faster.  4 nodes: 3min
 #
-#SBATCH --job-name d21
+#SBATCH --job-name d20
 #SBATCH --account=FY150001
 #SBATCH -N 25
 #SBATCH --time=3:00:00

@@ -17,7 +17,7 @@ module prim_state_mod
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
-  use element_ops,      only: get_field, get_pnh_and_exner
+  use element_ops,      only: get_field, get_pnh_and_exner, get_kappa_star
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin
   use perf_mod,         only: t_startf, t_stopf
@@ -760,6 +760,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
     real (kind=real_kind) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
+    real (kind=real_kind) :: kappa_star(np,np,nlev)  ! exner nh pressure
 
 
     integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
@@ -776,10 +777,10 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           dpt1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t1)
        enddo
-
+       call get_kappa_star(kappa_star,elem(ie)%state%Qdp(:,:,:,1,t1_qdp),dpt1)
        call get_pnh_and_exner(hvcoord,elem(ie)%state%theta_dp_cp(:,:,:,t1),dpt1,&
             elem(ie)%state%phi(:,:,:,t1), &
-            elem(ie)%state%phis(:,:),elem(ie)%state%Qdp(:,:,:,1,t1_qdp),pnh,dpnh,exner)
+            elem(ie)%state%phis(:,:),kappa_star,pnh,dpnh,exner)
    
  !   KE   .5 dp/dn U^2
        do k=1,nlev

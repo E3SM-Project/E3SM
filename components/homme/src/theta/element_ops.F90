@@ -90,7 +90,7 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-  call get_cp_star(cp_star,elem%Qdp(:,:,:,1,ntQ),dp(:,:,:))
+  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp(:,:,:))
   
   pottemp(:,:,:) = elem%state%theta_dp_cp(:,:,:,nt)/(Cp_star(:,:,:)*dp(:,:,:))
   
@@ -128,12 +128,12 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-  call get_cp_star(cp_star,elem%Qdp(:,:,:,1,ntQ),dp)
-  call get_kappa_star(kappa_star,elem%Qdp(:,:,:,1,ntQ),dp)
+  call get_cp_star(cp_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
+  call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
 
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-          dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),elem%state%Qdp(:,:,:,1,ntQ),&
+          dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
           pnh,dpnh,exner)
 
   
@@ -164,7 +164,7 @@ contains
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dpnh(np,np,nlev)
-  real (kind=real_kind) :: pnh_i(np,np,nlevp)
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
   integer :: k
   
   
@@ -172,13 +172,14 @@ contains
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
   enddo
-
+  call get_kappa_star(kappa_star,elem%state%Qdp(:,:,:,1,ntQ),dp)
 
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),&
-       dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),elem%state%Qdp(:,:,:,1,ntQ),&
+       dp,elem%state%phi(:,:,:,nt),elem%state%phis(:,:),kappa_star,&
        pnh,dpnh,exner)
   dpnh_dp = dpnh/dp
   end subroutine 
+
 
 
 
@@ -189,8 +190,8 @@ contains
 !
   implicit none
   real (kind=real_kind), intent(out)  :: kappa_star(np,np,nlev)
-  type (kind=real_kind),     intent(in)    :: Qdp(np,np,nlev)
-  type (kind=real_kind),     intent(in)    :: dp(np,np,nlev)
+  real (kind=real_kind), intent(in)   :: Qdp(np,np,nlev)
+  real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
   !   local
   integer :: k
 
@@ -202,7 +203,7 @@ contains
         kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qdp(:,:,k)/dp(:,:,k)) / &
              (Cp + (Cpwater_vapor-Cp)*Qdp(:,:,k)/dp(:,:,k) )
      enddo
-  else if (use_moisture .and. use_cpsar==0) then
+  else if (use_moisture .and. use_cpstar==0) then
 #if (defined COLUMN_OPENMP)
   !$omp parallel do default(shared), private(k)
 #endif
@@ -223,8 +224,8 @@ contains
 !
   implicit none
   real (kind=real_kind), intent(out)  :: cp_star(np,np,nlev)
-  type (kind=real_kind),     intent(in)    :: Qdp(np,np,nlev)
-  type (kind=real_kind),     intent(in)    :: dp(np,np,nlev)
+  real (kind=real_kind),     intent(in)    :: Qdp(np,np,nlev)
+  real (kind=real_kind),     intent(in)    :: dp(np,np,nlev)
   !   local
   integer :: k
   if (use_moisture .and. use_cpstar==1) then
@@ -235,7 +236,7 @@ contains
         cp_star(:,:,k) = (Cp + (Cpwater_vapor-Cp)*Qdp(:,:,k)/dp(:,:,k) )
      enddo
   else
-     cp_star(:,:,k)=Cp
+     cp_star(:,:,:)=Cp
   endif
   end subroutine 
 
@@ -244,7 +245,7 @@ contains
 
 
 
-  subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,Qdp,pnh,dpnh,exner,exner_i_out)
+  subroutine get_pnh_and_exner(hvcoord,theta_dp_cp,dp3d,phi,phis,kappa_star,pnh,dpnh,exner,exner_i_out)
   implicit none
 !
 ! compute exner pressure, nh presure
@@ -260,14 +261,13 @@ contains
   real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
   real (kind=real_kind), intent(in) :: phi(np,np,nlev)
   real (kind=real_kind), intent(in) :: phis(np,np)
-  real (kind=real_kind), intent(in) :: Qdp(np,np,nlev)   
+  real (kind=real_kind), intent(in) :: kappa_star(np,np,nlev)   
   real (kind=real_kind), intent(out) :: pnh(np,np,nlev)   ! nh nonhyrdo pressure
   real (kind=real_kind), intent(out) :: dpnh(np,np,nlev) ! nh nonhyrdo pressure interfaces
   real (kind=real_kind), intent(out) :: exner(np,np,nlev)  ! exner nh pressure
   real (kind=real_kind), intent(out), optional :: exner_i_out(np,np,nlevp)  ! exner nh pressure interfaces
 
   !   local
-  real (kind=real_kind) :: kappa_star(np,np,nlev)
   real (kind=real_kind) :: kappa_star_i(np,np,nlev)
   real (kind=real_kind) :: Qt(np,np,nlev)
   real (kind=real_kind) :: pnh_i(np,np,nlevp) 
@@ -277,25 +277,6 @@ contains
   real (kind=real_kind) :: exner_i(np,np,nlevp) 
   integer :: k
 
-
-
-#if (defined COLUMN_OPENMP)
-  !$omp parallel do default(shared), private(k)
-#endif
-  do k=1,nlev
-     if (use_moisture) then
-        Qt(:,:,k) = Qdp(:,:,k)/dp3d(:,:,k)
-        
-        if (use_cpstar==1) then
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / &
-                (Cp + (Cpwater_vapor-Cp)*Qt(:,:,k) )
-        else
-           kappa_star(:,:,k) = (Rgas + (Rwater_vapor - Rgas)*Qt(:,:,k)) / Cp
-        endif
-     else
-        kappa_star(:,:,k)=Rgas/Cp
-     endif
-  enddo
 
 
   if (theta_hydrostatic_mode) then
@@ -443,6 +424,7 @@ contains
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dpnh(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: kappa_star(np,np,nlev)
   integer :: k,nt,ntQ
 
   do k=1,nlev
@@ -461,9 +443,10 @@ contains
 
 
   ! debug
+  kappa_star=kappa   
   call get_pnh_and_exner(hvcoord,elem%state%theta_dp_cp(:,:,:,nt),dp,&
        elem%state%phi(:,:,:,nt),&
-       elem%state%phis(:,:),elem%state%Qdp(:,:,:,1,nt),pnh,dpnh,exner)
+       elem%state%phis(:,:),kappa_star,pnh,dpnh,exner)
   do k=1,nlev
      if (maxval(abs(1-dpnh(:,:,k)/dp(:,:,k))) > 1e-10) then
         print *,'WARNING: hydrostatic inverse FAILED!'
