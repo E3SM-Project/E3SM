@@ -87,6 +87,10 @@ def set_units(ref_or_test, units):
     if units != '':
         ref_or_test.units = units
 
+def add_cyclic(var):
+    lon = var.getLongitude()
+    return var(longitude=(lon[0],lon[0]+360.0,'coe'))
+
 def plot(reference, test, diff, metrics_dict, parameter):
 
     case_id = parameter.case_id
@@ -147,9 +151,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
     set_colormap_of_graphics_method(vcs_canvas, parameter.test_colormap, test_isofill)
     set_colormap_of_graphics_method(vcs_canvas, parameter.diff_colormap, diff_isofill)
 
-    vcs_canvas.plot(test, template_test, test_isofill)
-    vcs_canvas.plot(reference, template_ref, reference_isofill)
-    vcs_canvas.plot(diff, template_diff, diff_isofill)
+    vcs_canvas.plot(add_cyclic(test), template_test, test_isofill)
+    vcs_canvas.plot(add_cyclic(reference), template_ref, reference_isofill)
+    vcs_canvas.plot(add_cyclic(diff), template_diff, diff_isofill)
 
     plot_rmse_and_corr(vcs_canvas, metrics_dict)
 
