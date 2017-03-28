@@ -1260,8 +1260,8 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="MKLROOT">`echo $MKLROOT` </env>
-      <env name="NETCDF_PATH">`which nc-config | xargs dirname | xargs dirname|sed 's/[ \t]*$//'`</env>
+      <env name="MKLROOT">$ENV{MKLROOT} </env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
   </machine>
