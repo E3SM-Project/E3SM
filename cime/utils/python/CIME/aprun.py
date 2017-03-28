@@ -57,16 +57,14 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
 
             c2 += 1
 
-    logger.info("total tasks is: %s" % total_tasks)
-
     # make sure all maxt values at least 1
     for c1 in xrange(0, total_tasks):
         if maxt[c1] < 1:
             maxt[c1] = 1
 
     # Compute task and thread settings for batch commands
-    tasks_per_node, task_count, thread_count, max_thread_count, aprun = \
-        0, 1, maxt[0], maxt[0], "aprun"
+    tasks_per_node, task_count, thread_count, max_thread_count, total_node_count, aprun = \
+        0, 1, maxt[0], maxt[0], 0, "aprun"
     for c1 in xrange(1, total_tasks):
         if maxt[c1] != thread_count:
             tasks_per_node = min(pes_per_node, max_tasks_per_node / thread_count)
@@ -82,6 +80,9 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
                     aprun += " -cc numa_node"
 
             aprun += " -n %d -N %d -d %d %s :" % (task_count, tasks_per_node, thread_count, run_exe)
+
+            node_count = int(math.ceil(float(task_count) / tasks_per_node))
+            total_node_count += node_count
 
             thread_count = maxt[c1]
             max_thread_count = max(max_thread_count, maxt[c1])
@@ -99,6 +100,8 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
 
     task_per_numa = int(math.ceil(tasks_per_node / 2.0))
 
+    total_node_count += int(math.ceil(float(task_count) / tasks_per_node))
+
     # Special option for Titan with intel compiler
     if machine == "titan" and tasks_per_node > 1:
         aprun += " -S %d" % task_per_numa
@@ -107,13 +110,13 @@ def _get_aprun_cmd_for_case_impl(ntasks, nthreads, rootpes, pstrids,
 
     aprun += " -n %d -N %d -d %d %s " % (task_count, tasks_per_node, thread_count, run_exe)
 
-    return aprun
+    return aprun, total_node_count
 
 ###############################################################################
 def get_aprun_cmd_for_case(case, run_exe):
 ###############################################################################
     """
-    Given a case, construct and return the aprun command
+    Given a case, construct and return the aprun command and optimized node count
     """
     models = case.get_values("COMP_CLASSES")
     ntasks, nthreads, rootpes, pstrids = [], [], [], []
