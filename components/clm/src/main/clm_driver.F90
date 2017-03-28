@@ -119,7 +119,7 @@ module clm_driver
   use clm_instMod            , only : chemstate_vars
   use clm_instMod            , only : PlantMicKinetics_vars
   use tracer_varcon          , only : is_active_betr_bgc
-  use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr !, CNEcosystemDynBetrSummary, CNFluxStateBetrSummary
+  use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use GridcellType           , only : grc
   use LandunitType           , only : lun
   use ColumnType             , only : col
@@ -739,7 +739,7 @@ contains
 
          endif
 
-       else
+       endif
 
          ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
          if (.not. use_ed) then
@@ -922,7 +922,6 @@ contains
                carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars,&
                PlantMicKinetics_vars)
            endif
-
            call ep_betr%StepWithoutDrainage(bounds_clump, col, pft)
 
            if(is_active_betr_bgc)then
@@ -933,7 +932,7 @@ contains
            endif
          endif
 
-         if (use_lch4) then
+         if (use_lch4 .and. .not. is_active_betr_bgc) then
            !warning: do not call ch4 before CNAnnualUpdate, which will fail the ch4 model
            call t_startf('ch4')
            call ch4 (bounds_clump,                                                                  &
@@ -945,7 +944,6 @@ contains
                carbonstate_vars, carbonflux_vars, nitrogenflux_vars, ch4_vars, lnd2atm_vars)
            call t_stopf('ch4')
          end if
-       endif !end of if is_active_betr_bgc
 
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
        call t_startf('depvel')

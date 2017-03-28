@@ -26,7 +26,6 @@ module CNEcosystemDynBetrMod
   use WaterstateType            , only : waterstate_type
   use WaterfluxType             , only : waterflux_type
   use atm2lndType               , only : atm2lnd_type
-  use SoilStateType             , only : soilstate_type
   use CanopyStateType           , only : canopystate_type
   use TemperatureType           , only : temperature_type
   use PhotosynthesisType        , only : photosyns_type
@@ -67,31 +66,37 @@ module CNEcosystemDynBetrMod
     ! setup fluxes and parameters for plant-microbe coupling in soibgc
     !
     ! !USES:
-    use CNNDynamicsMod            , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
-    use CNMRespMod                , only: CNMResp
-    use CNDecompMod               , only: CNDecompAlloc
-    use CNPhenologyMod            , only: CNPhenology
-    use CNGRespMod                , only: CNGResp
-    use CNCStateUpdate1Mod        , only: CStateUpdate1,CStateUpdate0
-    use CNNStateUpdate1Mod        , only: NStateUpdate1
-    use CNGapMortalityMod         , only: CNGapMortality
-    use CNCStateUpdate2Mod        , only: CStateUpdate2, CStateUpdate2h
-    use CNNStateUpdate2Mod        , only: NStateUpdate2, NStateUpdate2h
-    use CNFireMod                 , only: CNFireArea, CNFireFluxes
-    use CNCStateUpdate3Mod        , only: CStateUpdate3
-    use CNCIsoFluxMod             , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
-    use CNC14DecayMod             , only: C14Decay, C14BombSpike
-    use CNWoodProductsMod         , only: CNWoodProducts
-    use CNDecompCascadeBGCMod     , only: decomp_rate_constants_bgc
-    use CNDecompCascadeCNMod      , only: decomp_rate_constants_cn
-    use CropType                  , only: crop_type
-    use dynHarvestMod             , only: CNHarvest
-    use clm_varpar                , only: crop_prog
+    use CNNDynamicsMod            , only : CNNDeposition,CNNFixation, CNNFert, CNSoyfix
+    use CNMRespMod                , only : CNMResp
+    use CNDecompMod               , only : CNDecompAlloc
+    use CNPhenologyMod            , only : CNPhenology
+    use CNGRespMod                , only : CNGResp
+    use CNCStateUpdate1Mod        , only : CStateUpdate1,CStateUpdate0
+    use CNNStateUpdate1Mod        , only : NStateUpdate1
+    use CNGapMortalityMod         , only : CNGapMortality
+    use CNCStateUpdate2Mod        , only : CStateUpdate2, CStateUpdate2h
+    use CNNStateUpdate2Mod        , only : NStateUpdate2, NStateUpdate2h
+    use CNFireMod                 , only : CNFireArea, CNFireFluxes
+    use CNCStateUpdate3Mod        , only : CStateUpdate3
+    use CNCIsoFluxMod             , only : CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
+    use CNC14DecayMod             , only : C14Decay, C14BombSpike
+    use CNWoodProductsMod         , only : CNWoodProducts
+    use CNDecompCascadeBGCMod     , only : decomp_rate_constants_bgc
+    use CNDecompCascadeCNMod      , only : decomp_rate_constants_cn
+    use CropType                  , only : crop_type
+    use dynHarvestMod             , only : CNHarvest
+    use clm_varpar                , only : crop_prog
+    use CNCropHarvestPoolsMod     , only : CNCropHarvestPools
+    use CNAllocationMod           , only : update_plant_stoichiometry
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, CNAllocation3_PlantCNPAlloc
     use CNNStateUpdate3Mod        , only : NStateUpdate3
-    use CNNDynamicsMod            , only: CNNFixation_balance
-    use PDynamicsMod              , only: PBiochemMin_balance
+    use CNNDynamicsMod            , only : CNNFixation_balance
+    use PStateUpdate1Mod          , only : PStateUpdate1
+    use PStateUpdate2Mod          , only : PStateUpdate2, PStateUpdate2h
+    use PDynamicsMod              , only : PBiochemMin_balance,PDeposition,PWeathering
+    use CNVerticalProfileMod      , only : decomp_vertprofiles
+    use CNRootDynMod              , only : CNRootDyn
     implicit none
 
 
@@ -118,7 +123,7 @@ module CNEcosystemDynBetrMod
     type(waterstate_type)            , intent(in)    :: waterstate_vars
     type(waterflux_type)             , intent(in)    :: waterflux_vars
     type(canopystate_type)           , intent(in)    :: canopystate_vars
-    type(soilstate_type)             , intent(in)    :: soilstate_vars
+    type(soilstate_type)             , intent(inout) :: soilstate_vars
     type(temperature_type)           , intent(inout) :: temperature_vars
     type(crop_type)                  , intent(inout) :: crop_vars
     type(dgvs_type)                  , intent(inout) :: dgvs_vars
