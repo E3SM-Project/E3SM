@@ -170,16 +170,24 @@ for parameter in parameters:
     #domain = regions_specs[region]
 
     for season in seasons:
-        test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
-        for filename in fnmatch.filter(test_files, '*'+season+'*'):
-            print filename
-            filename1 = filename
+        if hasattr(parameter, 'test_path'):
+            filename1 = parameter.test_path
+            print filename1
+        else:
+            test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
+            for filename in fnmatch.filter(test_files, '*'+season+'*'):
+                print filename
+                filename1 = filename
 
-        ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
-        #for filename in fnmatch.filter(ref_files, '*'+season+'*'):
-        for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+season+'*'):
-            print filename
-            filename2 = filename
+        if hasattr(parameter, 'reference_path'):
+            filename2 = parameter.reference_path
+            print filename2
+        else:
+            ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
+            #for filename in fnmatch.filter(ref_files, '*'+season+'*'):
+            for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+season+'*'):
+                print filename
+                filename2 = filename
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
