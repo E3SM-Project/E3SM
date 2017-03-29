@@ -416,18 +416,47 @@ class Grids(GenericXML):
     def _print_values_v2(self, long_output=None):
         
         logger.info("%5s-------------------------------------------------------------" %(""))
-        logger.info("%20s  default component grids:" %(""))
+        logger.info("%10s  default component grids:\n" %(""))
+        logger.info("     component         compset       value " )
         logger.info("%5s-------------------------------------------------------------" %(""))
         default_nodes = self.get_nodes(nodename="model_grid_defaults")
-
         for default_node in default_nodes:
             grid_nodes = self.get_nodes(nodename="grid", root=default_node)
             for grid_node in grid_nodes:
                 name = grid_node.get("name")
                 compset = grid_node.get("compset")
                 value = grid_node.text
-                logger.info("     component: %6s   compset: %15s  value: %10s" %(name, compset, value))
+                logger.info("     %6s   %15s   %10s" %(name, compset, value))
+        logger.info("%5s-------------------------------------------------------------" %(""))
                        
+        domains = {}
+        if long_output is not None:
+            domain_nodes = self.get_nodes(nodename="domain")
+            for domain_node in domain_nodes:
+                name = domain_node.get("name")
+                if name == 'null':
+                    continue
+                nx = self.get_node("nx", root=domain_node).text
+                ny = self.get_node("ny", root=domain_node).text
+                desc = self.get_node("desc", root=domain_node).text
+                #support = self.get_optional_node("support", root=domain_node).text
+                files = ""
+                file_nodes = self.get_nodes("file", root=domain_node)
+                for file_node in file_nodes:
+                    filename = file_node.text
+                    mask_attrib = file_node.get("mask")
+                    grid_attrib = file_node.get("grid")
+                    files += "\n       " + filename
+                    if mask_attrib or grid_attrib:
+                        files += " (only for"
+                    if mask_attrib:
+                        files += " mask: " + mask_attrib
+                    if grid_attrib:
+                        files += " grid match: " + grid_attrib
+                    if mask_attrib or grid_attrib:
+                        files += ")"
+                domains[name] = "\n       %s with domain file(s): %s " %(desc, files)
+
         model_grid_nodes = self.get_nodes(nodename="model_grid")
         for model_grid_node in model_grid_nodes:
             alias = model_grid_node.get("alias")
@@ -444,14 +473,19 @@ class Grids(GenericXML):
                 logger.info("\n     alias: %s" % (alias))
             grid_nodes = self.get_nodes("grid", root=model_grid_node)
             grids = ""
+            gridnames = []
             for grid_node in grid_nodes:
-                name = grid_node.get("name")
-                value = grid_node.text
-                grids += name + ":" + value + "  " 
-            logger.info("        non-default grids are: %s" %grids)
+                gridnames.append(grid_node.text)
+                grids += grid_node.get("name") + ":" + grid_node.text + "  " 
+            logger.info("       non-default grids are: %s" %grids)
             mask_nodes = self.get_nodes("mask", root=model_grid_node)
             for mask_node in mask_nodes:
-                logger.info("        mask is: %s" %(mask_node.text))
+                logger.info("       mask is: %s" %(mask_node.text))
+            if long_output is not None:
+                gridnames = set(gridnames)
+                for gridname in gridnames:
+                    if gridname != "null":
+                        logger.info ("    %s" %(domains[gridname]))
 
     def _print_values_v1(self, long_output=None):
         # write out grid elements
