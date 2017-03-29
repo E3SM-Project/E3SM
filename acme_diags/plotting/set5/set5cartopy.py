@@ -95,7 +95,6 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, stats=None):
       fig.text(panel[n][0]+0.6635,panel[n][1]-0.0105,"RMSE\nCORR",ha='left',fontdict=plotSideTitle)
       fig.text(panel[n][0]+0.7635,panel[n][1]-0.0105,"%.2f\n%.2f" % stats,ha='right',fontdict=plotSideTitle)
 
-#def plot(reference, test, reference_regrid, test_regrid, parameter):
 def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
@@ -107,8 +106,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
     plot_panel(1, fig, proj, reference, parameter.reference_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
 
     # Third panel
-    #r = rmse(reference_regrid, test_regrid)
-    #c = corr(reference_regrid, test_regrid)
     r = metrics_dict['misc']['rmse']
     c = metrics_dict['misc']['corr']
     plot_panel(2, fig, proj, diff, parameter.diff_levels, 'RdBu_r', (None,parameter.diff_title,None), stats=(r,c))

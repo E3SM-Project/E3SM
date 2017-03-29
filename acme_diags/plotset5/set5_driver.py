@@ -267,7 +267,10 @@ for parameter in parameters:
 
                 diff = mv1_reg - mv2_reg
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-                acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                if hasattr(parameter, 'plot'):
+                    parameter.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                else:
+                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
@@ -372,7 +375,11 @@ for parameter in parameters:
                     # Plotting
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+
+                    if hasattr(parameter, 'plot'):
+                        parameter.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                    else:
+                        acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
                     if season is seasons[0]:
                         viewer.add_row('%s %s %s' % (var,str(int(plev[ilev]))+'mb',region))

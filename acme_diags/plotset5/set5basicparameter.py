@@ -17,8 +17,13 @@ regrid_method = 'linear'
 #test_title = 'Model'
 #reference_title = 'Observation'
 
-backend = 'cartopy'
+backend = 'vcs'
 diff_title = 'test - reference'
 diff_colormap = 'bl_to_darkred'
 
 output_format = ['png', 'pdf']
+
+def my_fcn(ref, test, diff, metrics_dict, parameter):
+    print(':)')
+
+# plot = my_fcn
