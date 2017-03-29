@@ -69,6 +69,8 @@ _TEST_SUITES = {
                               "ERS.ne11_oQU240.I20TRCLM45",
                               "ERS.f09_g16.IMCLM45BC")
                              ),
+
+    "acme_atm_developer" : (None, None,
                             ("ERS.ne16_ne16.FC5MAM4",
                              "ERS.ne16_ne16.FC5PLMOD",
                              "ERS.ne16_ne16.FC5CLBMG2",
@@ -101,12 +103,7 @@ _TEST_SUITES = {
                          "NCK.f19_g16_rx1.A",
                          "SMS.ne30_f19_g16_rx1.A",
                          "ERS_Ld5.T62_oQU120.CMPASO-NYF",
-<<<<<<< HEAD
-                         "ERS.f09_g16_g.MPASLI_ONLY",
-                         "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
-=======
                          "ERS.f09_g16_g.MPASLISIA",
->>>>>>> agsalin/split-03292017
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI",
                          "SMS_D_Ln5.ne16_ne16.FC5AV1F",
@@ -137,21 +134,12 @@ _TEST_SUITES = {
                            "PET.f19_g16.X",
                            "PET.f45_g37_rx1.A",
                            "PET_Ln9.ne30_oEC.A_WCYCL2000",
-<<<<<<< HEAD
-                           "ERP_Ln3.ne30_oEC.A_WCYCL2000",
-                           "PFS.ne30_ne30.FC5",
-=======
                            "ERP_Ld3.ne30_oEC.A_WCYCL2000",
->>>>>>> agsalin/split-03292017
                            "SEQ_IOP.f19_g16.X",
                            "SMS.ne30_oEC.A_WCYCL2000",
                            "SMS.ne16_ne16.FC5AQUAP",
                            "SMS_D_Ld3.ne16_ne16.FC5",
-<<<<<<< HEAD
-                           "SMS.f09_g16_a.MPASLIALB_ONLY",
-=======
                            "SMS.f09_g16_a.MPASLIALB",
->>>>>>> agsalin/split-03292017
                            "ERS.ne16_ne16.FC5ATMMOD",
                            "ERS_Ld5.ne16_ne16.FC5AV1F",
                            "ERS_Ld5.ne16_ne16.FC5AV1C",
@@ -159,10 +147,7 @@ _TEST_SUITES = {
                            "ERS_Ld5.ne16_ne16.FC5AV1C-02",
                            "ERS_Ld5.ne16_ne16.FC5AV1C-03",
                            "ERS_Ld5.ne16_ne16.FC5AV1C-04",
-<<<<<<< HEAD
-=======
                            "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
->>>>>>> agsalin/split-03292017
                            "ERS_Ld5.ne30_oEC.F1850C5AV1C-02",
                            "ERS_Ld5.ne16_ne16.F1850C5AV1C-04",
                            "ERS_Ld5.ne16_ne16.F20TRC5AV1C-03",
