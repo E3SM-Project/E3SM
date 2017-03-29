@@ -6,16 +6,15 @@
     =========================================
     GRID naming convention
     =========================================
-    The long grid name has the order atm,lnd,ocn/ice,river,mask,glc
-    The following shortname is used
-    a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wav
-
     The notation for the grid longname is
-    a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
+        a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
+    where     
+        a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wav
 
     Supported out of the box grid configurations are given via alias specification in
-    the file "config_grids.xml". Futhermore, each grid alias  can also be associated
-    with the following optional attributes
+    the file "config_grids.xml". Each grid alias can also be associated  with the 
+    following optional attributes
+
     compset       (Regular expression for compset matches that are required for this grid)
     not_compset   (Regular expression for compset matches that are not permitted this grid)
 
@@ -872,8 +871,8 @@
 
     <domain name="01col">
       <nx>1</nx> <ny>1</ny>
-      <file lnd_mask="01col">domain.ocn.01col.ArcticOcean.20150824.nc</file>
-      <file ocn_mask="01col">domain.ocn.01col.ArcticOcean.20150824.nc</file>
+      <file>domain.ocn.01col.ArcticOcean.20150824.nc</file>
+      <file>domain.ocn.01col.ArcticOcean.20150824.nc</file>
       <desc>01col is a single-column grid for datm and POP:</desc>
     </domain>
 
@@ -1134,7 +1133,7 @@
 
     <domain name="oQU120">
       <nx>28574</nx>  <ny>1</ny>
-      <file ocn_mask="oQU120">$DIN_LOC_ROOT/share/domains/domain.ocn.oQU120.160325.nc</file>
+      <file mask="oQU120">$DIN_LOC_ROOT/share/domains/domain.ocn.oQU120.160325.nc</file>
       <desc>oQU120 is a MPAS ocean grid that is roughly 1 degree resolution:</desc>
       <support>Experimental, under development</support>
     </domain>
@@ -1170,8 +1169,8 @@
 
     <domain name="ww3a">
       <nx>90</nx>  <ny>50</ny>
-      <file lnd_mask="ww3a">$DIN_LOC_ROOT/share/domains/domain.lnd.ww3a_ww3a.120222.nc</file>
-      <file ocn_mask="ww3a">$DIN_LOC_ROOT/share/domains/domain.ocn.ww3a_ww3a.120222.nc</file>
+      <file mask="ww3a">$DIN_LOC_ROOT/share/domains/domain.lnd.ww3a_ww3a.120222.nc</file>
+      <file mask="ww3a">$DIN_LOC_ROOT/share/domains/domain.ocn.ww3a_ww3a.120222.nc</file>
       <desc>WW3 90 x 50 global grid</desc>
       <support>For testing of the WAV model</support>
     </domain>
