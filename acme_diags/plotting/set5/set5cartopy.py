@@ -103,8 +103,8 @@ def plot(reference, test, diff, metrics_dict, parameter):
     proj = ccrs.PlateCarree(central_longitude=180)
 
     # First two panels
-    plot_panel(0, fig, proj, test, parameter.test_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units))
-    plot_panel(1, fig, proj, reference, parameter.reference_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
+    plot_panel(0, fig, proj, test, parameter.contour_levels, 'viridis', (parameter.test_name,parameter.test_title,test.units))
+    plot_panel(1, fig, proj, reference, parameter.contour_levels, 'viridis', (parameter.reference_name,parameter.reference_title,reference.units))
 
     # Third panel
     #r = rmse(reference_regrid, test_regrid)

@@ -135,8 +135,8 @@ def plot(reference, test, diff, metrics_dict, parameter):
     diff_isofill.missing = 'grey'
 
 
-    set_levels_of_graphics_method(reference_isofill, parameter.reference_levels, reference)
-    set_levels_of_graphics_method(test_isofill, parameter.test_levels, test)
+    set_levels_of_graphics_method(reference_isofill, parameter.contour_levels, reference)
+    set_levels_of_graphics_method(test_isofill, parameter.contour_levels, test)
     set_levels_of_graphics_method(diff_isofill, parameter.diff_levels, diff)
 
     if parameter.arrows:
