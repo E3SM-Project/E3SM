@@ -76,9 +76,6 @@ class Grids(GenericXML):
 
         return gridinfo
 
-
-
-
     def _read_config_grids(self, name, compset):
         if self._version == 1.0:
             return self._read_config_grids_v1(name, compset)
@@ -119,7 +116,7 @@ class Grids(GenericXML):
                 "grid '%s'  is not supported, use manage_case to determine supported grids " %name)
 
 
-    def _read_config_grids_v2(self, name,compset):
+    def _read_config_grids_v2(self, name, compset):
         """
         read config_grids.xml with version 2.0 schema
         """
@@ -411,6 +408,52 @@ class Grids(GenericXML):
         helptext = self.get_element_text("help")
         logger.info("%s " %helptext)
 
+        if self._version == 1.0:
+            self._print_values_v1(long_output=long_output)
+        elif self._version >= 2.0:
+            self._print_values_v2(long_output=long_output)
+
+    def _print_values_v2(self, long_output=None):
+        
+        logger.info("%5s-------------------------------------------------------------" %(""))
+        logger.info("%20s  default component grids:" %(""))
+        logger.info("%5s-------------------------------------------------------------" %(""))
+        default_nodes = self.get_nodes(nodename="model_grid_defaults")
+
+        for default_node in default_nodes:
+            grid_nodes = self.get_nodes(nodename="grid", root=default_node)
+            for grid_node in grid_nodes:
+                name = grid_node.get("name")
+                compset = grid_node.get("compset")
+                value = grid_node.text
+                logger.info("     component: %6s   compset: %15s  value: %10s" %(name, compset, value))
+                       
+        model_grid_nodes = self.get_nodes(nodename="model_grid")
+        for model_grid_node in model_grid_nodes:
+            alias = model_grid_node.get("alias")
+            compset = model_grid_node.get("compset")
+            not_compset = model_grid_node.get("not_compset")
+            restriction = ""
+            if compset:
+                restriction += "only for compsets that are %s " %compset
+            if not_compset:
+                restriction += "only for compsets that are not %s " %not_compset
+            if restriction:
+                logger.info("\n     alias: %s (%s)" % (alias,restriction))
+            else:
+                logger.info("\n     alias: %s" % (alias))
+            grid_nodes = self.get_nodes("grid", root=model_grid_node)
+            grids = ""
+            for grid_node in grid_nodes:
+                name = grid_node.get("name")
+                value = grid_node.text
+                grids += name + ":" + value + "  " 
+            logger.info("        non-default grids are: %s" %grids)
+            mask_nodes = self.get_nodes("mask", root=model_grid_node)
+            for mask_node in mask_nodes:
+                logger.info("        mask is: %s" %(mask_node.text))
+
+    def _print_values_v1(self, long_output=None):
         # write out grid elements
         grid_nodes = self.get_nodes(nodename="grid")
         for grid_node in grid_nodes:
