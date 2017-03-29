@@ -1018,9 +1018,9 @@
     </entry>
   </group>
   <group id="run_component_cpl">
-    <entry id="CPL_ALBAV" value="false">
+    <entry id="CPL_ALBAV" value="FALSE">
       <type>logical</type>
-      <valid_values>true,false</valid_values>
+      <valid_values>TRUE,FALSE</valid_values>
       <desc>
       Only used for compsets with DATM and POP (currently C, G and J):
       If true, compute albedos to work with daily avg SW down
