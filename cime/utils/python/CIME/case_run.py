@@ -6,7 +6,7 @@ from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 from CIME.preview_namelists         import create_namelists
 
-import shutil, time, sys, os, glob
+import shutil, time, sys, os, glob, resource
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +199,13 @@ def case_run(case):
            "As a result, short-term archiving will not be called automatically."
            "Please submit your run using the submit script like so:"
            " ./case.submit")
+
+    # If we need to produce core files, we need to try to ensure that the
+    # system will support them
+    try:
+        resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+    except resource.error:
+        pass
 
     data_assimilation = case.get_value("DATA_ASSIMILATION")
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
