@@ -1810,6 +1810,7 @@
       <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpasgx1_blin.150827.nc</ATM2OCN_VMAPNAME>
       <OCN2ATM_FMAPNAME>cpl/gridmaps/mpasgx1/map_mpasgx1_TO_T62_aave.150827.nc</OCN2ATM_FMAPNAME>
       <OCN2ATM_SMAPNAME>cpl/gridmaps/mpasgx1/map_mpasgx1_TO_T62_aave.150827.nc</OCN2ATM_SMAPNAME>
+    </gridmap>
     <gridmap atm_grid="T62" ocn_grid="oQU120">
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU120_aave.151209.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU120_patc.151209.nc</ATM2OCN_VMAPNAME>
