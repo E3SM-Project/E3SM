@@ -1,0 +1,26 @@
+nmldef2html.py
+
+Synopsis:
+  Parses a namelist XML file and generates a html page. 
+
+Requires:
+  jinja2 template python module available from https://pypi.python.org/pypi/Jinja2
+  
+  >pip install --user jinja2
+
+Example:
+  >./nmldef2html.py 
+    --nmlfile ~/cesm2_0_alpha06/cime/src/drivers/mct/cime_config/namelist_definition_drv.xml 
+    --comp Driver 
+    --htmlfile drv.html
+
+  This example reads the XML namelist file "namelist_definition_drv.xml" for the
+  "Driver" component and generates an output html file "drv.html".
+
+  You can view the file either locally using:
+  >open drv.html
+  
+  or copy the drv.html file to a web server for remote viewing.
+  
+Options:
+  >./nmldef2html.py --help

@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+
+    <style type="text/css">
+      body {
+         font-family:'Open Sans', Arial, sans-serif;
+         font-size:14px;
+         font-weight:300;
+         line-height:1.6em;
+         color:#656565;
+         width: 90%;
+         align: center;
+      }
+
+      .container {
+         padding: 0 30px 0 30px;
+         padding-top: 0px;
+         padding-right: 30px;
+         padding-bottom: 30px;
+         padding-left: 30px;
+         position: relative;
+      }
+      
+      dt { color:#656565; font-weight: bold }
+
+      .accordionItem h2 { margin: 0; font-size: 1.1em; padding: 0.4em; color: #000; background-color: #E3E4E6; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem h2:hover { cursor: pointer; }
+      .accordionItem div { margin: 0; padding: 1em 0.4em; background-color: #eef; border-bottom: 1px solid #66d; width: 90%}
+      .accordionItem.hide h2 { color: #000; background-color: #E3E4E6; width: 90%}
+      
+      .detailsBtn { background-color: #E3E4E6; }
+
+      #variable { color:#66d; font-size: 1.2em; font-weight: bold; display: inline-block; margin-right: 30px; width: 350px; }
+      #emphasis { color:#656565; font-weight: bold; display: inline-block; }
+      #small { color:#9f9f9f; display: inline-block; }
+
+    </style>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript">
+    //<![CDATA[
+
+    var accordionItems = new Array();
+
+    function init() {
+
+      // Grab the accordion items from the page
+      var divs = document.getElementsByTagName( 'div' );
+      for ( var i = 0; i < divs.length; i++ ) {
+        if ( divs[i].className == 'accordionItem' ) accordionItems.push( divs[i] );
+      }
+
+      // Assign onclick events to the accordion item headings
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        var h2 = getFirstChildWithTagName( accordionItems[i], 'H2' );
+        h2.onclick = toggleItem;
+      }
+
+      // Hide all accordion item bodies 
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function toggleItem() {
+      var itemClass = this.parentNode.className;
+
+      // Hide all items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+
+      // Show this item if it was previously hidden
+      if ( itemClass == 'accordionItem hide' ) {
+        this.parentNode.className = 'accordionItem';
+        $(this).parent().find('div').slideDown();
+      }
+    }
+
+    function getFirstChildWithTagName( element, tagName ) {
+      for ( var i = 0; i < element.childNodes.length; i++ ) {
+        if ( element.childNodes[i].nodeName == tagName ) return element.childNodes[i];
+      }
+    }
+
+    function hideAll() {
+      // Hide all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideUp();
+      }
+    }
+
+    function showAll() {
+      // show all accordian items
+      for ( var i = 0; i < accordionItems.length; i++ ) {
+        accordionItems[i].className = 'accordionItem hide';
+        $(accordionItems[i]).find('div').slideDown();
+      }
+    }
+
+     //]]>
+    </script>
+
+  </head>
+  <body onload="init()">
+    <div class="container">
+        <h1>Component Model Namelist Definitions for <b>{{ comp }}</b></h1>
+	<p style="font-size: 0.9em;">
+	  CESM Version: {{ cesm_version }}<br>
+	  HTML created on: {{ today }}
+	</p>
+  	<p>
+	This page contains the complete list of <b>{{ comp }}</b> namelist variables available.<br/>
+	They are grouped by categories designed to aid browsing.  <br/>
+	Clicking on the name of a variable will display additional descriptive information.<br/>  
+	Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
+	</p>
+
+	<button class="detailsBtn" onclick="showAll();">Show Details</button>
+	<button class="detailsBtn" onclick="hideAll();">Hide Details</button>
+
+	{% for category, var_list in html_dict|dictsort %}
+	<h2>Category: {{ category|e }}</h2>
+	{% for var in var_list|sort(attribute='name') %}
+	<div class="accordionItem">
+	  <h2><span id="variable">{{ var['name'] }}</span> <span id="emphasis">{{ var['short_desc']|e }}</span>
+	      {% if var['group_name']|length > 1 %}
+	      <br/><span id="small">Group: {{ var['group_name'] }}
+              </span>{% endif %}</h2>
+	  <div>
+	    <dl>
+	      {% if var['desc']|length > 1 %}
+	      <dt>Description</dt>
+	      <dd>{{ var['desc'] }}</dd>
+	      {% endif %}
+
+	      {% if var['entry_type']|length > 1 %}	    
+	      <dt>Type</dt>
+	      <dd>{{ var['entry_type'] }}</dd>
+	      {% endif %}
+	    
+	      {% if var['valid_values']|length > 1 %}	    
+	      <dt>Valid Values</dt>
+	      <dd>{{ var['valid_values']|e }}</dd>
+	      {% endif %}
+	    
+	      {% if var['value']|length > 1 %}	    
+	      <dt>Default Value</dt>
+	      <dd>{{ var['value'] }}</dd>
+	      {% endif %}
+
+	      {% if var['group_name']|length > 1 %}	    
+	      <dt>XML Group Name</dt>
+	      <dd>{{ var['group_name'] }}</dd>
+	      {% endif %}
+
+	    </dl>
+	  </div>
+	</div>
+	{% endfor %}
+	{% endfor %}
+    </div>
+  </body>
+</html>
