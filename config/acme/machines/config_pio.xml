@@ -52,6 +52,8 @@
       <value mach="hobart" compiler="pgi">netcdf</value>
       <value mach="oic2">netcdf</value>
       <value mach="oic5">netcdf</value>
+      <value mach="lawrencium-lr2">netcdf</value>
+      <value mach="lawrencium-lr3">netcdf</value>
       <value mach="cades">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
     </values>

@@ -206,7 +206,7 @@ class EntryID(GenericXML):
             type_str = self._get_type_info(node)
             str_value = convert_to_string(value, type_str, vid)
         if valid_values is not None and not str_value.startswith('$'):
-            expect(str_value in valid_values, "Did not find %s in valid values:%s"%(value, valid_values))
+            expect(str_value in valid_values, "Did not find %s in valid values for %s: %s" % (value, vid, valid_values))
         node.set("value", str_value)
 
         return value

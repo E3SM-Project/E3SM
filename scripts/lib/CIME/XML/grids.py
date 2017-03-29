@@ -115,7 +115,6 @@ class Grids(GenericXML):
         expect (False,
                 "grid '%s'  is not supported, use manage_case to determine supported grids " %name)
 
-
     def _read_config_grids_v2(self, name, compset):
         """
         read config_grids.xml with version 2.0 schema
@@ -293,6 +292,7 @@ class Grids(GenericXML):
                  ("OCN", component_grids[2]), \
                  ("ICE", component_grids[2]), \
                  ("ROF", component_grids[3]), \
+                 ("MASK", component_grids[4]), \
                  ("GLC", component_grids[5]), \
                  ("WAV", component_grids[6])]
         mask = component_grids[4]
@@ -308,9 +308,11 @@ class Grids(GenericXML):
                 mask_name = "ocn_mask"
             root = self.get_optional_node(nodename="domain", attributes={"name":grid[1]})
             if root is not None:
-                domains[grid[0]+"_NX"] = int(self.get_element_text("nx", root=root))
-                domains[grid[0]+"_NY"] = int(self.get_element_text("ny", root=root))
+                if grid[0] != "MASK":
+                    domains[grid[0]+"_NX"] = int(self.get_element_text("nx", root=root))
+                    domains[grid[0]+"_NY"] = int(self.get_element_text("ny", root=root))
                 domains[grid[0] + "_GRID"] = grid[1]
+
                 if mask_name is not None:
                     file_ = self.get_element_text("file", attributes={mask_name:mask}, root=root)
                     path  = self.get_element_text("path", attributes={mask_name:mask}, root=root)
