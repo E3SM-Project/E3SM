@@ -159,5 +159,13 @@ def plot(reference, test, diff, metrics_dict, parameter):
     main_title.string = parameter.main_title
     vcs_canvas.plot(main_title)
 
-    vcs_canvas.png(case_id + '/' + parameter.output_file)
-    print 'Plot saved in: ' + case_id + '/' + parameter.output_file
+    for f in parameter.output_format:
+        f = f.lower().split('.')[-1]
+        if f == 'png':
+            vcs_canvas.png(case_id + '/' + parameter.output_file)
+        elif f == 'pdf':
+            vcs_canvas.pdf(case_id + '/' + parameter.output_file)
+        elif f == 'svg':
+            vcs_canvas.svg(case_id + '/' + parameter.output_file)
+
+        print('Plot saved in: ' + case_id + '/' + parameter.output_file + '.' + f)

@@ -120,6 +120,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
     case_id = parameter.case_id
     if not os.path.exists(case_id):
         os.makedirs(case_id)
-    for f in parameter.format:
+    
+    for f in parameter.output_format:
+        f = f.lower().split('.')[-1]
         plt.savefig(case_id + '/' + parameter.output_file + '.' + f)
-    print 'Plot saved in: ' + case_id + '/' + parameter.output_file
+
+        print('Plot saved in: ' + case_id + '/' + parameter.output_file + '.' + f)
