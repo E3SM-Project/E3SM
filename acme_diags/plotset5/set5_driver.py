@@ -29,6 +29,15 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_CRU.json').read()
     json_file = json.loads(f_data)
 
+    # add the custom_diags to the main default diags file
+    if hasattr(original_parameter, 'custom_diags'):
+        f_data = open(original_parameter.custom_diags).read()
+        custom_json_data = json.loads(f_data)
+
+        for key in custom_json_data:
+            for single_run in custom_json_data[key]:
+                json_file['set5'].append(single_run)
+
     parameters = []
     for key in json_file:
         for single_run in json_file[key]:
@@ -37,7 +46,6 @@ def make_parameters(orginal_parameter):
             for attr_name in single_run:
                 setattr(p, attr_name, single_run[attr_name])
             # Add attributes of original_parameter to p
-            print orginal_parameter.__dict__
             p.__dict__.update(orginal_parameter.__dict__)
             parameters.append(p)
     return parameters
@@ -167,7 +175,6 @@ for parameter in parameters:
     ref_name = parameter.ref_name
     test_name = parameter.test_name
     regions = parameter.region
-    #domain = regions_specs[region]
 
     for season in seasons:
         if hasattr(parameter, 'test_path'):
@@ -184,7 +191,6 @@ for parameter in parameters:
             print filename2
         else:
             ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
-            #for filename in fnmatch.filter(ref_files, '*'+season+'*'):
             for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+season+'*'):
                 print filename
                 filename2 = filename
