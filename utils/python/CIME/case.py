@@ -132,13 +132,18 @@ class Case(object):
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
         self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
         logger.debug("total_tasks %s thread_count %s"%(self.total_tasks, self.thread_count))
-        self.num_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
+
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
         smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
 
         threads_per_node = self.tasks_per_node * self.thread_count
         threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
+
+        if self.get_value("MACH") == "titan":
+            self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
+        else:
+            self.num_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -1094,7 +1099,7 @@ class Case(object):
 
         # special case for aprun
         if executable == "aprun":
-            return get_aprun_cmd_for_case(self, run_exe) + " " + run_misc_suffix
+            return get_aprun_cmd_for_case(self, run_exe)[0] + " " + run_misc_suffix
         else:
             mpi_arg_string = " ".join(args.values())
 
