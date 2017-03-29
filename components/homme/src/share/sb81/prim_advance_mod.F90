@@ -202,8 +202,6 @@ contains
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
     call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
 
-    ! get time integration method for this timestep
-
 ! integration = "explicit"
 !
 !   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
@@ -253,39 +251,9 @@ contains
     endif
 #endif
 
-    ! integration = "explicit"
-    !
-    !   tstep_type=0  pure leapfrog except for very first timestep   CFL=1
-    !                    typically requires qsplit=4 or 5
-    !   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
-    !                    typically requires qsplit=4 or 5
-    !   tstep_type=2  RK2-SSP 3 stage (as used by tracers)           CFL=.58
-    !                    optimal in terms of SSP CFL, but not        CFLSSP=2
-    !                    optimal in terms of CFL
-    !                    typically requires qsplit=3
-    !                    but if windspeed > 340m/s, could use this
-    !                    with qsplit=1
-    !   tstep_type=3  classic RK3                                    CFL=1.73 (sqrt(3))
-    !
-    !   tstep_type=4  Kinnmark&Gray RK4 4 stage                      CFL=sqrt(8)=2.8
-    !                 should we replace by standard RK4 (CFL=sqrt(8))?
-    !                 (K&G 1st order method has CFL=3)
-    !   tstep_type=5  Kinnmark&Gray RK3 5 stage 3rd order            CFL=3.87  (sqrt(15))
-    !                 From Paul Ullrich.  3rd order for nonlinear terms also
-    !                 K&G method is only 3rd order for linear
-    !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
-    !                 run with qsplit=1
-    !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-    !
-    ! integration = "full_imp"
-    !
-    !   tstep_type=1  Backward Euler or BDF2 implicit dynamics
-    !
-
     ! ==================================
     ! Take timestep
     ! ==================================
-
     dt_vis = dt
     if (method==0) then
        ! regular LF step
