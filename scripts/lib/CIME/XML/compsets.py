@@ -86,3 +86,13 @@ class Compsets(GenericXML):
             label, definition = v
             logger.info("   %20s : %s" %(label, definition))
 
+    def return_all_values(self):
+        all_compsets = dict()
+        help_text = self.get_value(name="help")
+        compsets_text = self.get_value("names")
+        for v in compsets_text.iteritems():
+            label, definition = v
+            all_compsets[label] = (help_text, definition)
+
+        return all_compsets
+
