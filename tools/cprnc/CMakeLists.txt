@@ -1,0 +1,58 @@
+PROJECT(CPRNC C Fortran)
+
+execute_process(COMMAND ../configure --macros-format=CMake WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{CIMEROOT}/externals/CMake")
+
+INCLUDE(Macros.cmake)
+
+ENABLE_LANGUAGE(Fortran)
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{CIMEROOT}/externals/pio2/cmake)
+
+# Defining NETCDF_LIBRARIES and NETCDF_INCLUDE_DIR enables bypassing
+#   the search for Netcdf
+IF (NOT DEFINED NETCDF_LIBRARIES OR NOT DEFINED NETCDF_INCLUDE_DIR)
+  SET(NETCDF_INCLUDE_DIR ${NETCDF_PATH}/include)
+  SET(NETCDF_LIBRARIES ${NETCDF_PATH}/lib/libnetcdff.a)
+ENDIF ()
+
+ADD_CUSTOM_COMMAND(
+  OUTPUT ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
+  COMMAND perl ${PROJECT_SOURCE_DIR}/../../externals/genf90/genf90.pl
+    ${PROJECT_SOURCE_DIR}/compare_vars_mod.F90.in > ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
+)
+
+ADD_CUSTOM_TARGET(COMPARE_VARS DEPENDS ${PROJECT_BINARY_DIR}/compare_vars_mod.F90)
+
+# Support extended line lengths
+IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
+ELSEIF (CMAKE_COMPILER_ID STREQUAL PGI)
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend")
+ELSEIF (CMAKE_COMPILER_ID STREQUAL PathScale)
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -extend-source")
+ENDIF ()
+
+INCLUDE_DIRECTORIES(
+  ${NETCDF_INCLUDE_DIR}
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_BINARY_DIR}
+)
+
+SET (CPRNC_SRCS
+  ${PROJECT_BINARY_DIR}/compare_vars_mod.F90
+  filestruct.F90
+  utils.F90
+  prec.F90
+  cprnc.F90
+)
+
+ADD_EXECUTABLE(cprnc ${CPRNC_SRCS})
+ADD_DEPENDENCIES(cprnc COMPARE_VARS)
+
+TARGET_LINK_LIBRARIES(cprnc ${NETCDF_LIBRARIES})
+
+INSTALL(TARGETS cprnc
+        RUNTIME DESTINATION bin)
