@@ -71,12 +71,13 @@ def create_namelists(case):
             compname = "drv"
         else:
             compname = case.get_value("COMP_%s" % model_str.upper())
+
         cmd = os.path.join(config_dir, "buildnml")
         do_run_cmd = False
         try:
             with open(cmd, 'r') as f:
                 first_line = f.readline()
-            if "python" in first_line:    
+            if "python" in first_line:
                 logger.info("   Calling %s buildnml"%compname)
                 mod = imp.load_source("buildnml", cmd)
                 mod.buildnml(case, caseroot, compname)
@@ -93,11 +94,12 @@ def create_namelists(case):
             raise
 
         if do_run_cmd:
-            logger.debug("   Running %s buildnml"%compname)
+            logger.info("   Running %s buildnml"%compname)
             case.flush()
-            run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+            output = run_cmd_no_fail("%s %s" % (cmd, caseroot), verbose=False)
+            logger.info(output)
             # refresh case xml object from file
-            case.read_xml()            
+            case.read_xml()
     logger.info("Finished creating component namelists")
 
 

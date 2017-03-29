@@ -15,6 +15,59 @@ from abc import ABCMeta, abstractmethod
 from CIME.XML.standard_module_setup import *
 logger = logging.getLogger(__name__)
 
+def _get_components(value):
+    """
+    >>> value = '-something ${shell ${NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack'
+    >>> _get_components(value)
+    [(False, '-something'), (True, '${NETCDF_PATH}/bin/nf-config --flibs'), (False, '-lblas -llapack')]
+    >>> value = '${shell ${NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack'
+    >>> _get_components(value)
+    [(True, '${NETCDF_PATH}/bin/nf-config --flibs'), (False, '-lblas -llapack')]
+    >>> value = '${shell ${NETCDF_PATH}/bin/nf-config --flibs}'
+    >>> _get_components(value)
+    [(True, '${NETCDF_PATH}/bin/nf-config --flibs')]
+    """
+    value = value.strip()
+    components = []
+    curr_comp = ""
+    idx = 0
+    while idx < len(value):
+        if value[idx:idx+8] == "${shell ":
+            if curr_comp:
+                components.append((False, curr_comp.strip()))
+                curr_comp = ""
+
+            idx += 8
+            brace_cnt = 0
+            done = False
+            while not done:
+                if value[idx] == "{":
+                    brace_cnt += 1
+                    curr_comp += value[idx]
+
+                elif value[idx] == "}":
+                    if brace_cnt == 0:
+                        done = True
+                    else:
+                        brace_cnt -= 1
+                        curr_comp += value[idx]
+
+                else:
+                    curr_comp += value[idx]
+
+                idx += 1
+
+            components.append((True, curr_comp.strip()))
+            curr_comp = ""
+        else:
+            curr_comp += value[idx]
+            idx += 1
+
+    if curr_comp:
+        components.append((False, curr_comp.strip()))
+
+    return components
+
 class MacroWriterBase(object):
 
     """Abstract base class for macro file writers.
@@ -199,6 +252,8 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                 else:
                     value = value.replace("(", "{").replace(")", "}")
                     if key.endswith("_PATH"):
+                        if value.startswith("$"):
+                            value = "$ENV%s" % value[1:]
                         fd.write("set(%s %s)\n" % (key, value))
                         fd.write("list(APPEND CMAKE_PREFIX_PATH %s)\n\n" % value)
 
@@ -207,14 +262,32 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                     pass
                 else:
                     value = value.replace("(", "{").replace(")", "}")
-                    if "CFLAGS" in key:
-                        fd.write("add_flags(CMAKE_C_FLAGS %s)\n\n" % value)
-                    elif "FFLAGS" in key:
-                        fd.write("add_flags(CMAKE_Fortran_FLAGS %s)\n\n" % value)
-                    elif "CPPDEFS" in key:
-                        fd.write("list(APPEND COMPILE_DEFINITIONS %s)\n\n" % value)
-                    elif "SLIBS" in key or "LDFLAGS" in key:
-                        fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS %s)\n\n" % value)
+                    if "CFLAGS" in key or "FFLAGS" in key or "CPPDEFS" in key or "SLIBS" in key or "LDFLAGS" in key:
+                        if "shell " in value:
+                            components = _get_components(value)
+
+                            idx = 0
+                            for is_shell, component in components:
+                                if is_shell:
+                                    fd.write('execute_process(COMMAND %s OUTPUT_VARIABLE TEMP%d)\n' % (component, idx))
+                                    fd.write('string(REGEX REPLACE "\\n$" "" TEMP%d "${TEMP%d}")\n' % (idx, idx))
+                                else:
+                                    fd.write('set(TEMP%d "%s")\n' % (idx, component))
+
+                                idx += 1
+
+                            fd.write('set(TEMP "%s")\n' % " ".join(["${TEMP%d}" % i for i in range(idx)]))
+                        else:
+                            fd.write('set(TEMP "%s")\n' % value)
+
+                        if "CFLAGS" in key:
+                            fd.write("add_flags(CMAKE_C_FLAGS ${TEMP})\n\n")
+                        elif "FFLAGS" in key:
+                            fd.write("add_flags(CMAKE_Fortran_FLAGS ${TEMP})\n\n")
+                        elif "CPPDEFS" in key:
+                            fd.write("list(APPEND COMPILE_DEFINITIONS ${TEMP})\n\n")
+                        elif "SLIBS" in key or "LDFLAGS" in key:
+                            fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS ${TEMP})\n\n")
 
         # Recursively print the conditionals, combining tests to avoid repetition
         _parse_hash(macros["_COND_"], fd, 0, output_format)

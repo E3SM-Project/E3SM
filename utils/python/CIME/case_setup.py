@@ -9,7 +9,7 @@ from CIME.preview_namelists import create_dirs, create_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.machines      import Machines
 from CIME.BuildTools.configure import configure
-from CIME.utils             import append_status, get_cime_root
+from CIME.utils             import append_status, get_cime_root, get_model
 from CIME.test_status       import *
 
 import shutil
@@ -163,7 +163,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             # create batch files
             logger.info("Creating batch script case.run")
             env_batch = case.get_env("batch")
-            num_nodes = env_mach_pes.get_total_nodes(pestot, thread_count)
+            num_nodes = case.num_nodes
             tasks_per_node = env_mach_pes.get_tasks_per_node(pestot, thread_count)
             for job in env_batch.get_jobs():
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
@@ -223,7 +223,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
                 logger.info("Finished testcase.setup")
 
         # Some tests need namelists created here (ERP) - so do this if are in test mode
-        if test_mode:
+        if test_mode or get_model() == "acme":
             logger.info("Generating component namelists as part of setup")
             create_namelists(case)
 
