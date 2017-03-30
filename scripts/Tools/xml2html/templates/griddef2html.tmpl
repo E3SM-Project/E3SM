@@ -145,23 +145,34 @@
 	  </table>
 	  {% endif %}
 	<hr>
-## START HERE looping over the all_grids dictionary
+
+	{% for grid in all_grids %}
+	{% for name, value in grid %}
 	<div class="accordionItem">
-	  <h2>Alias: <span id="variable"></span></h2>
+	  <h2>Grid Alias: <span id="variable">{{ name }}</span><br/>
+	      <span id="emphasis">Grid Lonname: longname here...</h2>
 	    <div>
-	        <hr>
-		  <table>
-		    <tr>
-		      <th>Short Name</th>
-		      <th>Long Name</th>
-		    <tr/>
-		    <tr>
-		      <td></td>
-		      <td></td>
-		    </tr>
-		  </table>
-	    </div>
+	      {% for grid_dict in value %}
+	      <ul>
+		{% if grid_dict['mask']|length > 1 %}
+		<li>Mask: {{ grid_dict['mask'] }}</li>
+		{% endif %}
+
+		{% if grid_dict['grids']|length > 1 %}
+	        <li>Grids: {{ grid_dict['grids'] }}</li>
+		{% endif %}
+
+	        {% if grid_dict['aliases']|length > 1 %}
+	        <li>Aliases: {{ grid_dict['grids'] }}</li>
+		{% endif %}
+
+	      </ul>
+              {% endfor %}
+    	    </div>
 	</div>
+       {% endfor %}
+       {% endfor %}
+
     </div>
   </body>
 </html>
