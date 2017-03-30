@@ -141,7 +141,7 @@ real(r8), parameter, public :: mi0 = 4._r8/3._r8*pi*rhoi*(10.e-6_r8)**3
 ! Private module parameters
 !=================================================
 
-logical :: pergro = .false.
+logical :: pergro_mods = .false.
 
 ! Signaling NaN bit pattern that represents a limiter that's turned off.
 integer(i8), parameter :: limiter_off = int(Z'7FF1111111111111', i8)
@@ -252,10 +252,10 @@ subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
 
   !-----------------------------------------------------------------------
 
-call phys_getopts(pergro_out=pergro)
+call phys_getopts(pergro_mods_out=pergro_mods)
 
 qsmall = 1.e-18_r8
-if(pergro) qsmall = 1.e-8_r8 !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
+if(pergro_mods) qsmall = 1.e-8_r8 !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
 
   errstring = ' '
 

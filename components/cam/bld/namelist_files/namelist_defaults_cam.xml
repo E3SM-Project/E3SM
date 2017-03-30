@@ -962,7 +962,8 @@
 
 <!-- ice nucleation option by PNNL -->
 <demott_ice_nuc>.false.</demott_ice_nuc>
-<pergro>.false.</pergro>
+<pergro_mods>.false.</pergro_mods>
+<pergro_test_active>.false.</pergro_test_active>
 
 <sol_facti_cloud_borne clubb_sgs="1" microphys="mg2"                  >1.0D0</sol_facti_cloud_borne>
 <sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="mg2">3.0D0</sol_facti_cloud_borne>

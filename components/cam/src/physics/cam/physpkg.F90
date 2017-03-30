@@ -127,7 +127,8 @@ module physpkg
   logical           :: clim_modal_aero     ! climate controled by prognostic or prescribed modal aerosols
   logical           :: prog_modal_aero     ! Prognostic modal aerosols present
   logical           :: micro_do_icesupersat
-  logical :: pergro = .false.
+  logical           :: pergro_mods = .false.
+  logical           :: pergro_test_active= .false.
 
   !======================================================================= 
 contains
@@ -203,8 +204,8 @@ subroutine phys_register
                       use_subcol_microp_out    = use_subcol_microp, &
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
-	                  pergro_out = pergro)
-
+	                  pergro_mods_out          = pergro_mods, &
+                      pergro_test_active_out   = pergro_test_active )
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -998,8 +999,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     if(Nudge_Model) call nudging_init
 
     
-   !BSINGH -  addfld and adddefault calls for perturb growth testing
-   call add_fld_default_calls()
+   !BSINGH -  addfld and adddefault calls for perturb growth testing    
+    if(pergro_test_active)call add_fld_default_calls()
 
 end subroutine phys_init
 
@@ -1566,7 +1567,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     ncol  = state%ncol
 
     nstep = get_nstep()
-if(pergro) then
+if(pergro_mods) then
     !BALLI- Temporary fix - bypass changes by surface model
     cam_in%wsx(:)    = 0.0_r8 
     cam_in%wsy(:)    = 0.0_r8 
@@ -2158,15 +2159,17 @@ subroutine tphysbc (ztodt,               &
     !-----------------------------------------------------------------------
     call t_startf('bc_init')
 
-    !BSINGH - Call outfld calls
-    str_S = 'S_topphysbc'
-    call outfld( trim(adjustl(str_S)), state%s, pcols, state%lchnk )
-    
-    str_T = 'T_topphysbc'
-    call outfld( trim(adjustl(str_T)), state%t, pcols, state%lchnk )
-    
-    str_QV = 'QV_topphysbc'
-    call outfld( trim(adjustl(str_QV)), state%q(:,:,1), pcols, state%lchnk )  
+    if (pergro_test_active) then
+       !BSINGH - Call outfld calls
+       str_S = 'S_topphysbc'
+       call outfld( trim(adjustl(str_S)), state%s, pcols, state%lchnk )
+       
+       str_T = 'T_topphysbc'
+       call outfld( trim(adjustl(str_T)), state%t, pcols, state%lchnk )
+       
+       str_QV = 'QV_topphysbc'
+       call outfld( trim(adjustl(str_QV)), state%q(:,:,1), pcols, state%lchnk )  
+    endif
 
     zero = 0._r8
     zero_tracers(:,:) = 0._r8

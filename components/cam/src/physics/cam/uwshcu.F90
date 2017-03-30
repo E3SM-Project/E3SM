@@ -19,7 +19,7 @@ module uwshcu
      init_uwshcu,        &
      compute_uwshcu,     &
      compute_uwshcu_inv
-  logical             :: pergro = .false.
+  logical             :: pergro_mods = .false.
   integer , parameter :: r8 = selected_real_kind(12)    !  8 byte real
   real(r8), parameter :: unset_r8 = huge(1.0_r8)
   real(r8)            :: xlv                            !  Latent heat of vaporization
@@ -115,7 +115,7 @@ end subroutine uwshcu_readnl
 
     character(len=*), parameter :: subname = 'init_uwshcu'
 
-    call phys_getopts(pergro_out = pergro)
+    call phys_getopts(pergro_mods_out = pergro_mods)
 
     ! ------------------------- !
     ! Internal Output Variables !
@@ -2865,7 +2865,7 @@ end subroutine uwshcu_readnl
        ! ------------------------------------------------------------------------------ ! 
        
        drage_cond = ( drage .eq. 0._r8 )
-       if(pergro) drage_cond = ( drage*dp0(kpen) .lt.  1.e-4_r8)
+       if(pergro_mods) drage_cond = ( drage*dp0(kpen) .lt.  1.e-4_r8)
 !       if( drage .eq. 0._r8 ) then !BSINGH - This is the original code
        if( drage_cond ) then !BSINGH - Phil suggested modification
            aquad =  ( bogtop - bogbot ) / ( ps0(kpen) - ps0(kpen-1) )
@@ -3108,7 +3108,7 @@ end subroutine uwshcu_readnl
                  if( ( emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen ) .lt. -0.9_r8*dp0(k+1)/g/dt ) limit_emf(i) = 1         
                  emf(k) = max(max(emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen, -0.1_r8*rhos0j), -0.9_r8*dp0(k+1)/g/dt )    
                  
-                 if(pergro) then
+                 if(pergro_mods) then
                     !BSINGH - new code suggected by sungsu
                     gam_fac = emf(k) / min( -1.e-20_r8, emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen )
                     

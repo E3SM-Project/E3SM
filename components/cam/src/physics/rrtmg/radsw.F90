@@ -27,7 +27,7 @@ save
 real(r8) :: fractional_solar_irradiance(1:nbndsw) ! fraction of solar irradiance in each band
 real(r8) :: solar_band_irrad(1:nbndsw) ! rrtmg-assumed solar irradiance in each sw band
 
-logical :: pergro = .false.
+logical :: pergro_mods = .false.
 
 ! Public methods
 
@@ -507,7 +507,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call mcica_subcol_sw(lchnk, Nday, rrtmg_levs-1, icld, permuteseed, pmid, &
       cld, cicewp, cliqwp, rei, rel, tauc_sw, ssac_sw, asmc_sw, fsfc_sw, &
       cld_stosw, cicewp_stosw, cliqwp_stosw, rei_stosw, rel_stosw, &
-      tauc_stosw, ssac_stosw, asmc_stosw, fsfc_stosw, rngsw, pergro) !BSINGH- added rngsw
+      tauc_stosw, ssac_stosw, asmc_stosw, fsfc_stosw, rngsw, pergro_mods) !BSINGH- added rngsw
 
    call t_stopf('mcica_subcol_sw')
 
@@ -674,7 +674,7 @@ subroutine radsw_init()
     use radconstants,  only: get_solar_band_fraction_irrad, get_ref_solar_band_irrad
     use phys_control,  only: phys_getopts
 
-    call phys_getopts(pergro_out=pergro)
+    call phys_getopts(pergro_mods_out=pergro_mods)
     ! get the reference fractional solar irradiance in each band
     call get_solar_band_fraction_irrad(fractional_solar_irradiance)
     call get_ref_solar_band_irrad( solar_band_irrad )

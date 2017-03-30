@@ -37,7 +37,7 @@ module conv_water
 
   integer :: ixcldice, ixcldliq
 
-  logical :: pergro
+  logical :: pergro_mods
 
   contains
 
@@ -191,7 +191,7 @@ module conv_water
    lchnk = state%lchnk
 
  ! Get microphysics option
-   call phys_getopts( microp_scheme_out = microp_scheme, pergro_out = pergro )
+   call phys_getopts( microp_scheme_out = microp_scheme, pergro_mods_out = pergro_mods )
 
  ! Get convective in-cloud water and ice/water temperature partitioning.
 
@@ -295,7 +295,7 @@ module conv_water
       end if
       
       !BSINGH - Logic by Phil to account for insignificant condensate in large scale clouds
-      if (ls_icwmr < 100._r8*ic_limit .and. pergro) then ! if there is virtually  no stratiform condensate
+      if (ls_icwmr < 100._r8*ic_limit .and. pergro_mods) then ! if there is virtually  no stratiform condensate
          if (state%t(i,k) < 243._r8) then           ! if very cold assume convective condensate is ice
             wrk1 = 1._r8  
          else if (state%t(i,k) < 263._r8) then      ! intermediate, do a linear interpolation

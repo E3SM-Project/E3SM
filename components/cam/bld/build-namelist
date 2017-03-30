@@ -3378,7 +3378,8 @@ add_default($nl, 'sscav_tuning');
 add_default($nl, 'convproc_do_gas');
 add_default($nl, 'demott_ice_nuc');
 #BSINGH - ENDS
-add_default($nl, 'pergro');
+add_default($nl, 'pergro_mods');
+add_default($nl, 'pergro_test_active');
 
 add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in cam
 add_default($nl, 'n_so4_monolayers_pcage'); #number of so4(+nh4) monolayers needed to "age" a carbon particle

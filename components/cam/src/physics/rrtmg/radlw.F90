@@ -30,7 +30,7 @@ public ::&
    
 ! Private data
 integer :: ntoplw    ! top level to solve for longwave cooling
-logical :: pergro = .false.
+logical :: pergro_mods = .false.
 !===============================================================================
 CONTAINS
 !===============================================================================
@@ -171,7 +171,7 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
 
    call mcica_subcol_lw(lchnk, ncol, rrtmg_levs-1, icld, permuteseed, pmid(:, pverp-rrtmg_levs+1:pverp-1), &
       cld(:, pverp-rrtmg_levs+1:pverp-1), cicewp, cliqwp, rei, rel, tauc_lw(:, :ncol, pverp-rrtmg_levs+1:pverp-1), &
-      cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw, rnglw, pergro)
+      cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw, rnglw, pergro_mods)
 
    call t_stopf('mcica_subcol_lw')
 
@@ -312,7 +312,7 @@ subroutine radlw_init()
 
    integer :: k
    
-   call phys_getopts(pergro_out=pergro)
+   call phys_getopts(pergro_mods_out=pergro_mods)
 
    ! If the top model level is above ~90 km (0.1 Pa), set the top level to compute
    ! longwave cooling to about 80 km (1 Pa)
