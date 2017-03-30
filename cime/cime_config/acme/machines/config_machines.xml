@@ -1848,13 +1848,19 @@
 	<mpirun mpilib="default">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
+		</arguments>
+	</mpirun>
+	<mpirun mpilib="mvapich">
+		<executable>srun</executable>
+		<arguments>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="openmpi">
 		<executable>mpirun</executable>
 		<arguments>
-			<arg name="num_tasks"> -n {{ num_tasks }}</arg>
+			<arg name="num_tasks"> -n $TOTALPES</arg>
 		</arguments>
 	</mpirun>
 	<mpirun mpilib="mpi-serial">
