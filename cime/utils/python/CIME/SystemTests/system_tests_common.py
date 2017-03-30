@@ -352,14 +352,20 @@ class SystemTestsCommon(object):
             if not os.path.isfile(baselog):
                 # for backward compatibility
                 baselog = os.path.join(basecmp_dir, "cpl.log")
+
             if os.path.isfile(baselog) and len(memlist) > 3:
                 blmem = self._get_mem_usage(baselog)[-1][1]
                 curmem = memlist[-1][1]
-                diff = (curmem-blmem)/blmem
-                if(diff < 0.1):
-                    self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
+                if blmem != 0:
+                    diff = (curmem - blmem) / blmem
+                    if diff < 0.1:
+                        self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
+                    else:
+                        comment = "Error: Memory usage increase > 10% from baseline"
+                        self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
+                        append_status(comment, sfile="TestStatus.log")
                 else:
-                    comment = "Error: Memory usage increase > 10% from baseline"
+                    comment = "Error: Could not determine baseline memory usage"
                     self._test_status.set_status(MEMCOMP_PHASE, TEST_FAIL_STATUS, comments=comment)
                     append_status(comment, sfile="TestStatus.log")
 
