@@ -12,10 +12,9 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2012_test3"         ! test identifier
-  theta_hydrostatic_mode = .true.
   ne                = 27                        ! number of elements per cube face
   qsize             = 0                         ! num tracer fields
-  nmax              = 1200                      ! total number of steps: 3600s / tstep=0.2s
+  nmax              = 1200                      ! total number of steps: 3600s / tstep
   statefreq         = 60                        ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 = new run
@@ -36,9 +35,9 @@
   vtop              = 2.73919e-1                ! vertical coordinate at top of atm (z=10000m)
 /
 &analysis_nl
-  output_dir        = "./movies/"              ! destination dir for netcdf file
+  output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 120,                     ! 500 sec / 0.5 sec per step
+  output_frequency  = 120,                      ! steps
   output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf

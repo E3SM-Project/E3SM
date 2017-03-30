@@ -6,7 +6,6 @@
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
   test_case         = "dcmip2012_test2_0"       ! test identifier
-  theta_hydrostatic_mode = .true.
   ne                = 30                        ! number of elements per cube face
   qsize             = 0                         ! num tracer fields
   ndays             = 6                         ! num simulation days: 0 = use nmax steps

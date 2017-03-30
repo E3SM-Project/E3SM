@@ -4,13 +4,17 @@
 #
 # usage: sbatch jobscript-...
 
-#SBATCH -J dcmip2-1           # job name
+#SBATCH -J d21-preqx          # job name
 #SBATCH -o out_dcmip2-1.o%j   # output and error file name (%j expands to jobID)
-#SBATCH -n 600                # total number of mpi tasks requested
+#SBATCH -n 192                # total number of mpi tasks requested
 #SBATCH -p debug              # queue (partition) -- normal, development, etc.
 #SBATCH -t 00:10:00           # run time (hh:mm:ss)
 #SBATCH -A acme               # charge hours to account 1
+date
 
-EXEC=../../../test_execs/preqx-nlev60-interp/preqx-nlev60-interp           # set name of executable
-srun -n 600 $EXEC < ./namelist-default.nl                               # launch simulation
+EXEC=../../../test_execs/preqx-nlev60-interp/preqx-nlev60-interp        # set name of executable
+cp ./namelist-default.nl input.nl
+srun -n 192 $EXEC < input.nl                                            # launch simulation
+ncl plot_lon_vs_z.ncl
 
+date
