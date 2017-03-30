@@ -83,7 +83,7 @@
     <arguments>
       <arg name="label"> --label</arg>
       <arg name="num_tasks" > -n $TOTALPES</arg>
-      <arg name="thread_count" > -c $OMP_NUM_THREADS</arg>
+      <arg name="thread_count" > -c $ENV{OMP_NUM_THREADS}</arg>
     </arguments>
   </mpirun>
   <module_system type="module">
@@ -939,7 +939,7 @@
            <executable>mpiexec</executable>
            <arguments>
              <arg name="num_tasks"> -n $TOTALPES </arg>
-             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$OMP_NUM_THREADS --bind-to core</arg>
+             <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
            </arguments>
          </mpirun>
          <mpirun mpilib="mvapich">
@@ -1048,7 +1048,7 @@
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1170,7 +1170,7 @@
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
 	       <arg name="xl_bg_spreadlayout"> --envs XL_BG_SPREADLAYOUT=YES</arg>
                <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
-               <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+               <arg name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
              </arguments>
          </mpirun>
     <module_system type="soft">
@@ -1562,7 +1562,7 @@
         <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
         <arg name="num_tasks" > -n $TOTALPES</arg>
         <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-        <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
+        <arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
         <arg name="numa_node" > -cc numa_node </arg>
 	-->
 	<arg name="aprun"> {{ aprun }}</arg>
@@ -1727,7 +1727,7 @@
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
              <arg name="num_tasks" > -n $TOTALPES</arg>
              <arg name="tasks_per_node" > -N $PES_PER_NODE</arg>
-             <arg name="thread_count" > -d $OMP_NUM_THREADS</arg>
+             <arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
              <arg name="numa_node" > -cc numa_node</arg>
            </arguments>
          </mpirun>
@@ -2085,7 +2085,7 @@
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-                <arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
+                <arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
              </arguments>
          </mpirun>
 </machine>
@@ -2124,7 +2124,7 @@
                 <arg name="num_tasks"> -n $TOTALPES</arg>
                 <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
                 <arg name="tasks_per_node"> -N $PES_PER_NODE</arg>
-                <arg name="thread_count"> -d $OMP_NUM_THREADS</arg>
+                <arg name="thread_count"> -d $ENV{OMP_NUM_THREADS}</arg>
              </arguments>
          </mpirun>
 </machine>
