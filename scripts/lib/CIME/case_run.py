@@ -121,7 +121,7 @@ def _run_model_impl(case, lid):
                         case_st_archive(case, no_resubmit=True)
                         restore_from_archive(case)
 
-                        orig_cont = case.set_value("CONTINUE_RUN")
+                        orig_cont = case.get_value("CONTINUE_RUN")
                         if not orig_cont:
                             case.set_value("CONTINUE_RUN", True)
                             create_namelists(case)
@@ -138,6 +138,8 @@ def _run_model_impl(case, lid):
     logger.info("%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     post_run_check(case, lid)
+
+    return lid
 
 ###############################################################################
 def run_model(case, lid):
@@ -159,7 +161,7 @@ def post_run_check(case, lid):
     if not os.path.isfile(model_logfile):
         expect(False, "Model did not complete, no %s log file " % model_logfile)
     elif not os.path.isfile(cpl_logfile):
-        expect(False, "Model did not complete, no cpl log file")
+        expect(False, "Model did not complete, no cpl log file '%s'" % cpl_logfile)
     elif os.stat(model_logfile).st_size == 0:
         expect(False, "Run FAILED")
     else:
@@ -250,7 +252,7 @@ def case_run(case):
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
 
-        run_model(case, lid)
+        lid = run_model(case, lid)
         save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script

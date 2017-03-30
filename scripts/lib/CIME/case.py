@@ -95,7 +95,6 @@ class Case(object):
         self._component_classes = []
         self._is_env_loaded = False
 
-
         self.thread_count = None
         self.tasks_per_node = None
         self.num_nodes = None
@@ -104,7 +103,6 @@ class Case(object):
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
             self.initialize_derived_attributes()
-
 
     def check_if_comp_var(self, vid):
         vid = vid

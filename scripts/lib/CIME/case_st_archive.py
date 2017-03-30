@@ -360,7 +360,7 @@ def restore_from_archive(case):
     """
     dout_sr = case.get_value("DOUT_S_ROOT")
     rundir = case.get_value("RUNDIR")
-    most_recent_rest = run_cmd_no_fail(r'ls -1dt %s/rest/* | head -1"' % dout_sr)
+    most_recent_rest = run_cmd_no_fail("ls -1dt %s/rest/* | head -1" % dout_sr)
 
     for item in glob.glob("%s/*" % most_recent_rest):
         base = os.path.basename(item)
@@ -368,10 +368,7 @@ def restore_from_archive(case):
         if os.path.exists(dst):
             os.remove(dst)
 
-        if "rpointer" in base:
-            shutil.copy(item, rundir)
-        else:
-            os.symlink(item, dst)
+        shutil.copy(item, rundir)
 
 ###############################################################################
 def case_st_archive(case, no_resubmit=False):
