@@ -1841,7 +1841,6 @@
 		</modules>
 	</module_system>
 	<environment_variables>
-		<env name="LD_LIBRARY_PATH">$LD_LIBRARY_PATH:$NETCDF_ROOT/lib</env>
 		<env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable</env>
 	</environment_variables>
 
