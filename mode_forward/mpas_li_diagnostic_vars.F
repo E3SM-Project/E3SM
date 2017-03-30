@@ -173,10 +173,10 @@ contains
             err = ior(err, err_tmp)
 
          endif   ! sia
-         ! (HO dissipation is calculated within dycore)
+         ! (FO dissipation is calculated within dycore)
 
          ! Compute heat flux due to basal friction
-         !   appropriate for SIA or HO dycore, assuming Taub=beta*ub
+         !   appropriate for SIA or FO dycore, assuming Taub=beta*ub
          call li_basal_friction(domain, err_tmp)
          err = ior(err, err_tmp)
 

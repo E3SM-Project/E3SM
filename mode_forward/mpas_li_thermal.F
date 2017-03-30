@@ -1536,16 +1536,19 @@ module li_thermal
         
         if (config_print_thermal_info) then
            write(stdoutUnit,*) 'Compute SIA heat dissipation'
+           if (maxval(thickness) == 0.0_RKIND) then
+              return ! no thicknessm so just return
+           endif
         endif
 
         ! compute the heat dissipation on edges
         
         do iEdge = 1, nEdges
-           
+
            ! identify the cells on this edge
            iCell1 = cellsOnEdge(1,iEdge)
            iCell2 = cellsOnEdge(2,iEdge)
-           
+
            if (iCell1 >= 1 .and. iCell1 <= nCells .and. iCell2 >= 1 .and. iCell2 <= nCells) then  ! both cells exist
 
               ! average the thickness and flow parameter to the edge
