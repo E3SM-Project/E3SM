@@ -414,7 +414,7 @@ class Grids(GenericXML):
             self._print_values_v2(long_output=long_output)
 
     def _print_values_v2(self, long_output=None):
-        
+
         logger.info("%5s-------------------------------------------------------------" %(""))
         logger.info("%10s  default component grids:\n" %(""))
         logger.info("     component         compset       value " )
@@ -428,7 +428,7 @@ class Grids(GenericXML):
                 value = grid_node.text
                 logger.info("     %6s   %15s   %10s" %(name, compset, value))
         logger.info("%5s-------------------------------------------------------------" %(""))
-                       
+
         domains = {}
         if long_output is not None:
             domain_nodes = self.get_nodes(nodename="domain")
@@ -436,8 +436,6 @@ class Grids(GenericXML):
                 name = domain_node.get("name")
                 if name == 'null':
                     continue
-                nx = self.get_node("nx", root=domain_node).text
-                ny = self.get_node("ny", root=domain_node).text
                 desc = self.get_node("desc", root=domain_node).text
                 #support = self.get_optional_node("support", root=domain_node).text
                 files = ""
@@ -476,7 +474,7 @@ class Grids(GenericXML):
             gridnames = []
             for grid_node in grid_nodes:
                 gridnames.append(grid_node.text)
-                grids += grid_node.get("name") + ":" + grid_node.text + "  " 
+                grids += grid_node.get("name") + ":" + grid_node.text + "  "
             logger.info("       non-default grids are: %s" %grids)
             mask_nodes = self.get_nodes("mask", root=model_grid_node)
             for mask_node in mask_nodes:
