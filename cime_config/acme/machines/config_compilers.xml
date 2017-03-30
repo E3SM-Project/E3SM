@@ -1075,22 +1075,6 @@ for mct, etc.
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
 </compiler>
 
-<compiler COMPILER="intel" MACH="sooty">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH> $(NETCDF)</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lpmi </SLIBS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
 
 <compiler COMPILER="pgi" MACH="sooty">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
@@ -1101,6 +1085,20 @@ for mct, etc.
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
 </compiler>
+
+<compiler MACH="sooty" COMPILER="intel">
+  <ADD_CFLAGS> -std=c99 </ADD_CFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_CPPDEFS> -DLINUX -DCPRINTEL </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <NETCDF_PATH>$(NETCDF_PATH)</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKLROOT) -lmkl_rt</SLIBS>
+</compiler>
+
+
 
 <compiler COMPILER="intel" MACH="cascade">
   <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
