@@ -92,7 +92,7 @@ class Compsets(GenericXML):
         compsets_text = self.get_value("names")
         for v in compsets_text.iteritems():
             label, definition = v
-            all_compsets[label] = (help_text, definition)
+            all_compsets[label] = definition
 
-        return all_compsets
+        return help_text, all_compsets
 

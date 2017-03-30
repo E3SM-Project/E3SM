@@ -487,6 +487,8 @@ class Grids(GenericXML):
                     if gridname != "null":
                         logger.info ("    %s" %(domains[gridname]))
 
+
+
     def _print_values_v1(self, long_output=None):
         # write out grid elements
         grid_nodes = self.get_nodes(nodename="grid")
@@ -532,3 +534,158 @@ class Grids(GenericXML):
                 logger.info("   ")
 
                 # write out XROT_FLOOD_MODE element TODO: (why is this in there???)
+
+
+    def _get_all_values_v1(self):
+        # return a list of grid elements in long form
+        grid_list = list()
+        default_comp_grids = list()
+
+        grid_nodes = self.get_nodes(nodename="grid")
+        for grid_node in grid_nodes:
+            grid_info = dict()
+            lname = self.get_element_text("lname",root=grid_node)
+            sname = self.get_element_text("sname",root=grid_node)
+            alias = self.get_element_text("alias",root=grid_node)
+            grid_info = {
+                "lname" : lname,
+                "sname" : sname,
+                "alias" : alias,
+                }
+            compset_list = list()
+            for attr, value in grid_node.items():
+                if  attr == 'compset':
+                    compset_list.append(value)
+
+            grid_info.update({'compsets': compset_list})
+
+            # add domain description and mapping fiels
+            # get component grids (will contain duplicates)
+            component_grids = self._get_component_grids(lname)
+
+            # write out out only unique non-null component grids
+            for domain in list(set(component_grids)):
+                if domain != 'null':
+                    domain_list = list()
+                    domain_node = self.get_node(nodename="domain", attributes={"name":domain})
+                    for child in domain_node:
+                        domain_list.append({'domain':child.tag, 'text':child.text})
+
+            grid_info.update({'domains': domain_list})
+                        
+            # add mapping files
+            grids = [ ("atm_grid", component_grids[0]), ("lnd_grid", component_grids[1]), ("ocn_grid", component_grids[2]), \
+                          ("rof_grid", component_grids[3]), ("glc_grid", component_grids[5]), ("wav_grid", component_grids[6]) ]
+
+            for idx, grid in enumerate(grids):
+                map_list = list()
+                for other_grid in grids[idx+1:]:
+                    nodes = self.get_nodes(nodename="gridmap", attributes={grid[0]:grid[1], other_grid[0]:other_grid[1]})
+                    for gridmap_node in nodes:
+                        for child in gridmap_node:
+                            map_list.append({'map':child.tag, 'file':child.text})
+
+            grid_info.update({'maps': map_list})
+
+            grid_list.append(grid_info)
+
+        return default_comp_grids, grid_list
+
+
+    def _get_all_values_v2(self):
+
+        default_comp_grids = list()
+        grid_list = list()
+
+        default_nodes = self.get_nodes(nodename="model_grid_defaults")
+        for default_node in default_nodes:
+            grid_nodes = self.get_nodes(nodename="grid", root=default_node)
+            for grid_node in grid_nodes:
+                name = grid_node.get("name")
+                compset = grid_node.get("compset")
+                value = grid_node.text
+                default_comp_grids.append({'component':name,
+                                           'compset':compset,
+                                           'value':value,})
+                
+        domains = {}
+
+        domain_nodes = self.get_nodes(nodename="domain")
+        for domain_node in domain_nodes:
+            name = domain_node.get("name")
+            if name == 'null':
+                continue
+            nx = self.get_node("nx", root=domain_node).text
+            ny = self.get_node("ny", root=domain_node).text
+            desc = self.get_node("desc", root=domain_node).text
+            ##support = self.get_optional_node("support", root=domain_node).text
+            files = ""
+            file_nodes = self.get_nodes("file", root=domain_node)
+            for file_node in file_nodes:
+                filename = file_node.text
+                mask_attrib = file_node.get("mask")
+                grid_attrib = file_node.get("grid")
+                files += "\n       " + filename
+                if mask_attrib or grid_attrib:
+                    files += " (only for"
+                if mask_attrib:
+                    files += " mask: " + mask_attrib
+                if grid_attrib:
+                    files += " grid match: " + grid_attrib
+                if mask_attrib or grid_attrib:
+                    files += ")"
+            domains[name] = "\n       %s with domain file(s): %s " %(desc, files)
+
+        grids_dict = dict()
+        model_grid_nodes = self.get_nodes(nodename="model_grid")
+        for model_grid_node in model_grid_nodes:
+            alias = model_grid_node.get("alias")
+            compset = model_grid_node.get("compset")
+            not_compset = model_grid_node.get("not_compset")
+            restriction = ""
+            if compset:
+                restriction += "only for compsets that are %s " %compset
+            if not_compset:
+                restriction += "only for compsets that are not %s " %not_compset
+            if restriction:
+                aliases = "\n     alias: %s (%s)" % (alias,restriction)
+            else:
+                aliases = "\n     alias: %s" % (alias)
+
+            grid_nodes = self.get_nodes("grid", root=model_grid_node)
+            grids = ""
+            gridnames = []
+            for grid_node in grid_nodes:
+                gridnames.append(grid_node.text)
+                grids += grid_node.get("name") + ":" + grid_node.text + "  " 
+            grids = "       non-default grids are: %s" %grids
+
+            mask = ""
+            mask_nodes = self.get_nodes("mask", root=model_grid_node)
+            for mask_node in mask_nodes:
+                mask += "\n       mask is: %s" %(mask_node.text)
+            
+            grids_dict[alias] = {'aliases':aliases, 
+                                 'grids':grids, 
+                                 'mask':mask }
+
+            gridnames = set(gridnames)
+            for gridname in gridnames:
+                if gridname != "null":
+                    grid_list.append({gridname:(grids_dict[alias], domains[gridname])})
+
+        return default_comp_grids, grid_list
+
+
+    def return_all_values(self):
+        # parse grid data and return a dictionary
+        help_text = self.get_element_text("help")
+
+        # get a list of grid dictionaries
+        if self._version == 1.0:
+            (default_comp_grids, all_grids) = self._get_all_values_v1()
+        elif self._version >= 2.0:
+            (default_comp_grids, all_grids) = self._get_all_values_v2()
+
+        return help_text, default_comp_grids, all_grids
+
