@@ -276,7 +276,8 @@
 
   <batch_system MACH="grizzly" type="moab" >
     <directives>
-      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+	    <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+	    <directive>-l qos=standard </directive>
     </directives>
         <queues>
            <queue walltimemax="16:00:00" default="true">moab</queue>
