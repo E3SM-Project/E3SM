@@ -1193,26 +1193,78 @@
 </machine>
 
 <machine MACH="sooty">
-         <DESC>PNL cluster, os is Linux (pgi,intel,nag), batch system is SLURM</DESC>
-         <NODENAME_REGEX>sooty</NODENAME_REGEX>
-         <TESTS>acme_developer</TESTS>
-         <OS>LINUX</OS>
-         <COMPILERS>pgi,intel</COMPILERS>
-         <MPILIBS>mvapich2</MPILIBS>
-         <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
-         <EXEROOT>/lustre/$USER/csmruns/$CASE/bld</EXEROOT>
-         <CIME_OUTPUT_ROOT>/lustre/$USER/csmruns/</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/lustre/sing201/DATASETS/CAM/InitialCondFilesCam/FromMythos1/CSMDATA_CAM/aerocom/csmdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/lustre/sing201/DATASETS/CAM/InitialCondFilesCam/FromMythos1/CSMDATA_CAM/aerocom/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/UNSET_BASELINE</BASELINE_ROOT>
-         <CCSM_CPRNC>/lustre/sing201/CAM/netcdfComp_cprnc/cprnc/cprnc</CCSM_CPRNC>
-	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-         <SUPPORTED_BY>balwinder.singh at pnnl dot gov</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
-</machine>
+    <DESC>PNL cluster, OS is Linux, batch system is SLURM</DESC>
+    <NODENAME_REGEX>sooty</NODENAME_REGEX>
+    <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
+    <EXEROOT>/lustre/$USER/csmruns/$CASE/bld</EXEROOT>
+    <CESMSCRATCHROOT>/lustre/$USER/</CESMSCRATCHROOT>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,pgi</COMPILERS>
+    <MPILIBS>mvapich2</MPILIBS>
+    <CIME_OUTPUT_ROOT>/lustre/$USER/cime_output_root</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lustre/climate/csmdata/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+    <BASELINE_ROOT>/lustre/climate/acme_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/lustre/climate/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
+    <SAVE_TIMING_DIR>/lustre/climate/timing_acme</SAVE_TIMING_DIR>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>8</PES_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="mpi-serial">
+      <executable/>
+    </mpirun>
+    <mpirun mpilib="mvapich2">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi">--mpi=none</arg>
+        <arg name="num_tasks">--ntasks=$TOTALPES</arg>
+        <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
+        <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/share/apps/modules/Modules/3.2.10/init/perl.pm</init_path>
+      <init_path lang="python">/share/apps/modules/Modules/3.2.10/init/python.py</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <cmd_path lang="perl">/share/apps/modules/Modules/3.2.10/bin/modulecmd perl </cmd_path>
+      <cmd_path lang="python">/share/apps/modules/Modules/3.2.10/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+      </modules>
+      <modules>
+        <command name="load">perl/5.20.0</command>
+        <command name="load">cmake/3.3.0</command>
+        <command name="load">python/2.7.8</command>
+	    <command name="load">svn/1.8.13</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">intel/15.0.1</command>
+        <command name="load">mkl/15.0.1</command>
+      </modules>
+      <modules compiler="pgi">
+        <command name="load">pgi/14.10</command>
+      </modules>
+      <modules mpilib="mvapich2">
+        <command name="load">mvapich2/2.1</command>
+      </modules>
+      <modules>
+        <command name="load">netcdf/4.3.2</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="MKLROOT">$ENV{MKLROOT} </env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+  </machine>
 
 <machine MACH="cascade">
          <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>
