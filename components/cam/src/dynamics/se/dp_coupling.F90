@@ -440,11 +440,11 @@ CONTAINS
        call t_startf('putUniquePoints')
        do ie=1,nelemd
           ncols = elem(ie)%idxP%NumUniquePts
-          call putUniquePoints(elem(ie)%idxP, nlev, T_tmp(1:ncols,:,ie), elem(ie)%derived%fT(:,:,:,1))
+          call putUniquePoints(elem(ie)%idxP, nlev, T_tmp(1:ncols,:,ie), elem(ie)%derived%fT(:,:,:))
           call putUniquePoints(elem(ie)%idxP, 2, nlev, uv_tmp(1:ncols,:,:,ie), &
-               elem(ie)%derived%fM(:,:,:,:,1))
+               elem(ie)%derived%fM(:,:,:,:))
           call putUniquePoints(elem(ie)%idxP, nlev,pcnst, q_tmp(1:ncols,:,:,ie), &
-               elem(ie)%derived%fQ(:,:,:,:,1))
+               elem(ie)%derived%fQ(:,:,:,:))
        end do
        call t_stopf('putUniquePoints')
     end if

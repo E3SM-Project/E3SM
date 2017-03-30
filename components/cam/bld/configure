@@ -2782,9 +2782,14 @@ sub write_filepath
 	    print $fh "$camsrcdir/homme/src/share\n";
       if ($opts{'dyn_target'} eq 'preqx') {
 	      print $fh "$camsrcdir/homme/src/preqx\n";
+        print $fh "$camsrcdir/homme/src/share/sb81\n";
       } 
       elsif($opts{'dyn_target'} eq 'preqx_acc') {
 	      print $fh "$camsrcdir/homme/src/preqx_acc\n";
+        print $fh "$camsrcdir/homme/src/share/sb81\n";
+      }
+      elsif($opts{'dyn_target'} eq 'pese') {
+	      print $fh "$camsrcdir/homme/src/pese\n";
       }
     }
 

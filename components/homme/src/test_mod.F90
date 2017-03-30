@@ -100,11 +100,12 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
 end subroutine
 
 !_______________________________________________________________________
-subroutine apply_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
+subroutine compute_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
 
   ! apply forcing terms produced by HOMME stand-alone tests
 
   use dcmip_tests, only:  dcmip2012_test2_x_forcing
+  use held_suarez_mod, only: hs_forcing
   implicit none
   type(element_t),  intent(inout) :: elem(:)                            ! element array
   type(hybrid_t),   intent(in)    :: hybrid                             ! hybrid parallel structure
@@ -112,27 +113,23 @@ subroutine apply_test_forcing(elem,hybrid,hvcoord,n,n_tracer,dt,nets,nete)
   real(kind=rl),    intent(in)    :: dt
   integer,          intent(in)    :: n,nets,nete,n_tracer
 
-  integer :: ie
+  integer :: ie,q
 
   do ie=nets,nete
     elem(ie)%derived%FT = 0
     elem(ie)%derived%FM = 0
+    elem(ie)%derived%FQ = 0
   enddo
 
   ! get forcing from test case
   select case(test_case)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x_forcing(elem, hybrid,hvcoord,nets,nete,n,dt)
+    case('held_suarez0');       
+       do ie=nets,nete
+          call hs_forcing(elem(ie),hvcoord,n,n_tracer,dt)
+       enddo
   endselect
-
-  do ie=nets,nete
-
-    ! apply dynamics forcing
-    elem(ie)%state%T(:,:,:,  n) = elem(ie)%state%T(:,:,:,  n) + dt * elem(ie)%derived%FT(:,:,:,  n)
-    elem(ie)%state%v(:,:,:,:,n) = elem(ie)%state%v(:,:,:,:,n) + dt * elem(ie)%derived%FM(:,:,:,:,n)
-
-    ! apply tracer forcing (todo)
-  enddo
 
 end subroutine
 

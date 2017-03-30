@@ -28,7 +28,7 @@
 
   <entry id="CAM_TARGET">
          <type>char</type>
-         <valid_values>preqx,preqx_acc</valid_values>
+         <valid_values>preqx,preqx_acc,pese</valid_values>
          <default_value>preqx</default_value>
          <group>build_component_cam</group>
          <file>env_build.xml</file>

@@ -886,7 +886,7 @@ contains
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie),  &
-                        elem(ie)%derived%FM(:,:,:,:,tl%np1), nlev, var3d(st:en,:,:,1), 0)
+                        elem(ie)%derived%FM(:,:,:,:), nlev, var3d(st:en,:,:,1), 0)
                    st=st+interpdata(ie)%n_interp
                 enddo
 
