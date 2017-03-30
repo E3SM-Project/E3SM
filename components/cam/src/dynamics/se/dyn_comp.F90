@@ -149,6 +149,9 @@ CONTAINS
        write(iulog,*) "dyn_init1: number of OpenMP threads = ", nthreads
        write(iulog,*) " "
     endif
+#ifndef HORIZ_OPENMP
+    call endrun('Error: threaded runs require -DHORIZ_OPENMP')
+#endif
 #ifdef COLUMN_OPENMP
     call omp_set_nested(.true.)
     if (vthreads > nthreads .or. vthreads < 1) &
