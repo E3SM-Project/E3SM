@@ -67,7 +67,7 @@
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <OS>CNL</OS>
   <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-  <SUPPORTED_BY>cseg</SUPPORTED_BY>
+  <SUPPORTED_BY>acme</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
   <PES_PER_NODE>24</PES_PER_NODE>
@@ -123,18 +123,18 @@
     <modules compiler="intel">
       <command name="load">PrgEnv-intel</command>
       <command name="rm">intel</command>
-      <command name="load">intel/15.0.1.133</command>
+      <!--command name="load">intel/15.0.1.133</command-->
       <!--command name="load">intel/16.0.2.181</command-->
-      <!--command name="load">intel/17.0.0.098</command-->
+      <command name="load">intel/17.0.1.132</command>
       <command name="rm">cray-libsci</command>
     </modules>
     <modules compiler="cray">
       <command name="load">PrgEnv-cray</command>
-      <command name="switch">cce cce/8.4.3</command>
+      <command name="switch">cce cce/8.5.1</command>
     </modules>
     <modules compiler="gnu">
       <command name="load">PrgEnv-gnu</command>
-      <command name="switch">gcc gcc/5.1.0</command>
+      <command name="switch">gcc gcc/6.2.0</command>
     </modules>
     <modules compiler="!intel">
       <command name="switch">cray-libsci/16.07.1</command>
@@ -149,7 +149,8 @@
 
       <!--command name="load">cray-mpich/7.3.1</command  acme original  -->
       <!--command name="load">cray-mpich/7.4.1</command  edison default -->
-      <command name="load">cray-mpich/7.2.5</command>
+      <!--command name="load">cray-mpich/7.2.5</command-->
+      <command name="load">cray-mpich/7.5.1</command>
     </modules>
 
     <modules mpilib="mpi-serial">
@@ -162,9 +163,10 @@
       <command name="load">cray-parallel-netcdf/1.6.1</command>
     </modules>
     <modules>
-      <command name="load">papi/5.4.3.2</command>
+      <!--command name="load">papi/5.4.3.2</command-->
       <command name="load">perl/5.20.0</command>
       <command name="load">cmake/3.3.2</command>
+      <command name="load">git/2.4.6</command>
       <!--command name="load">cray-petsc/3.5.3.0</command-->
     </modules>
   </module_system>
@@ -172,7 +174,7 @@
   <environment_variables>
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
-    <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
 
     <env name="OMP_STACKSIZE">64M</env>
   </environment_variables>
