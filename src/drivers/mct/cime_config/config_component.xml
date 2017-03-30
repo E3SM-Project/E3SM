@@ -946,7 +946,7 @@
           USE_ESMF_LIB is TRUE. 
       ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
           all of the PETs. Not supported on some platforms.
-      ESMF_LOGKIND_MULTI: Use multiple log files — one per PET.
+      ESMF_LOGKIND_MULTI: Use multiple log files -- one per PET.
       ESMF_LOGKIND_NONE: Do not issue messages to a log file.
       By default, no ESMF log files are generated.
     </desc>
