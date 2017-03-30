@@ -412,7 +412,7 @@ contains
          thickness, bedTopography, lowerSurface, upperSurface, layerThicknessFractions, betaSolve, sfcMassBal
       real (kind=RKIND), dimension(:,:), pointer :: &
          normalVelocity, uReconstructX, uReconstructY, uReconstructZ
-      real (kind=RKIND), dimension(:,:), pointer :: temperature
+      real (kind=RKIND), dimension(:,:), pointer :: temperature, pmpTemperature
       real (kind=RKIND), pointer :: deltat
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
@@ -423,6 +423,8 @@ contains
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       integer, pointer :: nEdges
+      type (field2dReal), pointer :: correctedTemperatureField
+      real (kind=RKIND), dimension(:,:), pointer :: correctedTemperature  ! on cells
       type (field2dReal), pointer :: dissipationVertexField
       real (kind=RKIND), dimension(:,:), pointer :: heatDissipation  ! on cells
       integer :: iEdge
@@ -453,6 +455,7 @@ contains
 
       ! Thermal variables
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(thermalPool, 'pmpTemperature', pmpTemperature)
       call mpas_pool_get_array(thermalPool, 'heatDissipation', heatDissipation)
 
       ! Velocity variables
@@ -496,11 +499,20 @@ contains
       flush(stdoutUnit)  ! Flush log files before handing control to C++
       flush(stderrUnit)
 
+      ! Compute the corrected temperature, defined as min(0.0, T - Tpmp) + 273.15
+      ! Note: The corrected temperature is passed to the external dycore and used to compute flowParamA.
+      !       This assumes that there are no external calculation involving the true temperature, just the corrected temperature.
+
+      call mpas_pool_get_field(scratchPool, 'workLevelCell', correctedTemperatureField)
+      call mpas_allocate_scratch_field(correctedTemperatureField, .true.)
+      correctedTemperature => correctedTemperatureField % array
+      correctedTemperature = min(0.0_RKIND, temperature - pmpTemperature) + kelvin_to_celsius
+
       select case (config_velocity_solver)
       case ('L1L2') ! ===============================================
 #ifdef USE_EXTERNAL_L1L2
           call mpas_timer_start("velocity_solver_solve_L1L2")
-          call velocity_solver_solve_L1L2(lowerSurface, thickness, betaSolve, temperature, &
+          call velocity_solver_solve_L1L2(lowerSurface, thickness, betaSolve, correctedTemperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY)  ! return values
           call mpas_timer_stop("velocity_solver_solve_L1L2")
@@ -529,7 +541,7 @@ contains
 
           call mpas_timer_start("velocity_solver_solve_FO")
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
-                betaSolve, sfcMassBal, temperature, &
+                betaSolve, sfcMassBal, correctedTemperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, dissipationVertexField % array, uReconstructX, uReconstructY, deltat)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
@@ -537,6 +549,10 @@ contains
           ! Now interpolate from vertices to cell centers
           call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
           heatDissipation = heatDissipation / (config_ice_density * cp_ice)
+          !WHL - For debugging, I inserted a correction factor per Mauro's instructions.
+          !      Commented out for now.
+          !      Remove after verifying that heatDissipation has been fixed in Albany.
+!!!          heatDissipation = heatDissipation * 2.0_RKIND
           call mpas_deallocate_scratch_field(dissipationVertexField, .true.)
 
           if (config_output_external_velocity_solver_data) then
@@ -553,7 +569,7 @@ contains
       case ('Stokes') ! ===============================================
 #ifdef USE_EXTERNAL_STOKES
           call mpas_timer_start("velocity_solver_solve_stokes")
-          call velocity_solver_solve_stokes(lowerSurface, thickness, betaSolve, temperature, &
+          call velocity_solver_solve_stokes(lowerSurface, thickness, betaSolve, correctedTemperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, uReconstructZ)  ! return values
           uReconstructZ = uReconstructZ / (365.0*24.0*3600.0)  ! convert from m/yr to m/s
@@ -565,6 +581,9 @@ contains
 #endif
       end select
       write(stdoutUnit,*) "Completed velocity solve using external velocity solver."
+
+      ! deallocate corrected temperature field
+      call mpas_deallocate_scratch_field(correctedTemperatureField, .true.)
 
       ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
       normalVelocity = normalVelocity / secondsInYear
