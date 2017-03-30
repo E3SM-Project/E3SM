@@ -1793,7 +1793,7 @@
         <NODENAME_REGEX>gr-fe.*.lanl.gov</NODENAME_REGEX>
         <TESTS>acme_developer</TESTS>
         <COMPILERS>gnu,intel</COMPILERS>
-        <MPILIBS>openmpi</MPILIBS>
+        <MPILIBS>mvapich,openmpi</MPILIBS>
 	<OS>LINUX</OS>
 	<RUNDIR>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
 	<EXEROOT>/lustre/scratch3/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
@@ -1830,7 +1830,9 @@
 		<modules mpilib="openmpi">
 			<command name="load">openmpi/1.10.5</command>
 		</modules>
-
+		<modules mpilib="mvapich">
+			<command name="load">mvapich2/2.2</command>
+		</modules>
 		<modules>
 			<command name="load">netcdf/4.4.1</command>
 		</modules>
