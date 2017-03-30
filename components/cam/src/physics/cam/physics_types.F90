@@ -20,6 +20,7 @@ module physics_types
   private          ! Make default type private to the module
 
   logical, parameter :: adjust_te = .FALSE.
+  logical            :: pergro_test_active = .FALSE.
 
 ! Public types:
 
@@ -304,7 +305,9 @@ contains
     end if
 
     !-----------------------------------------------------------------------
-    call phys_getopts(state_debug_checks_out=state_debug_checks)
+    call phys_getopts(state_debug_checks_out=state_debug_checks, &
+         pergro_test_active_out   = pergro_test_active)
+
 
     ncol = state%ncol
 
@@ -454,24 +457,25 @@ contains
     deallocate(cpairv_loc, rairv_loc)
 
 
-    !BSINGH - for pergrow
-    
-    !BSINGH - Added these calls to output fields
-    str_T = 'T_'//trim(adjustl(ptend%name))
-    call outfld( trim(adjustl(str_T)), state%t, pcols, state%lchnk )
-    
-    str_S = 'S_'//trim(adjustl(ptend%name))
-    call outfld( trim(adjustl(str_S)), state%s, pcols, state%lchnk )
-    
-    !str_Stend = 'St_'//trim(adjustl(ptend%name))
-    !call outfld( trim(adjustl(str_Stend)), ptend%s, pcols, state%lchnk )
-    
-    str_QV = 'QV_'//trim(adjustl(ptend%name))
-    call outfld( trim(adjustl(str_QV)), state%q(:,:,1), pcols, state%lchnk )
-    
-    !str_QVtend = 'QVt_'//trim(adjustl(ptend%name))
-    !call outfld( trim(adjustl(str_QVtend)), ptend%q(:,:,1), pcols, state%lchnk )
-
+    if (pergro_test_active) then
+       !BSINGH - for pergrow
+       
+       !BSINGH - Added these calls to output fields
+       str_T = 'T_'//trim(adjustl(ptend%name))
+       call outfld( trim(adjustl(str_T)), state%t, pcols, state%lchnk )
+       
+       str_S = 'S_'//trim(adjustl(ptend%name))
+       call outfld( trim(adjustl(str_S)), state%s, pcols, state%lchnk )
+       
+       !str_Stend = 'St_'//trim(adjustl(ptend%name))
+       !call outfld( trim(adjustl(str_Stend)), ptend%s, pcols, state%lchnk )
+       
+       str_QV = 'QV_'//trim(adjustl(ptend%name))
+       call outfld( trim(adjustl(str_QV)), state%q(:,:,1), pcols, state%lchnk )
+       
+       !str_QVtend = 'QVt_'//trim(adjustl(ptend%name))
+       !call outfld( trim(adjustl(str_QVtend)), ptend%q(:,:,1), pcols, state%lchnk )
+    endif
 
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)

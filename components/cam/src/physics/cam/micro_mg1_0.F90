@@ -66,7 +66,7 @@ public :: &
      micro_mg_tend
 
 integer, parameter :: r8 = selected_real_kind(12)      ! 8 byte real
-logical            :: pergro = .false.
+logical            :: pergro_mods = .false.
 
 logical  :: dcs_tdep
 
@@ -193,7 +193,7 @@ real(r8) surften       ! surface tension of water w/respect to air (N/m)
 real(r8) arg
 !-----------------------------------------------------------------------
 
-call phys_getopts(pergro_out=pergro)
+call phys_getopts(pergro_mods_out=pergro_mods)
 errstring = ' '
 
 if( kind .ne. r8 ) then
@@ -301,7 +301,7 @@ Dcs = micro_mg_dcs
 dcs_tdep = micro_mg_dcs_tdep
 
 ! smallest mixing ratio considered in microphysics
-if(pergro) then
+if(pergro_mods) then
    qsmall = 1.e-8_r8   !1.e-18_r8  !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
 else
    qsmall = 1.e-18_r8
@@ -1101,7 +1101,7 @@ do k=top_lev,pver
 
       icldm(i,k)=max(icecldf(i,k),mincld)
       lcldm(i,k)=max(liqcldf(i,k),mincld)
-      if(pergro) then
+      if(pergro_mods) then
          !pjr - BSINGH - Added by phil as a temporary solution to avoid temprature jump         
          if (cldm(i,k).gt.0.9999999_r8) cldm(i,k) = 0.9999999_r8 !BSINGH
       endif

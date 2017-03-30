@@ -38,7 +38,7 @@ integer :: dgnumwet_idx   = 0
 integer :: wetdens_ap_idx = 0
 integer :: qaerwat_idx    = 0
 
-logical :: pergro         = .false.
+logical :: pergro_mods         = .false.
 !===============================================================================
 contains
 !===============================================================================
@@ -85,7 +85,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
                      history_verbose_out = history_verbose, &
-                     pergro_out = pergro)
+                     pergro_mods_out = pergro_mods)
 
    do m = 1, nmodes
       write(trnum, '(i3.3)') m
@@ -351,7 +351,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          endif
          rh(i,k) = max(rh(i,k), 0.0_r8)
          rh(i,k) = min(rh(i,k), 0.98_r8)
-         if(pergro) then
+         if(pergro_mods) then
             cldn_thresh = 0.9998_r8
          else			
             cldn_thresh = 1.0_r8
