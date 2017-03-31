@@ -793,7 +793,7 @@ contains
   real (kind=real_kind) :: vtens1(np,np,nlev)
   real (kind=real_kind) :: vtens2(np,np,nlev)
   real (kind=real_kind) :: v_vadv(np,np,2,nlev)   ! velocity vertical advection
-  real (kind=real_kind) :: s_state(np,np,nlev,3)  ! scalars w,theta,phi
+  real (kind=real_kind) :: s_state(np,np,nlev,2)  ! scalars w,theta,phi
   real (kind=real_kind) :: s_vadv(np,np,nlev,3)   ! scalar vertical advection 
   real (kind=real_kind) :: s_theta_dp_cpadv(np,np,nlev)
   real (kind=real_kind) :: stens(np,np,nlev,3)    ! tendencies w,theta,phi
@@ -904,10 +904,9 @@ contains
         ! ==============================================
         ! TODO: remove theta from s_state and s_vadv
         s_state(:,:,:,1)=elem(ie)%state%w(:,:,:,n0)
-        s_state(:,:,:,2)=elem(ie)%state%theta_dp_cp(:,:,:,n0)
-        s_state(:,:,:,3)=elem(ie)%state%phi(:,:,:,n0)
-        call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
-        !call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,2,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
+        s_state(:,:,:,2)=elem(ie)%state%phi(:,:,:,n0)
+        call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,2,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
+        !call preq_vertadv_v(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
         !call preq_vertadv_upwind(elem(ie)%state%v(:,:,:,:,n0),s_state,3,eta_dot_dpdn,dp3d,v_vadv,s_vadv)
 
         !    this loop constructs d( eta-dot * theta_dp_cp)/deta
@@ -973,7 +972,7 @@ contains
         v_gradphi(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*gradphi(:,:,1,k) &
              +elem(ie)%state%v(:,:,2,k,n0)*gradphi(:,:,2,k) 
         ! use of s_vadv(:,:,k,2) here is correct since this corresponds to etadot d(phi)/deta
-        stens(:,:,k,3) =  -s_vadv(:,:,k,3) - v_gradphi(:,:,k) + g*elem(ie)%state%w(:,:,k,n0)
+        stens(:,:,k,3) =  -s_vadv(:,:,k,2) - v_gradphi(:,:,k) + g*elem(ie)%state%w(:,:,k,n0)
 
         do j=1,np
            do i=1,np
