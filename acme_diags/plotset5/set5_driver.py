@@ -21,6 +21,8 @@ from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of 
     parameters in a json and an original parameter """
+
+    #f_data = open('set5_diags_AMWG_default.json').read()
     #f_data = open('set5_diags_AMWG_default.json').read()
     #f_data = open('set5_diags_WHOI.json').read()
     #f_data = open('set5_diags_MERRA_domains.json').read()
@@ -30,6 +32,15 @@ def make_parameters(orginal_parameter):
     f_data = open('set5_diags_GPCP.json').read()
     json_file = json.loads(f_data)
 
+    # add the custom_diags to the main default diags file
+    if hasattr(original_parameter, 'custom_diags'):
+        f_data = open(original_parameter.custom_diags).read()
+        custom_json_data = json.loads(f_data)
+
+        for key in custom_json_data:
+            for single_run in custom_json_data[key]:
+                json_file['set5'].append(single_run)
+
     parameters = []
     for key in json_file:
         for single_run in json_file[key]:
@@ -38,7 +49,6 @@ def make_parameters(orginal_parameter):
             for attr_name in single_run:
                 setattr(p, attr_name, single_run[attr_name])
             # Add attributes of original_parameter to p
-            print orginal_parameter.__dict__
             p.__dict__.update(orginal_parameter.__dict__)
             parameters.append(p)
     return parameters
@@ -168,19 +178,25 @@ for parameter in parameters:
     ref_name = parameter.ref_name
     test_name = parameter.test_name
     regions = parameter.region
-    #domain = regions_specs[region]
 
     for season in seasons:
-        test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
-        for filename in fnmatch.filter(test_files, '*'+season+'*'):
-            print filename
-            filename1 = filename
+        if hasattr(parameter, 'test_path'):
+            filename1 = parameter.test_path
+            print filename1
+        else:
+            test_files = glob.glob(os.path.join(test_data_path,'*'+test_name+'*.nc'))
+            for filename in fnmatch.filter(test_files, '*'+season+'*'):
+                print filename
+                filename1 = filename
 
-        ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
-        #for filename in fnmatch.filter(ref_files, '*'+season+'*'):
-        for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+season+'*'):
-            print filename
-            filename2 = filename
+        if hasattr(parameter, 'reference_path'):
+            filename2 = parameter.reference_path
+            print filename2
+        else:
+            ref_files = glob.glob(os.path.join(reference_data_path,'*'+ref_name+'*.nc'))
+            for filename in fnmatch.filter(ref_files, '*'+ref_name+'_'+season+'*'):
+                print filename
+                filename2 = filename
 
         f_mod = cdms2.open(filename1)
         f_obs = cdms2.open(filename2)
@@ -268,7 +284,10 @@ for parameter in parameters:
 
                 diff = mv1_reg - mv2_reg
                 metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-                acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                if hasattr(parameter, 'plot'):
+                    parameter.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                else:
+                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
@@ -373,7 +392,11 @@ for parameter in parameters:
                     # Plotting
                     diff = mv1_reg - mv2_reg
                     metrics_dict = create_metrics(mv2_domain, mv1_domain, mv2_reg, mv1_reg, diff)
-                    acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+
+                    if hasattr(parameter, 'plot'):
+                        parameter.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                    else:
+                        acme_diags.plotting.set5.plot.plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
                     if season is seasons[0]:
                         viewer.add_row('%s %s %s' % (var,str(int(plev[ilev]))+'mb',region))

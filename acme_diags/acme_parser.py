@@ -12,6 +12,14 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
         super(ACMEParser, self).load_default_args()
 
         self.add_argument(
+            '-c',
+            type=str,
+            dest='custom_diags',
+            help='Path to a json that contains a list of custom diags, which' + 
+            ' get appended to the default diags.',
+            required=False)
+
+        self.add_argument(
             '-r', '--reference_data_set',
             type=str,
             dest='reference_data_set',
