@@ -1,5 +1,6 @@
 from numbers import Number
-from unidata import udunits
+#from unidata import udunits
+from genutil import udunits
 import cdms2
 import copy
 
