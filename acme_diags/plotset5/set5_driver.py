@@ -28,8 +28,8 @@ def make_parameters(orginal_parameter):
     #f_data = open('set5_diags_MERRA_domains.json').read()
     #f_data = open('set5_diags_HadISST.json').read()
     #f_data = open('set5_diags_JRA25.json').read()
-    #f_data = open('set5_diags_CRU.json').read()
-    f_data = open('set5_diags_GPCP.json').read()
+    f_data = open('set5_diags_CRU.json').read()
+    #f_data = open('set5_diags_GPCP.json').read()
     json_file = json.loads(f_data)
 
     # add the custom_diags to the main default diags file
