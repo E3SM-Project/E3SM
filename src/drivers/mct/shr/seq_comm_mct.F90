@@ -20,6 +20,8 @@ module seq_comm_mct
   use shr_sys_mod , only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
   use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
+  use esmf        , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
+  use esmf        , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
 
   implicit none
 
@@ -145,7 +147,10 @@ module seq_comm_mct
   integer, public :: CPLWAVID(num_inst_wav)
   integer, public :: CPLESPID(num_inst_esp)
 
+  type(ESMF_LogKind_Flag), public :: esmf_logfile_kind
+
   integer, parameter, public :: seq_comm_namelen=16
+
   type seq_comm_type
     character(len=seq_comm_namelen) :: name     ! my name
     character(len=seq_comm_namelen) :: suffix   ! recommended suffix
@@ -236,6 +241,8 @@ contains
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
+    character(len=24) :: esmf_logging
+
     namelist /ccsm_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
          lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, lnd_layout, &
@@ -245,7 +252,7 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads 
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, esmf_logging
     !----------------------------------------------------------
 
     ! make sure this is first pass and set comms unset
@@ -351,6 +358,8 @@ contains
        cpl_rootpe = 0
        cpl_pestride = 1
        cpl_nthreads = 1
+
+       esmf_logging = 'unset'
 
        ! Read namelist if it exists
 
@@ -889,6 +898,30 @@ contains
     call mct_world_init(ncomps, GLOBAL_COMM, comms, comps)
 
     deallocate(comps,comms)
+
+    ! ESMF logging (only has effect if ESMF libraries are used)
+    if (mype == 0) then
+       if (esmf_logging == 'unset') then
+          write(logunit,*) trim(subname),' ERROR: esmf_logging not set'
+          call shr_sys_abort(trim(subname)//' ERROR: esmf_logging not set')
+       endif
+    endif
+
+    call mpi_bcast(esmf_logging, len(esmf_logging), MPI_CHARACTER, 0, GLOBAL_COMM, ierr)
+
+    select case(esmf_logging)
+    case ("ESMF_LOGKIND_SINGLE")
+       esmf_logfile_kind = ESMF_LOGKIND_SINGLE
+    case ("ESMF_LOGKIND_MULTI")
+       esmf_logfile_kind = ESMF_LOGKIND_MULTI
+    case ("ESMF_LOGKIND_NONE")
+       esmf_logfile_kind = ESMF_LOGKIND_NONE
+    case default
+       if (mype == 0) then
+          write(logunit,*) trim(subname),' ERROR: Invalid value for esmf_logging, ',esmf_logging
+       endif
+       call shr_sys_abort(trim(subname)//' ERROR: Invalid value for esmf_logging '//esmf_logging)
+    end select
 
     call seq_comm_printcomms()
 
