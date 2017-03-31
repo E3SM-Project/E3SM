@@ -29,7 +29,7 @@ module li_time_integration_fe
    use mpas_vector_reconstruction
    use li_advection
    use li_calving, only: li_calve_ice, li_restore_calving_front
-   use li_thermal, only: li_thermal_solver
+   use li_thermal, only: li_thermal_solver, li_basal_melt_floating_ice
    use li_diagnostic_vars
    use li_setup
 
@@ -125,11 +125,17 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("advection prep")
 
+! === Basal melting for floating ice ===========
+      call mpas_timer_start("basal melting for floating ice")
+      call li_basal_melt_floating_ice(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("basal melting for floating ice")
+
 ! === Implicit column physics (vertical temperature diffusion) ===========
-      call mpas_timer_start("calculate vertical therm")
+      call mpas_timer_start("vertical therm")
       call li_thermal_solver(domain, err_tmp)
       err = ior(err, err_tmp)
-      call mpas_timer_stop("calculate vertical therm")
+      call mpas_timer_stop("vertical therm")
 
 ! === Compute new state for prognostic variables ==================================
       call mpas_timer_start("advect thickness and tracers")

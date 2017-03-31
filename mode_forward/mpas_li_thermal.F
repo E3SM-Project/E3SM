@@ -50,8 +50,8 @@ module li_thermal
              li_init_linear_temperature_in_column,  &
              li_heat_dissipation_sia, li_basal_friction,  &
              li_temperature_to_enthalpy, li_enthalpy_to_temperature, &
-             li_compute_pressure_melting_point_fields
-
+             li_compute_pressure_melting_point_fields, &
+             li_basal_melt_floating_ice
 
    !--------------------------------------------------------------------
    !
@@ -649,14 +649,11 @@ module li_thermal
            config_print_thermal_info   ! if true, print debug info
 
       character(len=StrKIND), pointer :: &
-           config_thermal_solver,    & ! option for thermal solver
-           config_basal_mass_bal_float ! option for basal mass balance of floating ice
+           config_thermal_solver       ! option for thermal solver
 
       real(kind=RKIND), pointer :: &
            config_thermal_thickness, & ! minimum thickness (m) for temperature calculations
-           config_sea_level,         & ! sea level (m) relative to z = 0
-           config_bmlt_float_flux,   & ! constant heat flux (W/m^2) applied to the base of floating ice; positive upward
-           config_bmlt_float_xlimit    ! x value (m) defining region where bmlt_float_flux is applied; melt only where abs(x) > xlimit
+           config_sea_level            ! sea level (m) relative to z = 0
 
       integer, pointer :: &
            config_stats_cell_ID        ! global ID for diagnostic cell
@@ -666,6 +663,7 @@ module li_thermal
            indexToCellID               ! list of global cell IDs
       
       type (field1dInteger), pointer :: thermalCellMaskField
+
       integer, dimension(:), pointer :: &
            thermalCellMask             ! mask for thermal calculations
                                        ! = 1 where thickness > config_thermal_thickness, elsewhere = 0 
@@ -687,13 +685,10 @@ module li_thermal
            basalFrictionFlux,        & ! basal frictional flux into the ice (W m^{-2})
            surfaceConductiveFlux,    & ! conductive heat flux at the upper surface (W m^{-2}, positive down) 
            basalConductiveFlux,      & ! conductive heat flux at the lower surface (W m^{-2}, positive down) 
-           basalMassBal,             & ! basal mass balance (kg m^{-2} s^{-1}); positive for freeze-on, negative for melting
            groundedBasalMassBal,     & ! basal mass balance for grounded ice
            floatingBasalMassBal,     & ! basal mass balance for floating ice
            basalWaterThickness,      & ! basal water thickness (m)
-           thickness,                & ! ice thickness (m)
-           lowerSurface,             & ! lower surface elevation (m)
-           bedTopography               ! bed topography (m; negative below sea level)
+           thickness                   ! ice thickness (m)
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,              & ! interior ice temperature (K)
@@ -736,17 +731,15 @@ module li_thermal
 
       !WHL - Commenting out these lines because we may want to compute basal melting for floating ice
       !      even when config_thermal_solver = 'none' (as in the MISMIP+ experiments).
-!!      if (trim(config_thermal_solver) == 'none') then
-!!         return ! nothing to do
-!!      endif
+      if (trim(config_thermal_solver) == 'none') then
+         return ! nothing to do
+      endif
 
       ! get rest of config variables
       call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
       call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
-      call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
-
 
       if (config_print_thermal_info) then
          write(stdoutUnit,*) 'Solving for temperature, config_thermal_solver = ', trim(config_thermal_solver)
@@ -766,7 +759,6 @@ module li_thermal
          write(stderrUnit,*) 'ERROR: li_thermal_solver was called with invalid deltat =', deltat
          call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_thermal. Aborting...")
       endif
-
 
 
       ! block loop
@@ -792,10 +784,7 @@ module li_thermal
 
          ! get fields from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
-         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'basalWaterThickness', basalWaterThickness)
@@ -823,9 +812,6 @@ module li_thermal
          call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
          call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
-         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
-         call mpas_pool_get_config(liConfigs, 'config_bmlt_float_flux', config_bmlt_float_flux)
-         call mpas_pool_get_config(liConfigs, 'config_bmlt_float_xlimit', config_bmlt_float_xlimit)
          call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
          if (config_print_thermal_info) then
@@ -846,8 +832,6 @@ module li_thermal
             endif
          enddo
 
-         !WHL - debug dome - Zero out heat dissipation for easier comparison with dome problem
-!!         heatDissipation(:,:) = 0.0d0
 
          select case(config_thermal_solver)
 
@@ -920,11 +904,6 @@ module li_thermal
                   if (trim(config_thermal_solver) == 'enthalpy') then
 
                      ! Given temperature and waterfrac in ice interior, compute enthalpy
-
-                     !WHL - debug - nonzero waterfrac for testing
-!!                     if (verboseColumn) then
-!!                        waterfrac(nVertLevels-1:nVertLevels,iCell) = 0.01d0
-!!                     endif
 
                      call li_temperature_to_enthalpy(&
                           layerCenterSigma,      &
@@ -1278,43 +1257,11 @@ module li_thermal
 
          end select   ! config_thermal_solver
 
-         ! Compute basal melting for floating ice.
-         ! Note: This subroutine is called whether or not the temperature/enthalpy is prognostic.
-         !       Some tests (e.g., MISMIP+) have basal melting of floating ice without prognostic temperature.
-
-         if (trim(config_basal_mass_bal_float) == 'none') then
-
-            floatingBasalMassBal(:) = 0.0_RKIND
-
-         else
-
-            if (config_print_thermal_info) then
-               write(stdoutUnit,*) 'Computing basal melt of floating ice, config_basal_mass_bal_float = ', &
-                    trim(config_basal_mass_bal_float)
-            endif
-
-            !WHL - thermalCellMask not needed?
-
-            call basal_melt_floating_ice(&
-                 config_basal_mass_bal_float,  &
-                 nCellsSolve,                  &
-                 xCell,                        &
-                 thermalCellMask,              &
-                 li_mask_is_floating_ice_int(cellMask), &
-                 lowerSurface,                 &
-                 bedTopography,                &
-                 thickness,                    &  !WHL - debug
-                 config_sea_level,             &
-                 config_bmlt_float_flux,       &
-                 config_bmlt_float_xlimit,     &
-                 floatingBasalMassBal)
-
-         endif   ! config_basal_mass_bal_float
+         ! It is possible that internal melting was computed above for floating ice and assigned
+         !  to the groundedBasalMassBal array.  If so, then add it to floatingBasalMassBal.
+         ! Note: Subroutine basal_melt_floating_ice should be called earlier in the time step, before adding this term.
 
          do iCell = 1, nCellsSolve
-
-            ! It is possible that internal melting was computed above for floating ice and assigned
-            !  to the groundedBasalMassBal array.  If so, then transfer it to floatingBasalMassBal.
 
             if (thermalCellMask(iCell) == 1 .and. li_mask_is_floating_ice(cellMask(iCell)) .and. &
                  groundedBasalMassBal(iCell) /= 0.0_RKIND) then
@@ -1322,12 +1269,9 @@ module li_thermal
                groundedBasalMassBal(iCell) = 0.0_RKIND
             endif
 
-            ! Compute total basal mass balance
-            basalMassBal(iCell) = groundedBasalMassBal(iCell) + floatingBasalMassBal(iCell)
-
             if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-               write(stdoutUnit,*) 'iCell, basal mass balance (m/yr) (grounded, floating, total):', &
-                    iCell, groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi, basalMassBal(iCell)*scyr/rhoi
+               write(stdoutUnit,*) 'iCell, basal mass balance (m/yr) (grounded, floating):', &
+                    iCell, groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi
             endif
 
          enddo
@@ -1366,6 +1310,188 @@ module li_thermal
       endif
 
     end subroutine li_thermal_solver
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_basal_melt_floating_ice
+!
+!> \brief MPAS land ice solver for basal melt of floating ice
+!> \author William Lipscomb
+!> \date   November 2015
+!> \details
+!>  This routine computes basal melting for floating ice. 
+!>  The following options are supported:
+!>  (1) Do nothing (config_basal_mass_bal_float = 'none')
+!>  (2) Read melt rate from a file (config_basal_mass_bal_float = 'file')
+!>  (2) Prescribed constant basal melt rate (config_basal_mass_bal_float = 'constant')
+!>  (3) Basal melt rate as in MISMIP+ (config_basal_mass_bal_float = 'mismip')
+
+!-----------------------------------------------------------------------
+
+   subroutine li_basal_melt_floating_ice(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object 
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      type (block_type), pointer :: block
+
+      type (mpas_pool_type), pointer :: meshPool 
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: velocityPool   ! needed for mask subroutine
+      type (mpas_pool_type), pointer :: scratchPool 
+
+      integer, pointer :: &
+           nCellsSolve                 ! number of locally owned cells
+
+      logical, pointer :: &
+           config_print_thermal_info   ! if true, print debug info
+
+      character(len=StrKIND), pointer :: &
+           config_basal_mass_bal_float ! option for basal mass balance of floating ice
+
+      real(kind=RKIND), pointer :: &
+           config_thermal_thickness, & ! minimum thickness (m) for temperature calculations
+           config_sea_level,         & ! sea level (m) relative to z = 0
+           config_bmlt_float_flux,   & ! constant heat flux (W/m^2) applied to the base of floating ice; positive upward
+           config_bmlt_float_xlimit    ! x value (m) defining region where bmlt_float_flux is applied; melt only where abs(x) > xlimit
+
+      integer, dimension(:), pointer :: &
+           cellMask                    ! bit mask describing whether ice is floating, dynamically active, etc.
+      
+      type (field1dInteger), pointer :: thermalCellMaskField
+
+      integer, dimension(:), pointer :: &
+           thermalCellMask             ! mask for thermal calculations
+                                       ! = 1 where thickness > config_thermal_thickness, elsewhere = 0 
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           xCell                       ! x coordinate for each cell (m)
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           floatingBasalMassBal,     & ! basal mass balance for floating ice
+           thickness,                & ! ice thickness (m)
+           lowerSurface,             & ! lower surface elevation (m)
+           bedTopography               ! bed topography (m; negative below sea level)
+
+      integer :: iCell, err_tmp
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+
+      if (trim(config_basal_mass_bal_float) == 'none') then
+
+         return   ! nothing to do
+
+      elseif (trim(config_basal_mass_bal_float) == 'file') then
+
+         return   ! already set; nothing to do
+
+      endif
+
+      ! get rest of config variables
+      call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
+      call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_bmlt_float_flux', config_bmlt_float_flux)
+      call mpas_pool_get_config(liConfigs, 'config_bmlt_float_xlimit', config_bmlt_float_xlimit)
+
+      if (config_print_thermal_info) then
+         write(stdoutUnit,*) 'Solving for basal melting of floating ice, config_basal_mass_bal_float = ',&
+              trim(config_basal_mass_bal_float)
+      endif
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+         ! get dimensions
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+         ! get fields from the mesh pool
+         call mpas_pool_get_array(meshPool, 'xCell', xCell)
+
+         ! get fields from the geometry pool
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+
+         ! get fields from the scratch pool
+         call mpas_pool_get_field(scratchPool, 'iceCellMask', thermalCellMaskField)
+         call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
+         thermalCellMask => thermalCellMaskField % array
+
+         ! calculate masks - so we know where the ice is floating
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! calculate a mask to identify ice that is thick enough to be thermally active
+         do iCell = 1, nCellsSolve
+            if (thickness(iCell) > config_thermal_thickness) then
+               thermalCellMask(iCell) = 1
+            else
+               thermalCellMask(iCell) = 0
+            endif
+         enddo
+
+         ! Compute basal melting for floating ice.
+
+         call basal_melt_floating_ice(&
+              config_basal_mass_bal_float,  &
+              nCellsSolve,                  &
+              xCell,                        &
+              thermalCellMask,              &
+              li_mask_is_floating_ice_int(cellMask), &
+              lowerSurface,                 &
+              bedTopography,                &
+              config_sea_level,             &
+              config_bmlt_float_flux,       &
+              config_bmlt_float_xlimit,     &
+              floatingBasalMassBal)
+
+         !WHL - debug
+         write(stdoutUnit,*) 'Computed basal melt for floating ice'
+         write(stdoutUnit,*) ' '
+         write(stdoutUnit,*) 'iCell, thickness, basal mbal:'
+         do iCell = 1, nCellsSolve
+            if (li_mask_is_floating_ice(cellMask(iCell))) then
+               write(stdoutUnit,*) iCell, thickness(iCell), floatingBasalMassBal(iCell)*scyr/rhoi
+            endif
+         enddo
+         write(stdoutUnit,*) 'Done with basal melt for floating ice'
+         
+         ! clean up
+         call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
+
+         block => block % next
+      enddo   ! associated(block)
+
+
+    end subroutine li_basal_melt_floating_ice
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2663,7 +2789,6 @@ module li_thermal
          floatingMask,                  &
          lowerSurface,                  &
          bedTopography,                 &
-         thickness,                     &   !WHL - added for diagnostics
          config_sea_level,              &
          config_bmlt_float_flux,        &
          config_bmlt_float_xlimit,      &
@@ -2685,9 +2810,6 @@ module li_thermal
       real(kind=RKIND), dimension(:), intent(in) :: &
            lowerSurface,          & !< Input: lower surface elevation (m)
            bedTopography            !< Input: elevation of bed topography (m)
-
-      real(kind=RKIND), dimension(:), intent(in) :: &
-           thickness                !WHL - added for diagnostics
 
       real(kind=RKIND), intent(in) :: &
            config_sea_level         !< Input: sea level relative to z = 0 (m)
@@ -2755,9 +2877,6 @@ module li_thermal
 
          floatingBasalMassBal(:) = 0.0_RKIND
 
-         !WHL - debug
-!!         write(stderrUnit,*) 'iCell, xCell, thickness, melt rate (m/yr):'
-
          do iCell = 1, nCellsSolve
             if ( floatingMask(iCell) == 1 .or.  &
                  (bedTopography(iCell) < config_sea_level .and. iceMask(iCell) == 0) ) then   ! ice is present and floating, or ice-free ocean
@@ -2769,11 +2888,6 @@ module li_thermal
                endif
 
             endif   ! ice is present and floating
-
-            !WHL - debug - Write a list of cells where ice is present
-!!            if (iceMask(iCell) == 1) then
-!!               write(stderrUnit,*) iCell, xCell(iCell), thickness(iCell), floatingBasalMassBal(iCell)*31536000._RKIND 
-!!            endif
 
          enddo   ! iCell
 
