@@ -118,7 +118,6 @@ implicit none
            call tracerflux_vars%flux_summary(c, betrtracer_vars)
 
            do kk = 1, ngwmobile_tracers
-              if(c>maxval(filter))print*,'crazy happend'
               errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk)  
               errtracer(c,kk) = errtracer(c,kk) + tracer_flx_netpro(c,kk)-tracer_flx_netphyloss(c,kk)
               if(abs(errtracer(c,kk))<err_min)then
