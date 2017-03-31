@@ -774,11 +774,16 @@ class TestScheduler(object):
                 os.chmod(cs_submit_file,
                          os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
 
-            if get_model == "cesm":
-                testreporter =  os.path.join(self._test_root,"testreporter.pl")
-                shutil.copy(os.path.join(self._cime_root,"scripts","Testing","testreporter.pl"),
-                            testreporter)
-                os.chmod(testreporter, os.stat(testreporter).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            if get_model() == "cesm":
+                template_file = os.path.join(python_libs_root, "testreporter.template")
+                template = open(template_file, "r").read()
+                template = template.replace("<PATH>",
+                                            os.path.join(self._cime_root, "scripts", "Tools"))
+                testreporter_file = os.path.join(self._test_root, "testreporter")
+                with open(testreporter_file, "w") as fd:
+                    fd.write(template)
+                os.chmod(testreporter_file, os.stat(testreporter_file).st_mode
+                         | stat.S_IXUSR | stat.S_IXGRP)
 
         except Exception as e:
             logger.warning("FAILED to set up cs files: %s" % str(e))
