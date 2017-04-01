@@ -115,9 +115,9 @@
 	  HTML created on: {{ today }}
 	</p>
   	<p>
-	This page contains the complete list of component sets short name and long names.<br/>
+	This page contains the complete list of component sets aliases and long names.<br/>
 	They are grouped by model components designed to aid browsing.  <br/>
-	Clicking on the name of a componente will display additional descriptive information.<br/>  
+	Clicking on the name of a component will display additional descriptive information.<br/>  
 	Click on the "Show Details" button and then cntl+F key to search for specific strings in this file.
 	</p>
 
@@ -133,12 +133,12 @@
 	        <hr>
 		  <table>
 		    <tr>
-		      <th>Short Name</th>
+		      <th>Alias</th>
 		      <th>Long Name</th>
 		    <tr/>
-		  {% for short_name, long_name in comp_dict.1.iteritems()  %}
+		  {% for alias, long_name in comp_dict.1.iteritems()  %}
 		    <tr>
-		      <td>{{ short_name|e }}</td>
+		      <td>{{ alias|e }}</td>
 		      <td>{{ long_name|e }}</td>
 		    </tr>
 	          {% endfor %}
