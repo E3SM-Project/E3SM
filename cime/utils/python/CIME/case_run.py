@@ -83,10 +83,6 @@ def pre_run_check(case, lid):
 def run_model(case):
 ###############################################################################
 
-    # Set OMP_NUM_THREADS
-    env_mach_pes = case.get_env("mach_pes")
-    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_values("COMP_CLASSES")))
-
     # Run the model
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
@@ -213,6 +209,11 @@ def case_run(case):
 
     # set up the LID
     lid = new_lid()
+
+    # Set OMP_NUM_THREADS. Want this to happen before prerun provenance
+    # so it gets properly logged in the environment provenance files.
+    env_mach_pes = case.get_env("mach_pes")
+    os.environ["OMP_NUM_THREADS"] = str(env_mach_pes.get_max_thread_count(case.get_values("COMP_CLASSES")))
 
     save_prerun_provenance(case)
 
