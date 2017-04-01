@@ -44,7 +44,7 @@
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
-  output_frequency  = 1000,                     ! 100s /0.1s = 1000 steps between outputs
+  output_frequency  = 500,                     ! 100s /0.1s = 1000 steps between outputs
   output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
