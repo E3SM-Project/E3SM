@@ -17,7 +17,6 @@ endif
 # NOTE: CIME 5 and git commands are not cwd agnostic, so compute the absolute paths, then cd to the directories as needed
 set this_script_name = `basename $0`
 set relative_dir = `dirname $0`
-set case_scripts_dir = `pwd -P`/$case_name
 set this_script_dir = `cd $relative_dir ; pwd -P`
 set this_script_path = $this_script_dir/$this_script_name
 
@@ -206,6 +205,8 @@ set cpl_hist_num   = 1
 #  END OF COMMON OPTIONS - you may need to change things below here to access advanced
 #  capabilities, but if you do you should know what you're doing.
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+set case_scripts_dir = `pwd -P`/$case_name
 
 #===========================================
 # DOCUMENT WHICH VERSION OF THIS SCRIPT IS BEING USED:
