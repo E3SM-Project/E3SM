@@ -123,9 +123,10 @@ class Case(object):
         These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
         """
-        env_mach_pes = self.get_env("mach_pes")
-        comp_classes = self.get_values("COMP_CLASSES")
-        pes_per_node = self.get_value("PES_PER_NODE")
+        env_mach_pes  = self.get_env("mach_pes")
+        env_mach_spec = self.get_env('mach_specific')
+        comp_classes  = self.get_values("COMP_CLASSES")
+        pes_per_node  = self.get_value("PES_PER_NODE")
 
         self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
@@ -139,7 +140,14 @@ class Case(object):
         threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
-        if self.get_value("MACH") == "titan":
+        mpi_attribs = {
+            "compiler" : self.get_value("COMPILER"),
+            "mpilib"   : self.get_value("MPILIB"),
+            "threaded" : get_build_threaded(self)
+            }
+
+        executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
+        if executable == "aprun":
             self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
         else:
             self.num_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
@@ -1068,7 +1076,9 @@ class Case(object):
 
         # special case for aprun
         if executable == "aprun":
-            return get_aprun_cmd_for_case(self, run_exe)[0] + " " + run_misc_suffix
+            aprun_cmd, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+            expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
+            return aprun_cmd + " " + run_misc_suffix
         else:
             mpi_arg_string = " ".join(args.values())
 
