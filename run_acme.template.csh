@@ -206,23 +206,24 @@ set cpl_hist_num   = 1
 #  capabilities, but if you do you should know what you're doing.
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-set case_scripts_dir = `pwd -P`/$case_name
-
-#===========================================
-# DOCUMENT WHICH VERSION OF THIS SCRIPT IS BEING USED:
-#===========================================
-set script_ver = 3.0.2
-
-echo ''
-echo 'run_acme: ++++++++ run_acme starting ('`date`'), version '$script_ver' ++++++++'
-echo ''
-
 #===========================================
 # DEFINE THINGS NEEDED LATER:
 #===========================================
 
 alias lowercase "echo \!:1 | tr '[A-Z]' '[a-z]'"  #make function which lowercases any strings passed to it.
 alias uppercase "echo \!:1 | tr '[a-z]' '[A-Z]'"  #make function which uppercases any strings passed to it.
+
+alias print 'eval "echo run_acme: \!*"'
+alias newline "echo ''"
+
+#===========================================
+# DOCUMENT WHICH VERSION OF THIS SCRIPT IS BEING USED:
+#===========================================
+set script_ver = 3.0.2
+
+newline
+print '++++++++ run_acme starting ('`date`'), version '$script_ver' ++++++++'
+newline
 
 #===========================================
 # DOWNLOAD SOURCE CODE IF NEEDED:
@@ -232,31 +233,31 @@ alias uppercase "echo \!:1 | tr '[a-z]' '[A-Z]'"  #make function which uppercase
 ###       https://acme-climate.atlassian.net/wiki/display/Docs/Installing+the+ACME+Model
 
 if ( `lowercase $fetch_code` == true ) then
-  echo 'run_acme: Downloading code from the ACME git repository.'
+  print 'Downloading code from the ACME git repository.'
   if ( -d $code_root_dir/$tag_name ) then
     if ( $seconds_before_delete_source_dir >= 0 ) then
       set num_seconds_until_delete = $seconds_before_delete_source_dir
-      echo 'run_acme: Removing old code directory '$code_root_dir/$tag_name' in '$num_seconds_until_delete' seconds.'
-      echo 'run_acme: To abort, press ctrl-C'
+      print 'Removing old code directory '$code_root_dir/$tag_name' in '$num_seconds_until_delete' seconds.'
+      print 'To abort, press ctrl-C'
       while ( ${num_seconds_until_delete} > 0 )
-         echo 'run_acme:  '${num_seconds_until_delete}'  seconds until deletion.'
+         print ' '${num_seconds_until_delete}'  seconds until deletion.'
          sleep 1
          @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
       end
       rm -fr $code_root_dir/$tag_name
-      echo 'run_acme: Deleted '$code_root_dir/$tag_name
+      print 'Deleted '$code_root_dir/$tag_name
     else
-      echo 'run_acme: ERROR: Your branch tag already exists, so dying instead of overwriting.'
-      echo '          You likely want to either set fetch_code=false, change $tag_name, or'
-      echo '          change seconds_before_delete_source_dir.'
-      echo '          Note: $fetch_code = '$fetch_code
-      echo '                $code_root_dir/$tag_name = '$code_root_dir/$tag_name
-      echo '                $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir
+      print 'ERROR: Your branch tag already exists, so dying instead of overwriting.'
+      print '          You likely want to either set fetch_code=false, change $tag_name, or'
+      print '          change seconds_before_delete_source_dir.'
+      print '          Note: $fetch_code = '$fetch_code
+      print '                $code_root_dir/$tag_name = '$code_root_dir/$tag_name
+      print '                $seconds_before_delete_source_dir = '$seconds_before_delete_source_dir
       exit 20
     endif #$seconds_before_delete_source_dir >=0
   endif #$code_root_dir exists
 
-  echo 'run_acme: Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
+  print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
   mkdir -p $code_root_dir
   git clone git@github.com:ACME-Climate/ACME.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name
   ## Setup git hooks
@@ -269,53 +270,52 @@ if ( `lowercase $fetch_code` == true ) then
   git submodule update --init
 
   if ( `lowercase $acme_tag` == master ) then
-    echo ''
-    ##echo 'run_acme: Detaching from the master branch to avoid accidental changes to master by user.'
+    newline
+    ##print 'Detaching from the master branch to avoid accidental changes to master by user.'
     ##git checkout --detach
     echo 'KLUDGE: git version on anvil (1.7.1) is too old to be able to detach'
     echo 'edison uses git version 1.8.5.6 and it can git checkout --detach'
   else
-    echo ''
-    echo 'run_acme: Checking out branch ${acme_tag} = '${acme_tag}
+    newline
+    print 'Checking out branch ${acme_tag} = '${acme_tag}
     git checkout ${acme_tag}
   endif
 
 endif
 
-echo ''
-echo 'run_acme: $case_name        = '$case_name
-
-
+newline
+print '$case_name        = '$case_name
 
 #===========================================
 # DELETE PREVIOUS DIRECTORIES (IF REQUESTED)
 #============================================
-
 ### Remove existing case_scripts directory (so it doesn't have to be done manually every time)
 ### Note: This script causes create_newcase to generate a temporary directory (part of a workaround to put the case_name into the script names)
 ###       If something goes wrong, this temporary directory is sometimes left behind, so we need to delete it too.
 ### Note: To turn off the deletion, set $num_seconds_until_delete to be negative.
 ###       To delete immediately, set $num_seconds_until_delete to be zero.
 
+set case_scripts_dir = `pwd -P`/$case_name
+
 if ( -d $case_scripts_dir ) then
   if ( ${seconds_before_delete_case_dir} >= 0 ) then
     set num_seconds_until_delete = $seconds_before_delete_case_dir
-    echo ''
-    echo 'run_acme: Removing old $case_scripts_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
-    echo 'run_acme: To abort, press ctrl-C'
+    newline
+    print 'Removing old $case_scripts_dir directory for '${case_name}' in '${num_seconds_until_delete}' seconds.'
+    print 'To abort, press ctrl-C'
     while ( ${num_seconds_until_delete} > 0 )
-      echo 'run_acme:  '${num_seconds_until_delete}'  seconds until deletion.'
+      print ' '${num_seconds_until_delete}'  seconds until deletion.'
       sleep 1
       @ num_seconds_until_delete = ${num_seconds_until_delete} - 1
     end
  #  ls -ld $case_scripts_dir     # For testing this script.
     rm -fr $case_scripts_dir
-    echo 'run_acme:  Deleted $case_scripts_dir directory for : '${case_name}
+    print ' Deleted $case_scripts_dir directory for : '${case_name}
   else
-    echo 'run_acme: WARNING: $case_scripts_dir='$case_scripts_dir' exists '
-    echo '          and is not being removed because seconds_before_delete_case_dir<0.'
-    echo '          But create_newcase always fails when the case directory exists, so this script will now abort.'
-    echo '          To fix this, either delete the case_scripts directory manually, or change seconds_before_delete_case_dir'
+    print 'WARNING: $case_scripts_dir='$case_scripts_dir' exists '
+    print '         and is not being removed because seconds_before_delete_case_dir<0.'
+    print '         But create_newcase always fails when the case directory exists, so this script will now abort.'
+    print '         To fix this, either delete the case_scripts directory manually, or change seconds_before_delete_case_dir'
     exit 35
   endif
 endif
@@ -352,7 +352,7 @@ switch ( $lower_case )
     set std_proc_configuration = 'M'
     breaksw
   default:
-    echo 'run_acme ERROR: $processor_config='$processor_config' is not recognized'
+    print 'ERROR: $processor_config='$processor_config' is not recognized'
     exit 40
     breaksw
 endsw
@@ -370,9 +370,9 @@ if ( -f ${create_newcase_exe} ) then
   set shortterm_archive_script = $case_scripts_dir/case.st_archive
   set longterm_archive_script = $case_scripts_dir/case.lt_archive
 else                                                                   # No version of create_newcase found
-  echo 'run_acme ERROR: ${create_newcase_exe} not found'
-  echo '                This is most likely because fetch_code should be true.'
-  echo '                At the moment, $fetch_code = '$fetch_code
+  print 'ERROR: ${create_newcase_exe} not found'
+  print '       This is most likely because fetch_code should be true.'
+  print '       At the moment, $fetch_code = '$fetch_code
   exit 45
 endif
 
@@ -386,17 +386,17 @@ if ( `lowercase $machine` != default ) then
   set configure_options = "$configure_options --mach ${machine}"
 endif
 
-echo ''
-echo 'run_acme: -------- Starting create_newcase --------'
-echo ''
+newline
+print '-------- Starting create_newcase --------'
+newline
 
-echo $create_newcase_exe $configure_options
+print $create_newcase_exe $configure_options
 $create_newcase_exe $configure_options
 cd ${case_name}
 
-echo ''
-echo 'run_acme: -------- Finished create_newcase --------'
-echo ''
+newline
+print '-------- Finished create_newcase --------'
+newline
 
 echo `pwd`
 
@@ -473,19 +473,19 @@ cp -f $this_script_path $script_provenance_dir/$script_provenance_name
 #NOTE: Starting the suffix wit 'a' helps to keep this near the script in ls
 #      (but in practice the behavior depends on the LC_COLLATE system variable).
 
-echo 'run_acme: Creating logical links to make navigating easier.'
-echo '          Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
+print 'Creating logical links to make navigating easier.'
+print 'Note: Beware of using ".." with the links, since the behavior of shell commands can vary.'
 
 # Link in this_script_dir case_dir
 set run_dir_link = $this_script_dir/$this_script_name=a_run_link
 
-echo ${run_dir_link}
+print ${run_dir_link}
 
 if ( -l $run_dir_link ) then
   rm -f $run_dir_link
 endif
-echo "run_root ${run_root_dir}"
-echo "run_dir ${run_dir_link}"
+print "run_root ${run_root_dir}"
+print "run_dir ${run_dir_link}"
 
 ln -s $run_root_dir $run_dir_link
 
@@ -493,11 +493,11 @@ ln -s $run_root_dir $run_dir_link
 # COPY AUTO_CHAIN_RUNS SCRIPT TO CASE_SCRIPTS_DIR
 #================================================
 
-echo 'run_acme: copy auto_chain script, in case it is needed'
+print 'copy auto_chain script, in case it is needed'
 
 set auto_chain_run_file = ./auto_chain_runs.$machine
 if ( -fx ${this_script_dir}/${auto_chain_run_file}  ) then
-  echo 'run_acme: Copying '${auto_chain_run_file}' to '${case_scripts_dir}
+  print 'Copying '${auto_chain_run_file}' to '${case_scripts_dir}
   cp ${this_script_dir}/${auto_chain_run_file} ${case_scripts_dir}/${auto_chain_run_file}
 endif
 
@@ -531,7 +531,7 @@ if ( `lowercase $processor_config` == '1' ) then
 
 else if ( `lowercase $processor_config` == 'custom173' ) then
 
-  echo 'run_acme: Setting custom processor configuration, because $processor_config = '$processor_config
+  print 'Setting custom processor configuration, because $processor_config = '$processor_config
 ###   This space is to allow a custom processor configuration to be defined.
 ###   If your layout will be useful to other people, then please get it added to the standard
 ###   configurations in the ACME repository.
@@ -582,7 +582,7 @@ else if ( `lowercase $processor_config` == 'custom173' ) then
 
 else if ( `lowercase $processor_config` == 'custom375' ) then
 
-  echo 'run_acme: Setting custom processor configuration, because $processor_config = '$processor_config
+  print 'Setting custom processor configuration, because $processor_config = '$processor_config
 ###   This space is to allow a custom processor configuration to be defined.
 ###   If your layout will be useful to other people, then please get it added to the standard
 ###   configurations in the ACME repository.
@@ -633,7 +633,7 @@ else if ( `lowercase $processor_config` == 'custom375' ) then
 
 
 ### The following couple of lines are for when no custom configuration is set (eg, in the archived version)
-#    echo 'run_acme: Custom processor configuration not defined.  Please edit this script.'
+#    print 'Custom processor configuration not defined.  Please edit this script.'
 #    exit 150
 
 endif
@@ -716,29 +716,29 @@ endif
 
 #note configure -case turned into cesm_setup in cam5.2
 
-echo ''
-echo 'run_acme: -------- Starting case.setup --------'
-echo ''
+newline
+print '-------- Starting case.setup --------'
+newline
 
-echo $case_setup_exe
+print $case_setup_exe
 
 $case_setup_exe --reset
 
-echo ''
-echo 'run_acme: -------- Finished case.setup  --------'
-echo ''
+newline
+print '-------- Finished case.setup  --------'
+newline
 
 #============================================
 # SET BUILD OPTIONS
 #============================================
 
 if ( `uppercase $debug_compile` != 'TRUE' && `uppercase $debug_compile` != 'FALSE' ) then
-  echo 'run_acme ERROR: $debug_compile can be true or false but is instead '$debug_compile
+  print 'ERROR: $debug_compile can be true or false but is instead '$debug_compile
   exit 220
 endif
 
 if ( `lowercase $machine` == 'edison' && `uppercase $debug_compile` == 'TRUE' ) then
-  echo 'run_acme ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
+  print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
   exit 222
 endif
 
@@ -780,16 +780,16 @@ EOF
 
 #NOTE: This will either build the code (if needed and $old_executable=false) or copy an existing executable.
 
-echo ''
-echo 'run_acme: -------- Starting Build --------'
-echo ''
+newline
+print '-------- Starting Build --------'
+newline
 
-echo ${case_build_exe}
+print ${case_build_exe}
 ${case_build_exe}
 
-echo ''
-echo 'run_acme: -------- Finished Build --------'
-echo ''
+newline
+print '-------- Finished Build --------'
+newline
 
 
 #============================================
@@ -860,8 +860,8 @@ else if ( $machine == titan || $machine == eos ) then
     sed -i /"#PBS \( \)*-j oe"/a'#PBS  -o batch_output/${PBS_JOBNAME}.o${PBS_JOBID}' $longterm_archive_script
 
 else
-    echo 'run_acme WARNING: This script does not have batch directives for $machine='$machine
-    echo '                  Assuming default ACME values.'
+    print 'WARNING: This script does not have batch directives for $machine='$machine
+    print '         Assuming default ACME values.'
 endif
 
 #============================================
@@ -907,8 +907,8 @@ $xmlchange_exe --id HIST_N      --val $cpl_hist_num
 # SETUP SIMULATION INITIALIZATION
 #============================================
 
-echo ''
-echo 'run_acme: $model_start_type = '${model_start_type}'  (This is NOT necessarily related to RUN_TYPE)'
+newline
+print '$model_start_type = '${model_start_type}'  (This is NOT necessarily related to RUN_TYPE)'
 
 set model_start_type = `lowercase $model_start_type`
 #-----------------------------------------------------------------------------------------------
@@ -948,23 +948,23 @@ else if ( $model_start_type == 'branch' ) then
   ### the next lines attempt to automatically extract all needed info for setting up the branch run.
   set rpointer_filename = "${restart_files_dir}/rpointer.drv"
   if ( ! -f $rpointer_filename ) then
-    echo 'run_acme ERROR: ${rpointer_filename} does not exist. It is needed to extract RUN_REFDATE.'
-    echo "                This may be because you should set model_start_type to 'initial' or 'continue' rather than 'branch'."
-    echo '                ${rpointer_filename} = '{rpointer_filename}
+    print 'ERROR: ${rpointer_filename} does not exist. It is needed to extract RUN_REFDATE.'
+    print "       This may be because you should set model_start_type to 'initial' or 'continue' rather than 'branch'."
+    print '       ${rpointer_filename} = '{rpointer_filename}
     exit 370
   endif
   set restart_coupler_filename = `cat $rpointer_filename`
   set restart_case_name = ${restart_coupler_filename:r:r:r:r}         # Extract out the case name for the restart files.
   set restart_filedate = ${restart_coupler_filename:r:e:s/-00000//}   # Extract out the date (yyyy-mm-dd).
-  echo 'run_acme: $restart_case_name = '$restart_case_name
-  echo 'run_acme: $restart_filedate  = '$restart_filedate
+  print '$restart_case_name = '$restart_case_name
+  print '$restart_filedate  = '$restart_filedate
 
   ### the next line gets the YYYY-MM of the month before the restart time. Needed for staging history files.
   set restart_prevdate = `date -d "${restart_filedate} - 1 month" +%Y-%m`
 
-  echo 'run_acme: $restart_prevdate  = '$restart_prevdate
+  print '$restart_prevdate  = '$restart_prevdate
 
-  echo 'run_acme: Copying stuff for branch run'
+  print 'Copying stuff for branch run'
   cp ${restart_files_dir}/${restart_case_name}.cam.r.${restart_filedate}-00000.nc $case_run_dir
   cp ${restart_files_dir}/${restart_case_name}.cam.rs.${restart_filedate}-00000.nc $case_run_dir
   cp ${restart_files_dir}/${restart_case_name}.clm2.r.${restart_filedate}-00000.nc $case_run_dir
@@ -987,7 +987,7 @@ else if ( $model_start_type == 'branch' ) then
 
 else
 
-  echo 'run_acme ERROR: $model_start_type = '${model_start_type}' is unrecognized.   Exiting.'
+  print 'ERROR: $model_start_type = '${model_start_type}' is unrecognized.   Exiting.'
   exit 380
 
 endif
@@ -1011,46 +1011,46 @@ endif
 # where you may need to change srun to the appropriate submit command for your system, etc.
 
 
-echo ''
-echo 'run_acme: -------- Starting Submission to Run Queue --------'
-echo ''
+newline
+print '-------- Starting Submission to Run Queue --------'
+newline
 
 if ( `lowercase $submit_run` == 'true' ) then
   if ( $num_submits == 1 ) then
-    echo 'run_acme:          SUBMITTING A SINGLE JOB.'
+    print '         SUBMITTING A SINGLE JOB.'
     ${case_submit_exe}
   else if ( $num_submits <= 0 ) then
-    echo 'run_acme: $num_submits <= 0 so NOT submitting a job.'
-    echo '          $num_submits = '$num_submits
+    print '$num_submits <= 0 so NOT submitting a job.'
+    print '$num_submits = '$num_submits
   else if ( `lowercase $debug_queue` == 'true' && $num_submits > 1 ) then
-    echo 'run_acme WARNING: $num_submits > 1  and  $debug_queue = "TRUE"'
-    echo '                  Submitting chained jobs to the debug queue is usually forbidden'
-    echo '                  $num_submits = '$num_submits
-    echo '                  SUBMITTING JUST A SINGLE JOB.'
+    print 'WARNING: $num_submits > 1  and  $debug_queue = "TRUE"'
+    print '         Submitting chained jobs to the debug queue is usually forbidden'
+    print '         $num_submits = '$num_submits
+    print '         SUBMITTING JUST A SINGLE JOB.'
     ${case_submit_exe}
   else if ( ! -x ./auto_chain_runs.$machine && $num_submits > 1 ) then
-    echo 'run_acme WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
-    echo '                  $num_submits = '$num_submits
-    echo '                  $machine     = '$machine
-    echo '                  SUBMITTING JUST A SINGLE JOB.'
+    print 'WARNING: $num_submits > 1  but auto_chain_runs.$machine excutable cannot be found.'
+    print '         $num_submits = '$num_submits
+    print '         $machine     = '$machine
+    print '         SUBMITTING JUST A SINGLE JOB.'
     ${case_submit_exe}
   else
-    echo 'run_acme: executing 'auto_chain_runs.$machine
-    echo '          $num_submits = '$num_submits
-    echo '          $do_short_term_archiving = '`uppercase $do_short_term_archiving`
-    echo '          $do_long_term_archiving  = '`uppercase $do_long_term_archiving`
+    print 'executing 'auto_chain_runs.$machine
+    print '$num_submits = '$num_submits
+    rintprint '$do_short_term_archiving = '`uppercase $do_short_term_archiving`
+     '$do_long_term_archiving  = '`uppercase $do_long_term_archiving`
     # To avoid the error checking in the ACME scripts, it is necessary to tell ACME the archiving is FALSE, and then implement it manually.
     $xmlchange_exe --id DOUT_S    --val 'FALSE'
     $xmlchange_exe --id DOUT_L_MS --val 'FALSE'
     ./auto_chain_runs.$machine  $num_submits -1 `uppercase $do_short_term_archiving` `uppercase $do_long_term_archiving` ${case_run_exe}
   endif
 else
-    echo 'run_acme: Run NOT submitted because $submit_run = '$submit_run
+    print 'Run NOT submitted because $submit_run = '$submit_run
 endif
 
-echo ''
-echo 'run_acme: -------- Finished Submission to Run Queue --------'
-echo ''
+newline
+print '-------- Finished Submission to Run Queue --------'
+newline
 
 #=================================================
 # DO POST-SUBMISSION THINGS (IF ANY)
@@ -1058,9 +1058,9 @@ echo ''
 
 # Actions after the run submission go here.
 
-echo ''
-echo 'run_acme: ++++++++ run_acme Completed ('`date`') ++++++++'
-echo ''
+newline
+print '++++++++ run_acme Completed ('`date`') ++++++++'
+newline
 
 #**********************************************************************************
 ### --- end of script - there are no commands beyond here, just useful comments ---
