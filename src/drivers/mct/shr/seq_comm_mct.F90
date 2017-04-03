@@ -359,7 +359,7 @@ contains
        cpl_pestride = 1
        cpl_nthreads = 1
 
-       esmf_logging = 'unset'
+       esmf_logging = "ESMF_LOGKIND_NONE"
 
        ! Read namelist if it exists
 
@@ -900,13 +900,6 @@ contains
     deallocate(comps,comms)
 
     ! ESMF logging (only has effect if ESMF libraries are used)
-    if (mype == 0) then
-       if (esmf_logging == 'unset') then
-          write(logunit,*) trim(subname),' ERROR: esmf_logging not set'
-          call shr_sys_abort(trim(subname)//' ERROR: esmf_logging not set')
-       endif
-    endif
-
     call mpi_bcast(esmf_logging, len(esmf_logging), MPI_CHARACTER, 0, GLOBAL_COMM, ierr)
 
     select case(esmf_logging)
