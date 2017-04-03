@@ -41,30 +41,30 @@ os.chdir(args.testroot)
 xml_file=glob.glob("*"+args.testid+"/env_build.xml")
 root = ET.parse(xml_file[0]).getroot()
 for child in root.iter('group'):
-   for entry in child.iter('entry'):
-     id = entry.get('id')
-     value = entry.get('value')
-     if id == "COMPILER":
-        compiler=value
-     if id == "MPILIB":
-        mpilib = value
+    for entry in child.iter('entry'):
+        test_id = entry.get('id')
+        value = entry.get('value')
+        if test_id == "COMPILER":
+            compiler=value
+        if test_id == "MPILIB":
+            mpilib = value
 
 xml_file=glob.glob("*"+args.testid+"/env_case.xml")
 root = ET.parse(xml_file[0]).getroot()
 for child in root.iter('group'):
-   for entry in child.iter('entry'):
-     id = entry.get('id')
-     value = entry.get('value')
-     if id == "MACH":
+    for entry in child.iter('entry'):
+        test_id = entry.get('id')
+        value = entry.get('value')
+     if test_id == "MACH":
         machine=value
 
 xml_file=glob.glob("*"+args.testid+"/env_test.xml")
 root = ET.parse(xml_file[0]).getroot()
 for child in root.iter('group'):
-   for entry in child.iter('entry'):
-     id = entry.get('id')
-     value = entry.get('value')
-     if id == "BASELINE_NAME_CMP":
+    for entry in child.iter('entry'):
+        test_id = entry.get('id')
+        value = entry.get('value')
+     if test_id == "BASELINE_NAME_CMP":
         baseline=value
 
 
@@ -113,80 +113,80 @@ for test_name in test_names:
     #
     for line in lines:
         if "NLCOMP" in line:
-           test_status[test_name,'NLCOMP']=line[0:4]
+            test_status[test_name,'NLCOMP']=line[0:4]
         if "MEMLEAK" in line:
-           test_status[test_name,'MEMLEAK']=line[0:4]
+            test_status[test_name,'MEMLEAK']=line[0:4]
         if "MEMCOMP" in line:
-           test_status[test_name,'MEMCOMP']=line[0:4]
+            test_status[test_name,'MEMCOMP']=line[0:4]
         if "BASELINE" in line:
-           test_status[test_name,'BASELINE']=line[0:4]
+            test_status[test_name,'BASELINE']=line[0:4]
         if "TPUTCOMP" in line:
-           test_status[test_name,'TPUTCOMP']=line[0:4]
+            test_status[test_name,'TPUTCOMP']=line[0:4]
         if "INIT" in line:
-           test_status[test_name,'INIT']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'STATUS']="SFAIL"
-               test_status[test_name,'COMMENT']+="INIT fail! "
-               break
+            test_status[test_name,'INIT']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'STATUS']="SFAIL"
+                test_status[test_name,'COMMENT']+="INIT fail! "
+                break
         if "CREATE_NEWCASE" in line:
-           test_status[test_name,'CREATE_NEWCASE']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'STATUS']="SFAIL"
-               test_status[test_name,'COMMENT']+="CREATE_NEWCASE fail! "
-               break
+            test_status[test_name,'CREATE_NEWCASE']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'STATUS']="SFAIL"
+                test_status[test_name,'COMMENT']+="CREATE_NEWCASE fail! "
+                break
         if "XML" in line:
-           test_status[test_name,'XML']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'STATUS']="SFAIL"
-               test_status[test_name,'COMMENT']+="XML fail! "
-               break
+            test_status[test_name,'XML']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'STATUS']="SFAIL"
+                test_status[test_name,'COMMENT']+="XML fail! "
+                break
         if "SETUP" in line:
-           test_status[test_name,'SETUP']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'STATUS']="SFAIL"
-               test_status[test_name,'COMMENT']+="SETUP fail! "
-               break
+            test_status[test_name,'SETUP']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'STATUS']="SFAIL"
+                test_status[test_name,'COMMENT']+="SETUP fail! "
+                break
         if "SHAREDLIB_BUILD" in line:
-           test_status[test_name,'SHAREDLIB_BUILD']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'STATUS']="CFAIL"
-               test_status[test_name,'COMMENT']+="SHAREDLIB_BUILD fail! "
-               break
+            test_status[test_name,'SHAREDLIB_BUILD']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'STATUS']="CFAIL"
+                test_status[test_name,'COMMENT']+="SHAREDLIB_BUILD fail! "
+                break
         if "MODEL_BUILD" in line:
-           test_status[test_name,'MODEL_BUILD']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'STATUS']="CFAIL"
-               test_status[test_name,'COMMENT']+="MODEL_BUILD fail! "
-               break
+            test_status[test_name,'MODEL_BUILD']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'STATUS']="CFAIL"
+                test_status[test_name,'COMMENT']+="MODEL_BUILD fail! "
+                break
         if "SUBMIT" in line:
-           test_status[test_name,'STATUS']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'COMMENT']+="SUBMIT fail! "
-               break
+            test_status[test_name,'STATUS']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'COMMENT']+="SUBMIT fail! "
+                break
         if "RUN" in line:
-           test_status[test_name,'STATUS']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'COMMENT']+="RUN fail! "
-               break
+            test_status[test_name,'STATUS']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'COMMENT']+="RUN fail! "
+                break
         if "COMPARE_base_rest" in line:
-           test_status[test_name,'STATUS']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'COMMENT']+="Restart fail! "
-               break
+            test_status[test_name,'STATUS']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'COMMENT']+="Restart fail! "
+                break
         if "COMPARE_base_hybrid" in line:
-           test_status[test_name,'STATUS']=line[0:4]
-           if line[0:4] == "FAIL":
-               test_status[test_name,'COMMENT']+="Hybrid fail! "
-               break
+            test_status[test_name,'STATUS']=line[0:4]
+            if line[0:4] == "FAIL":
+                test_status[test_name,'COMMENT']+="Hybrid fail! "
+                break
 
         #
         #  Do not include time comments.  Just a preference to have cleaner comments in the test database
         #
         try:
-           if 'time=' not in line:
-               test_status[test_name,'COMMENT']+=line.split(' ',3)[3]+' '
+            if 'time=' not in line:
+                test_status[test_name,'COMMENT']+=line.split(' ',3)[3]+' '
         except:
-           pass
+            pass
 
     #
     # File in the xml with the test results
@@ -217,7 +217,7 @@ testXML = xml.toprettyxml(encoding="UTF-8")
 # Dump xml to the screen.
 #
 if args.dumpxml:
-  print testXML
+    print testXML
 
 #
 # Prompt for username and password, then post the XML string to the test database website
