@@ -26,7 +26,7 @@ module seq_comm_mct
   implicit none
 
   private
-#include <mpif.h>  
+#include <mpif.h>
   save
 
 !--------------------------------------------------------------------------
@@ -187,19 +187,19 @@ module seq_comm_mct
   character(len=32), public :: &
        atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
        ocn_layout, wav_layout, esp_layout
-  
+
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
 !=======================================================================
 contains
 !======================================================================
-  integer function seq_comm_get_ncomps() 
+  integer function seq_comm_get_ncomps()
     seq_comm_get_ncomps = ncomps
   end function seq_comm_get_ncomps
 
-  
+
   subroutine seq_comm_init(Comm_in, nmlfile)
-      
+
     !----------------------------------------------------------
     !
     ! Arguments
@@ -271,7 +271,7 @@ contains
        seq_comms(n)%inst = 0
        seq_comms(n)%set = .false.
        seq_comms(n)%petlist_allocated = .false.
-       seq_comms(n)%mpicom = MPI_COMM_NULL    ! do some initialization here 
+       seq_comms(n)%mpicom = MPI_COMM_NULL    ! do some initialization here
        seq_comms(n)%iam = -1
        seq_comms(n)%iamroot = .false.
        seq_comms(n)%npes = -1
@@ -295,7 +295,7 @@ contains
     ! Initialize gloiam on all IDs
 
     global_mype = mype
- 
+
     do n = 1,ncomps
        seq_comms(n)%gloiam = mype
     enddo
@@ -378,7 +378,7 @@ contains
     end if
 
     !--- compute some other num_inst values
-       
+
     num_inst_xao = max(num_inst_atm,num_inst_ocn)
     num_inst_frc = num_inst_ice
 
@@ -466,21 +466,21 @@ contains
        count = count + 1
        CPLATMID(n) = count
     end do
-         
+
     do n = 1, num_inst_lnd
        count = count + 1
        LNDID(n) = count
        count = count + 1
        CPLLNDID(n) = count
     end do
-       
+
     do n = 1, num_inst_ocn
        count = count + 1
        OCNID(n) = count
        count = count + 1
        CPLOCNID(n) = count
     end do
-       
+
     do n = 1, num_inst_ice
        count = count + 1
        ICEID(n) = count
@@ -535,7 +535,7 @@ contains
        if (rof_rootpe < 0) error_state = .true.
        if (esp_rootpe < 0) error_state = .true.
        if (cpl_rootpe < 0) error_state = .true.
-       
+
        if (error_state) then
           write(logunit,*) trim(subname),' ERROR: rootpes must be >= 0'
           call shr_sys_abort(trim(subname)//' ERROR: rootpes >= 0')
@@ -586,7 +586,7 @@ contains
        end do
 
        !! Ocean instance tasks
-       
+
        if (trim(ocn_layout) == trim(layout_concurrent)) then
           ocn_inst_tasks = ocn_ntasks / num_inst_ocn
           droot = (ocn_inst_tasks * ocn_pestride)
@@ -606,7 +606,7 @@ contains
        end do
 
        !! Sea ice instance tasks
-       
+
        if (trim(ice_layout) == trim(layout_concurrent)) then
           ice_inst_tasks = ice_ntasks / num_inst_ice
           droot = (ice_inst_tasks * ice_pestride)
@@ -626,7 +626,7 @@ contains
        end do
 
        !! Glacier instance tasks
-       
+
        if (trim(glc_layout) == trim(layout_concurrent)) then
           glc_inst_tasks = glc_ntasks / num_inst_glc
           droot = (glc_inst_tasks * glc_pestride)
@@ -646,7 +646,7 @@ contains
        end do
 
        !! Runoff instance tasks
-       
+
        if (trim(rof_layout) == trim(layout_concurrent)) then
           rof_inst_tasks = rof_ntasks / num_inst_rof
           droot = (rof_inst_tasks * rof_pestride)
@@ -666,7 +666,7 @@ contains
        end do
 
        !! Wave instance tasks
-       
+
        if (trim(wav_layout) == trim(layout_concurrent)) then
           wav_inst_tasks = wav_ntasks / num_inst_wav
           droot = (wav_inst_tasks * wav_pestride)
@@ -686,7 +686,7 @@ contains
        end do
 
        !! External System Processing instance tasks
-       
+
        if (trim(esp_layout) == trim(layout_concurrent)) then
           esp_inst_tasks = esp_ntasks / num_inst_esp
           droot = (esp_inst_tasks * esp_pestride)
@@ -930,10 +930,10 @@ contains
     ! seq_comm_init.
 
     integer :: id
-    
+
     character(*), parameter :: subName =   '(seq_comm_clean) '
     !----------------------------------------------------------
-    
+
     if (.not. seq_comm_mct_initialized) then
        write(logunit,*) trim(subname),' ERROR seq_comm_init has not been called '
        call shr_sys_abort()
@@ -945,11 +945,11 @@ contains
           deallocate(seq_comms(id)%petlist)
        end if
     end do
-    
+
     call mct_world_clean()
 
   end subroutine seq_comm_clean
-  
+
 !---------------------------------------------------------
   subroutine seq_comm_setcomm(ID,pelist,nthreads,iname,inst,tinst)
 
@@ -973,7 +973,7 @@ contains
     if (ID < 1 .or. ID > ncomps) then
        write(logunit,*) subname,' ID out of range, abort ',ID
        call shr_sys_abort()
-    endif 
+    endif
 
     call mpi_comm_group(GLOBAL_COMM, mpigrp_world, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
@@ -1083,11 +1083,11 @@ contains
     if (ID1 < 1 .or. ID1 > ncomps) then
        write(logunit,*) subname,' ID1 out of range, abort ',ID1
        call shr_sys_abort()
-    endif 
+    endif
     if (ID2 < 1 .or. ID2 > ncomps) then
        write(logunit,*) subname,' ID2 out of range, abort ',ID2
        call shr_sys_abort()
-    endif 
+    endif
     if (ID < 1 .or. ID > ncomps) then
        write(logunit,*) subname,' ID out of range, abort ',ID
        call shr_sys_abort()
@@ -1237,7 +1237,7 @@ contains
        if (IDs(n) < 1 .or. IDs(n) > ncomps) then
           write(logunit,*) subname,' IDs out of range, abort ',n,IDs(n)
           call shr_sys_abort()
-       endif 
+       endif
        if (.not. seq_comms(IDs(n))%set) then
           write(logunit,*) subname,' IDs not set ',n,IDs(n)
           call shr_sys_abort()
@@ -1293,7 +1293,7 @@ contains
 
     seq_comms(ID)%mpicom = mpicom
     seq_comms(ID)%mpigrp = mpigrp
-    
+
     seq_comms(ID)%nthreads = 1
     do n = 1,nids
        seq_comms(ID)%nthreads = max(seq_comms(ID)%nthreads,seq_comms(IDs(n))%nthreads)
@@ -1381,7 +1381,7 @@ contains
     if ((ID == 0) .or. (ID > ncomps)) then
        write(logunit,*) subname,' ID out of range, return ',ID
        return
-    endif 
+    endif
 
     if (present(mpicom)) then
        if (ID > 0) then
