@@ -573,10 +573,7 @@ else if ( `lowercase $processor_config` == 'custom173' ) then
   $xmlchange_exe --id ROOTPE_WAV --val 0
 
   set sequential_or_concurrent = 'concurrent'
-# CIME 5.1 has a typo in it's env_mach_pes.xml such that NINST_ICE_LAYOUT can be 'concurrent' or 'equential' (note the missing s)
-  $xmlchange_exe --id NINST_ICE_LAYOUT --val concurrent
-#  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_ICE_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
-  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
+  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_ICE_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
     $xmlchange_exe --id $layout_name --val $sequential_or_concurrent
   end
 
@@ -624,10 +621,7 @@ else if ( `lowercase $processor_config` == 'custom375' ) then
   $xmlchange_exe --id ROOTPE_WAV --val 0
 
   set sequential_or_concurrent = 'concurrent'
-# CIME 5.1 has a typo in it's env_mach_pes.xml such that NINST_ICE_LAYOUT can be 'concurrent' or 'equential' (note the missing s)
-  $xmlchange_exe --id NINST_ICE_LAYOUT --val concurrent
-#  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_ICE_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
-  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
+  foreach layout_name ( NINST_ATM_LAYOUT NINST_LND_LAYOUT NINST_ICE_LAYOUT NINST_OCN_LAYOUT NINST_GLC_LAYOUT NINST_ROF_LAYOUT NINST_WAV_LAYOUT )
     $xmlchange_exe --id $layout_name --val $sequential_or_concurrent
   end
 
