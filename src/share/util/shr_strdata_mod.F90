@@ -95,6 +95,7 @@ module shr_strdata_mod
     character(CL)                  :: mapread (nStrMax) ! regrid mapping file to read
     character(CL)                  :: mapwrit (nStrMax) ! regrid mapping file to write
     character(CL)                  :: tintalgo(nStrMax) ! time interpolation algorithm
+    character(CL)                  :: readmode(nStrMax) ! file read mode
     integer(IN)                    :: io_type
 
     !--- data required by cosz t-interp method, set by user ---
@@ -127,6 +128,7 @@ module shr_strdata_mod
     type(mct_gsmap)                :: gsmapR(nStrMax)
     type(mct_rearr)                :: rearrR(nStrMax)
     type(mct_ggrid)                :: gridR(nStrMax)
+    type(mct_avect)                :: avRFile(nStrMax)  ! Read attrvect for multiple time slices
     type(mct_avect)                :: avRLB(nStrMax)    ! Read attrvect
     type(mct_avect)                :: avRUB(nStrMax)    ! Read attrvect
     type(mct_avect)                :: avFUB(nStrMax)    ! Final attrvect
@@ -689,7 +691,8 @@ module shr_strdata_mod
      call shr_dmodel_readLBUB(SDAT%stream(n),SDAT%pio_subsystem,SDAT%io_type,SDAT%pio_iodesc(n), &
           ymdmod(n),todmod,mpicom,SDAT%gsmapR(n),&
           SDAT%avRLB(n),SDAT%ymdLB(n),SDAT%todLB(n), &
-          SDAT%avRUB(n),SDAT%ymdUB(n),SDAT%todUB(n),newData(n), &
+          SDAT%avRUB(n),SDAT%ymdUB(n),SDAT%todUB(n), &
+          SDAT%avRFile(n), trim(SDAT%readmode(n)), newData(n), &
           istr=trim(lstr)//'_readLBUB')
 
      if (debug > 0) then
@@ -1114,6 +1117,7 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
    character(CL) :: mapread(nStrMax)  ! regrid mapping file to read
    character(CL) :: mapwrite(nStrMax) ! regrid mapping file to write
    character(CL) :: tintalgo(nStrMax) ! time interpolation algorithm
+   character(CL) :: readmode(nStrMax) ! file read mode
    character(CL) :: io_type
    integer(IN)   :: num_iotasks
    integer(IN)   :: io_root
@@ -1140,7 +1144,8 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
       , mapmask         &
       , mapread         &
       , mapwrite        &
-      , tintalgo
+      , tintalgo        &
+      , readmode
    !----- formats -----
    character(*),parameter :: subName = "(shr_strdata_readnml) "
    character(*),parameter ::   F00 = "('(shr_strdata_readnml) ',8a)"
@@ -1186,6 +1191,7 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
    mapread(:)  = trim(shr_strdata_unset)
    mapwrite(:) = trim(shr_strdata_unset)
    tintalgo(:) = 'linear'
+   readmode(:) = 'single'
 
 
    !----------------------------------------------------------------------------
@@ -1231,6 +1237,7 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
    SDAT%mapread(:)  = mapread(:)
    SDAT%mapwrit(:)  = mapwrite(:)
    SDAT%tintalgo(:) = tintalgo(:)
+   SDAT%readmode(:) = readmode(:)
    do n=1,nStrMax
       if (trim(streams(n)) /= trim(shr_strdata_nullstr)) SDAT%nstreams = max(SDAT%nstreams,n)
       if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) SDAT%dtlimit(n) = 1.0e30
@@ -1319,7 +1326,7 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
            pio_subsystem, pio_iotype,                       &
 !--- strdata optional ---
            nzg, domZvarName,                                &
-           taxMode, dtlimit, tintalgo,                      &
+           taxMode, dtlimit, tintalgo, readmode,            &
            fillalgo, fillmask, fillread, fillwrite,         &
            mapalgo, mapmask, mapread, mapwrite,             &
            calendar)
@@ -1368,6 +1375,7 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
    character(*),optional ,intent(in)   :: mapread   ! regrid mapping file to read
    character(*),optional ,intent(in)   :: mapwrite  ! regrid mapping file to write
    character(*),optional ,intent(in)   :: tintalgo  ! time interpolation algorithm
+   character(*),optional ,intent(in)   :: readmode  ! file read mode
    character(*),optional, intent(in)   :: calendar
 
 !EOP
@@ -1420,6 +1428,9 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
    endif
    if (present(tintalgo)) then
       SDAT%tintalgo(1) = tintalgo
+   endif
+   if (present(readmode)) then
+      SDAT%readmode(1) = readmode
    endif
    if (present(mapmask)) then
       SDAT%mapmask(1) = mapmask
@@ -1540,6 +1551,7 @@ subroutine shr_strdata_print(SDAT,name)
      write(logunit,F04) "  mapread (",n,") = ",trim(SDAT%mapread(n))
      write(logunit,F04) "  mapwrit (",n,") = ",trim(SDAT%mapwrit(n))
      write(logunit,F04) "  tintalgo(",n,") = ",trim(SDAT%tintalgo(n))
+     write(logunit,F04) "  readmode(",n,") = ",trim(SDAT%readmode(n))
      write(logunit,F01) " "
    end do
    write(logunit,F01) "nvectors    = ",SDAT%nvectors
@@ -1608,6 +1620,7 @@ subroutine shr_strdata_bcastnml(SDAT,mpicom,rc)
    call shr_mpi_bcast(SDAT%mapread   ,mpicom,'mapread')
    call shr_mpi_bcast(SDAT%mapwrit   ,mpicom,'mapwrit')
    call shr_mpi_bcast(SDAT%tintalgo  ,mpicom,'tintalgo')
+   call shr_mpi_bcast(SDAT%readmode  ,mpicom,'readmode')
 
    if (present(rc)) then
       rc = lrc

@@ -515,7 +515,8 @@ end subroutine shr_dmodel_readgrid
 !===============================================================================
 
 subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,mSec,mpicom,gsMap, &
-                             avLB,mDateLB,mSecLB,avUB,mDateUB,mSecUB,newData,rmOldFile,istr)
+                             avLB,mDateLB,mSecLB,avUB,mDateUB,mSecUB,avFile,readMode, &
+                             newData,rmOldFile,istr)
 
   use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
   use shr_const_mod, only : shr_const_cDay
@@ -534,6 +535,8 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
   integer(IN)                ,intent(inout) :: mDateLB,mSecLB
   type(mct_aVect)            ,intent(inout) :: avUB
   integer(IN)                ,intent(inout) :: mDateUB,mSecUB
+  type(mct_aVect)            ,intent(inout) :: avFile
+  character(len=*)           ,intent(in)    :: readMode
   logical                    ,intent(out)   :: newData
   logical,optional           ,intent(in)    :: rmOldFile
   character(len=*),optional  ,intent(in)    :: istr
@@ -634,8 +637,19 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
            write(logunit,F02) 'file lb: ',trim(path),trim(fn_lb),n_lb
            call shr_sys_flush(logunit)
         endif
-        call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avLB, mpicom, &
-             path, fn_lb, n_lb,istr=trim(lstr)//'_LB')
+
+        select case(readMode)
+        case ('single')
+           call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avLB, mpicom, &
+                path, fn_lb, n_lb,istr=trim(lstr)//'_LB')
+        case ('full_file')
+           call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
+                  pio_iodesc, gsMap, avLB, avFile, mpicom, &
+                  path, fn_lb, n_lb,istr=trim(lstr)//'_LB')
+        case default
+           write(logunit,F00) "ERROR: Unsupported readmode : ", trim(readMode)
+           call shr_sys_abort(subName//"ERROR: Unsupported readmode: "//trim(readMode))
+        end select
      endif
   endif
 
@@ -645,8 +659,20 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
         write(logunit,F02) 'file ub: ',trim(path),trim(fn_ub),n_ub
         call shr_sys_flush(logunit)
      endif
-     call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avUB, mpicom, &
-          path, fn_ub, n_ub,istr=trim(lstr)//'_UB')
+
+     select case(readMode)
+     case ('single')
+        call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avUB, mpicom, &
+             path, fn_ub, n_ub,istr=trim(lstr)//'_UB')
+     case ('full_file')
+        call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
+             pio_iodesc, gsMap, avUB, avFile, mpicom, &
+             path, fn_ub, n_ub,istr=trim(lstr)//'_UB')
+     case default
+        write(logunit,F00) "ERROR: Unsupported readmode : ", trim(readMode)
+        call shr_sys_abort(subName//"ERROR: Unsupported readmode: "//trim(readMode))
+     end select
+
   endif
 
   call t_startf(trim(lstr)//'_filemgt')
@@ -731,6 +757,12 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   type(file_desc_t) :: pioid
   type(var_desc_t) :: varid
   integer(kind=pio_offset_kind) :: frame
+  type(io_desc_t) :: pio_iodesc_local
+
+  integer :: gsmap_lsize, gsmap_gsize, cnt,m,n
+  real(R8),allocatable :: rattr_local(:)
+  integer, allocatable :: count(:), compDOF(:)
+  integer, pointer,dimension(:) :: gsmOP   ! gsmap ordered points
 
   character(*), parameter :: subname = '(shr_dmodel_readstrm) '
   character(*), parameter :: F00   = "('(shr_dmodel_readstrm) ',8a)"
@@ -872,6 +904,219 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   endif
 
 end subroutine shr_dmodel_readstrm
+
+!===============================================================================
+
+subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
+     pio_iodesc, gsMap, av, avFile, mpicom, &
+     path, fn, nt, istr)
+
+  use shr_file_mod, only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
+  use shr_stream_mod
+  use shr_ncread_mod, only: shr_ncread_open, shr_ncread_close, shr_ncread_varDimSizes, &
+       shr_ncread_tField
+  implicit none
+
+  !----- arguments -----
+  type      (shr_stream_streamType) ,intent(inout)         :: stream
+  type      (iosystem_desc_t)       ,intent(inout), target :: pio_subsystem
+  integer   (IN)                    ,intent(in)            :: pio_iotype
+  type      (io_desc_t)             ,intent(inout)         :: pio_iodesc
+  type      (mct_gsMap)             ,intent(in)            :: gsMap
+  type      (mct_aVect)             ,intent(inout)         :: av
+  type      (mct_aVect)             ,intent(inout)         :: avFile
+  integer   (IN)                    ,intent(in)            :: mpicom
+  character (len=*)                 ,intent(in)            :: path
+  character (len=*)                 ,intent(in)            :: fn
+  integer   (IN)                    ,intent(in)            :: nt
+  character (len=*)                 ,intent(in) ,optional  :: istr
+
+  !----- local -----
+  integer(IN)                   :: my_task
+  integer(IN)                   :: master_task
+  integer(IN)                   :: ierr
+  logical                       :: localCopy,fileexists
+  type(mct_avect)               :: avG
+  integer(IN)                   :: gsize,nx,ny,nz
+  integer(IN)                   :: k
+  integer(IN)                   :: fid
+  integer(IN)                   :: rCode   ! return code
+  real(R8),allocatable          :: data2d(:,:)
+  real(R8),allocatable          :: data3d(:,:,:)
+  logical                       :: d3dflag
+  character(CL)                 :: fileName
+  character(CL)                 :: sfldName
+  type(mct_avect)               :: avtmp
+  character(len=32)             :: lstr
+  logical                       :: fileopen
+  character(CL)                 :: currfile
+  character(CXX)                :: fldList ! list of fields
+
+  integer(in)                   :: ndims
+  integer(in),pointer           :: dimid(:)
+  type(file_desc_t)             :: pioid
+  type(var_desc_t)              :: varid
+  integer(kind=pio_offset_kind) :: frame
+  type(io_desc_t)               :: pio_iodesc_local
+  integer(IN)                   :: avFile_beg, avFile_end
+
+  integer                       :: lsize, cnt,m,n
+  integer, allocatable          :: count(:), compDOF(:)
+  integer, pointer,dimension(:) :: gsmOP   ! gsmap ordered points
+
+  character(*), parameter :: subname = ' (shr_dmodel_readstrm_fullfile) '
+  character(*), parameter :: F00   = "(' (shr_dmodel_readstrm_fullfile) ',8a)"
+  character(*), parameter :: F01   = "(' (shr_dmodel_readstrm_fullfile) ',a,5i8)"
+
+  !-------------------------------------------------------------------------------
+
+  lstr = 'shr_dmodel_readstrm_fullfile'
+  if (present(istr)) then
+     lstr = trim(istr)
+  endif
+
+  call t_barrierf(trim(lstr)//'_BARRIER',mpicom)
+  call t_startf(trim(lstr)//'_setup')
+  call MPI_COMM_RANK(mpicom,my_task,ierr)
+  master_task = 0
+
+  gsize = mct_gsmap_gsize(gsMap)
+  lsize = mct_gsmap_lsize(gsMap,mpicom)
+
+  if (my_task == master_task) then
+     localCopy = (shr_file_queryPrefix(path) /= shr_file_noPrefix )
+     if (localCopy) then
+        call shr_file_get(rCode,fn,trim(path)//fn)
+        fileName = fn
+     else                 ! DON'T acquire a local copy of the data file
+        fileName = trim(path)//fn
+     end if
+     inquire(file=trim(fileName),exist=fileExists)
+     if (.not. fileExists) then
+        write(logunit,F00) "ERROR: file does not exist: ", trim(fileName)
+        call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(fileName))
+     end if
+  endif
+
+  if (my_task == master_task) then
+     call shr_stream_getFileFieldName(stream,1,sfldName)
+  endif
+
+  call t_stopf(trim(lstr)//'_setup')
+
+  if (pio_iotype == iotype_std_netcdf) then
+
+     write(logunit,F01) "shr_dmodel_readstrm_fullfile: not supported for iotype_std_netcdf"
+     call shr_sys_abort(subname//"ERROR extend shr_dmodel_readstrm_fullfile")
+
+  else
+
+     call t_startf(trim(lstr)//'_readpio')
+     call shr_mpi_bcast(sfldName,mpicom,'sfldName')
+     call shr_mpi_bcast(filename,mpicom,'filename')
+
+     call shr_stream_getCurrFile(stream,fileopen=fileopen,currfile=currfile,currpioid=pioid)
+
+     if (fileopen .and. currfile==filename) then
+        ! don't reopen file, all good
+     else
+        ! otherwise close the old file if open and open new file
+        if (fileopen) then
+           if (my_task == master_task) then
+              write(logunit,F00) 'close  : ',trim(currfile)
+              call shr_sys_flush(logunit)
+           endif
+           call pio_closefile(pioid)
+        endif
+        if (my_task == master_task) then
+           write(logunit,F00) 'open   : ',trim(filename)
+           call shr_sys_flush(logunit)
+        endif
+        rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
+        call shr_stream_setCurrFile(stream,fileopen=.true.,currfile=trim(filename),currpioid=pioid)
+
+        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+
+        rcode = pio_inq_varid(pioid,trim(sfldName),varid)
+        rcode = pio_inq_varndims(pioid, varid, ndims)
+        allocate(dimid(ndims))
+
+        rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+
+        nx = 1
+        ny = 1
+        nz = 1
+        if (ndims >= 1) rcode = pio_inq_dimlen(pioid, dimid(1), nx)
+        if (ndims >= 2) rcode = pio_inq_dimlen(pioid, dimid(2), ny)
+        if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
+        deallocate(dimid)
+
+        if (gsize /= nx*ny .and. gsize /= nx*ny*nz) then
+           write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
+           call shr_sys_abort(subname//"ERROR in data sizes")
+        endif
+
+        if (my_task == master_task) then
+           call shr_stream_getModelFieldList(stream,fldList)
+        endif
+        call shr_mpi_bcast(fldList,mpicom)
+
+        call mct_avect_clean(avFile)
+        call mct_aVect_init(avFile,rlist=fldList,lsize=nx*ny*nz)
+
+        call mct_gsmap_OP(gsMap,my_task,gsmOP)
+
+        allocate(count(3))
+        allocate(compDOF(lsize*nz),stat=rcode)
+        if (rcode /= 0) call shr_sys_abort(subname//"ERROR insufficient memory")
+
+        count(1) = nx
+        count(2) = ny
+        count(3) = nz
+
+        cnt = 0
+        do n = 1,nz
+           do m = 1,lsize
+              cnt = cnt + 1
+              compDOF(cnt) = (n-1)*gsize + gsmOP(m)
+           enddo
+        enddo
+
+        call pio_initdecomp(pio_subsystem, pio_double, count, compDOF, pio_iodesc_local)
+
+        frame = 1
+        do k = 1, mct_aVect_nRAttr(avFile)
+           if (my_task == master_task) then
+              call shr_stream_getFileFieldName(stream,k,sfldName)
+           endif
+           call shr_mpi_bcast(sfldName,mpicom,'sfldName')
+           rcode = pio_inq_varid(pioid,trim(sfldName),varid)
+
+           call pio_setframe(pioid,varid,frame)
+
+           call pio_read_darray(pioid, varid, pio_iodesc_local, avFile%rattr(k,:), rcode)
+        enddo
+
+        call pio_freedecomp(pio_subsystem, pio_iodesc_local)
+
+        deallocate(count)
+        deallocate(compDOF)
+
+     endif
+
+     ! Cope the `nt` time slice data from avFile into av
+     avFile_beg = lsize*(nt-1) + 1
+     avFile_end = lsize*nt
+     do k = 1, mct_aVect_nRAttr(avFile)
+        av%rattr(k,1:lsize) = avFile%rattr(k,avFile_beg:avFile_end)
+     enddo
+
+     call t_stopf(trim(lstr)//'_readpio')
+
+  endif
+
+end subroutine shr_dmodel_readstrm_fullfile
+
 !===============================================================================
 !===============================================================================
 !BOP ===========================================================================

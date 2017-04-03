@@ -426,6 +426,23 @@
     </values>
   </entry>
 
+  <entry id="readmode" per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>single,full_file</valid_values>
+    <desc>
+      array (up to 30 elements) of reading mode associated with the array of
+      streams.  specifies the mode of reading temporal stream dataset.
+      valid options are "single" (read temporal dataset one at a time) or
+      "full_file" (read all entires of temporal dataset in a given netcdf file)
+      valid values: single,full_file
+    </desc>
+    <values>
+      <value>single</value>
+    </values>
+  </entry>
+
   <entry id="dtlimit"  per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
