@@ -1026,6 +1026,22 @@ for mct, etc.
   <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
+<compiler COMPILER="ibm" MACH="summitdev">
+  <SFC> xlf_r </SFC>
+  <MPIFC> mpixlf </MPIFC>
+  <SCC> xlc_r </SCC>
+  <MPICC> mpixlc </MPICC>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <NETCDF_PATH>${OLCF_NETCDF_ROOT}</NETCDF_PATH>
+  <PNETCDF_PATH>$(OLCF_PARALLEL_NETCDF_ROOT}</PNETCDF_PATH>
+  <HDF5_PATH>${OLCF_HDF5_ROOT}</HDF5_PATH>
+  <!-- 
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_SLIBS> -L${OLCF_NETCDF_ROOT}/lib -lnetcdf  </ADD_SLIBS> 
+  -->
+</compiler>
 
 <compiler COMPILER="ibm" MACH="cetus">
   <SFC> mpixlf2003_r </SFC>
