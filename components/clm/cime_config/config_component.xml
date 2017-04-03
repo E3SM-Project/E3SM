@@ -86,7 +86,7 @@
     <values>
       <value compset="%CNCR"                 >-ignore_ic_year</value>  <!-- ERROR: Never matched, see bug 2025 -->
       <value compset="_CLM45%[^_]*SP"        >-bgc sp</value>
-      <value compset="_CLM45%[^_]*SPBC"      >-bgc sp -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
+      <value compset="_CLM45%[^_]*SPBC"      >-bgc sp -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</value>
       <value compset="_CLM45%[^_]*CN"        >-bgc cn</value>
       <value compset="_CLM45%[^_]*BGC"       >-bgc bgc</value>
       <value compset="_CLM45%[^_]*CN-CROP"   >-bgc cn -crop</value>
@@ -97,11 +97,11 @@
       <value compset="_CLM45%[^_]*BGCDV-CROP">-bgc bgc -dynamic_vegetation -crop</value>
       <value compset="_CLM45%[^_]*CN-ED"     >-bgc cn -ed_mode</value>
       <value compset="_CLM45%[^_]*BGC-ED"    >-bgc bgc -ed_mode</value>
-      <value compset="_CLM45%[^_]*CRDCTCBC"   >-bgc cn -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
-      <value compset="_CLM45%[^_]*CNRDCTCBC"  >-bgc cn -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
-      <value compset="_CLM45%[^_]*CNPRDCTCBC" >-bgc cn -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
-      <value compset="_CLM45%[^_]*CNECACTCBC" >-bgc cn -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
-      <value compset="_CLM45%[^_]*CNPECACTCBC">-bgc cn -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</value>
+      <value compset="_CLM45%[^_]*CRDCTCBC"   >-bgc cn -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</value>
+      <value compset="_CLM45%[^_]*CNRDCTCBC"  >-bgc cn -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</value>
+      <value compset="_CLM45%[^_]*CNPRDCTCBC" >-bgc cn -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</value>
+      <value compset="_CLM45%[^_]*CNECACTCBC" >-bgc cn -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</value>
+      <value compset="_CLM45%[^_]*CNPECACTCBC">-bgc cn -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane -nitrif_denitrif -fsnowoptics lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</value>
 
       <value compset="_CLM50%[^_]*SP"        >-bgc sp</value>
       <value compset="_CLM50%[^_]*BGC"       >-bgc bgc</value>
