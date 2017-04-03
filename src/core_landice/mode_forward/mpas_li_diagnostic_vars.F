@@ -457,11 +457,6 @@ contains
 
       integer :: err_tmp
 
-      !WHL - debug
-      real (kind=RKIND), dimension(:), pointer :: xCell, yCell
-      integer, pointer :: nCellsSolve
-      integer, dimension(:), pointer :: indexToCellID
-
       err = 0
       err_tmp = 0
 
@@ -717,19 +712,6 @@ contains
             elsewhere
                betaSolve = beta
             end where
-
-            !WHL - debug - Write list of cells with ice
-!            call mpas_pool_get_array(meshPool, 'xCell', xCell)
-!            call mpas_pool_get_array(meshPool, 'yCell', yCell)
-!            call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-!            call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
-
-!            write(stdoutUnit,*) 'Cells with ice before diagnostic_solve: iCell (local, global), xCell, yCell, thickness:'
-!            do iCell = 1, nCellsSolve
-!               if (thickness(iCell) > 0.0_RKIND) then
-!                  write(stdoutUnit,*) iCell, indexToCellID(iCell), xCell(iCell), yCell(iCell), thickness(iCell)
-!               endif
-!            enddo
 
             block => block % next
          end do
