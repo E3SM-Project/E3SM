@@ -21,7 +21,7 @@ before_install:
   - conda update -q conda
   - conda config --set anaconda_upload no
 
-  - conda install python=$TRAVIS_PYTHON_VERSION cdp cdms2 unidata -c conda-forge -c uvcdat -y
+  - conda install python=$TRAVIS_PYTHON_VERSION cdp cdms2 genutil -c conda-forge -c uvcdat -y
   - export UVCDAT_ANONYMOUS_LOG=False
 
 install:
