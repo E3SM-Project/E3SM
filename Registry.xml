@@ -472,6 +472,7 @@
                         <var name="simulationStartTime"/>
 			<var name="thickness"/>
 			<var name="temperature"/>
+                        <var name="surfaceAirTemperature"/>
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
