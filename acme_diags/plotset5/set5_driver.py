@@ -291,7 +291,8 @@ for parameter in parameters:
 
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
-                    viewer.add_col('Description for %s' % var)
+                    #viewer.add_col('Description for %s' % var)
+                    viewer.add_col(mv1.long_name)
                 viewer.set_row('%s %s' % (var, region))
                 files = [parameter.case_id + '/' + parameter.output_file + ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
                 formatted_files = [{'url': f, 'title': f} for f in files]
