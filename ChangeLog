@@ -1,6 +1,161 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 4-4-2017
+Tag: cime5.3.0-alpha.05
+Answer Changes: None
+Tests: scripts_regression_test, code checker 
+Dependencies:
+
+Brief Summary:
+    - First try to support titan restart.
+    - Pull back ACME repo changes of CIME since last subtree split (late
+      January?) up to March 29 back into CIME master.
+    - Allow a custom input root through create_test.
+    - Update pio stubs to include new derived field needed in pio_init.
+    - Set a default value for esmf_logging so it does not have to appear in
+      drv_in.
+    - Add logging options to ESMF_Initialize
+    - Fix pylint issues.
+    - Fix manage_case --query-grids for cesm.
+    - Adds support for namelist entries of the form foo(3) = 'a'
+    - Add mpilib and compiler command line options to configure.
+    - summarize_cprnc_diffs: Print unnormalized RMS diffs.
+    - Make sure pio_typename is valid.
+    - New hooks for runnning external scripts for pre-run and post-run.
+    - Enable PIO rearranger options for PIO2.
+    - code_checker needs to work outside of ESMCI/CIME.
+    - Fix pylint error in buildnml.
+    - Add flags to make create_newcase non-interactive.
+    - Added mct/cime_config/namelist_definition_drv_flds.xml with updated
+      schema.
+    - Some driver code no longer needed to do this for cam.
+    - Supress a future warning on the use of condition in expect subroutine.
+    - Couple fixes to recent PR that added SUBMIT phase.
+   
+User interface changes: 
+    - Add --input-dir argument to create_test
+    - esmf_logging (and therefore drv_in) are now optional
+    - New run time XML variable: ESMF_LOGFILE_KIND
+    - New --answer flag to create_newcase
+    - Removes a distracting warning
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+eeb1e2c Merge pull request #1275 from ESMCI/jgfouca/titan_restart
+fbf1b0c Merge pull request #1287 from ESMCI/agsalin/merge-from-acme-03292017
+dda631e Merge pull request #1298 from ESMCI/jgfouca/allow_custom_input_root
+2dc9a8a Merge pull request #1301 from jedwards4b/unit_test_stubs_update
+3d76b10 Merge pull request #1300 from gold2718/esmfLog
+0d320ec Merge pull request #1289 from gold2718/esmfLog
+8890873 Merge pull request #1290 from ESMCI/jgfouca/grids_pylint_fixes
+55a084b Merge pull request #1285 from ESMCI/mvertens/manage_case
+9d8396a Merge pull request #1259 from jedwards4b/index_in_namelist
+4e125ee Merge pull request #1268 from jedwards4b/configure_update
+9759e15 Merge pull request #1279 from billsacks/summarize_rms
+840ae3c Merge pull request #1273 from jedwards4b/pio_typename_fix
+07e61ed Merge pull request #1256 from ESMCI/mvertens/phys_cycle
+85f831d Merge pull request #1260 from ESMCI/jayeshkrishna/enable_rearr_opts_pio2
+fbfa996 Merge pull request #1269 from ESMCI/jgfouca/code_checker_work_outside_esmci
+300cbf3 Merge pull request #1253 from ESMCI/jgfouca/pylint_fix_to_buildnml
+d44970c Merge pull request #1249 from ESMCI/jgfouca/create_newcase_non_interactive
+8270602 Merge pull request #1231 from ESMCI/mvertens/drv_flds_in
+5f3072c Merge pull request #1237 from jedwards4b/jpe_fix_atm_simple_settings
+ffa61ea Merge pull request #1242 from jedwards4b/jpe/futurewarning
+fecaaad Merge pull request #1240 from ESMCI/jgfouca/fixes_to_submit_phase_pr
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/acme/allactive/config_pes.xml
+M	config/acme/allactive/config_pesall.xml
+M	config/acme/config_archive.xml
+M	config/acme/config_files.xml
+M	config/acme/config_grids.xml
+M	config/acme/machines/Makefile
+M	config/acme/machines/config_batch.xml
+M	config/acme/machines/config_compilers.xml
+M	config/acme/machines/config_machines.xml
+M	config/acme/machines/config_pio.xml
+A	config/acme/machines/syslog.anvil
+A	config/acme/testmods_dirs/allactive/cam/outfrq9s/xmlchange_cmnds
+A	config/acme/testmods_dirs/allactive/force_netcdf_pio/shell_commands
+A	config/acme/testmods_dirs/allactive/force_netcdf_pio/xmlchange_cmnds
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_pio.xml
+M	config/config_tests.xml
+M	scripts/Tools/check_input_data
+M	scripts/create_newcase
+M	scripts/create_test
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/BuildTools/macrowriterbase.py
+M	scripts/lib/CIME/SystemTests/dae.py
+M	scripts/lib/CIME/SystemTests/homme.py
+A	scripts/lib/CIME/SystemTests/nodefail.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/entry_id.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_pes.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/namelist_definition.py
+A	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/case.py
+M	scripts/lib/CIME/case_run.py
+M	scripts/lib/CIME/case_setup.py
+M	scripts/lib/CIME/case_st_archive.py
+M	scripts/lib/CIME/case_submit.py
+M	scripts/lib/CIME/code_checker.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/namelist.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/preview_namelists.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/update_acme_tests.py
+M	scripts/manage_case
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps/datm/cime_config/buildnml
+M	src/components/data_comps/desp/cime_config/buildnml
+M	src/components/data_comps/dice/cime_config/buildnml
+M	src/components/data_comps/dlnd/cime_config/buildnml
+M	src/components/data_comps/docn/cime_config/buildnml
+M	src/components/data_comps/drof/cime_config/buildnml
+M	src/components/data_comps/dwav/cime_config/buildnml
+D	src/drivers/mct/bld/namelist_files/namelist_defaults_drv.xml
+D	src/drivers/mct/bld/namelist_files/namelist_definition_drv.xml
+D	src/drivers/mct/bld/namelist_files/namelist_definition_drv_flds.xml
+D	src/drivers/mct/bld/namelist_files/namelist_definition_modio.xml
+D	src/drivers/mct/bld/testdir/Buildconf/camconf/drv_flds_in
+D	src/drivers/mct/bld/testdir/Buildconf/clmconf/drv_flds_in
+D	src/drivers/mct/bld/testdir/env_build.xml
+D	src/drivers/mct/bld/testdir/env_case.xml
+D	src/drivers/mct/bld/testdir/env_mach_pes.xml
+D	src/drivers/mct/bld/testdir/env_run.xml
+D	src/drivers/mct/bld/testdir/runtest
+D	src/drivers/mct/bld/testdir/user_nl_cpl
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_acme.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+A	src/drivers/mct/cime_config/namelist_definition_drv_flds.xml
+M	src/drivers/mct/main/cesm_driver.F90
+M	src/drivers/mct/shr/seq_comm_mct.F90
+M	src/externals/pio1/pio/CMakeLists.txt
+M	src/share/esmf_wrf_timemgr/ESMF_Stubs.F90
+M	src/share/unit_test_stubs/pio/pio.F90.in
+M	src/share/util/shr_pio_mod.F90
+M	tools/Readme.configure
+M	tools/configure
+M	tools/cprnc/summarize_cprnc_diffs
+M	tools/mapping/map_field/src/map_field.F90
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 3-14-2017
 Tag: cime5.3.0-alpha.04
 Answer Changes: Answer changes for gx3v7
