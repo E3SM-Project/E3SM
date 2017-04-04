@@ -273,7 +273,7 @@ for mct, etc.
   <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
-<!--  <FREEFLAGS> -free </FREEFLAGS> -->
+  <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <!-- WJS (8-11-14): For some reason, yellowstone-intel has starting giving lots of
        messages about array temporaries, leading to a ton of standard output, and
