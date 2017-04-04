@@ -1,5 +1,27 @@
 ======================================================================
 
+Originator:Chris Fischer 
+Date: 4-4-2017
+Tag: cime5.3.0-alpha.06
+Answer Changes: None
+Tests: code_checker, NODEFAIL 
+Dependencies:
+
+Brief Summary:
+    - Fix handling of spare nodes
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+95019a3 Merge pull request #1302 from ESMCI/jgfouca/fixes_to_recent_prs
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/XML/env_mach_pes.py
+M       scripts/lib/CIME/case.py
+M       scripts/lib/CIME/case_run.py
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 4-4-2017
 Tag: cime5.3.0-alpha.05
