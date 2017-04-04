@@ -2,11 +2,14 @@ import unittest
 import os
 import cdms2
 from acme_diags.derivations import acme
+from acme_diags.acme_parameter import ACMEParameter
 
 def get_abs_file_path(relative_path):
     return os.path.dirname(os.path.abspath(__file__)) + '/' + relative_path
 
 class TestACMEDerivations(unittest.TestCase):
+    def setUp(self):
+        self.parameter = ACMEParameter()
 
     def test_convert_units(self):
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
@@ -26,7 +29,7 @@ class TestACMEDerivations(unittest.TestCase):
         }
 
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
-        acme.process_derived_var('PRECT', derived_var, precc_file)
+        acme.process_derived_var('PRECT', derived_var, precc_file, self.parameter)
         precc_file.close()
 
     def test_process_derived_var_with_wrong_dict(self):
@@ -40,7 +43,7 @@ class TestACMEDerivations(unittest.TestCase):
 
         precc_file = cdms2.open(get_abs_file_path('precc.nc'))
         with self.assertRaises(RuntimeError):
-            acme.process_derived_var('PRECT', wrong_derived_var, precc_file)
+            acme.process_derived_var('PRECT', wrong_derived_var, precc_file, self.parameter)
         precc_file.close()
 
     def test_mask_by_passes(self):
