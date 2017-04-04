@@ -2244,6 +2244,11 @@
       <ROF2OCN_LIQ_RMAPNAME >cpl/cpl6/map_r0125_to_oRRS18to6v3_nn.170111.nc</ROF2OCN_LIQ_RMAPNAME>
     </gridmap>
 
+    <gridmap rof_grid="r0125" ocn_grid="oRRS18to6v3_ICG" >
+      <ROF2OCN_ICE_RMAPNAME >cpl/cpl6/map_r0125_to_oRRS18to6v3_nn.170111.nc</ROF2OCN_ICE_RMAPNAME>
+      <ROF2OCN_LIQ_RMAPNAME >cpl/cpl6/map_r0125_to_oRRS18to6v3_nn.170111.nc</ROF2OCN_LIQ_RMAPNAME>
+    </gridmap>
+
     <gridmap rof_grid="r0125" ocn_grid="oRRS15to5" >
       <ROF2OCN_ICE_RMAPNAME >cpl/cpl6/map_r0125_to_oRRS15to5_nn.160720.nc</ROF2OCN_ICE_RMAPNAME>
       <ROF2OCN_LIQ_RMAPNAME >cpl/cpl6/map_r0125_to_oRRS15to5_nn.160720.nc</ROF2OCN_LIQ_RMAPNAME>
