@@ -78,6 +78,8 @@ real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg)
       shr_orb_cosz =  shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
    else
       shr_orb_cosz = sin(lat)*sin(declin) - &
+   !   &              cos(lat)*cos(declin)*cos(jday*2.0_SHR_KIND_R8*pi + lon)
+! RLJ old version above.  Restore more accurate version below in separate PR
            cos(lat)*cos(declin) * &
            cos((jday-floor(jday))*2.0_SHR_KIND_R8*pi + lon)
    end if

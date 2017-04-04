@@ -96,6 +96,9 @@ class NamelistGenerator(object):
     def init_defaults(self, infiles, config, skip_groups=None, skip_entry_loop=None ):
         """Return array of names of all definition nodes
         """
+        # first clean out any settings left over from previous calls
+        self.new_instance()
+
         self._definition.set_nodes(skip_groups=skip_groups)
 
         # Determine the array of entry nodes that will be acted upon
@@ -211,7 +214,8 @@ class NamelistGenerator(object):
         """
         var_group = self._definition.get_group(name)
         literals = self._to_namelist_literals(name, value)
-        self._namelist.set_variable_value(var_group, name, literals)
+        _, _, var_size, = self._definition.split_type_string(name)
+        self._namelist.set_variable_value(var_group, name, literals, var_size)
 
     def get_default(self, name, config=None, allow_none=False):
         """Get the value of a variable from the namelist definition file.
@@ -274,11 +278,23 @@ class NamelistGenerator(object):
                     default[i] = self.quote_string(scalar)
 
         default = self._to_python_value(name, default)
+
         return default
 
     def get_streams(self):
         """Get a list of all streams used for the current data model  mode."""
         return self.get_default("streamslist")
+
+    def clean_streams(self):
+        for variable in self._streams_variables:
+            self._streams_namelists[variable] = []
+        self._streams_namelists["streams"] = []
+
+    def new_instance(self):
+        """ Clean the object just enough to introduce a new instance """
+        self.clean_streams()
+        self._namelist.clean_groups()
+
 
     def _sub_fields(self, varnames):
         """Substitute indicators with given values in a list of fields.
@@ -407,6 +423,7 @@ class NamelistGenerator(object):
         `stream_path` - Path to write the stream file to.
         `data_list_path` - Path of file to append input data information to.
         """
+
         # Stream-specific configuration.
         config = config.copy()
         config["stream"] = stream
@@ -517,13 +534,8 @@ class NamelistGenerator(object):
 
         # Use this to see if we need to raise an error when nothing is found.
         have_value = False
-
         # Check for existing value.
         current_literals = self._namelist.get_variable_value(group, name)
-        if current_literals != [""]:
-            have_value = True
-            # Do not proceed further since this has been obtained the -infile contents
-            return
 
         # Check for input argument.
         if value is not None:
@@ -542,7 +554,8 @@ class NamelistGenerator(object):
 
         # Go through file names and prepend input data root directory for
         # absolute pathnames.
-        if ignore_abs_path is None:
+        var_type, _, var_size = self._definition.split_type_string(name)
+        if var_type == "character" and ignore_abs_path is None:
             var_input_pathname = self._definition.get_input_pathname(name)
             if var_input_pathname == 'abs':
                 current_literals = expand_literal_list(current_literals)
@@ -562,7 +575,7 @@ class NamelistGenerator(object):
                 current_literals = compress_literal_list(current_literals)
 
         # Set the new value.
-        self._namelist.set_variable_value(group, name, current_literals)
+        self._namelist.set_variable_value(group, name, current_literals, var_size)
 
     def create_shr_strdata_nml(self):
         """Set defaults for `shr_strdata_nml` variables other than the variable domainfile """

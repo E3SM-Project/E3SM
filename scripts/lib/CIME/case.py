@@ -32,6 +32,7 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
+from CIME.aprun import get_aprun_cmd_for_case
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +97,14 @@ class Case(object):
         self._is_env_loaded = False
 
         self.thread_count = None
+        self.total_tasks = None
         self.tasks_per_node = None
         self.num_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
-            self.initialize_derived_attributes()
+            self._initialize_derived_attributes()
 
     def check_if_comp_var(self, vid):
         vid = vid
@@ -114,20 +116,21 @@ class Case(object):
                 return vid, comp, iscompvar
         return vid, comp, iscompvar
 
-    def initialize_derived_attributes(self):
+    def _initialize_derived_attributes(self):
         """
         These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
         """
-        env_mach_pes = self.get_env("mach_pes")
-        comp_classes = self.get_values("COMP_CLASSES")
-        total_tasks  = env_mach_pes.get_total_tasks(comp_classes)
-        pes_per_node = self.get_value("PES_PER_NODE")
+        env_mach_pes  = self.get_env("mach_pes")
+        env_mach_spec = self.get_env('mach_specific')
+        comp_classes  = self.get_values("COMP_CLASSES")
+        pes_per_node  = self.get_value("PES_PER_NODE")
 
+        self.total_tasks = env_mach_pes.get_total_tasks(comp_classes)
         self.thread_count = env_mach_pes.get_max_thread_count(comp_classes)
-        self.tasks_per_node = env_mach_pes.get_tasks_per_node(total_tasks, self.thread_count)
-        logger.debug("total_tasks %s thread_count %s"%(total_tasks, self.thread_count))
-        self.num_nodes = env_mach_pes.get_total_nodes(total_tasks, self.thread_count)
+        self.tasks_per_node = env_mach_pes.get_tasks_per_node(self.total_tasks, self.thread_count)
+        logger.debug("total_tasks %s thread_count %s"%(self.total_tasks, self.thread_count))
+
         self.tasks_per_numa = int(math.ceil(self.tasks_per_node / 2.0))
         smt_factor = max(1,int(self.get_value("MAX_TASKS_PER_NODE") / pes_per_node))
 
@@ -135,7 +138,17 @@ class Case(object):
         threads_per_core = 1 if (threads_per_node <= pes_per_node) else smt_factor
         self.cores_per_task = self.thread_count / threads_per_core
 
-        return total_tasks
+        mpi_attribs = {
+            "compiler" : self.get_value("COMPILER"),
+            "mpilib"   : self.get_value("MPILIB"),
+            "threaded" : get_build_threaded(self)
+            }
+
+        executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
+        if executable == "aprun":
+            self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
+        else:
+            self.num_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.
@@ -773,10 +786,10 @@ class Case(object):
         if test:
             self.set_value("TEST",True)
 
-        total_tasks = self.initialize_derived_attributes()
+        self._initialize_derived_attributes()
 
         # Make sure that parallel IO is not specified if total_tasks==1
-        if total_tasks == 1:
+        if self.total_tasks == 1:
             for compclass in self._component_classes:
                 key = "PIO_TYPENAME_%s"%compclass
                 pio_typename = self.get_value(key)
@@ -784,7 +797,7 @@ class Case(object):
                     self.set_value(key, "netcdf")
 
         # Set TOTAL_CORES
-        self.set_value("TOTAL_CORES", total_tasks * self.cores_per_task )
+        self.set_value("TOTAL_CORES", self.total_tasks * self.cores_per_task )
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
@@ -1058,20 +1071,19 @@ class Case(object):
             }
 
         executable, args = env_mach_specific.get_mpirun(self, mpi_attribs, job=job)
-        # special case for aprun if using < 1 full node
+
+        # special case for aprun
         if executable == "aprun":
-            totalpes = self.get_value("TOTALPES")
-            pes_per_node = self.get_value("PES_PER_NODE")
-            if totalpes < pes_per_node:
-                args["tasks_per_node"] = "-N "+str(totalpes)
+            aprun_cmd, num_nodes = get_aprun_cmd_for_case(self, run_exe)
+            expect(num_nodes == self.num_nodes, "Not using optimized num nodes")
+            return aprun_cmd + " " + run_misc_suffix
+        else:
+            mpi_arg_string = " ".join(args.values())
 
-        mpi_arg_string = " ".join(args.values())
+            if self.get_value("BATCH_SYSTEM") == "cobalt":
+                mpi_arg_string += " : "
 
-
-        if self.get_value("BATCH_SYSTEM") == "cobalt":
-            mpi_arg_string += " : "
-
-        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
+            return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, run_suffix)
 
     def set_model_version(self, model):
         version = "unknown"

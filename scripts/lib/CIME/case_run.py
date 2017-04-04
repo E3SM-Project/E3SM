@@ -219,12 +219,22 @@ def resubmit_check(case):
         submit(case, job=job, resubmit=True)
 
 ###############################################################################
-def do_data_assimilation(da_script, caseroot, cycle, lid):
+def do_external(script_name, caseroot, rundir, lid, prefix):
 ###############################################################################
-    cmd = da_script + " 1> da.log.%s %s %d 2>&1" %(lid, caseroot, cycle)
-    logger.debug("running %s" %da_script)
+    filename = "%s.external.log.%s" %(prefix, lid)
+    outfile = os.path.join(rundir, filename)
+    cmd = script_name + " 1> %s %s 2>&1" %(outfile, caseroot)
+    logger.info("running %s" %script_name)
     run_cmd_no_fail(cmd)
-    # disposeLog(case, 'da', lid)  THIS IS UNDEFINED!
+
+###############################################################################
+def do_data_assimilation(da_script, caseroot, cycle, lid, rundir):
+###############################################################################
+    filename = "da.log.%s" %(lid)
+    outfile = os.path.join(rundir, filename)
+    cmd = da_script + " 1> %s %s %d 2>&1" %(outfile, caseroot, cycle)
+    logger.info("running %s" %da_script)
+    run_cmd_no_fail(cmd)
 
 ###############################################################################
 def case_run(case):
@@ -236,6 +246,9 @@ def case_run(case):
            "As a result, short-term archiving will not be called automatically."
            "Please submit your run using the submit script like so:"
            " ./case.submit")
+
+    prerun_script = case.get_value("PRERUN_SCRIPT")
+    postrun_script = case.get_value("POSTRUN_SCRIPT")
 
     data_assimilation = case.get_value("DATA_ASSIMILATION")
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
@@ -252,13 +265,22 @@ def case_run(case):
             case.set_value("CONTINUE_RUN", "TRUE")
             lid = new_lid()
 
+        if prerun_script:
+            do_external(prerun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
+                        lid, prefix="prerun")
+
         lid = run_model(case, lid)
         save_logs(case, lid)       # Copy log files back to caseroot
         if case.get_value("CHECK_TIMING") or case.get_value("SAVE_TIMING"):
             get_timing(case, lid)     # Run the getTiming script
 
         if data_assimilation:
-            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid)
+            do_data_assimilation(data_assimilation_script, case.get_value("CASEROOT"), cycle, lid,
+                                 case.get_value("RUNDIR"))
+
+        if postrun_script:
+            do_external(postrun_script, case.get_value("CASEROOT"), case.get_value("RUNDIR"),
+                        lid, prefix="postrun")
 
         save_postrun_provenance(case)
 

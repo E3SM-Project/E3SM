@@ -935,6 +935,23 @@
     this to work.</desc>
   </entry>
 
+  <entry id="ESMF_LOGFILE_KIND">
+    <type>char</type>
+    <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_NONE</valid_values>
+    <default_value>ESMF_LOGKIND_NONE</default_value>
+    <group>run_cesm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Determines what ESMF log files (if any) are generated when
+          USE_ESMF_LIB is TRUE. 
+      ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
+          all of the PETs. Not supported on some platforms.
+      ESMF_LOGKIND_MULTI: Use multiple log files -- one per PET.
+      ESMF_LOGKIND_NONE: Do not issue messages to a log file.
+      By default, no ESMF log files are generated.
+    </desc>
+  </entry>
+
   <entry id="COMP_RUN_BARRIERS">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -2520,6 +2537,23 @@
       run MPASLI on a machine that does not have Albany, or for which
       the CIME scripts are not aware of the existence of
       Albany.</desc>
+  </entry>
+
+  <!-- Prerun/postrun custom script options -->
+
+  <entry id="PRERUN_SCRIPT">
+    <type>char</type>
+    <default_value></default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc>External script to be run before model completion</desc>
+  </entry>
+  <entry id="POSTRUN_SCRIPT">
+    <type>char</type>
+    <default_value></default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc>External script to be run after model completion</desc>
   </entry>
 
   <!-- Data Assimilation type stuff -->

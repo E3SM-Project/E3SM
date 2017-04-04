@@ -147,11 +147,11 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen):
 
     # set variables that are not per-stream
     if datm_mode == 'CPLHISTForcingForOcnIce':
-        nmlgen.add_default("domainfile", value='null')
         if atm_domain_file != "UNSET":
             if case.get_value('ATM_DOMAIN_FILE') != 'UNSET':
-                case.add_default('ATM_DOMAIN_FILE', value='UNSET', ignore_abs_path=True)
-                case.flush()
+                nmlgen.add_default("domainfile", value=atm_domain_file, ignore_abs_path=True)
+        else:
+            nmlgen.add_default("domainfile", value='null')
     else:
         full_domain_path = os.path.join(atm_domain_path, atm_domain_file)
         nmlgen.add_default("domainfile", value=full_domain_path)
@@ -203,7 +203,6 @@ def buildnml(case, caseroot, compname):
     # Loop over instances
     #----------------------------------------------------
     for inst_counter in range(1, ninst+1):
-
         # determine instance string
         inst_string = ""
         if ninst > 1:

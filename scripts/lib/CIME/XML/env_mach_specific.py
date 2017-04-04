@@ -321,7 +321,7 @@ class EnvMachSpecific(EnvBase):
         cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
         return cmd_nodes.text if cmd_nodes is not None else None
 
-    def get_mpirun(self, case, attribs, check_members=None, job="case.run"):
+    def get_mpirun(self, case, attribs, check_members=None, job="case.run", exe_only=False):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -372,16 +372,17 @@ class EnvMachSpecific(EnvBase):
         the_match = best_match if best_match is not None else default_match
 
         # Now that we know the best match, compute the arguments
-        arg_node = self.get_optional_node("arguments", root=the_match)
-        if arg_node is not None:
-            arg_nodes = self.get_nodes("arg", root=arg_node)
-            for arg_node in arg_nodes:
-                arg_value = transform_vars(arg_node.text,
-                                           case=case,
-                                           subgroup=job,
-                                           check_members=check_members,
-                                           default=arg_node.get("default"))
-                args[arg_node.get("name")] = arg_value
+        if not exe_only:
+            arg_node = self.get_optional_node("arguments", root=the_match)
+            if arg_node is not None:
+                arg_nodes = self.get_nodes("arg", root=arg_node)
+                for arg_node in arg_nodes:
+                    arg_value = transform_vars(arg_node.text,
+                                               case=case,
+                                               subgroup=job,
+                                               check_members=check_members,
+                                               default=arg_node.get("default"))
+                    args[arg_node.get("name")] = arg_value
 
         exec_node = self.get_node("executable", root=the_match)
         expect(exec_node is not None,"No executable found")

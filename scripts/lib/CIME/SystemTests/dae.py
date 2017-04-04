@@ -65,18 +65,21 @@ class DAE(SystemTestsCompareTwo):
         # Clean up any da.log files in case this is a re-run.
         self._activate_case2()
         case_root = self._get_caseroot2()
-        da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
+        rundir2 = self._case.get_value("RUNDIR")
+        da_files = glob.glob(os.path.join(rundir2, 'da.log.*'))
         for file_ in da_files:
             os.remove(file_)
         # End for
+
         # CONTINUE_RUN ends up TRUE, set it back in case this is a re-run.
         self._case.set_value("CONTINUE_RUN", False)
         # Start normal run here
         self._activate_case1()
         SystemTestsCompareTwo.run_phase(self)
+
         # Do some checks on the data assimilation 'output' from case2
         self._activate_case2()
-        da_files = glob.glob(os.path.join(case_root, 'da.log.*'))
+        da_files = glob.glob(os.path.join(rundir2, 'da.log.*'))
         if da_files is None:
             logger = logging.getLogger(__name__)
             logger.warning("No DA files in %s", os.path.join(case_root, 'da.log.*'))
