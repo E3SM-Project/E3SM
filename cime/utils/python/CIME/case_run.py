@@ -200,7 +200,7 @@ def case_run(case):
     # system will support them
     try:
         resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
-    except resource.error:
+    except:
         pass
 
     data_assimilation = case.get_value("DATA_ASSIMILATION")
