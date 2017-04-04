@@ -10,17 +10,22 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.test_data_set = ''
 
         self.variables = ''
-        self.season = ''
+        self.season = []
         self.region = ''
         self.regrid_tool = 'esmf'
         self.regrid_method = 'linear'
 
+
+        # Plotting related
+        self.main_title = 'Main Title'
         self.backend = 'vcs'
         self.output_file = 'output'
         self.output_format = ['png']
-
-        # VCS Options
-        self.main_title = 'Main Title'
+        self.contour_levels = []
+        self.canvas_size_w = 1212
+        self.canvas_size_h = 1628
+        self.arrows = True
+        self.logo = True
 
         self.test_name = ''
         self.test_title = ''
@@ -40,12 +45,7 @@ class ACMEParameter(cdp.cdp_parameter.CDPParameter):
         self.diff_levels = []
         self.diff_units = ''
         
-        self.contour_levels = []
 
-        self.canvas_size_w = 1212
-        self.canvas_size_h = 1628
-        self.arrows = True
-        self.logo = True
 
     def check_values(self):
         # just check if reference_data_path + reference_data_set and
