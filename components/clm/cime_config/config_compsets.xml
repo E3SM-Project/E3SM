@@ -292,6 +292,11 @@
   </compset>
 
   <compset>
+    <alias>IM20TRCNECACTCBC</alias>
+    <lname>20TR_DATM%QIA_CLM45%CNPECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>ICRDCTCBC</alias>
     <lname>2000_DATM%QIA_CLM45%CRDCTCBC_SICE_SOCN_RTM_SGLC_SWAV</lname>
   </compset>
