@@ -87,16 +87,19 @@ class TestScheduler(object):
                  walltime=None, proc_pool=None,
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
-                 force_procs=None, force_threads=None, mpilib=None):
+                 force_procs=None, force_threads=None, mpilib=None,
+                 input_dir=None):
     ###########################################################################
-        self._cime_root     = CIME.utils.get_cime_root()
-        self._cime_model    = CIME.utils.get_model()
-        self._save_timing   = save_timing
-        self._queue         = queue
-        self._test_data     = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
-        self._mpilib = mpilib  # allow override of default mpilib
-        self._allow_baseline_overwrite  = allow_baseline_overwrite
+        self._cime_root       = CIME.utils.get_cime_root()
+        self._cime_model      = CIME.utils.get_model()
+        self._save_timing     = save_timing
+        self._queue           = queue
+        self._test_data       = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
+        self._mpilib          = mpilib  # allow override of default mpilib
         self._completed_tests = 0
+        self._input_dir       = input_dir
+
+        self._allow_baseline_overwrite = allow_baseline_overwrite
 
         self._machobj = Machines(machine=machine_name)
 
@@ -530,6 +533,9 @@ class TestScheduler(object):
             envtest.set_initial_values(case)
             case.set_value("TEST", True)
             case.set_value("SAVE_TIMING", self._save_timing)
+
+            if self._input_dir is not None:
+                case.set_value("DIN_LOC_ROOT", self._input_dir)
 
         return True
 
