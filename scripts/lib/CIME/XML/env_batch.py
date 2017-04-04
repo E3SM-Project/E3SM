@@ -2,10 +2,10 @@
 Interface to the env_batch.xml file.  This class inherits from EnvBase
 """
 import stat
-import time
 import re
 import math
 from CIME.XML.standard_module_setup import *
+from CIME.utils import format_time
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root
 from copy import deepcopy
@@ -39,13 +39,12 @@ class EnvBatch(EnvBase):
             walltime_format = self.get_value("walltime_format", subgroup=None)
             if walltime_format is not None and walltime_format.count(":") != value.count(":"): # pylint: disable=maybe-no-member
                 if value.count(":") == 1:
-                    t = time.strptime(value,"%H:%M")
+                    t_spec = "%H:%M"
                 elif value.count(":") == 2:
-                    t = time.strptime(value,"%H:%M:%S")
+                    t_spec = "%H:%M:%S"
                 else:
                     expect(False, "could not interpret format for wallclock time %s"%value)
-
-                value = time.strftime(walltime_format, t)
+                value = format_time(walltime_format, t_spec, value)
 
         # allow the user to set item for all jobs if subgroup is not provided
         if subgroup is None:
@@ -269,6 +268,10 @@ class EnvBatch(EnvBase):
                     # need a correction for tasks per node
                     if flag == "-n" and rval<= 0:
                         rval = 1
+
+                    if flag == "-q" and rval == "batch" and case.get_value("MACH") == "blues":
+                        # Special case. Do not provide '-q batch' for blues
+                        continue
 
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
                        flag.rfind(":", len(flag)-1, len(flag)) >= 0:

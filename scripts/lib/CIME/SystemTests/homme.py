@@ -5,6 +5,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.build import post_build
 from CIME.utils import append_testlog
+from CIME.test_status import *
 import shutil
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,7 @@ class HOMME(SystemTestsCommon):
         initialize an object interface to the SMS system test
         """
         SystemTestsCommon.__init__(self, case)
+        case.load_env()
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         if not sharedlib_only:
@@ -72,7 +74,9 @@ class HOMME(SystemTestsCommon):
     # We need to override some methods to make the core infrastructure work.
 
     def _generate_baseline(self):
-        pass
+        with self._test_status:
+            self._test_status.set_status(GENERATE_PHASE, TEST_PASS_STATUS)
 
     def _compare_baseline(self):
-        pass
+        with self._test_status:
+            self._test_status.set_status(BASELINE_PHASE, TEST_PASS_STATUS)
