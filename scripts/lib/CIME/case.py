@@ -96,7 +96,6 @@ class Case(object):
         self._component_classes = []
         self._is_env_loaded = False
 
-
         self.thread_count = None
         self.total_tasks = None
         self.tasks_per_node = None
@@ -106,7 +105,6 @@ class Case(object):
         # check if case has been configured and if so initialize derived
         if self.get_value("CASEROOT") is not None:
             self._initialize_derived_attributes()
-
 
     def check_if_comp_var(self, vid):
         vid = vid
@@ -149,6 +147,7 @@ class Case(object):
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable == "aprun":
             self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
+            self.num_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
         else:
             self.num_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
 

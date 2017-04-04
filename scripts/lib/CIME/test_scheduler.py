@@ -830,7 +830,7 @@ class TestScheduler(object):
                     ts_status = ts.get_overall_test_status(ignore_namelists=True, check_memory=False, check_throughput=False)
 
                     if ts_status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
-                        logger.info( "%s %s (phase %s)" % (status, test, phase))
+                        logger.info( "%s %s (phase %s)" % (ts_status, test, phase))
                         rv = False
                     elif nlfail:
                         logger.info( "%s %s (but otherwise OK) %s" % (NAMELIST_FAIL_STATUS, test, phase))
