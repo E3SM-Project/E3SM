@@ -100,6 +100,7 @@ class Case(object):
         self.total_tasks = None
         self.tasks_per_node = None
         self.num_nodes = None
+        self.spare_nodes = None
         self.tasks_per_numa = None
         self.cores_per_task = None
         # check if case has been configured and if so initialize derived
@@ -147,9 +148,11 @@ class Case(object):
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable == "aprun":
             self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
-            self.num_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
+            self.spare_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
+            self.num_nodes += self.spare_nodes
         else:
-            self.num_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
+            self.num_nodes, self.spare_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
+            self.num_nodes += self.spare_nodes
 
     # Define __enter__ and __exit__ so that we can use this as a context manager
     # and force a flush on exit.

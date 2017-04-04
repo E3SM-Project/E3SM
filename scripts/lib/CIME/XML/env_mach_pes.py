@@ -44,7 +44,7 @@ class EnvMachPes(EnvBase):
         figure out the value of COST_PES which is the pe value used to estimate model cost
         """
         pespn = self.get_value("PES_PER_NODE")
-        num_nodes = self.get_total_nodes(totaltasks, max_thread_count)
+        num_nodes = self.get_total_nodes(totaltasks, max_thread_count)[0]
         # This is hardcoded because on yellowstone by default we
         # run with 15 pes per node
         # but pay for 16 pes per node.  See github issue #518
@@ -68,9 +68,12 @@ class EnvMachPes(EnvBase):
         return tasks_per_node
 
     def get_total_nodes(self, total_tasks, max_thread_count):
+        """
+        Return (num_active_nodes, num_spare_nodes)
+        """
         tasks_per_node = self.get_tasks_per_node(total_tasks, max_thread_count)
         num_nodes = int(math.ceil(float(total_tasks) / tasks_per_node))
-        return num_nodes + self.get_spare_nodes(num_nodes)
+        return num_nodes, self.get_spare_nodes(num_nodes)
 
     def get_spare_nodes(self, num_nodes):
         return int(math.ceil(float(num_nodes) * (self.get_value("PCT_SPARE_NODES") / 100.0)))
