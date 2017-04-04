@@ -5,17 +5,18 @@ import acme_diags.acme_parameter
 
 class ACMEParser(cdp.cdp_parser.CDPParser):
     def __init__(self, *args, **kwargs):
-        super(ACMEParser, self).__init__(acme_diags.acme_parameter.ACMEParameter, *args, **kwargs)
+        super(ACMEParser, self).__init__(
+            acme_diags.acme_parameter.ACMEParameter, *args, **kwargs)
 
     def load_default_args(self):
         # this has '-p' and '--parameter' reserved
         super(ACMEParser, self).load_default_args()
 
         self.add_argument(
-            '-c',
+            '-d',
             type=str,
             dest='custom_diags',
-            help='Path to a json that contains a list of custom diags, which' + 
+            help='Path to a json that contains a list of custom diags, which' +
             ' get appended to the default diags.',
             required=False)
 
