@@ -2602,6 +2602,24 @@
     </values>
   </entry>
 
+  <entry id="esmf_logging" modify_via_xml="ESMF_LOGFILE_KIND">
+    <type>char</type>
+    <category>ccsm_pes</category>
+    <group>ccsm_pes</group>
+    <desc>
+      Determines what ESMF log files (if any) are generated when
+          USE_ESMF_LIB is TRUE. 
+      ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
+          all of the PETs. Not supported on some platforms.
+      ESMF_LOGKIND_MULTI: Use multiple log files — one per PET.
+      ESMF_LOGKIND_NONE: Do not issue messages to a log file.
+      By default, no ESMF log files are generated.
+    </desc>
+    <values>
+      <value>$ESMF_LOGFILE_KIND</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- group prof_inparm           -->
   <!--  in perf_mod.F90            -->
