@@ -372,7 +372,7 @@ class EnvMachSpecific(EnvBase):
         the_match = best_match if best_match is not None else default_match
 
         # Now that we know the best match, compute the arguments
-        if exe_only:
+        if not exe_only:
             arg_node = self.get_optional_node("arguments", root=the_match)
             if arg_node is not None:
                 arg_nodes = self.get_nodes("arg", root=arg_node)
