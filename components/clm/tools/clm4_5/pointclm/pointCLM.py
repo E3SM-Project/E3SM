@@ -973,6 +973,8 @@ if (options.clean_build):
 #compile cesm
 if (options.no_build == False):
     os.system('./case.build')
+    if ('eos' in options.machine):
+      os.system('./case.build')
 else:
     print ('no_build set.  Assuming model has already been built.')
     print ('Creating run directory.  Setting BUILD_COMPLETE = TRUE')
