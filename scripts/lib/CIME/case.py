@@ -147,6 +147,7 @@ class Case(object):
         executable = env_mach_spec.get_mpirun(self, mpi_attribs, job="case.run", exe_only=True)[0]
         if executable == "aprun":
             self.num_nodes = get_aprun_cmd_for_case(self, "acme.exe")[1]
+            self.num_nodes = env_mach_pes.get_spare_nodes(self.num_nodes)
         else:
             self.num_nodes = env_mach_pes.get_total_nodes(self.total_tasks, self.thread_count)
 
