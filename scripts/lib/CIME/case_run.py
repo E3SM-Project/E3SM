@@ -99,9 +99,6 @@ def _run_model_impl(case, lid):
     rundir = case.get_value("RUNDIR")
     loop = True
 
-    total_tasks  = env_mach_pes.get_total_tasks(comp_classes)
-    num_spare_nodes = env_mach_pes.get_spare_nodes(total_tasks, thread_count)
-
     while loop:
         loop = False
         stat = run_cmd(cmd, from_dir=rundir)[0]
@@ -113,7 +110,7 @@ def _run_model_impl(case, lid):
                 model_logfile = os.path.join(rundir, model + ".log." + lid)
                 if os.path.exists(model_logfile):
                     num_fails = len(node_fail_regex.findall(open(model_logfile, 'r').read()))
-                    if num_fails > 0 and num_spare_nodes >= num_fails:
+                    if num_fails > 0 and case.spare_nodes >= num_fails:
                         # We failed due to node failure!
                         logger.warning("Detected model run failed due to node failure, restarting")
 
@@ -129,7 +126,7 @@ def _run_model_impl(case, lid):
                         lid = new_lid()
                         loop = True
 
-                        num_spare_nodes -= num_fails
+                        case.spare_nodes -= num_fails
 
             if not loop:
                 # We failed and we're not restarting
