@@ -733,7 +733,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        endif
     enddo
 
-    ! --- Initialize component and driver clocks and alarms common to components amd drivver clocks ---
+    ! --- Initialize component and driver clocks and alarms common to components and driver clocks ---
 
     do n = 1,max_clocks
        call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )

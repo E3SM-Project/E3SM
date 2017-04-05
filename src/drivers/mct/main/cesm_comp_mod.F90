@@ -2206,7 +2206,9 @@ end subroutine cesm_init
       if (tod            == 0) t24hr_alarm = .true.
       if (month==1 .and. day==1 .and. tod==0) t1yr_alarm = .true.
 
-      call seq_infodata_putData(infodata, glcrun_alarm=glcrun_alarm) !??? TODO - why is this here ???
+      ! TODO(wjs, 2017-04-05) I think glcrun_alarm can be removed from infodata: It used
+      ! to be needed by CLM, but no longer is needed.
+      call seq_infodata_putData(infodata, glcrun_alarm=glcrun_alarm)
 
       if (seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_datestop)) then
          if (iamroot_CPLID) then
@@ -2955,7 +2957,7 @@ end subroutine cesm_init
             endif
          else
             if (iamin_CPLID .and. glc_prognostic) then
-               ! Set seq_infodata flag for unvalid data 
+               ! Set seq_infodata flag for invalid data
                call seq_infodata_PutData(infodata, glc_valid_input=.false.)
             end if
          end if
