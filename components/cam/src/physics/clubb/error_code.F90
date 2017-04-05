@@ -63,6 +63,7 @@ module error_code
 
     use constants_clubb, only: & 
         fstderr ! Variable(s)
+    use cam_abortutils, only: endrun
 
     implicit none
 
@@ -75,30 +76,39 @@ module error_code
 
     case ( clubb_no_error )
       write(fstderr,*) "No errors reported."
+      return
 
     case ( clubb_var_less_than_zero )
       write(fstderr,*) "Variable in CLUBB is less than zero."
+      call endrun()
 
     case ( clubb_singular_matrix )
       write(fstderr,*) "Singular Matrix in CLUBB."
+      call endrun()
 
     case ( clubb_var_equals_NaN )
       write(fstderr,*) "Variable in CLUBB is NaN."
+      call endrun()
 
     case ( clubb_bad_lapack_arg )
       write(fstderr,*) "Argument passed to a LAPACK procedure is invalid."
+      call endrun()
 
     case ( clubb_rtm_level_not_found )
       write(fstderr,*) "rtm level not found"
+      call endrun()
 
     case ( clubb_var_out_of_bounds )
       write(fstderr,*) "Input variable is out of bounds."
+      call endrun()
 
     case ( clubb_var_out_of_range )
       write(fstderr,*) "A CLUBB variable had a value outside the valid range."
+      call endrun()
 
     case default
       write(fstderr,*) "Unknown error: ", err_code
+      call endrun()
 
     end select
 

@@ -24,6 +24,8 @@ module lapack_wrap
     core_rknd, & ! Variable(s)
     dp
 
+  use cam_abortutils, only: endrun
+
   implicit none
 
   ! Simple routines
@@ -527,6 +529,7 @@ module lapack_wrap
         write(fstderr,*) trim( solve_type )// & 
           " band solver: singular matrix"
         err_code = clubb_singular_matrix
+        call endrun ('lapack_wrap.F90: Singular matrix detected in band_solvex')
       end if
 
     end select
@@ -692,6 +695,7 @@ module lapack_wrap
       err_code = clubb_singular_matrix
 
       solution = -999._core_rknd
+      call endrun ('lapack_wrap.F90: Singular matrix detected in band_solve')
 
     end select
 
