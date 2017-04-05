@@ -1,8 +1,7 @@
-from numbers import Number
-#from unidata import udunits
-from genutil import udunits
-import cdms2
 import copy
+from numbers import Number
+import cdms2
+from genutil import udunits
 
 
 def process_derived_var(var_key, derived_vars_dict, nc_file, parameter):
@@ -67,7 +66,7 @@ def _convert_units(var, target_units):
     ''' Converts units of var to target_units.
     var is a cdms.TransientVariable. '''
 
-    if hasattr(var, 'units') == False and var.id == 'SST':
+    if not hasattr(var, 'units') and var.id == 'SST':
         var.units = target_units
     elif var.units == 'fraction':
         var = 100.0 * var
@@ -121,7 +120,7 @@ def qflx_convert_units(var):
 
 derived_variables = {
     'PRECT': [
-        (['pr'],  rename),
+        (['pr'], rename),
         (['PRECC', 'PRECL'], lambda a, b: aplusb(a, b, target_units="mm/day"))
     ],
     'SST': [

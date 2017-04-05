@@ -23,18 +23,12 @@ def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of
     parameters in a json and an original parameter """
 
-    pth = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5', 'set5_diags_AMWG_default.json')
-    f_data = open(pth).read()
-    json_file = json.loads(f_data)
-
-    # add the custom_diags to the main default diags file
     if hasattr(original_parameter, 'custom_diags'):
         f_data = open(original_parameter.custom_diags).read()
-        custom_json_data = json.loads(f_data)
-
-        for key in custom_json_data:
-            for single_run in custom_json_data[key]:
-                json_file['set5'].append(single_run)
+    else:
+        pth = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5', 'set5_diags_AMWG_default.json')
+        f_data = open(pth).read()
+    json_file = json.loads(f_data)
 
     parameters = []
     for key in json_file:
