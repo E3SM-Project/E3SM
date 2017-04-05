@@ -3431,7 +3431,7 @@ end subroutine cesm_init
       !| GLC RECV-POST
       !----------------------------------------------------------
 
-      if (glc_present .and. glcrun_avg_alarm) then
+      if (glc_present .and. glcrun_alarm) then
 
          !----------------------------------------------------------
          !| glc -> cpl
