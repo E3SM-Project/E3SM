@@ -205,7 +205,6 @@ for parameter in parameters:
             var, acme.derived_variables, f_mod, parameter)
         mv2 = acme.process_derived_var(
             var, acme.derived_variables, f_obs, parameter)
-        print mv1.units, mv2.units
 
         # special case, cdms didn't properly convert mask with fill value
         # -999.0, filed issue with denise

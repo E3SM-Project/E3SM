@@ -117,6 +117,26 @@ def qflx_convert_units(var):
         var.units = 'mm/day'
     return var
 
+def prect(precc, precl):
+    """Total precipitation flux = convective + large-scal, """
+    var = precc + precl
+    var = _convert_units(var, "mm/day") 
+    var.long_name = "Total precipitation rate"
+    return var
+    
+def albedo(solin, fsntoa):
+    """TOA (top-of-atmosphere) albedo, (solin - fsntoa) / solin, unit is nondimension"""
+    var = (solin - fsntoa) / solin
+    var.units = "dimensionless"
+    var.long_name = "TOA albedo"
+    return var
+
+def albedoc(solin, fsntoa):
+    """TOA (top-of-atmosphere) albedo clear-sky, (solin - fsntoac) / solin, unit is nondimension"""
+    var = (solin - fsntoa) / solin
+    var.units = "dimensionless"
+    var.long_name = "TOA albedo clear-sky"
+    return var
 
 # derived_variables is a list
 derived_variables = {
@@ -134,11 +154,11 @@ derived_variables = {
     ],
     'ALBEDO': [
         (['ALBEDO'], rename),
-        (['SOLIN', 'FSNTOA'], lambda solin, fsntoa: (solin - fsntoa) / solin)
+        (['SOLIN', 'FSNTOA'], lambda solin, fsntoa: albedo(solin, fsntoa))
     ],
     'ALBEDOC': [
         (['ALBEDOC'], rename),
-        (['SOLIN', 'FSNTOAC'], lambda solin, fsntoac: (solin - fsntoac) / solin)
+        (['SOLIN', 'FSNTOAC'], lambda solin, fsntoac: albedoc(solin, fsntoac))
     ],
     'SWCF': [
         (['SWCF'], rename),
@@ -225,12 +245,6 @@ derived_variables = {
     ],
     'TREFHT': [
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
-    ],
-    'FLNS': [
-        (['FLNS'], rename)
-    ],
-    'FSNS': [
-        (['FSNS'], rename)
     ],
     'TREFHT': [
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
