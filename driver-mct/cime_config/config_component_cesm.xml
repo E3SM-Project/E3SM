@@ -206,7 +206,13 @@
     <default_value>yearly</default_value>
     <group>run_coupling</group>
     <file>env_run.xml</file>
-    <desc>Number of glc coupling intervals relative to NCPL_BASE_PERIOD for averaging of GLC input.</desc>
+    <desc>Period at which coupler averages fields sent to GLC.
+    This supports doing the averaging to GLC less frequently than GLC is called
+    (i.e., separating the averaging frequency from the calling frequency).
+    This is useful because there are benefits to only averaging the GLC inputs
+    as frequently as they are really needed (yearly for CISM), but GLC needs to
+    still be called more frequently than that in order to support mid-year restarts.
+    </desc>
   </entry>
 
   <entry id="ROF_NCPL">
