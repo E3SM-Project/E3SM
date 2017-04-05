@@ -3,18 +3,19 @@ import json
 import copy
 import glob
 import os
+import sys
 import fnmatch
 import numpy
 import cdutil
 import genutil
 import cdms2
 import MV2
+from cdp.cdp_viewer import OutputViewer
 from acme_diags.acme_parser import ACMEParser
 from acme_diags.acme_parameter import ACMEParameter
 from acme_diags.plotting.set5.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.derivations.default_regions import regions_specs
-from cdp.cdp_viewer import OutputViewer
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 
 
@@ -22,7 +23,8 @@ def make_parameters(orginal_parameter):
     """ Create multiple parameters given a list of
     parameters in a json and an original parameter """
 
-    f_data = open('set5_diags_AMWG_default.json').read()
+    pth = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5', 'set5_diags_AMWG_default.json')
+    f_data = open(pth).read()
     json_file = json.loads(f_data)
 
     # add the custom_diags to the main default diags file

@@ -102,7 +102,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     if not parameter.logo:
         vcs_canvas.drawlogooff()
 
-    file_path = os.path.abspath(os.path.dirname(__file__))
+    file_path = os.path.join(sys.prefix, 'share', 'acme_diags', 'set5')
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5.json'))
     vcs_canvas.scriptrun(os.path.join(file_path, 'plot_set_5_new.json'))
     

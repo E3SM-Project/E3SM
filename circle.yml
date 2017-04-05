@@ -17,4 +17,4 @@ dependencies:
 test:
   override:
     - PATH=${HOME}/miniconda/bin:${PATH} UVCDAT_ANONYMOUS_LOG=False bash ./tests/test.sh
-    - if [ $? == 0 -a $CIRCLE_BRANCH == "master" ]; then TRAVIS_OS_NAME=osx PATH=${HOME}/miniconda/bin:${PATH} conda install conda-build && conda install anaconda-client && bash conda/conda_upload.sh; fi
+    - if [ $? == 0 -a $CIRCLE_BRANCH == "master" ]; then TRAVIS_OS_NAME=osx PATH=${HOME}/miniconda/bin:${PATH} conda install conda-build && conda install anaconda-client && bash conda/nightly_conda_upload.sh; fi
