@@ -371,6 +371,7 @@ module CNCarbonFluxType
      real(r8), pointer :: npp_col                                   (:)     ! column (gC/m2/s) net primary production (p2c)
      real(r8), pointer :: fire_closs_p2c_col                        (:)     ! column (gC/m2/s) patch2col averaged column-level fire C loss (p2c)
      real(r8), pointer :: fire_closs_col                            (:)     ! column (gC/m2/s) total patch-level fire C loss
+     real(r8), pointer :: fire_decomp_closs_col                     (:)     ! column (gC/m2/s) carbon loss to fire for decomposable pools
      real(r8), pointer :: litfall_col                               (:)     ! column (gC/m2/s) total patch-level litterfall C loss (p2c)
      real(r8), pointer :: vegfire_col                               (:)     ! column (gC/m2/s) patch-level fire loss (obsolete, mark for removal) (p2c)
      real(r8), pointer :: wood_harvestc_col                         (:)     ! column (p2c)
@@ -412,6 +413,7 @@ module CNCarbonFluxType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
+     procedure , private :: Summary_betr
      ! bgc & pflotran interface
      procedure , private :: CSummary_interface
   end type carbonflux_type
@@ -717,6 +719,7 @@ contains
      allocate(this%npp_col                           (begc:endc))                  ; this%npp_col                   (:)  =nan
      allocate(this%fire_closs_p2c_col                (begc:endc))                  ; this%fire_closs_p2c_col        (:)  =nan
      allocate(this%fire_closs_col                    (begc:endc))                  ; this%fire_closs_col            (:)  =nan
+     allocate(this%fire_decomp_closs_col             (begc:endc))                  ; this%fire_decomp_closs_col     (:)  =nan
      allocate(this%litfall_col                       (begc:endc))                  ; this%litfall_col               (:)  =nan
      allocate(this%vegfire_col                       (begc:endc))                  ; this%vegfire_col               (:)  =nan
      allocate(this%wood_harvestc_col                 (begc:endc))                  ; this%wood_harvestc_col         (:)  =nan
@@ -796,7 +799,7 @@ contains
      use clm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
      use clm_varctl , only : hist_wrtch4diag
      use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
-     use tracer_varcon    , only : is_active_betr_bgc
+
      use clm_varctl,  only : get_carbontag
     !
      ! !ARGUMENTS:
@@ -2779,6 +2782,7 @@ contains
               endif
            endif
 
+
            ! decomposition k
            data2dptr => this%decomp_k_col(:,:,k)
            fieldname = 'K_'//trim(decomp_cascade_con%decomp_pool_name_history(k))
@@ -2786,9 +2790,10 @@ contains
            call hist_addfld_decomp (fname=fieldname, units='1/s',  type2d='levdcmp', &
                 avgflag='A', long_name=longname, &
                 ptr_col=data2dptr, default='inactive')
+
         end do
 
-        if(.not. is_active_betr_bgc)then
+
           this%decomp_cascade_hr_col(begc:endc,:)             = spval
           this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
           this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
@@ -2872,7 +2877,7 @@ contains
            end if
 
           end do
-        endif
+
 
         this%t_scalar_col(begc:endc,:) = spval
         call hist_addfld_decomp (fname='T_SCALAR', units='unitless',  type2d='levdcmp', &
@@ -2894,7 +2899,7 @@ contains
              avgflag='A', long_name='total flux of C from SOM pools due to leaching', &
              ptr_col=this%som_c_leached_col)!, default='inactive')
 
-        if(.not. is_active_betr_bgc)then
+
           this%decomp_cpools_leached_col(begc:endc,:) = spval
           this%decomp_cpools_transport_tendency_col(begc:endc,:,:) = spval
           do k = 1, ndecomp_pools
@@ -2914,7 +2919,7 @@ contains
                    ptr_col=data2dptr, default='inactive')
            endif
           end do
-        endif
+
         this%lithr_col(begc:endc) = spval
         call hist_addfld1d (fname='LITHR', units='gC/m^2/s', &
              avgflag='A', long_name='litter heterotrophic respiration', &
@@ -2994,6 +2999,11 @@ contains
         call hist_addfld1d (fname='COL_FIRE_CLOSS', units='gC/m^2/s', &
              avgflag='A', long_name='total column-level fire C loss for non-peat fires outside land-type converted region', &
              ptr_col=this%fire_closs_col, default='inactive')
+  
+        this%fire_decomp_closs_col(begc:endc) = spval
+        call hist_addfld1d (fname='DECOMP_FIRE_CLOSS', units='gC/m^2/s', &
+             avgflag='A', long_name='decomposable fire C loss for non-peat fires outside land-type converted region', &
+             ptr_col=this%fire_decomp_closs_col, default='inactive')
 
         this%dwt_seedc_to_leaf_col(begc:endc) = spval
         call hist_addfld1d (fname='DWT_SEEDC_TO_LEAF', units='gC/m^2/s', &
@@ -3121,7 +3131,7 @@ contains
               end if
            endif
         end do
-        if(.not. is_active_betr_bgc)then
+
           this%decomp_cascade_hr_col(begc:endc,:)             = spval
           this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
           this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
@@ -3297,7 +3307,7 @@ contains
         call hist_addfld1d (fname='C13_PRODUCT_CLOSS', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 total carbon loss from wood product pools', &
              ptr_col=this%product_closs_col)
-     endif
+
 
      !-------------------------------
      ! C14 flux variables - native to column
@@ -3326,7 +3336,7 @@ contains
               end if
            endif
         end do
-        if(.not. is_active_betr_bgc)then
+
           this%decomp_cascade_hr_col(begc:endc,:)             = spval
           this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
           this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
@@ -3371,7 +3381,7 @@ contains
                    ptr_col=data2dptr, default='inactive')
            endif
           end do
-        endif
+
 
         this%lithr_col(begc:endc) = spval
         call hist_addfld1d (fname='C14_LITHR', units='gC14/m^2/s', &
@@ -4269,6 +4279,108 @@ contains
 
   end subroutine ZeroDwt
 
+
+  !-----------------------------------------------------------------------
+  subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       isotope)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform patch and column-level carbon summary calculations
+    !
+    ! !USES:
+    use clm_varctl       , only : iulog, use_cndv
+    use clm_time_manager , only : get_step_size
+    use clm_varcon       , only : secspday
+    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+    use subgridAveMod    , only : p2c
+
+    use MathfuncMod      , only : dot_sum
+    !
+    ! !ARGUMENTS:
+    class(carbonflux_type)                 :: this
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    character(len=*)       , intent(in)    :: isotope
+
+    integer :: c, fc 
+
+    ! column-level carbon losses to fire, including pft losses
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       ! total soil respiration, heterotrophic + root respiration (SR)
+       this%sr_col(c) = &
+            this%rr_col(c) + &
+            this%hr_col(c)
+
+       ! total ecosystem respiration, autotrophic + heterotrophic (ER)
+       this%er_col(c) = &
+            this%ar_col(c) + &
+            this%hr_col(c)
+
+       ! total product loss
+       this%product_closs_col(c) = &
+            this%prod10c_loss_col(c)  + &
+            this%prod100c_loss_col(c) + &
+            this%prod1c_loss_col(c)
+
+       this%fire_closs_col(c) = this%fire_closs_p2c_col(c) +  this%fire_decomp_closs_col(c)
+
+       ! column-level carbon losses due to landcover change
+       this%dwt_closs_col(c) = &
+            this%dwt_conv_cflux_col(c)
+
+       ! net ecosystem production, excludes fire flux, landcover change, and loss from wood products, positive for sink (NEP)
+       this%nep_col(c) = &
+            this%gpp_col(c) - &
+            this%er_col(c)
+
+       ! net biome production of carbon, includes depletion from: fire flux, landcover change flux, and loss
+       ! from wood products pools, positive for sink (NBP)
+       this%nbp_col(c) =             &
+            this%nep_col(c)        - &
+            this%fire_closs_col(c) - &
+            this%dwt_closs_col(c)  - &
+            this%product_closs_col(c)
+
+       ! net ecosystem exchange of carbon, includes fire flux, landcover change flux, loss
+       ! from wood products pools, and hrv_xsmrpool flux, positive for source (NEE)
+       this%nee_col(c) =                &
+           -this%nep_col(c)           + &
+            this%fire_closs_col(c)    + &
+            this%dwt_closs_col(c)     + &
+            this%product_closs_col(c) + &
+            this%hrv_xsmrpool_to_atm_col(c)
+
+       ! land use flux and land uptake
+       this%landuseflux_col(c) = &
+            this%dwt_closs_col(c) + &
+            this%product_closs_col(c)
+
+       this%landuptake_col(c) = &
+            this%nee_col(c) - &
+            this%landuseflux_col(c)
+    end do
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+
+       ! litter fire losses (LITFIRE)
+       this%litfire_col(c) = 0._r8
+
+       ! soil organic matter fire losses (SOMFIRE)
+       this%somfire_col(c) = 0._r8
+
+       ! total ecosystem fire losses (TOTFIRE)
+       this%totfire_col(c) = &
+            this%litfire_col(c) + &
+            this%somfire_col(c) + &
+            this%vegfire_col(c)
+    end do
+
+  end subroutine Summary_betr
   !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        isotope)
@@ -4663,6 +4775,10 @@ contains
        endif
     endif
 
+    if(is_active_betr_bgc)then
+      call this%summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,isotope)
+      return
+    endif
     ! column variables
 
     ! some zeroing
@@ -4672,8 +4788,7 @@ contains
        this%som_c_leached_col(c)      = 0._r8
     end do
 
-    if ( (.not. is_active_betr_bgc           ) .and. &
-         (.not. (use_pflotran .and. pf_cmode))) then
+    if ( (.not. (use_pflotran .and. pf_cmode))) then
 
       ! vertically integrate HR and decomposition cascade fluxes
       do k = 1, ndecomp_cascade_transitions
@@ -4801,8 +4916,7 @@ contains
 
     ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
 
-    if ( (.not. is_active_betr_bgc)           .and. &
-         (.not.(use_pflotran .and. pf_cmode)) ) then
+    if ( (.not.(use_pflotran .and. pf_cmode)) ) then
 
        ! _col(cWDC_HR) - coarse woody debris heterotrophic respiration
        do fc = 1,num_soilc
@@ -5163,7 +5277,7 @@ end subroutine CSummary_interface
 
   !summarize heterotrophic respiration for methane calculation
   !
-    use tracer_varcon    , only : is_active_betr_bgc
+
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   ! !ARGUMENTS:
     class(carbonflux_type) :: this
@@ -5225,8 +5339,7 @@ end subroutine CSummary_interface
        this%hr_vr_col(c,1:nlevdecomp) = 0._r8
     enddo
 
-    if ( (.not. is_active_betr_bgc           ) .and. &
-         (.not. (use_pflotran .and. pf_cmode))) then
+    if ( (.not. (use_pflotran .and. pf_cmode))) then
       ! vertically integrate HR and decomposition cascade fluxes
       do k = 1, ndecomp_cascade_transitions
 

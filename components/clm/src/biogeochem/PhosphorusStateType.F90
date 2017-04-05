@@ -140,6 +140,7 @@ module PhosphorusStateType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
+     procedure , private  :: Summary_betr
   end type phosphorusstate_type
   !------------------------------------------------------------------------
 
@@ -1435,6 +1436,75 @@ contains
 
   end subroutine ZeroDwt
 
+
+    !-----------------------------------------------------------------------
+    subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+      !
+      ! DESCRIPTION
+      ! summarize things belowground and add them together to the aboveground components
+      ! to obtain column and ecosystem level variables
+
+      ! !USES:
+      use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+      use subgridAveMod , only: p2c
+      !
+      ! !ARGUMENTS:
+      class (phosphorusstate_type) :: this
+      type(bounds_type) , intent(in) :: bounds
+      integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+      integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+      integer           , intent(in) :: num_soilp       ! number of soil patches in filter
+      integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
+
+      integer :: fc, c, j
+
+
+
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%primp_col(c)     =0._r8
+      end do
+
+      do j = 1, nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%primp_col(c) = &
+                 this%primp_col(c) + &
+                 this%primp_vr_col(c,j) * dzsoi_decomp(j)
+         end do
+      end do
+
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+
+         ! total wood product phosphorus
+         this%totprodp_col(c) = &
+              this%prod1p_col(c) + &
+              this%prod10p_col(c) + &
+              this%prod100p_col(c)
+
+         ! total ecosystem phosphorus, including veg (TOTECOSYSP)
+         this%totecosysp_col(c) = &
+              this%cwdp_col(c) + &
+              this%totlitp_col(c) + &
+              this%totsomp_col(c) + &
+              this%sminp_col(c) + &
+              this%primp_col(c) + &
+              this%occlp_col(c) + &
+              this%totprodp_col(c) + &
+              this%totvegp_col(c)
+
+         ! total column phosphorus, including pft (TOTCOLP)
+         this%totcolp_col(c) = &
+              this%totpftp_col(c) + &
+              this%cwdp_col(c) + &
+              this%totlitp_col(c) + &
+              this%totsomp_col(c) + &
+              this%sminp_col(c) + &
+              this%totprodp_col(c) + &
+              this%seedp_col(c)
+      end do
+   end subroutine Summary_betr
   !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
@@ -1442,6 +1512,7 @@ contains
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
+    use tracer_varcon  , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
@@ -1518,6 +1589,10 @@ contains
         this%totpftp_patch(bounds%begp:bounds%endp), &
         this%totpftp_col(bounds%begc:bounds%endc))
 
+   if(is_active_betr_bgc)then
+     call this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+     return
+   endif
    ! vertically integrate soil mineral P pools
 
    do fc = 1,num_soilc

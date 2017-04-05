@@ -124,7 +124,7 @@ module CNCarbonStateType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
-
+     procedure , private :: Summary_betr
   end type carbonstate_type
   !------------------------------------------------------------------------
 
@@ -725,7 +725,6 @@ contains
 
     if (carbon_type == 'c12') then
 
-
          !those variables are now ouput in betr
          this%decomp_cpools_col(begc:endc,:) = spval
          do l  = 1, ndecomp_pools
@@ -755,7 +754,6 @@ contains
                   ptr_col=data1dptr, default = 'inactive')
            endif
          end do
-
        if ( nlevdecomp_full > 1 ) then
           this%totlitc_1m_col(begc:endc) = spval
           call hist_addfld1d (fname='TOTLITC_1m', units='gC/m^2', &
@@ -836,7 +834,6 @@ contains
     !-------------------------------
 
     if ( carbon_type == 'c13' ) then
-
 
          this%decomp_cpools_vr_col(begc:endc,:,:) = spval
          do l = 1, ndecomp_pools
@@ -925,7 +922,6 @@ contains
     !-------------------------------
 
     if ( carbon_type == 'c14' ) then
-
        this%decomp_cpools_vr_col(begc:endc,:,:) = spval
        do l = 1, ndecomp_pools
           if ( nlevdecomp_full > 1 ) then
@@ -950,7 +946,6 @@ contains
                   avgflag='A', long_name=longname, ptr_col=data1dptr, default='inactive')
           endif
        end do
-
        this%seedc_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_SEEDC', units='gC14/m^2', &
             avgflag='A', long_name='C14 pool for seeding new Patches', &
@@ -2683,6 +2678,7 @@ contains
                  end do
               end do
            end do
+           !be careful for the following lines when betr is on.
            do i = bounds%begp, bounds%endp
               if (exit_spinup) then
                  m_veg = spinup_mortality_factor
@@ -2827,6 +2823,61 @@ contains
   end subroutine ZeroDwt
 
   !-----------------------------------------------------------------------
+  subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform patch and column-level carbon summary calculations
+    !
+    ! !USES:
+    use clm_varctl       , only: iulog
+    use clm_time_manager , only: get_step_size
+    use clm_varcon       , only: secspday
+    use clm_varpar       , only: nlevdecomp, ndecomp_pools
+
+    !
+    ! !ARGUMENTS:
+    class(carbonstate_type) :: this
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer :: fc, c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+
+       ! total product carbon
+       this%totprodc_col(c) = &
+            this%prod10c_col(c)  + &
+            this%prod100c_col(c) + &
+            this%prod1c_col(c)
+
+       ! total ecosystem carbon, including veg but excluding cpool (TOTECOSYSC)
+       this%totecosysc_col(c) = &
+            this%cwdc_col(c)     + &
+            this%totlitc_col(c)  + &
+            this%totsomc_col(c)  + &
+            this%totprodc_col(c) + &
+            this%totvegc_col(c)
+
+       ! total column carbon, including veg and cpool (TOTCOLC)
+       ! adding col_ctrunc, seedc
+       this%totcolc_col(c) = &
+            this%totpftc_col(c)  + &
+            this%cwdc_col(c)     + &
+            this%totlitc_col(c)  + &
+            this%totsomc_col(c)  + &
+            this%totprodc_col(c) + &
+            this%seedc_col(c)
+
+       this%totabgc_col(c) = &
+            this%totpftc_col(c)  + &
+            this%totprodc_col(c) + &
+            this%seedc_col(c)
+    end do
+  end subroutine Summary_betr
+  !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !DESCRIPTION:
@@ -2929,8 +2980,11 @@ contains
 
     ! column level summary
 
+    if( is_active_betr_bgc)then
+       call  this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+      return
+    endif
 
-    if(.not. is_active_betr_bgc)then
       ! vertically integrate each of the decomposing C pools
       do l = 1, ndecomp_pools
        do fc = 1,num_soilc
@@ -3060,7 +3114,6 @@ contains
           end do
        end if
       end do
-    endif
     ! truncation carbon
     do fc = 1,num_soilc
        c = filter_soilc(fc)

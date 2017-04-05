@@ -922,48 +922,15 @@ contains
             retransn_to_npool(p) = plant_ndemand(p)
          end if
 
-         plant_ndemand(p) = plant_ndemand(p) - retransn_to_npool(p)
 
          if (plant_pdemand(p) > avail_retransp(p)) then
             retransp_to_ppool(p) = avail_retransp(p)
          else
             retransp_to_ppool(p) = plant_pdemand(p)
          end if
-         plant_pdemand(p) = plant_pdemand(p) - retransp_to_ppool(p)
 
 
       end do ! end pft loop
-
-      ! now use the p2c routine to get the column-averaged plant_ndemand
-      call p2c(bounds, num_soilc, filter_soilc, &
-           plant_ndemand(bounds%begp:bounds%endp), &
-           col_plant_ndemand(bounds%begc:bounds%endc))
-
-      !!! add phosphorus
-      call p2c(bounds, num_soilc, filter_soilc, &
-           plant_pdemand(bounds%begp:bounds%endp), &
-           col_plant_pdemand(bounds%begc:bounds%endc))
-
-      !!! Starting resolving N limitation
-      !! new subroutines to calculate nuptake_prof & puptake_prof
-
-      !! flux_type%var = local var, used in CNAllocation2
-      do fc=1, num_soilc
-            c = filter_soilc(fc)
-            plant_ndemand_col(c) = col_plant_ndemand(c)
-            plant_pdemand_col(c) = col_plant_pdemand(c)
-      end do
-
-      ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
-      if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
-            do j = 1, nlevdecomp
-               do fc=1, num_soilc
-                  c = filter_soilc(fc)
-                  plant_ndemand_vr_col(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j)
-                  plant_pdemand_vr_col(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
-               end do
-            end do
-      endif
 
     end associate
 

@@ -1373,6 +1373,11 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 Specify what reaction module will be used within the betr framework. 
 </entry>
 
+<entry id="AppParNLFile" type="char*256" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Specify file to input parameters that will be used within the betr framework.
+</entry>
+
 <entry id="advection_on" type="logical" category="clm_betr"
        group="betr_inparm" valid_values="" >
 Turn on advection in betr if it is true.

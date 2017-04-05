@@ -56,6 +56,7 @@ module CNNitrogenStateType
      real(r8), pointer :: npool_patch                  (:)     ! patch (gN/m2) temporary plant N pool
      real(r8), pointer :: ntrunc_patch                 (:)     ! patch (gN/m2) pft-level sink for N truncation
      real(r8), pointer :: plant_n_buffer_patch        (:)     ! patch (gN/m2) pft-level abstract N storage
+     real(r8), pointer :: plant_n_buffer_col        (:)     ! patch (gN/m2) pft-level abstract N storage
 
      real(r8), pointer :: decomp_npools_vr_col         (:,:,:) ! col (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
      real(r8), pointer :: sminn_vr_col                 (:,:)   ! col (gN/m3) vertically-resolved soil mineral N
@@ -197,7 +198,7 @@ module CNNitrogenStateType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
-
+     procedure , private  :: Summary_betr
   end type nitrogenstate_type
   !------------------------------------------------------------------------
 
@@ -273,6 +274,7 @@ contains
     allocate(this%totvegn_patch            (begp:endp))                   ; this%totvegn_patch            (:)   = nan
     allocate(this%totpftn_patch            (begp:endp))                   ; this%totpftn_patch            (:)   = nan
     allocate(this%plant_n_buffer_patch    (begp:endp))                   ; this%plant_n_buffer_patch    (:)   = nan
+    allocate(this%plant_n_buffer_col    (begp:endp))                     ; this%plant_n_buffer_col    (:)   = nan
     allocate(this%sminn_vr_col             (begc:endc,1:nlevdecomp_full)) ; this%sminn_vr_col             (:,:) = nan
     allocate(this%ntrunc_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%ntrunc_vr_col            (:,:) = nan
     allocate(this%smin_no3_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_vr_col          (:,:) = nan
@@ -573,6 +575,7 @@ contains
        this%decomp_npools_vr_col(begc:endc,:,:) = spval
        this%decomp_npools_1m_col(begc:endc,:) = spval
     end if
+
     this%decomp_npools_col(begc:endc,:) = spval
     do l  = 1, ndecomp_pools
        if ( nlevdecomp_full > 1 ) then
@@ -630,6 +633,7 @@ contains
          avgflag='A', long_name='column-level sink for N truncation', &
          ptr_col=this%ntrunc_col, default='inactive')
 
+
     ! add suffix if number of soil decomposition depths is greater than 1
     if (nlevdecomp > 1) then
        vr_suffix = "_vr"
@@ -638,6 +642,7 @@ contains
     endif
 
     if (use_nitrif_denitrif) then
+
        this%smin_no3_vr_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='SMIN_NO3'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral NO3 (vert. res.)', &
@@ -676,7 +681,9 @@ contains
        call hist_addfld_decomp (fname='SMINN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral N', &
             ptr_col=this%sminn_vr_col, default = 'inactive')
+
     else
+
        this%sminn_vr_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='SMINN'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
             avgflag='A', long_name='soil mineral N', &
@@ -1372,6 +1379,7 @@ contains
              end do
           end do
        end do
+       !be careful about the follows when betr is on
        do i = bounds%begp, bounds%endp
          if (exit_spinup) then
             m_veg = spinup_mortality_factor
@@ -1533,12 +1541,74 @@ contains
   end subroutine ZeroDwt
 
   !-----------------------------------------------------------------------
+  subroutine Summary_betr(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    !
+    ! !USES:
+    use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+    use clm_varctl    , only: use_nitrif_denitrif
+    use subgridAveMod , only: p2c
+    !
+    ! !ARGUMENTS:
+    class (nitrogenstate_type) :: this
+    type(bounds_type) , intent(in) :: bounds
+    integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+    integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+    integer           , intent(in) :: num_soilp       ! number of soil patches in filter
+    integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
+    integer :: fc, c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+
+       ! total wood product nitrogen
+       this%totprodn_col(c) = &
+            this%prod1n_col(c) + &
+            this%prod10n_col(c) + &
+            this%prod100n_col(c)
+
+       ! total ecosystem nitrogen, including veg (TOTECOSYSN)
+       this%totecosysn_col(c) = &
+            this%cwdn_col(c) + &
+            this%totlitn_col(c) + &
+            this%totsomn_col(c) + &
+            this%sminn_col(c) + &
+            this%totprodn_col(c) + &
+            this%totvegn_col(c)
+
+       ! total column nitrogen, including pft (TOTCOLN)
+       this%totcoln_col(c) = &
+            this%totpftn_col(c) + &
+            this%cwdn_col(c) + &
+            this%totlitn_col(c) + &
+            this%totsomn_col(c) + &
+            this%sminn_col(c) + &
+            this%totprodn_col(c) + &
+            this%seedn_col(c) + &
+            this%plant_n_buffer_col(c)
+
+       this%totabgn_col (c) =  &
+            this%totpftn_col(c) + &
+            this%totprodn_col(c) + &
+            this%seedn_col(c) + &
+            this%plant_n_buffer_col(c)
+
+       this%totblgn_col(c) = &
+            this%cwdn_col(c) + &
+            this%totlitn_col(c) + &
+            this%totsomn_col(c) + &
+            this%sminn_col(c)
+
+    end do
+
+  end subroutine Summary_betr
+  !-----------------------------------------------------------------------
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !USES:
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
+    use tracer_varcon , only: is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (nitrogenstate_type) :: this
@@ -1615,6 +1685,14 @@ contains
         this%totpftn_patch(bounds%begp:bounds%endp), &
         this%totpftn_col(bounds%begc:bounds%endc))
 
+   call p2c(bounds, num_soilc, filter_soilc, &
+        this%plant_n_buffer_patch(bounds%begp:bounds%endp), &
+        this%plant_n_buffer_col(bounds%begc:bounds%endc))
+
+   if(is_active_betr_bgc)then
+      call this%Summary_betr(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+      return
+   endif
    ! vertically integrate NO3 NH4 N2O pools
    if (use_nitrif_denitrif) then
       do fc = 1,num_soilc
