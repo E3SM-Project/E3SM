@@ -118,10 +118,11 @@ def qflx_convert_units(var):
     return var
 
 
+# derived_variables is a list
 derived_variables = {
     'PRECT': [
         (['pr'], rename),
-        (['PRECC', 'PRECL'], lambda a, b: aplusb(a, b, target_units="mm/day"))
+        (['PRECC', 'PRECL'], lambda precc, precl: _convert_units(precc + precl, target_units="mm/day"))
     ],
     'SST': [
         (['SST'], lambda sst: _convert_units(sst, target_units="degC")),
@@ -231,32 +232,10 @@ derived_variables = {
     'FSNS': [
         (['FSNS'], rename)
     ],
-    'TREFHT_LAND': [
-        (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(
-            _convert_units(trefht, target_units="K"), landfrac, low_limit=0.65)),
-        (['TREFHT_LAND'], rename)
-    ],
-    'PRECT_LAND': [
-        (['PRECC', 'PRECL', 'LANDFRAC'], lambda a, b, landfrac: mask_by(aplusb(
-            a, b, target_units="mm/day"), landfrac, low_limit=0.5)),  # 0.5 just to match amwg
-        (['PRECIP_LAND'], rename)
-    ],
-    'Z3': [
-        (['Z3'], lambda z3: _convert_units(z3, target_units="hectometer"))
-    ],
-    'PSL': [
-        (['PSL'], lambda psl: _convert_units(psl, target_units="hectopascal"))
-    ],
-    'T': [
-        (['T'], lambda t: _convert_units(t, target_units="K"))
-    ],
-    'U': [
-        (['U'], lambda u: _convert_units(u, target_units="m/s"))
-    ],
     'TREFHT': [
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
     ],
-    u'QFLX': [
+    'QFLX': [
         (['QFLX'], lambda qflx: qflx_convert_units(qflx))
     ],
 
@@ -273,7 +252,6 @@ derived_variables = {
     'PREH2O_OCN': [(['PREH2O_OCEAN'], (lambda x: _convert_units(x, target_units='mm'))),
                    (['TMQ', 'OCNFRAC'], lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit=0.65))],
     'CLDHGH': [
-        # below fraction to percent conversion not working
         (['CLDHGH'], lambda cldhgh: _convert_units(cldhgh, target_units="%")),
     ],
     'CLDLOW': [
@@ -285,20 +263,20 @@ derived_variables = {
     'CLDTOT': [
         (['CLDTOT'], lambda cldtot: _convert_units(cldtot, target_units="%")),
     ],
-    'CLDHGH_VISIR': [
-        (['CLDHGH'], rename),
-        (['CLDHGH_VISIR'], rename),
-    ],
-    'CLDLOW_VISIR': [
-        (['CLDLOW'], rename),
-        (['CLDLOW_VISIR'], rename),
-    ],
-    'CLDMED_VISIR': [
-        (['CLDMED'], rename),
-        (['CLDMED_VISIR'], rename),
-    ],
-    'CLDTOT_VISIR': [
-        (['CLDTOT'], rename),
-        (['CLDTOT_VISIR'], rename),
-    ],
+#    'CLDHGH_VISIR': [
+#        (['CLDHGH'], rename),
+#        (['CLDHGH_VISIR'], rename),
+#    ],
+#    'CLDLOW_VISIR': [
+#        (['CLDLOW'], rename),
+#        (['CLDLOW_VISIR'], rename),
+#    ],
+#    'CLDMED_VISIR': [
+#        (['CLDMED'], rename),
+#        (['CLDMED_VISIR'], rename),
+#    ],
+#    'CLDTOT_VISIR': [
+#        (['CLDTOT'], rename),
+#        (['CLDTOT_VISIR'], rename),
+#    ],
 }
