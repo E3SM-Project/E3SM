@@ -121,7 +121,7 @@ def prect(precc, precl):
     """Total precipitation flux = convective + large-scal, """
     var = precc + precl
     var = _convert_units(var, "mm/day") 
-    var.long_name = "Total precipitation rate"
+    var.long_name = "Total precipitation rate (convective + large-scale)"
     return var
     
 def albedo(solin, fsntoa):
@@ -142,7 +142,7 @@ def albedoc(solin, fsntoa):
 derived_variables = {
     'PRECT': [
         (['pr'], rename),
-        (['PRECC', 'PRECL'], lambda precc, precl: _convert_units(precc + precl, target_units="mm/day"))
+        (['PRECC', 'PRECL'], lambda precc, precl: prect(precc , precl))
     ],
     'SST': [
         (['SST'], lambda sst: _convert_units(sst, target_units="degC")),
