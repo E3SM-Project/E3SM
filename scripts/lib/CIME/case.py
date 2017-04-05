@@ -1009,7 +1009,7 @@ class Case(object):
             newcase.set_value("BUILD_COMPLETE","TRUE")
             orig_bld_complete = self.get_value("BUILD_COMPLETE")
             if not orig_bld_complete:
-                logger.warn("\nWARNING: Creating a clone before building the original case may cause PIO_TYPENAME to be invalid in the clone")
+                logger.warn("\nWARNING: Creating a clone with --keepexe before building the original case may cause PIO_TYPENAME to be invalid in the clone")
                 logger.warn("Avoid this message by building case one before you clone.\n")
         else:
             newcase.set_value("BUILD_COMPLETE","FALSE")
