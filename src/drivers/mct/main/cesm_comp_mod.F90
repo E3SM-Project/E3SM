@@ -2932,32 +2932,33 @@ end subroutine cesm_init
             !| glc prep-merge
             !----------------------------------------------------
 
-            if (iamin_CPLID .and. glc_prognostic) then
-               call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
-               call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
-               if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-               
-               if (lnd_c2_glc) then
-                  call prep_glc_accum_avg(timer='CPL:glcprep_avg')
-                  
-                  ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-                  call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
-                  
-                  call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
-                  
-                  call component_diag(infodata, glc, flow='x2c', comment='send glc', &
-                       info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
-               endif
-               
-               if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-               call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
+            if (glc_prognostic) then
+               if (iamin_CPLID) then
+                  call cesm_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:GLCPREP_BARRIER')
+                  call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
+                  if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-               ! Set seq_infodata flag for valid data 
+                  if (lnd_c2_glc) then
+                     call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+
+                     ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+                     call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+
+                     call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+
+                     call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+                          info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
+                  endif
+
+                  if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+                  call t_drvstopf  ('CPL:GLCPREP',cplrun=.true.)
+
+               end if  ! iamin_CPLID
+
                call seq_infodata_PutData(infodata, glc_valid_input=.true.)
-            endif
-         else
-            if (iamin_CPLID .and. glc_prognostic) then
-               ! Set seq_infodata flag for invalid data
+            end if  ! glc_prognostic
+         else  ! .not. glcrun_avg_alarm
+            if (glc_prognostic) then
                call seq_infodata_PutData(infodata, glc_valid_input=.false.)
             end if
          end if
