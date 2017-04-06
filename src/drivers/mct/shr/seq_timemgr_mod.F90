@@ -132,12 +132,12 @@ module seq_timemgr_mod
       seq_timemgr_optNMonth         = "nmonth"    , &
       seq_timemgr_optNYears         = "nyears"    , &
       seq_timemgr_optNYear          = "nyear"     , &
-      seq_timemgr_optDaily          = "daily"     , &
       seq_timemgr_optMonthly        = "monthly"   , &
       seq_timemgr_optYearly         = "yearly"    , &
       seq_timemgr_optDate           = "date"      , &
       seq_timemgr_optIfdays0        = "ifdays0"   , &
-      seq_timemgr_optEnd            = "end"      
+      seq_timemgr_optEnd            = "end"       , &
+      seq_timemgr_optGLCCouplingPeriod = "glc_coupling_period"
 
    integer(SHR_KIND_IN),private,parameter :: &
       seq_timemgr_nclock_drv  = 1, &
@@ -416,7 +416,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        ice_cpl_dt       = 0
        ocn_cpl_dt       = 0
        glc_cpl_dt       = 0
-       glc_avg_period   = seq_timemgr_optDaily
+       glc_avg_period   = seq_timemgr_optGLCCouplingPeriod
        rof_cpl_dt       = 0
        wav_cpl_dt       = 0
        esp_cpl_dt       = 0
@@ -925,13 +925,14 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        opt_n   = dtime(seq_timemgr_nclock_glc), &
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_glcrun))
-    if (glc_avg_period == seq_timemgr_optDaily) then
+    if (glc_avg_period == seq_timemgr_optGLCCouplingPeriod) then
+       ! Create this alarm identically to the glcrun alarm (which is created above)
        call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
             EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun_avg),  &
             option  = seq_timemgr_optNSeconds,       &
-            opt_n   = 86400,                         &
+            opt_n   = dtime(seq_timemgr_nclock_glc), &
             RefTime = OffsetTime,                    &
-       alarmname = trim(seq_timemgr_alarm_glcrun_avg))
+            alarmname = trim(seq_timemgr_alarm_glcrun_avg))
     else if (glc_avg_period == seq_timemgr_optYearly) then 
        call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
             EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_glcrun_avg),  &
@@ -939,7 +940,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
             RefTime = OffsetTime,                    &
             alarmname = trim(seq_timemgr_alarm_glcrun_avg))
     else
-       call shr_sys_abort(subname//':: glc_avg_period can only be yearly or daily')
+       call shr_sys_abort(subname//':: glc_avg_period can only be glc_coupling_period or yearly')
     end if
 
     call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_ocn), rc=rc )
