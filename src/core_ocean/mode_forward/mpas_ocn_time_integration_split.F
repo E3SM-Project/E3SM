@@ -1805,7 +1805,7 @@ module ocn_time_integration_split
 
          call mpas_timer_start('se final mpas reconstruct', .false.)
          call mpas_threading_barrier()
-         !$omp master
+
          call mpas_reconstruct(meshPool, normalVelocityNew,  &
                           velocityX, velocityY, velocityZ,   &
                           velocityZonal, velocityMeridional, &
@@ -1815,7 +1815,7 @@ module ocn_time_integration_split
                           gradSSHX, gradSSHY, gradSSHZ,    &
                           gradSSHZonal, gradSSHMeridional, &
                           includeHalos = .true.)
-         !$omp end master
+
          call mpas_threading_barrier()
          call mpas_timer_stop('se final mpas reconstruct')
 
