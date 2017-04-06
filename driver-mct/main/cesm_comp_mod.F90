@@ -2928,6 +2928,16 @@ end subroutine cesm_init
       ! NOTE - only create appropriate input to glc if the avg_alarm is on
       if (glc_present) then
          if (glcrun_avg_alarm) then
+
+            if (.not. glcrun_alarm) then
+               write(logunit,*) 'ERROR: glcrun_avg_alarm is true, but glcrun_alarm is false'
+               write(logunit,*) 'Make sure that NCPL_BASE_PERIOD, GLC_NCPL and GLC_AVG_PERIOD'
+               write(logunit,*) 'are set so that glc averaging only happens at glc coupling times.'
+               write(logunit,*) '(It is allowable for glc coupling to be more frequent than glc averaging,'
+               write(logunit,*) 'but not for glc averaging to be more frequent than glc coupling.)'
+               call shr_sys_abort(subname//' glcrun_avg_alarm is true, but glcrun_alarm is false')
+            end if
+
             !----------------------------------------------------
             !| glc prep-merge
             !----------------------------------------------------
