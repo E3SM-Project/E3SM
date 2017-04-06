@@ -1467,7 +1467,7 @@
     <type>char</type>
     <category>time</category>
     <group>seq_timemgr_inparm</group>
-    <valid_values>yearly,daily</valid_values>
+    <valid_values>glc_coupling_period,yearly</valid_values>
     <values>
       <value>$GLC_AVG_PERIOD</value>
     </values>
@@ -1478,6 +1478,9 @@
       This is useful because there are benefits to only averaging the GLC inputs
       as frequently as they are really needed (yearly for CISM), but GLC needs to
       still be called more frequently than that in order to support mid-year restarts.
+
+      Setting glc_avg_period to 'glc_coupling_period' means that the averaging is
+      done exactly when the GLC is called (governed by GLC_NCPL).
     </desc>
   </entry>
 
