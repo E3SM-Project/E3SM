@@ -349,8 +349,10 @@ class J_TestCreateNewcase(unittest.TestCase):
                 output = run_cmd_no_fail(cmd, from_dir=casedir)
                 self.assertTrue(output == JOB_QUEUE, msg="%s != %s"%(output, JOB_QUEUE))
 
-        cls._do_teardown.append(cls._testroot)
+            cmd = xmlquery + " --listall"
+            run_cmd_no_fail(cmd, from_dir=casedir)
 
+        cls._do_teardown.append(cls._testroot)
 
     @classmethod
     def tearDownClass(cls):
