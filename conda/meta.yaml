@@ -24,7 +24,7 @@ requirements:
     - genutil
     - numpy
     - output_viewer
-    - matplotlib
+    - matplotlib=1.5.1
     - cartopy
 
 about:
