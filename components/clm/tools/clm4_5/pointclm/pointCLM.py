@@ -374,8 +374,7 @@ if (os.path.exists(casedir)):
     
     print('Warning:  Case directory exists')
     if (options.rmold):
-        print('--rmold specified.  Removing old case (this will NOT clean the run directory')
-        print('Please perform a clean build if code has changed')
+        print('--rmold specified.  Removing old case ')
         os.system('rm -rf '+casedir)
     else:
         var = raw_input('proceed (p), remove old (r), or exit (x)? ')
@@ -388,7 +387,7 @@ print("CASE directory is: "+casedir+"\n")
 #Construct case build and run directory
 if (options.exeroot == '' or (os.path.exists(options.exeroot) == False)):
     exeroot = runroot+'/'+casename+'/bld'
-    if ('titan' in options.machine):
+    if ('titan' in options.machine or 'eos' in options.machine):
         exeroot = os.path.abspath(os.environ['HOME']+ \
     	    '/acme_scratch/pointclm/'+casename+'/bld')
 else:
@@ -396,7 +395,12 @@ else:
 print("CASE exeroot is: "+exeroot+"\n")
 rundir=runroot+'/'+casename+'/run'
 print("CASE rundir is: "+rundir+"\n")
-
+if (options.rmold):
+    if (options.no_build == False):
+        print('Removing build directory: '+exeroot)
+        os.system('rm -rf '+exeroot)
+    print('Removing run directory: '+rundir)
+    os.system('rm -rf '+rundir)
 
 #------------------- make point data for site -------------------------------
 if (options.nopointdata == False):
@@ -419,6 +423,8 @@ if (options.nopointdata == False):
         ptcmd = ptcmd + ' --ypts '+options.ypts
     if ('45' not in compset):
         ptcmd = ptcmd + ' --clm40'
+    if (options.nopftdyn):
+        ptcmd = ptcmd + ' --nopftdyn'
     print(ptcmd)
     os.system(ptcmd)
 else:

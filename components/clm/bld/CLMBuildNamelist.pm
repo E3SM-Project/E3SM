@@ -3365,7 +3365,7 @@ sub add_default {
     # if no value is found then exit w/ error (unless 'nofail' option set)
     unless ( defined($val) ) {
       unless ($settings{'nofail'}) {
-        if ($var eq 'finidat') {
+        if ($var eq 'finidat' or $var eq 'flanduse_timeseries') {
           warning("No default value found for $var.\n" .
                   "            Are defaults provided for this resolution and land mask?\n");
         } else {

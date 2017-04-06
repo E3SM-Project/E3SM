@@ -41,7 +41,8 @@ parser.add_option("--xpts", dest="xpts", default=1, \
                       help = "number of x points (regional only)")
 parser.add_option("--ypts", dest="ypts", default=1, \
                       help = "number of y points (regional only)")
-
+parser.add_option("--nopftdyn", dest="nopftdyn", default=False, \
+                     action='store_true', help='Do not make transient PFT file')
 
 (options, args) = parser.parse_args()
 
@@ -324,7 +325,7 @@ ierr = nffun.putvar(surffile_new, 'MONTHLY_LAI', monthly_lai)
 
 #-------------------- create pftdyn surface data ----------------------------------
 
-if ('20TR' in options.compset):
+if ('20TR' in options.compset and options.nopftdyn == False):
 
     print('Creating dynpft data')
 
