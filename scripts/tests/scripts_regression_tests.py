@@ -2145,7 +2145,17 @@ def _main_func():
             expect(not hasattr(B_CheckCode, testname), "Repeat %s" % testname)
             setattr(B_CheckCode, testname, pylint_test)
 
-    unittest.main(verbosity=2, catchbreak=True)
+    try:
+        unittest.main(verbosity=2, catchbreak=True)
+    except SystemExit:
+        had_fails = sys.exc_info()[1].message
+        if had_fails:
+            print "Detected failures, leaving directory:", TEST_ROOT
+        else:
+            print "All pass, removing directory:", TEST_ROOT
+            if os.path.exists(TEST_ROOT):
+                shutil.rmtree(TEST_ROOT)
+            raise
 
 if (__name__ == "__main__"):
     _main_func()
