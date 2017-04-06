@@ -447,7 +447,8 @@ class Case(object):
             self.set_lookup_value("PES_SPEC_FILE", pesfile)
         else:
             expect(False,
-                   "Could not find a compset match for either alias or longname in %s" %(compset_name))
+                   "Could not find a compset match for either alias or longname in %s\n"%(compset_name)
+                   + "You may need the --user-compset argument.")
 
         return None, science_support
 
