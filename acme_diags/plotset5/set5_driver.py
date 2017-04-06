@@ -432,8 +432,7 @@ for parameter in parameters:
                         parameter.plot(mv2_domain, mv1_domain,
                                        diff, metrics_dict, parameter)
                     else:
-                        acme_diags.plotting.set5.plot.plot(
-                            mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
                     if season is seasons[0]:
                         viewer.add_row('%s %s %s' % (
