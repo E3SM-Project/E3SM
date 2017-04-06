@@ -138,7 +138,55 @@ def albedoc(solin, fsntoa):
     var.long_name = "TOA albedo clear-sky"
     return var
 
-# derived_variables is a list
+def swcfsrf(fsns, fsnsc):
+    """Surface shortwave cloud forcing """
+    var = fsns - fsnsc
+    var.long_name = "Surface shortwave cloud forcing"
+    return var
+
+def lwcfsrf(flnsc, flns):
+    """Surface longwave cloud forcing """
+    var = flnsc - flns
+    var.long_name = "Surface longwave cloud forcing"
+    return var
+
+def swcf(fsntoa, fsntoac):
+    """TOA shortwave cloud forcing """
+    var = fsntoa - fsntoac
+    var.long_name = "TOA shortwave cloud forcing"
+    return var
+
+def lwcf(flntoa, flntoac):
+    """TOA longwave cloud forcing """
+    var = flntoa - flntoac
+    var.long_name = "TOA longwave cloud forcing"
+    return var
+
+def fldsc(ts, flnsc):
+    """Clearsky Surf LW downwelling flux"""
+    var = 5.67e-8 * ts**4 - flnsc
+    var.units = "W/m2"
+    var.long_name = "Clearsky Surf LW downwelling flux"
+    return var
+
+def restom(fsnt, flnt):
+    """TOM(top of model) Radiative flux"""
+    var = fsnt - flnt
+    var.long_name = "TOM(top of model) Radiative flux"
+    return var
+
+def restoa(fsnt, flnt):
+    """TOA(top of atmosphere) Radiative flux"""
+    var = fsnt - flnt
+    var.long_name = "TOA(top of atmosphere) Radiative flux"
+    return var
+
+# derived_variables is a dictionary to accomodate user specified derived variables. 
+# The driver search for available variable keys and functions to calculate derived variable.
+# For example 
+# In derived_variable there is an entry for 'PRECT':
+# If 'PRECT' is not available, but both 'PRECC' and 'PRECT' are available in the netcdf variable keys,
+# PRECT is calculated using fuction prect() with precc and precl as inputs.
 derived_variables = {
     'PRECT': [
         (['pr'], rename),
@@ -162,19 +210,19 @@ derived_variables = {
     ],
     'SWCF': [
         (['SWCF'], rename),
-        (['FSNTOA', 'FSNTOAC'], lambda fsntoa, fsntoac: fsntoa - fsntoac)
+        (['FSNTOA', 'FSNTOAC'], lambda fsntoa, fsntoac: swcf(fsntoa - fsntoac))
     ],
     'SWCFSRF': [
         (['SWCFSRF'], rename),
-        (['FSNS', 'FSNSC'], lambda fsns, fsnsc: fsns - fsnsc)
+        (['FSNS', 'FSNSC'], lambda fsns, fsnsc: swcfsrf(fsns - fsnsc))
     ],
     'LWCF': [
         (['LWCF'], rename),
-        (['FLNTOA', 'FLNTOAC'], lambda flntoa, flntoac: flntoa - flntoac)
+        (['FLNTOA', 'FLNTOAC'], lambda flntoa, flntoac: lwcf(flntoa - flntoac))
     ],
     'LWCFSRF': [
         (['LWCFSRF'], rename),
-        (['FLNSC', 'FLNS'], lambda flns, flnsc: flnsc - flns)
+        (['FLNSC', 'FLNS'], lambda flns, flnsc: lwcfsrf(flnsc - flns))
     ],
     'FLNS': [
         (['FLNS'], rename)
@@ -187,7 +235,7 @@ derived_variables = {
     ],
     'FLDSC': [
         (['FLDSC'], rename),
-        (['TS', 'FLNSC'], lambda ts, flnsc: 5.67e-8 * ts**4 - flnsc)
+        (['TS', 'FLNSC'], lambda ts, flnsc: fldsc(ts, flnsc))
     ],
     'FSNS': [
         (['FSNS'], rename)
@@ -215,11 +263,11 @@ derived_variables = {
     ],
     'RESTOM': [
         (['RESTOA'], rename),
-        (['FSNT', 'FLNT'], lambda fsnt, flnt: fsnt - flnt)
+        (['FSNT', 'FLNT'], lambda fsnt, flnt: restom(fsnt,flnt))
     ],
     'RESTOA': [
         (['RESTOA'], rename),
-        (['FSNTOA', 'FLUT'], lambda fsntoa, flut: fsntoa - flut)
+        (['FSNT', 'FLNT'], lambda fsnt, flnt: restoa(fsnt,flnt))
     ],
     'TREFHT_LAND': [
         (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(
@@ -227,8 +275,8 @@ derived_variables = {
         (['TREFHT_LAND'], rename)
     ],
     'PRECT_LAND': [
-        (['PRECC', 'PRECL', 'LANDFRAC'], lambda a, b, landfrac: mask_by(aplusb(
-            a, b, target_units="mm/day"), landfrac, low_limit=0.5)),  # 0.5 just to match amwg
+        (['PRECC', 'PRECL', 'LANDFRAC'], lambda a, b, landfrac: mask_by(
+           prect(precc , precl), landfrac, low_limit=0.5)),  # 0.5 just to match amwg
         (['PRECIP_LAND'], rename)
     ],
     'Z3': [

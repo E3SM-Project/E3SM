@@ -303,7 +303,10 @@ for parameter in parameters:
 
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
-                    viewer.add_col(mv1.long_name)
+                    if hasattr(mv1,"long_name"):
+                        viewer.add_col(mv1.long_name)
+                    else:
+                        viewer.add_col('%s' % var)
                 viewer.set_row('%s %s' % (var, region))
                 files = [parameter.case_id + '/' + parameter.output_file +
                          ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
@@ -435,7 +438,10 @@ for parameter in parameters:
                     if season is seasons[0]:
                         viewer.add_row('%s %s %s' % (
                             var, str(int(plev[ilev])) + 'mb', region))
-                        viewer.add_col('Description for %s' % var)
+                        if hasattr(mv1,"long_name"):
+                            viewer.add_col(mv1.long_name)
+                        else:
+                            viewer.add_col('%s' % var)
                     viewer.set_row('%s %s %s' %
                                    (var, str(int(plev[ilev])) + 'mb', region))
                     files = [parameter.case_id + '/' + parameter.output_file +
