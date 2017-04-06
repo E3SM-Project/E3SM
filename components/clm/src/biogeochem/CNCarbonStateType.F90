@@ -2303,6 +2303,12 @@ contains
     end if
 
     if (carbon_type == 'c12') then
+       call restartvar(ncid=ncid, flag=flag, varname='cwdc', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%cwdc_col)
+    end if
+
+    if (carbon_type == 'c12') then
        if (use_vertsoilc) then
           ptr2d => this%ctrunc_vr_col
           call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc_vr', xtype=ncd_double,  &

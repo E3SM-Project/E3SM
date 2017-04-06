@@ -501,7 +501,6 @@ module CNEcosystemDynBetrMod
   end subroutine CNEcosystemDynBetr
 
 
-
   !-----------------------------------------------------------------------
   subroutine CNFluxStateBetrSummary(bounds, col, pft, num_soilc, filter_soilc, &
        num_soilp, filter_soilp,                                      &
@@ -535,6 +534,8 @@ module CNEcosystemDynBetrMod
     type(phosphorusflux_type), intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type),intent(inout) :: phosphorusstate_vars
 
+    call t_startf('CNsumBetr')
+
     call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
 
     call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
@@ -557,7 +558,7 @@ module CNEcosystemDynBetrMod
     call update_plant_nutrient_buffer(bounds, col, pft, num_soilc, filter_soilc, num_soilp, filter_soilp, &
       nitrogenflux_vars, nitrogenstate_vars, phosphorusflux_vars, phosphorusstate_vars)
 
-    call t_stopf('CNsum')
+    call t_stopf('CNsumBetr')
 
   end subroutine CNFluxStateBetrSummary
 
