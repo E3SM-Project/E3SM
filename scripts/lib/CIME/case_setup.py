@@ -69,7 +69,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, 
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     testcase     = case.get_value("TESTCASE")
     expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
-           "inputdata root is not a directory: \"$din_loc_root\" ")
+           "inputdata root is not a directory: %s" % din_loc_root)
 
     # Check that userdefine settings are specified before expanding variable
     for vid, value in case:

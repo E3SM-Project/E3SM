@@ -854,9 +854,14 @@ def append_status(msg, sfile, caseroot='.'):
     Append msg to sfile in caseroot
     """
     ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
+
+    # Reduce empty lines in CaseStatus. It's a very concise file
+    # and does not need extra newlines for readability
+    line_ending = "" if sfile == "CaseStatus" else "\n"
+
     with open(os.path.join(caseroot, sfile), "a") as fd:
-        fd.write(ctime + msg + "\n")
-        fd.write("\n ---------------------------------------------------\n\n")
+        fd.write(ctime + msg + line_ending)
+        fd.write("\n ---------------------------------------------------\n" + line_ending)
 
 def append_testlog(msg, caseroot='.'):
     """
