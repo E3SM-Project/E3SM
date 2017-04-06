@@ -71,7 +71,7 @@ contains
     allocate(tau_soil%tau_liq(bounds%begc:bounds%endc, 1 : nlevtrc_soil))
     tau_soil%tau_liq(:,:) = 0._r8
 
-
+    allocate(h2osoi_liq_copy(bounds%begc:bounds%endc, 1:nlevsoi));  h2osoi_liq_copy(:, :) = spval
   end subroutine tracer_param_init
 
   !--------------------------------------------------------------------------------------------------------------
@@ -1143,10 +1143,12 @@ contains
 
    !compute tortuosity
    !gaseous phase
-   call calc_gaseous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, tau_soil%tau_gas)
+   call calc_gaseous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, &
+      tau_soil%tau_gas(bounds%begc:bounds%endc,lbj:ubj))
 
    !aqueous phase
-   call calc_aqueous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, tau_soil%tau_liq)
+   call calc_aqueous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, &
+      tau_soil%tau_liq(bounds%begc:bounds%endc,lbj:ubj))
 
    !compute bulk diffusivity
    call calc_bulk_diffusivity(bounds, lbj, ubj, jtops, numf, filter       , &
@@ -1309,7 +1311,6 @@ contains
    integer :: j, fc, c
    SHR_ASSERT_ALL((ubound(h2osoi_liq) == (/bounds%endc, nlevsoi/)), errMsg(__FILE__,__LINE__))
 
-   allocate(h2osoi_liq_copy(bounds%begc:bounds%endc, 1:nlevsoi));  h2osoi_liq_copy(:, :) = spval
    do j = 1, nlevsoi
      do fc = 1, num_hydrologyc
        c = filter_hydrologyc(fc)
@@ -1412,7 +1413,6 @@ contains
 
    enddo
 
-   deallocate(h2osoi_liq_copy)
    end associate
    end subroutine diagnose_advect_water_flux
 
@@ -1461,7 +1461,6 @@ contains
      enddo
    enddo
 
-   deallocate(h2osoi_liq_copy)
    end associate
    end subroutine diagnose_drainage_water_flux
 
