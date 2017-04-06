@@ -205,7 +205,6 @@ for parameter in parameters:
             var, acme.derived_variables, f_mod, parameter)
         mv2 = acme.process_derived_var(
             var, acme.derived_variables, f_obs, parameter)
-        print mv1.units, mv2.units
 
         # special case, cdms didn't properly convert mask with fill value
         # -999.0, filed issue with denise
@@ -304,7 +303,10 @@ for parameter in parameters:
 
                 if season is seasons[0]:
                     viewer.add_row('%s %s' % (var, region))
-                    viewer.add_col(mv1.long_name)
+                    if hasattr(mv1,"long_name"):
+                        viewer.add_col(mv1.long_name)
+                    else:
+                        viewer.add_col('%s' % var)
                 viewer.set_row('%s %s' % (var, region))
                 files = [parameter.case_id + '/' + parameter.output_file +
                          ext for ext in ['_test.nc', '_ref.nc', '_test.nc']]
@@ -430,13 +432,15 @@ for parameter in parameters:
                         parameter.plot(mv2_domain, mv1_domain,
                                        diff, metrics_dict, parameter)
                     else:
-                        acme_diags.plotting.set5.plot.plot(
-                            mv2_domain, mv1_domain, diff, metrics_dict, parameter)
+                        plot(mv2_domain, mv1_domain, diff, metrics_dict, parameter)
 
                     if season is seasons[0]:
                         viewer.add_row('%s %s %s' % (
                             var, str(int(plev[ilev])) + 'mb', region))
-                        viewer.add_col('Description for %s' % var)
+                        if hasattr(mv1,"long_name"):
+                            viewer.add_col(mv1.long_name)
+                        else:
+                            viewer.add_col('%s' % var)
                     viewer.set_row('%s %s %s' %
                                    (var, str(int(plev[ilev])) + 'mb', region))
                     files = [parameter.case_id + '/' + parameter.output_file +
@@ -446,7 +450,8 @@ for parameter in parameters:
                                    '.png', is_file=True, title=season, other_files=formatted_files)
 
                     save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
-
+            f_mod.close()
+            f_in.close()
         else:
             raise RuntimeError(
                 "Dimensions of two variables are difference. Abort")

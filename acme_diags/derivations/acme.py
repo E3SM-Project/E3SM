@@ -117,11 +117,80 @@ def qflx_convert_units(var):
         var.units = 'mm/day'
     return var
 
+def prect(precc, precl):
+    """Total precipitation flux = convective + large-scal, """
+    var = precc + precl
+    var = _convert_units(var, "mm/day") 
+    var.long_name = "Total precipitation rate (convective + large-scale)"
+    return var
+    
+def albedo(solin, fsntoa):
+    """TOA (top-of-atmosphere) albedo, (solin - fsntoa) / solin, unit is nondimension"""
+    var = (solin - fsntoa) / solin
+    var.units = "dimensionless"
+    var.long_name = "TOA albedo"
+    return var
 
+def albedoc(solin, fsntoa):
+    """TOA (top-of-atmosphere) albedo clear-sky, (solin - fsntoac) / solin, unit is nondimension"""
+    var = (solin - fsntoa) / solin
+    var.units = "dimensionless"
+    var.long_name = "TOA albedo clear-sky"
+    return var
+
+def swcfsrf(fsns, fsnsc):
+    """Surface shortwave cloud forcing """
+    var = fsns - fsnsc
+    var.long_name = "Surface shortwave cloud forcing"
+    return var
+
+def lwcfsrf(flnsc, flns):
+    """Surface longwave cloud forcing """
+    var = flnsc - flns
+    var.long_name = "Surface longwave cloud forcing"
+    return var
+
+def swcf(fsntoa, fsntoac):
+    """TOA shortwave cloud forcing """
+    var = fsntoa - fsntoac
+    var.long_name = "TOA shortwave cloud forcing"
+    return var
+
+def lwcf(flntoa, flntoac):
+    """TOA longwave cloud forcing """
+    var = flntoa - flntoac
+    var.long_name = "TOA longwave cloud forcing"
+    return var
+
+def fldsc(ts, flnsc):
+    """Clearsky Surf LW downwelling flux"""
+    var = 5.67e-8 * ts**4 - flnsc
+    var.units = "W/m2"
+    var.long_name = "Clearsky Surf LW downwelling flux"
+    return var
+
+def restom(fsnt, flnt):
+    """TOM(top of model) Radiative flux"""
+    var = fsnt - flnt
+    var.long_name = "TOM(top of model) Radiative flux"
+    return var
+
+def restoa(fsnt, flnt):
+    """TOA(top of atmosphere) Radiative flux"""
+    var = fsnt - flnt
+    var.long_name = "TOA(top of atmosphere) Radiative flux"
+    return var
+
+# derived_variables is a dictionary to accomodate user specified derived variables. 
+# The driver search for available variable keys and functions to calculate derived variable.
+# For example 
+# In derived_variable there is an entry for 'PRECT':
+# If 'PRECT' is not available, but both 'PRECC' and 'PRECT' are available in the netcdf variable keys,
+# PRECT is calculated using fuction prect() with precc and precl as inputs.
 derived_variables = {
     'PRECT': [
         (['pr'], rename),
-        (['PRECC', 'PRECL'], lambda a, b: aplusb(a, b, target_units="mm/day"))
+        (['PRECC', 'PRECL'], lambda precc, precl: prect(precc , precl))
     ],
     'SST': [
         (['SST'], lambda sst: _convert_units(sst, target_units="degC")),
@@ -133,27 +202,27 @@ derived_variables = {
     ],
     'ALBEDO': [
         (['ALBEDO'], rename),
-        (['SOLIN', 'FSNTOA'], lambda solin, fsntoa: (solin - fsntoa) / solin)
+        (['SOLIN', 'FSNTOA'], lambda solin, fsntoa: albedo(solin, fsntoa))
     ],
     'ALBEDOC': [
         (['ALBEDOC'], rename),
-        (['SOLIN', 'FSNTOAC'], lambda solin, fsntoac: (solin - fsntoac) / solin)
+        (['SOLIN', 'FSNTOAC'], lambda solin, fsntoac: albedoc(solin, fsntoac))
     ],
     'SWCF': [
         (['SWCF'], rename),
-        (['FSNTOA', 'FSNTOAC'], lambda fsntoa, fsntoac: fsntoa - fsntoac)
+        (['FSNTOA', 'FSNTOAC'], lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
     ],
     'SWCFSRF': [
         (['SWCFSRF'], rename),
-        (['FSNS', 'FSNSC'], lambda fsns, fsnsc: fsns - fsnsc)
+        (['FSNS', 'FSNSC'], lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
     ],
     'LWCF': [
         (['LWCF'], rename),
-        (['FLNTOA', 'FLNTOAC'], lambda flntoa, flntoac: flntoa - flntoac)
+        (['FLNTOA', 'FLNTOAC'], lambda flntoa, flntoac: lwcf(flntoa, flntoac))
     ],
     'LWCFSRF': [
         (['LWCFSRF'], rename),
-        (['FLNSC', 'FLNS'], lambda flns, flnsc: flnsc - flns)
+        (['FLNSC', 'FLNS'], lambda flns, flnsc: lwcfsrf(flnsc, flns))
     ],
     'FLNS': [
         (['FLNS'], rename)
@@ -166,7 +235,7 @@ derived_variables = {
     ],
     'FLDSC': [
         (['FLDSC'], rename),
-        (['TS', 'FLNSC'], lambda ts, flnsc: 5.67e-8 * ts**4 - flnsc)
+        (['TS', 'FLNSC'], lambda ts, flnsc: fldsc(ts, flnsc))
     ],
     'FSNS': [
         (['FSNS'], rename)
@@ -189,16 +258,17 @@ derived_variables = {
     'FSNTOA': [
         (['FSNTOA'], rename)
     ],
+    
     'FSNTOAC': [
-        (['FSNTOAC'], rename)
+        (['FSNTOAC'], rename) #Note: CERES_EBAF data in amwg obs sets mis-spells "units" as "lunits"
     ],
     'RESTOM': [
         (['RESTOA'], rename),
-        (['FSNT', 'FLNT'], lambda fsnt, flnt: fsnt - flnt)
+        (['FSNT', 'FLNT'], lambda fsnt, flnt: restom(fsnt,flnt))
     ],
     'RESTOA': [
         (['RESTOA'], rename),
-        (['FSNTOA', 'FLUT'], lambda fsntoa, flut: fsntoa - flut)
+        (['FSNT', 'FLNT'], lambda fsnt, flnt: restoa(fsnt,flnt))
     ],
     'TREFHT_LAND': [
         (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(
@@ -206,8 +276,8 @@ derived_variables = {
         (['TREFHT_LAND'], rename)
     ],
     'PRECT_LAND': [
-        (['PRECC', 'PRECL', 'LANDFRAC'], lambda a, b, landfrac: mask_by(aplusb(
-            a, b, target_units="mm/day"), landfrac, low_limit=0.5)),  # 0.5 just to match amwg
+        (['PRECC', 'PRECL', 'LANDFRAC'], lambda precc, precl, landfrac: mask_by(
+           prect(precc , precl), landfrac, low_limit=0.5)),  # 0.5 just to match amwg
         (['PRECIP_LAND'], rename)
     ],
     'Z3': [
@@ -225,38 +295,10 @@ derived_variables = {
     'TREFHT': [
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
     ],
-    'FLNS': [
-        (['FLNS'], rename)
-    ],
-    'FSNS': [
-        (['FSNS'], rename)
-    ],
-    'TREFHT_LAND': [
-        (['TREFHT', 'LANDFRAC'], lambda trefht, landfrac: mask_by(
-            _convert_units(trefht, target_units="K"), landfrac, low_limit=0.65)),
-        (['TREFHT_LAND'], rename)
-    ],
-    'PRECT_LAND': [
-        (['PRECC', 'PRECL', 'LANDFRAC'], lambda a, b, landfrac: mask_by(aplusb(
-            a, b, target_units="mm/day"), landfrac, low_limit=0.5)),  # 0.5 just to match amwg
-        (['PRECIP_LAND'], rename)
-    ],
-    'Z3': [
-        (['Z3'], lambda z3: _convert_units(z3, target_units="hectometer"))
-    ],
-    'PSL': [
-        (['PSL'], lambda psl: _convert_units(psl, target_units="hectopascal"))
-    ],
-    'T': [
-        (['T'], lambda t: _convert_units(t, target_units="K"))
-    ],
-    'U': [
-        (['U'], lambda u: _convert_units(u, target_units="m/s"))
-    ],
     'TREFHT': [
         (['TREFHT'], lambda t: _convert_units(t, target_units="K"))
     ],
-    u'QFLX': [
+    'QFLX': [
         (['QFLX'], lambda qflx: qflx_convert_units(qflx))
     ],
 
@@ -273,7 +315,6 @@ derived_variables = {
     'PREH2O_OCN': [(['PREH2O_OCEAN'], (lambda x: _convert_units(x, target_units='mm'))),
                    (['TMQ', 'OCNFRAC'], lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit=0.65))],
     'CLDHGH': [
-        # below fraction to percent conversion not working
         (['CLDHGH'], lambda cldhgh: _convert_units(cldhgh, target_units="%")),
     ],
     'CLDLOW': [
@@ -285,20 +326,20 @@ derived_variables = {
     'CLDTOT': [
         (['CLDTOT'], lambda cldtot: _convert_units(cldtot, target_units="%")),
     ],
-    'CLDHGH_VISIR': [
-        (['CLDHGH'], rename),
-        (['CLDHGH_VISIR'], rename),
-    ],
-    'CLDLOW_VISIR': [
-        (['CLDLOW'], rename),
-        (['CLDLOW_VISIR'], rename),
-    ],
-    'CLDMED_VISIR': [
-        (['CLDMED'], rename),
-        (['CLDMED_VISIR'], rename),
-    ],
-    'CLDTOT_VISIR': [
-        (['CLDTOT'], rename),
-        (['CLDTOT_VISIR'], rename),
-    ],
+#    'CLDHGH_VISIR': [
+#        (['CLDHGH'], rename),
+#        (['CLDHGH_VISIR'], rename),
+#    ],
+#    'CLDLOW_VISIR': [
+#        (['CLDLOW'], rename),
+#        (['CLDLOW_VISIR'], rename),
+#    ],
+#    'CLDMED_VISIR': [
+#        (['CLDMED'], rename),
+#        (['CLDMED_VISIR'], rename),
+#    ],
+#    'CLDTOT_VISIR': [
+#        (['CLDTOT'], rename),
+#        (['CLDTOT_VISIR'], rename),
+#    ],
 }
