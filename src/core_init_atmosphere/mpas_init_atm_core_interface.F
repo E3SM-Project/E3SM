@@ -12,6 +12,7 @@ module init_atm_core_interface
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_io_units
+   use mpas_log, only : mpas_log_write
 
    contains
 
@@ -56,14 +57,6 @@ module init_atm_core_interface
       core % source = 'MPAS'
 
 #include "inc/core_variables.inc"
-
-write(0,*) ''
-#ifdef SINGLE_PRECISION
-write(0,'(a)') 'Using default single-precision reals'
-#else
-write(0,'(a)') 'Using default double-precision reals'
-#endif
-write(0,*) ''
 
    end subroutine init_atm_setup_core
 
@@ -111,7 +104,6 @@ write(0,*) ''
 
       use mpas_derived_types, only : mpas_pool_type, mpas_io_context_type
       use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
-      use mpas_io_units, only : stderrUnit
 
       implicit none
 
@@ -162,9 +154,9 @@ write(0,*) ''
           .not. associated(vertical_stage_out) .or. &
           .not. associated(met_stage_in) .or. &
           .not. associated(met_stage_out)) then
-         write(stderrUnit,*) '********************************************************************************'
-         write(stderrUnit,*) '* Error while setting up packages for init_atmosphere core.'
-         write(stderrUnit,*) '********************************************************************************'
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
+         call mpas_log_write('* Error while setting up packages for init_atmosphere core.',                      messageType=MPAS_LOG_ERR)
+         call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_ERR)
          ierr = 1
          return
       end if
@@ -290,6 +282,15 @@ write(0,*) ''
       ! After core has had a chance to modify log defaults, open the output log
       call mpas_log_open(err=local_err)
       iErr = ior(iErr, local_err)
+
+      call mpas_log_write('')
+#ifdef SINGLE_PRECISION
+      call mpas_log_write('Using default single-precision reals')
+#else
+      call mpas_log_write('Using default double-precision reals')
+#endif
+      call mpas_log_write('')
+
 
    end function init_atm_setup_log!}}}
 
