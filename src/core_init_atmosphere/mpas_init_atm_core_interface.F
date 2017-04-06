@@ -265,8 +265,8 @@ write(0,*) ''
    !-----------------------------------------------------------------------
    function init_atm_setup_log(logInfo, domain) result(iErr)!{{{
 
-      use mpas_derived_types
-      use mpas_log
+      use mpas_derived_types, only : mpas_log_type, domain_type
+      use mpas_log, only : mpas_log_init, mpas_log_open
 
       implicit none
 
@@ -286,10 +286,6 @@ write(0,*) ''
       ! Set core specific options here
       ! (At present, there are not any.  There could eventually be choices about the file naming conventions
       !  or other settings controlling behavior.)
-
-      ! ATTENTION: DISABLING LOG MANAGER FOR NOW
-      logInfo % outputLog % isActive = .false.
-      logInfo % errorLog % isActive = .false.
 
       ! After core has had a chance to modify log defaults, open the output log
       call mpas_log_open(err=local_err)
