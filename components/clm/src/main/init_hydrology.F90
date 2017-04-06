@@ -32,5 +32,7 @@ implicit none
   call init_soilwater_movement
   
   call init_soil_stress
+
+  call init_root_moist_stress()
   
 end subroutine init_hydrology
