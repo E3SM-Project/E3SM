@@ -210,19 +210,19 @@ derived_variables = {
     ],
     'SWCF': [
         (['SWCF'], rename),
-        (['FSNTOA', 'FSNTOAC'], lambda fsntoa, fsntoac: swcf(fsntoa - fsntoac))
+        (['FSNTOA', 'FSNTOAC'], lambda fsntoa, fsntoac: swcf(fsntoa, fsntoac))
     ],
     'SWCFSRF': [
         (['SWCFSRF'], rename),
-        (['FSNS', 'FSNSC'], lambda fsns, fsnsc: swcfsrf(fsns - fsnsc))
+        (['FSNS', 'FSNSC'], lambda fsns, fsnsc: swcfsrf(fsns, fsnsc))
     ],
     'LWCF': [
         (['LWCF'], rename),
-        (['FLNTOA', 'FLNTOAC'], lambda flntoa, flntoac: lwcf(flntoa - flntoac))
+        (['FLNTOA', 'FLNTOAC'], lambda flntoa, flntoac: lwcf(flntoa, flntoac))
     ],
     'LWCFSRF': [
         (['LWCFSRF'], rename),
-        (['FLNSC', 'FLNS'], lambda flns, flnsc: lwcfsrf(flnsc - flns))
+        (['FLNSC', 'FLNS'], lambda flns, flnsc: lwcfsrf(flnsc, flns))
     ],
     'FLNS': [
         (['FLNS'], rename)
@@ -258,8 +258,9 @@ derived_variables = {
     'FSNTOA': [
         (['FSNTOA'], rename)
     ],
+    
     'FSNTOAC': [
-        (['FSNTOAC'], rename)
+        (['FSNTOAC'], rename) #Note: CERES_EBAF data in amwg obs sets mis-spells "units" as "lunits"
     ],
     'RESTOM': [
         (['RESTOA'], rename),
@@ -275,7 +276,7 @@ derived_variables = {
         (['TREFHT_LAND'], rename)
     ],
     'PRECT_LAND': [
-        (['PRECC', 'PRECL', 'LANDFRAC'], lambda a, b, landfrac: mask_by(
+        (['PRECC', 'PRECL', 'LANDFRAC'], lambda precc, precl, landfrac: mask_by(
            prect(precc , precl), landfrac, low_limit=0.5)),  # 0.5 just to match amwg
         (['PRECIP_LAND'], rename)
     ],
