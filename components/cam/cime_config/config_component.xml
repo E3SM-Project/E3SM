@@ -162,6 +162,8 @@
       <value compset="1850_CAM5.*AV1C-04P">1850_cam5_av1c-04p</value>
       <value compset="1850_CAM5.*AV1C-04P2">1850_cam5_av1c-04p2</value>
       <value compset="1850_CAM5.*AV1C-L" >1850_cam5_av1c-04p2</value>
+      <value compset="1850_CAM5.*AV1C-H01A">1850_cam5_av1c-h01a</value>
+      <value compset="1850_CAM5.*AV1C-H01B">1850_cam5_av1c-h01b</value>
       <value compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</value>
       <value compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</value>
       <value compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</value>
@@ -179,6 +181,8 @@
       <value compset="20TR_CAM5.*AV1C-04P">20TR_cam5_av1c-04p</value>
       <value compset="20TR_CAM5.*AV1C-04P2">20TR_cam5_av1c-04p2</value>
       <value compset="20TR_CAM5.*AV1C-L">20TR_cam5_av1c-04p2</value>
+      <value compset="20TR_CAM5.*AV1C-H01A">20TR_cam5_av1c-h01a</value>
+      <value compset="20TR_CAM5.*AV1C-H01B">20TR_cam5_av1c-h01b</value>
       <value compset="2000_CAM5%COSP"   >2000_cam5_cosp</value>
       <value compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</value>
       <value compset="1996_CAM4%WCMX"   >waccmx_1996_cam4</value>

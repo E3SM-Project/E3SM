@@ -130,6 +130,16 @@
   </compset>
 
   <compset>
+    <alias>F1850C5AV1C-H01A</alias>
+    <lname>1850_CAM5%AV1C-H01A_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F1850C5AV1C-H01B</alias>
+    <lname>1850_CAM5%AV1C-H01B_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FC5AV1C-01</alias>
     <lname>2000_CAM5%AV1C-01_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
@@ -212,6 +222,16 @@
   <compset>
    <alias>F20TRC5AV1C-L</alias>
    <lname>20TR_CAM5%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+   <alias>F20TRC5AV1C-H01A</alias>
+   <lname>20TR_CAM5%AV1C-H01A_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+   <alias>F20TRC5AV1C-H01B</alias>
+   <lname>20TR_CAM5%AV1C-H01B_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>
