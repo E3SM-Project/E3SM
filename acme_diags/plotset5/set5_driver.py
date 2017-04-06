@@ -450,7 +450,8 @@ for parameter in parameters:
                                    '.png', is_file=True, title=season, other_files=formatted_files)
 
                     save_ncfiles(mv1_domain, mv2_domain, diff, parameter)
-
+            f_mod.close()
+            f_in.close()
         else:
             raise RuntimeError(
                 "Dimensions of two variables are difference. Abort")
