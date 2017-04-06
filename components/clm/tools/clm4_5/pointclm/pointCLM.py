@@ -387,9 +387,9 @@ print("CASE directory is: "+casedir+"\n")
 #Construct case build and run directory
 if (options.exeroot == '' or (os.path.exists(options.exeroot) == False)):
     exeroot = runroot+'/'+casename+'/bld'
-    if ('titan' in options.machine or 'eos' in options.machine):
-        exeroot = os.path.abspath(os.environ['HOME']+ \
-    	    '/acme_scratch/pointclm/'+casename+'/bld')
+    #if ('titan' in options.machine or 'eos' in options.machine):
+    #    exeroot = os.path.abspath(os.environ['HOME']+ \
+   # 	    '/acme_scratch/pointclm/'+casename+'/bld')
 else:
     exeroot=options.exeroot
 print("CASE exeroot is: "+exeroot+"\n")
