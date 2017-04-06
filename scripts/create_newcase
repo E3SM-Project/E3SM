@@ -114,7 +114,7 @@ OR
     parser.add_argument("-q", "--queue", default=None,
                         help="Force batch system to use a certain queue")
 
-    parser.add_argument("-a", "--answer", choices=("a", "r", "u"), default=None,
+    parser.add_argument("--handle-preexisting-dirs", dest="answer", choices=("a", "r", "u"), default=None,
                         help="Pre-answer what to do pre-existing bld/exe dirs. Valid answers are (a)bort (r)eplace or (u)se existing."
                         "This can be useful if you need to run create_newcase non-iteractively.")
 
