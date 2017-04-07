@@ -2589,7 +2589,7 @@
 	 <arguments>
 		 <arg name="num_tasks" > -np $TOTALPES</arg>
 		 <arg name="tasks_per_node"> --map-by ppr:$PES_PER_NODE:node</arg>
-		 <arg name="thread_count"> --envs OMP_NUM_THREADS=$OMP_NUM_THREADS</arg>
+		 <arg name="thread_count"> --envs OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
 		 <arg name="show-binding"> --report-bindings </arg>
 		 <arg name="show-processmap"> --display-map </arg>
 	 </arguments>  
@@ -2638,6 +2638,7 @@
         <command name="load">netcdf/4.4.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
+        <command name="load">netcdf/4.4.1</command>
         <command name="load">parallel-netcdf/1.7.0</command>
         <command name="load">hdf5/1.10.0-patch1-parallel</command>
       </modules>
@@ -2646,6 +2647,12 @@
         <env name="COMPILER">$COMPILER</env>
         <env name="MPILIB">$MPILIB</env>
         <env name="OMP_STACKSIZE">128M</env>
+		<!--
+        <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
+        <env name="NETCDF_FORTRAN_PATH">/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</env>
+        <env name="PNETCDF_PATH" mpilib="!mpi-serial">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+        <env name="HDF5_PATH" mpilib="!mpi-serial">$ENV{OLCF_HDF5_ROOT}</env>
+		-->
       </environment_variables>
     </module_system>
 </machine>
