@@ -8,7 +8,6 @@
 module atm_core_interface
 
    use mpas_attlist
-   use mpas_abort, only : mpas_dmpar_global_abort
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
@@ -57,14 +56,6 @@ module atm_core_interface
       core % source = 'MPAS'
 
 #include "inc/core_variables.inc"
-
-write(0,*) ''
-#ifdef SINGLE_PRECISION
-write(0,'(a)') 'Using default single-precision reals'
-#else
-write(0,'(a)') 'Using default double-precision reals'
-#endif
-write(0,*) ''
 
    end subroutine atm_setup_core
 
@@ -150,8 +141,7 @@ write(0,*) ''
 
       ierr = atmphys_setup_packages(configs,packages,iocontext)
       if(ierr /= 0) then
-         call mpas_dmpar_global_abort('ERROR: Package setup failed for atmphys in core_atmosphere', &
-                                      deferredAbort=.true.)
+         call mpas_log_write('Package setup failed for atmphys in core_atmosphere', messageType=MPAS_LOG_ERR)
       endif
 #endif
 
@@ -233,6 +223,14 @@ write(0,*) ''
       call mpas_log_open(err=local_err)
       iErr = ior(iErr, local_err)
 
+      call mpas_log_write('')
+#ifdef SINGLE_PRECISION
+      call mpas_log_write('Using default single-precision reals')
+#else
+      call mpas_log_write('Using default double-precision reals')
+#endif
+      call mpas_log_write('')
+
    end function atm_setup_log!}}}
 
 
@@ -269,7 +267,7 @@ write(0,*) ''
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 
       if (.not. associated(config_do_restart)) then
-         call mpas_dmpar_global_abort('ERROR: config_do_restart was not found when defining mesh stream.', deferredAbort=.true.)
+         call mpas_log_write('config_do_restart was not found when defining mesh stream.', messageType=MPAS_LOG_ERR)
          ierr = 1
       else if (config_do_restart) then
          write(stream,'(a)') 'restart'
