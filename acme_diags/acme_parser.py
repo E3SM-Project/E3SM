@@ -56,9 +56,9 @@ class ACMEParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
-            '--plev',
+            '--levels',
             type=float,
-            dest='plev',
+            dest='levels',
             help='Selected pressure level',
             required=False)
 
