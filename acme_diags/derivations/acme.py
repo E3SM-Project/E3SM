@@ -124,12 +124,12 @@ def prect(precc, precl):
     var.long_name = "Total precipitation rate (convective + large-scale)"
     return var
     
-#def albedo(solin, fsntoa):
-#    """TOA (top-of-atmosphere) albedo, (solin - fsntoa) / solin, unit is nondimension"""
-#    var = (solin - fsntoa) / solin
-#    var.units = "dimensionless"
-#    var.long_name = "TOA albedo"
-#    return var
+def albedo(solin, fsntoa):
+    """TOA (top-of-atmosphere) albedo, (solin - fsntoa) / solin, unit is nondimension"""
+    var = (solin - fsntoa) / solin
+    var.units = "dimensionless"
+    var.long_name = "TOA albedo"
+    return var
 
 def albedoc(solin, fsntoa):
     """TOA (top-of-atmosphere) albedo clear-sky, (solin - fsntoac) / solin, unit is nondimension"""
@@ -200,10 +200,10 @@ derived_variables = {
     'PREH2O': [
         (['TMQ'], rename)
     ],
-#    'ALBEDO': [
-#        (['ALBEDO'], rename),
-#        (['SOLIN', 'FSNTOA'], lambda solin, fsntoa: albedo(solin, fsntoa))
-#    ],
+    'ALBEDO': [
+        (['ALBEDO'], rename),
+        (['SOLIN', 'FSNTOA'], lambda solin, fsntoa: albedo(solin, fsntoa))
+    ],
     'ALBEDOC': [
         (['ALBEDOC'], rename),
         (['SOLIN', 'FSNTOAC'], lambda solin, fsntoac: albedoc(solin, fsntoac))
