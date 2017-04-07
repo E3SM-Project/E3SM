@@ -105,7 +105,8 @@ for mct, etc.
   <CFLAGS> -g -qfullpath -qmaxmem=-1 -qphsinfo </CFLAGS>
   <FIXEDFLAGS>  -qsuffix=f=f -qfixed=132 </FIXEDFLAGS>
   <FREEFLAGS> -qsuffix=f=f90:cpp=F90  </FREEFLAGS>
-  <FFLAGS> -g -qzerosize -qfree=f90 -qfullpath -qmaxmem=-1 -qphsinfo </FFLAGS>
+  <FFLAGS> -g -qfullpath -qmaxmem=-1 -qphsinfo </FFLAGS>
+  <FFLAGS_NOOPT> -O0 -g -qfree=f90  </FFLAGS_NOOPT>
   <FC_AUTO_R8> -qrealsize=8 </FC_AUTO_R8>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -Q </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
@@ -1031,18 +1032,23 @@ for mct, etc.
   <MPIFC> mpixlf </MPIFC>
   <SCC> xlc_r </SCC>
   <MPICC> mpixlc </MPICC>
+  <ADD_FFLAGS DEBUG="FALSE"> -qzerosize -qfree=f90 -qxlf2003=polymorphic</ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -qzerosize -qfree=f90 -qxlf2003=polymorphic</ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <NETCDF_PATH>${OLCF_NETCDF_ROOT}</NETCDF_PATH>
-  <PNETCDF_PATH>${OLCF_PARALLEL_NETCDF_ROOT}</PNETCDF_PATH>
-  <HDF5_PATH>${OLCF_HDF5_ROOT}</HDF5_PATH>
+  <NETCDF_C_PATH>/autofs/nccs-svm1_sw/summitdev/.spack/opt/spack/20170224/linux-rhel7-ppc64le/xl-20161123/netcdf-4.4.1-lzfkljjh7oiisoq5bmfihtienjy4dbbd</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</NETCDF_FORTRAN_PATH>
-  <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 </ADD_SLIBS>
+  <PNETCDF_PATH>/autofs/nccs-svm1_sw/summitdev/.spack/opt/spack/20170224/linux-rhel7-ppc64le/xl-20161123/parallel-netcdf-1.7.0-xtj6ktuczh7mdnykt4ybquhyw2z7b3gx</PNETCDF_PATH>
+  <HDF5_PATH>/autofs/nccs-svm1_sw/summitdev/.spack/opt/spack/20170224/linux-rhel7-ppc64le/xl-20161123/hdf5-1.10.0-patch1-2gxloc767tdbsr5utpkhmbjf4n4kx45p</HDF5_PATH>
+  <ADD_SLIBS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -L/sw/summitdev/essl/5.5.0-20161110/lib64 -lessl -L/autofs/nccs-svm1_sw/summitdev/.spack/opt/spack/20170224/linux-rhel7-ppc64le/xl-20161123/netlib-lapack-3.6.1-7y4cztmzhlmtfu2pl5cwz2bk4hhpeixh/lib64 -llapack</ADD_SLIBS>
   <!-- 
+  <NETCDF_C_PATH>$(OLCF_NETCDF_ROOT)</NETCDF_C_PATH>
+  <PNETCDF_PATH>$(OLCF_PARALLEL_NETCDF_ROOT)</PNETCDF_PATH>
+  <HDF5_PATH>$(OLCF_HDF5_ROOT)</HDF5_PATH>
+  <NETCDF_FORTRAN_PATH>/lustre/atlas/proj-shared/cli115/summitdev/soft/netcdf/fortran-4.4.4</NETCDF_FORTRAN_PATH>
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <ADD_SLIBS> -L${OLCF_NETCDF_ROOT}/lib -lnetcdf  </ADD_SLIBS> 
-  <ADD_SLIBS compile_threaded="true"> </ADD_SLIBS>
+  <ADD_SLIBS MPILIB!="mpi-serial">-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5</ADD_SLIBS>
   -->
 </compiler>
 
