@@ -384,7 +384,7 @@ class EnvBatch(EnvBase):
                 submitcmd += string + " "
 
         logger.info("Submitting job script %s"%submitcmd)
-        output = run_cmd_no_fail(submitcmd)
+        output = run_cmd_no_fail(submitcmd + " 2>&1")
         jobid = self.get_job_id(output)
         logger.info("Submitted job id is %s"%jobid)
         return jobid
