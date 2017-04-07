@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<config case="init_step1">
+
+	<get_file hash="3hsm7mju91" dest_path="mesh_database" file_name="mesh.EC.60-30km.160115.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
+	</get_file>
+
+	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
+	<add_executable source="mask_creator" dest="MpasMaskCreator.x"/>
+
+	<add_link source_path="mesh_database" source="mesh.EC.60-30km.160115.nc" dest="base_mesh.nc"/>
+	<add_link source_path="compass" source="ocean/global_ocean/EC60to30/five_cell/land_coverage_5_cell.geojson" dest="land_coverage_5_cell.geojson"/>
+
+	<run_script name="run.py">
+		<step executable="./MpasMaskCreator.x">
+			<argument flag="">base_mesh.nc</argument>
+			<argument flag="">land_mask.nc</argument>
+			<argument flag="-f">land_coverage_5_cell.geojson</argument>
+		</step>
+		<step executable="./MpasCellCuller.x">
+			<argument flag="">base_mesh.nc</argument>
+			<argument flag="">culled_mesh_final.nc</argument>
+			<argument flag="-i">land_mask.nc</argument>
+		</step>
+	</run_script>
+</config>
